@@ -220,7 +220,7 @@ export function ApprovalBanner({
                             </button>
                         )}
                         <Button
-                            variant="success"
+                            variant="primary"
                             size="sm"
                             onClick={() => onDecide?.(approval.id, 'APPROVED', comment)}
                             disabled={!canActNow}
@@ -235,7 +235,7 @@ export function ApprovalBanner({
                             {busy ? '…' : 'Approve'}
                         </Button>
                         <Button
-                            variant="danger"
+                            variant="destructive"
                             size="sm"
                             onClick={() => onDecide?.(approval.id, 'REJECTED', comment)}
                             disabled={!canActNow}

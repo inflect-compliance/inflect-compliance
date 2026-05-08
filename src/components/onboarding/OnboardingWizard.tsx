@@ -396,7 +396,7 @@ export default function OnboardingWizard() {
                                 )}
                                 {isLast && (
                                     <Button
-                                        variant="success"
+                                        variant="primary"
                                         size="lg"
                                         onClick={handleFinish}
                                         disabled={saving}

@@ -266,7 +266,7 @@ export default function TestRunPage() {
                             {(['PASS', 'FAIL', 'INCONCLUSIVE'] as const).map(r => (
                                 <button
                                     key={r}
-                                    className={buttonVariants({ variant: result === r ? (r === 'FAIL' ? 'danger' : r === 'PASS' ? 'success' : 'primary') : 'ghost', size: 'sm', className: result === r ? (r === 'PASS' ? 'bg-bg-success-emphasis text-content-emphasis' : r === 'FAIL' ? 'bg-bg-error-emphasis text-content-emphasis' : 'bg-bg-warning-emphasis text-content-emphasis') : '' })}
+                                    className={buttonVariants({ variant: result === r ? (r === 'FAIL' ? 'destructive' : 'primary') : 'ghost', size: 'sm', className: result === r ? (r === 'PASS' ? 'bg-bg-success-emphasis text-content-emphasis' : r === 'FAIL' ? 'bg-bg-error-emphasis text-content-emphasis' : 'bg-bg-warning-emphasis text-content-emphasis') : '' })}
                                     onClick={() => setResult(r)}
                                     id={`result-btn-${r}`}
                                 >

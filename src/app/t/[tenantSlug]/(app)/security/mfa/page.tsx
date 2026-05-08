@@ -234,7 +234,7 @@ export default function UserMfaPage() {
                         )}
                         {status.isVerified && status.tenantMfaPolicy !== 'REQUIRED' && (
                             <Button
-                                variant="danger-outline"
+                                variant="destructive-outline"
                                 onClick={removeMfa}
                                 disabled={submitting}
                                 id="mfa-remove-btn"

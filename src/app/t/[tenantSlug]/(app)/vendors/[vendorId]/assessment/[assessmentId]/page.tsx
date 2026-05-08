@@ -228,7 +228,7 @@ export default function AssessmentPage(
                         <Button variant="primary" onClick={() => decideAssessment('APPROVED')} disabled={deciding} id="approve-assessment-btn">
                             Approve
                         </Button>
-                        <Button variant="danger" onClick={() => decideAssessment('REJECTED')} disabled={deciding} id="reject-assessment-btn">
+                        <Button variant="destructive" onClick={() => decideAssessment('REJECTED')} disabled={deciding} id="reject-assessment-btn">
                             Reject
                         </Button>
                     </div>

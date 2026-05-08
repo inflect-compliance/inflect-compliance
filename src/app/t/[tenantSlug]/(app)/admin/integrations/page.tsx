@@ -261,7 +261,7 @@ export default function AdminIntegrationsPage() {
                                                 </Button>
                                             </Tooltip>
                                             <Tooltip content="Disable integration">
-                                                <Button variant="danger-outline" size="xs" onClick={() => handleDisable(row.original.id)} aria-label="Disable integration">
+                                                <Button variant="destructive-outline" size="xs" onClick={() => handleDisable(row.original.id)} aria-label="Disable integration">
                                                     <Trash2 className="w-3 h-3" />
                                                 </Button>
                                             </Tooltip>

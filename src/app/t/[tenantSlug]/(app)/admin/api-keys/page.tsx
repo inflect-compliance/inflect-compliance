@@ -412,7 +412,7 @@ export default function ApiKeysPage() {
                         <div className="text-right">
                             <Tooltip content="Revoke key">
                                 <Button
-                                    variant="danger-outline"
+                                    variant="destructive-outline"
                                     size="xs"
                                     onClick={() => handleRevoke(row.original)}
                                     aria-label="Revoke key"

@@ -351,7 +351,7 @@ export default function AdminSecurityPage() {
                             id="revoke-user-id-input"
                         />
                         <Button
-                            variant="danger-outline"
+                            variant="destructive-outline"
                             onClick={handleRevokeUser}
                             disabled={revoking || !revokeUserId.trim()}
                             id="revoke-user-btn"
