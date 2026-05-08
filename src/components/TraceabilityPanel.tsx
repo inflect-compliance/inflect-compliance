@@ -258,7 +258,7 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
                     <div className="flex items-center justify-between mb-3">
                         <Heading level={3} className="text-white inline-flex items-center gap-2">{entityType === 'control' ? <><AppIcon name="shield" size={16} /> Mitigates Risks</> : <><AppIcon name="warning" size={16} /> Associated Risks</>} ({risks.length})</Heading>
                         {canWrite && (
-                            <Button variant="primary" size="xs" onClick={() => { setShowAddRisk(!showAddRisk); setAddId(''); }} id="add-risk-link-btn">+ Link Risk</Button>
+                            <Button variant="primary" size="xs" onClick={() => { setShowAddRisk(!showAddRisk); setAddId(''); }} id="add-risk-link-btn">Link Risk</Button>
                         )}
                     </div>
                     {showAddRisk && canWrite && (
@@ -316,7 +316,7 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
                     <div className="flex items-center justify-between mb-3">
                         <Heading level={3} className="text-white inline-flex items-center gap-2">{entityType === 'risk' ? <><AppIcon name="shield" size={16} /> Mitigated by Controls</> : <><AppIcon name="controls" size={16} /> Covered by Controls</>} ({controls.length})</Heading>
                         {canWrite && (
-                            <Button variant="primary" size="xs" onClick={() => { setShowAddControl(!showAddControl); setAddId(''); }} id="add-control-link-btn">+ Link Control</Button>
+                            <Button variant="primary" size="xs" onClick={() => { setShowAddControl(!showAddControl); setAddId(''); }} id="add-control-link-btn">Link Control</Button>
                         )}
                     </div>
                     {showAddControl && canWrite && (
@@ -374,7 +374,7 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
                     <div className="flex items-center justify-between mb-3">
                         <Heading level={3} className="text-white inline-flex items-center gap-2"><AppIcon name="package" size={16} /> {entityType === 'control' ? 'Covers Assets' : 'Affects Assets'} ({assets.length})</Heading>
                         {canWrite && (
-                            <Button variant="primary" size="xs" onClick={() => { setShowAddAsset(!showAddAsset); setAddId(''); }} id="add-asset-link-btn">+ Link Asset</Button>
+                            <Button variant="primary" size="xs" onClick={() => { setShowAddAsset(!showAddAsset); setAddId(''); }} id="add-asset-link-btn">Link Asset</Button>
                         )}
                     </div>
                     {showAddAsset && canWrite && (
