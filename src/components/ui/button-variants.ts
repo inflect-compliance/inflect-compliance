@@ -20,25 +20,17 @@ export const buttonVariants = cva(
           "bg-bg-default border-border-subtle text-content-emphasis",
           "hover:bg-bg-muted hover:border-border-default",
         ],
-        outline: [
-          "bg-transparent border-border-default text-content-default",
-          "hover:bg-bg-muted hover:text-content-emphasis",
-        ],
         ghost: [
           "bg-transparent border-transparent text-content-default",
           "hover:bg-bg-muted hover:text-content-emphasis",
         ],
-        danger: [
+        destructive: [
           "bg-bg-error-emphasis border-bg-error-emphasis text-white",
           "hover:brightness-110",
         ],
-        "danger-outline": [
+        "destructive-outline": [
           "bg-transparent border-border-error text-content-error",
           "hover:bg-bg-error hover:text-content-error",
-        ],
-        success: [
-          "bg-bg-success-emphasis border-bg-success-emphasis text-white",
-          "hover:brightness-110",
         ],
       },
       size: {

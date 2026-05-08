@@ -184,7 +184,7 @@ export function ColumnsDropdown({
                         someHidden && "ring-1 ring-[var(--brand-default)]/30",
                         className,
                     )}
-                    variant="outline"
+                    variant="secondary"
                     icon={<Settings className="h-4 w-4 shrink-0" />}
                     aria-label="Edit columns"
                     data-testid="edit-columns-button"

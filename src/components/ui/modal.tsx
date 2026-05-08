@@ -469,8 +469,8 @@ const toneIcon: Record<ConfirmTone, React.JSX.Element> = {
     info: <Info className="size-5 text-content-info" aria-hidden="true" />,
 };
 
-const tonePrimaryVariant: Record<ConfirmTone, "danger" | "primary"> = {
-    danger: "danger",
+const tonePrimaryVariant: Record<ConfirmTone, "destructive" | "primary"> = {
+    danger: "destructive",
     warning: "primary",
     info: "primary",
 };

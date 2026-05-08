@@ -193,7 +193,7 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
                     <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                         {f.status === 'OPEN' && <Button variant="secondary" size="sm" onClick={() => updateStatus(f.id, 'IN_PROGRESS')}>{t.inProgress}</Button>}
                         {f.status === 'IN_PROGRESS' && <Button variant="secondary" size="sm" onClick={() => updateStatus(f.id, 'READY_FOR_VERIFICATION')}>{t.readyForVerification}</Button>}
-                        {f.status === 'READY_FOR_VERIFICATION' && <Button variant="success" size="sm" onClick={() => updateStatus(f.id, 'CLOSED')}>{t.closed}</Button>}
+                        {f.status === 'READY_FOR_VERIFICATION' && <Button variant="primary" size="sm" onClick={() => updateStatus(f.id, 'CLOSED')}>{t.closed}</Button>}
                     </div>
                 );
             },

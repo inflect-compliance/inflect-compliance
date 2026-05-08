@@ -568,7 +568,7 @@ function RemoveMemberModal({
                     </Button>
                     <Button
                         type="button"
-                        variant="danger"
+                        variant="destructive"
                         loading={submitting}
                         disabled={submitting}
                         onClick={onConfirm}

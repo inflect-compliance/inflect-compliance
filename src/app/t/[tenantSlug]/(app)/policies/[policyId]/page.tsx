@@ -602,7 +602,7 @@ export default function PolicyDetailPage() {
                                             </Button>
                                         )}
                                         {canAdmin && hasApproved && !isCurrentPublished && (
-                                            <Button variant="success" size="sm" onClick={() => publishVersion(v.id)} disabled={!!actionLoading} id={`publish-version-${v.versionNumber}`}>
+                                            <Button variant="primary" size="sm" onClick={() => publishVersion(v.id)} disabled={!!actionLoading} id={`publish-version-${v.versionNumber}`}>
                                                 {actionLoading === 'publish-' + v.id ? '...' : 'Publish'}
                                             </Button>
                                         )}
@@ -627,10 +627,10 @@ export default function PolicyDetailPage() {
                                                 </div>
                                                 {canAdmin && a.status === 'PENDING' && (
                                                     <div className="flex gap-1">
-                                                        <Button variant="success" size="xs" onClick={() => decideApproval(a.id, 'APPROVED')} disabled={!!actionLoading} id={`approve-${a.id}`}>
+                                                        <Button variant="primary" size="xs" onClick={() => decideApproval(a.id, 'APPROVED')} disabled={!!actionLoading} id={`approve-${a.id}`}>
                                                             {actionLoading === 'decide-' + a.id ? '...' : 'Approve'}
                                                         </Button>
-                                                        <Button variant="danger" size="xs" onClick={() => decideApproval(a.id, 'REJECTED')} disabled={!!actionLoading}>Reject</Button>
+                                                        <Button variant="destructive" size="xs" onClick={() => decideApproval(a.id, 'REJECTED')} disabled={!!actionLoading}>Reject</Button>
                                                     </div>
                                                 )}
                                             </div>

@@ -125,10 +125,11 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
                 "bg-[var(--brand-default)] text-white/70 group-hover:bg-[var(--brand-muted)]":
                   variant === "primary",
                 "bg-bg-elevated text-content-muted":
-                  variant === "secondary" || variant === "outline",
+                  variant === "secondary",
                 "bg-bg-muted text-content-muted": variant === "ghost",
-                "bg-black/25 text-white/80":
-                  variant === "danger" || variant === "success",
+                "bg-black/25 text-white/80": variant === "destructive",
+                "bg-bg-error text-content-error":
+                  variant === "destructive-outline",
               },
               shortcutClassName,
             )}

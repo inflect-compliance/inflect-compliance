@@ -588,8 +588,8 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                         )}
                         {permissions.canWrite && ev.status === 'SUBMITTED' && (
                             <>
-                                <Button variant="success" size="sm" onClick={() => submitReview(ev.id, 'APPROVED')}>{t.approveEvidence}</Button>
-                                <Button variant="danger" size="sm" onClick={() => submitReview(ev.id, 'REJECTED', 'Needs improvement')}>{t.rejectEvidence}</Button>
+                                <Button variant="primary" size="sm" onClick={() => submitReview(ev.id, 'APPROVED')}>{t.approveEvidence}</Button>
+                                <Button variant="destructive" size="sm" onClick={() => submitReview(ev.id, 'REJECTED', 'Needs improvement')}>{t.rejectEvidence}</Button>
                             </>
                         )}
                         {permissions.canWrite && ev.status === 'REJECTED' && (
@@ -676,7 +676,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                             Active ({activeEvidence.length})
                         </Button>
                         <Button
-                            variant={retentionFilter === 'expiring' ? 'danger' : 'ghost'}
+                            variant={retentionFilter === 'expiring' ? 'destructive' : 'ghost'}
                             onClick={() => setFilter('tab', 'expiring')}
                             id="tab-expiring"
                         >

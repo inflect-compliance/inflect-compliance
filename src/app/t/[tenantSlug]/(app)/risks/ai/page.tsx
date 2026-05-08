@@ -559,7 +559,7 @@ export default function AIRiskAssessmentPage() {
                                                     [+] Accept
                                                 </Button>
                                                 <Button
-                                                    variant={dec === 'reject' ? 'danger' : 'secondary'}
+                                                    variant={dec === 'reject' ? 'destructive' : 'secondary'}
                                                     size="xs"
                                                     className={dec === 'reject' ? 'bg-bg-error-emphasis text-content-emphasis' : ''}
                                                     onClick={() => setDecision(item.id, 'reject')}

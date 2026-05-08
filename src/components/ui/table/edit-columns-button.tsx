@@ -154,7 +154,7 @@ export function EditColumnsButton<T>({
             someHidden && "ring-[var(--brand-default)]/30 ring-1",
             className,
           )}
-          variant="outline"
+          variant="secondary"
           icon={<Settings className="h-4 w-4 shrink-0" />}
           aria-label={title}
           data-testid="edit-columns-button"

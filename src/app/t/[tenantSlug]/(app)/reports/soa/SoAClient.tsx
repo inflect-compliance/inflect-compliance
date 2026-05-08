@@ -228,7 +228,7 @@ export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientPr
                         </div>
                     </div>
                     <Button
-                        variant="danger"
+                        variant="destructive"
                         size="xs"
                         onClick={() => setGapsOnly(true)}
                     >
@@ -261,7 +261,7 @@ export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientPr
                 </div>
 
                 <Button
-                    variant={gapsOnly ? 'danger' : 'ghost'}
+                    variant={gapsOnly ? 'destructive' : 'ghost'}
                     onClick={() => setGapsOnly(!gapsOnly)}
                     id="soa-gaps-only"
                 >
@@ -546,7 +546,7 @@ function SoARow({
                                         )}
                                         {c.applicability === 'NOT_APPLICABLE' && !c.justification && canEdit && (
                                             <Button
-                                                variant="danger"
+                                                variant="destructive"
                                                 size="xs"
                                                 onClick={(e) => { e.stopPropagation(); onJustify(c.controlId, c.code || c.controlId.slice(0, 8)); }}
                                             >

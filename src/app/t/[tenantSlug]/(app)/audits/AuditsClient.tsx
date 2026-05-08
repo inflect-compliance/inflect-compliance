@@ -165,7 +165,7 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
                                 <Heading level={2}>{selected.title}</Heading>
                                 <div className="flex flex-wrap gap-2">
                                     {selected.status === 'PLANNED' && <Button variant="primary" size="sm" onClick={() => updateAuditStatus('IN_PROGRESS')}>{t.inProgress}</Button>}
-                                    {selected.status === 'IN_PROGRESS' && <Button variant="success" size="sm" onClick={() => updateAuditStatus('COMPLETED')}>{t.completed}</Button>}
+                                    {selected.status === 'IN_PROGRESS' && <Button variant="primary" size="sm" onClick={() => updateAuditStatus('COMPLETED')}>{t.completed}</Button>}
                                 </div>
                             </div>
                             {selected.scope && <p className="text-sm text-content-muted">{selected.scope}</p>}

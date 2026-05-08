@@ -216,7 +216,13 @@ jobs:
   coverage:
     name: "Coverage (≥60%)"
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # 25-minute budget. The non-instrumented Test job consistently
+    # runs ~14m40s as the suite size grows; the coverage-instrumented
+    # variant has been hitting the previous 15-minute ceiling on
+    # PRs that touch many files (v2-PR-1 cancelled twice at 14m16s).
+    # Bumping to 25 leaves clear headroom without rewarding test
+    # bloat — revisit if the gate ever runs >18 min.
+    timeout-minutes: 25
 
     env:
       DATABASE_URL: postgresql://ci:ci_password@localhost:5432/ci_testdb?schema=public

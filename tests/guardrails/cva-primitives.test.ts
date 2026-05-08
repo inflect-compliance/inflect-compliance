@@ -29,10 +29,15 @@ describe('Button primitive', () => {
         expect(src).toMatch(/export \{ Button \}/);
     });
 
-    it('defines expected variant keys', () => {
-        for (const v of ['primary', 'secondary', 'ghost', 'danger', 'outline', 'success']) {
+    it('defines expected variant keys (post v2-PR-1 cull)', () => {
+        // v2-PR-1 retired `outline` (→ secondary), `success` (→ primary),
+        // and renamed `danger` → `destructive` (`danger-outline` →
+        // `destructive-outline`). Final catalogue is 5 variants.
+        for (const v of ['primary', 'secondary', 'ghost', 'destructive']) {
             expect(variantsSrc).toContain(`${v}:`);
         }
+        // destructive-outline is quoted because of the hyphen.
+        expect(variantsSrc).toContain(`"destructive-outline":`);
     });
 
     it('defines size variants', () => {
