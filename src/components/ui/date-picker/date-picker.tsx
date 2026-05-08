@@ -171,7 +171,7 @@ export function DatePicker({
                                 type="button"
                                 onClick={handleClear}
                                 className={cn(
-                                    'flex items-center justify-center gap-2',
+                                    'flex items-center justify-center gap-tight',
                                     'border-t border-border-subtle px-3 py-2 text-xs',
                                     'text-content-muted transition-colors',
                                     'hover:bg-bg-muted hover:text-content-emphasis',

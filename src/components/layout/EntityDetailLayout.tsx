@@ -180,11 +180,11 @@ export function EntityDetailLayout<TKey extends string = string>({
     return (
         <div
             id={id}
-            className={cn('space-y-6 animate-fadeIn', className)}
+            className={cn('space-y-section animate-fadeIn', className)}
             data-entity-detail-layout
         >
             {/* Header */}
-            <header className="flex items-start justify-between gap-4 flex-wrap">
+            <header className="flex items-start justify-between gap-default flex-wrap">
                 <div className="min-w-0">
                     {breadcrumbs && breadcrumbs.length > 0 && (
                         <Breadcrumbs
@@ -211,7 +211,7 @@ export function EntityDetailLayout<TKey extends string = string>({
                     </Heading>
                     {meta && (
                         <div
-                            className="flex gap-2 mt-1 flex-wrap items-center"
+                            className="flex gap-tight mt-1 flex-wrap items-center"
                             data-testid="entity-detail-meta"
                         >
                             {meta}
@@ -220,7 +220,7 @@ export function EntityDetailLayout<TKey extends string = string>({
                 </div>
                 {actions && (
                     <div
-                        className="flex gap-2 flex-wrap"
+                        className="flex gap-tight flex-wrap"
                         data-testid="entity-detail-actions"
                     >
                         {actions}
@@ -297,12 +297,12 @@ export function EntityDetailLayout<TKey extends string = string>({
 function DetailLoadingSkeleton({ tabCount }: { tabCount: number }) {
     return (
         <div
-            className="space-y-6 animate-fadeIn"
+            className="space-y-section animate-fadeIn"
             aria-busy="true"
             data-testid="entity-detail-loading"
         >
             <div className="flex items-center justify-between">
-                <div className="space-y-2">
+                <div className="space-y-tight">
                     <div className="animate-pulse rounded bg-bg-elevated/60 h-4 w-24" />
                     <div className="animate-pulse rounded bg-bg-elevated/60 h-7 w-64" />
                 </div>
@@ -315,8 +315,8 @@ function DetailLoadingSkeleton({ tabCount }: { tabCount: number }) {
                     />
                 ))}
             </div>
-            <div className="glass-card p-6 space-y-4">
-                <div className="grid grid-cols-2 gap-6">
+            <div className="glass-card p-6 space-y-default">
+                <div className="grid grid-cols-2 gap-section">
                     {Array.from({ length: 6 }).map((_, i) => (
                         <div key={i} className="space-y-1">
                             <div className="animate-pulse rounded bg-bg-elevated/60 h-3 w-16" />

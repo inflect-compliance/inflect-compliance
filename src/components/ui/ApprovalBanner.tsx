@@ -135,9 +135,9 @@ export function ApprovalBanner({
             data-status={approval.status}
             className={`rounded-lg border ${tone.border} ${tone.bg} px-4 py-3 ${className}`.trim()}
         >
-            <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-compact">
                 <div className="min-w-0 flex-1">
-                    <div className="mb-1 flex items-center gap-2">
+                    <div className="mb-1 flex items-center gap-tight">
                         {tone.icon}
                         <h3
                             className={`text-sm font-semibold ${tone.fg}`}
@@ -206,7 +206,7 @@ export function ApprovalBanner({
                     (2) hidden when the viewer can't decide (RBAC)
                     (3) disabled if the viewer is the requester      */}
                 {isPending && canDecide && (
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-tight">
                         {!showCommentField && (
                             <button
                                 type="button"

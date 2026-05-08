@@ -142,13 +142,13 @@ export default function UserMfaPage() {
 
     if (loading) {
         return (
-            <div className="space-y-6 animate-fadeIn">
-                <Heading level={1} className="flex items-center gap-2">
+            <div className="space-y-section animate-fadeIn">
+                <Heading level={1} className="flex items-center gap-tight">
                     <ShieldCheck className="w-6 h-6 text-[var(--brand-default)]" />
                     Multi-Factor Authentication
                 </Heading>
                 <Card>
-                    <div className="animate-pulse space-y-4">
+                    <div className="animate-pulse space-y-default">
                         <div className="h-4 bg-bg-elevated rounded w-1/3" />
                         <div className="h-20 bg-bg-elevated rounded w-full" />
                     </div>
@@ -158,14 +158,14 @@ export default function UserMfaPage() {
     }
 
     return (
-        <div className="space-y-6 animate-fadeIn max-w-2xl">
-            <Heading level={1} className="flex items-center gap-2">
+        <div className="space-y-section animate-fadeIn max-w-2xl">
+            <Heading level={1} className="flex items-center gap-tight">
                 <ShieldCheck className="w-6 h-6 text-[var(--brand-default)]" />
                 Multi-Factor Authentication
             </Heading>
 
             {error && (
-                <div className="glass-card p-4 border border-border-error bg-bg-error flex items-center gap-2">
+                <div className="glass-card p-4 border border-border-error bg-bg-error flex items-center gap-tight">
                     <XCircle className="w-4 h-4 text-content-error shrink-0" />
                     <span className="text-sm text-content-error">{error}</span>
                     <button onClick={() => setError(null)} className="ml-auto text-xs text-content-muted hover:text-content-emphasis">
@@ -175,7 +175,7 @@ export default function UserMfaPage() {
             )}
 
             {success && (
-                <div className="glass-card p-4 border border-border-success bg-bg-success flex items-center gap-2">
+                <div className="glass-card p-4 border border-border-success bg-bg-success flex items-center gap-tight">
                     <CheckCircle className="w-4 h-4 text-content-success shrink-0" />
                     <span className="text-sm text-content-success">{success}</span>
                 </div>
@@ -183,7 +183,7 @@ export default function UserMfaPage() {
 
             {/* Status Card */}
             {step === 'status' && status && (
-                <div className="glass-card p-6 space-y-4">
+                <div className="glass-card p-6 space-y-default">
                     <div className="flex items-center justify-between">
                         <div>
                             <Heading level={2}>MFA Status</Heading>
@@ -212,7 +212,7 @@ export default function UserMfaPage() {
                     )}
 
                     {status.mfaRequired && !status.isVerified && (
-                        <div className="p-3 rounded-lg border border-border-warning bg-bg-warning flex items-start gap-2">
+                        <div className="p-3 rounded-lg border border-border-warning bg-bg-warning flex items-start gap-tight">
                             <AlertTriangle className="w-4 h-4 text-content-warning mt-0.5 shrink-0" />
                             <p className="text-sm text-content-warning">
                                 Your organization requires MFA. You must enroll to continue using the application.
@@ -220,7 +220,7 @@ export default function UserMfaPage() {
                         </div>
                     )}
 
-                    <div className="flex gap-2 pt-2">
+                    <div className="flex gap-tight pt-2">
                         {!status.isVerified && (
                             <Button
                                 variant="primary"
@@ -261,7 +261,7 @@ export default function UserMfaPage() {
                     </div>
 
                     {/* QR Code placeholder — render the otpauth URI */}
-                    <div className="flex flex-col items-center gap-4 py-4">
+                    <div className="flex flex-col items-center gap-default py-4">
                         <div className="bg-white p-4 rounded-xl">
                             {/* Simple QR fallback: render as a monospace URI block */}
                             <div className="w-full sm:w-48 h-48 flex items-center justify-center">
@@ -276,7 +276,7 @@ export default function UserMfaPage() {
                     {/* Setup Key */}
                     <div className="p-4 rounded-lg border border-border-default bg-bg-default/50">
                         <label className="text-xs text-content-muted block mb-1">Setup Key</label>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-tight">
                             <code className="text-sm font-mono text-[var(--brand-muted)] tracking-wider break-all flex-1">
                                 {enrollment.secret}
                             </code>
@@ -297,7 +297,7 @@ export default function UserMfaPage() {
                         <Heading level={3} className="mb-2">
                             3. Enter the 6-digit code from your authenticator app
                         </Heading>
-                        <div className="flex gap-2">
+                        <div className="flex gap-tight">
                             <input
                                 type="text"
                                 inputMode="numeric"

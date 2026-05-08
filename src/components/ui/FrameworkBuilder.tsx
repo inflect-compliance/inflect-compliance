@@ -189,9 +189,9 @@ export function FrameworkBuilder({
     };
 
     return (
-        <div id={id} className="space-y-4">
+        <div id={id} className="space-y-default">
             {/* Header / actions */}
-            <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center justify-between flex-wrap gap-tight">
                 <div>
                     <Heading level={3}>
                         Builder — reorder mode
@@ -201,7 +201,7 @@ export function FrameworkBuilder({
                         framework stays unchanged for everyone else.
                     </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-tight">
                     <Button
                         variant="secondary"
                         size="sm"
@@ -236,7 +236,7 @@ export function FrameworkBuilder({
             )}
 
             {/* Sections */}
-            <div className="space-y-3">
+            <div className="space-y-compact">
                 {model.map((section, sectionIndex) => (
                     <div key={section.id} className="space-y-1">
                         {/* Section drop target ABOVE this section */}
@@ -248,9 +248,9 @@ export function FrameworkBuilder({
                             draggable
                             onDragStart={(e) => onSectionDragStart(e, section.id)}
                             data-builder-section-id={section.id}
-                            className="glass-card p-3 space-y-2 cursor-grab active:cursor-grabbing"
+                            className="glass-card p-3 space-y-tight cursor-grab active:cursor-grabbing"
                         >
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-tight">
                                 <GripVertical
                                     className="w-4 h-4 text-content-subtle flex-shrink-0"
                                     aria-hidden="true"
@@ -281,7 +281,7 @@ export function FrameworkBuilder({
                                             }
                                             data-builder-requirement-id={req.id}
                                             className={cn(
-                                                'flex items-center gap-2 px-2 py-1.5 rounded',
+                                                'flex items-center gap-tight px-2 py-1.5 rounded',
                                                 'cursor-grab active:cursor-grabbing',
                                                 'text-xs hover:bg-bg-muted',
                                             )}

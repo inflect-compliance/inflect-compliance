@@ -147,7 +147,7 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
         <>
             {/* ── Header ─────────────────────────────────────────── */}
             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-compact">
                     <Link
                         href={tenantHref('/assets')}
                         className="text-content-muted hover:text-content-emphasis transition"
@@ -168,7 +168,7 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
             </div>
 
             {/* ── KPI Strip: 3 Coverage Donuts ────────────────────── */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4" id="coverage-kpi-strip">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-default" id="coverage-kpi-strip">
                 <CoverageKpiCard
                     id="kpi-assets-covered"
                     icon={<Cpu className="w-5 h-5" />}
@@ -201,7 +201,7 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
             {/* ── Summary Bar ─────────────────────────────────────── */}
             <Card id="coverage-summary-bar">
                 <Heading level={3} className="mb-4">Overall Coverage</Heading>
-                <div className="space-y-3">
+                <div className="space-y-compact">
                     <CoverageBar
                         label="Asset Protection"
                         pct={data.assetsWithControlsPct}
@@ -221,10 +221,10 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
             </Card>
 
             {/* ── Tables: Gaps ─────────────────────────────────────── */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-default">
                 {/* Uncovered Critical Assets */}
                 <Card id="uncovered-assets-section">
-                    <div className="flex items-center gap-2 mb-4">
+                    <div className="flex items-center gap-tight mb-4">
                         <Cpu className="w-4 h-4 text-content-error" />
                         <Heading level={3}>
                             Uncovered Critical Assets
@@ -248,7 +248,7 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
 
                 {/* Unmapped Risks */}
                 <Card id="unmapped-risks-section">
-                    <div className="flex items-center gap-2 mb-4">
+                    <div className="flex items-center gap-tight mb-4">
                         <AlertTriangle className="w-4 h-4 text-content-warning" />
                         <Heading level={3}>
                             Unmapped Risks
@@ -274,20 +274,20 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
             {/* ── Hot Controls ─────────────────────────────────────── */}
             {data.hotControls.length > 0 && (
                 <Card id="hot-controls-section">
-                    <div className="flex items-center gap-2 mb-4">
+                    <div className="flex items-center gap-tight mb-4">
                         <Flame className="w-4 h-4 text-orange-400" />
                         <Heading level={3}>
                             Top Controls by Risk Coverage
                         </Heading>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-compact">
                         {data.hotControls.map((ctrl, idx) => (
                             <Link
                                 key={ctrl.id}
                                 href={tenantHref(`/controls/${ctrl.id}`)}
                                 className="glass-card p-4 hover:scale-[1.03] transition-transform group cursor-pointer"
                             >
-                                <div className="flex items-center gap-2 mb-2">
+                                <div className="flex items-center gap-tight mb-2">
                                     <span className={`
                                         w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold
                                         ${idx === 0 ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-content-emphasis' :
@@ -339,7 +339,7 @@ function CoverageKpiCard({
 
     return (
         <Card className="hover:scale-[1.02] transition-transform" id={id}>
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-tight mb-3">
                 <span className="text-content-muted">{icon}</span>
                 <span className="text-xs text-content-muted uppercase tracking-wide font-medium">
                     {label}
@@ -388,7 +388,7 @@ function CoverageBar({
         <div>
             <div className="flex items-center justify-between mb-1">
                 <span className="text-xs text-content-muted">{label}</span>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-tight">
                     <span className="text-xs text-content-subtle">{detail}</span>
                     <span className={`text-xs font-semibold ${textClass}`}>{pct}%</span>
                 </div>

@@ -278,7 +278,7 @@ export function VendorAssessmentReviewClient({
     const answerByQ = new Map(view.answers.map((a) => [a.questionId, a]));
 
     return (
-        <div className="space-y-6 animate-fadeIn" data-testid="vendor-review-page">
+        <div className="space-y-section animate-fadeIn" data-testid="vendor-review-page">
             {/* Header */}
             <div>
                 <Link
@@ -295,7 +295,7 @@ export function VendorAssessmentReviewClient({
                         <Heading level={1} className="mt-0.5">
                             {view.template.name}
                         </Heading>
-                        <div className="flex items-center gap-2 mt-1 text-xs text-content-subtle">
+                        <div className="flex items-center gap-tight mt-1 text-xs text-content-subtle">
                             <span>{view.template.key}</span>
                             <span>·</span>
                             <span>v{view.template.version}</span>
@@ -349,7 +349,7 @@ export function VendorAssessmentReviewClient({
                 view.status === 'REVIEWED' ||
                 view.status === 'CLOSED') && (
                 <div
-                    className="glass-card p-4 grid grid-cols-2 md:grid-cols-5 gap-4"
+                    className="glass-card p-4 grid grid-cols-2 md:grid-cols-5 gap-default"
                     data-testid="scoring-panel"
                 >
                     <Stat
@@ -397,7 +397,7 @@ export function VendorAssessmentReviewClient({
                         <Heading level={2} className="mb-3">
                             {s.title}
                         </Heading>
-                        <div className="space-y-3">
+                        <div className="space-y-compact">
                             {s.questions.map((q) => {
                                 const a = answerByQ.get(q.id);
                                 const ov = overrides[q.id] ?? {
@@ -407,7 +407,7 @@ export function VendorAssessmentReviewClient({
                                 return (
                                     <div
                                         key={q.id}
-                                        className="border-t border-border-default/30 pt-3 grid grid-cols-1 md:grid-cols-12 gap-3"
+                                        className="border-t border-border-default/30 pt-3 grid grid-cols-1 md:grid-cols-12 gap-compact"
                                         data-testid={`review-row-${q.id}`}
                                     >
                                         <div className="md:col-span-5">
@@ -528,10 +528,10 @@ export function VendorAssessmentReviewClient({
             {/* Final rating + reviewer notes + actions */}
             {(view.status === 'SUBMITTED' || view.status === 'REVIEWED') && (
                 <div
-                    className="glass-card p-4 space-y-3"
+                    className="glass-card p-4 space-y-compact"
                     data-testid="final-rating-panel"
                 >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-compact">
                         <div>
                             <label className="text-xs text-content-muted block mb-1">
                                 Final risk rating
@@ -585,7 +585,7 @@ export function VendorAssessmentReviewClient({
                         </div>
                     </div>
 
-                    <div className="flex justify-end gap-2 pt-2 border-t border-border-default/30">
+                    <div className="flex justify-end gap-tight pt-2 border-t border-border-default/30">
                         {editable && (
                             <Button
                                 variant="primary"

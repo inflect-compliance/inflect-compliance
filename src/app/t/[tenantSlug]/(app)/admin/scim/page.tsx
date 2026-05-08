@@ -114,11 +114,11 @@ export default function ScimAdminPage() {
     const revokedTokens = state?.tokens.filter(t => t.revokedAt) || [];
 
     return (
-        <div className="space-y-6 animate-fadeIn max-w-4xl">
+        <div className="space-y-section animate-fadeIn max-w-4xl">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <Heading level={1} className="flex items-center gap-2">
+                    <Heading level={1} className="flex items-center gap-tight">
                         <CloudCog className="w-6 h-6 text-[var(--brand-default)]" />
                         SCIM Provisioning
                     </Heading>
@@ -139,7 +139,7 @@ export default function ScimAdminPage() {
                 is queryable before the GET /admin/scim fetch resolves. */}
             <div className="glass-card p-4">
                 <Heading level={3} className="mb-2">SCIM Endpoint</Heading>
-                <div className="flex items-center gap-2 bg-bg-default/50 rounded px-3 py-2">
+                <div className="flex items-center gap-tight bg-bg-default/50 rounded px-3 py-2">
                     <code
                         className="text-xs text-[var(--brand-muted)] flex-1 select-all min-h-[1.25rem] inline-block"
                         id="scim-endpoint-url"
@@ -172,7 +172,7 @@ export default function ScimAdminPage() {
                     <p className="text-xs text-content-warning/80">
                         This token will not be shown again. Store it securely in your identity provider.
                     </p>
-                    <div className="flex items-center gap-2 mt-3 bg-bg-page/60 rounded px-3 py-2">
+                    <div className="flex items-center gap-tight mt-3 bg-bg-page/60 rounded px-3 py-2">
                         <code className="text-xs text-content-emphasis flex-1 break-all select-all" id="scim-token-value">
                             {newTokenPlaintext}
                         </code>
@@ -211,7 +211,7 @@ export default function ScimAdminPage() {
                 {/* Generate form */}
                 {showForm && (
                     <div className="p-4 border-b border-border-default/50 bg-bg-default/30">
-                        <div className="flex gap-2">
+                        <div className="flex gap-tight">
                             <input
                                 type="text"
                                 value={newLabel}
@@ -252,11 +252,11 @@ export default function ScimAdminPage() {
                         {activeTokens.map(token => (
                             <div key={token.id} className="flex items-center justify-between p-4">
                                 <div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-tight">
                                         <span className="text-sm font-medium text-content-emphasis">{token.label}</span>
                                         <StatusBadge variant="success" className="text-[10px]">Active</StatusBadge>
                                     </div>
-                                    <div className="flex items-center gap-3 mt-1">
+                                    <div className="flex items-center gap-compact mt-1">
                                         <span className="text-xs text-content-subtle">
                                             Created {formatDate(token.createdAt)}
                                         </span>
@@ -307,7 +307,7 @@ export default function ScimAdminPage() {
             {/* Setup guide */}
             <Card>
                 <Heading level={3} className="mb-3">Setup Guide</Heading>
-                <ol className="space-y-2 text-xs text-content-muted list-decimal list-inside">
+                <ol className="space-y-tight text-xs text-content-muted list-decimal list-inside">
                     <li>Generate a SCIM token above and copy it securely.</li>
                     <li>In your IdP (Okta, Azure AD, etc.), configure a SCIM 2.0 provisioning connector.</li>
                     <li>Set the <strong>SCIM connector base URL</strong> to the endpoint shown above.</li>

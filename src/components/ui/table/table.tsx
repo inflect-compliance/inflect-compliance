@@ -742,14 +742,14 @@ export function Table<T>({
                             className={cn(
                               header.column.id === "select"
                                 ? "absolute inset-0 flex items-center justify-center"
-                                : "flex items-center justify-between gap-6 !pr-0",
+                                : "flex items-center justify-between gap-section !pr-0",
                             )}
                           >
                             <ButtonOrDiv
                               className={cn(
                                 header.column.id === "select"
                                   ? "flex size-full items-center justify-center"
-                                  : "flex items-center gap-2",
+                                  : "flex items-center gap-tight",
                                 // PR-7 — keyboard-focus ring on
                                 // sortable column headers. Without
                                 // this, Tab through the table header
@@ -1029,7 +1029,7 @@ export function Table<T>({
               {resourceName?.(table.getRowCount() !== 1) || "items"}
             </As>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-tight">
             <Button
               variant="secondary"
               text="Previous"

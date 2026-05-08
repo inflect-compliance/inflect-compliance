@@ -19,7 +19,7 @@ export default function OnboardingBanner() {
 
     return (
         <Card className="border-[var(--brand-default)]/30 bg-gradient-to-r from-[var(--brand-subtle)] to-[var(--brand-subtle)]">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-compact">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--brand-emphasis)] to-[var(--brand-default)] flex items-center justify-center flex-shrink-0">
                     <Sparkles className="w-5 h-5 text-white" />
                 </div>

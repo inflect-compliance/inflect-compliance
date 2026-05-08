@@ -161,11 +161,11 @@ export function CalendarClient({
     };
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-section animate-fadeIn">
             {/* Header */}
-            <header className="flex items-start justify-between gap-4 flex-wrap">
+            <header className="flex items-start justify-between gap-default flex-wrap">
                 <div className="min-w-0">
-                    <Heading level={1} className="flex items-center gap-2">
+                    <Heading level={1} className="flex items-center gap-tight">
                         <CalIcon className="size-6 text-content-muted" aria-hidden="true" />
                         Compliance Calendar
                     </Heading>
@@ -174,7 +174,7 @@ export function CalendarClient({
                         vendor renewals, audit cycles, control tests — in one place.
                     </p>
                 </div>
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-tight flex-wrap">
                     <ToggleGroup
                         selected={view}
                         selectAction={(v) => setView(v as View)}
@@ -229,7 +229,7 @@ export function CalendarClient({
             )}
 
             {/* Body — view switch */}
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-section">
                 <div className="glass-card p-4">
                     {events.length === 0 && !calQuery.isLoading ? (
                         <EmptyState
@@ -275,7 +275,7 @@ export function CalendarClient({
                                     No events on this day.
                                 </p>
                             ) : (
-                                <ul className="space-y-2">
+                                <ul className="space-y-tight">
                                     {selectedEvents.map((ev) => (
                                         <li
                                             key={ev.id}

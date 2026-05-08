@@ -236,10 +236,10 @@ export function CardListCardHeader({
     return (
         <header
             data-card-header
-            className={cn('mb-3 flex items-start justify-between gap-3', className)}
+            className={cn('mb-3 flex items-start justify-between gap-compact', className)}
         >
             <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-tight">
                     <Heading level={3} className="truncate">
                         {title}
                     </Heading>
@@ -296,7 +296,7 @@ export function CardListCardContent({
     return (
         <div
             data-card-content
-            className={cn('flex flex-1 flex-col gap-3 text-sm text-content-default', className)}
+            className={cn('flex flex-1 flex-col gap-compact text-sm text-content-default', className)}
         >
             {kv && kv.length > 0 && (
                 <dl

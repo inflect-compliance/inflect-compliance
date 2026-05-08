@@ -8,7 +8,7 @@ import {
  */
 export default function IssuesLoading() {
     return (
-        <div role="status" aria-live="polite" className="space-y-6 animate-fadeIn" aria-busy="true" aria-label="Loading issues">
+        <div role="status" aria-live="polite" className="space-y-section animate-fadeIn" aria-busy="true" aria-label="Loading issues">
             <SkeletonPageHeader />
             <SkeletonDataTable rows={8} cols={7} />
         </div>

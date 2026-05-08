@@ -74,27 +74,27 @@ export default function ControlsDashboard() {
     };
 
     if (loading) return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-section animate-fadeIn">
             <Heading level={1} id="dashboard-heading"><AppIcon name="dashboard" className="inline-block mr-2 align-text-bottom" /> Controls Dashboard</Heading>
             <div className="p-12 text-center text-content-subtle animate-pulse">Loading dashboard...</div>
         </div>
     );
     if (!data) return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-section animate-fadeIn">
             <Heading level={1} id="dashboard-heading"><AppIcon name="dashboard" className="inline-block mr-2 align-text-bottom" /> Controls Dashboard</Heading>
             <div className="p-12 text-center text-content-error">Failed to load dashboard.</div>
         </div>
     );
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-section animate-fadeIn">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <Heading level={1} id="dashboard-heading"><AppIcon name="dashboard" className="inline-block mr-2 align-text-bottom" /> Controls Dashboard</Heading>
                     <p className="text-content-muted text-sm">{data.totalControls} controls in register</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-tight">
                     {permissions.canAdmin && (
                         <Button variant="secondary" onClick={fetchConsistency} id="consistency-check-btn">
                             <AppIcon name="search" size={16} className="inline-block" /> Consistency Check
@@ -107,7 +107,7 @@ export default function ControlsDashboard() {
             </div>
 
             {/* Stat Cards Row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4" id="dashboard-stats">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-default" id="dashboard-stats">
                 <div className="glass-card p-4">
                     <p className="text-xs text-content-subtle uppercase">Implementation Progress</p>
                     <p className="text-3xl font-bold text-content-success mt-1" id="implementation-progress">{data.implementationProgress}%</p>
@@ -138,7 +138,7 @@ export default function ControlsDashboard() {
             </div>
 
             {/* Status Distribution */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-default">
                 <Card>
                     <Heading level={3} className="mb-4">Status Distribution</Heading>
                     {/* Epic 59 — StatusBreakdown primitive. Bar widths are
@@ -167,7 +167,7 @@ export default function ControlsDashboard() {
                 <Card>
                     <Heading level={3} className="mb-4">Top Owners by Open Tasks</Heading>
                     {data.topOwners?.length > 0 ? (
-                        <div className="space-y-2" id="top-owners">
+                        <div className="space-y-tight" id="top-owners">
                             {data.topOwners.map((o) => (
                                 <div key={o.id} className="flex justify-between items-center text-sm">
                                     <span className="text-content-default">{o.name}</span>
@@ -185,7 +185,7 @@ export default function ControlsDashboard() {
             {showConsistency && consistency && (
                 <Card id="consistency-results">
                     <Heading level={3} className="mb-3"><AppIcon name="search" size={16} className="inline-block mr-1" /> Consistency Check Results</Heading>
-                    <div className="grid grid-cols-3 gap-4 mb-4">
+                    <div className="grid grid-cols-3 gap-default mb-4">
                         <div className="text-center">
                             <p className={`text-xl font-bold ${consistency.summary.missingCodeCount > 0 ? 'text-content-warning' : 'text-content-success'}`}>
                                 {consistency.summary.missingCodeCount}

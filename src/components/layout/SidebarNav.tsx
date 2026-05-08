@@ -168,7 +168,7 @@ export function SidebarContent({ user, onLogout, onNavClick }: SidebarContentPro
         <div className="flex flex-col h-full">
             {/* Logo */}
             <div className="p-4 border-b border-border-subtle">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-tight">
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--brand-emphasis)] to-[var(--brand-default)] flex items-center justify-center flex-shrink-0">
                         <span className="text-content-inverted text-sm font-bold">IC</span>
                     </div>
@@ -197,7 +197,7 @@ export function SidebarContent({ user, onLogout, onNavClick }: SidebarContentPro
 
             {/* User */}
             <div className="p-3 border-t border-border-subtle">
-                <div className="mb-2 flex items-start justify-between gap-2">
+                <div className="mb-2 flex items-start justify-between gap-tight">
                     <div className="min-w-0">
                         <p className="text-xs font-medium text-content-default truncate">{user.name}</p>
                         <p className="text-xs text-content-muted truncate">{tenant.tenantName}</p>

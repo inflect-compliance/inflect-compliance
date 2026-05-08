@@ -156,9 +156,11 @@ describe('FieldGroup', () => {
         expect(GROUP_SRC).toMatch(/lg:grid-cols-3/);
     });
 
-    it('default gap is md (gap-4) — matches form rhythm', () => {
+    it('default gap is md (gap-default = 16 px after v2-PR-2) — matches form rhythm', () => {
         expect(GROUP_SRC).toMatch(/gap\s*=\s*["']md["']/);
-        expect(GROUP_SRC).toMatch(/md:\s*["']gap-4["']/);
+        // Post-v2-PR-2: the FieldGroup `md` size resolves to the
+        // semantic `gap-default` token (16 px), not the raw `gap-4`.
+        expect(GROUP_SRC).toMatch(/md:\s*["']gap-default["']/);
     });
 
     it('renders a section heading that links via aria-labelledby', () => {

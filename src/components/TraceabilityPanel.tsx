@@ -251,18 +251,18 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
     const showAssets = entityType === 'control' || entityType === 'risk';
 
     return (
-        <div className="space-y-6" id="traceability-panel">
+        <div className="space-y-section" id="traceability-panel">
             {/* Risks section */}
             {showRisks && (
                 <div>
                     <div className="flex items-center justify-between mb-3">
-                        <Heading level={3} className="text-white inline-flex items-center gap-2">{entityType === 'control' ? <><AppIcon name="shield" size={16} /> Mitigates Risks</> : <><AppIcon name="warning" size={16} /> Associated Risks</>} ({risks.length})</Heading>
+                        <Heading level={3} className="text-white inline-flex items-center gap-tight">{entityType === 'control' ? <><AppIcon name="shield" size={16} /> Mitigates Risks</> : <><AppIcon name="warning" size={16} /> Associated Risks</>} ({risks.length})</Heading>
                         {canWrite && (
                             <Button variant="primary" size="xs" onClick={() => { setShowAddRisk(!showAddRisk); setAddId(''); }} id="add-risk-link-btn">Link Risk</Button>
                         )}
                     </div>
                     {showAddRisk && canWrite && (
-                        <div className="glass-card p-3 mb-3 space-y-2">
+                        <div className="glass-card p-3 mb-3 space-y-tight">
                             <Combobox
                                 id="risk-select"
                                 selected={availableRisks.map((r: any) => ({ value: r.id, label: `${r.title} (${r.status})` })).find((o: { value: string }) => o.value === addId) ?? null}
@@ -314,13 +314,13 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
             {showControls && (
                 <div>
                     <div className="flex items-center justify-between mb-3">
-                        <Heading level={3} className="text-white inline-flex items-center gap-2">{entityType === 'risk' ? <><AppIcon name="shield" size={16} /> Mitigated by Controls</> : <><AppIcon name="controls" size={16} /> Covered by Controls</>} ({controls.length})</Heading>
+                        <Heading level={3} className="text-white inline-flex items-center gap-tight">{entityType === 'risk' ? <><AppIcon name="shield" size={16} /> Mitigated by Controls</> : <><AppIcon name="controls" size={16} /> Covered by Controls</>} ({controls.length})</Heading>
                         {canWrite && (
                             <Button variant="primary" size="xs" onClick={() => { setShowAddControl(!showAddControl); setAddId(''); }} id="add-control-link-btn">Link Control</Button>
                         )}
                     </div>
                     {showAddControl && canWrite && (
-                        <div className="glass-card p-3 mb-3 space-y-2">
+                        <div className="glass-card p-3 mb-3 space-y-tight">
                             <Combobox
                                 id="control-select"
                                 selected={availableControls.map((c: any) => ({ value: c.id, label: `${c.code ? `${c.code} — ` : ''}${c.name} (${c.status})` })).find((o: { value: string }) => o.value === addId) ?? null}
@@ -372,13 +372,13 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
             {showAssets && (
                 <div>
                     <div className="flex items-center justify-between mb-3">
-                        <Heading level={3} className="text-white inline-flex items-center gap-2"><AppIcon name="package" size={16} /> {entityType === 'control' ? 'Covers Assets' : 'Affects Assets'} ({assets.length})</Heading>
+                        <Heading level={3} className="text-white inline-flex items-center gap-tight"><AppIcon name="package" size={16} /> {entityType === 'control' ? 'Covers Assets' : 'Affects Assets'} ({assets.length})</Heading>
                         {canWrite && (
                             <Button variant="primary" size="xs" onClick={() => { setShowAddAsset(!showAddAsset); setAddId(''); }} id="add-asset-link-btn">Link Asset</Button>
                         )}
                     </div>
                     {showAddAsset && canWrite && (
-                        <div className="glass-card p-3 mb-3 space-y-2">
+                        <div className="glass-card p-3 mb-3 space-y-tight">
                             <Combobox
                                 id="asset-select"
                                 selected={availableAssets.map((a: any) => ({ value: a.id, label: `${a.name} (${a.type})` })).find((o: { value: string }) => o.value === addId) ?? null}

@@ -109,8 +109,8 @@ export function FilterToolbar({
     );
 
     return (
-        <div className={`flex flex-wrap items-start gap-3${className ? ` ${className}` : ''}`}>
-            <div className="flex flex-wrap items-center gap-2">
+        <div className={`flex flex-wrap items-start gap-compact${className ? ` ${className}` : ''}`}>
+            <div className="flex flex-wrap items-center gap-tight">
                 <input
                     id={searchId}
                     type="search"
@@ -146,7 +146,7 @@ export function FilterToolbar({
                     onRemoveAll={clearAll}
                 />
             </div>
-            {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
+            {actions ? <div className="flex items-center gap-tight">{actions}</div> : null}
         </div>
     );
 }

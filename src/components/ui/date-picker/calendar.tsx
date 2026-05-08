@@ -164,7 +164,7 @@ export function Calendar({
             data-testid="calendar"
             classNames={{
                 months: 'flex space-y-0',
-                month: 'space-y-4 p-3 w-full',
+                month: 'space-y-default p-3 w-full',
                 nav: 'gap-1 flex items-center justify-between w-full h-full',
                 month_grid: 'w-full border-separate border-spacing-y-1',
                 weekdays: 'flex',

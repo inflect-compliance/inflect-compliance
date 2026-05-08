@@ -173,7 +173,7 @@ export function ControlsTable({ rows: initialRows, nextCursor: initialNextCursor
                     data-testid="org-controls-table"
                 />
                 {pagination.hasMore && orgSlug && (
-                    <div className="flex flex-col items-center gap-2 pt-3">
+                    <div className="flex flex-col items-center gap-tight pt-3">
                         <Button
                             type="button"
                             variant="secondary"

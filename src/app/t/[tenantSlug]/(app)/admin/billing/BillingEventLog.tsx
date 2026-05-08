@@ -39,7 +39,7 @@ export function BillingEventLog({ events }: { events: BillingEvent[] }) {
                 };
                 const Icon = config.icon;
                 return (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-tight">
                         <Icon className={`w-4 h-4 ${config.color}`} />
                         <span className="text-sm text-content-emphasis">{config.label}</span>
                     </div>

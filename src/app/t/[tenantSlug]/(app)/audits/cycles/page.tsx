@@ -106,14 +106,14 @@ export default function AuditCyclesPage() {
 
     if (loading) return (
         <div className="p-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-section">
                 {[1, 2, 3].map(i => <SkeletonCard key={i} lines={3} />)}
             </div>
         </div>
     );
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-section animate-fadeIn">
             <div className="flex items-center justify-between">
                 <div>
                     <Heading level={1}>Audit Readiness</Heading>
@@ -191,7 +191,7 @@ export default function AuditCyclesPage() {
                             />
                         </FormField>
                     </div>
-                    <div className="mt-4 flex gap-2">
+                    <div className="mt-4 flex gap-tight">
                         <Button type="submit" variant="primary" id="submit-cycle-btn">Create Cycle</Button>
                         <Button type="button" variant="secondary" onClick={() => setShowForm(false)}>Cancel</Button>
                     </div>
@@ -211,7 +211,7 @@ export default function AuditCyclesPage() {
                     />
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-default">
                     {cycles.map(c => {
                         const meta = FW_META[c.frameworkKey] || { icon: 'shield' as AppIconName, label: c.frameworkKey, color: 'from-gray-500 to-gray-600' };
                         return (
@@ -225,7 +225,7 @@ export default function AuditCyclesPage() {
                                 </div>
                                 <Heading level={3} className="group-hover:text-content-emphasis transition">{c.name}</Heading>
                                 <p className="text-xs text-content-muted mt-1">{meta.label} · v{c.frameworkVersion}</p>
-                                <div className="flex items-center gap-2 mt-3 text-xs text-content-subtle">
+                                <div className="flex items-center gap-tight mt-3 text-xs text-content-subtle">
                                     <span>{c.packs?.length || 0} pack{(c.packs?.length || 0) !== 1 ? 's' : ''}</span>
                                     <span>·</span>
                                     <span>{formatDate(c.createdAt)}</span>

@@ -117,7 +117,7 @@ export default function RiskImportPage() {
 
     if (!canWrite) {
         return (
-            <div className="space-y-6 animate-fadeIn">
+            <div className="space-y-section animate-fadeIn">
                 <Card className="text-center">
                     <p className="text-content-muted">{t('noImportPermission')}</p>
                     <Link href={href('/risks')} className={buttonVariants({ variant: 'secondary', className: 'mt-4' })}>
@@ -129,8 +129,8 @@ export default function RiskImportPage() {
     }
 
     return (
-        <div className="space-y-6 animate-fadeIn max-w-4xl">
-            <div className="flex items-center gap-3">
+        <div className="space-y-section animate-fadeIn max-w-4xl">
+            <div className="flex items-center gap-compact">
                 <Link href={href('/risks')} className="text-content-muted hover:text-content-emphasis transition">←</Link>
                 <div>
                     <Heading level={1}>{t('importTitle')}</Heading>
@@ -208,7 +208,7 @@ export default function RiskImportPage() {
 
             {/* Result */}
             {result && (
-                <div className="glass-card p-6 space-y-4">
+                <div className="glass-card p-6 space-y-default">
                     <p className="text-lg font-semibold text-content-success">
                         {t('importComplete', { created: result.created, total: rows.length })}
                     </p>
@@ -220,7 +220,7 @@ export default function RiskImportPage() {
                             ))}
                         </div>
                     )}
-                    <div className="flex gap-3">
+                    <div className="flex gap-compact">
                         <Link href={href('/risks')} className={buttonVariants({ variant: 'primary' })}>
                             {t('viewRegister')}
                         </Link>

@@ -104,7 +104,7 @@ export function DashboardWidget({
             {showHeader && (
                 <header
                     data-widget-header
-                    className="flex items-start justify-between gap-3 border-b border-border-subtle px-4 py-3"
+                    className="flex items-start justify-between gap-compact border-b border-border-subtle px-4 py-3"
                 >
                     <div className="min-w-0">
                         {title && (

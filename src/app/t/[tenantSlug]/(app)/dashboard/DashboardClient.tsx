@@ -183,11 +183,11 @@ export default function DashboardClient({
     const trendBundle = deriveTrendBundle(trends ?? initialTrends ?? undefined);
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-section animate-fadeIn">
             <OnboardingBanner />
 
             {/* ─── Header ─── */}
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-compact">
                 <div>
                     <Heading level={1}>
                         {t('title')}
@@ -196,7 +196,7 @@ export default function DashboardClient({
                         {t('subtitle')}
                     </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-tight">
                     {exec.stats.unreadNotifications > 0 && (
                         <Link
                             href={href('/notifications')}
@@ -213,7 +213,7 @@ export default function DashboardClient({
 
             {/* ─── KPI Grid (6 cards) ─── */}
             <div
-                className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4"
+                className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-default"
                 id="kpi-grid"
             >
                 <KpiCard
@@ -275,7 +275,7 @@ export default function DashboardClient({
             </div>
 
             {/* ─── Control Coverage + Risk Distribution ─── */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-default">
                 <ProgressCard
                     id="control-coverage"
                     label="Control Coverage"
@@ -311,13 +311,13 @@ export default function DashboardClient({
             </div>
 
             {/* ─── Evidence Status + Compliance Alerts ─── */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-default">
                 <EvidenceStatusSection exec={exec} />
                 <ComplianceAlerts exec={exec} t={t} />
             </div>
 
             {/* ─── Risk Heatmap + Evidence Expiry ─── */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-default">
                 <RiskMatrix
                     id="risk-heatmap"
                     config={matrixConfig}
@@ -340,12 +340,12 @@ export default function DashboardClient({
             )}
 
             {/* ─── Quick Actions + Recent Activity ─── */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-default">
                 <Card>
                     <Heading level={3} className="mb-3">
                         {t('quickActions')}
                     </Heading>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-tight">
                         <Link
                             href={href('/assets')}
                             className={cn(buttonVariants({ variant: 'secondary', size: 'xs' }))}
@@ -388,11 +388,11 @@ export default function DashboardClient({
                 {/* RecentActivityCard remains a server component;
                     rendered by the parent page and passed in here. */}
                 {children ?? (
-                    <Card className="space-y-3">
+                    <Card className="space-y-compact">
                         <Skeleton className="h-4 w-full sm:w-32" />
-                        <div className="space-y-2">
+                        <div className="space-y-tight">
                             {Array.from({ length: 4 }).map((_, i) => (
-                                <div key={i} className="flex items-start gap-2">
+                                <div key={i} className="flex items-start gap-tight">
                                     <Skeleton className="h-3 w-full sm:w-28 shrink-0" />
                                     <Skeleton
                                         className={`h-3 ${i % 2 === 0 ? 'w-full' : 'w-3/4'}`}
@@ -420,7 +420,7 @@ function RiskDistributionSection({
             <Heading level={3} className="mb-3">
                 Risk Distribution
             </Heading>
-            <div className="grid grid-cols-2 gap-4 items-center">
+            <div className="grid grid-cols-2 gap-default items-center">
                 <DonutChart
                     id="risk-severity-donut"
                     segments={[
@@ -439,7 +439,7 @@ function RiskDistributionSection({
                     centerSub="Total"
                     showLegend={false}
                 />
-                <div className="space-y-2">
+                <div className="space-y-tight">
                     {[
                         { label: 'Critical', value: riskBySeverity.critical, color: 'bg-bg-error-emphasis' },
                         { label: 'High', value: riskBySeverity.high, color: 'bg-orange-500' },
@@ -518,12 +518,12 @@ function ComplianceAlerts({ exec, t }: { exec: ExecutiveDashboardPayload; t: (ke
             <Heading level={3} className="mb-3">
                 {t('complianceAlerts')}
             </Heading>
-            <div className="space-y-2">
+            <div className="space-y-tight">
                 {alerts.length === 0 ? (
                     <p className="text-content-success text-sm">{t('noAlerts')}</p>
                 ) : (
                     alerts.map((alert, i) => (
-                        <div key={i} className="flex items-center gap-2 text-sm">
+                        <div key={i} className="flex items-center gap-tight text-sm">
                             <span
                                 className={`w-2 h-2 rounded-full ${alert.color} shrink-0`}
                             />
@@ -565,7 +565,7 @@ function TrendSection({ trends }: { trends: TrendPayload }) {
                     {trends.daysAvailable} day{trends.daysAvailable !== 1 ? 's' : ''} of data
                 </span>
             </div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-default">
                 <TrendCard
                     label="Coverage"
                     value={coveragePoints[coveragePoints.length - 1].value}

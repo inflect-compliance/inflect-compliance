@@ -119,7 +119,7 @@ export default function ExpiryCalendar({
                 <span className="text-xs text-content-subtle tabular-nums">{items.length} item{items.length !== 1 ? 's' : ''}</span>
             </div>
 
-            <div className="space-y-3 max-h-[280px] overflow-y-auto">
+            <div className="space-y-compact max-h-[280px] overflow-y-auto">
                 {orderedGroups.map((urgency) => {
                     const groupItems = groups.get(urgency);
                     if (!groupItems || groupItems.length === 0) return null;
@@ -128,7 +128,7 @@ export default function ExpiryCalendar({
                     return (
                         <div key={urgency}>
                             {/* Group header */}
-                            <div className="flex items-center gap-2 mb-1.5">
+                            <div className="flex items-center gap-tight mb-1.5">
                                 <span className={`text-[10px] uppercase tracking-wider font-semibold ${config.color}`}>
                                     {config.label}
                                 </span>
@@ -144,13 +144,13 @@ export default function ExpiryCalendar({
                                     return (
                                         <div
                                             key={item.id}
-                                            className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg ${itemConfig.bg}`}
+                                            className={`flex items-center justify-between gap-tight px-2.5 py-1.5 rounded-lg ${itemConfig.bg}`}
                                             title={`${item.title} — due ${item.nextReviewDate} (${formatDaysUntil(item.daysUntil)})`}
                                         >
-                                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                                            <div className="flex items-center gap-tight min-w-0 flex-1">
                                                 <span className="text-xs text-content-default truncate">{item.title}</span>
                                             </div>
-                                            <div className="flex items-center gap-2 shrink-0">
+                                            <div className="flex items-center gap-tight shrink-0">
                                                 <span className="text-[10px] text-content-subtle">{formatDate(item.nextReviewDate)}</span>
                                                 <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${itemConfig.badge} tabular-nums`}>
                                                     {formatDaysUntil(item.daysUntil)}

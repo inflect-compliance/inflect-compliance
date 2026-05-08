@@ -5,7 +5,7 @@
  *
  * Stacks multiple `<FormField>`s (or plain controls) with consistent
  * vertical rhythm and an optional section header. Replaces the ad-hoc
- * `<div className="space-y-4">` / `<div className="grid grid-cols-2 gap-4">`
+ * `<div className="space-y-default">` / `<div className="grid grid-cols-2 gap-default">`
  * patterns that every modal/page currently rolls its own.
  *
  * Usage:
@@ -49,16 +49,16 @@ export interface FieldGroupProps
      * stack (the common case for CRUD modals).
      */
     columns?: 1 | 2 | 3;
-    /** Vertical gap between fields. Default: `md` (1rem / gap-4). */
+    /** Vertical gap between fields. Default: `md` (1rem / gap-default). */
     gap?: "sm" | "md" | "lg";
     /** Override the heading element. Defaults to `h3`. */
     titleAs?: "h2" | "h3" | "h4";
 }
 
 const gapClass = {
-    sm: "gap-2",
-    md: "gap-4",
-    lg: "gap-6",
+    sm: "gap-tight",
+    md: "gap-default",
+    lg: "gap-section",
 } as const;
 
 const columnsClass = {

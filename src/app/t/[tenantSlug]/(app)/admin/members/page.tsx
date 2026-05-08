@@ -344,7 +344,7 @@ export default function MembersAdminPage() {
                 cell: ({ row }) => {
                     const m = row.original;
                     return (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-tight">
                             <div className="w-7 h-7 rounded-full bg-[var(--brand-subtle)] text-[var(--brand-default)] flex items-center justify-center text-xs font-semibold">
                                 {(m.user.name || m.user.email).charAt(0).toUpperCase()}
                             </div>
@@ -522,7 +522,7 @@ export default function MembersAdminPage() {
                                             setPendingRole(m.role);
                                             setOpenMenuId(null);
                                         }}
-                                        className="w-full text-left px-3 py-2 text-xs text-content-emphasis hover:bg-bg-muted flex items-center gap-2"
+                                        className="w-full text-left px-3 py-2 text-xs text-content-emphasis hover:bg-bg-muted flex items-center gap-tight"
                                         id={`action-change-role-${m.id}`}
                                     >
                                         <Shield className="w-3 h-3" />
@@ -533,7 +533,7 @@ export default function MembersAdminPage() {
                                             setOpenMenuId(null);
                                             void openSessionsModal(m);
                                         }}
-                                        className="w-full text-left px-3 py-2 text-xs text-content-emphasis hover:bg-bg-muted flex items-center gap-2"
+                                        className="w-full text-left px-3 py-2 text-xs text-content-emphasis hover:bg-bg-muted flex items-center gap-tight"
                                         id={`action-view-sessions-${m.id}`}
                                     >
                                         <Monitor className="w-3 h-3" />
@@ -541,7 +541,7 @@ export default function MembersAdminPage() {
                                     </button>
                                     <button
                                         onClick={() => handleDeactivate(m.id, m.user.email)}
-                                        className="w-full text-left px-3 py-2 text-xs text-content-error hover:bg-bg-error flex items-center gap-2"
+                                        className="w-full text-left px-3 py-2 text-xs text-content-error hover:bg-bg-error flex items-center gap-tight"
                                         id={`action-deactivate-${m.id}`}
                                     >
                                         <UserMinus className="w-3 h-3" />
@@ -605,12 +605,12 @@ export default function MembersAdminPage() {
     // ─── Loading state ───
     if (loading) {
         return (
-            <div className="space-y-6 animate-fadeIn">
-                <Heading level={1} className="flex items-center gap-2">
+            <div className="space-y-section animate-fadeIn">
+                <Heading level={1} className="flex items-center gap-tight">
                     <Users className="w-6 h-6 text-[var(--brand-default)]" />
                     Members &amp; Roles
                 </Heading>
-                <Card className="space-y-4">
+                <Card className="space-y-default">
                     <div className="h-4 bg-bg-subtle rounded w-1/3 animate-pulse" />
                     <div className="h-4 bg-bg-subtle rounded w-2/3 animate-pulse" />
                     <div className="h-4 bg-bg-subtle rounded w-1/2 animate-pulse" />
@@ -620,11 +620,11 @@ export default function MembersAdminPage() {
     }
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-section animate-fadeIn">
             {/* Header */}
-            <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center justify-between flex-wrap gap-default">
                 <div>
-                    <Heading level={1} className="flex items-center gap-2">
+                    <Heading level={1} className="flex items-center gap-tight">
                         <Users className="w-6 h-6 text-[var(--brand-default)]" />
                         Members &amp; Roles
                     </Heading>
@@ -667,7 +667,7 @@ export default function MembersAdminPage() {
             {showInvite && (
                 <div className="glass-card p-6 border border-[var(--brand-default)]/30" id="invite-form">
                     <Heading level={3} className="mb-4">Invite a New Member</Heading>
-                    <div className="flex gap-3 items-end flex-wrap">
+                    <div className="flex gap-compact items-end flex-wrap">
                         <div className="flex-1 min-w-[200px]">
                             <label className="text-xs text-content-muted uppercase tracking-wider mb-1 block">
                                 Email Address
@@ -799,13 +799,13 @@ export default function MembersAdminPage() {
                 />
                 <Modal.Body>
                     {sessionsLoading ? (
-                        <ul className="space-y-2" aria-busy="true" aria-label="Loading sessions">
+                        <ul className="space-y-tight" aria-busy="true" aria-label="Loading sessions">
                             {Array.from({ length: 3 }).map((_, i) => (
                                 <li
                                     key={i}
-                                    className="border border-border-subtle rounded-md p-3 flex items-start justify-between gap-3"
+                                    className="border border-border-subtle rounded-md p-3 flex items-start justify-between gap-compact"
                                 >
-                                    <div className="min-w-0 flex-1 space-y-2">
+                                    <div className="min-w-0 flex-1 space-y-tight">
                                         <Skeleton className="h-4 w-2/3" />
                                         <Skeleton className="h-3 w-1/2" />
                                     </div>
@@ -820,11 +820,11 @@ export default function MembersAdminPage() {
                             description="This user is not currently signed in on any device."
                         />
                     ) : (
-                        <ul className="space-y-2" id="sessions-list">
+                        <ul className="space-y-tight" id="sessions-list">
                             {memberSessions.map((s) => (
                                 <li
                                     key={s.sessionId}
-                                    className="border border-border-subtle rounded-md p-3 flex items-start justify-between gap-3"
+                                    className="border border-border-subtle rounded-md p-3 flex items-start justify-between gap-compact"
                                     data-session-id={s.sessionId}
                                 >
                                     <div className="min-w-0 flex-1">

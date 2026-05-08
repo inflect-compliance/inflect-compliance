@@ -271,7 +271,7 @@ export function NewControlModal({ open, setOpen, tenantSlug }: NewControlModalPr
                         </div>
                     )}
 
-                    <div className="space-y-4">
+                    <div className="space-y-default">
                         <FormField label="Code" error={errors.code?.message}>
                             <Input
                                 id="control-code-input"
@@ -305,7 +305,7 @@ export function NewControlModal({ open, setOpen, tenantSlug }: NewControlModalPr
                                 {...register('description')}
                             />
                         </FormField>
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
                             <FormField
                                 label="Category"
                                 error={errors.category?.message}
@@ -382,8 +382,8 @@ export function NewControlModal({ open, setOpen, tenantSlug }: NewControlModalPr
                                     content="Mark Not Applicable when scope legitimately excludes this control (e.g. no payment processing for PCI). The justification is required and appears verbatim in the SoA report."
                                 />
                             </div>
-                            <div className="flex gap-4">
-                                <label className="flex items-center gap-2 text-sm text-content-default">
+                            <div className="flex gap-default">
+                                <label className="flex items-center gap-tight text-sm text-content-default">
                                     <input
                                         type="radio"
                                         value="APPLICABLE"
@@ -391,7 +391,7 @@ export function NewControlModal({ open, setOpen, tenantSlug }: NewControlModalPr
                                     />
                                     Applicable
                                 </label>
-                                <label className="flex items-center gap-2 text-sm text-content-default">
+                                <label className="flex items-center gap-tight text-sm text-content-default">
                                     <input
                                         type="radio"
                                         value="NOT_APPLICABLE"

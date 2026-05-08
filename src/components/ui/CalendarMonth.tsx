@@ -146,7 +146,7 @@ export function CalendarMonth({
 
     return (
         <section
-            className={cn('flex flex-col gap-2', className)}
+            className={cn('flex flex-col gap-tight', className)}
             data-testid={dataTestId}
             aria-label={`${MONTH_NAMES[monthStart.getUTCMonth()]} ${monthStart.getUTCFullYear()}`}
         >

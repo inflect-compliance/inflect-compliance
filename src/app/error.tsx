@@ -30,7 +30,7 @@ export default function GlobalError({
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-bg-page p-6">
-            <div className="max-w-md w-full text-center space-y-6 bg-bg-default p-8 rounded-xl shadow-lg border border-border-subtle">
+            <div className="max-w-md w-full text-center space-y-section bg-bg-default p-8 rounded-xl shadow-lg border border-border-subtle">
                 <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-bg-error">
                     <svg className="h-8 w-8 text-content-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -51,7 +51,7 @@ export default function GlobalError({
                     </p>
                 </div>
 
-                <div className="pt-4 flex flex-col sm:flex-row gap-3 justify-center">
+                <div className="pt-4 flex flex-col sm:flex-row gap-compact justify-center">
                     <button
                         onClick={() => reset()}
                         className="inline-flex justify-center w-full sm:w-auto px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[var(--brand-emphasis)] hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring transition-colors"

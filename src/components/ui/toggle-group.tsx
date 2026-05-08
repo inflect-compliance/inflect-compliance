@@ -54,7 +54,7 @@ const toggleGroupVariants = cva(
 );
 
 const toggleOptionVariants = cva(
-    "text-content-emphasis relative z-10 flex items-center gap-2 font-medium capitalize outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-lg",
+    "text-content-emphasis relative z-10 flex items-center gap-tight font-medium capitalize outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-lg",
     {
         variants: {
             size: {

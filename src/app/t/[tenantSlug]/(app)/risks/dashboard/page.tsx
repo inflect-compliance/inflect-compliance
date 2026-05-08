@@ -71,7 +71,7 @@ export default function RiskDashboardPage() {
     }
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-section animate-fadeIn">
             <div className="flex items-center justify-between">
                 <div>
                     <Heading level={1}>{t('dashboardTitle')}</Heading>
@@ -83,7 +83,7 @@ export default function RiskDashboardPage() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
                 <Card className="text-center">
                     <p className="text-xs text-content-muted uppercase tracking-wider">{t('totalRisks')}</p>
                     <p className="text-3xl font-bold mt-2">{total}</p>
@@ -102,7 +102,7 @@ export default function RiskDashboardPage() {
                 </Card>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-section">
                 {/* Status Breakdown — Epic 59: StatusBreakdown primitive. */}
                 <Card>
                     <Heading level={3} className="mb-4">{t('statusBreakdown')}</Heading>
@@ -162,7 +162,7 @@ export default function RiskDashboardPage() {
             {overdueRisks.length > 0 && (
                 <Card className="border-border-error">
                     <Heading level={2} className="mb-3 text-content-error">{t('overdueReviewsTitle')}</Heading>
-                    <div className="space-y-2">
+                    <div className="space-y-tight">
                         {overdueRisks.map(r => {
                             const daysOverdue = Math.floor((now.getTime() - new Date(r.nextReviewAt!).getTime()) / 86400000);
                             return (

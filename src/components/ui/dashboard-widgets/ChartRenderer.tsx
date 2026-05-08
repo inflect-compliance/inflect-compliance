@@ -65,7 +65,7 @@ function LoadingState({ label }: { label?: string }) {
             aria-busy="true"
             className="flex h-full w-full items-center justify-center px-6 py-8"
         >
-            <div className="space-y-2 text-center">
+            <div className="space-y-tight text-center">
                 <div className="mx-auto h-3 w-24 animate-pulse rounded bg-bg-muted" />
                 <div className="mx-auto h-2 w-32 animate-pulse rounded bg-bg-muted" />
                 {label && (

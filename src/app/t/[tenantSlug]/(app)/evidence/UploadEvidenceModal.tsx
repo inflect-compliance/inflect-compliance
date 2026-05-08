@@ -402,7 +402,7 @@ export function UploadEvidenceModal({
                         </div>
                     )}
 
-                    <fieldset className="space-y-4" disabled={uploadingAll}>
+                    <fieldset className="space-y-default" disabled={uploadingAll}>
                         {/* Multi-file dropzone */}
                         <div>
                             <label
@@ -427,7 +427,7 @@ export function UploadEvidenceModal({
                             />
                         </div>
 
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
                             {/* Title (single-file only — see UX note below) */}
                             <div>
                                 <label

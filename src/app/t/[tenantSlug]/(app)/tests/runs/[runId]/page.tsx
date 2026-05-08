@@ -257,12 +257,12 @@ export default function TestRunPage() {
         >
             {/* Complete Form — only if not completed */}
             {!isCompleted && permissions.canWrite && (
-                <Card className="space-y-4 border-l-4 border-[var(--brand-default)]">
+                <Card className="space-y-default border-l-4 border-[var(--brand-default)]">
                     <Heading level={3}>Complete This Test Run</Heading>
 
                     <div>
                         <label className="text-xs text-content-muted block mb-1">Result *</label>
-                        <div className="flex gap-3">
+                        <div className="flex gap-compact">
                             {(['PASS', 'FAIL', 'INCONCLUSIVE'] as const).map(r => (
                                 <button
                                     key={r}
@@ -314,7 +314,7 @@ export default function TestRunPage() {
 
             {/* Completed Info */}
             {isCompleted && (
-                <div className="glass-card p-4 space-y-2">
+                <div className="glass-card p-4 space-y-tight">
                     {run.notes && (
                         <div>
                             <span className="text-xs text-content-muted">Notes:</span>
@@ -368,7 +368,7 @@ export default function TestRunPage() {
                 </div>
 
                 {showEvForm && (
-                    <div className="space-y-3 mb-4 p-3 rounded bg-bg-default/50 animate-fadeIn">
+                    <div className="space-y-compact mb-4 p-3 rounded bg-bg-default/50 animate-fadeIn">
                         <div>
                             <label className="text-xs text-content-muted block mb-1">Evidence Type</label>
                             <Combobox
@@ -396,7 +396,7 @@ export default function TestRunPage() {
                                             id="evidence-file-input"
                                         />
                                         {evFile ? (
-                                            <div className="text-sm text-content-emphasis flex items-center gap-2">
+                                            <div className="text-sm text-content-emphasis flex items-center gap-tight">
                                                 <Paperclip className="w-4 h-4 text-[var(--brand-default)]" aria-hidden="true" />
                                                 <span>{evFile.name}</span>
                                                 <span className="text-xs text-content-subtle">({(evFile.size / 1024).toFixed(1)} KB)</span>
@@ -450,7 +450,7 @@ export default function TestRunPage() {
                         {run.evidence.map(ev => (
                             <div key={ev.id} className="flex items-center justify-between py-2 group">
                                 <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-tight">
                                         <StatusBadge variant="neutral" size="sm">{ev.kind}</StatusBadge>
                                         {ev.evidence && (
                                             <span className="text-sm text-content-default">{ev.evidence.title}</span>

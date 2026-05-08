@@ -76,12 +76,12 @@ export function TenantCoverageList({
                 <li key={row.tenantId} className="py-2">
                     <Link
                         href={row.drillDownUrl}
-                        className="flex items-center gap-4 hover:bg-bg-muted -mx-3 px-3 py-2 rounded-lg transition-colors group"
+                        className="flex items-center gap-default hover:bg-bg-muted -mx-3 px-3 py-2 rounded-lg transition-colors group"
                         data-testid={`org-tenant-row-${row.slug}`}
                     >
                         <RagPill rag={row.rag} />
                         <div className="min-w-0 flex-1">
-                            <div className="flex items-baseline justify-between gap-2">
+                            <div className="flex items-baseline justify-between gap-tight">
                                 <span className="text-sm font-medium text-content-emphasis truncate">
                                     {row.name}
                                 </span>
@@ -97,7 +97,7 @@ export function TenantCoverageList({
                                 </span>
                             </div>
                             <CoverageBar percent={row.coveragePercent} rag={row.rag} />
-                            <div className="mt-1.5 flex items-center gap-4 text-xs text-content-muted">
+                            <div className="mt-1.5 flex items-center gap-default text-xs text-content-muted">
                                 <span>{row.openRisks ?? '—'} open risks</span>
                                 <span>{row.criticalRisks ?? 0} critical</span>
                                 <span>{row.overdueEvidence ?? 0} overdue evidence</span>
@@ -363,7 +363,7 @@ export function DrillDownCtas({
 
     return (
         <div
-            className="grid grid-cols-1 sm:grid-cols-3 gap-3 h-full"
+            className="grid grid-cols-1 sm:grid-cols-3 gap-compact h-full"
             data-testid="org-drilldown-ctas"
         >
             {visible.map((cta) => (
@@ -374,7 +374,7 @@ export function DrillDownCtas({
                     data-testid={`org-drilldown-${cta.key}`}
                 >
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-content-emphasis">
+                        <div className="flex items-center gap-tight text-content-emphasis">
                             <cta.icon
                                 className={`w-4 h-4 text-${cta.tone}-500`}
                                 aria-hidden="true"

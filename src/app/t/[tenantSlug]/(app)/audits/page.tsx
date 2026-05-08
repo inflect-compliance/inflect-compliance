@@ -32,7 +32,7 @@ export default async function AuditsPage({
     const audits = await listAudits(ctx, { take: SSR_PAGE_LIMIT });
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-section animate-fadeIn">
             <AuditsClient
                 initialAudits={JSON.parse(JSON.stringify(audits))}
                 tenantSlug={tenantSlug}

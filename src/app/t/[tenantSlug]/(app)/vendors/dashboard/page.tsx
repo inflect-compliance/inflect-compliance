@@ -69,7 +69,7 @@ export default function VendorDashboardPage() {
     if (!metrics) return <div className="text-content-error py-8 text-center">Failed to load metrics</div>;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-section">
             <div className="flex items-center justify-between">
                 <div>
                     <Heading level={1}>Vendor Dashboard</Heading>
@@ -79,7 +79,7 @@ export default function VendorDashboardPage() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-default">
                 <MetricCard label="Total Vendors" value={metrics.totalVendors} />
                 <MetricCard label="Overdue Reviews" value={metrics.overdueReview} accentClass={metrics.overdueReview > 0 ? 'text-content-error' : 'text-content-success'}
                     href={tenantHref('/vendors?reviewDue=overdue')} />
@@ -89,21 +89,21 @@ export default function VendorDashboardPage() {
                 <MetricCard label="High Risk (No Assessment)" value={metrics.highRiskNoAssessment} accentClass={metrics.highRiskNoAssessment > 0 ? 'text-content-error' : 'text-content-success'} />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-section">
                 {/* By Criticality */}
-                <div className="card p-5 space-y-3">
+                <div className="card p-5 space-y-compact">
                     <Heading level={3}>By Criticality</Heading>
                     <BreakdownBar data={metrics.byCriticality} colors={CRIT_COLORS} />
                 </div>
 
                 {/* By Status */}
-                <div className="card p-5 space-y-3">
+                <div className="card p-5 space-y-compact">
                     <Heading level={3}>By Status</Heading>
                     <BreakdownBar data={metrics.byStatus} colors={STATUS_COLORS} />
                 </div>
 
                 {/* By Risk Rating */}
-                <div className="card p-5 space-y-3">
+                <div className="card p-5 space-y-compact">
                     <Heading level={3}>By Risk Rating</Heading>
                     {Object.keys(metrics.byRiskRating).length > 0
                         ? <BreakdownBar data={metrics.byRiskRating} colors={CRIT_COLORS} />
@@ -114,7 +114,7 @@ export default function VendorDashboardPage() {
             {/* Expiring Documents */}
             {metrics.expiringDocuments > 0 && (
                 <div className="card p-5 border border-orange-500/30">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-tight">
                         <span className="text-orange-400 text-lg font-semibold">!</span>
                         <span className="font-semibold">{metrics.expiringDocuments} document(s) expiring within 30 days</span>
                     </div>

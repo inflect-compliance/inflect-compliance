@@ -118,7 +118,7 @@ export default function TemplateLibraryPage() {
     if (loading) return <div className="p-8 animate-pulse text-content-muted">Loading template library...</div>;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-section">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
@@ -128,7 +128,7 @@ export default function TemplateLibraryPage() {
                     <Heading level={1} className="mt-2" id="template-library-heading">
                         Template Library — {framework?.name}
                     </Heading>
-                    <div className="flex gap-3 mt-1 text-xs text-content-subtle">
+                    <div className="flex gap-compact mt-1 text-xs text-content-subtle">
                         <span>{templates.length} templates</span>
                         <span className="text-content-success">{installed} installed</span>
                         <span className="text-[var(--brand-default)]">{available} available</span>
@@ -147,7 +147,7 @@ export default function TemplateLibraryPage() {
             </div>
 
             {/* Filters */}
-            <div className="flex flex-wrap gap-3 items-center" id="template-filters">
+            <div className="flex flex-wrap gap-compact items-center" id="template-filters">
                 <input
                     type="text"
                     placeholder="Search templates..."
@@ -182,14 +182,14 @@ export default function TemplateLibraryPage() {
             </div>
 
             {/* Template cards */}
-            <div className="space-y-3" id="template-list">
+            <div className="space-y-compact" id="template-list">
                 {templates.map(t => {
                     const isExpanded = expandedTemplate === t.code;
                     const isSelected = selected.has(t.code);
 
                     return (
                         <div key={t.code} className={`glass-card transition-colors ${isSelected ? 'ring-1 ring-[var(--ring)]/50' : ''}`} id={`template-${t.code}`}>
-                            <div className="flex items-start gap-3">
+                            <div className="flex items-start gap-compact">
                                 {/* Checkbox */}
                                 {!t.installed && (
                                     <input
@@ -202,12 +202,12 @@ export default function TemplateLibraryPage() {
 
                                 {/* Main */}
                                 <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-tight">
                                         <button
                                             onClick={() => setExpandedTemplate(isExpanded ? null : t.code)}
                                             className="text-left flex-1 min-w-0"
                                         >
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-tight">
                                                 <code className="text-xs text-[var(--brand-default)] font-mono">{t.code}</code>
                                                 <span className="text-sm font-medium text-content-emphasis truncate">{t.title}</span>
                                                 {t.installed ? (
@@ -240,7 +240,7 @@ export default function TemplateLibraryPage() {
 
                                     {/* Expanded detail */}
                                     {isExpanded && (
-                                        <div className="mt-3 space-y-3 border-t border-border-default/30 pt-3">
+                                        <div className="mt-3 space-y-compact border-t border-border-default/30 pt-3">
                                             {t.description && (
                                                 <p className="text-sm text-content-muted">{t.description}</p>
                                             )}
@@ -250,7 +250,7 @@ export default function TemplateLibraryPage() {
                                                 <Eyebrow className="block mb-1 text-content-subtle">Mapped Requirements</Eyebrow>
                                                 <div className="space-y-1">
                                                     {t.requirements.map((r: any, i: number) => (
-                                                        <div key={i} className="flex items-center gap-2 text-xs">
+                                                        <div key={i} className="flex items-center gap-tight text-xs">
                                                             <code className="text-[var(--brand-default)] font-mono">{r.code}</code>
                                                             <span className="text-content-muted">{r.title}</span>
                                                             <span className="text-content-subtle">({r.framework.name})</span>
@@ -264,7 +264,7 @@ export default function TemplateLibraryPage() {
                                                 <Eyebrow className="block mb-1 text-content-subtle">Default Tasks</Eyebrow>
                                                 <div className="space-y-1">
                                                     {t.tasks.map((task: any, i: number) => (
-                                                        <div key={i} className="flex items-center gap-2 text-xs">
+                                                        <div key={i} className="flex items-center gap-tight text-xs">
                                                             <span className="w-1.5 h-1.5 rounded-full bg-border-emphasis" />
                                                             <span className="text-content-default">{task.title}</span>
                                                         </div>

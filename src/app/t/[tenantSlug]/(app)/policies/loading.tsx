@@ -9,7 +9,7 @@ import {
  */
 export default function PoliciesLoading() {
     return (
-        <div role="status" aria-live="polite" className="space-y-6 animate-fadeIn" aria-busy="true" aria-label="Loading policies">
+        <div role="status" aria-live="polite" className="space-y-section animate-fadeIn" aria-busy="true" aria-label="Loading policies">
             <SkeletonPageHeader />
             <SkeletonFilterToolbar />
             <SkeletonDataTable rows={8} cols={6} />

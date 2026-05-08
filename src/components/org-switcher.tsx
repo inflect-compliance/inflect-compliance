@@ -198,7 +198,7 @@ export function OrgSwitcher({
 
                     {loading && (
                         <div
-                            className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-content-muted"
+                            className="flex items-center gap-tight px-2.5 py-1.5 text-xs text-content-muted"
                             role="status"
                             aria-live="polite"
                         >
@@ -262,7 +262,7 @@ export function OrgSwitcher({
                 aria-expanded={open}
                 aria-label="Switch organization context"
                 data-testid="org-switcher-trigger"
-                className="flex w-full items-center gap-2 rounded-lg border border-transparent px-2 py-1.5 hover:bg-bg-muted hover:border-border-subtle transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="flex w-full items-center gap-tight rounded-lg border border-transparent px-2 py-1.5 hover:bg-bg-muted hover:border-border-subtle transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
                 <div
                     className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--brand-emphasis)] to-[var(--brand-default)] flex items-center justify-center flex-shrink-0"

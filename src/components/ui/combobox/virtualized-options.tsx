@@ -269,7 +269,7 @@ export function VirtualizedComboboxOptions<TMeta>({
                                         onSelect(option);
                                     }}
                                     className={cn(
-                                        "flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-left text-sm",
+                                        "flex cursor-pointer items-center gap-compact rounded-md px-3 py-2 text-left text-sm",
                                         description
                                             ? "whitespace-normal py-2.5"
                                             : "whitespace-nowrap",
@@ -290,7 +290,7 @@ export function VirtualizedComboboxOptions<TMeta>({
                                     )}
                                     <div
                                         className={cn(
-                                            "flex min-w-0 grow items-center gap-2",
+                                            "flex min-w-0 grow items-center gap-tight",
                                             description &&
                                                 "flex-col items-start gap-0.5",
                                         )}

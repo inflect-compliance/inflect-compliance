@@ -94,14 +94,14 @@ export default function DueQueuePage() {
     if (loading) return <div className="p-12 text-center text-content-subtle animate-pulse">Loading due queue...</div>;
 
     return (
-        <ListPageShell className="animate-fadeIn gap-6">
+        <ListPageShell className="animate-fadeIn gap-section">
             <ListPageShell.Header>
                 <div className="flex items-center justify-between">
                     <div>
                         <Heading level={1} id="due-queue-title">Due Queue</Heading>
                         <p className="text-sm text-content-muted mt-1">Test plans due or overdue for execution</p>
                     </div>
-                    <div className="flex gap-3">
+                    <div className="flex gap-compact">
                         <Link href={tenantHref('/tests')} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>← Tests</Link>
                         <Link href={tenantHref('/tests/dashboard')} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>Dashboard</Link>
                         {permissions.canWrite && (
@@ -119,7 +119,7 @@ export default function DueQueuePage() {
                 </div>
             </ListPageShell.Header>
 
-            <ListPageShell.Filters className="space-y-6">
+            <ListPageShell.Filters className="space-y-section">
                 {/* Planning result */}
             {planningResult && (
                 <div className="glass-card p-4 border border-border-success bg-bg-success" id="planning-result">
@@ -133,7 +133,7 @@ export default function DueQueuePage() {
             {error && <div className="glass-card p-4 border border-border-error text-content-error text-sm">{error}</div>}
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-default">
                 <div className="glass-card p-4 text-center">
                     <div className="text-2xl font-bold text-[var(--brand-default)]">{queue.length}</div>
                     <div className="text-xs text-content-muted mt-1">Due / Due Soon</div>

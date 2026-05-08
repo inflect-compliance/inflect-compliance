@@ -37,7 +37,7 @@ export function SoAPrintView({ report, tenantName }: SoAPrintViewProps) {
                     <h2 className="text-lg font-bold text-gray-900">SoA Print Preview</h2>
                     <p className="text-xs text-gray-500">Use Ctrl+P (or Cmd+P) to print or save as PDF</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-tight">
                     <button
                         onClick={() => window.print()}
                         className="px-4 py-2 bg-bg-info-emphasis text-content-emphasis rounded-lg text-sm font-medium hover:bg-bg-info-emphasis transition-colors"
@@ -71,7 +71,7 @@ export function SoAPrintView({ report, tenantName }: SoAPrintViewProps) {
 
                 {/* Summary */}
                 <h2 className="text-lg font-bold text-gray-900 mb-3 border-b border-gray-300 pb-1">Summary</h2>
-                <div className="grid grid-cols-3 gap-4 mb-8">
+                <div className="grid grid-cols-3 gap-default mb-8">
                     <SummaryBox label="Applicable" value={summary.applicable} total={summary.total} color="green" />
                     <SummaryBox label="Not Applicable" value={summary.notApplicable} total={summary.total} color="gray" />
                     <SummaryBox label="Unmapped" value={summary.unmapped} total={summary.total} color="red" />

@@ -375,7 +375,7 @@ export function NewRiskModal({
                         </div>
                     )}
 
-                    <fieldset className="space-y-4" disabled={submitting}>
+                    <fieldset className="space-y-default" disabled={submitting}>
                         {/* Template (optional) */}
                         {templates.length > 0 && (
                             <FormField
@@ -430,7 +430,7 @@ export function NewRiskModal({
                             <FormError>Title cannot be empty.</FormError>
                         )}
 
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
                             {/* Category */}
                             <FormField label="Category">
                                 <Combobox
@@ -487,7 +487,7 @@ export function NewRiskModal({
 
                         {/* Scoring */}
                         <div className="rounded-lg border border-border-subtle bg-bg-subtle p-4">
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+                            <div className="grid grid-cols-1 gap-default sm:grid-cols-[1fr_1fr_auto] sm:items-end">
                                 <div>
                                     <div className="mb-1 flex items-center gap-1.5">
                                         <label
@@ -617,7 +617,7 @@ export function NewRiskModal({
                                         {controls.map((c) => (
                                             <label
                                                 key={c.id}
-                                                className="flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-sm text-content-default hover:bg-bg-muted"
+                                                className="flex cursor-pointer items-center gap-tight rounded px-1 py-1 text-sm text-content-default hover:bg-bg-muted"
                                             >
                                                 <input
                                                     type="checkbox"

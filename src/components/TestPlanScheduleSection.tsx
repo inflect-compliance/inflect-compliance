@@ -230,7 +230,7 @@ export function TestPlanScheduleSection({
 
     return (
         <div
-            className="glass-card p-4 space-y-3"
+            className="glass-card p-4 space-y-compact"
             id="test-plan-schedule-section"
             data-testid="test-plan-schedule-section"
         >
@@ -244,7 +244,7 @@ export function TestPlanScheduleSection({
             </div>
 
             {/* Frequency picker */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-compact items-start">
                 <div className="md:col-span-2">
                     <label
                         className="text-xs text-content-muted block mb-1"

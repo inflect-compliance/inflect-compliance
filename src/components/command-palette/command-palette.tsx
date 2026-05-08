@@ -372,7 +372,7 @@ export function CommandPalette() {
                     >
                         <div
                             className={cn(
-                                'flex items-center gap-2 border-b border-border-subtle',
+                                'flex items-center gap-tight border-b border-border-subtle',
                                 'px-4 py-3',
                             )}
                         >
@@ -610,7 +610,7 @@ function CommandGroup({
                             else if (c.perform) onAction(c.perform);
                         }}
                         className={cn(
-                            'flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 text-sm',
+                            'flex cursor-pointer items-center gap-compact rounded-md px-2 py-2 text-sm',
                             'text-content-default',
                             'data-[selected=true]:bg-bg-muted data-[selected=true]:text-content-emphasis',
                         )}
@@ -670,7 +670,7 @@ function EntityGroup({
                     value={`${r.kind}:${r.id}:${r.primary}`}
                     onSelect={() => onSelect(r.href)}
                     className={cn(
-                        'flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 text-sm',
+                        'flex cursor-pointer items-center gap-compact rounded-md px-2 py-2 text-sm',
                         'text-content-default',
                         'data-[selected=true]:bg-bg-muted data-[selected=true]:text-content-emphasis',
                     )}
@@ -729,7 +729,7 @@ function ShortcutGroup({
                     key={s.id}
                     value={`${s.description ?? ''} ${s.keys.join(' ')}`}
                     className={cn(
-                        'flex cursor-default items-center justify-between gap-3',
+                        'flex cursor-default items-center justify-between gap-compact',
                         'rounded-md px-2 py-2 text-sm',
                         'text-content-default',
                         'data-[selected=true]:bg-bg-muted data-[selected=true]:text-content-emphasis',
@@ -792,7 +792,7 @@ function RecentsGroup({
                     data-testid="palette-recent-item"
                     data-recent-type={item.type}
                     className={cn(
-                        'flex cursor-pointer items-center justify-between gap-3',
+                        'flex cursor-pointer items-center justify-between gap-compact',
                         'rounded-md px-2 py-2 text-sm',
                         'text-content-default',
                         'data-[selected=true]:bg-bg-muted data-[selected=true]:text-content-emphasis',

@@ -43,7 +43,7 @@ export function Form({
       }}
       className="rounded-xl border border-neutral-200 bg-white"
     >
-      <div className="relative flex flex-col space-y-6 p-6">
+      <div className="relative flex flex-col space-y-section p-6">
         <div className="flex flex-col space-y-1">
           <Heading level={2}>{title}</Heading>
           <p className="text-sm text-neutral-500">{description}</p>
@@ -68,7 +68,7 @@ export function Form({
         )}
       </div>
 
-      <div className="flex flex-col items-start justify-between gap-4 rounded-b-xl border-t border-neutral-200 bg-neutral-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 sm:py-3">
+      <div className="flex flex-col items-start justify-between gap-default rounded-b-xl border-t border-neutral-200 bg-neutral-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 sm:py-3">
         {typeof helpText === "string" ? (
           // Epic 55 hardening: the legacy port used
           // `dangerouslySetInnerHTML` here, which is an XSS hazard if

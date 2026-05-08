@@ -91,13 +91,13 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         className={cn(
           props.disabled || loading
             ? cn(
-                "flex items-center justify-center gap-2 whitespace-nowrap",
+                "flex items-center justify-center gap-tight whitespace-nowrap",
                 "rounded-lg border border-border-subtle bg-bg-subtle text-content-subtle",
                 "cursor-not-allowed outline-none text-sm font-medium",
                 size === "xs" && "h-7 px-2.5 text-[11px] gap-1 rounded-md",
                 size === "sm" && "h-8 px-3 text-xs gap-1.5",
-                size === "lg" && "h-10 px-5 gap-2",
-                !size && "h-9 px-3.5 gap-2",
+                size === "lg" && "h-10 px-5 gap-tight",
+                !size && "h-9 px-3.5 gap-tight",
               )
             : buttonVariants({ variant, size }),
           className,

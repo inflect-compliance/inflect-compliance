@@ -424,15 +424,15 @@ function TasksPageInner({
     }, [appPermissions.tasks.edit, selected, tasks.length, tenantHref, hydratedNow]);
 
     return (
-        <ListPageShell className="animate-fadeIn gap-6" data-hydrated={hydrated || undefined}>
+        <ListPageShell className="animate-fadeIn gap-section" data-hydrated={hydrated || undefined}>
             <ListPageShell.Header>
                 <div className="flex items-center justify-between">
                     <div>
                         <Heading level={1}>Tasks</Heading>
                         <p className="text-content-muted text-sm">{tasks.length} tasks in register</p>
                     </div>
-                    <div className="flex gap-2">
-                        <Link href={tenantHref('/tasks/dashboard')} className={buttonVariants({ variant: 'secondary', className: 'inline-flex items-center gap-2' })} id="dashboard-btn"><AppIcon name="dashboard" size={16} /> Dashboard</Link>
+                    <div className="flex gap-tight">
+                        <Link href={tenantHref('/tasks/dashboard')} className={buttonVariants({ variant: 'secondary', className: 'inline-flex items-center gap-tight' })} id="dashboard-btn"><AppIcon name="dashboard" size={16} /> Dashboard</Link>
                         {appPermissions.tasks.create && (
                             <Link href={tenantHref('/tasks/new')} className={buttonVariants({ variant: 'primary' })} id="new-task-btn">
                                 + New Task
@@ -453,7 +453,7 @@ function TasksPageInner({
             {/* Bulk Actions Toolbar — flex-shrink-0 so it keeps its
                 natural height in the ListPageShell column. */}
             {appPermissions.tasks.edit && selected.size > 0 && (
-                <div className="glass-card p-3 flex items-center gap-3 border border-[var(--brand-default)]/30 flex-shrink-0" id="bulk-toolbar">
+                <div className="glass-card p-3 flex items-center gap-compact border border-[var(--brand-default)]/30 flex-shrink-0" id="bulk-toolbar">
                     <span className="text-sm text-[var(--brand-default)] font-medium">{selected.size} selected</span>
                     <Combobox
                         hideSearch

@@ -157,13 +157,13 @@ export default function AdminSecurityPage() {
 
     if (loading) {
         return (
-            <div className="space-y-6 animate-fadeIn">
-                <Heading level={1} className="flex items-center gap-2">
+            <div className="space-y-section animate-fadeIn">
+                <Heading level={1} className="flex items-center gap-tight">
                     <ShieldCheck className="w-6 h-6 text-[var(--brand-default)]" />
                     Security & MFA
                 </Heading>
                 <Card>
-                    <div className="animate-pulse space-y-4">
+                    <div className="animate-pulse space-y-default">
                         <div className="h-4 bg-bg-elevated rounded w-1/3" />
                         <div className="h-10 bg-bg-elevated rounded w-full" />
                         <div className="h-10 bg-bg-elevated rounded w-full" />
@@ -175,8 +175,8 @@ export default function AdminSecurityPage() {
     }
 
     return (
-        <div className="space-y-6 animate-fadeIn">
-            <Heading level={1} className="flex items-center gap-2">
+        <div className="space-y-section animate-fadeIn">
+            <Heading level={1} className="flex items-center gap-tight">
                 <ShieldCheck className="w-6 h-6 text-[var(--brand-default)]" />
                 Security & MFA
             </Heading>
@@ -192,7 +192,7 @@ export default function AdminSecurityPage() {
             {/* MFA Policy Section */}
             <div className="glass-card p-6 space-y-5">
                 <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-tight">
                         <Heading level={2}>Multi-Factor Authentication Policy</Heading>
                         <InfoTooltip
                             aria-label="About the MFA policy"
@@ -205,11 +205,11 @@ export default function AdminSecurityPage() {
                     </p>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-compact">
                     {POLICY_OPTIONS.map((option) => (
                         <label
                             key={option.value}
-                            className={`flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all ${
+                            className={`flex items-start gap-compact p-4 rounded-lg border cursor-pointer transition-all ${
                                 settings.mfaPolicy === option.value
                                     ? 'border-[var(--brand-default)]/60 bg-[var(--brand-subtle)]'
                                     : 'border-border-default hover:border-border-emphasis'
@@ -252,7 +252,7 @@ export default function AdminSecurityPage() {
             </div>
 
             {/* Session Settings */}
-            <div className="glass-card p-6 space-y-4">
+            <div className="glass-card p-6 space-y-default">
                 <div>
                     <Heading level={2} className="mb-1">Session Settings</Heading>
                     <p className="text-sm text-content-muted">
@@ -308,12 +308,12 @@ export default function AdminSecurityPage() {
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-compact">
                     {/* Revoke my sessions */}
                     <button
                         onClick={handleRevokeMySessions}
                         disabled={revoking}
-                        className="p-4 border border-border-default rounded-lg hover:border-[var(--brand-default)]/50 transition text-left flex items-start gap-3 group"
+                        className="p-4 border border-border-default rounded-lg hover:border-[var(--brand-default)]/50 transition text-left flex items-start gap-compact group"
                         id="revoke-my-sessions-btn"
                     >
                         <LogOut className="w-5 h-5 text-content-muted group-hover:text-[var(--brand-default)] transition mt-0.5 shrink-0" />
@@ -327,7 +327,7 @@ export default function AdminSecurityPage() {
                     <button
                         onClick={handleRevokeAllTenant}
                         disabled={revoking}
-                        className="p-4 border border-border-error rounded-lg hover:border-border-error transition text-left flex items-start gap-3 group"
+                        className="p-4 border border-border-error rounded-lg hover:border-border-error transition text-left flex items-start gap-compact group"
                         id="revoke-all-sessions-btn"
                     >
                         <Users className="w-5 h-5 text-content-error/70 group-hover:text-content-error transition mt-0.5 shrink-0" />
@@ -341,7 +341,7 @@ export default function AdminSecurityPage() {
                 {/* Revoke specific user */}
                 <div className="border-t border-border-default/50 pt-4">
                     <label className="block text-sm text-content-default mb-2">Revoke sessions for a specific user</label>
-                    <div className="flex gap-2">
+                    <div className="flex gap-tight">
                         <input
                             type="text"
                             placeholder="User ID"

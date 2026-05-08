@@ -106,8 +106,8 @@ export function FrameworksClient({
     );
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-end justify-between gap-4 flex-wrap">
+        <div className="space-y-section">
+            <div className="flex items-end justify-between gap-default flex-wrap">
                 <div>
                     <Heading level={1} id="frameworks-heading">
                         Compliance Frameworks
@@ -140,7 +140,7 @@ export function FrameworksClient({
                             >
                                 <CardList.CardHeader
                                     title={
-                                        <span className="inline-flex items-center gap-2">
+                                        <span className="inline-flex items-center gap-tight">
                                             <FwIcon
                                                 className="w-5 h-5"
                                                 aria-hidden="true"

@@ -60,8 +60,8 @@ export default function CycleReadinessPage() {
     const bd = result.breakdown;
 
     return (
-        <div className="space-y-6 animate-fadeIn">
-            <div className="flex items-center gap-3">
+        <div className="space-y-section animate-fadeIn">
+            <div className="flex items-center gap-compact">
                 <Link href={`/t/${tenantSlug}/audits/readiness`} className="text-content-muted hover:text-content-emphasis transition">← Readiness</Link>
                 <span className="text-content-subtle">·</span>
                 <Link href={`/t/${tenantSlug}/audits/cycles/${cycleId}`} className="text-content-muted hover:text-content-emphasis transition">{cycle?.name || 'Cycle'}</Link>
@@ -69,12 +69,12 @@ export default function CycleReadinessPage() {
 
             {/* Score + Breakdown */}
             <div className="glass-card p-6">
-                <div className="flex items-start gap-8">
+                <div className="flex items-start gap-page">
                     <div className="flex-shrink-0 text-center">
                         <ScoreRing score={result.score} />
                         <p className="text-xs text-content-muted mt-2">{result.frameworkKey} Readiness</p>
                     </div>
-                    <div className="flex-1 space-y-3" id="readiness-breakdown">
+                    <div className="flex-1 space-y-compact" id="readiness-breakdown">
                         {bd.coverage && (
                             <BreakdownBar label="Requirement Coverage" score={bd.coverage.score}
                                 detail={`${bd.coverage.mapped}/${bd.coverage.total} requirements mapped`} weight={bd.coverage.weight} />
@@ -106,10 +106,10 @@ export default function CycleReadinessPage() {
             {/* Recommendations */}
             {result.recommendations?.length > 0 && (
                 <div className="glass-card p-6" id="recommendations">
-                    <Heading level={3} className="mb-3 inline-flex items-center gap-2"><AppIcon name="info" size={16} /> Recommended Next Actions</Heading>
-                    <div className="space-y-2">
+                    <Heading level={3} className="mb-3 inline-flex items-center gap-tight"><AppIcon name="info" size={16} /> Recommended Next Actions</Heading>
+                    <div className="space-y-tight">
                         {result.recommendations.map((r: string, i: number) => (
-                            <div key={i} className="flex items-start gap-2 text-sm">
+                            <div key={i} className="flex items-start gap-tight text-sm">
                                 <span className="text-content-warning flex-shrink-0">→</span>
                                 <span className="text-content-default">{r}</span>
                             </div>
@@ -120,12 +120,12 @@ export default function CycleReadinessPage() {
 
             {/* Gaps */}
             {result.gaps?.length > 0 && (
-                <div className="space-y-3" id="gaps-section">
+                <div className="space-y-compact" id="gaps-section">
                     <Heading level={3}>Top Gaps ({result.gaps.length})</Heading>
                     <div className="glass-card divide-y divide-border-default/50">
                         {result.gaps.map((g: any, i: number) => (
                             <div key={i} className="p-3 flex items-center justify-between text-sm">
-                                <div className="flex items-center gap-3 min-w-0">
+                                <div className="flex items-center gap-compact min-w-0">
                                     <AppIcon name={GAP_ICON[g.type] || 'overview'} size={16} />
                                     <div className="min-w-0">
                                         <span className="font-medium truncate block">{g.title}</span>
@@ -141,8 +141,8 @@ export default function CycleReadinessPage() {
 
             {/* Exports */}
             <div className="glass-card p-6" id="exports-section">
-                <Heading level={3} className="mb-3 inline-flex items-center gap-2"><AppIcon name="export" size={16} /> Exports</Heading>
-                <div className="flex flex-wrap gap-2">
+                <Heading level={3} className="mb-3 inline-flex items-center gap-tight"><AppIcon name="export" size={16} /> Exports</Heading>
+                <div className="flex flex-wrap gap-tight">
                     <a href={apiUrl(`/audits/cycles/${cycleId}/readiness?action=export-json`)}
                         target="_blank" rel="noopener" className={buttonVariants({ variant: 'secondary', size: 'sm' })}>Readiness Report (JSON)</a>
                     <a href={apiUrl(`/audits/cycles/${cycleId}/readiness?action=export-unmapped-csv`)}

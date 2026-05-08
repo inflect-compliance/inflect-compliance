@@ -345,7 +345,7 @@ export default function TaskDetailPage() {
             {/* Assignment controls */}
             {permissions.canWrite && (
                 <div className="glass-card p-4">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-compact">
                         <span className="text-sm text-content-muted">Assignee:</span>
                         <span className="text-sm text-content-emphasis font-medium" id="task-assignee">
                             {task.assignee?.name || task.assigneeUserId || 'Unassigned'}
@@ -372,8 +372,8 @@ export default function TaskDetailPage() {
 
             {/* Overview Tab */}
             {tab === 'overview' && (
-                <div className="glass-card p-6 space-y-4">
-                    <div className="grid grid-cols-2 gap-6">
+                <div className="glass-card p-6 space-y-default">
+                    <div className="grid grid-cols-2 gap-section">
                         <div className="col-span-2">
                             <span className="text-xs text-content-subtle uppercase">Description</span>
                             <p className="text-sm text-content-default mt-1 whitespace-pre-wrap">{task.description || 'No description.'}</p>
@@ -430,7 +430,7 @@ export default function TaskDetailPage() {
                     {(task.type === 'AUDIT_FINDING' || task.type === 'CONTROL_GAP') && (metadata.findingSource || metadata.controlGapType) && (
                         <div className="border-t border-border-default pt-4 mt-4">
                             <Heading level={3} className="mb-3">Audit Details</Heading>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-default">
                                 {metadata.findingSource && (
                                     <div>
                                         <span className="text-xs text-content-subtle uppercase">Finding Source</span>
@@ -451,7 +451,7 @@ export default function TaskDetailPage() {
 
             {/* Links Tab */}
             {tab === 'links' && (
-                <div className="space-y-4">
+                <div className="space-y-default">
                     {permissions.canWrite && (
                         <div className="flex justify-end">
                             <Button variant="primary" onClick={() => setShowLinkForm(!showLinkForm)} id="add-link-btn">
@@ -460,8 +460,8 @@ export default function TaskDetailPage() {
                         </div>
                     )}
                     {showLinkForm && permissions.canWrite && (
-                        <form onSubmit={addLink} className="glass-card p-4 space-y-3">
-                            <div className="grid grid-cols-3 gap-3">
+                        <form onSubmit={addLink} className="glass-card p-4 space-y-compact">
+                            <div className="grid grid-cols-3 gap-compact">
                                 <Combobox hideSearch id="link-entity-type" selected={ENTITY_TYPE_CB_OPTIONS.find(o => o.value === linkEntityType) ?? null} setSelected={(opt) => setLinkEntityType(opt?.value ?? linkEntityType)} options={ENTITY_TYPE_CB_OPTIONS} matchTriggerWidth />
                                 <input type="text" className="input" placeholder="Entity ID *" value={linkEntityId} onChange={e => setLinkEntityId(e.target.value)} required id="link-entity-id" />
                                 <Combobox hideSearch id="link-relation" selected={RELATION_CB_OPTIONS.find(o => o.value === linkRelation) ?? null} setSelected={(opt) => setLinkRelation(opt?.value ?? linkRelation)} options={RELATION_CB_OPTIONS} matchTriggerWidth />
@@ -473,7 +473,7 @@ export default function TaskDetailPage() {
                     )}
                     <div className="glass-card overflow-hidden">
                         {linksLoading ? (
-                            <div className="p-4 space-y-2">
+                            <div className="p-4 space-y-tight">
                                 {Array.from({ length: 3 }).map((_, i) => (
                                     <SkeletonLine key={i} className="w-full" />
                                 ))}
@@ -510,9 +510,9 @@ export default function TaskDetailPage() {
 
             {/* Comments Tab */}
             {tab === 'comments' && (
-                <div className="space-y-4">
+                <div className="space-y-default">
                     {canComment && (
-                        <form onSubmit={addComment} className="glass-card p-4 space-y-3">
+                        <form onSubmit={addComment} className="glass-card p-4 space-y-compact">
                             <textarea
                                 className="input w-full"
                                 rows={3}
@@ -529,7 +529,7 @@ export default function TaskDetailPage() {
                     )}
                     <div className="glass-card overflow-hidden" id="comments-list">
                         {commentsLoading ? (
-                            <div className="p-4 space-y-3">
+                            <div className="p-4 space-y-compact">
                                 {Array.from({ length: 3 }).map((_, i) => (
                                     <div key={i} className="space-y-1">
                                         <SkeletonLine className="w-32" />
@@ -543,7 +543,7 @@ export default function TaskDetailPage() {
                             <div className="divide-y divide-border-default/50">
                                 {comments.map((c: any) => (
                                     <div key={c.id} className="px-5 py-3">
-                                        <div className="flex items-center gap-2 mb-1">
+                                        <div className="flex items-center gap-tight mb-1">
                                             <span className="text-sm font-medium text-content-emphasis">{c.createdBy?.name || 'Unknown'}</span>
                                             <span className="text-xs text-content-subtle">{formatDateTime(c.createdAt)}</span>
                                         </div>
@@ -560,9 +560,9 @@ export default function TaskDetailPage() {
             {tab === 'activity' && (
                 <div className="glass-card overflow-hidden" id="activity-list">
                     {activityLoading ? (
-                        <div className="p-4 space-y-3">
+                        <div className="p-4 space-y-compact">
                             {Array.from({ length: 4 }).map((_, i) => (
-                                <div key={i} className="flex items-start gap-3">
+                                <div key={i} className="flex items-start gap-compact">
                                     <div className="animate-pulse rounded-full bg-bg-elevated/60 w-2 h-2 mt-2" />
                                     <div className="flex-1 space-y-1">
                                         <SkeletonLine className="w-48" />
@@ -576,10 +576,10 @@ export default function TaskDetailPage() {
                     ) : (
                         <div className="divide-y divide-border-default/50">
                             {activity.map((evt: any) => (
-                                <div key={evt.id} className="px-5 py-3 flex items-start gap-3">
+                                <div key={evt.id} className="px-5 py-3 flex items-start gap-compact">
                                     <div className="w-2 h-2 rounded-full bg-[var(--brand-default)] mt-2 shrink-0" />
                                     <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-0.5">
+                                        <div className="flex items-center gap-tight mb-0.5">
                                             <span className="text-sm font-medium text-content-emphasis">{evt.user?.name || 'System'}</span>
                                             <StatusBadge variant="neutral">{evt.action?.replace(/_/g, ' ')}</StatusBadge>
                                         </div>

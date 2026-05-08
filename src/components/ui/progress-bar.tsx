@@ -108,7 +108,7 @@ export function ProgressBar({
     if (!showValue) return track;
 
     return (
-        <div className={cn("flex items-center gap-3", className)}>
+        <div className={cn("flex items-center gap-compact", className)}>
             <div className="flex-1">{track}</div>
             <span className="min-w-[2.75rem] text-right text-xs tabular-nums text-content-muted">
                 {percent.toFixed(0)}%

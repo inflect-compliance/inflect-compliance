@@ -93,8 +93,8 @@ export default function CreateVendorPage() {
     };
 
     return (
-        <div className="max-w-2xl mx-auto space-y-6">
-            <div className="flex items-center gap-3">
+        <div className="max-w-2xl mx-auto space-y-section">
+            <div className="flex items-center gap-compact">
                 <Link href={tenantHref('/vendors')} className="text-content-muted hover:text-content-emphasis">← Back</Link>
                 <Heading level={1}>New Vendor</Heading>
             </div>
@@ -109,7 +109,7 @@ export default function CreateVendorPage() {
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="card space-y-4 p-6" noValidate>
+            <form onSubmit={handleSubmit} className="card space-y-default p-6" noValidate>
                 {/* Name */}
                 <FormField label="Vendor Name" required>
                     <Input
@@ -120,7 +120,7 @@ export default function CreateVendorPage() {
                     />
                 </FormField>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-default">
                     <FormField label="Legal Name">
                         <Input
                             id="vendor-legal-name"
@@ -138,7 +138,7 @@ export default function CreateVendorPage() {
                     </FormField>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-default">
                     <FormField label="Website URL">
                         <Input
                             id="vendor-website"
@@ -165,19 +165,19 @@ export default function CreateVendorPage() {
                     />
                 </FormField>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 gap-default">
                     <div>
                         <label className="block text-sm font-medium text-content-default mb-1">Status</label>
                         <RadioGroup
                             id="vendor-status-select"
                             value={form.status}
                             onValueChange={(v) => update('status', v)}
-                            className="flex gap-4 pt-1"
+                            className="flex gap-default pt-1"
                         >
                             {STATUS_OPTIONS.map((o) => {
                                 const itemId = `vendor-status-${o.value.toLowerCase()}`;
                                 return (
-                                    <div key={o.value} className="flex items-center gap-2">
+                                    <div key={o.value} className="flex items-center gap-tight">
                                         <RadioGroupItem value={o.value} id={itemId} />
                                         <Label htmlFor={itemId} className="cursor-pointer">
                                             {o.label}
@@ -217,7 +217,7 @@ export default function CreateVendorPage() {
                     </FormField>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-default">
                     {/* Epic 58 — shared DatePickers; form state keeps
                         the YMD string shape the vendors API expects. */}
                     <FormField label="Next Review Date">
@@ -256,12 +256,12 @@ export default function CreateVendorPage() {
                     </FormField>
                 </div>
 
-                <label className="flex items-center gap-2 text-sm text-content-default">
+                <label className="flex items-center gap-tight text-sm text-content-default">
                     <input type="checkbox" checked={form.isSubprocessor} onChange={e => update('isSubprocessor', e.target.checked)} id="vendor-subprocessor" />
                     This vendor is a sub-processor
                 </label>
 
-                <div className="flex gap-3 pt-2">
+                <div className="flex gap-compact pt-2">
                     <Button type="submit" variant="primary" disabled={submitting || !form.name} id="create-vendor-submit">
                         {submitting ? 'Creating…' : 'Create Vendor'}
                     </Button>

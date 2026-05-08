@@ -134,7 +134,7 @@ export function EmptyState({
                 </p>
             )}
             {(primaryAction || secondaryAction) && (
-                <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+                <div className="mt-2 flex flex-wrap items-center justify-center gap-tight">
                     {primaryAction && renderAction(primaryAction, "primary")}
                     {secondaryAction &&
                         renderAction(secondaryAction, "secondary")}

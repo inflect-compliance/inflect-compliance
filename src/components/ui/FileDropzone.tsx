@@ -548,7 +548,7 @@ function FileDropzoneInner(
 
             {hasEntries && (
                 <ul
-                    className="mt-3 space-y-2"
+                    className="mt-3 space-y-tight"
                     data-testid="file-dropzone-list"
                 >
                     {entries.map((entry) => (
@@ -556,7 +556,7 @@ function FileDropzoneInner(
                             key={entry.id}
                             data-file-status={entry.status}
                             data-testid={`file-dropzone-row-${entry.id}`}
-                            className="flex items-center gap-3 rounded-md border border-border-default bg-bg-subtle px-3 py-2"
+                            className="flex items-center gap-compact rounded-md border border-border-default bg-bg-subtle px-3 py-2"
                         >
                             <FileTypeIcon
                                 fileName={entry.file.name}
@@ -564,7 +564,7 @@ function FileDropzoneInner(
                                 size={18}
                             />
                             <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center justify-between gap-compact">
                                     <span
                                         className="truncate text-sm text-content-emphasis"
                                         title={entry.file.name}
@@ -575,7 +575,7 @@ function FileDropzoneInner(
                                         {formatBytes(entry.file.size)}
                                     </span>
                                 </div>
-                                <div className="mt-1 flex items-center gap-2">
+                                <div className="mt-1 flex items-center gap-tight">
                                     <ProgressBar entry={entry} />
                                     <StatusLabel entry={entry} />
                                 </div>

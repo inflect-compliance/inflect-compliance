@@ -214,8 +214,8 @@ function RoleForm({
     };
 
     return (
-        <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-default">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-default">
                 <div>
                     <label className="text-xs text-content-muted uppercase tracking-wider mb-1 block">
                         Role Name *
@@ -298,7 +298,7 @@ function RoleForm({
                 )}
             </div>
 
-            <div className="flex gap-2 pt-2">
+            <div className="flex gap-tight pt-2">
                 <Button
                     variant="primary"
                     type="button"
@@ -545,12 +545,12 @@ export default function CustomRolesPage() {
     // ─── Loading ───
     if (loading) {
         return (
-            <div className="space-y-6 animate-fadeIn">
-                <Heading level={1} className="flex items-center gap-2">
+            <div className="space-y-section animate-fadeIn">
+                <Heading level={1} className="flex items-center gap-tight">
                     <Shield className="w-6 h-6 text-[var(--brand-default)]" />
                     Custom Roles
                 </Heading>
-                <Card className="space-y-4">
+                <Card className="space-y-default">
                     <div className="h-4 bg-bg-elevated/50 rounded w-1/3 animate-pulse" />
                     <div className="h-4 bg-bg-elevated/50 rounded w-2/3 animate-pulse" />
                     <div className="h-4 bg-bg-elevated/50 rounded w-1/2 animate-pulse" />
@@ -562,9 +562,9 @@ export default function CustomRolesPage() {
     return (
         <ListPageShell>
             <ListPageShell.Header>
-                <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center justify-between flex-wrap gap-default">
                     <div>
-                        <Heading level={1} className="flex items-center gap-2">
+                        <Heading level={1} className="flex items-center gap-tight">
                             <Shield className="w-6 h-6 text-[var(--brand-default)]" />
                             Custom Roles
                         </Heading>
@@ -586,7 +586,7 @@ export default function CustomRolesPage() {
                 </div>
             </ListPageShell.Header>
 
-            <ListPageShell.Filters className="space-y-4">
+            <ListPageShell.Filters className="space-y-default">
                 {/* Messages */}
                 {error && (
                     <InlineNotice

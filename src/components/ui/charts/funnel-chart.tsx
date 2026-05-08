@@ -196,7 +196,7 @@ function FunnelChartInner({
               {tooltipStep.label}
             </p>
             <div className="flex flex-wrap justify-between gap-x-4 gap-y-2 px-3 py-2 text-sm sm:px-4 sm:py-3">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-tight">
                 <div
                   className={cn(
                     tooltipStep.colorClassName,

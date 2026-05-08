@@ -53,8 +53,8 @@ export function ClausesBrowser({ clauses: initialClauses, tenantSlug }: ClausesB
     );
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-1 space-y-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-default">
+            <div className="lg:col-span-1 space-y-tight">
                 {clauses.map(c => (
                     <button key={c.id} onClick={() => setSelected(c)}
                         className={`w-full text-left glass-card p-4 hover:bg-bg-elevated/30 transition ${selected?.id === c.id ? 'ring-2 ring-[var(--ring)]' : ''}`}>
@@ -70,7 +70,7 @@ export function ClausesBrowser({ clauses: initialClauses, tenantSlug }: ClausesB
             <div className="lg:col-span-2">
                 {selected ? (
                     <div className="glass-card p-6 animate-slideIn">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-compact mb-4">
                             <Heading level={2}>{t('clause')} {selected.number}: {selected.title}</Heading>
                             <div className="w-full sm:w-48">
                                 <Combobox
@@ -96,9 +96,9 @@ export function ClausesBrowser({ clauses: initialClauses, tenantSlug }: ClausesB
                         </div>
                         <div>
                             <Eyebrow className="block mb-2">{t('checklist')}</Eyebrow>
-                            <div className="space-y-2">
+                            <div className="space-y-tight">
                                 {selected.checklist?.map((item: string, i: number) => (
-                                    <label key={i} className="flex items-start gap-2 text-sm text-content-default cursor-pointer group">
+                                    <label key={i} className="flex items-start gap-tight text-sm text-content-default cursor-pointer group">
                                         <input type="checkbox" className="mt-1 accent-[var(--brand-default)]" />
                                         <span className="group-hover:text-content-emphasis transition">{item}</span>
                                     </label>

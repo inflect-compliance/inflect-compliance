@@ -30,7 +30,7 @@ export default function AppSectionError({
     }, [error]);
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-section animate-fadeIn">
             <Card className="text-center max-w-xl mx-auto mt-12">
                 <div className="mx-auto flex items-center justify-center h-14 w-14 rounded-full bg-bg-error mb-4">
                     <svg className="h-7 w-7 text-content-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -52,7 +52,7 @@ export default function AppSectionError({
                     )}
                 </p>
 
-                <div className="flex gap-3 justify-center">
+                <div className="flex gap-compact justify-center">
                     <Button
                         variant="primary"
                         onClick={() => reset()}

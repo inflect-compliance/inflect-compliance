@@ -108,11 +108,11 @@ export function ControlExceptionsPanel({
 
     return (
         <section
-            className="space-y-4"
+            className="space-y-default"
             data-testid="control-exceptions-panel"
         >
             <header className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-compact">
                     <Heading level={2}>
                         Control Exceptions
                     </Heading>
@@ -136,15 +136,15 @@ export function ControlExceptionsPanel({
                     No exceptions on file. The control is enforced as designed.
                 </p>
             ) : (
-                <ul className="space-y-2" data-testid="control-exceptions-list">
+                <ul className="space-y-tight" data-testid="control-exceptions-list">
                     {rows.map((r) => (
                         <li
                             key={r.id}
                             className="rounded border border-border-subtle p-3"
                             data-testid={`control-exception-row-${r.id}`}
                         >
-                            <div className="flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-2">
+                            <div className="flex items-center justify-between gap-compact">
+                                <div className="flex items-center gap-tight">
                                     <StatusBadge variant={STATUS_VARIANT[r.status]}>
                                         {r.status}
                                     </StatusBadge>
@@ -159,7 +159,7 @@ export function ControlExceptionsPanel({
                                         </span>
                                     ) : null}
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="flex gap-tight">
                                     {canAdmin && r.status === 'REQUESTED' ? (
                                         <>
                                             <Button
@@ -359,7 +359,7 @@ function RequestExceptionDialog({
         <Modal showModal setShowModal={(v) => !v && onClose()}>
             <Modal.Header title="Request control exception" />
             <Modal.Body>
-                <div className="space-y-4">
+                <div className="space-y-default">
                     <FormField label="Justification" required>
                         <textarea
                             className="input"
@@ -474,7 +474,7 @@ function ApproveDialog({
         <Modal showModal setShowModal={(v) => !v && onClose()}>
             <Modal.Header title="Approve exception" />
             <Modal.Body>
-                <div className="space-y-4">
+                <div className="space-y-default">
                     <FormField label="Expires on" required>
                         <DatePicker value={expiresAt} onChange={setExpiresAt} />
                     </FormField>

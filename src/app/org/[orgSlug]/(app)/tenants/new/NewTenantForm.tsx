@@ -167,7 +167,7 @@ export function NewTenantForm({ orgSlug }: Props) {
     );
 
     return (
-        <div className="max-w-xl mx-auto space-y-6">
+        <div className="max-w-xl mx-auto space-y-section">
             <div>
                 <Link
                     href={`/org/${orgSlug}/tenants`}
@@ -229,7 +229,7 @@ export function NewTenantForm({ orgSlug }: Props) {
                     />
                 </FormField>
 
-                <fieldset className="space-y-2" data-testid="org-new-tenant-framework-group">
+                <fieldset className="space-y-tight" data-testid="org-new-tenant-framework-group">
                     <legend className="text-sm font-medium text-content-emphasis">
                         Starting framework
                     </legend>
@@ -245,7 +245,7 @@ export function NewTenantForm({ orgSlug }: Props) {
                                 <label
                                     key={opt.key}
                                     htmlFor={id}
-                                    className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                                    className={`flex items-start gap-compact rounded-lg border p-3 cursor-pointer transition-colors ${
                                         checked
                                             ? 'border-border-emphasis bg-bg-subtle'
                                             : 'border-border-subtle hover:bg-bg-muted'
@@ -285,7 +285,7 @@ export function NewTenantForm({ orgSlug }: Props) {
                     </p>
                 )}
 
-                <div className="flex items-center justify-end gap-2 pt-2">
+                <div className="flex items-center justify-end gap-tight pt-2">
                     <Link
                         href={`/org/${orgSlug}/tenants`}
                         className={buttonVariants({ variant: 'ghost', size: 'sm' })}

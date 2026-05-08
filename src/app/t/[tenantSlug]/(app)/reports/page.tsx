@@ -42,7 +42,7 @@ export default async function ReportsPage({
     ]);
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-section animate-fadeIn">
             <ReportsClient
                 data={JSON.parse(JSON.stringify(data))}
                 soaReport={JSON.parse(JSON.stringify(soaReport))}

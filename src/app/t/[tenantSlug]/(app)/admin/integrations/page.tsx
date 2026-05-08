@@ -180,8 +180,8 @@ export default function AdminIntegrationsPage() {
     const selectedProvider = providers.find(p => p.id === formProvider);
 
     return (
-            <div className="space-y-6 animate-fadeIn">
-                <div className="flex items-center gap-3">
+            <div className="space-y-section animate-fadeIn">
+                <div className="flex items-center gap-compact">
                     <Link href={tenantHref('/admin')} className={buttonVariants({ variant: 'secondary', size: 'sm' })}>
                         <ArrowLeft className="w-3.5 h-3.5" /> Back
                     </Link>
@@ -190,7 +190,7 @@ export default function AdminIntegrationsPage() {
 
                 {/* Message banner */}
                 {message && (
-                    <div className={`p-3 rounded-lg text-sm flex items-center gap-2 ${
+                    <div className={`p-3 rounded-lg text-sm flex items-center gap-tight ${
                         message.type === 'success'
                             ? 'bg-bg-success border border-border-success text-content-success'
                             : 'bg-bg-error border border-border-error text-content-error'
@@ -285,7 +285,7 @@ export default function AdminIntegrationsPage() {
 
                 {/* Add/Edit Form */}
                 {showForm && (
-                    <div className="glass-card p-6 space-y-4">
+                    <div className="glass-card p-6 space-y-default">
                         <Heading level={2}>
                             {editingId ? 'Edit Integration' : 'Add Integration'}
                         </Heading>
@@ -322,7 +322,7 @@ export default function AdminIntegrationsPage() {
 
                         {/* Config fields */}
                         {selectedProvider && selectedProvider.configSchema.configFields.length > 0 && (
-                            <div className="space-y-3">
+                            <div className="space-y-compact">
                                 <Heading level={3}>Configuration</Heading>
                                 {selectedProvider.configSchema.configFields.map(field => (
                                     <div key={field.key}>
@@ -346,7 +346,7 @@ export default function AdminIntegrationsPage() {
 
                         {/* Secret fields */}
                         {selectedProvider && selectedProvider.configSchema.secretFields.length > 0 && (
-                            <div className="space-y-3">
+                            <div className="space-y-compact">
                                 <div className="flex items-center justify-between">
                                     <Heading level={3}>Secrets</Heading>
                                     <Button
@@ -396,7 +396,7 @@ export default function AdminIntegrationsPage() {
                         )}
 
                         {/* Actions */}
-                        <div className="flex gap-2 pt-2">
+                        <div className="flex gap-tight pt-2">
                             <Button
                                 variant="primary"
                                 onClick={handleSave}

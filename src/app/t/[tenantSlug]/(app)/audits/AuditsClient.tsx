@@ -126,7 +126,7 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
 
     return (
         <>
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-compact">
                 <div><Heading level={1}>{t.title}</Heading><p className="text-content-muted text-sm">{audits.length} audits</p></div>
                 <Button variant="primary" onClick={() => setShowForm(!showForm)} id="new-audit-btn">{t.newAudit}</Button>
             </div>
@@ -134,18 +134,18 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
             <TruncationBanner truncated={truncated} />
 
             {showForm && (
-                <form onSubmit={createAudit} className="glass-card p-6 space-y-4 animate-fadeIn" id="audit-form">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <form onSubmit={createAudit} className="glass-card p-6 space-y-default animate-fadeIn" id="audit-form">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-default">
                         <div><label className="input-label">{t.auditTitle} *</label><input className="input" required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} id="audit-title-input" /></div>
                         <div><label className="input-label">{t.auditors}</label><input className="input" value={form.auditors} onChange={e => setForm(f => ({ ...f, auditors: e.target.value }))} /></div>
                         <div className="sm:col-span-2"><label className="input-label">{t.scope}</label><textarea className="input" value={form.scope} onChange={e => setForm(f => ({ ...f, scope: e.target.value }))} id="audit-scope-input" /></div>
                     </div>
-                    <div className="flex flex-wrap gap-2"><Button type="submit" variant="primary" id="create-audit-btn">{t.createAudit}</Button><Button type="button" variant="secondary" onClick={() => setShowForm(false)}>{t.cancel}</Button></div>
+                    <div className="flex flex-wrap gap-tight"><Button type="submit" variant="primary" id="create-audit-btn">{t.createAudit}</Button><Button type="button" variant="secondary" onClick={() => setShowForm(false)}>{t.cancel}</Button></div>
                 </form>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div className="space-y-2">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-default">
+                <div className="space-y-tight">
                     {audits.map((a: any) => (
                         <button key={a.id} onClick={() => loadAudit(a.id)}
                             className={`w-full text-left glass-card p-4 hover:bg-bg-elevated/30 transition ${selected?.id === a.id ? 'ring-2 ring-[var(--ring)]' : ''}`}>
@@ -160,10 +160,10 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
 
                 <div className="lg:col-span-2">
                     {selected ? (
-                        <div className="glass-card p-6 animate-slideIn space-y-4">
-                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div className="glass-card p-6 animate-slideIn space-y-default">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-compact">
                                 <Heading level={2}>{selected.title}</Heading>
-                                <div className="flex flex-wrap gap-2">
+                                <div className="flex flex-wrap gap-tight">
                                     {selected.status === 'PLANNED' && <Button variant="primary" size="sm" onClick={() => updateAuditStatus('IN_PROGRESS')}>{t.inProgress}</Button>}
                                     {selected.status === 'IN_PROGRESS' && <Button variant="primary" size="sm" onClick={() => updateAuditStatus('COMPLETED')}>{t.completed}</Button>}
                                 </div>
@@ -172,9 +172,9 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
 
                             <div>
                                 <Heading level={3} className="mb-3">{t.checklist} ({selected.checklist?.length || 0})</Heading>
-                                <div className="space-y-2">
+                                <div className="space-y-tight">
                                     {selected.checklist?.map((item: any) => (
-                                        <div key={item.id} className="flex flex-col sm:flex-row items-start gap-3 p-3 border border-border-default/50 rounded-lg">
+                                        <div key={item.id} className="flex flex-col sm:flex-row items-start gap-compact p-3 border border-border-default/50 rounded-lg">
                                             <Combobox
                                                 hideSearch
                                                 options={resultOptions}

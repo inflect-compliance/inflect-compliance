@@ -89,7 +89,7 @@ export default function CycleDetailPage() {
             id="cycle-detail-page"
             back={back}
             title={
-                <span className="inline-flex items-center gap-3" id="cycle-name">
+                <span className="inline-flex items-center gap-compact" id="cycle-name">
                     <AppIcon name={fw.icon} size={28} />
                     {cycle.name}
                 </span>
@@ -99,7 +99,7 @@ export default function CycleDetailPage() {
             }
         >
             {/* Default Pack Preview */}
-            <div className="glass-card p-6 space-y-4">
+            <div className="glass-card p-6 space-y-default">
                 <div className="flex items-center justify-between">
                     <Heading level={2}>Default Pack Preview</Heading>
                     <Button variant="primary" onClick={createDefaultPack} disabled={creating} id="create-default-pack-btn" icon={<AppIcon name="package" size={16} />}>
@@ -108,7 +108,7 @@ export default function CycleDetailPage() {
                 </div>
 
                 {preview ? (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4" id="preview-counts">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-default" id="preview-counts">
                         <div className="p-4 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
                             <div className="text-2xl font-bold text-indigo-400" id="preview-controls">{preview.selection?.controls?.count || 0}</div>
                             <div className="text-xs text-content-muted">Controls</div>
@@ -137,7 +137,7 @@ export default function CycleDetailPage() {
 
             {/* Existing Packs */}
             {cycle.packs?.length > 0 && (
-                <div className="space-y-3">
+                <div className="space-y-compact">
                     <Heading level={2}>Packs</Heading>
                     {cycle.packs.map((p: any) => (
                         <Link key={p.id} href={`/t/${tenantSlug}/audits/packs/${p.id}`}

@@ -87,7 +87,7 @@ export const TreeViewItem = forwardRef<HTMLDivElement, TreeViewItemProps>(
                 data-selected={selected ? 'true' : undefined}
                 onClick={onSelect}
                 className={cn(
-                    'flex items-center gap-2 py-1.5 pr-2 cursor-pointer rounded-md',
+                    'flex items-center gap-tight py-1.5 pr-2 cursor-pointer rounded-md',
                     'text-sm text-content-default transition-colors',
                     'hover:bg-bg-muted',
                     'focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-default)] focus-visible:ring-offset-1 focus-visible:ring-offset-bg-default',

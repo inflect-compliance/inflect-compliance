@@ -131,7 +131,7 @@ export default function RiskHeatmap({
                 <span className="text-xs text-content-subtle tabular-nums">{totalRisks} risks</span>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-tight">
                 {/* Y-axis label */}
                 <div className="flex flex-col items-center justify-center -mr-1">
                     <span className="text-[10px] text-content-subtle [writing-mode:vertical-lr] rotate-180 tracking-widest uppercase">
@@ -202,7 +202,7 @@ export default function RiskHeatmap({
             </div>
 
             {/* Legend */}
-            <div className="flex justify-center gap-3 mt-3">
+            <div className="flex justify-center gap-compact mt-3">
                 {[
                     { label: 'Low', color: 'bg-emerald-500/50' },
                     { label: 'Medium', color: 'bg-amber-500/60' },

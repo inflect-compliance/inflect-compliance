@@ -20,7 +20,7 @@ export default async function CoveragePage({
     const data = await coverageSummary(ctx);
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-section animate-fadeIn">
             <CoverageClient
                 data={JSON.parse(JSON.stringify(data))}
                 tenantSlug={tenantSlug}

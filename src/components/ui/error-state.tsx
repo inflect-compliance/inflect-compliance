@@ -103,7 +103,7 @@ export function ErrorState({
             role="alert"
             aria-live="polite"
             className={cn(
-                "flex flex-col items-center justify-center gap-3 px-6 py-12 text-center",
+                "flex flex-col items-center justify-center gap-compact px-6 py-12 text-center",
                 className,
             )}
             data-testid={dataTestId}
@@ -122,7 +122,7 @@ export function ErrorState({
                 )}
             </div>
             {(onRetry || secondaryAction || children) && (
-                <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+                <div className="mt-2 flex flex-wrap items-center justify-center gap-tight">
                     {onRetry && (
                         <Button
                             variant="primary"

@@ -32,7 +32,7 @@ export default async function FindingsPage({
     const findings = await listFindings(ctx, { take: SSR_PAGE_LIMIT });
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-section animate-fadeIn">
             <FindingsClient
                 initialFindings={JSON.parse(JSON.stringify(findings))}
                 tenantSlug={tenantSlug}

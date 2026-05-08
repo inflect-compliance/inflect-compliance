@@ -95,7 +95,7 @@ export default function ControlTemplatesPage() {
     const categories = [...new Set(templates.map(t => t.category).filter(Boolean))];
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-section animate-fadeIn">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
@@ -116,8 +116,8 @@ export default function ControlTemplatesPage() {
 
             {/* Filters + Install bar */}
             <div className="glass-card p-4">
-                <div className="flex flex-wrap gap-3 items-center justify-between">
-                    <div className="flex gap-3 items-center flex-1">
+                <div className="flex flex-wrap gap-compact items-center justify-between">
+                    <div className="flex gap-compact items-center flex-1">
                         <input
                             type="text"
                             className="input flex-1 min-w-[200px]"

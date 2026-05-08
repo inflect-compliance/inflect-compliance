@@ -142,8 +142,8 @@ export function AccessReviewDetailClient({
                 </StatusBadge>
             }
             actions={
-                <div className="flex flex-col items-end gap-2">
-                    <div className="flex items-center gap-2">
+                <div className="flex flex-col items-end gap-tight">
+                    <div className="flex items-center gap-tight">
                         <ProgressBar
                             value={pct}
                             variant={pct >= 100 ? 'success' : pct >= 50 ? 'info' : 'brand'}
@@ -154,7 +154,7 @@ export function AccessReviewDetailClient({
                             {decided}/{decisionsTotal}
                         </span>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-tight">
                         {review.evidenceFileRecordId ? (
                             <Button
                                 variant="secondary"
@@ -182,7 +182,7 @@ export function AccessReviewDetailClient({
             {/* Description + meta data list — preserved as the first body
                 element since EntityDetailLayout's `meta` prop is sized
                 for inline badges, not multi-row metadata. */}
-            <div className="space-y-2">
+            <div className="space-y-tight">
                 {review.description ? (
                     <p className="text-sm text-content-muted max-w-prose">
                         {review.description}
@@ -313,7 +313,7 @@ function DecisionRow({
             </td>
             <td className="px-4 py-3">
                 {row.decision ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-tight">
                         <StatusBadge variant={DECISION_VARIANT[row.decision]}>
                             {row.decision}
                             {row.decision === 'MODIFY' && row.modifiedToRole
@@ -407,7 +407,7 @@ function DecisionDialog({
                 title={`${titleByType[decision.type]} — ${decision.row.subjectUser.email}`}
             />
             <Modal.Body>
-                <div className="space-y-4">
+                <div className="space-y-default">
                     <p className="text-sm text-content-muted">
                         Snapshot role at campaign creation:{' '}
                         <strong>{decision.row.snapshotRole}</strong>

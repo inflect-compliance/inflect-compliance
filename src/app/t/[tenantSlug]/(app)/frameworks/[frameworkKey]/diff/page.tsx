@@ -42,7 +42,7 @@ export default function DiffPage() {
     if (loading) return <div className="p-8 animate-pulse text-content-muted">Loading diff...</div>;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-section">
             <div>
                 <Link href={tenantHref(`/frameworks/${frameworkKey}`)} className="text-content-muted hover:text-content-emphasis transition-colors text-sm">
                     ← Back to {framework?.name || frameworkKey}
@@ -71,7 +71,7 @@ export default function DiffPage() {
             {diff && (
                 <>
                     {/* Summary cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4" id="diff-summary">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-default" id="diff-summary">
                         <div className="glass-card text-center">
                             <div className="text-3xl font-bold text-content-success">{diff.summary.added}</div>
                             <div className="text-xs text-content-muted mt-1">Added</div>
@@ -108,9 +108,9 @@ export default function DiffPage() {
                     </div>
 
                     {/* Content */}
-                    <div className="space-y-2" id="diff-content">
+                    <div className="space-y-tight" id="diff-content">
                         {activeTab === 'added' && diff.added.map((r: any, i: number) => (
-                            <div key={i} className="glass-card flex items-center gap-3">
+                            <div key={i} className="glass-card flex items-center gap-compact">
                                 <span className="text-content-success text-lg font-bold">+</span>
                                 <code className="text-xs text-[var(--brand-default)] font-mono w-28 flex-shrink-0">{r.code}</code>
                                 <span className="text-sm text-content-default">{r.title}</span>
@@ -119,7 +119,7 @@ export default function DiffPage() {
                         ))}
 
                         {activeTab === 'removed' && diff.removed.map((r: any, i: number) => (
-                            <div key={i} className="glass-card flex items-center gap-3">
+                            <div key={i} className="glass-card flex items-center gap-compact">
                                 <span className="text-content-error text-lg font-bold">−</span>
                                 <code className="text-xs text-content-error/60 font-mono w-28 flex-shrink-0 line-through">{r.code}</code>
                                 <span className="text-sm text-content-subtle line-through">{r.title}</span>
@@ -129,7 +129,7 @@ export default function DiffPage() {
 
                         {activeTab === 'changed' && diff.changed.map((r: any, i: number) => (
                             <div key={i} className="glass-card">
-                                <div className="flex items-center gap-3 mb-2">
+                                <div className="flex items-center gap-compact mb-2">
                                     <span className="text-content-warning text-lg font-bold">~</span>
                                     <code className="text-xs text-[var(--brand-default)] font-mono">{r.code}</code>
                                     <span className="text-xs text-content-subtle">Changed: {r.changes.join(', ')}</span>

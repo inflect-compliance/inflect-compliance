@@ -144,11 +144,11 @@ export function CalendarHeatmap({
 
     return (
         <figure
-            className={cn('flex flex-col gap-2', className)}
+            className={cn('flex flex-col gap-tight', className)}
             aria-label={ariaLabel}
             data-testid={dataTestId}
         >
-            <div className="flex gap-2">
+            <div className="flex gap-tight">
                 {/* Row labels (only show every other row to save space). */}
                 <div className="flex flex-col gap-[2px] pt-[14px] text-[10px] text-content-muted select-none">
                     {dayLabels.map((label, i) => (

@@ -110,7 +110,7 @@ export function TestDashboardG2Section({
 
     return (
         <section
-            className="space-y-4"
+            className="space-y-default"
             id="test-dashboard-g2-section"
             data-testid="test-dashboard-g2-section"
         >
@@ -124,7 +124,7 @@ export function TestDashboardG2Section({
                 </span>
             </div>
 
-            <div className="grid lg:grid-cols-3 gap-6">
+            <div className="grid lg:grid-cols-3 gap-section">
                 {/* ─── Pass/Fail Donut ───────────────────────────── */}
                 <div
                     className="glass-card p-6"

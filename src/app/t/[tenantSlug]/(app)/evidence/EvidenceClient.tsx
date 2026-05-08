@@ -396,7 +396,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             cell: ({ row }: { row: any }) => {
                 const ev = row.original;
                 return (
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center gap-tight min-w-0">
                         <FileTypeIcon
                             fileName={ev.fileName ?? null}
                             mime={ev.fileRecord?.mimeType ?? null}
@@ -604,7 +604,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     ]), [t, permissions, editingRetention, editRetentionDate, apiUrl]);
 
     return (
-        <ListPageShell className="animate-fadeIn gap-6">
+        <ListPageShell className="animate-fadeIn gap-section">
             <ListPageShell.Header>
                 <div className="flex items-center justify-between">
                     <div>
@@ -612,7 +612,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                         <p className="text-content-muted text-sm">{evidence.length} evidence items</p>
                     </div>
                     {permissions.canWrite && (
-                        <div className="flex gap-2">
+                        <div className="flex gap-tight">
                             <Button
                                 variant="primary"
                                 onClick={() => setShowUpload(true)}
@@ -664,9 +664,9 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                 </>
             )}
 
-            <ListPageShell.Filters className="space-y-3">
+            <ListPageShell.Filters className="space-y-compact">
                 {/* Retention filter tabs + Control filter */}
-                <div className="flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center justify-between flex-wrap gap-compact">
                     <div className="flex items-center gap-1" id="retention-tabs">
                         <Button
                             variant={retentionFilter === 'active' ? 'primary' : 'ghost'}
@@ -691,7 +691,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                         </Button>
                     </div>
 
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-tight flex-wrap">
                         {/*
                           Epic 43.2 view toggle. Filter state lives in
                           `filterCtx`, NOT in `useUrlFilters`, so

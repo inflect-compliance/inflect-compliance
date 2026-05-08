@@ -324,7 +324,7 @@ export function VendorTemplateBuilderClient({
 
     return (
         <div
-            className="space-y-6 animate-fadeIn"
+            className="space-y-section animate-fadeIn"
             data-testid="vendor-template-builder"
         >
             {/* Header */}
@@ -337,7 +337,7 @@ export function VendorTemplateBuilderClient({
                         ← All templates
                     </Link>
                     <Heading level={1} className="mt-1">{tree.name}</Heading>
-                    <div className="flex items-center gap-2 mt-1 text-xs text-content-subtle">
+                    <div className="flex items-center gap-tight mt-1 text-xs text-content-subtle">
                         <span>{tree.key}</span>
                         <span>·</span>
                         <span>v{tree.version}</span>
@@ -400,7 +400,7 @@ export function VendorTemplateBuilderClient({
             )}
 
             {/* Sections */}
-            <div className="space-y-4">
+            <div className="space-y-default">
                 {sections.map((s) => (
                     <SectionCard
                         key={s.id}
@@ -475,7 +475,7 @@ function SectionCard({
             data-testid={`section-${section.id}`}
         >
             <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-tight">
                     {editable && (
                         <span
                             className="text-content-subtle cursor-grab"
@@ -495,11 +495,11 @@ function SectionCard({
                 )}
             </div>
 
-            <div className="space-y-2 mb-3">
+            <div className="space-y-tight mb-3">
                 {section.questions.map((q) => (
                     <div
                         key={q.id}
-                        className="flex items-center gap-3 px-2 py-1.5 rounded hover:bg-bg-default/30"
+                        className="flex items-center gap-compact px-2 py-1.5 rounded hover:bg-bg-default/30"
                         draggable={editable}
                         onDragStart={(e) => {
                             e.stopPropagation();
@@ -553,7 +553,7 @@ function AddSectionForm({ onSubmit }: { onSubmit: (title: string) => void }) {
     const [title, setTitle] = useState('');
     return (
         <form
-            className="glass-card p-3 flex items-center gap-2"
+            className="glass-card p-3 flex items-center gap-tight"
             onSubmit={(e) => {
                 e.preventDefault();
                 if (title.trim()) {
@@ -600,7 +600,7 @@ function AddQuestionForm({
 
     return (
         <form
-            className="border-t border-border-default/30 pt-3 grid grid-cols-1 md:grid-cols-12 gap-2 items-end"
+            className="border-t border-border-default/30 pt-3 grid grid-cols-1 md:grid-cols-12 gap-tight items-end"
             onSubmit={async (e) => {
                 e.preventDefault();
                 if (!prompt.trim()) return;

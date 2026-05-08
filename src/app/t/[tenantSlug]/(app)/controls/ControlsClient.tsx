@@ -695,7 +695,7 @@ function ControlsPageInner({
 
     return (
         <EntityListPage<ControlListItem>
-            className="animate-fadeIn gap-6"
+            className="animate-fadeIn gap-section"
             banner={<TruncationBanner truncated={truncated} />}
             header={{
                 breadcrumbs: [

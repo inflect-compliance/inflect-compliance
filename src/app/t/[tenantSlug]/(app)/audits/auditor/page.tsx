@@ -42,7 +42,7 @@ export default function AuditorPortalPage() {
     );
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-section animate-fadeIn">
             <div>
                 <Heading level={1} id="auditor-heading">Auditor Portal</Heading>
                 <p className="text-content-muted text-sm">Review assigned audit packs</p>
@@ -55,14 +55,14 @@ export default function AuditorPortalPage() {
                     <p className="text-content-muted text-sm">You have not been assigned any audit packs yet.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    <div className="space-y-2">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-default">
+                    <div className="space-y-tight">
                         {packs.map(p => {
                             const meta = FW_META[p.cycle?.frameworkKey] || { icon: 'shield' as AppIconName, label: p.cycle?.frameworkKey || '' };
                             return (
                                 <button key={p.id} onClick={() => loadPack(p.id)}
                                     className={`w-full text-left glass-card p-4 hover:bg-bg-elevated/30 transition ${selectedPack?.id === p.id ? 'ring-2 ring-[var(--ring)]' : ''}`}>
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-compact">
                                         <AppIcon name={meta.icon} size={20} />
                                         <div className="min-w-0">
                                             <p className="font-medium text-sm truncate">{p.name}</p>
@@ -76,7 +76,7 @@ export default function AuditorPortalPage() {
                     </div>
                     <div className="lg:col-span-2">
                         {selectedPack ? (
-                            <div className="glass-card p-6 space-y-4 animate-fadeIn">
+                            <div className="glass-card p-6 space-y-default animate-fadeIn">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <Heading level={2} id="auditor-pack-name">{selectedPack.name}</Heading>

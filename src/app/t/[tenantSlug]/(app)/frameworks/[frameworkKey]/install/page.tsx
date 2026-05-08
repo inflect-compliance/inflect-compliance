@@ -94,7 +94,7 @@ export default function InstallWizardPage() {
     if (!framework) return <div className="p-8 text-content-error">Framework not found</div>;
 
     return (
-        <div className="max-w-2xl mx-auto space-y-6">
+        <div className="max-w-2xl mx-auto space-y-section">
             {/* Header */}
             <div>
                 <Link href={tenantHref(`/frameworks/${frameworkKey}`)} className="text-content-muted hover:text-content-emphasis transition-colors text-sm">
@@ -109,9 +109,9 @@ export default function InstallWizardPage() {
             </div>
 
             {/* Step indicator */}
-            <div className="flex items-center gap-2 text-xs">
+            <div className="flex items-center gap-tight text-xs">
                 {['Select Pack', 'Preview', 'Install'].map((s, i) => (
-                    <div key={s} className="flex items-center gap-2">
+                    <div key={s} className="flex items-center gap-tight">
                         <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 && step === 'select' ? 'bg-brand-600 text-content-emphasis' :
                                 i === 1 && step === 'preview' ? 'bg-brand-600 text-content-emphasis' :
                                     i === 2 && step === 'done' ? 'bg-bg-success-emphasis text-content-emphasis' :
@@ -126,14 +126,14 @@ export default function InstallWizardPage() {
 
             {/* Step 1: Select Pack */}
             {step === 'select' && (
-                <div className="glass-card space-y-4">
+                <div className="glass-card space-y-default">
                     <Heading level={2}>Select a Pack</Heading>
                     {packs.length === 0 ? (
                         <p className="text-content-subtle">No packs available for this framework.</p>
                     ) : (
-                        <div className="space-y-2">
+                        <div className="space-y-tight">
                             {packs.map(p => (
-                                <label key={p.key} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${selectedPack === p.key ? 'border-[var(--brand-default)] bg-[var(--brand-subtle)]' : 'border-border-default hover:border-border-emphasis'
+                                <label key={p.key} className={`flex items-center gap-compact p-3 rounded-lg border cursor-pointer transition-colors ${selectedPack === p.key ? 'border-[var(--brand-default)] bg-[var(--brand-subtle)]' : 'border-border-default hover:border-border-emphasis'
                                     }`}>
                                     <input
                                         type="radio"
@@ -156,10 +156,10 @@ export default function InstallWizardPage() {
 
             {/* Step 2: Preview */}
             {step === 'preview' && preview && (
-                <div className="space-y-4">
+                <div className="space-y-default">
                     <div className="glass-card">
                         <Heading level={2} className="mb-4">Install Preview</Heading>
-                        <div className="grid grid-cols-3 gap-4 mb-4">
+                        <div className="grid grid-cols-3 gap-default mb-4">
                             <div className="text-center p-3 rounded-lg bg-bg-default/50">
                                 <div className="text-2xl font-bold text-[var(--brand-default)]" id="preview-new-controls">{preview.newControls}</div>
                                 <div className="text-xs text-content-muted">New Controls</div>
@@ -177,7 +177,7 @@ export default function InstallWizardPage() {
                         {/* Template list */}
                         <div className="max-h-64 overflow-y-auto space-y-1 border-t border-border-default/50 pt-3">
                             {preview.templates?.map((t: any) => (
-                                <div key={t.code} className="flex items-center gap-3 px-3 py-1.5 rounded-md text-sm">
+                                <div key={t.code} className="flex items-center gap-compact px-3 py-1.5 rounded-md text-sm">
                                     <span className={`w-2 h-2 rounded-full flex-shrink-0 ${t.alreadyInstalled ? 'bg-bg-success-emphasis' : 'bg-[var(--brand-default)]'}`} />
                                     <code className="text-xs text-content-subtle font-mono w-24 flex-shrink-0">{t.code}</code>
                                     <span className="text-content-default flex-1">{t.title}</span>
@@ -192,7 +192,7 @@ export default function InstallWizardPage() {
                         <div className="glass-card border-border-error bg-bg-error text-content-error text-sm">{error}</div>
                     )}
 
-                    <div className="flex gap-3">
+                    <div className="flex gap-compact">
                         <Button variant="secondary" onClick={() => { setStep('select'); setSelectedPack(''); }}>
                             ← Back
                         </Button>
@@ -204,7 +204,7 @@ export default function InstallWizardPage() {
                             id="confirm-install-btn"
                         >
                             {installing ? (
-                                <span className="flex items-center gap-2">
+                                <span className="flex items-center gap-tight">
                                     Installing...
                                 </span>
                             ) : preview.newControls === 0 ? (
@@ -219,10 +219,10 @@ export default function InstallWizardPage() {
 
             {/* Step 3: Done */}
             {step === 'done' && result && (
-                <div className="glass-card text-center space-y-4" id="install-result">
+                <div className="glass-card text-center space-y-default" id="install-result">
                     <div className="text-4xl"></div>
                     <Heading level={1}>Pack Installed Successfully!</Heading>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-3 gap-default">
                         <div className="p-3 rounded-lg bg-bg-success">
                             <div className="text-2xl font-bold text-content-success" id="result-controls">{result.controlsCreated}</div>
                             <div className="text-xs text-content-muted">Controls Created</div>
@@ -236,7 +236,7 @@ export default function InstallWizardPage() {
                             <div className="text-xs text-content-muted">Mappings Created</div>
                         </div>
                     </div>
-                    <div className="flex gap-3 justify-center">
+                    <div className="flex gap-compact justify-center">
                         <Link href={tenantHref('/controls')} className={buttonVariants({ variant: 'primary' })} id="go-to-controls">
                             View Controls →
                         </Link>

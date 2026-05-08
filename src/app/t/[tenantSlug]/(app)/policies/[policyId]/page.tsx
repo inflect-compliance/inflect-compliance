@@ -430,7 +430,7 @@ export default function PolicyDetailPage() {
 
             {/* Description + meta + review-schedule */}
             <div className="glass-card p-6">
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start justify-between gap-default">
                     <div className="flex-1 min-w-0">
                         {policy.description && <p className="text-sm text-content-muted mb-3">{policy.description}</p>}
                         <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-content-subtle">
@@ -451,7 +451,7 @@ export default function PolicyDetailPage() {
                             </button>
                         )}
                         {editingReview && (
-                            <div className="flex gap-2 items-end mt-2">
+                            <div className="flex gap-tight items-end mt-2">
                                 <div>
                                     <label
                                         className="text-xs text-content-subtle"
@@ -539,7 +539,7 @@ export default function PolicyDetailPage() {
 
             {/* ── Current Version ── */}
             {tab === 'current' && (
-                <div className="glass-card p-6 space-y-4">
+                <div className="glass-card p-6 space-y-default">
                     {currentVersion ? (
                         <>
                             <div className="flex items-center justify-between mb-4">
@@ -561,7 +561,7 @@ export default function PolicyDetailPage() {
 
             {/* ── Version History ── */}
             {tab === 'versions' && (
-                <div className="space-y-3" id="version-history">
+                <div className="space-y-compact" id="version-history">
                     {/* Version diff (Epic 45.3) — defaults to
                         previous-vs-current so a reviewer's first
                         impression is always meaningful. The picker
@@ -585,9 +585,9 @@ export default function PolicyDetailPage() {
                         const isCurrentPublished = policy.currentVersionId === v.id;
 
                         return (
-                            <div key={v.id} className="glass-card p-4 space-y-3">
+                            <div key={v.id} className="glass-card p-4 space-y-compact">
                                 <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-compact">
                                         <span className="text-sm font-semibold text-[var(--brand-default)]">v{v.versionNumber}</span>
                                         {isCurrentPublished && <StatusBadge variant="success">Published</StatusBadge>}
                                         {v.contentType === 'EXTERNAL_LINK' && <StatusBadge variant="info">External Link</StatusBadge>}
@@ -595,7 +595,7 @@ export default function PolicyDetailPage() {
                                             {v.createdBy?.name} · {formatDate(v.createdAt)}
                                         </span>
                                     </div>
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-tight">
                                         {canWrite && !hasPending && !isCurrentPublished && (
                                             <Button variant="secondary" size="sm" onClick={() => requestApproval(v.id)} disabled={!!actionLoading} id={`request-approval-${v.versionNumber}`}>
                                                 {actionLoading === 'approve-' + v.id ? '...' : 'Request Approval'}
@@ -618,7 +618,7 @@ export default function PolicyDetailPage() {
                                         <p className="text-xs font-semibold text-content-subtle">Approvals</p>
                                         {vApprovals.map((a) => (
                                             <div key={a.id} className="flex items-center justify-between text-xs">
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-tight">
                                                     <StatusBadge variant={APPROVAL_BADGE[a.status]}>{a.status}</StatusBadge>
                                                     <span className="text-content-muted">
                                                         by {a.requestedBy?.name || 'Unknown'}
@@ -645,13 +645,13 @@ export default function PolicyDetailPage() {
 
             {/* ── Editor ── */}
             {tab === 'editor' && canWrite && (
-                <div className="glass-card p-6 space-y-4">
+                <div className="glass-card p-6 space-y-default">
                     <div className="flex items-center justify-between">
                         <Heading level={3}>Create New Version</Heading>
                     </div>
 
                     {/* Content type selector */}
-                    <div className="flex gap-2">
+                    <div className="flex gap-tight">
                         {([
                             { key: 'MARKDOWN' as const, label: 'Markdown', icon: '' },
                             { key: 'EXTERNAL_LINK' as const, label: 'External Link', icon: '' },
@@ -724,12 +724,12 @@ export default function PolicyDetailPage() {
                     ) : activities.length === 0 ? (
                         <div className="text-center text-content-subtle py-8">No activity recorded yet.</div>
                     ) : (
-                        <div className="space-y-3">
+                        <div className="space-y-compact">
                             {activities.map((evt: AuditLogEntry) => (
-                                <div key={evt.id} className="flex items-start gap-3 text-sm">
+                                <div key={evt.id} className="flex items-start gap-compact text-sm">
                                     <span className="text-base mt-0.5">{EVENT_ICONS[evt.action] || 'event'}</span>
                                     <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-tight">
                                             <span className="font-medium text-content-emphasis text-xs">
                                                 {evt.action.replace('POLICY_', '').replace(/_/g, ' ')}
                                             </span>

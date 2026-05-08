@@ -164,7 +164,7 @@ export function MembersTable({ orgSlug, currentUserId, rows, invites }: Props) {
     return (
         <ListPageShell>
             <ListPageShell.Header>
-                <div className="flex items-end justify-between gap-4 flex-wrap">
+                <div className="flex items-end justify-between gap-default flex-wrap">
                     <div>
                         <Heading level={1}>
                             Org Members
@@ -176,7 +176,7 @@ export function MembersTable({ orgSlug, currentUserId, rows, invites }: Props) {
                             see the portfolio summary only.
                         </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-tight">
                         <Button
                             type="button"
                             variant="secondary"
@@ -349,7 +349,7 @@ function AddMemberModal({ orgSlug, open, onClose, onSuccess }: AddMemberModalPro
                     id="org-add-member-form"
                     onSubmit={onSubmit}
                     noValidate
-                    className="space-y-4"
+                    className="space-y-default"
                     data-testid="org-add-member-form"
                 >
                     <FormField
@@ -369,7 +369,7 @@ function AddMemberModal({ orgSlug, open, onClose, onSuccess }: AddMemberModalPro
                         />
                     </FormField>
 
-                    <fieldset className="space-y-2" data-testid="org-add-member-role-group">
+                    <fieldset className="space-y-tight" data-testid="org-add-member-role-group">
                         <legend className="text-sm font-medium text-content-emphasis">
                             Role
                         </legend>
@@ -380,7 +380,7 @@ function AddMemberModal({ orgSlug, open, onClose, onSuccess }: AddMemberModalPro
                                 <label
                                     key={opt}
                                     htmlFor={id}
-                                    className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                                    className={`flex items-start gap-compact rounded-lg border p-3 cursor-pointer transition-colors ${
                                         checked
                                             ? 'border-border-emphasis bg-bg-subtle'
                                             : 'border-border-subtle hover:bg-bg-muted'
@@ -512,7 +512,7 @@ function RemoveMemberModal({
             <Modal.Header title="Remove org member" />
             <Modal.Body>
                 <div
-                    className="space-y-3 text-sm"
+                    className="space-y-compact text-sm"
                     data-testid="org-remove-member-body"
                 >
                     {target && (
@@ -526,7 +526,7 @@ function RemoveMemberModal({
                             </p>
                             {target.role === 'ORG_ADMIN' && (
                                 <div
-                                    className="flex gap-2 rounded-lg border border-border-warning bg-bg-warning/30 p-3 text-content-warning"
+                                    className="flex gap-tight rounded-lg border border-border-warning bg-bg-warning/30 p-3 text-content-warning"
                                     role="alert"
                                 >
                                     <AlertTriangle
@@ -669,7 +669,7 @@ function ChangeRoleModal({
                     id="org-change-role-form"
                     onSubmit={onConfirm}
                     noValidate
-                    className="space-y-4"
+                    className="space-y-default"
                     data-testid="org-change-role-form"
                 >
                     {target && (
@@ -682,7 +682,7 @@ function ChangeRoleModal({
                         </p>
                     )}
 
-                    <fieldset className="space-y-2">
+                    <fieldset className="space-y-tight">
                         <legend className="text-sm font-medium text-content-emphasis">
                             New role
                         </legend>
@@ -693,7 +693,7 @@ function ChangeRoleModal({
                                 <label
                                     key={opt}
                                     htmlFor={id}
-                                    className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                                    className={`flex items-start gap-compact rounded-lg border p-3 cursor-pointer transition-colors ${
                                         checked
                                             ? 'border-border-emphasis bg-bg-subtle'
                                             : 'border-border-subtle hover:bg-bg-muted'
@@ -734,7 +734,7 @@ function ChangeRoleModal({
                     */}
                     {isPromotion && (
                         <div
-                            className="flex gap-2 rounded-lg border border-border-info bg-bg-info/30 p-3 text-content-info text-xs"
+                            className="flex gap-tight rounded-lg border border-border-info bg-bg-info/30 p-3 text-content-info text-xs"
                             role="status"
                             data-testid="org-change-role-promotion-callout"
                         >
@@ -748,7 +748,7 @@ function ChangeRoleModal({
                     )}
                     {isDemotion && (
                         <div
-                            className="flex gap-2 rounded-lg border border-border-warning bg-bg-warning/30 p-3 text-content-warning text-xs"
+                            className="flex gap-tight rounded-lg border border-border-warning bg-bg-warning/30 p-3 text-content-warning text-xs"
                             role="status"
                             data-testid="org-change-role-demotion-callout"
                         >
@@ -883,7 +883,7 @@ function InviteMemberModal({ orgSlug, open, onClose, onSuccess }: InviteMemberMo
             />
             <Modal.Body>
                 {issued ? (
-                    <div className="space-y-3 text-sm" data-testid="org-invite-issued">
+                    <div className="space-y-compact text-sm" data-testid="org-invite-issued">
                         <p className="text-content-default">
                             Send the recipient this acceptance link. The invite
                             expires in 7 days and is single-use.
@@ -902,7 +902,7 @@ function InviteMemberModal({ orgSlug, open, onClose, onSuccess }: InviteMemberMo
                         id="org-invite-member-form"
                         onSubmit={onSubmit}
                         noValidate
-                        className="space-y-4"
+                        className="space-y-default"
                         data-testid="org-invite-member-form"
                     >
                         <FormField
@@ -922,7 +922,7 @@ function InviteMemberModal({ orgSlug, open, onClose, onSuccess }: InviteMemberMo
                             />
                         </FormField>
 
-                        <fieldset className="space-y-2" data-testid="org-invite-member-role-group">
+                        <fieldset className="space-y-tight" data-testid="org-invite-member-role-group">
                             <legend className="text-sm font-medium text-content-emphasis">
                                 Role
                             </legend>
@@ -933,7 +933,7 @@ function InviteMemberModal({ orgSlug, open, onClose, onSuccess }: InviteMemberMo
                                     <label
                                         key={opt}
                                         htmlFor={id}
-                                        className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                                        className={`flex items-start gap-compact rounded-lg border p-3 cursor-pointer transition-colors ${
                                             checked
                                                 ? 'border-border-emphasis bg-bg-subtle'
                                                 : 'border-border-subtle hover:bg-bg-muted'

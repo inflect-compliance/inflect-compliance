@@ -72,7 +72,7 @@ export default async function BillingPage({
     });
 
     return (
-        <div className="space-y-8 animate-fadeIn">
+        <div className="space-y-page animate-fadeIn">
             {/* Header */}
             <div>
                 <Heading level={1}>Billing</Heading>
@@ -107,7 +107,7 @@ export default async function BillingPage({
             {/* Current Plan Card */}
             <section className="glass-card p-6">
                 <Heading level={2} className="mb-4">Current Plan</Heading>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-default">
                     <div>
                         <p className="text-xs text-content-subtle uppercase tracking-wider mb-1">Plan</p>
                         <StatusBadge variant={plan === 'ENTERPRISE' ? 'warning' :
@@ -187,7 +187,7 @@ export default async function BillingPage({
             {billingMode === 'SAAS' && (plan === 'FREE' || plan === 'TRIAL') && (
                 <section>
                     <Heading level={2} className="mb-4">Upgrade</Heading>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-default">
                         <div className="glass-card p-6 border border-[var(--brand-default)]/30 hover:border-[var(--brand-default)]/60 transition">
                             <div className="flex items-center justify-between mb-3">
                                 <Heading level={3}>Pro</Heading>

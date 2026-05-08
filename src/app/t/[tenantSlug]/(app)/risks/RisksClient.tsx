@@ -466,14 +466,14 @@ function RisksPageInner({
     ]), [t, getRiskLevel, matrixConfig]);
 
     return (
-        <ListPageShell className="animate-fadeIn gap-6">
+        <ListPageShell className="animate-fadeIn gap-section">
             <ListPageShell.Header>
                 <div className="flex items-center justify-between">
                     <div>
                         <Heading level={1}>{t.title}</Heading>
                         <p className="text-content-muted text-sm">{t.risksIdentified}</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-tight">
                         <Button variant="secondary" onClick={() => setView(view === 'register' ? 'heatmap' : 'register')}>
                             {view === 'register' ? t.heatmap : t.register}
                         </Button>
@@ -498,9 +498,9 @@ function RisksPageInner({
                 </div>
             </ListPageShell.Header>
 
-            <ListPageShell.Filters className="space-y-6">
+            <ListPageShell.Filters className="space-y-section">
                 {/* KPI Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
                     <Card className="text-center cursor-pointer hover:ring-1 hover:ring-[color:var(--ring)] transition" onClick={() => filterCtx.clearAll()}
                     >
                         <p className="text-xs text-content-muted uppercase tracking-wider">{t.totalRisks}</p>

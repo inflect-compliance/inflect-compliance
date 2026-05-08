@@ -290,7 +290,7 @@ export default function RiskDetailPage() {
                             <label className="input-label">Description</label>
                             <textarea className="input min-h-[100px]" value={editForm.description ?? ''} onChange={set('description')} />
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-default">
                             <div>
                                 <label className="input-label">Category</label>
                                 <Combobox
@@ -307,7 +307,7 @@ export default function RiskDetailPage() {
                                 <input className="input" value={editForm.treatmentOwner ?? ''} onChange={set('treatmentOwner')} />
                             </div>
                         </div>
-                        <div className="grid grid-cols-3 gap-4">
+                        <div className="grid grid-cols-3 gap-default">
                             {/* Epic 60 — NumberStepper replaces raw number inputs
                                 on the ISO 27005 1..5 likelihood/impact scale.
                                 Matches the Assets CIA fields for consistency. */}
@@ -342,7 +342,7 @@ export default function RiskDetailPage() {
                                 </div>
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-default">
                             <div>
                                 <label className="input-label">Treatment</label>
                                 <Combobox
@@ -382,7 +382,7 @@ export default function RiskDetailPage() {
                             <label className="input-label">Treatment Notes</label>
                             <textarea className="input min-h-[80px]" value={editForm.treatmentNotes ?? ''} onChange={set('treatmentNotes')} />
                         </div>
-                        <div className="flex gap-3 pt-2">
+                        <div className="flex gap-compact pt-2">
                             <Button variant="primary" onClick={handleSave} disabled={saving} loading={saving} id="save-risk-btn">
                                 Save
                             </Button>
@@ -399,7 +399,7 @@ export default function RiskDetailPage() {
                             </div>
                         )}
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
                             <div>
                                 <Eyebrow className="mb-1">Category</Eyebrow>
                                 <p className="text-sm">{risk.category || '—'}</p>
@@ -418,7 +418,7 @@ export default function RiskDetailPage() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-4">
+                        <div className="grid grid-cols-3 gap-default">
                             <div className="glass-card p-4 text-center">
                                 <p className="text-xs text-content-muted uppercase">Likelihood</p>
                                 <p className="text-2xl font-bold mt-1">{risk.likelihood}</p>
@@ -454,7 +454,7 @@ export default function RiskDetailPage() {
                             </div>
                         )}
 
-                        <div className="grid grid-cols-2 gap-4 border-t border-border-subtle pt-4">
+                        <div className="grid grid-cols-2 gap-default border-t border-border-subtle pt-4">
                             <div>
                                 <Eyebrow className="mb-1">Next Review</Eyebrow>
                                 <p className={`text-sm ${overdue ? 'text-content-error font-semibold' : ''}`}>
@@ -475,7 +475,7 @@ export default function RiskDetailPage() {
 
             {/* Linked Tasks */}
             <div className="glass-card p-6">
-                <Heading level={2} className="mb-4 inline-flex items-center gap-2"><AppIcon name="tasks" size={18} /> Linked Tasks</Heading>
+                <Heading level={2} className="mb-4 inline-flex items-center gap-tight"><AppIcon name="tasks" size={18} /> Linked Tasks</Heading>
                 <LinkedTasksPanel
                     apiBase={apiUrl('')}
                     entityType="RISK"
@@ -486,7 +486,7 @@ export default function RiskDetailPage() {
 
             {/* Traceability */}
             <div className="glass-card p-6">
-                <Heading level={2} className="mb-4 inline-flex items-center gap-2"><AppIcon name="link" size={18} /> Traceability</Heading>
+                <Heading level={2} className="mb-4 inline-flex items-center gap-tight"><AppIcon name="link" size={18} /> Traceability</Heading>
                 <TraceabilityPanel
                     apiBase={apiUrl('')}
                     entityType="risk"

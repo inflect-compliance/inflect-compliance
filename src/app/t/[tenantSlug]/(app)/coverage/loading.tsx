@@ -5,17 +5,17 @@ import { Skeleton } from '@/components/ui/skeleton';
  */
 export default function CoverageLoading() {
     return (
-        <div className="space-y-6 animate-fadeIn" aria-busy="true" aria-label="Loading coverage dashboard">
+        <div className="space-y-section animate-fadeIn" aria-busy="true" aria-label="Loading coverage dashboard">
             {/* Header */}
-            <div className="space-y-2">
+            <div className="space-y-tight">
                 <Skeleton className="h-7 w-64" />
                 <Skeleton className="h-4 w-96" />
             </div>
 
             {/* KPI cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-default">
                 {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="glass-card p-6 space-y-3">
+                    <div key={i} className="glass-card p-6 space-y-compact">
                         <Skeleton className="h-4 w-24" />
                         <Skeleton className="h-24 w-24 rounded-full mx-auto" />
                         <Skeleton className="h-3 w-32 mx-auto" />
@@ -24,9 +24,9 @@ export default function CoverageLoading() {
             </div>
 
             {/* Tables */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-default">
                 {Array.from({ length: 2 }).map((_, i) => (
-                    <div key={i} className="glass-card p-6 space-y-3">
+                    <div key={i} className="glass-card p-6 space-y-compact">
                         <Skeleton className="h-5 w-48" />
                         {Array.from({ length: 4 }).map((_, j) => (
                             <Skeleton key={j} className="h-10 w-full" />

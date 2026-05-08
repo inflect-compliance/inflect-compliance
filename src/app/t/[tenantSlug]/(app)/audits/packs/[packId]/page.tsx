@@ -183,7 +183,7 @@ export default function PackDetailPage() {
             {/* Share Link */}
             {shareLink && (
                 <div className="glass-card p-4 border border-border-success bg-bg-success animate-fadeIn" id="share-link-card">
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center justify-between gap-compact">
                         <div className="min-w-0">
                             <p className="text-sm font-medium text-content-success">Share Link Generated</p>
                             <p className="text-xs text-content-muted mt-1 break-all" id="share-link-url">{shareLink}</p>
@@ -209,8 +209,8 @@ export default function PackDetailPage() {
                 </div>
             ) : (
                 Object.entries(grouped).map(([type, items]) => (
-                    <div key={type} className="space-y-2">
-                        <Heading level={3} className="flex items-center gap-2">
+                    <div key={type} className="space-y-tight">
+                        <Heading level={3} className="flex items-center gap-tight">
                             <AppIcon name={ENTITY_ICON[type] || 'overview'} size={16} />
                             <span>{type}</span>
                             <span className="text-content-subtle">({items.length})</span>
@@ -227,7 +227,7 @@ export default function PackDetailPage() {
                                             <span className="font-medium truncate block">{name}</span>
                                             {snap.description && <span className="text-xs text-content-subtle truncate block">{snap.description}</span>}
                                         </div>
-                                        <div className="flex items-center gap-2 ml-4">
+                                        <div className="flex items-center gap-tight ml-4">
                                             {status && <StatusBadge variant="neutral">{status}</StatusBadge>}
                                             {snap.taskCompletion && (
                                                 <span className="text-xs text-content-subtle">
@@ -251,8 +251,8 @@ export default function PackDetailPage() {
             {/* Export area (placeholder) */}
             {isFrozen && (
                 <div className="glass-card p-6">
-                    <Heading level={3} className="mb-2 inline-flex items-center gap-2"><AppIcon name="export" size={16} /> Exports</Heading>
-                    <div className="flex gap-2">
+                    <Heading level={3} className="mb-2 inline-flex items-center gap-tight"><AppIcon name="export" size={16} /> Exports</Heading>
+                    <div className="flex gap-tight">
                         <a href={apiUrl(`/audits/packs/${packId}?action=export&format=json`)}
                             target="_blank" rel="noopener" className={buttonVariants({ variant: 'secondary', size: 'sm', className: 'inline-flex items-center gap-1' })}><AppIcon name="download" size={14} /> Export JSON</a>
                         <a href={apiUrl(`/audits/packs/${packId}?action=export&format=csv`)}

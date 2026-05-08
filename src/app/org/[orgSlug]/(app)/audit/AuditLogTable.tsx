@@ -194,9 +194,9 @@ export function AuditLogTable({ orgSlug, initialRows, initialNextCursor }: Props
     return (
         <ListPageShell>
             <ListPageShell.Header>
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start justify-between gap-default">
                     <div>
-                        <Heading level={1} className="flex items-center gap-2">
+                        <Heading level={1} className="flex items-center gap-tight">
                             <ScrollText className="w-5 h-5" aria-hidden="true" />
                             Audit Log
                         </Heading>

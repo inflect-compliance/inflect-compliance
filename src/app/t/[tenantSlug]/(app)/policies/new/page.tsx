@@ -118,7 +118,7 @@ export default function NewPolicyPage() {
     }
 
     return (
-        <div className="max-w-3xl mx-auto space-y-6 animate-fadeIn">
+        <div className="max-w-3xl mx-auto space-y-section animate-fadeIn">
             <div>
                 <Heading level={1}>
                     {isTemplateMode ? 'New Policy from Template' : 'New Policy'}
@@ -142,12 +142,12 @@ export default function NewPolicyPage() {
 
             {/* Template picker */}
             {isTemplateMode && (
-                <div className="glass-card p-4 space-y-3">
+                <div className="glass-card p-4 space-y-compact">
                     <Heading level={3}>Choose a Template</Heading>
                     {templates.length === 0 ? (
                         <p className="text-sm text-content-subtle">No templates available.</p>
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-tight max-h-60 overflow-y-auto">
                             {templates.map(tpl => (
                                 <button
                                     key={tpl.id}
@@ -168,7 +168,7 @@ export default function NewPolicyPage() {
             )}
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="glass-card p-6 space-y-4" noValidate>
+            <form onSubmit={handleSubmit} className="glass-card p-6 space-y-default" noValidate>
                 <FormField
                     label="Title"
                     required
@@ -221,7 +221,7 @@ export default function NewPolicyPage() {
                     </FormField>
                 )}
 
-                <div className="flex gap-2 pt-2">
+                <div className="flex gap-tight pt-2">
                     <Button type="submit" variant="primary" disabled={loading} id="create-policy-btn">
                         {loading ? 'Creating...' : 'Create Policy'}
                     </Button>

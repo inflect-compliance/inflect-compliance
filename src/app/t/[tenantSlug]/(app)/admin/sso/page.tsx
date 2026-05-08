@@ -258,9 +258,9 @@ export default function SsoAdminPage() {
 
     if (loading) {
         return (
-            <div className="space-y-6 animate-fadeIn">
+            <div className="space-y-section animate-fadeIn">
                 <Heading level={1}>SSO &amp; Identity</Heading>
-                <Card className="space-y-4">
+                <Card className="space-y-default">
                     <div className="h-4 bg-bg-elevated/50 rounded w-1/3 animate-pulse" />
                     <div className="h-4 bg-bg-elevated/50 rounded w-2/3 animate-pulse" />
                     <div className="h-4 bg-bg-elevated/50 rounded w-1/2 animate-pulse" />
@@ -270,10 +270,10 @@ export default function SsoAdminPage() {
     }
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-section animate-fadeIn">
             {/* Header */}
             <div>
-                <Heading level={1} className="flex items-center gap-2">
+                <Heading level={1} className="flex items-center gap-tight">
                     <Shield className="w-6 h-6 text-[var(--brand-default)]" />
                     SSO &amp; Identity
                 </Heading>
@@ -285,7 +285,7 @@ export default function SsoAdminPage() {
             {/* Protocol tabs — Epic 60 ToggleGroup. `id` on each option
                 preserves `#sso-tab-oidc` / `#sso-tab-saml` DOM anchors
                 for any future E2E selector use. */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-tight">
                 <ToggleGroup
                     ariaLabel="SSO protocol"
                     options={[
@@ -312,7 +312,7 @@ export default function SsoAdminPage() {
             <div className="glass-card p-6">
                 <Heading level={2} className="mb-4">{tab} Configuration</Heading>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-default">
                     {/* Provider name */}
                     <div>
                         <label className="text-xs text-content-muted uppercase tracking-wider mb-1 block">
@@ -345,7 +345,7 @@ export default function SsoAdminPage() {
 
                 {/* Protocol-specific fields */}
                 {tab === 'OIDC' ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-default mt-4">
                         <div>
                             <label className="text-xs text-content-muted uppercase tracking-wider mb-1 block">Issuer URL</label>
                             <input
@@ -398,7 +398,7 @@ export default function SsoAdminPage() {
                         </div>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-default mt-4">
                         <div>
                             <label className="text-xs text-content-muted uppercase tracking-wider mb-1 block">IdP Entity ID</label>
                             <input
@@ -461,8 +461,8 @@ export default function SsoAdminPage() {
                 )}
 
                 {/* Toggles */}
-                <div className="flex items-center gap-6 mt-6 pt-4 border-t border-border-default/50">
-                    <label className="flex items-center gap-2 cursor-pointer">
+                <div className="flex items-center gap-section mt-6 pt-4 border-t border-border-default/50">
+                    <label className="flex items-center gap-tight cursor-pointer">
                         <input
                             type="checkbox"
                             checked={formEnabled}
@@ -472,7 +472,7 @@ export default function SsoAdminPage() {
                         />
                         <span className="text-sm text-content-emphasis">Enable SSO</span>
                     </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex items-center gap-tight cursor-pointer">
                         <input
                             type="checkbox"
                             checked={formEnforced}
@@ -497,7 +497,7 @@ export default function SsoAdminPage() {
                 )}
 
                 {/* Actions */}
-                <div className="flex items-center gap-2 mt-6">
+                <div className="flex items-center gap-tight mt-6">
                     <Button
                         variant="primary"
                         onClick={handleSave}

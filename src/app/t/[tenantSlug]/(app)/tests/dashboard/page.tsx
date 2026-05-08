@@ -103,14 +103,14 @@ export default function TestDashboardPage() {
     if (loading || !metrics) return <div className="p-12 text-center text-content-subtle animate-pulse">Loading dashboard...</div>;
 
     return (
-        <div className="space-y-8 animate-fadeIn">
+        <div className="space-y-page animate-fadeIn">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <Heading level={1} id="dashboard-title">Test Dashboard</Heading>
                     <p className="text-sm text-content-muted mt-1">Testing health and framework readiness</p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-compact">
                     <Link href={tenantHref('/tests')} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>← Tests</Link>
                     <Link href={tenantHref('/tests/due')} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>Due Queue</Link>
                     <div className="flex gap-1 bg-bg-default/50 rounded-lg p-1">
@@ -129,7 +129,7 @@ export default function TestDashboardPage() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-default">
                 <MetricCard label="Completion Rate" value={`${metrics.completionRate}%`} sub={`${metrics.completedRuns}/${metrics.totalRuns} runs`} color={metrics.completionRate >= 80 ? 'green' : metrics.completionRate >= 50 ? 'amber' : 'red'} />
                 <MetricCard label="Pass Rate" value={`${metrics.passRate}%`} sub={`${metrics.passRuns} passed`} color={metrics.passRate >= 80 ? 'green' : metrics.passRate >= 50 ? 'amber' : 'red'} />
                 <MetricCard label="Fail Rate" value={`${metrics.failRate}%`} sub={`${metrics.failRuns} failed`} color={metrics.failRate <= 10 ? 'green' : metrics.failRate <= 30 ? 'amber' : 'red'} />
@@ -139,13 +139,13 @@ export default function TestDashboardPage() {
             </div>
 
             {/* Result Distribution */}
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-2 gap-section">
                 <div className="glass-card p-6">
                     <Heading level={2} className="mb-4">Result Distribution ({period}d)</Heading>
                     {metrics.completedRuns === 0 ? (
                         <p className="text-content-subtle text-sm">No completed runs in this period</p>
                     ) : (
-                        <div className="flex gap-6 items-center">
+                        <div className="flex gap-section items-center">
                             {/* Headline gauge — overall pass rate at a glance */}
                             <ProgressCircle
                                 progress={metrics.passRate / 100}
@@ -154,7 +154,7 @@ export default function TestDashboardPage() {
                                 size="md"
                                 aria-label="Overall pass rate"
                             />
-                            <div className="flex-1 space-y-3">
+                            <div className="flex-1 space-y-compact">
                             <div>
                                 <div className="flex justify-between text-sm mb-1">
                                     <span className="text-content-success">Pass</span>
@@ -190,7 +190,7 @@ export default function TestDashboardPage() {
                     {metrics.repeatedFailures.length === 0 ? (
                         <p className="text-content-subtle text-sm">No controls with repeated failures</p>
                     ) : (
-                        <div className="space-y-2">
+                        <div className="space-y-tight">
                             {metrics.repeatedFailures.map(f => (
                                 <Link
                                     key={f.controlId}
@@ -229,14 +229,14 @@ export default function TestDashboardPage() {
                     <p className="text-sm text-content-muted mb-4">
                         How well your mapped controls are covered by active test plans and recent test runs
                     </p>
-                    <div className="space-y-6">
+                    <div className="space-y-section">
                         {readiness.map(fw => (
                             <div key={fw.frameworkKey} className="border border-border-default/30 rounded-lg p-4">
                                 <div className="flex items-center justify-between mb-3">
                                     <Heading level={3}>{fw.frameworkName}</Heading>
                                     <span className="text-xs text-content-muted">{fw.totalMappedControls} mapped controls</span>
                                 </div>
-                                <div className="grid grid-cols-3 gap-4">
+                                <div className="grid grid-cols-3 gap-default">
                                     <div>
                                         <div className="flex justify-between text-xs mb-1">
                                             <span className="text-content-muted">Test Plan Coverage</span>

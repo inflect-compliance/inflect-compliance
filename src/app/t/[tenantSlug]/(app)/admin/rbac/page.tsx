@@ -62,7 +62,7 @@ export default async function RbacPage({
     }
 
     return (
-        <div className="space-y-8 animate-fadeIn">
+        <div className="space-y-page animate-fadeIn">
             {/* Header */}
             <div>
                 <Heading level={1}>Roles &amp; Access</Heading>

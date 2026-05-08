@@ -255,7 +255,7 @@ export function VendorAssessmentClient({
                         e.preventDefault();
                         handleSubmit();
                     }}
-                    className="space-y-8"
+                    className="space-y-page"
                 >
                     {data.template.sections.map((section) => (
                         <section key={section.id}>
@@ -267,7 +267,7 @@ export function VendorAssessmentClient({
                                     {section.description}
                                 </p>
                             )}
-                            <div className="space-y-4">
+                            <div className="space-y-default">
                                 {section.questions.map((q) => (
                                     <QuestionField
                                         key={q.id}
@@ -326,7 +326,7 @@ function QuestionField({
             return (
                 <div data-testid={`q-${question.id}`}>
                     {baseLabel}
-                    <div className="flex gap-4">
+                    <div className="flex gap-default">
                         {['yes', 'no'].map((opt) => (
                             <label
                                 key={opt}
@@ -391,7 +391,7 @@ function QuestionField({
             return (
                 <div data-testid={`q-${question.id}`}>
                     {baseLabel}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-tight">
                         {Array.from(
                             { length: max - min + 1 },
                             (_, i) => i + min,

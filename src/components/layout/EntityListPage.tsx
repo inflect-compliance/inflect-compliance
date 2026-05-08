@@ -179,7 +179,7 @@ export function EntityListPage<TRow>(props: EntityListPageProps<TRow>) {
         >
             <ListPageShell.Header>
                 <div
-                    className="flex items-center justify-between gap-4 flex-wrap"
+                    className="flex items-center justify-between gap-default flex-wrap"
                     data-testid="entity-list-header"
                 >
                     <div className="min-w-0">
@@ -204,7 +204,7 @@ export function EntityListPage<TRow>(props: EntityListPageProps<TRow>) {
                     </div>
                     {header.actions && (
                         <div
-                            className="flex gap-2 flex-wrap"
+                            className="flex gap-tight flex-wrap"
                             data-testid="entity-list-header-actions"
                         >
                             {header.actions}

@@ -157,7 +157,7 @@ export function RisksTable({ rows: initialRows, nextCursor: initialNextCursor, o
                     data-testid="org-risks-table"
                 />
                 {pagination.hasMore && orgSlug && (
-                    <div className="flex flex-col items-center gap-2 pt-3">
+                    <div className="flex flex-col items-center gap-tight pt-3">
                         <Button
                             type="button"
                             variant="secondary"

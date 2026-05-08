@@ -71,7 +71,7 @@ export function RiskMatrixLegend({
                 'flex',
                 orientation === 'vertical'
                     ? 'flex-col gap-1.5'
-                    : 'flex-wrap items-center justify-center gap-3',
+                    : 'flex-wrap items-center justify-center gap-compact',
                 className,
             ]
                 .filter(Boolean)

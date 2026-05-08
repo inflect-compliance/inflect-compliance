@@ -62,7 +62,7 @@ export function Presets<TPreset extends Preset>({
                             value={preset.id}
                             onSelect={() => onSelect(preset)}
                             className={cn(
-                                'group flex cursor-pointer items-center justify-between gap-3',
+                                'group flex cursor-pointer items-center justify-between gap-compact',
                                 'rounded-md px-2.5 py-1.5 text-sm',
                                 'text-content-default',
                                 'data-[selected=true]:bg-bg-muted data-[selected=true]:text-content-emphasis',

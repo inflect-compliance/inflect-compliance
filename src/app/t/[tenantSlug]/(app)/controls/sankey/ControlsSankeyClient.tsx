@@ -34,9 +34,9 @@ export function ControlsSankeyClient({
     const [searchQuery, setSearchQuery] = useState('');
 
     return (
-        <div className="space-y-4" id="controls-sankey-page">
+        <div className="space-y-default" id="controls-sankey-page">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-compact">
                 <div>
                     <Link
                         href={`/t/${tenantSlug}/controls`}

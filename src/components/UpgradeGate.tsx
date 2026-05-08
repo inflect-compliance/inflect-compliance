@@ -48,7 +48,7 @@ export function UpgradeGate({
     const label = FEATURE_LABELS[feature];
 
     return (
-        <div className="relative inline-flex items-center gap-2">
+        <div className="relative inline-flex items-center gap-tight">
             <div className="opacity-40 pointer-events-none select-none">
                 {children}
             </div>

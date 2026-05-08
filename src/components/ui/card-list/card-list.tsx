@@ -12,7 +12,7 @@
  *   - 1 column on mobile (<sm)
  *   - 2 columns on tablet (sm–lg)
  *   - 3 columns on desktop (lg+)
- *   - Consistent `gap-4` between cards
+ *   - Consistent `gap-default` between cards
  *   - Token-aligned: every visual is a `bg-*` / `border-*` / etc.
  *     class — no hex codes
  *
@@ -81,7 +81,7 @@ export function CardList({
             data-card-list
             data-testid={testId}
             className={cn(
-                'grid w-full gap-4',
+                'grid w-full gap-default',
                 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
                 loading && 'opacity-60',
                 className,

@@ -340,7 +340,7 @@ export function Combobox<
     const createOptionItem = (
         <Command.Item
             className={cn(
-                "text-content-default flex cursor-pointer items-center gap-3 whitespace-nowrap rounded-md px-3 py-2 text-left text-sm",
+                "text-content-default flex cursor-pointer items-center gap-compact whitespace-nowrap rounded-md px-3 py-2 text-left text-sm",
                 "data-[selected=true]:bg-bg-subtle",
                 optionClassName,
             )}
@@ -428,7 +428,7 @@ export function Combobox<
                       disabled={disabled || buttonProps?.disabled}
                       className={cn(
                           buttonProps?.className,
-                          "flex gap-2",
+                          "flex gap-tight",
                           effectiveInvalid &&
                               "border-border-error focus-visible:ring-border-error",
                       )}
@@ -682,7 +682,7 @@ function Option<TMeta>({
             <DisabledTooltip disabledTooltip={option.disabledTooltip}>
                 <Command.Item
                     className={cn(
-                        "flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-left text-sm",
+                        "flex cursor-pointer items-center gap-compact rounded-md px-3 py-2 text-left text-sm",
                         hasDescription
                             ? "whitespace-normal py-2.5"
                             : "whitespace-nowrap",
@@ -707,7 +707,7 @@ function Option<TMeta>({
                     )}
                     <div
                         className={cn(
-                            "flex min-w-0 grow items-center gap-2",
+                            "flex min-w-0 grow items-center gap-tight",
                             hasDescription &&
                                 "flex-col items-start gap-0.5",
                         )}

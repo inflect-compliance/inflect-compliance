@@ -338,7 +338,7 @@ function PoliciesPageInner({
 
     return (
         <EntityListPage<any>
-            className="animate-fadeIn gap-6"
+            className="animate-fadeIn gap-section"
             banner={<TruncationBanner truncated={truncated} />}
             header={{
                 title: t.title,

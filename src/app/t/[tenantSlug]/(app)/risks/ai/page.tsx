@@ -238,11 +238,11 @@ export default function AIRiskAssessmentPage() {
     const pendingCount = Object.values(decisions).filter(d => d === 'pending').length;
 
     return (
-        <div className="space-y-6 animate-fadeIn max-w-5xl">
+        <div className="space-y-section animate-fadeIn max-w-5xl">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-compact">
                         <Link href={tenantHref('/risks')} className="text-content-muted hover:text-content-emphasis transition text-lg">←</Link>
                         <div>
                             <Heading level={1} id="ai-risk-title">AI-Assisted Risk Assessment</Heading>
@@ -250,7 +250,7 @@ export default function AIRiskAssessmentPage() {
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-tight">
                     <StatusBadge variant="info">AI-Powered</StatusBadge>
                 </div>
             </div>
@@ -264,13 +264,13 @@ export default function AIRiskAssessmentPage() {
 
             {/* ═══ PHASE: FORM ═══ */}
             {phase === 'form' && (
-                <div className="glass-card p-6 space-y-6" id="ai-generate-form">
+                <div className="glass-card p-6 space-y-section" id="ai-generate-form">
                     <Heading level={2}>Configure Assessment</Heading>
 
                     {/* Framework Selection */}
                     <div>
                         <label className="input-label">Compliance Frameworks</label>
-                        <div className="flex flex-wrap gap-2 mt-2" id="ai-framework-pills">
+                        <div className="flex flex-wrap gap-tight mt-2" id="ai-framework-pills">
                             {['ISO27001', 'NIS2', 'SOC2'].map(fw => (
                                 <button
                                     key={fw}
@@ -304,7 +304,7 @@ export default function AIRiskAssessmentPage() {
                             <div className="mt-2 max-h-48 overflow-y-auto space-y-1" id="ai-asset-list">
                                 {assets.length === 0 && <p className="text-sm text-content-subtle">No assets found. Suggestions will be general.</p>}
                                 {assets.map(a => (
-                                    <label key={a.id} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-bg-elevated/30 cursor-pointer text-sm">
+                                    <label key={a.id} className="flex items-center gap-tight px-3 py-2 rounded-lg hover:bg-bg-elevated/30 cursor-pointer text-sm">
                                         <input
                                             type="checkbox"
                                             checked={selectedAssetIds.includes(a.id)}
@@ -360,10 +360,10 @@ export default function AIRiskAssessmentPage() {
 
             {/* ═══ PHASE: REVIEW ═══ */}
             {phase === 'review' && session && (
-                <div className="space-y-4" id="ai-review-section">
+                <div className="space-y-default" id="ai-review-section">
                     {/* Summary bar */}
                     <div className="glass-card p-4 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-default">
                             <span className="text-sm text-content-muted">
                                 {session.items.length} suggestions • Provider: <strong className="text-content-default">{session.provider}</strong>
                             </span>
@@ -377,14 +377,14 @@ export default function AIRiskAssessmentPage() {
                                 </span>
                             )}
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-tight">
                             <Button variant="secondary" size="xs" onClick={acceptAll} id="accept-all-btn">Accept All</Button>
                             <Button variant="secondary" size="xs" onClick={rejectAll} id="reject-all-btn">Reject All</Button>
                         </div>
                     </div>
 
                     {/* Decision summary */}
-                    <div className="flex gap-3 text-sm">
+                    <div className="flex gap-compact text-sm">
                         <span className="text-content-success" id="accepted-count">[+] {acceptedCount} accepted</span>
                         <span className="text-content-error" id="rejected-count">[-] {rejectedCount} rejected</span>
                         <span className="text-content-muted" id="pending-count">○ {pendingCount} pending</span>
@@ -408,10 +408,10 @@ export default function AIRiskAssessmentPage() {
                                     dec === 'reject' ? 'ring-1 ring-[var(--border-error)] opacity-60' : ''
                                 }`}
                             >
-                                <div className="flex items-start justify-between gap-4">
-                                    <div className="flex-1 space-y-3">
+                                <div className="flex items-start justify-between gap-default">
+                                    <div className="flex-1 space-y-compact">
                                         {/* Header */}
-                                        <div className="flex items-center gap-2 flex-wrap">
+                                        <div className="flex items-center gap-tight flex-wrap">
                                             <span className="text-xs text-content-subtle font-mono">#{idx + 1}</span>
                                             {isEditing ? (
                                                 <input
@@ -442,16 +442,16 @@ export default function AIRiskAssessmentPage() {
 
                                         {/* Threat / Vulnerability */}
                                         {(item.threat || item.vulnerability) && !isEditing && (
-                                            <div className="grid grid-cols-2 gap-4 text-xs">
+                                            <div className="grid grid-cols-2 gap-default text-xs">
                                                 {item.threat && <div><span className="text-content-subtle uppercase font-semibold">Threat</span><p className="text-content-muted mt-0.5">{item.threat}</p></div>}
                                                 {item.vulnerability && <div><span className="text-content-subtle uppercase font-semibold">Vulnerability</span><p className="text-content-muted mt-0.5">{item.vulnerability}</p></div>}
                                             </div>
                                         )}
 
                                         {/* Ratings */}
-                                        <div className="flex items-center gap-4 text-sm">
+                                        <div className="flex items-center gap-default text-sm">
                                             {isEditing ? (
-                                                <div className="flex items-center gap-4">
+                                                <div className="flex items-center gap-default">
                                                     <label className="text-xs text-content-muted">
                                                         L: <Combobox
                                                             hideSearch
@@ -486,7 +486,7 @@ export default function AIRiskAssessmentPage() {
 
                                         {/* Rationale & Explainability */}
                                         {!isEditing && (item.rationale || sr) && (
-                                            <div className="bg-bg-default/50 rounded-lg p-3 text-xs text-content-muted space-y-2">
+                                            <div className="bg-bg-default/50 rounded-lg p-3 text-xs text-content-muted space-y-tight">
                                                 {item.rationale && (
                                                     <div>
                                                         <span className="text-content-subtle uppercase font-semibold block mb-1">Rationale</span>
@@ -534,7 +534,7 @@ export default function AIRiskAssessmentPage() {
                                     </div>
 
                                     {/* Decision buttons */}
-                                    <div className="flex flex-col gap-2 shrink-0">
+                                    <div className="flex flex-col gap-tight shrink-0">
                                         {isEditing ? (
                                             <>
                                                 <Button
@@ -613,7 +613,7 @@ export default function AIRiskAssessmentPage() {
 
             {/* ═══ PHASE: DONE ═══ */}
             {phase === 'done' && (
-                <Card className="text-center space-y-4" id="ai-done">
+                <Card className="text-center space-y-default" id="ai-done">
                     <div className="text-4xl">Done</div>
                     <Heading level={2}>
                         {appliedCount} risk{appliedCount !== 1 ? 's' : ''} added to your register
@@ -621,7 +621,7 @@ export default function AIRiskAssessmentPage() {
                     <p className="text-sm text-content-muted">
                         AI suggestions have been applied. You can review and refine them in the Risk Register.
                     </p>
-                    <div className="flex gap-3 justify-center pt-2">
+                    <div className="flex gap-compact justify-center pt-2">
                         <Link href={tenantHref('/risks')} className={buttonVariants({ variant: 'primary' })} id="view-risks-btn">
                             View Risk Register →
                         </Link>

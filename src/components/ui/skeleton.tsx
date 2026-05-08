@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/card';
  *                rounded-full (9999px) for pills/avatars
  * Spacing:       px-3 py-3             for table cells
  *                p-4 / p-6             for cards
- *                space-y-3             for stacked lines
+ *                space-y-compact             for stacked lines
  * Heights:       h-3  (12px)  table headers
  *                h-4  (16px)  body text / lines
  *                h-5  (20px)  pills
@@ -63,11 +63,11 @@ export function SkeletonButton({ className = '' }: SkeletonProps) {
 
 export function SkeletonDetailPage() {
     return (
-        <div className="space-y-6 animate-fadeIn" aria-busy="true">
-            <div className="space-y-2">
+        <div className="space-y-section animate-fadeIn" aria-busy="true">
+            <div className="space-y-tight">
                 <Skeleton className="h-4 w-16" />
                 <Skeleton className="h-7 w-64" />
-                <div className="flex gap-2">
+                <div className="flex gap-tight">
                     <SkeletonPill />
                     <SkeletonPill />
                     <SkeletonPill />
@@ -100,7 +100,7 @@ export function SkeletonTableRow({ cols = 8 }: { cols?: number }) {
 
 export function SkeletonCard({ className = '', lines = 3 }: { className?: string; lines?: number }) {
     return (
-        <div className={`glass-card p-6 space-y-3 ${className}`} aria-hidden="true">
+        <div className={`glass-card p-6 space-y-compact ${className}`} aria-hidden="true">
             {Array.from({ length: lines }).map((_, i) => (
                 <SkeletonLine key={i} className={i === 0 ? 'w-1/3' : i === lines - 1 ? 'w-2/3' : 'w-full'} />
             ))}
@@ -117,7 +117,7 @@ export function SkeletonPageHeader() {
                 <SkeletonHeading />
                 <SkeletonLine className="w-32" />
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-tight">
                 <SkeletonButton />
                 <SkeletonButton />
                 <SkeletonButton />
@@ -130,7 +130,7 @@ export function SkeletonPageHeader() {
 export function SkeletonFilterBar() {
     return (
         <div className="glass-card p-4">
-            <div className="flex flex-wrap gap-3 items-center">
+            <div className="flex flex-wrap gap-compact items-center">
                 <div className="flex-1 min-w-[200px]">
                     <SkeletonInput className="w-full" />
                 </div>
@@ -179,7 +179,7 @@ export function SkeletonDataTable({ rows = 8, cols = 8 }: { rows?: number; cols?
 
 export function SkeletonFilterToolbar() {
     return (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-tight">
             <div className="relative flex-1 min-w-[180px] max-w-sm">
                 <Skeleton className="h-[34px] w-full rounded-lg" />
             </div>
@@ -202,7 +202,7 @@ export function SkeletonKpiCard() {
 
 export function SkeletonKpiGrid({ count = 4 }: { count?: number }) {
     return (
-        <div className={`grid grid-cols-2 ${count === 6 ? 'md:grid-cols-3 lg:grid-cols-6' : 'md:grid-cols-4'} gap-4`}>
+        <div className={`grid grid-cols-2 ${count === 6 ? 'md:grid-cols-3 lg:grid-cols-6' : 'md:grid-cols-4'} gap-default`}>
             {Array.from({ length: count }).map((_, i) => (
                 <SkeletonKpiCard key={i} />
             ))}
@@ -214,9 +214,9 @@ export function SkeletonKpiGrid({ count = 4 }: { count?: number }) {
 
 export function SkeletonDashboard() {
     return (
-        <div className="space-y-6 animate-fadeIn" aria-busy="true" aria-label="Loading dashboard">
+        <div className="space-y-section animate-fadeIn" aria-busy="true" aria-label="Loading dashboard">
             {/* Header */}
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-compact">
                 <div className="space-y-1.5">
                     <SkeletonHeading className="w-40" />
                     <SkeletonLine className="w-56" />
@@ -227,20 +227,20 @@ export function SkeletonDashboard() {
             <SkeletonKpiGrid count={6} />
 
             {/* Clause progress + Alerts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <Card className="space-y-3">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-default">
+                <Card className="space-y-compact">
                     <Skeleton className="h-4 w-32" />
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-compact">
                         <Skeleton className="flex-1 h-3 rounded-full" />
                         <Skeleton className="h-4 w-12" />
                     </div>
                     <Skeleton className="h-3 w-24 mt-1" />
                 </Card>
-                <Card className="space-y-3">
+                <Card className="space-y-compact">
                     <Skeleton className="h-4 w-36" />
-                    <div className="space-y-2">
+                    <div className="space-y-tight">
                         {Array.from({ length: 3 }).map((_, i) => (
-                            <div key={i} className="flex items-center gap-2">
+                            <div key={i} className="flex items-center gap-tight">
                                 <Skeleton className="w-2 h-2 rounded-full" />
                                 <Skeleton className={`h-3 ${i === 0 ? 'w-40' : i === 1 ? 'w-48' : 'w-36'}`} />
                             </div>
@@ -250,20 +250,20 @@ export function SkeletonDashboard() {
             </div>
 
             {/* Quick actions + Recent activity */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <Card className="space-y-3">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-default">
+                <Card className="space-y-compact">
                     <Skeleton className="h-4 w-28" />
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-tight">
                         {Array.from({ length: 6 }).map((_, i) => (
                             <Skeleton key={i} className="h-8 rounded" />
                         ))}
                     </div>
                 </Card>
-                <Card className="space-y-3">
+                <Card className="space-y-compact">
                     <Skeleton className="h-4 w-32" />
-                    <div className="space-y-2">
+                    <div className="space-y-tight">
                         {Array.from({ length: 4 }).map((_, i) => (
-                            <div key={i} className="flex items-start gap-2">
+                            <div key={i} className="flex items-start gap-tight">
                                 <Skeleton className="h-3 w-28 shrink-0" />
                                 <Skeleton className={`h-3 ${i % 2 === 0 ? 'w-full' : 'w-3/4'}`} />
                             </div>
@@ -279,12 +279,12 @@ export function SkeletonDashboard() {
 
 export function SkeletonDetailTabs({ tabCount = 4 }: { tabCount?: number }) {
     return (
-        <div className="space-y-6 animate-fadeIn" aria-busy="true" aria-label="Loading details">
+        <div className="space-y-section animate-fadeIn" aria-busy="true" aria-label="Loading details">
             {/* Back link + heading */}
-            <div className="space-y-2">
+            <div className="space-y-tight">
                 <Skeleton className="h-4 w-16" />
                 <SkeletonHeading className="w-72" />
-                <div className="flex gap-2 mt-1">
+                <div className="flex gap-tight mt-1">
                     <SkeletonPill />
                     <SkeletonPill className="w-24" />
                     <SkeletonPill className="w-16" />
@@ -309,17 +309,17 @@ export function SkeletonDetailTabs({ tabCount = 4 }: { tabCount?: number }) {
 
 export function SkeletonSettings() {
     return (
-        <div className="space-y-6 animate-fadeIn" aria-busy="true" aria-label="Loading settings">
+        <div className="space-y-section animate-fadeIn" aria-busy="true" aria-label="Loading settings">
             <SkeletonHeading className="w-36" />
             {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="glass-card p-6 space-y-4">
+                <div key={i} className="glass-card p-6 space-y-default">
                     <Skeleton className="h-5 w-40" />
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-4">
+                    <div className="space-y-compact">
+                        <div className="flex items-center gap-default">
                             <Skeleton className="h-4 w-24" />
                             <SkeletonInput className="flex-1" />
                         </div>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-default">
                             <Skeleton className="h-4 w-32" />
                             <SkeletonInput className="flex-1" />
                         </div>

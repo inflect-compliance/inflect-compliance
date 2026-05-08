@@ -374,7 +374,7 @@ function Footer({ className, ...rest }: HTMLAttributes<HTMLDivElement>) {
         <div
             data-modal-footer
             className={cn(
-                "flex shrink-0 items-center justify-end gap-2 border-t border-border-subtle px-5 py-3",
+                "flex shrink-0 items-center justify-end gap-tight border-t border-border-subtle px-5 py-3",
                 className,
             )}
             {...rest}
@@ -519,7 +519,7 @@ function Confirm({
             showCloseButton={false}
         >
             <Header>
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-compact">
                     <span className="mt-0.5 shrink-0">{toneIcon[tone]}</span>
                     <div className="flex min-w-0 flex-col gap-1">
                         <Dialog.Title asChild>

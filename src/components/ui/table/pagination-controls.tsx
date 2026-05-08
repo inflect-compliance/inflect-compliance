@@ -112,7 +112,7 @@ export function PaginationControls({
       </div>
 
       {/* Navigation buttons */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-tight">
         <Button
           variant="secondary"
           text="Previous"

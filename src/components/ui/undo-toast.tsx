@@ -105,11 +105,11 @@ export function UndoToast({
                 // Sonner's default toast frame — match its size/padding so
                 // our custom variant doesn't visually jump compared to the
                 // default toast row.
-                "flex w-full max-w-sm flex-col gap-2 rounded-lg border",
+                "flex w-full max-w-sm flex-col gap-tight rounded-lg border",
                 "border-border-default bg-bg-elevated px-4 py-3 shadow-lg",
                 "text-sm text-content-default",
             )}>
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center justify-between gap-compact">
                 <span className="font-medium">{message}</span>
                 <button
                     type="button"

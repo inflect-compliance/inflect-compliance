@@ -43,7 +43,7 @@ export default async function TenantsPage() {
                         You are a member of multiple workspaces. Select one to continue.
                     </p>
                 </div>
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-compact">
                     {memberships.map((m) => (
                         <a
                             key={m.slug}

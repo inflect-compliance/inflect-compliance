@@ -139,7 +139,7 @@ export function VersionDiff({
             data-testid={dataTestId}
             className={`rounded-lg border border-border-default bg-bg-subtle ${className}`.trim()}
         >
-            <header className="flex flex-wrap items-center gap-3 border-b border-border-default px-3 py-2 text-xs text-content-muted">
+            <header className="flex flex-wrap items-center gap-compact border-b border-border-default px-3 py-2 text-xs text-content-muted">
                 <label className="inline-flex items-center gap-1.5">
                     <span className="text-content-subtle">From</span>
                     <select

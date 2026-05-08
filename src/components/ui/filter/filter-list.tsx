@@ -83,7 +83,7 @@ export function FilterList({
     >
       <div
         className={cn(
-          "flex w-full flex-wrap items-start gap-4 sm:flex-nowrap",
+          "flex w-full flex-wrap items-start gap-default sm:flex-nowrap",
           className,
         )}
       >
@@ -257,7 +257,7 @@ export function FilterList({
           <button
             type="button"
             className={cn(
-              "group mt-px flex h-[38px] items-center gap-2 whitespace-nowrap rounded-lg border border-transparent px-3 py-2 text-sm text-content-muted",
+              "group mt-px flex h-[38px] items-center gap-tight whitespace-nowrap rounded-lg border border-transparent px-3 py-2 text-sm text-content-muted",
               "transition-[color,border-color,background-color,transform] duration-150 ease-out motion-reduce:transition-none",
               "hover:border-border-default hover:bg-bg-muted hover:text-content-emphasis [@media(hover:none)]:hover:border-transparent [@media(hover:none)]:hover:bg-transparent",
               "active:scale-[0.98] motion-reduce:active:scale-100",
@@ -597,7 +597,7 @@ function OperatorFilterPill({
                           <Command.Item
                             key={option.value}
                             className={cn(
-                              "flex cursor-pointer items-center gap-3 whitespace-nowrap rounded-md px-3 py-2 text-left text-sm",
+                              "flex cursor-pointer items-center gap-compact whitespace-nowrap rounded-md px-3 py-2 text-left text-sm",
                               "transition-[background-color] duration-100 ease-out motion-reduce:transition-none",
                               "active:scale-[0.99] motion-reduce:active:scale-100",
                               "text-content-default",

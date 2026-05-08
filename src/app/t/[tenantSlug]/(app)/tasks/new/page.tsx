@@ -170,7 +170,7 @@ export default function NewTaskPage() {
     };
 
     return (
-        <div className="max-w-2xl mx-auto space-y-6 animate-fadeIn">
+        <div className="max-w-2xl mx-auto space-y-section animate-fadeIn">
             <div>
                 <Link href={tenantHref('/tasks')} className="text-content-muted text-xs hover:text-content-emphasis transition">← Tasks</Link>
                 <Heading level={1} className="mt-1" id="new-task-heading">New Task</Heading>
@@ -207,7 +207,7 @@ export default function NewTaskPage() {
                         onChange={e => update('description', e.target.value)}
                     />
                 </FormField>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 gap-default">
                     <FormField label="Type" required>
                         <Combobox
                             id="task-type-select"
@@ -251,7 +251,7 @@ export default function NewTaskPage() {
                         />
                     </FormField>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-default">
                     {/* Epic 58 — shared DatePicker. `form.dueAt` keeps
                         its YMD-string shape so the POST body matches
                         the pre-migration contract. */}
@@ -300,9 +300,9 @@ export default function NewTaskPage() {
 
                 {/* Audit fields — shown for AUDIT_FINDING / CONTROL_GAP */}
                 {(form.type === 'AUDIT_FINDING' || form.type === 'CONTROL_GAP') && (
-                    <div className="border-t border-border-default pt-4 space-y-4">
+                    <div className="border-t border-border-default pt-4 space-y-default">
                         <Heading level={3}>Audit Details</Heading>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-default">
                             <FormField label="Finding Source">
                                 <Combobox
                                     id="finding-source-select"
@@ -338,7 +338,7 @@ export default function NewTaskPage() {
                 )}
 
                 {/* Links section */}
-                <div className="border-t border-border-default pt-4 space-y-3">
+                <div className="border-t border-border-default pt-4 space-y-compact">
                     <Heading level={3}>Links</Heading>
                     {validationMessage && (
                         <FormError
@@ -348,7 +348,7 @@ export default function NewTaskPage() {
                             {validationMessage}
                         </FormError>
                     )}
-                    <div className="flex gap-2 items-end">
+                    <div className="flex gap-tight items-end">
                         <FormField label="Entity Type" className="flex-1">
                             <Combobox
                                 id="link-entity-type"
@@ -378,7 +378,7 @@ export default function NewTaskPage() {
                     {pendingLinks.length > 0 && (
                         <div className="space-y-1" id="pending-links-list">
                             {pendingLinks.map((l, i) => (
-                                <div key={i} className="flex items-center gap-2 text-sm text-content-default bg-bg-default/50 rounded px-3 py-1.5">
+                                <div key={i} className="flex items-center gap-tight text-sm text-content-default bg-bg-default/50 rounded px-3 py-1.5">
                                     <StatusBadge variant="info">{l.entityType}</StatusBadge>
                                     <span className="font-mono text-xs flex-1">{l.entityId}</span>
                                     <Tooltip content="Remove linked item">
@@ -390,7 +390,7 @@ export default function NewTaskPage() {
                     )}
                 </div>
 
-                <div className="flex gap-3 pt-2">
+                <div className="flex gap-compact pt-2">
                     <Button type="submit" variant="primary" disabled={saving} id="create-task-btn">
                         {saving ? 'Creating...' : 'Create Task'}
                     </Button>

@@ -170,7 +170,7 @@ export function ShortcutHelpOverlay() {
                 title="Keyboard shortcuts"
                 description="Press ? any time to show this list. Shortcuts are ignored while you're typing."
             />
-            <Modal.Body className="space-y-6" data-testid="shortcut-help-body">
+            <Modal.Body className="space-y-section" data-testid="shortcut-help-body">
                 <Group
                     title="Available now"
                     emptyHint="No global shortcuts are registered yet."
@@ -220,7 +220,7 @@ function Group({
                 {rows.map((row) => (
                     <li
                         key={row.id}
-                        className="flex items-center justify-between gap-4 py-2 text-sm"
+                        className="flex items-center justify-between gap-default py-2 text-sm"
                     >
                         <span className="text-content-default">
                             {row.description}

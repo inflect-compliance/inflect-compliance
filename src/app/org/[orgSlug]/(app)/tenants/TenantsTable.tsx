@@ -142,7 +142,7 @@ export function TenantsTable({ rows, orgSlug }: Props) {
     return (
         <ListPageShell>
             <ListPageShell.Header>
-                <div className="flex items-end justify-between gap-4 flex-wrap">
+                <div className="flex items-end justify-between gap-default flex-wrap">
                     <div>
                         <Heading level={1}>
                             Tenant Health

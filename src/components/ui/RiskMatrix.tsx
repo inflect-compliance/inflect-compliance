@@ -198,7 +198,7 @@ export function RiskMatrix({
                     <Heading level={3}>
                         {title}
                     </Heading>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-compact">
                         {showSwapToggle && swapAxesProp === undefined && (
                             <button
                                 type="button"
@@ -218,7 +218,7 @@ export function RiskMatrix({
                 </div>
             )}
 
-            <div className="flex gap-2">
+            <div className="flex gap-tight">
                 {/* Y-axis title (vertical-LR rotation matches the legacy heatmap). */}
                 <div className="-mr-1 flex flex-col items-center justify-center">
                     <span className="rotate-180 text-[10px] uppercase tracking-widest text-content-subtle [writing-mode:vertical-lr]">

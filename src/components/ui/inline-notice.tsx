@@ -5,7 +5,7 @@
  *
  * Replaces the recurring 5-line hand-rolled block:
  *
- *   <div className="p-3 bg-bg-error border border-border-error rounded-lg flex items-center gap-2">
+ *   <div className="p-3 bg-bg-error border border-border-error rounded-lg flex items-center gap-tight">
  *     <XCircle className="w-4 h-4 text-content-error flex-shrink-0" />
  *     <span className="text-sm text-content-error">{error}</span>
  *     <button onClick={() => setError(null)}>...</button>
@@ -153,7 +153,7 @@ export function InlineNotice({
             id={id}
             data-testid={dataTestId}
             className={cn(
-                "flex items-start gap-2 rounded-lg border p-3 text-sm",
+                "flex items-start gap-tight rounded-lg border p-3 text-sm",
                 tokens.bg,
                 tokens.border,
                 tokens.text,

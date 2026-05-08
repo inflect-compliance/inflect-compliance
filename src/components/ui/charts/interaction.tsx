@@ -280,7 +280,7 @@ export function ChartTooltipRow({
         <div
             data-chart-tooltip-row
             className={cn(
-                'flex items-center justify-between gap-4',
+                'flex items-center justify-between gap-default',
                 className,
             )}
         >

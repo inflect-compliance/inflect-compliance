@@ -141,7 +141,7 @@ export function StatusBreakdown({
 
     return (
         <div
-            className={cn("space-y-2", className)}
+            className={cn("space-y-tight", className)}
             role="group"
             aria-label={ariaLabel}
         >
@@ -155,7 +155,7 @@ export function StatusBreakdown({
                 return (
                     <div
                         key={key}
-                        className={cn("flex items-center gap-2", textSize)}
+                        className={cn("flex items-center gap-tight", textSize)}
                     >
                         {showDot && (
                             <span

@@ -152,7 +152,7 @@ export default function AssetDetailPage() {
             <div className="glass-card p-6 space-y-5" id="asset-detail">
                 {editing ? (
                     <>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-default">
                             <div><label className="input-label">Name *</label><input className="input" value={form.name} onChange={e => setForm((f: any) => ({ ...f, name: e.target.value }))} /></div>
                             <div><label className="input-label">Type</label><Combobox hideSearch selected={TYPE_OPTIONS.find(o => o.value === form.type) ?? null} setSelected={(opt) => setForm((f: any) => ({ ...f, type: opt?.value ?? 'SYSTEM' }))} options={TYPE_OPTIONS} matchTriggerWidth /></div>
                             <div><label className="input-label">Criticality</label><Combobox hideSearch selected={CRIT_OPTIONS.find(o => o.value === form.criticality) ?? null} setSelected={(opt) => setForm((f: any) => ({ ...f, criticality: opt?.value || null }))} options={CRIT_OPTIONS} placeholder="—" matchTriggerWidth /></div>
@@ -162,7 +162,7 @@ export default function AssetDetailPage() {
                             <div><label className="input-label">Classification</label><input className="input" value={form.classification} onChange={e => setForm((f: any) => ({ ...f, classification: e.target.value }))} /></div>
                             <div><label className="input-label">Location</label><input className="input" value={form.location} onChange={e => setForm((f: any) => ({ ...f, location: e.target.value }))} /></div>
                         </div>
-                        <div className="flex gap-3 pt-2">
+                        <div className="flex gap-compact pt-2">
                             <Button variant="primary" onClick={handleSave} disabled={saving} id="save-asset-btn">{saving ? 'Saving…' : 'Save'}</Button>
                             <Button variant="secondary" onClick={() => setEditing(false)}>Cancel</Button>
                         </div>
@@ -170,7 +170,7 @@ export default function AssetDetailPage() {
                 ) : (
                     <>
                         {asset.classification && <div><Eyebrow className="mb-1">Classification</Eyebrow><p className="text-sm">{asset.classification}</p></div>}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
                             <div><Eyebrow className="mb-1">Owner</Eyebrow><p className="text-sm">{asset.owner || '—'}</p></div>
                             <div><Eyebrow className="mb-1">Location</Eyebrow><p className="text-sm">{asset.location || '—'}</p></div>
                             <div>
@@ -190,12 +190,12 @@ export default function AssetDetailPage() {
                             </div>
                             <div><Eyebrow className="mb-1">Data Residency</Eyebrow><p className="text-sm">{asset.dataResidency || '—'}</p></div>
                         </div>
-                        <div className="grid grid-cols-3 gap-4">
+                        <div className="grid grid-cols-3 gap-default">
                             <div className="glass-card p-4 text-center"><p className="text-xs text-content-muted uppercase">Confidentiality</p><p className="text-2xl font-bold mt-1">{asset.confidentiality ?? '—'}</p></div>
                             <div className="glass-card p-4 text-center"><p className="text-xs text-content-muted uppercase">Integrity</p><p className="text-2xl font-bold mt-1">{asset.integrity ?? '—'}</p></div>
                             <div className="glass-card p-4 text-center"><p className="text-xs text-content-muted uppercase">Availability</p><p className="text-2xl font-bold mt-1">{asset.availability ?? '—'}</p></div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4 border-t border-border-default/50 pt-4">
+                        <div className="grid grid-cols-2 gap-default border-t border-border-default/50 pt-4">
                             <div><Eyebrow className="mb-1">Created</Eyebrow><p className="text-sm text-content-muted">{formatDate(asset.createdAt)}</p></div>
                             <div><Eyebrow className="mb-1">Updated</Eyebrow><p className="text-sm text-content-muted">{formatDate(asset.updatedAt)}</p></div>
                         </div>
@@ -205,7 +205,7 @@ export default function AssetDetailPage() {
 
             {/* Linked Tasks */}
             <div className="glass-card p-6" id="linked-tasks-section">
-                <Heading level={2} className="mb-4 inline-flex items-center gap-2"><AppIcon name="tasks" size={18} /> Linked Tasks</Heading>
+                <Heading level={2} className="mb-4 inline-flex items-center gap-tight"><AppIcon name="tasks" size={18} /> Linked Tasks</Heading>
                 <LinkedTasksPanel
                     apiBase={apiUrl('')}
                     entityType="ASSET"
@@ -216,7 +216,7 @@ export default function AssetDetailPage() {
 
             {/* Traceability */}
             <div className="glass-card p-6">
-                <Heading level={2} className="mb-4 inline-flex items-center gap-2"><AppIcon name="link" size={18} /> Traceability</Heading>
+                <Heading level={2} className="mb-4 inline-flex items-center gap-tight"><AppIcon name="link" size={18} /> Traceability</Heading>
                 <TraceabilityPanel
                     apiBase={apiUrl('')}
                     entityType="asset"

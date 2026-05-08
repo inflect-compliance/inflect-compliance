@@ -113,7 +113,7 @@ export default function TestPlansPanel({ controlId }: { controlId: string }) {
     if (loading) return <div className="animate-pulse text-content-subtle text-sm py-4">Loading test plans...</div>;
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-default">
             <div className="flex items-center justify-between">
                 <Heading level={3}>Test Plans</Heading>
                 {permissions.canWrite && (
@@ -129,7 +129,7 @@ export default function TestPlansPanel({ controlId }: { controlId: string }) {
             </div>
 
             {showForm && (
-                <div className="glass-card p-4 space-y-3 animate-fadeIn">
+                <div className="glass-card p-4 space-y-compact animate-fadeIn">
                     <div>
                         <label className="text-xs text-content-muted block mb-1">Plan Name *</label>
                         <input
@@ -140,7 +140,7 @@ export default function TestPlansPanel({ controlId }: { controlId: string }) {
                             id="test-plan-name-input"
                         />
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-compact">
                         <div>
                             <label className="text-xs text-content-muted block mb-1">Frequency</label>
                             <select className="input w-full" value={frequency} onChange={e => setFrequency(e.target.value)} id="test-plan-frequency-select">
@@ -181,7 +181,7 @@ export default function TestPlansPanel({ controlId }: { controlId: string }) {
                                     >
                                         {plan.name}
                                     </Link>
-                                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                    <div className="flex items-center gap-tight mt-0.5 flex-wrap">
                                         <StatusBadge variant={STATUS_BADGE[plan.status] || 'neutral'} size="sm">
                                             {plan.status}
                                         </StatusBadge>
@@ -204,7 +204,7 @@ export default function TestPlansPanel({ controlId }: { controlId: string }) {
                                         )}
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2 ml-4">
+                                <div className="flex items-center gap-tight ml-4">
                                     {lastRun?.result && (
                                         <StatusBadge variant={RESULT_BADGE[lastRun.result] || 'neutral'} size="sm">
                                             {lastRun.result}

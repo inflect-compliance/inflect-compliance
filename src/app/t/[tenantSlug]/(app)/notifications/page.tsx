@@ -67,11 +67,11 @@ export default function NotificationsPage() {
     };
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-section animate-fadeIn">
             <Heading level={1}>{t('title')}</Heading>
-            <div className="space-y-2">
+            <div className="space-y-tight">
                 {optimisticList.map(n => (
-                    <div key={n.id} className={`glass-card p-4 flex items-start gap-3 ${!n.read ? 'border-l-2 border-[var(--brand-default)]' : 'opacity-60'}`}>
+                    <div key={n.id} className={`glass-card p-4 flex items-start gap-compact ${!n.read ? 'border-l-2 border-[var(--brand-default)]' : 'opacity-60'}`}>
                         <span className="text-lg"><AppIcon name={n.type === 'EVIDENCE' ? 'evidence' : n.type === 'FINDING' ? 'bug' : 'bell'} size={18} /></span>
                         <div className="flex-1">
                             <p className="text-sm text-content-emphasis">{n.message}</p>

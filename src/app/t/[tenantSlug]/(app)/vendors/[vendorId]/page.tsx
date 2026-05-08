@@ -260,8 +260,8 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
         >
             {/* OVERVIEW */}
             {tab === 'overview' && !editing && (
-                <div className="card p-6 space-y-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="card p-6 space-y-default">
+                    <div className="grid grid-cols-2 gap-default text-sm">
                         <div><span className="text-content-muted">Legal Name:</span> <span className="ml-2">{vendor.legalName || '—'}</span></div>
                         <div><span className="text-content-muted">Domain:</span> <span className="ml-2">{vendor.domain || '—'}</span></div>
                         <div><span className="text-content-muted">Website:</span> <span className="ml-2">{normaliseHref(vendor.websiteUrl) ? <a href={normaliseHref(vendor.websiteUrl)!} target="_blank" rel="noopener noreferrer" className="text-content-info underline">{vendor.websiteUrl}</a> : '—'}</span></div>
@@ -275,9 +275,9 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                     </div>
                     {/* Enrichment Fields */}
                     {(vendor.privacyPolicyUrl || vendor.securityPageUrl || vendor.certificationsJson) && (
-                        <div className="border-t border-border-default pt-3 mt-3 space-y-2">
+                        <div className="border-t border-border-default pt-3 mt-3 space-y-tight">
                             <Heading level={3}>Enrichment Data</Heading>
-                            <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div className="grid grid-cols-2 gap-compact text-sm">
                                 {normaliseHref(vendor.privacyPolicyUrl) && <div><span className="text-content-muted">Privacy Policy:</span> <a href={normaliseHref(vendor.privacyPolicyUrl)!} target="_blank" rel="noopener noreferrer" className="text-content-info underline ml-1" id="enrichment-privacy">View ↗</a></div>}
                                 {normaliseHref(vendor.securityPageUrl) && <div><span className="text-content-muted">Security Page:</span> <a href={normaliseHref(vendor.securityPageUrl)!} target="_blank" rel="noopener noreferrer" className="text-content-info underline ml-1" id="enrichment-security">View ↗</a></div>}
                                 {vendor.certificationsJson && Array.isArray(vendor.certificationsJson) && (
@@ -293,8 +293,8 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
 
             {/* EDIT FORM */}
             {tab === 'overview' && editing && canWrite && (
-                <div className="card p-6 space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                <div className="card p-6 space-y-default">
+                    <div className="grid grid-cols-2 gap-default">
                         <div>
                             <label className="block text-sm text-content-muted mb-1">Name</label>
                             <input className="input w-full" value={editForm.name} onChange={e => setEditForm((p: any) => ({ ...p, name: e.target.value }))} />
@@ -316,7 +316,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                         <label className="block text-sm text-content-muted mb-1">Description</label>
                         <textarea className="input w-full h-20" value={editForm.description} onChange={e => setEditForm((p: any) => ({ ...p, description: e.target.value }))} />
                     </div>
-                    <div className="flex gap-3">
+                    <div className="flex gap-compact">
                         <Button variant="primary" onClick={saveEdit} id="save-vendor-btn">Save</Button>
                         <Button variant="secondary" onClick={() => setEditing(false)}>Cancel</Button>
                     </div>
@@ -325,7 +325,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
 
             {/* DOCUMENTS */}
             {tab === 'documents' && (
-                <div className="space-y-4">
+                <div className="space-y-default">
                     {canWrite && (
                         <div className="flex justify-end">
                             <Button variant="primary" onClick={() => setShowDocForm(!showDocForm)} id="add-doc-btn">
@@ -334,8 +334,8 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                         </div>
                     )}
                     {showDocForm && canWrite && (
-                        <form onSubmit={addDoc} className="card p-4 space-y-3">
-                            <div className="grid grid-cols-2 gap-3">
+                        <form onSubmit={addDoc} className="card p-4 space-y-compact">
+                            <div className="grid grid-cols-2 gap-compact">
                                 <div>
                                     <label className="block text-sm text-content-muted mb-1">Type</label>
                                     <Combobox hideSearch id="doc-type-select" selected={DOC_TYPE_CB_OPTIONS.find(o => o.value === docForm.type) ?? null} setSelected={(opt) => setDocForm(p => ({ ...p, type: opt?.value ?? p.type }))} options={DOC_TYPE_CB_OPTIONS} matchTriggerWidth />
@@ -390,15 +390,15 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
 
             {/* ASSESSMENTS */}
             {tab === 'assessments' && (
-                <div className="space-y-4">
+                <div className="space-y-default">
                     {canWrite && (
-                        <div className="flex items-center gap-3 justify-end">
+                        <div className="flex items-center gap-compact justify-end">
                             {!showStartAssessment ? (
                                 <Button variant="primary" onClick={() => setShowStartAssessment(true)} id="start-assessment-btn">
                                     + Start Assessment
                                 </Button>
                             ) : (
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-tight">
                                     <Combobox
                                         id="template-select"
                                         selected={templates.map((t: any) => ({ value: t.key, label: `${t.name} (${t._count?.questions || 0} Q)` })).find((o: ComboboxOption) => o.value === selectedTemplate) ?? null}
@@ -450,7 +450,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
 
             {/* LINKS / TRACEABILITY */}
             {tab === 'links' && (
-                <div className="space-y-4">
+                <div className="space-y-default">
                     {canWrite && (
                         <div className="flex justify-end">
                             <Button variant="primary" onClick={() => setShowLinkForm(!showLinkForm)} id="add-link-btn">
@@ -459,7 +459,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                         </div>
                     )}
                     {showLinkForm && canWrite && (
-                        <div className="card p-4 flex items-end gap-3">
+                        <div className="card p-4 flex items-end gap-compact">
                             <div>
                                 <label className="block text-sm text-content-muted mb-1">Type</label>
                                 <Combobox hideSearch id="link-type" selected={VENDOR_LINK_TYPE_OPTIONS.find(o => o.value === linkForm.entityType) ?? null} setSelected={(opt) => setLinkForm(p => ({ ...p, entityType: opt?.value ?? p.entityType }))} options={VENDOR_LINK_TYPE_OPTIONS} matchTriggerWidth />
@@ -485,7 +485,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                         const typeLinks = links.filter((l: any) => l.entityType === type);
                         if (typeLinks.length === 0) return null;
                         return (
-                            <div key={type} className="card p-4 space-y-2">
+                            <div key={type} className="card p-4 space-y-tight">
                                 <Heading level={3}>{type}s ({typeLinks.length})</Heading>
                                 {typeLinks.map((l: any) => (
                                     <div key={l.id} className="flex items-center justify-between text-sm border-b border-border-subtle py-1">
@@ -504,9 +504,9 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
 
             {/* EVIDENCE BUNDLES */}
             {tab === 'bundles' && (
-                <div className="space-y-4">
+                <div className="space-y-default">
                     {canWrite && (
-                        <div className="flex items-center gap-2 justify-end">
+                        <div className="flex items-center gap-tight justify-end">
                             <input className="input w-48" placeholder="Bundle name…" value={bundleName}
                                 onChange={e => setBundleName(e.target.value)} id="bundle-name-input" />
                             <Button variant="primary" disabled={!bundleName} id="create-bundle-btn" onClick={async () => {
@@ -519,7 +519,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                         </div>
                     )}
                     {bundles.map((b: any) => (
-                        <div key={b.id} className="card p-4 space-y-2">
+                        <div key={b.id} className="card p-4 space-y-tight">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <span className="font-medium">{b.name}</span>
@@ -543,9 +543,9 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
 
             {/* SUBPROCESSORS */}
             {tab === 'subprocessors' && (
-                <div className="space-y-4">
+                <div className="space-y-default">
                     {canWrite && (
-                        <div className="card p-4 flex items-end gap-3">
+                        <div className="card p-4 flex items-end gap-compact">
                             <div>
                                 <label className="block text-sm text-content-muted mb-1">Subprocessor Vendor ID</label>
                                 <input className="input w-48" value={subForm.subprocessorVendorId}

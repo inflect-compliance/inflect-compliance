@@ -218,7 +218,7 @@ function Header({
         <div
             data-sheet-header
             className={cn(
-                "flex shrink-0 items-start justify-between gap-3 border-b border-border-subtle px-5 py-4",
+                "flex shrink-0 items-start justify-between gap-compact border-b border-border-subtle px-5 py-4",
                 className,
             )}
             {...rest}
@@ -298,7 +298,7 @@ function Footer({ className, ...rest }: HTMLAttributes<HTMLDivElement>) {
         <div
             data-sheet-footer
             className={cn(
-                "flex shrink-0 items-center justify-end gap-2 border-t border-border-subtle px-5 py-3",
+                "flex shrink-0 items-center justify-end gap-tight border-t border-border-subtle px-5 py-3",
                 className,
             )}
             {...rest}

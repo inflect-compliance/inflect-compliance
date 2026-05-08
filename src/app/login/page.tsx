@@ -164,7 +164,7 @@ function LoginForm() {
             <div className="relative w-full max-w-md">
                 {/* Logo */}
                 <div className="text-center mb-8 animate-fadeIn">
-                    <div className="inline-flex items-center gap-2 mb-2">
+                    <div className="inline-flex items-center gap-tight mb-2">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center">
                             <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -206,11 +206,11 @@ function LoginForm() {
                     )}
 
                     {/* OAuth Buttons */}
-                    <div className="space-y-3 mb-6">
+                    <div className="space-y-compact mb-6">
                         <button
                             onClick={() => handleOAuthSignIn('google')}
                             disabled={loading}
-                            className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-lg border border-slate-600/50 bg-slate-800/50 hover:bg-slate-700/50 transition-colors text-sm font-medium text-slate-200"
+                            className="w-full flex items-center justify-center gap-compact py-2.5 px-4 rounded-lg border border-slate-600/50 bg-slate-800/50 hover:bg-slate-700/50 transition-colors text-sm font-medium text-slate-200"
                         >
                             <svg className="w-5 h-5" viewBox="0 0 24 24">
                                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
@@ -223,7 +223,7 @@ function LoginForm() {
                         <button
                             onClick={() => handleOAuthSignIn('microsoft-entra-id')}
                             disabled={loading}
-                            className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-lg border border-slate-600/50 bg-slate-800/50 hover:bg-slate-700/50 transition-colors text-sm font-medium text-slate-200"
+                            className="w-full flex items-center justify-center gap-compact py-2.5 px-4 rounded-lg border border-slate-600/50 bg-slate-800/50 hover:bg-slate-700/50 transition-colors text-sm font-medium text-slate-200"
                         >
                             <svg className="w-5 h-5" viewBox="0 0 21 21">
                                 <rect x="1" y="1" width="9" height="9" fill="#F25022" />
@@ -255,7 +255,7 @@ function LoginForm() {
                                 `input[type="email"]` / `button[type="submit"]`
                                 lookups. Don't drop this id without updating
                                 tests/e2e/e2e-utils.ts. */}
-                            <form id="credentials-form" onSubmit={handleCredentialsSubmit} method="post" action="#" className="space-y-4">
+                            <form id="credentials-form" onSubmit={handleCredentialsSubmit} method="post" action="#" className="space-y-default">
                                 {mode === 'register' && (
                                     <>
                                         <div>
@@ -306,7 +306,7 @@ function LoginForm() {
                                 ) : (
                                     <form
                                         onSubmit={handleResendVerification}
-                                        className="flex items-center gap-2"
+                                        className="flex items-center gap-tight"
                                     >
                                         <input
                                             type="email"

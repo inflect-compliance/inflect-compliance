@@ -164,14 +164,14 @@ export default function FrameworkDetailPage() {
 
             {/* Packs Tab */}
             {activeTab === 'packs' && (
-                <div className="space-y-4" id="packs-panel">
+                <div className="space-y-default" id="packs-panel">
                     {packs.map((p: any) => (
                         <div key={p.id} className="glass-card">
                             <div className="flex items-start justify-between">
                                 <div>
                                     <Heading level={2}>{p.name}</Heading>
                                     {p.description && <p className="text-sm text-content-muted mt-1">{p.description}</p>}
-                                    <div className="flex items-center gap-3 mt-2 text-xs text-content-subtle">
+                                    <div className="flex items-center gap-compact mt-2 text-xs text-content-subtle">
                                         <span>{p._count?.templateLinks || 0} templates</span>
                                         {p.version && <span>v{p.version}</span>}
                                     </div>
@@ -196,9 +196,9 @@ export default function FrameworkDetailPage() {
 
             {/* Coverage Tab */}
             {activeTab === 'coverage' && coverage && (
-                <div className="space-y-4" id="coverage-panel">
+                <div className="space-y-default" id="coverage-panel">
                     {/* Summary cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-default">
                         <div className="glass-card text-center">
                             <div className="text-3xl font-bold text-content-emphasis">{coverage.total}</div>
                             <div className="text-xs text-content-muted mt-1">Total Requirements</div>
@@ -233,7 +233,7 @@ export default function FrameworkDetailPage() {
                     {coverage.bySection?.length > 0 && (
                         <div className="glass-card">
                             <Heading level={3} className="mb-3">Coverage by Section</Heading>
-                            <div className="space-y-3">
+                            <div className="space-y-compact">
                                 {coverage.bySection.map((s: any) => (
                                     <div key={s.section}>
                                         <div className="flex items-center justify-between text-xs mb-1">
@@ -266,7 +266,7 @@ export default function FrameworkDetailPage() {
                             </Heading>
                             <div className="space-y-1 max-h-64 overflow-y-auto">
                                 {coverage.unmappedRequirements.map((r: any, i: number) => (
-                                    <div key={i} className="flex items-center gap-3 px-3 py-1.5 rounded-md hover:bg-bg-elevated/20 text-sm">
+                                    <div key={i} className="flex items-center gap-compact px-3 py-1.5 rounded-md hover:bg-bg-elevated/20 text-sm">
                                         <span className="w-2 h-2 rounded-full bg-border-emphasis flex-shrink-0" />
                                         <code className="text-xs text-content-subtle font-mono w-16 sm:w-28 flex-shrink-0 truncate">{r.code}</code>
                                         <span className="text-content-muted">{r.title}</span>

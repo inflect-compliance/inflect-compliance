@@ -49,7 +49,7 @@ beforeEach(() => {
 function TaskDetailHeaderHarness({ taskKey }: { taskKey: string }) {
     return (
         <Providers>
-            <div className="flex gap-2 mt-1 flex-wrap items-center">
+            <div className="flex gap-tight mt-1 flex-wrap items-center">
                 {taskKey && (
                     <CopyText
                         value={taskKey}
@@ -108,7 +108,7 @@ describe('Task detail header — task.key copy affordance', () => {
 function ControlDetailHeaderHarness({ code }: { code: string }) {
     return (
         <Providers>
-            <div className="flex gap-2 mt-1 flex-wrap items-center">
+            <div className="flex gap-tight mt-1 flex-wrap items-center">
                 <CopyText
                     value={code}
                     label={`Copy control code ${code}`}

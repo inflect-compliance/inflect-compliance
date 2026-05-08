@@ -26,7 +26,7 @@ export default async function SoAPage({
     }));
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-section animate-fadeIn">
             <SoAClient
                 report={JSON.parse(JSON.stringify(report))}
                 controls={JSON.parse(JSON.stringify(controls))}

@@ -102,12 +102,12 @@ export function ReportsClient({ data, soaReport, controls, tenantSlug, canEdit, 
     ]), [t]);
 
     return (
-        <ListPageShell className="gap-4">
+        <ListPageShell className="gap-default">
             <ListPageShell.Header>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-compact">
                     <div><Heading level={1} id="reports-heading">{t.title}</Heading><p className="text-content-muted text-sm">{t.subtitle}</p></div>
                     <RequirePermission resource="reports" action="export">
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-tight">
                             <Button variant="secondary" onClick={() => downloadCSV(data.riskRegister, 'risk-register.csv')} id="export-risks-btn">{t.exportRisks}</Button>
                             <UpgradeGate feature="PDF_EXPORTS">
                                 <PdfExportButton

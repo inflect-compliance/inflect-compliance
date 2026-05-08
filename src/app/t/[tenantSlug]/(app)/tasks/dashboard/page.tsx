@@ -107,7 +107,7 @@ export default function TaskDashboardPage() {
     const maxBar = Math.max(metrics.trend.created30d, metrics.trend.resolved30d, 1);
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-section animate-fadeIn">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
@@ -118,7 +118,7 @@ export default function TaskDashboardPage() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4" id="dashboard-metrics">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-default" id="dashboard-metrics">
                 <div className="glass-card p-4 text-center">
                     <div className="text-3xl font-bold text-content-emphasis">{metrics.total}</div>
                     <div className="text-xs text-content-muted mt-1">Total Tasks</div>
@@ -148,7 +148,7 @@ export default function TaskDashboardPage() {
                             <Link
                                 key={task.id}
                                 href={tenantHref(`/tasks/${task.id}`)}
-                                className="flex items-center gap-3 p-2 rounded-lg hover:bg-bg-elevated/30 transition text-sm"
+                                className="flex items-center gap-compact p-2 rounded-lg hover:bg-bg-elevated/30 transition text-sm"
                             >
                                 <span className="font-mono text-xs text-content-subtle w-16 truncate">{task.key}</span>
                                 <span className="flex-1 text-content-emphasis truncate">{task.title}</span>
@@ -165,7 +165,7 @@ export default function TaskDashboardPage() {
             </div>
 
             {/* Breakdown + Trend */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-default">
                 {/* By Status — Epic 59: StatusBreakdown primitive. */}
                 <div className="glass-card p-4">
                     <Heading level={3} className="mb-3">By Status</Heading>
@@ -207,7 +207,7 @@ export default function TaskDashboardPage() {
                 {/* 30-Day Trend */}
                 <div className="glass-card p-4">
                     <Heading level={3} className="mb-3">30-Day Trend</Heading>
-                    <div className="flex items-end gap-4 h-24 mt-4">
+                    <div className="flex items-end gap-default h-24 mt-4">
                         <div className="flex-1 flex flex-col items-center gap-1">
                             <div className="w-full bg-bg-info rounded-t" style={{ height: `${(metrics.trend.created30d / maxBar) * 80}px` }}>
                                 <div className="w-full h-full bg-bg-info rounded-t" />
@@ -229,7 +229,7 @@ export default function TaskDashboardPage() {
             {/* By Type */}
             <div className="glass-card p-4">
                 <Heading level={3} className="mb-3">By Type</Heading>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-compact">
                     {Object.entries(TYPE_LABELS).map(([key, label]) => (
                         <div key={key} className="px-3 py-2 rounded-lg bg-bg-default/50 border border-border-default/50 text-xs">
                             <span className="text-content-muted">{label}: </span>
@@ -243,12 +243,12 @@ export default function TaskDashboardPage() {
             {metrics.topControls && metrics.topControls.length > 0 && (
                 <div className="glass-card p-4" id="top-controls-section">
                     <Heading level={3} className="mb-3"><AppIcon name="controls" size={14} className="inline-block mr-1" /> Top Controls with Open Tasks</Heading>
-                    <div className="space-y-2">
+                    <div className="space-y-tight">
                         {metrics.topControls.map((ctrl) => (
                             <Link
                                 key={ctrl.controlId}
                                 href={tenantHref(`/controls/${ctrl.controlId}`)}
-                                className="flex items-center gap-3 p-2 rounded-lg hover:bg-bg-elevated/30 transition text-sm"
+                                className="flex items-center gap-compact p-2 rounded-lg hover:bg-bg-elevated/30 transition text-sm"
                             >
                                 <span className="font-mono text-xs text-content-subtle w-20 truncate">{ctrl.code}</span>
                                 <span className="flex-1 text-content-emphasis truncate">{ctrl.name}</span>
@@ -263,11 +263,11 @@ export default function TaskDashboardPage() {
             {metrics.topLinkedEntities && metrics.topLinkedEntities.length > 0 && (
                 <div className="glass-card p-4" id="top-linked-entities-section">
                     <Heading level={3} className="mb-3"><Link2 size={14} className="inline-block mr-1" /> Top Assets & Risks with Open Tasks</Heading>
-                    <div className="space-y-2">
+                    <div className="space-y-tight">
                         {metrics.topLinkedEntities.map((entity) => (
                             <div
                                 key={`${entity.entityType}:${entity.entityId}`}
-                                className="flex items-center gap-3 p-2 rounded-lg bg-bg-default/30 text-sm"
+                                className="flex items-center gap-compact p-2 rounded-lg bg-bg-default/30 text-sm"
                             >
                                 <StatusBadge variant={entity.entityType === 'ASSET' ? 'info' : 'warning'}>
                                     {entity.entityType}
@@ -284,12 +284,12 @@ export default function TaskDashboardPage() {
             {overdueTasks.length > 0 && (
                 <div className="glass-card p-4" id="overdue-tasks-section">
                     <Heading level={3} className="mb-3 text-content-error"><AlertOctagon size={14} className="inline-block mr-1" /> Overdue Tasks</Heading>
-                    <div className="space-y-2">
+                    <div className="space-y-tight">
                         {overdueTasks.slice(0, 10).map((task: any) => (
                             <Link
                                 key={task.id}
                                 href={tenantHref(`/tasks/${task.id}`)}
-                                className="flex items-center gap-3 p-2 rounded-lg hover:bg-bg-elevated/30 transition text-sm"
+                                className="flex items-center gap-compact p-2 rounded-lg hover:bg-bg-elevated/30 transition text-sm"
                             >
                                 <span className="font-mono text-xs text-content-subtle">{task.key}</span>
                                 <span className="flex-1 text-content-emphasis truncate">{task.title}</span>

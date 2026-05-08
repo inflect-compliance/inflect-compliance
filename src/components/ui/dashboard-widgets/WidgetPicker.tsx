@@ -311,7 +311,7 @@ export function WidgetPicker({
                             {WIDGET_TYPES.map((opt) => (
                                 <div
                                     key={opt.type}
-                                    className="flex items-start gap-3 rounded-md border border-border-subtle p-3 hover:border-border-default"
+                                    className="flex items-start gap-compact rounded-md border border-border-subtle p-3 hover:border-border-default"
                                 >
                                     <RadioGroupItem
                                         value={opt.type}
@@ -369,7 +369,7 @@ export function WidgetPicker({
                                     setKpiFormat(v as 'number' | 'percent')
                                 }
                                 data-testid="widget-picker-kpi-format"
-                                className="flex gap-4"
+                                className="flex gap-default"
                             >
                                 {[
                                     { value: 'number', label: 'Number' },
@@ -377,7 +377,7 @@ export function WidgetPicker({
                                 ].map((opt) => (
                                     <div
                                         key={opt.value}
-                                        className="flex items-center gap-2"
+                                        className="flex items-center gap-tight"
                                     >
                                         <RadioGroupItem
                                             value={opt.value}
@@ -422,7 +422,7 @@ export function WidgetPicker({
 
                     {type === 'DONUT' && (
                         <FormField label="Options">
-                            <label className="flex items-center gap-2 text-sm text-content-emphasis">
+                            <label className="flex items-center gap-tight text-sm text-content-emphasis">
                                 <input
                                     type="checkbox"
                                     checked={showLegend}

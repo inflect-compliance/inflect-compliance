@@ -50,10 +50,10 @@ export default async function AdminPage({
     }
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-section animate-fadeIn">
             <div className="flex items-center justify-between">
                 <Heading level={1}>{t('title')}</Heading>
-                <div className="flex items-center gap-3 glass-card px-4 py-2" id="admin-theme-section">
+                <div className="flex items-center gap-compact glass-card px-4 py-2" id="admin-theme-section">
                     <Palette className="w-4 h-4 text-content-muted" />
                     <span className="text-sm text-content-muted">Theme</span>
                     <ThemeToggle id="admin-theme-toggle" />
@@ -61,12 +61,12 @@ export default async function AdminPage({
             </div>
 
             {/* Navigation links — server-rendered, no JS needed */}
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-tight flex-wrap">
                 {/* Tab buttons are rendered inside the client island below */}
             </div>
 
             {/* Navigation pills — pure server-rendered links */}
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-tight flex-wrap">
                 <Link
                     href={tenantHref('/admin/members')}
                     className={buttonVariants({ variant: 'secondary' })}

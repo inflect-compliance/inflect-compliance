@@ -85,15 +85,15 @@ export default function NotificationSettingsPage() {
     if (!settings) return <div className="p-8"><div className="h-6 w-full sm:w-48 bg-bg-elevated rounded animate-pulse" /></div>;
 
     return (
-        <div className="space-y-6 animate-fadeIn">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex flex-wrap items-center gap-3">
+        <div className="space-y-section animate-fadeIn">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-default">
+                <div className="flex flex-wrap items-center gap-compact">
                     <Heading level={1}>Email Notifications</Heading>
                     <StatusBadge variant={settings.enabled ? 'success' : 'warning'}>
                         {settings.enabled ? 'Enabled' : 'Disabled'}
                     </StatusBadge>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-compact">
                     <Button
                         variant="secondary"
                         size="sm"
@@ -131,7 +131,7 @@ export default function NotificationSettingsPage() {
             {tab === 'settings' ? (
                 <div className="glass-card p-6 space-y-5">
                     {/* Enable / Disable */}
-                    <label className="flex items-center gap-3 cursor-pointer">
+                    <label className="flex items-center gap-compact cursor-pointer">
                         <input
                             type="checkbox"
                             checked={settings.enabled}
@@ -179,7 +179,7 @@ export default function NotificationSettingsPage() {
                     </div>
 
                     {/* Save */}
-                    <div className="flex items-center gap-3 pt-2">
+                    <div className="flex items-center gap-compact pt-2">
                         <Button variant="primary" onClick={handleSave} disabled={saving} loading={saving}>
                             {saving ? 'Saving...' : 'Save Settings'}
                         </Button>

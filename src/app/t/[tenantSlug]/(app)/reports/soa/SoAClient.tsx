@@ -174,13 +174,13 @@ export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientPr
     return (
         <>
             {/* Header */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-compact">
                 <div>
                     <Heading level={1} id="soa-heading">Statement of Applicability</Heading>
                     <p className="text-content-muted text-sm">ISO 27001:2022 Annex A — {summary.total} requirements</p>
                 </div>
                 <RequirePermission resource="reports" action="export">
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-tight">
                         <a
                             href={`/api/t/${tenantSlug}/reports/soa/export.csv`}
                             className={buttonVariants({ variant: 'secondary' })}
@@ -206,7 +206,7 @@ export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientPr
             </div>
 
             {/* Summary cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-compact">
                 <SummaryCard label="Total" value={summary.total} icon={<FileText className="w-4 h-4 text-content-muted" />} />
                 <SummaryCard label="Applicable" value={summary.applicable} icon={<CheckCircle2 className="w-4 h-4 text-content-success" />} />
                 <SummaryCard label="Not Applicable" value={summary.notApplicable} icon={<XCircle className="w-4 h-4 text-content-muted" />} />
@@ -218,7 +218,7 @@ export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientPr
             {/* Readiness banner */}
             {(summary.unmapped > 0 || summary.missingJustification > 0) && (
                 <div className="rounded-xl border border-border-error bg-bg-error px-4 py-3 flex items-center justify-between" id="soa-readiness-banner">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-tight">
                         <AlertTriangle className="w-4 h-4 text-content-error flex-shrink-0" />
                         <div className="text-xs text-content-error">
                             <span className="font-semibold">SoA not audit-ready:</span>
@@ -238,7 +238,7 @@ export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientPr
             )}
 
             {/* Filters */}
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-tight">
                 <div className="relative flex-1 min-w-[180px] max-w-sm">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-content-subtle" />
                     <input
@@ -520,11 +520,11 @@ function SoARow({
             {expanded && entry.mappedControls.length > 0 && (
                 <tr className="bg-bg-default/40">
                     <td colSpan={canEdit ? 7 : 6} className="p-0">
-                        <div className="px-6 py-3 space-y-2">
+                        <div className="px-6 py-3 space-y-tight">
                             <div className="text-[10px] uppercase tracking-wider text-content-subtle font-semibold">Mapped Controls</div>
                             {entry.mappedControls.map(c => (
                                 <div key={c.controlId} className="flex items-center justify-between text-xs bg-bg-page/40 rounded-lg px-3 py-2">
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-compact">
                                         <a
                                             href={`/t/${tenantSlug}/controls/${c.controlId}`}
                                             className="font-mono text-[var(--brand-default)] hover:underline"
@@ -538,7 +538,7 @@ function SoARow({
                                         </StatusBadgePrimitive>
                                         <StatusBadge value={c.status} />
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-tight">
                                         {c.justification && (
                                             <span className="text-content-muted max-w-[200px] truncate" title={c.justification}>
                                                 {c.justification}

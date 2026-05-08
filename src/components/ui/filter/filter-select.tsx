@@ -500,7 +500,7 @@ function FilterButton({
   return (
     <Command.Item
       className={cn(
-        "flex cursor-pointer items-center gap-3 whitespace-nowrap rounded-md px-3 py-2 text-left text-sm",
+        "flex cursor-pointer items-center gap-compact whitespace-nowrap rounded-md px-3 py-2 text-left text-sm",
         "transition-colors duration-100 ease-out motion-reduce:transition-none",
         "active:scale-[0.99] motion-reduce:active:scale-100",
         "text-content-default",

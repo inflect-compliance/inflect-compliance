@@ -143,7 +143,7 @@ export function AccessReviewsClient({ tenantSlug, initialReviews }: Props) {
                                         ? 'brand'
                                         : 'neutral';
                         return (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-tight">
                                 <ProgressBar
                                     value={pct}
                                     variant={variant}
@@ -300,7 +300,7 @@ function CreateCampaignButton({
                 <Modal showModal={open} setShowModal={setOpen}>
                     <Modal.Header title="New access review campaign" />
                     <Modal.Body>
-                        <div className="space-y-4">
+                        <div className="space-y-default">
                             <FormField label="Name" required>
                                 <input
                                     className="input"
@@ -329,13 +329,13 @@ function CreateCampaignButton({
                                             v as 'ALL_USERS' | 'ADMIN_ONLY',
                                         )
                                     }
-                                    className="flex flex-col gap-2"
+                                    className="flex flex-col gap-tight"
                                 >
-                                    <label className="flex items-center gap-2 text-sm">
+                                    <label className="flex items-center gap-tight text-sm">
                                         <RadioGroupItem value="ALL_USERS" />
                                         All users
                                     </label>
-                                    <label className="flex items-center gap-2 text-sm">
+                                    <label className="flex items-center gap-tight text-sm">
                                         <RadioGroupItem value="ADMIN_ONLY" />
                                         Owners + admins only
                                     </label>

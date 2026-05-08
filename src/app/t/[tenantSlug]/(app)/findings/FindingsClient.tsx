@@ -202,7 +202,7 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
     ]), [t]);
 
     return (
-        <ListPageShell className="gap-6">
+        <ListPageShell className="gap-section">
             <ListPageShell.Header>
                 <div className="flex items-center justify-between">
                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -212,8 +212,8 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
             </ListPageShell.Header>
 
             {showForm && (
-                <form onSubmit={createFinding} className="glass-card p-6 space-y-4 animate-fadeIn">
-                    <div className="grid grid-cols-2 gap-4">
+                <form onSubmit={createFinding} className="glass-card p-6 space-y-default animate-fadeIn">
+                    <div className="grid grid-cols-2 gap-default">
                         <div><label className="input-label">{t.findingTitle} *</label><input className="input" required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} /></div>
                         <div>
                             <label className="input-label">{t.severity}</label>
@@ -292,7 +292,7 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
                             />
                         </div>
                     </div>
-                    <div className="flex gap-2"><Button type="submit" variant="primary">{t.createFinding}</Button><Button variant="secondary" onClick={() => setShowForm(false)}>{t.cancel}</Button></div>
+                    <div className="flex gap-tight"><Button type="submit" variant="primary">{t.createFinding}</Button><Button variant="secondary" onClick={() => setShowForm(false)}>{t.cancel}</Button></div>
                 </form>
             )}
 

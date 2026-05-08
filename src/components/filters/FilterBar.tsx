@@ -49,7 +49,7 @@ export function FilterBar({
 
     return (
         <div className={`glass-card p-4 ${className}`}>
-            <div className="flex flex-wrap gap-3 items-center">
+            <div className="flex flex-wrap gap-compact items-center">
                 {/* Search input */}
                 <div className="flex-1 min-w-[200px]">
                     <input

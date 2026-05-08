@@ -25,7 +25,7 @@ export default async function ClausesPage({
     const clauses = await listClauses(ctx);
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-section animate-fadeIn">
             <Heading level={1}>{t('title')}</Heading>
             <p className="text-content-muted text-sm">{t('subtitle')}</p>
 

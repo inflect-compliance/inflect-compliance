@@ -217,7 +217,7 @@ export function OrgSidebarContent({ user, onLogout, onNavClick }: OrgSidebarCont
 
             {/* User */}
             <div className="p-3 border-t border-border-subtle">
-                <div className="mb-2 flex items-start justify-between gap-2">
+                <div className="mb-2 flex items-start justify-between gap-tight">
                     <div className="min-w-0">
                         <p className="text-xs font-medium text-content-default truncate">{user.name}</p>
                         <p className="text-xs text-content-muted truncate">{org.orgName}</p>

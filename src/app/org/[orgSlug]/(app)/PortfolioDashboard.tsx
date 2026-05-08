@@ -177,9 +177,9 @@ export function PortfolioDashboard({
     );
 
     return (
-        <div className="space-y-4" data-portfolio-dashboard>
+        <div className="space-y-default" data-portfolio-dashboard>
             {/* Header bar */}
-            <header className="flex items-end justify-between gap-4 flex-wrap">
+            <header className="flex items-end justify-between gap-default flex-wrap">
                 <div>
                     <Heading level={1}>
                         Portfolio Overview
@@ -205,7 +205,7 @@ export function PortfolioDashboard({
                         )}
                     </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-tight">
                     {canEdit && !editMode && (
                         <Button
                             type="button"

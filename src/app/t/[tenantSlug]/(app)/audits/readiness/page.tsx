@@ -101,8 +101,8 @@ export default async function ReadinessOverviewPage({
     const { cycles, scoresByCycleId } = await getReadinessOverview(ctx);
 
     return (
-        <div className="space-y-6 animate-fadeIn">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="space-y-section animate-fadeIn">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-compact">
                 <div>
                     <Heading level={1} id="readiness-heading">
                         Audit Readiness
@@ -145,7 +145,7 @@ export default async function ReadinessOverviewPage({
                     </Link>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-section">
                     {(cycles as CycleListItem[]).map((c) => {
                         const meta = FW_META[c.frameworkKey] || { ...FW_DEFAULT, label: c.frameworkKey };
                         const FwIcon = meta.icon;
@@ -157,7 +157,7 @@ export default async function ReadinessOverviewPage({
                                 className="glass-card p-6 hover:bg-bg-elevated/30 transition group"
                                 id={`readiness-card-${c.id}`}
                             >
-                                <div className="flex items-start gap-6">
+                                <div className="flex items-start gap-section">
                                     <div className="flex-shrink-0">
                                         {sc ? (
                                             <ScoreRing score={sc.score} />
@@ -168,7 +168,7 @@ export default async function ReadinessOverviewPage({
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-1">
+                                        <div className="flex items-center gap-tight mb-1">
                                             <span
                                                 className={`w-8 h-8 rounded-lg bg-gradient-to-br ${meta.color} flex items-center justify-center text-sm`}
                                             >

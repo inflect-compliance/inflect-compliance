@@ -182,14 +182,14 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
     ]), [tenantHref, hydratedNow]);
 
     return (
-        <ListPageShell className="gap-6">
+        <ListPageShell className="gap-section">
             <ListPageShell.Header>
                 <div className="flex items-center justify-between">
                     <div>
                         <Heading level={1}>Vendor Register</Heading>
                         <p className="text-content-muted text-sm">{vendors.length} vendors</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-tight">
                         <Link href={tenantHref('/vendors/dashboard')} className={cn(buttonVariants({ variant: 'secondary', size: 'md' }))} id="vendor-dashboard-btn">
                             Dashboard
                         </Link>

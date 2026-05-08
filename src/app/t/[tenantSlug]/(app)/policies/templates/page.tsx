@@ -70,7 +70,7 @@ export default function TemplatesPage() {
     };
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-section animate-fadeIn">
             <div className="flex items-center justify-between">
                 <div>
                     <Heading level={1}>Policy Templates</Heading>
@@ -80,7 +80,7 @@ export default function TemplatesPage() {
             </div>
 
             {/* Filters */}
-            <div className="glass-card p-4 flex flex-wrap gap-3 items-center">
+            <div className="glass-card p-4 flex flex-wrap gap-compact items-center">
                 <input
                     type="text" className="input flex-1 min-w-[200px]" placeholder="Search templates..."
                     value={search} onChange={e => setSearch(e.target.value)} id="template-search"
@@ -119,12 +119,12 @@ export default function TemplatesPage() {
                     )}
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="template-grid">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-default" id="template-grid">
                     {filtered.map(tpl => (
                         <Card className="flex flex-col justify-between hover:ring-1 hover:ring-[var(--brand-default)]/30 transition" key={tpl.id}>
                             <div>
                                 <Heading level={3} className="mb-1">{tpl.title}</Heading>
-                                <div className="flex gap-2 mb-2">
+                                <div className="flex gap-tight mb-2">
                                     {tpl.category && <StatusBadge variant="neutral">{tpl.category}</StatusBadge>}
                                     {tpl.language && <span className="text-xs text-content-subtle">{tpl.language.toUpperCase()}</span>}
                                 </div>

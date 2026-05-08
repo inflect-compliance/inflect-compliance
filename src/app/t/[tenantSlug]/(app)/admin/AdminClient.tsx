@@ -80,7 +80,7 @@ export function AdminClient({ auditLog, tenantSlug, translations: t }: AdminClie
     ]), [t]);
 
     return (
-        <ListPageShell className="gap-4">
+        <ListPageShell className="gap-default">
             <ListPageShell.Filters>
                 {/* Epic 60 — ToggleGroup replaces the hand-rolled tab bar. */}
                 <ToggleGroup
@@ -108,7 +108,7 @@ export function AdminClient({ auditLog, tenantSlug, translations: t }: AdminClie
                 ) : (
                     <div className="glass-card p-6">
                         <p className="text-sm text-content-muted mb-4">{t.templateDescription}</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-compact">
                             {templateKeys.map(key => (
                                 <div key={key} className="p-4 border border-border-default rounded-lg hover:border-[var(--brand-default)] transition cursor-pointer">
                                     <span className="text-sm font-medium text-content-emphasis">{t.templateLabels[key]}</span>

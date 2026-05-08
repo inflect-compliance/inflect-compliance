@@ -68,7 +68,7 @@ export default function ProgressCard({
             <Heading level={3} className="mb-3">{label}</Heading>
 
             {/* Main progress bar */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-compact">
                 <div className="flex-1 bg-bg-subtle rounded-full h-3 overflow-hidden">
                     {segments && segments.length > 0 ? (
                         // Stacked segments

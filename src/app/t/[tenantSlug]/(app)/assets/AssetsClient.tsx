@@ -165,14 +165,14 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
     ]), [t]);
 
     return (
-        <ListPageShell className="gap-6">
+        <ListPageShell className="gap-section">
             <ListPageShell.Header>
                 <div className="flex items-center justify-between">
                     <div>
                         <Heading level={1}>{t.title}</Heading>
                         <p className="text-content-muted text-sm">{assets.length} assets</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-tight">
                         <Link href={tenantHref('/coverage')} className={buttonVariants({ variant: 'secondary' })}>Coverage</Link>
                         <Button variant="primary" onClick={() => setShowForm(!showForm)}>{t.addAsset}</Button>
                     </div>
@@ -188,8 +188,8 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
             </ListPageShell.Filters>
 
             {showForm && (
-                <form onSubmit={createAsset} className="glass-card p-6 space-y-4 animate-fadeIn">
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <form onSubmit={createAsset} className="glass-card p-6 space-y-default animate-fadeIn">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-default">
                         <div><label className="input-label">{t.name} *</label><input className="input" required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
                         <div><label className="input-label">{t.type}</label><Combobox hideSearch selected={ASSET_TYPE_OPTIONS.find(o => o.value === form.type) ?? null} setSelected={(opt) => setForm(f => ({ ...f, type: opt?.value ?? 'SYSTEM' }))} options={ASSET_TYPE_OPTIONS} matchTriggerWidth /></div>
                         <div><label className="input-label">{t.classification}</label><input className="input" value={form.classification} onChange={e => setForm(f => ({ ...f, classification: e.target.value }))} placeholder={t.classificationPlaceholder} /></div>
@@ -238,7 +238,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                             />
                         </div>
                     </div>
-                    <div className="flex gap-2"><Button type="submit" variant="primary">{t.createAsset}</Button><Button type="button" variant="secondary" onClick={() => setShowForm(false)}>{t.cancel}</Button></div>
+                    <div className="flex gap-tight"><Button type="submit" variant="primary">{t.createAsset}</Button><Button type="button" variant="secondary" onClick={() => setShowForm(false)}>{t.cancel}</Button></div>
                 </form>
             )}
 

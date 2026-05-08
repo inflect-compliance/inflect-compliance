@@ -37,7 +37,7 @@ export default async function AssetsPage({
     const assets = await listAssets(ctx, Object.keys(filters).length > 0 ? filters : undefined);
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-section animate-fadeIn">
             <AssetsClient
                 initialAssets={JSON.parse(JSON.stringify(assets))}
                 initialFilters={filters}

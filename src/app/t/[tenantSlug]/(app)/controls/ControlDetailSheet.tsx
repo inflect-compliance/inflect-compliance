@@ -325,7 +325,7 @@ export function ControlDetailSheet({
                         <Sheet.Body>
                             {/* Read-only summary */}
                             <section
-                                className="mb-5 grid grid-cols-2 gap-3 rounded-lg border border-border-subtle bg-bg-subtle px-4 py-3"
+                                className="mb-5 grid grid-cols-2 gap-compact rounded-lg border border-border-subtle bg-bg-subtle px-4 py-3"
                                 data-testid="control-sheet-summary"
                             >
                                 {summary.map((row) => (
@@ -356,7 +356,7 @@ export function ControlDetailSheet({
                                 </div>
                             )}
 
-                            <fieldset className="space-y-4" disabled={!canWrite || mutation.isPending}>
+                            <fieldset className="space-y-default" disabled={!canWrite || mutation.isPending}>
                                 <div>
                                     <label
                                         className="mb-1 block text-sm text-content-default"
@@ -406,7 +406,7 @@ export function ControlDetailSheet({
                                         onChange={(e) => update('intent', e.target.value)}
                                     />
                                 </div>
-                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
                                     <div>
                                         <label
                                             className="mb-1 block text-sm text-content-default"
@@ -483,7 +483,7 @@ export function ControlDetailSheet({
                             >
                                 Open full detail →
                             </Link>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-tight">
                                 <Sheet.Close asChild>
                                     <Button
                                         type="button"

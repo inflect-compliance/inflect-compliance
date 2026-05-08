@@ -91,7 +91,7 @@ export function VendorTemplatesIndexClient() {
     }
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-section animate-fadeIn">
             <header>
                 <Heading level={1} id="vendor-templates-title">
                     Vendor questionnaire templates
@@ -108,7 +108,7 @@ export function VendorTemplatesIndexClient() {
                     <Heading level={3} className="mb-3">
                         Create a new template
                     </Heading>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-compact items-end">
                         <div>
                             <label
                                 className="text-xs text-content-muted block mb-1"
@@ -195,7 +195,7 @@ export function VendorTemplatesIndexClient() {
                                         {t._count.questions} question(s)
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-compact">
                                     <StatusBadge variant={t.isPublished ? 'success' : 'warning'} size="sm">
                                         {t.isPublished ? 'Published' : 'Draft'}
                                     </StatusBadge>

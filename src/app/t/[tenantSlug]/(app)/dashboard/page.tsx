@@ -81,7 +81,7 @@ export default async function DashboardPage({
         >
             <Suspense
                 fallback={
-                    <Card className="space-y-3">
+                    <Card className="space-y-compact">
                         <Skeleton className="h-4 w-full sm:w-32" />
                     </Card>
                 }

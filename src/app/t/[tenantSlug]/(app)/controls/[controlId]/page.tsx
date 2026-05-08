@@ -841,14 +841,14 @@ export default function ControlDetailPage() {
         >
             {/* Applicability modal */}
             {showApplicability && permissions.canWrite && (
-                <div className="glass-card p-4 space-y-3">
+                <div className="glass-card p-4 space-y-compact">
                     <Heading level={3}>Set Applicability</Heading>
-                    <div className="flex gap-4">
-                        <label className="flex items-center gap-2 text-sm text-content-default">
+                    <div className="flex gap-default">
+                        <label className="flex items-center gap-tight text-sm text-content-default">
                             <input type="radio" value="APPLICABLE" checked={appChoice === 'APPLICABLE'} onChange={() => setAppChoice('APPLICABLE')} />
                             Applicable
                         </label>
-                        <label className="flex items-center gap-2 text-sm text-content-default">
+                        <label className="flex items-center gap-tight text-sm text-content-default">
                             <input type="radio" value="NOT_APPLICABLE" checked={appChoice === 'NOT_APPLICABLE'} onChange={() => setAppChoice('NOT_APPLICABLE')} />
                             Not Applicable
                         </label>
@@ -864,7 +864,7 @@ export default function ControlDetailPage() {
 
             {/* Tab content — tab bar is rendered by EntityDetailLayout */}
             {tab === 'overview' && (
-                <div className="glass-card p-6 space-y-4">
+                <div className="glass-card p-6 space-y-default">
                     {/* Overview header with Edit button */}
                     {permissions.canWrite && (
                         <div className="flex justify-end -mt-1 -mb-2">
@@ -879,7 +879,7 @@ export default function ControlDetailPage() {
                             </Button>
                         </div>
                     )}
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-2 gap-section">
                         <div>
                             <span className="text-xs text-content-subtle uppercase">Description</span>
                             <p className="text-sm text-content-default mt-1">{control.description || 'No description.'}</p>
@@ -931,7 +931,7 @@ export default function ControlDetailPage() {
                     <div className="border-t border-border-default pt-4 mt-4">
                         <div className="flex items-center justify-between mb-2">
                             <Heading level={3}>Automation</Heading>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-tight">
                                 {/* Sync Now button — only when automationKey is set */}
                                 {control.automationKey && permissions.canWrite && !editingAutomation && (
                                     <Tooltip content="Manually trigger a sync check against the source system.">
@@ -962,7 +962,7 @@ export default function ControlDetailPage() {
 
                         {/* Sync result flash */}
                         {syncResult && (
-                            <div className={`mb-3 p-2.5 rounded text-xs flex items-start gap-2 ${
+                            <div className={`mb-3 p-2.5 rounded text-xs flex items-start gap-tight ${
                                 syncResult.status === 'PASSED' ? 'bg-bg-success border border-border-success text-content-success'
                                 : syncResult.status === 'FAILED' || syncResult.status === 'ERROR' ? 'bg-bg-error border border-border-error text-content-error'
                                 : 'bg-bg-elevated/50 border border-border-emphasis text-content-default'
@@ -973,7 +973,7 @@ export default function ControlDetailPage() {
                         )}
 
                         {editingAutomation && permissions.canWrite ? (
-                            <div className="space-y-2">
+                            <div className="space-y-tight">
                                 <Combobox
                                     hideSearch
                                     id="evidence-source-select"
@@ -991,7 +991,7 @@ export default function ControlDetailPage() {
                                 </Button>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-default">
                                 <div>
                                     <span className="text-xs text-content-subtle">Evidence Source</span>
                                     <p className="text-sm text-content-default mt-1">{control.evidenceSource || '—'}</p>
@@ -1048,7 +1048,7 @@ export default function ControlDetailPage() {
                                 {editError}
                             </div>
                         )}
-                        <fieldset className="space-y-4" disabled={savingEdit}>
+                        <fieldset className="space-y-default" disabled={savingEdit}>
                             <div>
                                 <label htmlFor="edit-name" className="mb-1 block text-sm text-content-default">
                                     Title <span className="text-content-error">*</span>
@@ -1090,7 +1090,7 @@ export default function ControlDetailPage() {
                                     data-testid="edit-intent-input"
                                 />
                             </div>
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
                                 <div>
                                     <label htmlFor="edit-category" className="mb-1 block text-sm text-content-default">
                                         Category
@@ -1172,7 +1172,7 @@ export default function ControlDetailPage() {
             )}
 
             {tab === 'tasks' && (
-                <div className="space-y-4">
+                <div className="space-y-default">
                     {permissions.canWrite && (
                         <div className="flex justify-end">
                             <Button variant="primary" onClick={() => setShowTaskForm(!showTaskForm)} id="create-task-btn">
@@ -1181,7 +1181,7 @@ export default function ControlDetailPage() {
                         </div>
                     )}
                     {showTaskForm && permissions.canWrite && (
-                        <form onSubmit={createTask} className="glass-card p-4 space-y-3">
+                        <form onSubmit={createTask} className="glass-card p-4 space-y-compact">
                             <input type="text" className="input w-full" placeholder="Task title *" value={taskTitle} onChange={e => setTaskTitle(e.target.value)} required id="task-title-input" />
                             <textarea className="input w-full" rows={2} placeholder="Description (optional)" value={taskDesc} onChange={e => setTaskDesc(e.target.value)} id="task-desc-input" />
                             {/* Epic 58 — shared DatePicker. `taskDue`
@@ -1248,9 +1248,9 @@ export default function ControlDetailPage() {
             )}
 
             {tab === 'evidence' && (
-                <div className="space-y-4">
+                <div className="space-y-default">
                     {permissions.canWrite && (
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end gap-tight">
                             <Button variant="primary" onClick={() => { setShowFileUpload(!showFileUpload); setShowEvidenceForm(false); }} id="upload-evidence-btn">
                                 Upload Evidence
                             </Button>
@@ -1261,7 +1261,7 @@ export default function ControlDetailPage() {
                     )}
                     {/* File upload form for this control */}
                     {showFileUpload && permissions.canWrite && (
-                        <form onSubmit={handleFileUpload} className="glass-card p-4 space-y-3" id="control-upload-form">
+                        <form onSubmit={handleFileUpload} className="glass-card p-4 space-y-compact" id="control-upload-form">
                             <Heading level={3}>Upload Evidence for {control.name}</Heading>
                             <input
                                 ref={fileUploadRef}
@@ -1304,7 +1304,7 @@ export default function ControlDetailPage() {
                         </form>
                     )}
                     {showEvidenceForm && permissions.canWrite && (
-                        <form onSubmit={linkEvidence} className="glass-card p-4 space-y-3">
+                        <form onSubmit={linkEvidence} className="glass-card p-4 space-y-compact">
                             <input type="url" className="input w-full" placeholder="Evidence URL *" value={evidenceUrl} onChange={e => setEvidenceUrl(e.target.value)} required id="evidence-url-input" />
                             <textarea className="input w-full" rows={2} placeholder="Note (optional)" value={evidenceNote} onChange={e => setEvidenceNote(e.target.value)} id="evidence-note-input" />
                             <Button type="submit" variant="primary" disabled={savingEvidence} id="submit-evidence-btn">
@@ -1370,7 +1370,7 @@ export default function ControlDetailPage() {
             )}
 
             {tab === 'mappings' && (
-                <div className="space-y-4">
+                <div className="space-y-default">
                     {permissions.canWrite && (
                         <div className="flex justify-end">
                             <Button variant="primary" onClick={() => setShowMapForm(!showMapForm)} id="map-requirement-btn">
@@ -1379,7 +1379,7 @@ export default function ControlDetailPage() {
                         </div>
                     )}
                     {showMapForm && permissions.canWrite && (
-                        <div className="glass-card p-4 space-y-3">
+                        <div className="glass-card p-4 space-y-compact">
                             <Combobox
                                 id="framework-select"
                                 selected={frameworks.map((f: FrameworkDTO) => ({ value: f.key ?? f.id ?? '', label: f.name })).find(o => o.value === selectedFramework) ?? null}
@@ -1465,7 +1465,7 @@ export default function ControlDetailPage() {
                     ) : (
                         <div className="divide-y divide-border-default/50" id="activity-feed">
                             {activity.map((ev: AuditLogEntry) => (
-                                <div key={ev.id} className="px-5 py-3 flex items-start gap-3">
+                                <div key={ev.id} className="px-5 py-3 flex items-start gap-compact">
                                     <div className="mt-0.5">
                                         <StatusBadge variant="info">{EVENT_LABELS[ev.action] || ev.action}</StatusBadge>
                                     </div>

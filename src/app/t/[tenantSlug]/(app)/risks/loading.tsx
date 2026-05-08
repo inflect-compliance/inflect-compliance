@@ -11,7 +11,7 @@ import {
  */
 export default function RisksLoading() {
     return (
-        <div role="status" aria-live="polite" className="space-y-6 animate-fadeIn" aria-busy="true" aria-label="Loading risks">
+        <div role="status" aria-live="polite" className="space-y-section animate-fadeIn" aria-busy="true" aria-label="Loading risks">
             <SkeletonPageHeader />
             <SkeletonKpiGrid count={4} />
             <SkeletonFilterToolbar />

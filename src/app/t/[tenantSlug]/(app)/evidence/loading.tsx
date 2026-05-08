@@ -9,7 +9,7 @@ import {
  */
 export default function EvidenceLoading() {
     return (
-        <div className="space-y-6 animate-fadeIn" aria-busy="true" aria-label="Loading evidence">
+        <div className="space-y-section animate-fadeIn" aria-busy="true" aria-label="Loading evidence">
             <SkeletonPageHeader />
             <SkeletonFilterToolbar />
             <SkeletonDataTable rows={8} cols={7} />

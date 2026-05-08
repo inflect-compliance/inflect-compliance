@@ -21,7 +21,7 @@ export default function MappingPage() {
     const items = tab === 'soc2' ? data.soc2 : data.nis2;
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-section animate-fadeIn">
             <div>
                 <Heading level={1}>{t('title')}</Heading>
                 <p className="text-content-muted text-sm">{t('subtitle')}</p>
@@ -39,7 +39,7 @@ export default function MappingPage() {
                 selectAction={(v) => setTab(v as 'soc2' | 'nis2')}
             />
 
-            <div className="space-y-3">
+            <div className="space-y-compact">
                 {items.map((item: any) => (
                     <Card key={item.code}>
                         <div className="flex items-center justify-between mb-2">
@@ -52,7 +52,7 @@ export default function MappingPage() {
                             </span>
                         </div>
                         <p className="text-xs text-content-muted mb-3">{item.description}</p>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-compact">
                             <div className="flex-1">
                                 {/* Epic 59 ProgressBar primitive. */}
                                 <ProgressBar

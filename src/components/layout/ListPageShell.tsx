@@ -57,7 +57,7 @@ function ListPageShellRoot({ children, className }: ListPageShellProps) {
                 // Mobile: natural document flow, no flex constraints.
                 // Desktop: flex column that fills its parent and lets
                 // children flex-1 to claim remaining height.
-                'flex flex-col gap-4',
+                'flex flex-col gap-default',
                 'md:flex-1 md:min-h-0',
                 className,
             )}

@@ -139,7 +139,7 @@ const FormField = React.forwardRef<HTMLDivElement, FormFieldProps>(
                 ref={ref}
                 className={cn(
                     isHorizontal
-                        ? "flex items-center gap-3"
+                        ? "flex items-center gap-compact"
                         : "flex flex-col gap-1.5",
                     className,
                 )}

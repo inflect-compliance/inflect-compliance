@@ -90,6 +90,32 @@ module.exports = {
                 lg: 'var(--shadow-lg)',
             },
 
+            // ── Semantic spacing scale (v2-PR-2) ──
+            // Five named tokens that replace the high-frequency raw
+            // numerics (gap-2..gap-6, space-y-2..space-y-6, etc.).
+            // The intent is to put a semantic vocabulary on top of
+            // Tailwind's numeric scale so consumers reach for purpose
+            // ("section break") instead of magnitude ("gap-6").
+            //
+            //   tight     8 px — in-row icon+text, small button gaps
+            //   compact  12 px — dense form rows, list items
+            //   default  16 px — default block separation, card padding
+            //   section  24 px — between major sections inside a page
+            //   page     40 px — between top-level page regions
+            //
+            // The default Tailwind numeric scale is left untouched —
+            // these tokens are additive. Primitive-level micro spacing
+            // (gap-1 / space-y-1 = 4 px) intentionally stays as the
+            // raw numeric since its sites are inside primitives where
+            // the exact value is part of the render contract.
+            spacing: {
+                tight: '0.5rem',
+                compact: '0.75rem',
+                default: '1rem',
+                section: '1.5rem',
+                page: '2.5rem',
+            },
+
             // ── Animations required by Dub-ported components ──
             keyframes: {
                 'slide-up-fade': {

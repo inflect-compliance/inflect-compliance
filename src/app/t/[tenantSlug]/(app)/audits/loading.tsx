@@ -9,7 +9,7 @@ import {
  */
 export default function AuditsLoading() {
     return (
-        <div role="status" aria-live="polite" className="space-y-6 animate-fadeIn" aria-busy="true" aria-label="Loading audits">
+        <div role="status" aria-live="polite" className="space-y-section animate-fadeIn" aria-busy="true" aria-label="Loading audits">
             <SkeletonPageHeader />
 
             {/* Cycles section */}

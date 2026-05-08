@@ -139,11 +139,11 @@ export function RiskTreatmentPlanCard({
 
     return (
         <section
-            className="space-y-4"
+            className="space-y-default"
             data-testid="risk-treatment-plan-card"
         >
             <header className="flex items-center justify-between">
-                <Heading level={2} className="inline-flex items-center gap-2">
+                <Heading level={2} className="inline-flex items-center gap-tight">
                     Treatment Plan
                 </Heading>
                 {canWrite && !activeSummary ? (
@@ -270,11 +270,11 @@ function ActivePlanBlock({
 
     return (
         <div
-            className="rounded border border-border-subtle p-4 space-y-3"
+            className="rounded border border-border-subtle p-4 space-y-compact"
             data-testid={`treatment-plan-block-${plan.id}`}
         >
-            <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between gap-compact">
+                <div className="flex items-center gap-tight">
                     <StatusBadge variant={STATUS_VARIANT[plan.status]}>
                         {plan.status}
                     </StatusBadge>
@@ -288,7 +288,7 @@ function ActivePlanBlock({
                         target {formatDate(plan.targetDate)}
                     </span>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-tight">
                     {canWrite && plan.status !== 'COMPLETED' ? (
                         <Button
                             variant="secondary"
@@ -309,7 +309,7 @@ function ActivePlanBlock({
                 </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-compact">
                 <ProgressBar
                     value={pct}
                     variant={pct >= 100 ? 'success' : pct >= 50 ? 'info' : 'brand'}
@@ -399,7 +399,7 @@ function MilestoneRowItem({
     });
     return (
         <li
-            className="flex items-center gap-3 py-1"
+            className="flex items-center gap-compact py-1"
             data-testid={`treatment-plan-milestone-${milestone.id}`}
         >
             <input
@@ -493,7 +493,7 @@ function CreatePlanDialog({
         <Modal showModal setShowModal={(v) => !v && onClose()}>
             <Modal.Header title="Create treatment plan" />
             <Modal.Body>
-                <div className="space-y-4">
+                <div className="space-y-default">
                     <FormField label="Strategy" required>
                         <Combobox
                             options={STRATEGY_OPTIONS}
@@ -599,7 +599,7 @@ function AddMilestoneDialog({
         <Modal showModal setShowModal={(v) => !v && onClose()}>
             <Modal.Header title="Add milestone" />
             <Modal.Body>
-                <div className="space-y-4">
+                <div className="space-y-default">
                     <FormField label="Title" required>
                         <input
                             className="input"
@@ -681,7 +681,7 @@ function CompletePlanDialog({
         <Modal showModal setShowModal={(v) => !v && onClose()}>
             <Modal.Header title="Complete treatment plan" />
             <Modal.Body>
-                <div className="space-y-4">
+                <div className="space-y-default">
                     <p className="text-sm text-content-muted">
                         Closing this plan will transition the linked risk per
                         the strategy:{' '}

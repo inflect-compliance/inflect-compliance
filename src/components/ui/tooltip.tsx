@@ -168,7 +168,7 @@ function TooltipBody({
     return (
         <div className="flex flex-col gap-1">
             {hasHeader && (
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center justify-between gap-compact">
                     {title != null && (
                         <span className="text-[13px] font-semibold text-content-emphasis">
                             {title}

@@ -110,8 +110,8 @@ function ScopePicker({
     };
 
     return (
-        <div className="space-y-3">
-            <div className="flex items-center gap-2">
+        <div className="space-y-compact">
+            <div className="flex items-center gap-tight">
                 <button
                     type="button"
                     onClick={toggleFullAccess}
@@ -138,7 +138,7 @@ function ScopePicker({
             </div>
 
             {!isFullAccess && (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-tight">
                     {Object.entries(SCOPE_GROUPS).map(([, group]) => (
                         <div key={group.label} className="bg-bg-default/40 rounded-lg p-2 space-y-1">
                             <div className="text-[10px] text-content-subtle uppercase tracking-wider font-medium">
@@ -195,9 +195,9 @@ export function KeyDisplay({ plaintext }: { plaintext: string }) {
             id="key-display"
             icon={AlertTriangle}
             title="Copy this key now — it will never be shown again!"
-            className="flex-col items-stretch space-y-2 p-4"
+            className="flex-col items-stretch space-y-tight p-4"
         >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-tight">
                 <code className="flex-1 bg-bg-page px-3 py-2 rounded text-sm font-mono text-content-success select-all break-all">
                     {visible ? plaintext : plaintext.slice(0, 13) + '•'.repeat(40)}
                 </code>
@@ -472,12 +472,12 @@ export default function ApiKeysPage() {
 
     if (loading) {
         return (
-            <div className="space-y-6 animate-fadeIn">
-                <Heading level={1} className="flex items-center gap-2">
+            <div className="space-y-section animate-fadeIn">
+                <Heading level={1} className="flex items-center gap-tight">
                     <KeyRound className="w-6 h-6 text-[var(--brand-default)]" />
                     API Keys
                 </Heading>
-                <Card className="space-y-4">
+                <Card className="space-y-default">
                     <div className="h-4 bg-bg-elevated/50 rounded w-1/3 animate-pulse" />
                     <div className="h-4 bg-bg-elevated/50 rounded w-2/3 animate-pulse" />
                 </Card>
@@ -486,9 +486,9 @@ export default function ApiKeysPage() {
     }
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-section animate-fadeIn">
             {/* Header */}
-            <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center justify-between flex-wrap gap-default">
                 <div>
                     <Breadcrumbs
                         items={[
@@ -498,7 +498,7 @@ export default function ApiKeysPage() {
                         ]}
                         className="mb-1"
                     />
-                    <Heading level={1} className="flex items-center gap-2">
+                    <Heading level={1} className="flex items-center gap-tight">
                         <KeyRound className="w-6 h-6 text-[var(--brand-default)]" />
                         API Keys
                     </Heading>
@@ -537,7 +537,7 @@ export default function ApiKeysPage() {
 
             {/* Created Key Display (show once) */}
             {createdKey && (
-                <div className="space-y-2">
+                <div className="space-y-tight">
                     <KeyDisplay plaintext={createdKey.plaintext} />
                     <Button
                         variant="secondary"
@@ -552,7 +552,7 @@ export default function ApiKeysPage() {
 
             {/* Create Form */}
             {showCreate && (
-                <div className="glass-card p-6 border border-[var(--brand-default)]/30 space-y-4" id="create-key-form">
+                <div className="glass-card p-6 border border-[var(--brand-default)]/30 space-y-default" id="create-key-form">
                     <Heading level={3}>Create API Key</Heading>
 
                     <div>
@@ -590,7 +590,7 @@ export default function ApiKeysPage() {
                         <ScopePicker selected={createScopes} onChange={setCreateScopes} />
                     </div>
 
-                    <div className="flex gap-2 pt-2">
+                    <div className="flex gap-tight pt-2">
                         <Button
                             variant="primary"
                             onClick={handleCreate}

@@ -9,7 +9,7 @@ import {
  */
 export default function TasksLoading() {
     return (
-        <div role="status" aria-live="polite" className="space-y-6 animate-fadeIn" aria-busy="true" aria-label="Loading tasks">
+        <div role="status" aria-live="polite" className="space-y-section animate-fadeIn" aria-busy="true" aria-label="Loading tasks">
             <SkeletonPageHeader />
             <SkeletonFilterBar />
             <SkeletonDataTable rows={10} cols={8} />

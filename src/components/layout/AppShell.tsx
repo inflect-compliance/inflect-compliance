@@ -90,7 +90,7 @@ export function AppShell({ user, appName, children }: AppShellProps) {
             {/* Main content */}
             <main className="flex-1 overflow-auto md:overflow-hidden md:flex md:flex-col min-w-0 md:min-h-0">
                 {/* Mobile top bar — visible on <md only */}
-                <div className="md:hidden sticky top-0 z-30 flex items-center gap-3 px-4 py-2 bg-bg-page/80 backdrop-blur-sm border-b border-border-subtle">
+                <div className="md:hidden sticky top-0 z-30 flex items-center gap-compact px-4 py-2 bg-bg-page/80 backdrop-blur-sm border-b border-border-subtle">
                     <button
                         type="button"
                         className="p-2 rounded-lg text-content-muted hover:text-content-emphasis hover:bg-bg-muted transition-colors"
@@ -100,7 +100,7 @@ export function AppShell({ user, appName, children }: AppShellProps) {
                     >
                         <Menu className="w-5 h-5" />
                     </button>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-tight">
                         <div className="w-6 h-6 rounded-md bg-gradient-to-br from-[var(--brand-emphasis)] to-[var(--brand-default)] flex items-center justify-center">
                             <span className="text-content-inverted text-[10px] font-bold">IC</span>
                         </div>

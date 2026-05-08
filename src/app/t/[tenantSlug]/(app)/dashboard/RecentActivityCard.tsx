@@ -40,14 +40,14 @@ export default async function RecentActivityCard({
               content is hidden behind the overflow.
             */}
             <div
-                className="space-y-2 max-h-40 overflow-y-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded"
+                className="space-y-tight max-h-40 overflow-y-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded"
                 tabIndex={0}
                 role="region"
                 aria-labelledby="recent-activity-heading"
             >
                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 {recentActivity.map((log: any) => (
-                    <div key={log.id} className="flex flex-col sm:flex-row items-start gap-1 sm:gap-2 text-xs">
+                    <div key={log.id} className="flex flex-col sm:flex-row items-start gap-1 sm:gap-tight text-xs">
                         <span className="text-content-subtle whitespace-nowrap">{formatDateTime(log.createdAt)}</span>
                         <span className="text-content-muted">
                             <span className="text-content-default font-medium">{log.user?.name}</span>{' '}

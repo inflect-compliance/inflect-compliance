@@ -148,7 +148,7 @@ export default function TestPlanDetailPage() {
     if (!plan) return <div className="p-12 text-center text-content-subtle">Plan not found.</div>;
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-section animate-fadeIn">
             {/* Breadcrumb */}
             <div>
                 <Link href={tenantHref(`/controls/${controlId}`)} className="text-content-muted text-xs hover:text-content-emphasis transition">
@@ -160,7 +160,7 @@ export default function TestPlanDetailPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <Heading level={1} id="test-plan-title">{plan.name}</Heading>
-                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <div className="flex items-center gap-tight mt-1 flex-wrap">
                         <StatusBadge variant={plan.status === 'ACTIVE' ? 'success' : 'warning'} id="test-plan-status">
                             {plan.status}
                         </StatusBadge>
@@ -178,7 +178,7 @@ export default function TestPlanDetailPage() {
                     </div>
                 </div>
                 {permissions.canWrite && (
-                    <div className="flex gap-2">
+                    <div className="flex gap-tight">
                         <Button variant="secondary" size="sm" onClick={() => setEditing(!editing)} id="edit-test-plan-btn">
                             {editing ? 'Cancel' : 'Edit'}
                         </Button>
@@ -193,7 +193,7 @@ export default function TestPlanDetailPage() {
 
             {/* Edit Form */}
             {editing && permissions.canWrite && (
-                <div className="glass-card p-4 space-y-3 animate-fadeIn">
+                <div className="glass-card p-4 space-y-compact animate-fadeIn">
                     <div>
                         <label className="text-xs text-content-muted block mb-1">Name</label>
                         <input className="input w-full" value={editName} onChange={e => setEditName(e.target.value)} id="edit-plan-name" />
@@ -202,7 +202,7 @@ export default function TestPlanDetailPage() {
                         <label className="text-xs text-content-muted block mb-1">Description</label>
                         <textarea className="input w-full h-20" value={editDesc} onChange={e => setEditDesc(e.target.value)} />
                     </div>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-3 gap-compact">
                         <div>
                             <label className="text-xs text-content-muted block mb-1">Frequency</label>
                             <Combobox hideSearch selected={FREQ_CB_OPTIONS.find(o => o.value === editFreq) ?? null} setSelected={(opt) => setEditFreq(opt?.value ?? editFreq)} options={FREQ_CB_OPTIONS} matchTriggerWidth />
@@ -234,7 +234,7 @@ export default function TestPlanDetailPage() {
             />
 
             {/* Info Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
                 <div className="glass-card p-4 text-center">
                     <div className="text-2xl font-bold text-[var(--brand-default)]">{plan._count?.runs ?? 0}</div>
                     <div className="text-xs text-content-muted mt-1">Total Runs</div>
@@ -269,9 +269,9 @@ export default function TestPlanDetailPage() {
             {plan.steps.length > 0 && (
                 <div className="glass-card p-4">
                     <Heading level={3} className="mb-3">Test Procedure</Heading>
-                    <ol className="space-y-2">
+                    <ol className="space-y-tight">
                         {plan.steps.map((step, i) => (
-                            <li key={step.id} className="flex gap-3 text-sm">
+                            <li key={step.id} className="flex gap-compact text-sm">
                                 <span className="w-6 h-6 rounded-full bg-[var(--brand-subtle)] text-[var(--brand-default)] text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
                                     {i + 1}
                                 </span>
@@ -309,7 +309,7 @@ export default function TestPlanDetailPage() {
                                 className="flex items-center justify-between py-2.5 hover:bg-bg-default/30 px-2 rounded transition group"
                                 id={`test-run-link-${run.id}`}
                             >
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-compact">
                                     <StatusBadge variant={RUN_STATUS_BADGE[run.status] || 'neutral'} size="sm">
                                         {run.status}
                                     </StatusBadge>
@@ -322,7 +322,7 @@ export default function TestPlanDetailPage() {
                                         {run.executedAt ? formatDate(run.executedAt) : 'Not executed'}
                                     </span>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-tight">
                                     {run.executedBy && (
                                         <span className="text-xs text-content-subtle">
                                             {run.executedBy.name || run.executedBy.email}

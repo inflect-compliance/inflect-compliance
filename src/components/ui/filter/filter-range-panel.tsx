@@ -331,7 +331,7 @@ function FilterRangeContent({
 
   return (
     <div
-      className="flex w-full min-w-[282px] max-w-[282px] flex-col gap-3 p-2"
+      className="flex w-full min-w-[282px] max-w-[282px] flex-col gap-compact p-2"
       onKeyDownCapture={(e) => {
         if (e.key !== "Backspace" && e.key !== "Delete") {
           return;
@@ -344,7 +344,7 @@ function FilterRangeContent({
         onNavigateBack();
       }}
     >
-      <div className="flex items-end gap-2">
+      <div className="flex items-end gap-tight">
         <div className="min-w-0 flex-1">
           <RangeEndControl
             bound="min"

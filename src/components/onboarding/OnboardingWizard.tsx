@@ -216,9 +216,9 @@ export default function OnboardingWizard() {
     // ─── Loading skeleton ───
     if (loading) {
         return (
-            <div className="space-y-6 animate-fadeIn">
+            <div className="space-y-section animate-fadeIn">
                 <div className="h-8 w-48 bg-slate-800 rounded animate-pulse" />
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-section">
                     <div className="h-96 bg-slate-800/50 rounded-xl animate-pulse" />
                     <div className="lg:col-span-3 h-96 bg-slate-800/50 rounded-xl animate-pulse" />
                 </div>
@@ -286,9 +286,9 @@ export default function OnboardingWizard() {
     const isLast = activeStepIdx === STEPS.length - 1;
 
     return (
-        <div className="space-y-4 animate-fadeIn" data-testid="onboarding-wizard">
+        <div className="space-y-default animate-fadeIn" data-testid="onboarding-wizard">
             {/* Header */}
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-compact">
                 <div>
                     <Heading level={1}>Setup Wizard</Heading>
                     <p className="text-slate-400 text-sm mt-1">Complete these steps to configure your compliance workspace.</p>
@@ -299,19 +299,19 @@ export default function OnboardingWizard() {
             </div>
 
             {error && (
-                <div className="glass-card border-border-error p-3 text-sm text-content-error flex items-center gap-2">
+                <div className="glass-card border-border-error p-3 text-sm text-content-error flex items-center gap-tight">
                     <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                     {error}
                     <button onClick={() => setError(null)} className="ml-auto text-content-error hover:text-white text-xs">&times;</button>
                 </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-section">
                 {/* ─── Progress Sidebar ─── */}
                 <div className="glass-card p-0 overflow-hidden">
                     <div className="p-4 border-b border-slate-700/50">
                         <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">Progress</p>
-                        <div className="flex items-center gap-2 mt-2">
+                        <div className="flex items-center gap-tight mt-2">
                             <div className="flex-1 bg-slate-800 rounded-full h-2 overflow-hidden">
                                 <div className="h-full bg-gradient-to-r from-brand-500 to-emerald-500 rounded-full transition-all duration-500"
                                     style={{ width: `${(state.completedSteps.length / STEPS.length) * 100}%` }} />
@@ -328,7 +328,7 @@ export default function OnboardingWizard() {
                                 <button key={step.key}
                                     onClick={() => setActiveStepIdx(i)}
                                     data-testid={`step-nav-${step.key}`}
-                                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 ${
+                                    className={`w-full flex items-center gap-compact px-3 py-2.5 rounded-lg text-sm transition-all duration-200 ${
                                         active ? 'bg-brand-600/20 text-white font-medium' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/30'
                                     }`}
                                 >
@@ -352,7 +352,7 @@ export default function OnboardingWizard() {
                 {/* ─── Step Content ─── */}
                 <div className="lg:col-span-3">
                     <div className="glass-card">
-                        <div className="p-5 border-b border-slate-700/50 flex items-center gap-3">
+                        <div className="p-5 border-b border-slate-700/50 flex items-center gap-compact">
                             <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${currentStep.color} flex items-center justify-center`}>
                                 <currentStep.icon className="w-4.5 h-4.5 text-white" />
                             </div>
@@ -374,7 +374,7 @@ export default function OnboardingWizard() {
                             />
                         </div>
                         {/* Navigation footer */}
-                        <div className="p-4 border-t border-slate-700/50 flex items-center justify-between gap-3">
+                        <div className="p-4 border-t border-slate-700/50 flex items-center justify-between gap-compact">
                             <Button
                                 variant="ghost"
                                 size="sm"
@@ -383,7 +383,7 @@ export default function OnboardingWizard() {
                             >
                                 <ChevronLeft className="w-3.5 h-3.5" /> Back
                             </Button>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-tight">
                                 {!isLast && (
                                     <Button
                                         variant="primary"
@@ -439,7 +439,7 @@ function StepContent({ step, data, onUpdate, completedSteps, allData }: {
 
 function CompanyProfileStep({ data, onUpdate }: { data: StepData; onUpdate: (d: StepData) => void }) {
     return (
-        <div className="space-y-4 max-w-lg animate-fadeIn">
+        <div className="space-y-default max-w-lg animate-fadeIn">
             <p className="text-sm text-slate-400 mb-4">Tell us about your organization. This information helps tailor your compliance experience.</p>
             <div>
                 <label className="input-label">Company / Legal Name *</label>
@@ -475,7 +475,7 @@ function CompanyProfileStep({ data, onUpdate }: { data: StepData; onUpdate: (d: 
                     matchTriggerWidth
                 />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-compact">
                 <div>
                     <label className="input-label">Country</label>
                     <input className="input" placeholder="e.g. Germany" value={data.country || ''}
@@ -522,9 +522,9 @@ function FrameworkSelectionStep({ data, onUpdate }: { data: StepData; onUpdate: 
     };
 
     return (
-        <div className="space-y-4 animate-fadeIn">
+        <div className="space-y-default animate-fadeIn">
             <p className="text-sm text-slate-400 mb-4">Select the compliance frameworks you want to implement. You can add more later.</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-default">
                 {frameworks.map(fw => {
                     const active = selected.includes(fw.key);
                     return (
@@ -573,9 +573,9 @@ function AssetSetupStep({ data, onUpdate }: { data: StepData; onUpdate: (d: Step
     };
 
     return (
-        <div className="space-y-4 max-w-lg animate-fadeIn">
+        <div className="space-y-default max-w-lg animate-fadeIn">
             <p className="text-sm text-slate-400 mb-4">Add your key information assets. These are the systems, databases, and services you need to protect.</p>
-            <div className="flex gap-2">
+            <div className="flex gap-tight">
                 <input className="input flex-1" placeholder="e.g. Customer Database, Cloud Infrastructure..." value={newAsset}
                     onChange={(e) => setNewAsset(e.target.value)} onKeyDown={assetKeyDown} data-testid="asset-input" />
                 <Button variant="primary" onClick={addAsset}>Add</Button>
@@ -584,7 +584,7 @@ function AssetSetupStep({ data, onUpdate }: { data: StepData; onUpdate: (d: Step
                 <div className="space-y-1">
                     {assets.map(a => (
                         <div key={a} className="flex items-center justify-between bg-slate-800/50 rounded-lg px-3 py-2 text-sm">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-tight">
                                 <Server className="w-3.5 h-3.5 text-slate-500" />
                                 <span className="text-slate-200">{a}</span>
                             </div>
@@ -605,16 +605,16 @@ function ControlInstallStep({ data, onUpdate, allData }: { data: StepData; onUpd
     const fwLabels: Record<string, string> = { iso27001: 'ISO 27001:2022', nis2: 'NIS2 Directive' };
 
     return (
-        <div className="space-y-4 max-w-lg animate-fadeIn">
+        <div className="space-y-default max-w-lg animate-fadeIn">
             <p className="text-sm text-slate-400 mb-4">We&apos;ll install baseline controls from your selected frameworks. This creates your initial control register.</p>
             {selectedFrameworks.length === 0 ? (
                 <InlineNotice variant="warning" icon={null}>
                     No frameworks selected. Go back to the Frameworks step to select at least one.
                 </InlineNotice>
             ) : (
-                <div className="space-y-3">
+                <div className="space-y-compact">
                     {selectedFrameworks.map(fw => (
-                        <div key={fw} className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg">
+                        <div key={fw} className="flex items-center gap-compact p-3 bg-slate-800/50 rounded-lg">
                             <ShieldCheck className="w-5 h-5 text-brand-400" />
                             <div>
                                 <span className="text-sm font-medium text-slate-200">{fwLabels[fw] || fw}</span>
@@ -625,7 +625,7 @@ function ControlInstallStep({ data, onUpdate, allData }: { data: StepData; onUpd
                     ))}
                 </div>
             )}
-            <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+            <label className="flex items-center gap-tight text-sm text-slate-300 cursor-pointer">
                 <input type="checkbox" checked={data.confirmed || false} onChange={(e) => onUpdate({ confirmed: e.target.checked })}
                     className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-brand-500 focus:ring-brand-500" />
                 I confirm installing baseline controls
@@ -638,16 +638,16 @@ function ControlInstallStep({ data, onUpdate, allData }: { data: StepData; onUpd
 
 function RiskRegisterStep({ data, onUpdate }: { data: StepData; onUpdate: (d: StepData) => void }) {
     return (
-        <div className="space-y-4 max-w-lg animate-fadeIn">
+        <div className="space-y-default max-w-lg animate-fadeIn">
             <p className="text-sm text-slate-400 mb-4">Generate a starter risk register based on your assets and selected frameworks.</p>
             <div className="p-4 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-border-warning">
-                <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center gap-compact mb-3">
                     <AlertTriangle className="w-5 h-5 text-content-warning" />
                     <span className="font-medium text-white text-sm">Starter Risk Register</span>
                 </div>
                 <p className="text-xs text-slate-400 leading-relaxed">We&apos;ll generate common information security risks based on industry best practices. You can customize, add, or remove risks later.</p>
             </div>
-            <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+            <label className="flex items-center gap-tight text-sm text-slate-300 cursor-pointer">
                 <input type="checkbox" checked={data.generate !== false} onChange={(e) => onUpdate({ generate: e.target.checked })}
                     className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-brand-500 focus:ring-brand-500" />
                 Generate starter risks
@@ -678,9 +678,9 @@ function TeamSetupStep({ data, onUpdate }: { data: StepData; onUpdate: (d: StepD
     };
 
     return (
-        <div className="space-y-4 max-w-lg animate-fadeIn">
+        <div className="space-y-default max-w-lg animate-fadeIn">
             <p className="text-sm text-slate-400 mb-4">Invite your team members. They&apos;ll receive an email invitation to join your workspace.</p>
-            <div className="flex gap-2">
+            <div className="flex gap-tight">
                 <input className="input flex-1" placeholder="colleague@company.com" type="email" value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)} onKeyDown={emailKeyDown} data-testid="invite-email" />
                 <Button variant="primary" onClick={addEmail}>Invite</Button>
@@ -689,7 +689,7 @@ function TeamSetupStep({ data, onUpdate }: { data: StepData; onUpdate: (d: StepD
                 <div className="space-y-1">
                     {emails.map(e => (
                         <div key={e} className="flex items-center justify-between bg-slate-800/50 rounded-lg px-3 py-2 text-sm">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-tight">
                                 <Users className="w-3.5 h-3.5 text-slate-500" />
                                 <span className="text-slate-200">{e}</span>
                             </div>
@@ -716,13 +716,13 @@ function ReviewStep({ completedSteps, allData }: { completedSteps: string[]; all
     ];
 
     return (
-        <div className="space-y-4 animate-fadeIn">
+        <div className="space-y-default animate-fadeIn">
             <p className="text-sm text-slate-400 mb-4">Review your setup before completing onboarding.</p>
-            <div className="space-y-2">
+            <div className="space-y-tight">
                 {summaryItems.map(item => {
                     const done = completedSteps.includes(item.key);
                     return (
-                        <div key={item.key} className="flex items-center gap-3 p-3 bg-slate-800/30 rounded-lg" data-testid={`review-${item.key}`}>
+                        <div key={item.key} className="flex items-center gap-compact p-3 bg-slate-800/30 rounded-lg" data-testid={`review-${item.key}`}>
                             {done ? (
                                 <CheckCircle2 className="w-5 h-5 text-content-success flex-shrink-0" />
                             ) : (

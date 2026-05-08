@@ -2,7 +2,7 @@ import { cva } from "class-variance-authority";
 
 export const buttonVariants = cva(
   [
-    "inline-flex items-center justify-center gap-2 whitespace-nowrap",
+    "inline-flex items-center justify-center gap-tight whitespace-nowrap",
     "text-sm font-medium transition-all duration-150",
     "border rounded-lg",
     "disabled:opacity-50 disabled:pointer-events-none",
@@ -36,8 +36,8 @@ export const buttonVariants = cva(
       size: {
         xs: "h-7 px-2.5 text-[11px] gap-1 rounded-md",
         sm: "h-8 px-3 text-xs gap-1.5",
-        md: "h-9 px-3.5 text-sm gap-2",
-        lg: "h-10 px-5 text-sm gap-2",
+        md: "h-9 px-3.5 text-sm gap-tight",
+        lg: "h-10 px-5 text-sm gap-tight",
       },
     },
     defaultVariants: {

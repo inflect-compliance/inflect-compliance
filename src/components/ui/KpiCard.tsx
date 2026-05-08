@@ -318,7 +318,7 @@ export default function KpiCard({
             className={`glass-card p-4 hover:scale-[1.02] transition-transform ${className}`}
         >
             {/* Header: icon + label */}
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-tight mb-2">
                 {Icon && <Icon className="w-4 h-4 text-content-muted" aria-hidden="true" />}
                 <span className="text-xs text-content-muted uppercase tracking-wide font-medium">
                     {label}

@@ -121,7 +121,7 @@ export default function AssessmentPage(
 
         if (q.answerType === 'YES_NO') {
             return (
-                <div className="flex gap-3">
+                <div className="flex gap-compact">
                     <label className="flex items-center gap-1.5 text-sm">
                         <input type="radio" name={`q-${q.id}`} checked={value === true || value === 'YES'}
                             onChange={() => setAnswers(p => ({ ...p, [q.id]: true }))} disabled={disabled} />
@@ -163,20 +163,20 @@ export default function AssessmentPage(
     };
 
     return (
-        <div className="space-y-6 max-w-3xl mx-auto">
+        <div className="space-y-section max-w-3xl mx-auto">
             {/* Header */}
             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-compact">
                     <Link href={tenantHref(`/vendors/${params.vendorId}`)} className="text-content-muted hover:text-content-emphasis">← Back to Vendor</Link>
                 </div>
             </div>
 
-            <div className="card p-5 space-y-2">
+            <div className="card p-5 space-y-tight">
                 <div className="flex items-center justify-between">
                     <Heading level={1} id="assessment-title">{assessment.template?.name || 'Assessment'}</Heading>
                     <StatusBadge variant={STATUS_BADGE[assessment.status]} id="assessment-status">{assessment.status}</StatusBadge>
                 </div>
-                <div className="flex gap-4 text-sm text-content-muted">
+                <div className="flex gap-default text-sm text-content-muted">
                     <span>Score: <strong className="text-content-emphasis" id="assessment-score">{assessment.score != null ? assessment.score.toFixed(1) : '—'}</strong></span>
                     <span>Rating: {assessment.riskRating ? <StatusBadge variant={CRIT_BADGE[assessment.riskRating]} id="assessment-rating">{assessment.riskRating}</StatusBadge> : '—'}</span>
                     <span>Requested by: {assessment.requestedBy?.name || '—'}</span>
@@ -190,11 +190,11 @@ export default function AssessmentPage(
 
             {/* Questions by section */}
             {Object.entries(sections).map(([section, sQuestions]) => (
-                <div key={section} className="card p-5 space-y-4">
+                <div key={section} className="card p-5 space-y-default">
                     <Heading level={2} className="border-b border-border-default pb-2">{section}</Heading>
                     {sQuestions.map((q, idx) => (
                         <div key={q.id} className="space-y-1.5">
-                            <div className="flex items-start gap-2">
+                            <div className="flex items-start gap-tight">
                                 <span className="text-xs text-content-subtle font-mono mt-0.5">{q.sortOrder}.</span>
                                 <div className="flex-1">
                                     <p className="text-sm font-medium">{q.prompt}{q.required && <span className="text-content-error ml-1">*</span>}</p>
@@ -210,7 +210,7 @@ export default function AssessmentPage(
             ))}
 
             {/* Actions */}
-            <div className="flex gap-3 items-center flex-wrap">
+            <div className="flex gap-compact items-center flex-wrap">
                 {isDraft && canWrite && (
                     <>
                         <Button variant="primary" onClick={saveAnswers} disabled={saving} id="save-answers-btn">
@@ -222,7 +222,7 @@ export default function AssessmentPage(
                     </>
                 )}
                 {isInReview && isAdmin && (
-                    <div className="flex items-center gap-2 w-full">
+                    <div className="flex items-center gap-tight w-full">
                         <input className="input flex-1" placeholder="Decision notes (optional)…" value={decideNotes}
                             onChange={e => setDecideNotes(e.target.value)} id="decide-notes-input" />
                         <Button variant="primary" onClick={() => decideAssessment('APPROVED')} disabled={deciding} id="approve-assessment-btn">

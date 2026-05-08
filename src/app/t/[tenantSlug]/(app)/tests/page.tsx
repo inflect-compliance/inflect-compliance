@@ -89,14 +89,14 @@ export default function TestsRollupPage() {
     if (loading) return <div className="p-12 text-center text-content-subtle animate-pulse">Loading tests overview...</div>;
 
     return (
-        <ListPageShell className="animate-fadeIn gap-6">
+        <ListPageShell className="animate-fadeIn gap-section">
             <ListPageShell.Header>
                 <div className="flex items-center justify-between">
                     <div>
                         <Heading level={1} id="tests-page-title">Tests</Heading>
                         <p className="text-sm text-content-muted mt-1">Test plans and recent results across all controls</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-tight">
                         <Link href={tenantHref('/tests/due')} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>Due Queue</Link>
                         <Link href={tenantHref('/tests/dashboard')} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>Dashboard</Link>
                         <Link href={tenantHref('/findings')} className={buttonVariants({ variant: 'ghost', size: 'sm' })} id="findings-link-btn">Findings</Link>
@@ -104,9 +104,9 @@ export default function TestsRollupPage() {
                 </div>
             </ListPageShell.Header>
 
-            <ListPageShell.Filters className="space-y-6">
+            <ListPageShell.Filters className="space-y-section">
                 {/* Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
                 <div className="glass-card p-4 text-center cursor-pointer hover:ring-1 hover:ring-[color:var(--ring)] transition" onClick={() => setFilter('all')}>
                     <div className="text-2xl font-bold text-[var(--brand-default)]">{plans.length}</div>
                     <div className="text-xs text-content-muted mt-1">Total Plans</div>

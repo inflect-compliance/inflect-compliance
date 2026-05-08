@@ -64,7 +64,7 @@ export default function SharedPackPage() {
 
     return (
         <div className="min-h-screen bg-slate-900 text-white">
-            <div className="max-w-4xl mx-auto p-6 space-y-6">
+            <div className="max-w-4xl mx-auto p-6 space-y-section">
                 {/* Header */}
                 <div className="text-center py-4">
                     <div className="text-sm text-slate-500 uppercase tracking-wide mb-2">Shared Audit Pack</div>
@@ -81,7 +81,7 @@ export default function SharedPackPage() {
 
                 {/* Summary */}
                 <div className="glass-card p-4" id="shared-pack-summary">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-default text-center">
                         {Object.entries(grouped).map(([type, typeItems]) => (
                             <div key={type} className="p-3">
                                 <div><AppIcon name={ENTITY_ICON[type] || 'overview'} size={20} /></div>
@@ -94,8 +94,8 @@ export default function SharedPackPage() {
 
                 {/* Items */}
                 {Object.entries(grouped).map(([type, typeItems]) => (
-                    <div key={type} className="space-y-2">
-                        <Heading level={3} className="text-slate-300 flex items-center gap-2">
+                    <div key={type} className="space-y-tight">
+                        <Heading level={3} className="text-slate-300 flex items-center gap-tight">
                             <AppIcon name={ENTITY_ICON[type] || 'overview'} size={16} />
                             <span>{type}</span>
                             <span className="text-slate-500">({typeItems.length})</span>
@@ -112,7 +112,7 @@ export default function SharedPackPage() {
                                             {snap.status && <StatusBadge variant="neutral">{snap.status}</StatusBadge>}
                                         </div>
                                         {snap.description && <p className="text-xs text-slate-500 mt-1">{snap.description}</p>}
-                                        <div className="flex gap-4 mt-1 text-xs text-slate-500">
+                                        <div className="flex gap-default mt-1 text-xs text-slate-500">
                                             {snap.taskCompletion && <span>Tasks: {snap.taskCompletion.done}/{snap.taskCompletion.total}</span>}
                                             {snap.evidenceCount !== undefined && <span>Evidence: {snap.evidenceCount}</span>}
                                             {snap.mappedRequirements?.length > 0 && (

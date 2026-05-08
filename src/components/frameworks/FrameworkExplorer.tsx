@@ -236,12 +236,12 @@ export function FrameworkExplorer({
 
     return (
         <div
-            className="grid grid-cols-1 lg:grid-cols-[minmax(0,380px),12rem,1fr] gap-4"
+            className="grid grid-cols-1 lg:grid-cols-[minmax(0,380px),12rem,1fr] gap-default"
             id="framework-explorer"
         >
             {/* ── Tree pane ── */}
             <div className="glass-card flex flex-col min-h-[24rem]">
-                <div className="flex flex-wrap items-center gap-2 mb-3">
+                <div className="flex flex-wrap items-center gap-tight mb-3">
                     <input
                         type="text"
                         placeholder="Search code or title..."
@@ -480,12 +480,12 @@ function RequirementDetail({
     controls: ControlMapping[];
 }) {
     return (
-        <div className="p-5 space-y-4" id="framework-explorer-requirement-detail">
+        <div className="p-5 space-y-default" id="framework-explorer-requirement-detail">
             <div>
                 <p className="text-xs uppercase tracking-wider text-content-subtle mb-1">
                     Requirement
                 </p>
-                <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-compact flex-wrap">
                     <code className="text-sm font-mono text-[var(--brand-default)]">
                         {node.code}
                     </code>
@@ -543,7 +543,7 @@ function RequirementDetail({
                         {controls.map((c, i) => (
                             <li
                                 key={`${c.controlCode}-${i}`}
-                                className="flex items-center gap-2 text-xs"
+                                className="flex items-center gap-tight text-xs"
                             >
                                 <code className="font-mono text-[var(--brand-default)] truncate max-w-[8rem]">
                                     {c.controlCode}

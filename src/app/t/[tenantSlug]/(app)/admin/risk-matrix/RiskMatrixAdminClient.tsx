@@ -260,9 +260,9 @@ export function RiskMatrixAdminClient({
         <div
             id="risk-matrix-admin"
             data-testid="risk-matrix-admin"
-            className="animate-fadeIn space-y-6 p-6"
+            className="animate-fadeIn space-y-section p-6"
         >
-            <header className="flex flex-wrap items-end justify-between gap-3">
+            <header className="flex flex-wrap items-end justify-between gap-compact">
                 <div>
                     <Heading level={1}>
                         Risk matrix configuration
@@ -273,7 +273,7 @@ export function RiskMatrixAdminClient({
                         risk page in this tenant on save.
                     </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-tight">
                     <Button
                         variant="secondary"
                         size="sm"
@@ -317,15 +317,15 @@ export function RiskMatrixAdminClient({
                 </div>
             )}
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div className="grid grid-cols-1 gap-section lg:grid-cols-2">
                 {/* ── Editor ─────────────────────────────────────── */}
-                <section className="space-y-6">
+                <section className="space-y-section">
                     {/* Dimensions */}
-                    <Card className="space-y-4">
+                    <Card className="space-y-default">
                         <Heading level={3}>
                             Dimensions
                         </Heading>
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
                             <label className="block">
                                 <span className="mb-1 block text-xs text-content-muted">
                                     Likelihood levels
@@ -359,11 +359,11 @@ export function RiskMatrixAdminClient({
                     </Card>
 
                     {/* Axis titles */}
-                    <Card className="space-y-4">
+                    <Card className="space-y-default">
                         <Heading level={3}>
                             Axis titles
                         </Heading>
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
                             <label className="block">
                                 <span className="mb-1 block text-xs text-content-muted">
                                     Likelihood axis title
@@ -404,16 +404,16 @@ export function RiskMatrixAdminClient({
                     </Card>
 
                     {/* Per-level labels */}
-                    <Card className="space-y-4">
+                    <Card className="space-y-default">
                         <Heading level={3}>
                             Per-level labels
                         </Heading>
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
                             <div>
                                 <p className="mb-2 text-xs text-content-muted">
                                     Likelihood
                                 </p>
-                                <div className="space-y-2">
+                                <div className="space-y-tight">
                                     {config.levelLabels.likelihood.map(
                                         (label, idx) => (
                                             <input
@@ -438,7 +438,7 @@ export function RiskMatrixAdminClient({
                                 <p className="mb-2 text-xs text-content-muted">
                                     Impact
                                 </p>
-                                <div className="space-y-2">
+                                <div className="space-y-tight">
                                     {config.levelLabels.impact.map(
                                         (label, idx) => (
                                             <input
@@ -463,7 +463,7 @@ export function RiskMatrixAdminClient({
                     </Card>
 
                     {/* Bands */}
-                    <Card className="space-y-3">
+                    <Card className="space-y-compact">
                         <div className="flex items-center justify-between">
                             <Heading level={3}>
                                 Severity bands
@@ -482,11 +482,11 @@ export function RiskMatrixAdminClient({
                             Bands must cover scores 1..{totalCells} without
                             gaps or overlaps.
                         </p>
-                        <ul className="space-y-2">
+                        <ul className="space-y-tight">
                             {config.bands.map((band, idx) => (
                                 <li
                                     key={`band-${idx}`}
-                                    className="grid grid-cols-12 items-center gap-2 rounded-md border border-border-default bg-bg-subtle p-2"
+                                    className="grid grid-cols-12 items-center gap-tight rounded-md border border-border-default bg-bg-subtle p-2"
                                     data-testid={`rm-band-row-${idx}`}
                                 >
                                     <input
@@ -566,7 +566,7 @@ export function RiskMatrixAdminClient({
                 </section>
 
                 {/* ── Live preview ───────────────────────────────── */}
-                <aside className="space-y-2">
+                <aside className="space-y-tight">
                     <Heading level={3}>
                         Preview
                     </Heading>

@@ -113,7 +113,7 @@ export function EvidenceGallery<T extends EvidenceGalleryRow>({
     if (loading && rows.length === 0) {
         return (
             <div
-                className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                className="grid grid-cols-1 gap-default sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
                 aria-busy="true"
                 data-testid={`${dataTestId}-loading`}
             >
@@ -143,7 +143,7 @@ export function EvidenceGallery<T extends EvidenceGalleryRow>({
             role="grid"
             aria-label={ariaLabel}
             data-testid={dataTestId}
-            className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            className="grid grid-cols-1 gap-default sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
             style={style}
         >
             {items.map((row) => (
@@ -261,8 +261,8 @@ function GalleryCard<T extends EvidenceGalleryRow>({
             </div>
 
             {/* Body */}
-            <div className="flex flex-1 flex-col gap-2 p-3">
-                <div className="flex items-start gap-2">
+            <div className="flex flex-1 flex-col gap-tight p-3">
+                <div className="flex items-start gap-tight">
                     <FileTypeIcon
                         fileName={row.fileName ?? null}
                         mime={mime}

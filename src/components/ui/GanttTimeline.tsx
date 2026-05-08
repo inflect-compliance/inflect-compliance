@@ -162,7 +162,7 @@ export function GanttTimeline({
 
     return (
         <div
-            className={cn('flex flex-col gap-2', className)}
+            className={cn('flex flex-col gap-tight', className)}
             data-testid={dataTestId}
             role="list"
             aria-label="Gantt timeline"
