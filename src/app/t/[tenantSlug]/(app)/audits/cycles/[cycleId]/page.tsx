@@ -7,6 +7,7 @@ import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
+import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 
 const FW_META: Record<string, { icon: AppIconName; label: string }> = {
     ISO27001: { icon: 'shield', label: 'ISO/IEC 27001:2022' },
@@ -65,29 +66,38 @@ export default function CycleDetailPage() {
         } finally { setCreating(false); }
     };
 
-    if (loading) return <div className="p-8"><div className="glass-card animate-pulse h-64" /></div>;
-    if (!cycle) return <div className="p-8 text-center text-content-muted">Audit cycle not found</div>;
+    const back = { href: `/t/${tenantSlug}/audits/cycles`, label: 'Cycles' };
+    if (loading) {
+        return (
+            <EntityDetailLayout loading title="" back={back}>
+                <></>
+            </EntityDetailLayout>
+        );
+    }
+    if (!cycle) {
+        return (
+            <EntityDetailLayout empty={{ message: 'Audit cycle not found.' }} title="" back={back}>
+                <></>
+            </EntityDetailLayout>
+        );
+    }
 
-    const meta = FW_META[cycle.frameworkKey] || { icon: 'shield' as AppIconName, label: cycle.frameworkKey };
+    const fw = FW_META[cycle.frameworkKey] || { icon: 'shield' as AppIconName, label: cycle.frameworkKey };
 
     return (
-        <div className="space-y-6 animate-fadeIn">
-            <div className="flex items-center gap-3">
-                <Link href={`/t/${tenantSlug}/audits/cycles`} className="text-content-muted hover:text-content-emphasis transition">← Cycles</Link>
-            </div>
-
-            <div className="glass-card p-6">
-                <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-4">
-                        <div><AppIcon name={meta.icon} size={32} /></div>
-                        <div>
-                            <Heading level={1} id="cycle-name">{cycle.name}</Heading>
-                            <p className="text-sm text-content-muted">{meta.label} · v{cycle.frameworkVersion} · {cycle.status}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
+        <EntityDetailLayout
+            id="cycle-detail-page"
+            back={back}
+            title={
+                <span className="inline-flex items-center gap-3" id="cycle-name">
+                    <AppIcon name={fw.icon} size={28} />
+                    {cycle.name}
+                </span>
+            }
+            meta={
+                <span className="text-sm text-content-muted">{fw.label} · v{cycle.frameworkVersion} · {cycle.status}</span>
+            }
+        >
             {/* Default Pack Preview */}
             <div className="glass-card p-6 space-y-4">
                 <div className="flex items-center justify-between">
@@ -141,6 +151,6 @@ export default function CycleDetailPage() {
                     ))}
                 </div>
             )}
-        </div>
+        </EntityDetailLayout>
     );
 }

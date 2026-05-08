@@ -31,6 +31,7 @@ import { Modal } from '@/components/ui/modal';
 import { FormField } from '@/components/ui/form-field';
 import { formatDate, formatDateTime } from '@/lib/format-date';
 import { Heading } from '@/components/ui/typography';
+import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 
 const ALL_ROLES = ['OWNER', 'ADMIN', 'EDITOR', 'READER', 'AUDITOR'] as const;
 type Role = (typeof ALL_ROLES)[number];
@@ -131,50 +132,16 @@ export function AccessReviewDetailClient({
     const pct = decisionsTotal === 0 ? 0 : Math.round((decided / decisionsTotal) * 100);
 
     return (
-        <div className="space-y-6">
-            <Link
-                href={`/t/${tenantSlug}/access-reviews`}
-                className="text-sm text-content-muted hover:text-content-default"
-            >
-                ← All campaigns
-            </Link>
-
-            <header className="flex flex-wrap items-start justify-between gap-4">
-                <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                        <Heading level={1} data-testid="access-review-detail-title">
-                            {review.name}
-                        </Heading>
-                        <StatusBadge variant={STATUS_VARIANT[review.status]}>
-                            {review.status}
-                        </StatusBadge>
-                    </div>
-                    {review.description ? (
-                        <p className="text-sm text-content-muted max-w-prose">
-                            {review.description}
-                        </p>
-                    ) : null}
-                    <dl className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-content-muted">
-                        <div>
-                            <dt className="font-semibold uppercase">Reviewer</dt>
-                            <dd>{review.reviewer.email}</dd>
-                        </div>
-                        <div>
-                            <dt className="font-semibold uppercase">Scope</dt>
-                            <dd>{review.scope.replace('_', ' ').toLowerCase()}</dd>
-                        </div>
-                        <div>
-                            <dt className="font-semibold uppercase">Due</dt>
-                            <dd>{review.dueAt ? formatDate(review.dueAt) : '—'}</dd>
-                        </div>
-                        {review.closedAt ? (
-                            <div>
-                                <dt className="font-semibold uppercase">Closed</dt>
-                                <dd>{formatDateTime(review.closedAt)}</dd>
-                            </div>
-                        ) : null}
-                    </dl>
-                </div>
+        <EntityDetailLayout
+            id="access-review-detail-page"
+            back={{ href: `/t/${tenantSlug}/access-reviews`, label: 'All campaigns' }}
+            title={<span data-testid="access-review-detail-title">{review.name}</span>}
+            meta={
+                <StatusBadge variant={STATUS_VARIANT[review.status]}>
+                    {review.status}
+                </StatusBadge>
+            }
+            actions={
                 <div className="flex flex-col items-end gap-2">
                     <div className="flex items-center gap-2">
                         <ProgressBar
@@ -210,7 +177,38 @@ export function AccessReviewDetailClient({
                         ) : null}
                     </div>
                 </div>
-            </header>
+            }
+        >
+            {/* Description + meta data list — preserved as the first body
+                element since EntityDetailLayout's `meta` prop is sized
+                for inline badges, not multi-row metadata. */}
+            <div className="space-y-2">
+                {review.description ? (
+                    <p className="text-sm text-content-muted max-w-prose">
+                        {review.description}
+                    </p>
+                ) : null}
+                <dl className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-content-muted">
+                    <div>
+                        <dt className="font-semibold uppercase">Reviewer</dt>
+                        <dd>{review.reviewer.email}</dd>
+                    </div>
+                    <div>
+                        <dt className="font-semibold uppercase">Scope</dt>
+                        <dd>{review.scope.replace('_', ' ').toLowerCase()}</dd>
+                    </div>
+                    <div>
+                        <dt className="font-semibold uppercase">Due</dt>
+                        <dd>{review.dueAt ? formatDate(review.dueAt) : '—'}</dd>
+                    </div>
+                    {review.closedAt ? (
+                        <div>
+                            <dt className="font-semibold uppercase">Closed</dt>
+                            <dd>{formatDateTime(review.closedAt)}</dd>
+                        </div>
+                    ) : null}
+                </dl>
+            </div>
 
             {/* Roster table */}
             <div className="overflow-hidden rounded border border-border-subtle">
@@ -274,7 +272,7 @@ export function AccessReviewDetailClient({
                     }}
                 />
             ) : null}
-        </div>
+        </EntityDetailLayout>
     );
 }
 

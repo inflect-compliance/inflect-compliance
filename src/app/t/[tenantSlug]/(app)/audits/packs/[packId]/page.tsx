@@ -16,6 +16,7 @@ import { scopedMilestone } from '@/lib/celebrations';
 import { Package } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
+import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 
 const ENTITY_ICON: Record<string, AppIconName> = {
     CONTROL: 'controls', POLICY: 'policies', EVIDENCE: 'evidence', FILE: 'overview', ISSUE: 'warning',
@@ -95,8 +96,21 @@ export default function PackDetailPage() {
         );
     }, [packComplete, packId, packName, celebrate]);
 
-    if (loading) return <div className="p-8"><div className="glass-card animate-pulse h-64" /></div>;
-    if (!pack) return <div className="p-8 text-center text-content-muted">Pack not found</div>;
+    const back = { href: `/t/${tenantSlug}/audits/cycles`, label: 'Cycles' };
+    if (loading) {
+        return (
+            <EntityDetailLayout loading title="" back={back}>
+                <></>
+            </EntityDetailLayout>
+        );
+    }
+    if (!pack) {
+        return (
+            <EntityDetailLayout empty={{ message: 'Pack not found.' }} title="" back={back}>
+                <></>
+            </EntityDetailLayout>
+        );
+    }
 
     const isDraft = pack.status === 'DRAFT';
     const isFrozen = pack.status === 'FROZEN' || pack.status === 'EXPORTED';
@@ -109,66 +123,63 @@ export default function PackDetailPage() {
     });
 
     return (
-        <div className="space-y-6 animate-fadeIn">
-            <div className="flex items-center gap-3">
-                <Link href={`/t/${tenantSlug}/audits/cycles`} className="text-content-muted hover:text-content-emphasis transition">← Cycles</Link>
-            </div>
-
-            {/* Header */}
-            <div className="glass-card p-6">
-                <div className="flex items-start justify-between">
-                    <div>
-                        <Heading level={1} id="pack-name">{pack.name}</Heading>
-                        <p className="text-sm text-content-muted">
-                            {pack.cycle?.frameworkKey} · {pack._count?.items || 0} items ·
-                            <StatusBadge variant={isDraft ? 'neutral' : 'info'} className="ml-2" id="pack-status">{pack.status}</StatusBadge>
-                        </p>
-                        {pack.frozenAt && (
-                            <p className="text-xs text-content-subtle mt-1">
-                                Frozen {formatDateTime(pack.frozenAt)} by {pack.frozenBy?.name || pack.frozenBy?.email || 'Admin'}
-                            </p>
-                        )}
-                    </div>
-                    <div className="flex gap-2">
-                        {isDraft && (
-                            <RequirePermission resource="audits" action="freeze">
-                                <Button variant="primary" onClick={freeze} disabled={freezing} id="freeze-pack-btn" icon={<AppIcon name="lock" size={16} />}>
-                                    {freezing ? 'Freezing...' : 'Freeze Pack'}
+        <EntityDetailLayout
+            id="pack-detail-page"
+            back={back}
+            title={<span id="pack-name">{pack.name}</span>}
+            meta={
+                <>
+                    <span className="text-sm text-content-muted">
+                        {pack.cycle?.frameworkKey} · {pack._count?.items || 0} items
+                    </span>
+                    <StatusBadge variant={isDraft ? 'neutral' : 'info'} id="pack-status">{pack.status}</StatusBadge>
+                    {pack.frozenAt && (
+                        <span className="text-xs text-content-subtle">
+                            Frozen {formatDateTime(pack.frozenAt)} by {pack.frozenBy?.name || pack.frozenBy?.email || 'Admin'}
+                        </span>
+                    )}
+                </>
+            }
+            actions={
+                <>
+                    {isDraft && (
+                        <RequirePermission resource="audits" action="freeze">
+                            <Button variant="primary" onClick={freeze} disabled={freezing} id="freeze-pack-btn" icon={<AppIcon name="lock" size={16} />}>
+                                {freezing ? 'Freezing...' : 'Freeze Pack'}
+                            </Button>
+                        </RequirePermission>
+                    )}
+                    {isFrozen && (
+                        <RequirePermission resource="audits" action="share">
+                            <UpgradeGate feature="AUDIT_PACK_SHARING">
+                                <Button variant="primary" onClick={share} disabled={sharing} id="share-pack-btn" icon={<AppIcon name="share" size={16} />}>
+                                    {sharing ? 'Creating...' : 'Generate Share Link'}
                                 </Button>
-                            </RequirePermission>
-                        )}
-                        {isFrozen && (
-                            <RequirePermission resource="audits" action="share">
-                                <UpgradeGate feature="AUDIT_PACK_SHARING">
-                                    <Button variant="primary" onClick={share} disabled={sharing} id="share-pack-btn" icon={<AppIcon name="share" size={16} />}>
-                                        {sharing ? 'Creating...' : 'Generate Share Link'}
-                                    </Button>
-                                </UpgradeGate>
-                            </RequirePermission>
-                        )}
-                        {isFrozen && (
-                            <RequirePermission resource="audits" action="manage">
-                                <button onClick={async () => {
-                                    setCloning(true);
-                                    try {
-                                        const res = await fetch(apiUrl(`/audits/packs/${packId}?action=clone`), {
-                                            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
-                                        });
-                                        if (res.ok) {
-                                            const cloned = await res.json();
-                                            router.push(`/t/${tenantSlug}/audits/packs/${cloned.id}`);
-                                        }
-                                    } finally { setCloning(false); }
-                                }} disabled={cloning} className={buttonVariants({ variant: 'secondary' })} id="clone-pack-btn">
-                                    <AppIcon name="refresh" size={16} className="inline-block mr-1" />
-                                    {cloning ? 'Cloning...' : 'Clone for Retest'}
-                                </button>
-                            </RequirePermission>
-                        )}
-                    </div>
-                </div>
-            </div>
-
+                            </UpgradeGate>
+                        </RequirePermission>
+                    )}
+                    {isFrozen && (
+                        <RequirePermission resource="audits" action="manage">
+                            <button onClick={async () => {
+                                setCloning(true);
+                                try {
+                                    const res = await fetch(apiUrl(`/audits/packs/${packId}?action=clone`), {
+                                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+                                    });
+                                    if (res.ok) {
+                                        const cloned = await res.json();
+                                        router.push(`/t/${tenantSlug}/audits/packs/${cloned.id}`);
+                                    }
+                                } finally { setCloning(false); }
+                            }} disabled={cloning} className={buttonVariants({ variant: 'secondary' })} id="clone-pack-btn">
+                                <AppIcon name="refresh" size={16} className="inline-block mr-1" />
+                                {cloning ? 'Cloning...' : 'Clone for Retest'}
+                            </button>
+                        </RequirePermission>
+                    )}
+                </>
+            }
+        >
             {/* Share Link */}
             {shareLink && (
                 <div className="glass-card p-4 border border-border-success bg-bg-success animate-fadeIn" id="share-link-card">
@@ -249,6 +260,6 @@ export default function PackDetailPage() {
                     </div>
                 </div>
             )}
-        </div>
+        </EntityDetailLayout>
     );
 }

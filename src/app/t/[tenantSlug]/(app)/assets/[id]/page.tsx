@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading, Eyebrow } from '@/components/ui/typography';
+import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 
 const TraceabilityPanel = dynamic(() => import('@/components/TraceabilityPanel'), {
     loading: () => <div className="animate-pulse h-48" aria-busy="true" />,
@@ -93,10 +94,6 @@ export default function AssetDetailPage() {
         }
     };
 
-    if (loading) return <div className="p-12 text-center text-content-subtle animate-pulse">Loading asset…</div>;
-    if (error && !asset) return <div className="glass-card p-8 text-center text-content-error">{error}<div className="mt-4"><Link href={tenantHref('/assets')} className={buttonVariants({ variant: 'secondary' })}>← Back</Link></div></div>;
-    if (!asset) return null;
-
     const TYPES = ['INFORMATION', 'APPLICATION', 'SYSTEM', 'SERVICE', 'DATA_STORE', 'INFRASTRUCTURE', 'VENDOR', 'PROCESS', 'PEOPLE_PROCESS', 'OTHER'];
     const TYPE_OPTIONS: ComboboxOption[] = TYPES.map(t => ({ value: t, label: t.replace(/_/g, ' ') }));
     const CRITICALITIES = ['LOW', 'MEDIUM', 'HIGH'];
@@ -104,29 +101,50 @@ export default function AssetDetailPage() {
     const STATUS_OPTIONS: ComboboxOption[] = [{ value: 'ACTIVE', label: 'Active' }, { value: 'RETIRED', label: 'Retired' }];
     const critColor = (c: string): StatusBadgeVariant => c === 'HIGH' ? 'error' : c === 'MEDIUM' ? 'warning' : 'success';
 
+    const back = { href: tenantHref('/assets'), label: 'Assets' };
+    if (loading) {
+        return (
+            <EntityDetailLayout loading title="" back={back}>
+                <></>
+            </EntityDetailLayout>
+        );
+    }
+    if (error && !asset) {
+        return (
+            <EntityDetailLayout error={error} title="" back={back}>
+                <></>
+            </EntityDetailLayout>
+        );
+    }
+    if (!asset) {
+        return (
+            <EntityDetailLayout empty={{ message: 'Asset not found.' }} title="" back={back}>
+                <></>
+            </EntityDetailLayout>
+        );
+    }
+
     return (
-        <div className="space-y-6 animate-fadeIn max-w-4xl">
-            {/* Header */}
-            <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                    <Link href={tenantHref('/assets')} className="text-content-muted hover:text-content-emphasis transition text-lg">←</Link>
-                    <div>
-                        <Heading level={1} id="asset-title-heading">{asset.name}</Heading>
-                        <div className="flex items-center gap-2 mt-1">
-                            <StatusBadge variant="info">{asset.type?.replace(/_/g, ' ')}</StatusBadge>
-                            {asset.criticality && <StatusBadge variant={critColor(asset.criticality)}>{asset.criticality}</StatusBadge>}
-                            <StatusBadge variant={asset.status === 'RETIRED' ? 'neutral' : 'success'}>{asset.status || 'ACTIVE'}</StatusBadge>
-                        </div>
-                    </div>
-                </div>
-                {permissions.canWrite && !editing && (
-                    <div className="flex gap-2">
+        <EntityDetailLayout
+            id="asset-detail-page"
+            back={{ href: tenantHref('/assets'), label: 'Assets' }}
+            title={<span id="asset-title-heading">{asset.name}</span>}
+            meta={
+                <>
+                    <StatusBadge variant="info">{asset.type?.replace(/_/g, ' ')}</StatusBadge>
+                    {asset.criticality && <StatusBadge variant={critColor(asset.criticality)}>{asset.criticality}</StatusBadge>}
+                    <StatusBadge variant={asset.status === 'RETIRED' ? 'neutral' : 'success'}>{asset.status || 'ACTIVE'}</StatusBadge>
+                </>
+            }
+            actions={
+                permissions.canWrite && !editing && (
+                    <>
                         <Link href={tenantHref(`/risks/ai?assetId=${assetId}`)} className={buttonVariants({ variant: 'secondary' })} id="suggest-risks-btn">Suggest Risks</Link>
                         <Button variant="secondary" onClick={startEdit} id="edit-asset-btn">Edit</Button>
-                    </div>
-                )}
-            </div>
-
+                    </>
+                )
+            }
+        >
             {error && <div className="glass-card p-4 border-border-error text-content-error text-sm">{error}</div>}
 
             {/* Detail card */}
@@ -206,6 +224,6 @@ export default function AssetDetailPage() {
                     tenantHref={tenantHref}
                 />
             </div>
-        </div>
+        </EntityDetailLayout>
     );
 }

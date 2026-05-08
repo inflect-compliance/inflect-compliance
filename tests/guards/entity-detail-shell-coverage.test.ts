@@ -1,0 +1,200 @@
+/**
+ * PR-4 — `<EntityDetailLayout>` adoption ratchet.
+ *
+ * Locks in detail-page adoption of the canonical layout shell at
+ * `src/components/layout/EntityDetailLayout.tsx`. Pages migrated in
+ * PR-4 (Wave 1) MUST use the shell — listed in `ADOPTED_PAGES` below.
+ * Remaining detail pages are tracked in `WAVE_2_DEFERRED` with the
+ * planned follow-up PR (PR-4b) — each entry needs a written reason
+ * and graduates to `ADOPTED_PAGES` when migrated.
+ *
+ * Why this ratchet matters:
+ *   - 16 entity detail pages in the product. Before PR-4 only Controls
+ *     used the shell. Each hand-rolled detail page drifted in header
+ *     order, action placement, loading/error/empty handling, and tab
+ *     rhythm — every detail page felt slightly different.
+ *   - After PR-4 the migrated pages share one shell; future detail
+ *     pages MUST adopt the shell at creation time.
+ *
+ * Pairs with the per-page render adoption tests (mirroring
+ * `tests/rendered/control-detail-shell-adoption.test.ts`) which lock
+ * the structural assertion that a specific page mounts the shell.
+ */
+import * as fs from "fs";
+import * as path from "path";
+
+const ROOT = path.resolve(__dirname, "../..");
+const APP_ROOT = path.resolve(ROOT, "src/app/t/[tenantSlug]/(app)");
+
+interface Adopter {
+  /** Path relative to repo root. */
+  page: string;
+  /** Human-readable entity name. */
+  entity: string;
+}
+
+/**
+ * Detail pages that MUST mount `<EntityDetailLayout>`. Each entry is
+ * verified by checking the file's source:
+ *   1. imports `EntityDetailLayout` from `@/components/layout/EntityDetailLayout`
+ *   2. references `<EntityDetailLayout` somewhere (rendered tag).
+ */
+const ADOPTED_PAGES: ReadonlyArray<Adopter> = [
+  { page: "src/app/t/[tenantSlug]/(app)/controls/[controlId]/page.tsx", entity: "Control" },
+  { page: "src/app/t/[tenantSlug]/(app)/assets/[id]/page.tsx", entity: "Asset" },
+  { page: "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/page.tsx", entity: "Framework" },
+  { page: "src/app/t/[tenantSlug]/(app)/access-reviews/[reviewId]/AccessReviewDetailClient.tsx", entity: "Access review" },
+  { page: "src/app/t/[tenantSlug]/(app)/audits/cycles/[cycleId]/page.tsx", entity: "Audit cycle" },
+  { page: "src/app/t/[tenantSlug]/(app)/audits/packs/[packId]/page.tsx", entity: "Audit pack" },
+];
+
+/**
+ * Detail pages deferred to PR-4b for migration. Listed here (not
+ * silently exempt) so the count of pending pages is visible and
+ * reviewable. Each entry must have a written reason and the planned
+ * follow-up.
+ */
+const WAVE_2_DEFERRED: ReadonlyArray<{ page: string; entity: string; reason: string }> = [
+  {
+    page: "src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx",
+    entity: "Vendor",
+    reason: "581 lines, 6+ tab sections (overview/documents/assessments/links/bundles/subprocessors); migration scoped to PR-4b for focused review",
+  },
+  {
+    page: "src/app/t/[tenantSlug]/(app)/risks/[riskId]/page.tsx",
+    entity: "Risk",
+    reason: "515 lines with embedded comments + treatment plan + linked entities; PR-4b",
+  },
+  {
+    page: "src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx",
+    entity: "Task",
+    reason: "603 lines with rich tab system + linked entities + comments; PR-4b",
+  },
+  {
+    page: "src/app/t/[tenantSlug]/(app)/policies/[policyId]/page.tsx",
+    entity: "Policy",
+    reason: "740 lines (largest detail page) with version history, content editor, approvals; PR-4b",
+  },
+  {
+    page: "src/app/t/[tenantSlug]/(app)/tests/runs/[runId]/page.tsx",
+    entity: "Test run",
+    reason: "478 lines with step-by-step result rendering + evidence gallery; PR-4b",
+  },
+];
+
+function read(rel: string): string | null {
+  const abs = path.resolve(ROOT, rel);
+  if (!fs.existsSync(abs)) return null;
+  return fs.readFileSync(abs, "utf8");
+}
+
+describe("EntityDetailLayout adoption — PR-4", () => {
+  describe.each(ADOPTED_PAGES)(
+    "$entity detail ($page)",
+    ({ page, entity }) => {
+      const src = read(page);
+
+      it("file exists at the documented path", () => {
+        expect(src).not.toBeNull();
+      });
+
+      it("imports EntityDetailLayout from the canonical layout module", () => {
+        expect(src).toMatch(
+          /import\s+\{[^}]*\bEntityDetailLayout\b[^}]*\}\s+from\s+['"]@\/components\/layout\/EntityDetailLayout['"]/,
+        );
+      });
+
+      it("renders <EntityDetailLayout> at least once", () => {
+        expect(src).toMatch(/<EntityDetailLayout\b/);
+      });
+
+      it("does not regress to a hand-rolled top-level header for the migrated entity", () => {
+        // The pre-migration shape was a flex header with a back link
+        // (`<Link className="text-content-muted hover:text-content-emphasis...">`)
+        // immediately followed by an inline `<Heading level={1}>`.
+        // Once migrated, the back link is the shell's `back` prop.
+        // Reject any reintroduction of the hand-rolled `← Back` link
+        // outside the shell prop value.
+        //
+        // We allow `back={{ href: ..., label: ... }}` (the shell prop)
+        // but reject a literal `← ` followed by `</Link>` at the same
+        // indentation as the heading — that's the old shape.
+        const handRolledBack = /<Link[^>]*>\s*←\s*[^<]+<\/Link>/.test(src ?? "");
+        expect({ entity, handRolledBack }).toEqual({ entity, handRolledBack: false });
+      });
+    },
+  );
+
+  it("Wave-2 deferred entries are real files with documented reasons", () => {
+    for (const { page, reason } of WAVE_2_DEFERRED) {
+      const abs = path.resolve(ROOT, page);
+      expect(fs.existsSync(abs)).toBe(true);
+      expect(reason.length).toBeGreaterThan(20);
+    }
+  });
+
+  it("Wave-2 backlog is bounded — graduate entries to ADOPTED_PAGES, do not grow this list", () => {
+    // Bumping this means we're putting MORE detail pages on the
+    // hand-rolled side. Should only ever shrink.
+    expect(WAVE_2_DEFERRED.length).toBeLessThanOrEqual(5);
+  });
+
+  it("every detail-page route under `src/app/t/[tenantSlug]/(app)` is either adopted or explicitly deferred", () => {
+    // Walk app pages and find every `*/[*]/page.tsx` route. Each must
+    // appear in ADOPTED_PAGES, WAVE_2_DEFERRED, or KNOWN_NON_DETAIL.
+    const adopted = new Set(ADOPTED_PAGES.map((a) => a.page));
+    // Some pages have their layout in a sibling Client component
+    // (e.g. access-reviews/[reviewId]/page.tsx is a thin server shell
+    // that delegates to AccessReviewDetailClient.tsx). Treat the page
+    // file as covered if its directory contains any adopted file.
+    const adoptedDirs = new Set<string>();
+    for (const a of ADOPTED_PAGES) {
+      adoptedDirs.add(path.dirname(a.page));
+    }
+    const deferred = new Set(WAVE_2_DEFERRED.map((d) => d.page));
+
+    // Routes that are nested sub-pages of a parent entity (e.g. tests
+    // sub-page under controls) — these have their own layout needs and
+    // are not the entity's primary detail surface. Documented here so
+    // the ratchet doesn't flag them.
+    const KNOWN_NON_PRIMARY_DETAIL = new Set<string>([
+      "src/app/t/[tenantSlug]/(app)/audits/cycles/[cycleId]/readiness/page.tsx",
+      "src/app/t/[tenantSlug]/(app)/controls/[controlId]/tests/[planId]/page.tsx",
+      "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/diff/page.tsx",
+      "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/install/page.tsx",
+      "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/templates/page.tsx",
+      "src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/assessment/[assessmentId]/page.tsx",
+      "src/app/t/[tenantSlug]/(app)/issues/[issueId]/page.tsx", // legacy redirect → /tasks/[id]
+      "src/app/t/[tenantSlug]/(app)/admin/vendor-templates/[templateId]/page.tsx",
+      "src/app/t/[tenantSlug]/(app)/admin/vendor-assessment-reviews/[assessmentId]/page.tsx",
+    ]);
+
+    function walk(dir: string, out: string[] = []): string[] {
+      if (!fs.existsSync(dir)) return out;
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, e.name);
+        if (e.isDirectory()) walk(full, out);
+        else if (e.name === "page.tsx") out.push(full);
+      }
+      return out;
+    }
+    const allPages = walk(APP_ROOT)
+      .map((abs) => path.relative(ROOT, abs))
+      // Detail pages have a SECOND `[param]` segment beyond the
+      // outer `[tenantSlug]`. Plain list/dashboard routes only have
+      // the tenant slug — we filter those out.
+      .filter((rel) => (rel.match(/\[[^\]]+\]/g) ?? []).length >= 2);
+
+    const unknown: string[] = [];
+    for (const page of allPages) {
+      if (adopted.has(page)) continue;
+      if (deferred.has(page)) continue;
+      if (KNOWN_NON_PRIMARY_DETAIL.has(page)) continue;
+      // page may be covered indirectly by a sibling Client component
+      const dir = path.dirname(page);
+      if (adoptedDirs.has(dir)) continue;
+      unknown.push(page);
+    }
+    expect(unknown).toEqual([]);
+  });
+});

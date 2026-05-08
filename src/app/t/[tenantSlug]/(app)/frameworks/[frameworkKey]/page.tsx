@@ -12,7 +12,8 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { useCelebration } from '@/components/ui/hooks';
 import { MILESTONES, scopedMilestone } from '@/lib/celebrations';
 import type { FrameworkTreePayload } from '@/lib/framework-tree/types';
-import { Heading } from '@/components/ui/typography';
+import { Heading, Caption } from '@/components/ui/typography';
+import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 
 type Tab = 'requirements' | 'packs' | 'coverage' | 'builder';
 
@@ -78,8 +79,21 @@ export default function FrameworkDetailPage() {
         })();
     }, [apiUrl, frameworkKey]);
 
-    if (loading) return <div className="p-8 animate-pulse text-content-muted" id="framework-detail-loading">Loading framework...</div>;
-    if (error || !framework) return <div className="p-8 text-content-error" id="framework-detail-error">{error ?? 'Framework not found'}</div>;
+    const back = { href: tenantHref('/frameworks'), label: 'Frameworks' };
+    if (loading) {
+        return (
+            <EntityDetailLayout loading title="" back={back}>
+                <></>
+            </EntityDetailLayout>
+        );
+    }
+    if (error || !framework) {
+        return (
+            <EntityDetailLayout error={error ?? 'Framework not found'} title="" back={back}>
+                <></>
+            </EntityDetailLayout>
+        );
+    }
 
     const tabs: { key: Tab; label: string; count?: number }[] = [
         { key: 'requirements', label: 'Requirements', count: tree?.totals.requirements },
@@ -107,21 +121,18 @@ export default function FrameworkDetailPage() {
     }
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <div>
-                    <div className="flex items-center gap-3">
-                        <Link href={tenantHref('/frameworks')} className="text-content-muted hover:text-content-emphasis transition-colors">← Frameworks</Link>
-                    </div>
-                    <Heading level={1} className="mt-2" id="framework-detail-heading">{framework.name}</Heading>
-                    <div className="flex items-center gap-2 mt-1">
-                        {framework.version && <StatusBadge variant="info">v{framework.version}</StatusBadge>}
-                        {framework.kind && <span className="text-xs text-content-subtle">{framework.kind.replace('_', ' ')}</span>}
-                    </div>
-                    {framework.description && <p className="text-sm text-content-muted mt-2">{framework.description}</p>}
-                </div>
-                <div className="flex flex-wrap gap-2">
+        <EntityDetailLayout
+            id="framework-detail-page"
+            back={back}
+            title={<span id="framework-detail-heading">{framework.name}</span>}
+            meta={
+                <>
+                    {framework.version && <StatusBadge variant="info">v{framework.version}</StatusBadge>}
+                    {framework.kind && <span className="text-xs text-content-subtle">{framework.kind.replace('_', ' ')}</span>}
+                </>
+            }
+            actions={
+                <>
                     <Link href={tenantHref(`/frameworks/${frameworkKey}/templates`)} className={buttonVariants({ variant: 'secondary' })} id="browse-templates-cta">
                         Browse Templates
                     </Link>
@@ -130,24 +141,13 @@ export default function FrameworkDetailPage() {
                             Install Pack
                         </Link>
                     </RequirePermission>
-                </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="flex gap-1 bg-bg-default/50 p-1 rounded-lg w-full sm:w-fit overflow-x-auto" id="framework-tabs">
-                {tabs.map(tab => (
-                    <button
-                        key={tab.key}
-                        onClick={() => setActiveTab(tab.key)}
-                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === tab.key ? 'bg-brand-600 text-content-emphasis' : 'text-content-muted hover:text-content-emphasis'
-                            }`}
-                        id={`tab-${tab.key}`}
-                    >
-                        {tab.label}
-                        {tab.count !== undefined && <span className="ml-1.5 text-xs opacity-60">({tab.count})</span>}
-                    </button>
-                ))}
-            </div>
+                </>
+            }
+            tabs={tabs}
+            activeTab={activeTab}
+            onTabChange={(next) => setActiveTab(next as Tab)}
+        >
+            {framework.description && <Caption className="-mt-2">{framework.description}</Caption>}
 
             {/* Requirements Tab — Epic 46 tree explorer */}
             {activeTab === 'requirements' && (
@@ -301,6 +301,6 @@ export default function FrameworkDetailPage() {
                     )}
                 </div>
             )}
-        </div>
+        </EntityDetailLayout>
     );
 }
