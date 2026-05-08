@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
+import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 import type { PolicyDetailDTO, PolicyVersionDTO, AuditLogEntry } from '@/lib/dto';
 import { DatePicker } from '@/components/ui/date-picker/date-picker';
 import {
@@ -316,14 +317,28 @@ export default function PolicyDetailPage() {
 
     // ── Render ──
 
-    if (loading) return <div className="p-12 text-center text-content-subtle animate-pulse">Loading policy...</div>;
-    if (error && !policy) return (
-        <div className="glass-card p-12 text-center text-content-error animate-fadeIn">
-            <p className="text-lg">{error}</p>
-            <Link href={tenantHref('/policies')} className={buttonVariants({ variant: 'secondary', className: 'mt-4' })}>← Back to Policies</Link>
-        </div>
-    );
-    if (!policy) return null;
+    const back = { href: tenantHref('/policies'), label: 'Policies' };
+    if (loading) {
+        return (
+            <EntityDetailLayout loading title="" back={back}>
+                <></>
+            </EntityDetailLayout>
+        );
+    }
+    if (error && !policy) {
+        return (
+            <EntityDetailLayout error={error} title="" back={back}>
+                <></>
+            </EntityDetailLayout>
+        );
+    }
+    if (!policy) {
+        return (
+            <EntityDetailLayout empty={{ message: 'Policy not found.' }} title="" back={back}>
+                <></>
+            </EntityDetailLayout>
+        );
+    }
 
     const currentVersion = policy.currentVersion || policy.versions?.[0];
     const versions = policy.versions || [];
@@ -359,7 +374,37 @@ export default function PolicyDetailPage() {
     })();
 
     return (
-        <div className="space-y-6 animate-fadeIn">
+        <EntityDetailLayout
+            id="policy-detail-page"
+            back={back}
+            title={<span className="truncate" id="policy-title">{policy.title}</span>}
+            meta={
+                <>
+                    <StatusBadge variant={STATUS_BADGE[policy.status] || 'neutral'} id="policy-status">{policy.status}</StatusBadge>
+                    {isOverdue && <StatusBadge variant="error">Overdue</StatusBadge>}
+                </>
+            }
+            actions={
+                <>
+                    {canWrite && policy.status !== 'ARCHIVED' && (
+                        <button onClick={() => {
+                            setTab('editor');
+                            setEditorContent(currentVersion?.contentText || '');
+                            setEditorContentType(
+                                currentVersion?.contentType === 'HTML'
+                                    ? 'HTML'
+                                    : 'MARKDOWN',
+                            );
+                        }} className={buttonVariants({ variant: 'primary', size: 'sm' })} id="new-version-btn">New Version</button>
+                    )}
+                    {canAdmin && policy.status !== 'ARCHIVED' && (
+                        <Button variant="ghost" size="sm" className="text-content-muted hover:text-content-error" onClick={archivePolicy} disabled={actionLoading === 'archive'} id="archive-btn">
+                            {actionLoading === 'archive' ? '...' : 'Archive'}
+                        </Button>
+                    )}
+                </>
+            }
+        >
             {/* Approval banner (Epic 45.3) — only mounts when an
                 approval row is PENDING. Reviewer-only actions are
                 gated by `canAdmin`; non-reviewers still see status
@@ -375,13 +420,6 @@ export default function PolicyDetailPage() {
                 />
             )}
 
-            {/* Breadcrumb */}
-            <div className="flex items-center gap-2 text-sm text-content-muted">
-                <Link href={tenantHref('/policies')} className="hover:text-[var(--brand-default)] transition">Policies</Link>
-                <span>/</span>
-                <span className="text-content-emphasis truncate">{policy.title}</span>
-            </div>
-
             {error && (
                 <div className="p-3 rounded-lg bg-bg-error border border-border-error text-content-error text-sm">
                     {error}
@@ -389,15 +427,10 @@ export default function PolicyDetailPage() {
                 </div>
             )}
 
-            {/* Header */}
+            {/* Description + meta + review-schedule */}
             <div className="glass-card p-6">
                 <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-2">
-                            <Heading level={1} className="truncate" id="policy-title">{policy.title}</Heading>
-                            <StatusBadge variant={STATUS_BADGE[policy.status] || 'neutral'} id="policy-status">{policy.status}</StatusBadge>
-                            {isOverdue && <StatusBadge variant="error">Overdue</StatusBadge>}
-                        </div>
                         {policy.description && <p className="text-sm text-content-muted mb-3">{policy.description}</p>}
                         <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-content-subtle">
                             {policy.category && <span>{policy.category}</span>}
@@ -481,30 +514,6 @@ export default function PolicyDetailPage() {
                                 </Button>
                                 <Button variant="ghost" size="xs" onClick={() => setEditingReview(false)}>Cancel</Button>
                             </div>
-                        )}
-                    </div>
-                    <div className="flex gap-2 flex-shrink-0">
-                        {canWrite && policy.status !== 'ARCHIVED' && (
-                            <button onClick={() => {
-                                setTab('editor');
-                                setEditorContent(currentVersion?.contentText || '');
-                                // Seed the editor's mode from the
-                                // current version's contentType so a
-                                // version saved as HTML opens in
-                                // WYSIWYG and one saved as MARKDOWN
-                                // opens in the textarea.
-                                setEditorContentType(
-                                    currentVersion?.contentType === 'HTML'
-                                        ? 'HTML'
-                                        : 'MARKDOWN',
-                                );
-                            }}
-                                className={buttonVariants({ variant: 'primary', size: 'sm' })} id="new-version-btn">New Version</button>
-                        )}
-                        {canAdmin && policy.status !== 'ARCHIVED' && (
-                            <Button variant="ghost" size="sm" className="text-content-muted hover:text-content-error" onClick={archivePolicy} disabled={actionLoading === 'archive'} id="archive-btn">
-                                {actionLoading === 'archive' ? '...' : 'Archive'}
-                            </Button>
                         )}
                     </div>
                 </div>
@@ -735,6 +744,6 @@ export default function PolicyDetailPage() {
                     )}
                 </div>
             )}
-        </div>
+        </EntityDetailLayout>
     );
 }

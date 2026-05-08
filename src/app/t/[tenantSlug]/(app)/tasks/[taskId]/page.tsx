@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { useToastWithUndo } from '@/components/ui/hooks';
 import { SkeletonLine, SkeletonCard } from '@/components/ui/skeleton';
 import { UserCombobox } from '@/components/ui/user-combobox';
+import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { CopyText } from '@/components/ui/copy-text';
 import { TERMINAL_WORK_ITEM_STATUSES } from '@/app-layer/domain/work-item-status';
@@ -254,28 +255,34 @@ export default function TaskDetailPage() {
         setSavingComment(false);
     };
 
-    if (loading) return (
-        <div className="space-y-6 animate-fadeIn" aria-busy="true">
-            <div className="space-y-2">
-                <SkeletonLine className="w-12" />
-                <SkeletonLine className="w-64 h-7" />
-                <div className="flex gap-2">
-                    <SkeletonLine className="w-16 h-5 rounded-full" />
-                    <SkeletonLine className="w-16 h-5 rounded-full" />
-                    <SkeletonLine className="w-16 h-5 rounded-full" />
-                </div>
-            </div>
-            <SkeletonCard lines={4} />
-        </div>
-    );
-    if (error) return <div className="p-12 text-center text-content-error">{error}</div>;
-    if (!task) return <div className="p-12 text-center text-content-subtle">Task not found.</div>;
+    const back = { href: tenantHref('/tasks'), label: 'Tasks' };
+    if (loading) {
+        return (
+            <EntityDetailLayout loading title="" back={back}>
+                <></>
+            </EntityDetailLayout>
+        );
+    }
+    if (error) {
+        return (
+            <EntityDetailLayout error={error} title="" back={back}>
+                <></>
+            </EntityDetailLayout>
+        );
+    }
+    if (!task) {
+        return (
+            <EntityDetailLayout empty={{ message: 'Task not found.' }} title="" back={back}>
+                <></>
+            </EntityDetailLayout>
+        );
+    }
 
-    const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
-        { key: 'overview', label: 'Overview', icon: <AppIcon name="overview" size={14} /> },
-        { key: 'links', label: `Links${(task._count?.links ?? links.length) ? ` (${task._count?.links ?? links.length})` : ''}`, icon: <AppIcon name="link" size={14} /> },
-        { key: 'comments', label: `Comments${(task._count?.comments ?? comments.length) ? ` (${task._count?.comments ?? comments.length})` : ''}`, icon: <AppIcon name="comments" size={14} /> },
-        { key: 'activity', label: 'Activity', icon: <AppIcon name="activity" size={14} /> },
+    const tabs: { key: Tab; label: string; count?: number }[] = [
+        { key: 'overview', label: 'Overview' },
+        { key: 'links', label: 'Links', count: task._count?.links ?? links.length },
+        { key: 'comments', label: 'Comments', count: task._count?.comments ?? comments.length },
+        { key: 'activity', label: 'Activity' },
     ];
 
     const isOverdue = task.dueAt && new Date(task.dueAt) < new Date() && !(TERMINAL_WORK_ITEM_STATUSES as readonly string[]).includes(task.status);
@@ -284,56 +291,57 @@ export default function TaskDetailPage() {
     const metadata = task.metadataJson || {};
 
     return (
-        <div className="space-y-6 animate-fadeIn">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <Link href={tenantHref('/tasks')} className="text-content-muted text-xs hover:text-content-emphasis transition">← Tasks</Link>
-                    <Heading level={1} className="mt-1" id="task-title">{task.title}</Heading>
-                    <div className="flex gap-2 mt-1 flex-wrap items-center">
-                        {task.key && (
-                            <CopyText
-                                value={task.key}
-                                label={`Copy task key ${task.key}`}
-                                successMessage="Task key copied"
-                                className="text-xs text-content-subtle"
-                            >
-                                {task.key}
-                            </CopyText>
-                        )}
-                        <StatusBadge variant={STATUS_BADGE[task.status] || 'neutral'} id="task-status">
-                            {STATUS_LABELS[task.status] || task.status}
-                        </StatusBadge>
-                        <StatusBadge variant={SEVERITY_BADGE[task.severity] || 'neutral'} id="task-severity">
-                            {task.severity}
-                        </StatusBadge>
-                        <StatusBadge variant="info">{TYPE_LABELS[task.type] || task.type}</StatusBadge>
-                        {isOverdue && <StatusBadge variant="error">Overdue</StatusBadge>}
-                        {sla.breach && <StatusBadge variant="error" id="sla-badge">{sla.label}</StatusBadge>}
-                        {relevance.satisfied ? (
-                            <StatusBadge variant="success" id="relevance-badge">Relevance satisfied</StatusBadge>
-                        ) : (
-                            <StatusBadge variant="warning" id="relevance-badge">{relevance.message}</StatusBadge>
-                        )}
-                    </div>
-                </div>
-                {permissions.canWrite && (
-                    <div className="flex gap-2 items-center">
-                        <Combobox
-                            hideSearch
-                            id="task-status-select"
-                            selected={TASK_STATUS_CB_OPTIONS.find(o => o.value === task.status) ?? null}
-                            setSelected={(opt) => { if (opt) changeStatus(opt.value); }}
-                            options={TASK_STATUS_CB_OPTIONS}
-                            disabled={changingStatus}
-                            placeholder="Status"
-                            matchTriggerWidth
-                            buttonProps={{ className: 'w-40 text-sm' }}
-                        />
-                    </div>
-                )}
-            </div>
-
+        <EntityDetailLayout
+            id="task-detail-page"
+            back={back}
+            title={<span id="task-title">{task.title}</span>}
+            meta={
+                <>
+                    {task.key && (
+                        <CopyText
+                            value={task.key}
+                            label={`Copy task key ${task.key}`}
+                            successMessage="Task key copied"
+                            className="text-xs text-content-subtle"
+                        >
+                            {task.key}
+                        </CopyText>
+                    )}
+                    <StatusBadge variant={STATUS_BADGE[task.status] || 'neutral'} id="task-status">
+                        {STATUS_LABELS[task.status] || task.status}
+                    </StatusBadge>
+                    <StatusBadge variant={SEVERITY_BADGE[task.severity] || 'neutral'} id="task-severity">
+                        {task.severity}
+                    </StatusBadge>
+                    <StatusBadge variant="info">{TYPE_LABELS[task.type] || task.type}</StatusBadge>
+                    {isOverdue && <StatusBadge variant="error">Overdue</StatusBadge>}
+                    {sla.breach && <StatusBadge variant="error" id="sla-badge">{sla.label}</StatusBadge>}
+                    {relevance.satisfied ? (
+                        <StatusBadge variant="success" id="relevance-badge">Relevance satisfied</StatusBadge>
+                    ) : (
+                        <StatusBadge variant="warning" id="relevance-badge">{relevance.message}</StatusBadge>
+                    )}
+                </>
+            }
+            actions={
+                permissions.canWrite && (
+                    <Combobox
+                        hideSearch
+                        id="task-status-select"
+                        selected={TASK_STATUS_CB_OPTIONS.find(o => o.value === task.status) ?? null}
+                        setSelected={(opt) => { if (opt) changeStatus(opt.value); }}
+                        options={TASK_STATUS_CB_OPTIONS}
+                        disabled={changingStatus}
+                        placeholder="Status"
+                        matchTriggerWidth
+                        buttonProps={{ className: 'w-40 text-sm' }}
+                    />
+                )
+            }
+            tabs={tabs}
+            activeTab={tab}
+            onTabChange={(next) => setTab(next as Tab)}
+        >
             {/* Assignment controls */}
             {permissions.canWrite && (
                 <div className="glass-card p-4">
@@ -361,20 +369,6 @@ export default function TaskDetailPage() {
                     </div>
                 </div>
             )}
-
-            {/* Tabs */}
-            <div className="flex gap-1 border-b border-border-default">
-                {tabs.map(t => (
-                    <button
-                        key={t.key}
-                        className={`px-4 py-2 text-sm font-medium transition border-b-2 ${tab === t.key ? 'border-[var(--brand-default)] text-content-emphasis' : 'border-transparent text-content-muted hover:text-content-emphasis'}`}
-                        onClick={() => setTab(t.key)}
-                        id={`tab-${t.key}`}
-                    >
-                        {t.icon} {t.label}
-                    </button>
-                ))}
-            </div>
 
             {/* Overview Tab */}
             {tab === 'overview' && (
@@ -598,6 +592,6 @@ export default function TaskDetailPage() {
                     )}
                 </div>
             )}
-        </div>
+        </EntityDetailLayout>
     );
 }

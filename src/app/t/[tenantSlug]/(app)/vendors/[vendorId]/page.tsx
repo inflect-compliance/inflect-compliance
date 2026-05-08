@@ -15,6 +15,7 @@ import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { useToastWithUndo } from '@/components/ui/hooks';
 import { normaliseHref } from '@/lib/security/safe-url';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 import { Heading } from '@/components/ui/typography';
 
 const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
@@ -204,22 +205,45 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
         setEnriching(false);
     };
 
-    if (loading) return <SkeletonDetailPage />;
-    if (!vendor) return <div className="text-content-error py-8 text-center">Vendor not found</div>;
+    const back = { href: tenantHref('/vendors'), label: 'Vendors' };
+    if (loading) {
+        return (
+            <EntityDetailLayout loading title="" back={back}>
+                <></>
+            </EntityDetailLayout>
+        );
+    }
+    if (!vendor) {
+        return (
+            <EntityDetailLayout empty={{ message: 'Vendor not found.' }} title="" back={back}>
+                <></>
+            </EntityDetailLayout>
+        );
+    }
 
     const fmtDate = (d: string | null) => d ? formatDate(d) : '—';
+    const tabs: { key: Tab; label: string; count?: number }[] = [
+        { key: 'overview', label: 'Overview' },
+        { key: 'documents', label: 'Documents', count: vendor._count?.documents || 0 },
+        { key: 'assessments', label: 'Assessments', count: vendor._count?.assessments || 0 },
+        { key: 'links', label: 'Links' },
+        { key: 'bundles', label: 'Bundles' },
+        { key: 'subprocessors', label: 'Subprocessors' },
+    ];
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <Link href={tenantHref('/vendors')} className="text-content-muted hover:text-content-emphasis">← Back</Link>
-                    <Heading level={1} id="vendor-detail-name">{vendor.name}</Heading>
+        <EntityDetailLayout
+            id="vendor-detail-page"
+            back={back}
+            title={<span id="vendor-detail-name">{vendor.name}</span>}
+            meta={
+                <>
                     <StatusBadge variant={STATUS_BADGE[vendor.status]}>{vendor.status}</StatusBadge>
                     <StatusBadge variant={CRIT_BADGE[vendor.criticality]}>{vendor.criticality}</StatusBadge>
-                </div>
-                <div className="flex gap-2">
+                </>
+            }
+            actions={
+                <>
                     {canWrite && (vendor.domain || vendor.websiteUrl) && (
                         <Button variant="secondary" onClick={handleEnrich} disabled={enriching} id="enrich-vendor-btn">
                             {enriching ? 'Enriching…' : 'Auto-fill'}
@@ -228,20 +252,12 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                     {canWrite && !editing && (
                         <Button variant="secondary" onClick={() => setEditing(true)} id="edit-vendor-btn">Edit</Button>
                     )}
-                </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="flex gap-1 border-b border-border-default">
-                {(['overview', 'documents', 'assessments', 'links', 'bundles', 'subprocessors'] as Tab[]).map(t => (
-                    <button key={t} onClick={() => setTab(t)}
-                        className={`px-4 py-2 text-sm capitalize ${tab === t ? 'border-b-2 border-border-info text-content-emphasis' : 'text-content-muted hover:text-content-emphasis'}`}
-                        id={`tab-${t}`}>
-                        {t} {t === 'documents' ? `(${vendor._count?.documents || 0})` : t === 'assessments' ? `(${vendor._count?.assessments || 0})` : ''}
-                    </button>
-                ))}
-            </div>
-
+                </>
+            }
+            tabs={tabs}
+            activeTab={tab}
+            onTabChange={(next) => setTab(next as Tab)}
+        >
             {/* OVERVIEW */}
             {tab === 'overview' && !editing && (
                 <div className="card p-6 space-y-4">
@@ -576,6 +592,6 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                     </div>
                 </div>
             )}
-        </div>
+        </EntityDetailLayout>
     );
 }

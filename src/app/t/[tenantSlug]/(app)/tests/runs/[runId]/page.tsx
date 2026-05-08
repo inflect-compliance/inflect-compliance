@@ -14,6 +14,7 @@ import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { Tooltip } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
+import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 
@@ -196,48 +197,63 @@ export default function TestRunPage() {
         }
     };
 
-    if (loading) return <div className="p-12 text-center text-content-subtle animate-pulse"><div className="h-6 w-full sm:w-48 bg-bg-elevated rounded mx-auto" /></div>;
-    if (error) return <div className="p-12 text-center text-content-error">{error}</div>;
-    if (!run) return <div className="p-12 text-center text-content-subtle">Run not found.</div>;
+    const fallbackBack = { href: tenantHref('/tests'), label: 'Tests' };
+    if (loading) {
+        return (
+            <EntityDetailLayout loading title="" back={fallbackBack}>
+                <></>
+            </EntityDetailLayout>
+        );
+    }
+    if (error) {
+        return (
+            <EntityDetailLayout error={error} title="" back={fallbackBack}>
+                <></>
+            </EntityDetailLayout>
+        );
+    }
+    if (!run) {
+        return (
+            <EntityDetailLayout empty={{ message: 'Run not found.' }} title="" back={fallbackBack}>
+                <></>
+            </EntityDetailLayout>
+        );
+    }
 
     const isCompleted = run.status === 'COMPLETED';
 
     // Determine if "Link" button should be disabled
     const canSubmitEvidence = evKind === 'LINK' ? !!evUrl : evKind === 'EVIDENCE' ? !!evEvidenceId : !!evFile;
 
+    const back = run.testPlan
+        ? { href: tenantHref(`/controls/${run.testPlan.controlId}/tests/${run.testPlanId}`), label: run.testPlan.name }
+        : fallbackBack;
+
     return (
-        <div className="space-y-6 animate-fadeIn">
-            {/* Breadcrumb */}
-            <div className="flex items-center gap-2 text-xs text-content-muted">
-                {run.testPlan && (
-                    <Link href={tenantHref(`/controls/${run.testPlan.controlId}/tests/${run.testPlanId}`)} className="hover:text-content-emphasis transition">
-                        ← {run.testPlan.name}
-                    </Link>
-                )}
-            </div>
-
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <Heading level={1} id="test-run-title">
-                        Test Run {run.testPlan ? `— ${run.testPlan.name}` : ''}
-                    </Heading>
-                    <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <StatusBadge variant={run.status === 'COMPLETED' ? 'success' : run.status === 'RUNNING' ? 'info' : 'neutral'} id="test-run-status">
-                            {run.status}
+        <EntityDetailLayout
+            id="test-run-detail-page"
+            back={back}
+            title={
+                <span id="test-run-title">
+                    Test Run {run.testPlan ? `— ${run.testPlan.name}` : ''}
+                </span>
+            }
+            meta={
+                <>
+                    <StatusBadge variant={run.status === 'COMPLETED' ? 'success' : run.status === 'RUNNING' ? 'info' : 'neutral'} id="test-run-status">
+                        {run.status}
+                    </StatusBadge>
+                    {run.result && (
+                        <StatusBadge variant={RESULT_BADGE[run.result] || 'neutral'} id="test-run-result">
+                            {run.result}
                         </StatusBadge>
-                        {run.result && (
-                            <StatusBadge variant={RESULT_BADGE[run.result] || 'neutral'} id="test-run-result">
-                                {run.result}
-                            </StatusBadge>
-                        )}
-                        {run.executedAt && (
-                            <span className="text-xs text-content-muted">Executed: {formatDate(run.executedAt)}</span>
-                        )}
-                    </div>
-                </div>
-            </div>
-
+                    )}
+                    {run.executedAt && (
+                        <span className="text-xs text-content-muted">Executed: {formatDate(run.executedAt)}</span>
+                    )}
+                </>
+            }
+        >
             {/* Complete Form — only if not completed */}
             {!isCompleted && permissions.canWrite && (
                 <div className="glass-card p-5 space-y-4 border-l-4 border-[var(--brand-default)]">
@@ -473,6 +489,6 @@ export default function TestRunPage() {
             <div className="text-xs text-content-subtle">
                 Created {formatDate(run.createdAt)} by {run.createdBy?.name || run.createdBy?.email || 'Unknown'}
             </div>
-        </div>
+        </EntityDetailLayout>
     );
 }

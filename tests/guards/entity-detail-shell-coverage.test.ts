@@ -40,47 +40,31 @@ interface Adopter {
  *   2. references `<EntityDetailLayout` somewhere (rendered tag).
  */
 const ADOPTED_PAGES: ReadonlyArray<Adopter> = [
+  // Wave 1 (PR-4)
   { page: "src/app/t/[tenantSlug]/(app)/controls/[controlId]/page.tsx", entity: "Control" },
   { page: "src/app/t/[tenantSlug]/(app)/assets/[id]/page.tsx", entity: "Asset" },
   { page: "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/page.tsx", entity: "Framework" },
   { page: "src/app/t/[tenantSlug]/(app)/access-reviews/[reviewId]/AccessReviewDetailClient.tsx", entity: "Access review" },
   { page: "src/app/t/[tenantSlug]/(app)/audits/cycles/[cycleId]/page.tsx", entity: "Audit cycle" },
   { page: "src/app/t/[tenantSlug]/(app)/audits/packs/[packId]/page.tsx", entity: "Audit pack" },
+  // Wave 2 (PR-4b)
+  { page: "src/app/t/[tenantSlug]/(app)/risks/[riskId]/page.tsx", entity: "Risk" },
+  { page: "src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx", entity: "Task" },
+  { page: "src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx", entity: "Vendor" },
+  { page: "src/app/t/[tenantSlug]/(app)/policies/[policyId]/page.tsx", entity: "Policy" },
+  { page: "src/app/t/[tenantSlug]/(app)/tests/runs/[runId]/page.tsx", entity: "Test run" },
 ];
 
 /**
- * Detail pages deferred to PR-4b for migration. Listed here (not
- * silently exempt) so the count of pending pages is visible and
- * reviewable. Each entry must have a written reason and the planned
- * follow-up.
+ * Detail pages deferred for migration. PR-4b graduated all five
+ * Wave-2 entries to `ADOPTED_PAGES`; the list is empty.
+ *
+ * If a future PR genuinely needs to defer a detail-page migration,
+ * add an entry here with a written reason >= 20 chars and the
+ * planned follow-up. The post-loop assertion caps the list at 5
+ * entries — graduate, don't grow.
  */
-const WAVE_2_DEFERRED: ReadonlyArray<{ page: string; entity: string; reason: string }> = [
-  {
-    page: "src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx",
-    entity: "Vendor",
-    reason: "581 lines, 6+ tab sections (overview/documents/assessments/links/bundles/subprocessors); migration scoped to PR-4b for focused review",
-  },
-  {
-    page: "src/app/t/[tenantSlug]/(app)/risks/[riskId]/page.tsx",
-    entity: "Risk",
-    reason: "515 lines with embedded comments + treatment plan + linked entities; PR-4b",
-  },
-  {
-    page: "src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx",
-    entity: "Task",
-    reason: "603 lines with rich tab system + linked entities + comments; PR-4b",
-  },
-  {
-    page: "src/app/t/[tenantSlug]/(app)/policies/[policyId]/page.tsx",
-    entity: "Policy",
-    reason: "740 lines (largest detail page) with version history, content editor, approvals; PR-4b",
-  },
-  {
-    page: "src/app/t/[tenantSlug]/(app)/tests/runs/[runId]/page.tsx",
-    entity: "Test run",
-    reason: "478 lines with step-by-step result rendering + evidence gallery; PR-4b",
-  },
-];
+const WAVE_2_DEFERRED: ReadonlyArray<{ page: string; entity: string; reason: string }> = [];
 
 function read(rel: string): string | null {
   const abs = path.resolve(ROOT, rel);

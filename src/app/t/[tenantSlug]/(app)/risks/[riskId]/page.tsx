@@ -13,6 +13,7 @@ import { useTenantContext, useTenantApiUrl, useTenantHref } from '@/lib/tenant-c
 import dynamic from 'next/dynamic';
 import LinkedTasksPanel from '@/components/LinkedTasksPanel';
 import { Heading, Eyebrow } from '@/components/ui/typography';
+import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 // Epic G-7 — treatment plan card. Dynamic-imported so the modal +
 // react-query machinery only loads on risks the user actually opens.
 const RiskTreatmentPlanCard = dynamic(
@@ -211,53 +212,51 @@ export default function RiskDetailPage() {
     const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
         setEditForm(f => ({ ...f, [field]: e.target.value }));
 
+    const back = { href: href('/risks'), label: 'Risks' };
     if (loading) {
         return (
-            <div className="space-y-6 animate-fadeIn">
-                <div className="glass-card p-12 text-center text-content-subtle animate-pulse">Loading risk…</div>
-            </div>
+            <EntityDetailLayout loading title="" back={back}>
+                <></>
+            </EntityDetailLayout>
         );
     }
-
     if (error && !risk) {
         return (
-            <div className="space-y-6 animate-fadeIn">
-                <div className="glass-card p-8 text-center text-content-error">
-                    {error}
-                    <div className="mt-4">
-                        <Link href={href('/risks')} className={cn(buttonVariants({ variant: 'secondary' }))}>← Back to Risks</Link>
-                    </div>
-                </div>
-            </div>
+            <EntityDetailLayout error={error} title="" back={back}>
+                <></>
+            </EntityDetailLayout>
         );
     }
-
-    if (!risk) return null;
+    if (!risk) {
+        return (
+            <EntityDetailLayout empty={{ message: 'Risk not found.' }} title="" back={back}>
+                <></>
+            </EntityDetailLayout>
+        );
+    }
 
     const badge = getRiskBadge(risk.inherentScore);
     const overdue = isOverdue(risk.nextReviewAt);
 
     return (
-        <div className="space-y-6 animate-fadeIn max-w-4xl">
-            {/* Header */}
-            <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                    <Link href={href('/risks')} className="text-content-muted hover:text-content-emphasis transition text-lg">←</Link>
-                    <div>
-                        <Heading level={1} id="risk-title-heading">{risk.title}</Heading>
-                        <div className="flex items-center gap-2 mt-1">
-                            <StatusBadge variant={STATUS_VARIANT[risk.status] || 'neutral'} icon={null}>
-                                {risk.status}
-                            </StatusBadge>
-                            <StatusBadge variant={badge.variant} icon={null}>
-                                {risk.inherentScore} · {badge.label}
-                            </StatusBadge>
-                            {overdue && <StatusBadge variant="error" icon={null}>Overdue Review</StatusBadge>}
-                        </div>
-                    </div>
-                </div>
-                {canWrite && !editing && (
-                    <div className="flex gap-2">
+        <EntityDetailLayout
+            id="risk-detail-page"
+            back={back}
+            title={<span id="risk-title-heading">{risk.title}</span>}
+            meta={
+                <>
+                    <StatusBadge variant={STATUS_VARIANT[risk.status] || 'neutral'} icon={null}>
+                        {risk.status}
+                    </StatusBadge>
+                    <StatusBadge variant={badge.variant} icon={null}>
+                        {risk.inherentScore} · {badge.label}
+                    </StatusBadge>
+                    {overdue && <StatusBadge variant="error" icon={null}>Overdue Review</StatusBadge>}
+                </>
+            }
+            actions={
+                canWrite && !editing && (
+                    <>
                         <Button variant="secondary" onClick={startEditing} id="edit-risk-btn">Edit</Button>
                         <Combobox
                             hideSearch
@@ -269,10 +268,10 @@ export default function RiskDetailPage() {
                             matchTriggerWidth
                             buttonProps={{ className: 'w-36 text-sm' }}
                         />
-                    </div>
-                )}
-            </div>
-
+                    </>
+                )
+            }
+        >
             {error && (
                 <div className="glass-card p-4 border-border-error text-content-error text-sm">{error}</div>
             )}
@@ -510,6 +509,6 @@ export default function RiskDetailPage() {
                     canAdmin={tenant.permissions.canAdmin}
                 />
             </div>
-        </div>
+        </EntityDetailLayout>
     );
 }

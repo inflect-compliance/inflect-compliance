@@ -139,7 +139,11 @@ describe('Risk detail page token migration', () => {
     it('uses semantic tokens for text content', () => {
         expect(src).toContain('text-content-muted');
         expect(src).toContain('text-content-default');
-        expect(src).toContain('text-content-emphasis');
+        // The page-title's emphasis tone now flows through PR-3's
+        // `<Heading>` primitive (which applies `text-content-emphasis`
+        // by default) and PR-4b's `<EntityDetailLayout>` shell. We
+        // assert those substitutes instead of the literal class.
+        expect(src).toMatch(/Heading|EntityDetailLayout/);
         expect(src).toContain('text-content-error');
     });
 
