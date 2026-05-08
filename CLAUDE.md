@@ -654,6 +654,21 @@ stands for that PR only — not as a precedent.
 - **i18n**: UI strings go through `next-intl`. Message files are in `messages/`. Server components use `getTranslations()`, client components use `useTranslations()`.
 - **Path alias**: `@/` maps to `src/`. Always use this alias — never relative paths crossing layer boundaries.
 - **Two `DATABASE_URL` vars**: `DATABASE_URL` points to PgBouncer (transaction-mode, used at runtime). `DIRECT_DATABASE_URL` points directly to Postgres (used for Prisma migrations).
+- **Action button vocabulary** (PR-5): three verbs, one per intent.
+  Pick the one that matches what the click actually does. Never lead a
+  label with `+ ` — the icon belongs to the button's `icon` slot, not
+  the text.
+    - **`Create {Entity}`** — minting a new top-level entity (`Create
+      Risk`, `Create Asset`, `Create Audit`). Use this for the
+      primary action on a list page's header and for "+ New" replacements.
+    - **`Add {Entity}`** — inserting a child / attaching to a parent
+      (`Add Document` on the vendor detail page, `Add Comment` on a
+      task). The thing being added doesn't exist independently — it's
+      tied to the open entity.
+    - **`Link {Entity}`** — cross-entity association (`Link Risk`,
+      `Link Control`, `Link Asset` on the traceability panel). The
+      thing already exists; you're connecting it.
+  Forward enforcement at `tests/guards/action-label-vocabulary.test.ts`.
 
 ## Implementation notes
 

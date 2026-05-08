@@ -373,7 +373,7 @@ export default function NewTaskPage() {
                                 onChange={e => setLinkEntityId(e.target.value)}
                             />
                         </FormField>
-                        <Button type="button" variant="secondary" onClick={addPendingLink} id="add-link-btn">+ Add</Button>
+                        <Button type="button" variant="secondary" onClick={addPendingLink} id="add-link-btn">Add</Button>
                     </div>
                     {pendingLinks.length > 0 && (
                         <div className="space-y-1" id="pending-links-list">

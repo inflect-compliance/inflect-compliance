@@ -515,7 +515,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                     body: JSON.stringify({ name: bundleName }),
                                 });
                                 setBundleName(''); fetchBundles();
-                            }}>+ New Bundle</Button>
+                            }}>Create Bundle</Button>
                         </div>
                     )}
                     {bundles.map((b: any) => (
@@ -562,7 +562,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                     body: JSON.stringify(subForm),
                                 });
                                 setSubForm({ subprocessorVendorId: '', purpose: '' }); fetchSubs();
-                            }}>+ Add</Button>
+                            }}>Add</Button>
                         </div>
                     )}
                     <div className="card overflow-x-auto">
