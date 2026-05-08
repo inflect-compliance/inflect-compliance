@@ -5,6 +5,7 @@
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
 import { formatDate, formatDateTime } from '@/lib/format-date';
+import { SkeletonCard } from '@/components/ui/skeleton';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useSWRConfig } from 'swr';
 import { useParams } from 'next/navigation';
@@ -37,7 +38,7 @@ import dynamic from 'next/dynamic';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 
 const TraceabilityPanel = dynamic(() => import('@/components/TraceabilityPanel'), {
-    loading: () => <div className="glass-card p-6 animate-pulse h-48" aria-busy="true" />,
+    loading: () => <SkeletonCard lines={3} />,
     ssr: false,
 });
 // Epic G-5 — exceptions panel + header badge. The badge alone is
@@ -47,7 +48,7 @@ const TraceabilityPanel = dynamic(() => import('@/components/TraceabilityPanel')
 const ControlExceptionsPanel = dynamic(
     () => import('@/components/ControlExceptionsPanel').then((m) => m.ControlExceptionsPanel),
     {
-        loading: () => <div className="glass-card p-6 animate-pulse h-48" aria-busy="true" />,
+        loading: () => <SkeletonCard lines={3} />,
         ssr: false,
     },
 );
@@ -56,11 +57,11 @@ const ControlExceptionHeaderBadge = dynamic(
     { ssr: false },
 );
 const TestPlansPanel = dynamic(() => import('@/components/TestPlansPanel'), {
-    loading: () => <div className="glass-card p-6 animate-pulse h-48" aria-busy="true" />,
+    loading: () => <SkeletonCard lines={3} />,
     ssr: false,
 });
 const LinkedTasksPanel = dynamic(() => import('@/components/LinkedTasksPanel'), {
-    loading: () => <div className="glass-card p-6 animate-pulse h-48" aria-busy="true" />,
+    loading: () => <SkeletonCard lines={3} />,
     ssr: false,
 });
 import type {

@@ -1,5 +1,6 @@
 'use client';
 import { formatDate } from '@/lib/format-date';
+import { SkeletonCard } from '@/components/ui/skeleton';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -106,7 +107,7 @@ export default function AuditCyclesPage() {
     if (loading) return (
         <div className="p-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {[1, 2, 3].map(i => <div key={i} className="glass-card animate-pulse h-40" />)}
+                {[1, 2, 3].map(i => <SkeletonCard key={i} lines={3} />)}
             </div>
         </div>
     );

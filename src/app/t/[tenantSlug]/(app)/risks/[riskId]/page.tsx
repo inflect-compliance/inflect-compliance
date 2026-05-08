@@ -5,6 +5,7 @@
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
 import { formatDate } from '@/lib/format-date';
+import { SkeletonCard } from '@/components/ui/skeleton';
 import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -23,7 +24,7 @@ const RiskTreatmentPlanCard = dynamic(
         ),
     {
         loading: () => (
-            <div className="glass-card p-6 animate-pulse h-32" aria-busy="true" />
+            <SkeletonCard lines={2} />
         ),
         ssr: false,
     },
@@ -41,7 +42,7 @@ import { NumberStepper } from '@/components/ui/number-stepper';
 import { cn } from '@dub/utils';
 
 const TraceabilityPanel = dynamic(() => import('@/components/TraceabilityPanel'), {
-    loading: () => <div className="animate-pulse h-48" aria-busy="true" />,
+    loading: () => <SkeletonCard lines={3} />,
     ssr: false,
 });
 

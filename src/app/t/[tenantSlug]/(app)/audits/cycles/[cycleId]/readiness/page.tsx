@@ -1,6 +1,7 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback } from 'react';
+import { SkeletonCard } from '@/components/ui/skeleton';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
@@ -53,7 +54,7 @@ export default function CycleReadinessPage() {
         ]).then(([r, c]) => { setResult(r); setCycle(c); }).finally(() => setLoading(false));
     }, [apiUrl, cycleId]);
 
-    if (loading) return <div className="p-8"><div className="glass-card animate-pulse h-64" /></div>;
+    if (loading) return <div className="p-8"><SkeletonCard lines={5} /></div>;
     if (!result) return <div className="p-8 text-center text-content-muted">Could not compute readiness.</div>;
 
     const bd = result.breakdown;

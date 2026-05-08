@@ -1,6 +1,7 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { formatDate } from '@/lib/format-date';
+import { SkeletonCard } from '@/components/ui/skeleton';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -36,7 +37,7 @@ export default function AuditorPortalPage() {
 
     if (loading) return (
         <div className="p-8">
-            <div className="glass-card animate-pulse h-48" />
+            <SkeletonCard lines={4} />
         </div>
     );
 

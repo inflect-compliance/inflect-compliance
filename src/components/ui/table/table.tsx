@@ -35,6 +35,7 @@ import {
 } from "react";
 import { Button } from "../button";
 import { Checkbox } from "../checkbox";
+import { ErrorState } from "../error-state";
 import { LoadingSpinner, SortOrder } from "../icons";
 import { Tooltip } from "../tooltip";
 import { SelectionToolbar } from "./selection-toolbar";
@@ -987,9 +988,23 @@ export function Table<T>({
             emptyWrapperClassName,
           )}
         >
-          {error ||
-            emptyState ||
-            `No ${resourceName?.(true) || "items"} found.`}
+          {/* PR-8 — error fallback now renders as <ErrorState> when no
+              custom empty/error JSX is supplied. The previous plain-
+              text rendering meant a failed fetch surfaced as a tiny
+              muted line; users had to guess that the page was broken
+              vs. genuinely empty. With <ErrorState> the failure has
+              an alert role + icon + clear messaging. emptyState (if
+              passed) still wins so consumers can render their own
+              shape. */}
+          {error ? (
+            typeof error === "string" ? (
+              <ErrorState description={error} />
+            ) : (
+              error
+            )
+          ) : (
+            emptyState || `No ${resourceName?.(true) || "items"} found.`
+          )}
         </div>
       )}
       {pagination && !error && !!data?.length && !!rowCount && (

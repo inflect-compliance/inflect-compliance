@@ -1,5 +1,6 @@
 'use client';
 import { formatDateTime } from '@/lib/format-date';
+import { SkeletonCard } from '@/components/ui/skeleton';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
@@ -37,7 +38,7 @@ export default function SharedPackPage() {
 
     if (loading) return (
         <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-            <div className="glass-card animate-pulse w-96 h-32" />
+            <div className="w-96"><SkeletonCard lines={2} /></div>
         </div>
     );
 

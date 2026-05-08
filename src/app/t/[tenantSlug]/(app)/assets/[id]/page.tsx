@@ -5,6 +5,7 @@
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
 import { formatDate } from '@/lib/format-date';
+import { SkeletonCard } from '@/components/ui/skeleton';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
@@ -22,7 +23,7 @@ import { Heading, Eyebrow } from '@/components/ui/typography';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 
 const TraceabilityPanel = dynamic(() => import('@/components/TraceabilityPanel'), {
-    loading: () => <div className="animate-pulse h-48" aria-busy="true" />,
+    loading: () => <SkeletonCard lines={3} />,
     ssr: false,
 });
 
