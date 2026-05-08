@@ -535,7 +535,7 @@ function FrameworkSelectionStep({ data, onUpdate }: { data: StepData; onUpdate: 
                         >
                             <div className="flex items-center justify-between mb-2">
                                 <span className="font-semibold text-white text-sm">{fw.name}</span>
-                                {fw.badge && <StatusBadge variant="info" className="text-[10px]">{fw.badge}</StatusBadge>}
+                                {fw.badge && <StatusBadge variant="info" size="sm">{fw.badge}</StatusBadge>}
                             </div>
                             <p className="text-xs text-slate-400 leading-relaxed">{fw.desc}</p>
                             {active && <div className="mt-2 flex items-center gap-1 text-brand-400 text-xs font-medium"><CheckCircle2 className="w-3.5 h-3.5" /> Selected</div>}

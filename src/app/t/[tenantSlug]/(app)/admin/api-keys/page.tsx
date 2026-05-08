@@ -363,10 +363,10 @@ export default function ApiKeysPage() {
                         return (
                             <div className="flex flex-wrap gap-1">
                                 {scopes.slice(0, 3).map((s) => (
-                                    <StatusBadge variant="info" className="text-[10px]" key={s}>{s}</StatusBadge>
+                                    <StatusBadge variant="info" size="sm" key={s}>{s}</StatusBadge>
                                 ))}
                                 {scopes.length > 3 && (
-                                    <StatusBadge variant="neutral" className="text-[10px]">+{scopes.length - 3}</StatusBadge>
+                                    <StatusBadge variant="neutral" size="sm">+{scopes.length - 3}</StatusBadge>
                                 )}
                             </div>
                         );
@@ -454,9 +454,9 @@ export default function ApiKeysPage() {
                     header: 'Status',
                     cell: ({ row }) =>
                         row.original.revokedAt ? (
-                            <StatusBadge variant="error" className="text-[10px]">Revoked</StatusBadge>
+                            <StatusBadge variant="error" size="sm">Revoked</StatusBadge>
                         ) : (
-                            <StatusBadge variant="warning" className="text-[10px]">Expired</StatusBadge>
+                            <StatusBadge variant="warning" size="sm">Expired</StatusBadge>
                         ),
                 },
                 {

@@ -410,7 +410,7 @@ function FrameworkTreeRow({
         } else {
             // Coverage data missing — fall back to the prompt-2 affordance.
             meta = isMapped ? (
-                <StatusBadge variant="success" className="text-[10px] py-0.5 px-1.5">
+                <StatusBadge variant="success" size="sm">
                     {mappedCount}
                 </StatusBadge>
             ) : (
@@ -555,7 +555,7 @@ function RequirementDetail({
                                             ? 'success'
                                             : c.controlStatus === 'IN_PROGRESS'
                                               ? 'warning'
-                                              : 'info'} className="text-[10px]">
+                                              : 'info'} size="sm">
                                     {c.controlStatus}
                                 </StatusBadge>
                             </li>
