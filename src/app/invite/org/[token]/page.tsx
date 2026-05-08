@@ -17,6 +17,7 @@ import { auth } from '@/auth';
 import { previewOrgInviteByToken } from '@/app-layer/usecases/org-invites';
 import { formatDateLong } from '@/lib/format-date';
 import { Heading } from '@/components/ui/typography';
+import { InlineNotice } from '@/components/ui/inline-notice';
 
 interface InvitePageProps {
     params: Promise<{ token: string }>;
@@ -77,13 +78,14 @@ export default async function OrgInvitePage({ params, searchParams }: InvitePage
                 </p>
 
                 {errorParam && (
-                    <div
-                        className="mb-4 rounded-md bg-bg-error border border-border-error p-3 text-sm text-content-error text-center"
-                        role="alert"
+                    <InlineNotice
+                        variant="error"
+                        icon={null}
+                        className="mb-4 text-center"
                         data-testid="org-invite-error"
                     >
                         {errorParam}
-                    </div>
+                    </InlineNotice>
                 )}
 
                 {isReady ? (

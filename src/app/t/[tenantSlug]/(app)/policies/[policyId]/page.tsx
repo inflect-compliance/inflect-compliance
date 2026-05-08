@@ -29,6 +29,7 @@ import { VersionDiff } from '@/components/ui/VersionDiff';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { Card } from '@/components/ui/card';
+import { InlineNotice } from '@/components/ui/inline-notice';
 
 // Lazy-load Tiptap. The editor + ProseMirror chunks land at
 // ~200KB gzipped; deferring the import means the static parts of
@@ -422,10 +423,9 @@ export default function PolicyDetailPage() {
             )}
 
             {error && (
-                <div className="p-3 rounded-lg bg-bg-error border border-border-error text-content-error text-sm">
+                <InlineNotice variant="error" icon={null} onDismiss={() => setError('')}>
                     {error}
-                    <button onClick={() => setError('')} className="ml-2 text-content-error hover:text-content-emphasis" aria-label="Dismiss error">×</button>
-                </div>
+                </InlineNotice>
             )}
 
             {/* Description + meta + review-schedule */}

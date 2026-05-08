@@ -6,6 +6,7 @@ import prisma from '@/lib/prisma';
 import { BillingActions } from './BillingActions';
 import { BillingEventLog } from './BillingEventLog';
 import { getBillingMode } from '@/lib/billing/entitlements';
+import { InlineNotice } from '@/components/ui/inline-notice';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 
@@ -151,10 +152,13 @@ export default async function BillingPage({
 
                 {/* Past due warning */}
                 {status === 'PAST_DUE' && (
-                    <div className="mt-4 p-3 bg-bg-error border border-border-error rounded-lg">
-                        <p className="text-sm text-content-error font-medium">Payment issue detected</p>
-                        <p className="text-xs text-content-muted mt-1">Please update your payment method to avoid service interruption.</p>
-                    </div>
+                    <InlineNotice
+                        variant="error"
+                        className="mt-4"
+                        title="Payment issue detected"
+                    >
+                        Please update your payment method to avoid service interruption.
+                    </InlineNotice>
                 )}
             </section>
 

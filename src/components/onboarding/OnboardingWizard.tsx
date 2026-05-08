@@ -29,6 +29,7 @@ import {
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { Card } from '@/components/ui/card';
+import { InlineNotice } from '@/components/ui/inline-notice';
 
 // ─── Step Definitions ───
 
@@ -607,9 +608,9 @@ function ControlInstallStep({ data, onUpdate, allData }: { data: StepData; onUpd
         <div className="space-y-4 max-w-lg animate-fadeIn">
             <p className="text-sm text-slate-400 mb-4">We&apos;ll install baseline controls from your selected frameworks. This creates your initial control register.</p>
             {selectedFrameworks.length === 0 ? (
-                <div className="p-4 rounded-lg bg-bg-warning border border-border-warning text-sm text-content-warning">
+                <InlineNotice variant="warning" icon={null}>
                     No frameworks selected. Go back to the Frameworks step to select at least one.
-                </div>
+                </InlineNotice>
             ) : (
                 <div className="space-y-3">
                     {selectedFrameworks.map(fw => (
@@ -735,9 +736,9 @@ function ReviewStep({ completedSteps, allData }: { completedSteps: string[]; all
                     );
                 })}
             </div>
-            <div className="p-4 rounded-lg bg-bg-success border border-border-success text-sm text-content-success">
+            <InlineNotice variant="success" icon={null}>
                 Click &quot;Complete Setup&quot; below to finish onboarding and go to your dashboard.
-            </div>
+            </InlineNotice>
         </div>
     );
 }

@@ -50,6 +50,7 @@ import { FreshnessBadge } from '@/components/ui/FreshnessBadge';
 import { EvidenceGallery } from '@/components/ui/EvidenceGallery';
 import { TimestampTooltip } from '@/components/ui/timestamp-tooltip';
 import { ToggleGroup } from '@/components/ui/toggle-group';
+import { InlineNotice } from '@/components/ui/inline-notice';
 import { useCelebration } from '@/components/ui/hooks';
 import { MILESTONES } from '@/lib/celebrations';
 import { isAllEvidenceCurrent } from '@/lib/evidence-freshness';
@@ -728,13 +729,10 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
 
                 {/* Archived warning */}
                 {retentionFilter === 'archived' && archivedEvidence.length > 0 && (
-                    <div className="bg-bg-warning border border-border-warning rounded-lg px-4 py-3 text-sm text-content-warning flex items-start gap-2">
-                        <span className="text-lg">!</span>
-                        <div>
-                            <strong>Archived evidence</strong> should not be used in active audit packs or compliance assessments.
-                            Unarchive if you need to reuse this evidence.
-                        </div>
-                    </div>
+                    <InlineNotice variant="warning" title="Archived evidence">
+                        Archived evidence should not be used in active audit packs or compliance assessments.
+                        Unarchive if you need to reuse this evidence.
+                    </InlineNotice>
                 )}
             </ListPageShell.Filters>
 

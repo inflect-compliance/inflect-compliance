@@ -20,6 +20,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { InfoTooltip, Tooltip } from '@/components/ui/tooltip';
 import { useCopyToClipboard } from '@/components/ui/hooks';
 import { DataTable, createColumns } from '@/components/ui/table';
+import { InlineNotice } from '@/components/ui/inline-notice';
 // Epic 58 — route through the canonical app-wide formatter so
 // api-keys reads in the same date dialect (UTC, en-GB, em-dash
 // fallback) as every other page. Previously used a local
@@ -189,11 +190,13 @@ export function KeyDisplay({ plaintext }: { plaintext: string }) {
     };
 
     return (
-        <div className="p-4 bg-bg-warning border border-border-warning rounded-lg space-y-2" id="key-display">
-            <div className="flex items-center gap-2 text-content-warning text-sm font-medium">
-                <AlertTriangle className="w-4 h-4" />
-                Copy this key now — it will never be shown again!
-            </div>
+        <InlineNotice
+            variant="warning"
+            id="key-display"
+            icon={AlertTriangle}
+            title="Copy this key now — it will never be shown again!"
+            className="flex-col items-stretch space-y-2 p-4"
+        >
             <div className="flex items-center gap-2">
                 <code className="flex-1 bg-bg-page px-3 py-2 rounded text-sm font-mono text-content-success select-all break-all">
                     {visible ? plaintext : plaintext.slice(0, 13) + '•'.repeat(40)}
@@ -219,7 +222,7 @@ export function KeyDisplay({ plaintext }: { plaintext: string }) {
                     {copied ? 'Copied!' : 'Copy'}
                 </Button>
             </div>
-        </div>
+        </InlineNotice>
     );
 }
 
@@ -514,18 +517,22 @@ export default function ApiKeysPage() {
 
             {/* Messages */}
             {error && (
-                <div className="p-3 bg-bg-error border border-border-error rounded-lg flex items-center gap-2" id="api-keys-error">
-                    <XCircle className="w-4 h-4 text-content-error flex-shrink-0" />
-                    <span className="text-sm text-content-error">{error}</span>
-                    <button onClick={() => setError(null)} className="ml-auto text-content-error hover:text-content-error"><XCircle className="w-3.5 h-3.5" /></button>
-                </div>
+                <InlineNotice
+                    variant="error"
+                    id="api-keys-error"
+                    onDismiss={() => setError(null)}
+                >
+                    {error}
+                </InlineNotice>
             )}
             {success && (
-                <div className="p-3 bg-bg-success border border-border-success rounded-lg flex items-center gap-2" id="api-keys-success">
-                    <CheckCircle className="w-4 h-4 text-content-success flex-shrink-0" />
-                    <span className="text-sm text-content-success">{success}</span>
-                    <button onClick={() => setSuccess(null)} className="ml-auto text-content-success hover:text-content-success"><XCircle className="w-3.5 h-3.5" /></button>
-                </div>
+                <InlineNotice
+                    variant="success"
+                    id="api-keys-success"
+                    onDismiss={() => setSuccess(null)}
+                >
+                    {success}
+                </InlineNotice>
             )}
 
             {/* Created Key Display (show once) */}

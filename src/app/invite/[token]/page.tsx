@@ -14,6 +14,7 @@ import { auth } from '@/auth';
 import { previewInviteByToken } from '@/app-layer/usecases/tenant-invites';
 import { formatDateLong } from '@/lib/format-date';
 import { Heading } from '@/components/ui/typography';
+import { InlineNotice } from '@/components/ui/inline-notice';
 
 interface InvitePageProps {
     params: Promise<{ token: string }>;
@@ -73,9 +74,13 @@ export default async function InvitePage({ params, searchParams }: InvitePagePro
                 </p>
 
                 {errorParam && (
-                    <div className="mb-4 rounded-md bg-bg-error border border-border-error p-3 text-sm text-content-error text-center">
+                    <InlineNotice
+                        variant="error"
+                        icon={null}
+                        className="mb-4 text-center"
+                    >
                         {errorParam}
-                    </div>
+                    </InlineNotice>
                 )}
 
                 {isReady ? (

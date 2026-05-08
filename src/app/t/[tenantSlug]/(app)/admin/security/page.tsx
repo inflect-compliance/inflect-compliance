@@ -11,6 +11,7 @@ import { useTenantApiUrl } from '@/lib/tenant-context-provider';
 import { ShieldCheck, Save, AlertTriangle, CheckCircle, LogOut, Users, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { InfoTooltip } from '@/components/ui/tooltip';
+import { InlineNotice } from '@/components/ui/inline-notice';
 import { Heading } from '@/components/ui/typography';
 
 type MfaPolicy = 'DISABLED' | 'OPTIONAL' | 'REQUIRED';
@@ -181,17 +182,11 @@ export default function AdminSecurityPage() {
             </Heading>
 
             {error && (
-                <div className="glass-card p-4 border border-border-error bg-bg-error flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-content-error shrink-0" />
-                    <span className="text-sm text-content-error">{error}</span>
-                </div>
+                <InlineNotice variant="error" icon={AlertTriangle}>{error}</InlineNotice>
             )}
 
             {success && (
-                <div className="glass-card p-4 border border-border-success bg-bg-success flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-content-success shrink-0" />
-                    <span className="text-sm text-content-success">{success}</span>
-                </div>
+                <InlineNotice variant="success">{success}</InlineNotice>
             )}
 
             {/* MFA Policy Section */}
@@ -246,19 +241,13 @@ export default function AdminSecurityPage() {
                 </div>
 
                 {settings.mfaPolicy === 'REQUIRED' && (
-                    <div className="p-4 rounded-lg border border-border-warning bg-bg-warning">
-                        <div className="flex items-start gap-2">
-                            <AlertTriangle className="w-4 h-4 text-content-warning mt-0.5 shrink-0" />
-                            <div>
-                                <p className="text-sm text-content-warning font-medium">Before enabling Required MFA:</p>
-                                <ul className="text-xs text-content-warning/70 mt-1 list-disc pl-4 space-y-1">
-                                    <li>Ensure you (the admin) have enrolled in MFA first</li>
-                                    <li>Users without MFA will be redirected to enrollment on their next login</li>
-                                    <li>Break-glass admin access is preserved via SSO if configured</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
+                    <InlineNotice variant="warning" title="Before enabling Required MFA:">
+                        <ul className="text-xs text-content-warning/80 list-disc pl-4 space-y-1">
+                            <li>Ensure you (the admin) have enrolled in MFA first</li>
+                            <li>Users without MFA will be redirected to enrollment on their next login</li>
+                            <li>Break-glass admin access is preserved via SSO if configured</li>
+                        </ul>
+                    </InlineNotice>
                 )}
             </div>
 

@@ -39,6 +39,7 @@ import { Button } from '@/components/ui/button';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { Tooltip } from '@/components/ui/tooltip';
 import { DataTable, createColumns } from '@/components/ui/table';
+import { InlineNotice } from '@/components/ui/inline-notice';
 import { ListPageShell } from '@/components/layout/ListPageShell';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading, Eyebrow } from '@/components/ui/typography';
@@ -588,22 +589,22 @@ export default function CustomRolesPage() {
             <ListPageShell.Filters className="space-y-4">
                 {/* Messages */}
                 {error && (
-                    <div className="p-3 bg-bg-error border border-border-error rounded-lg flex items-center gap-2" id="roles-error">
-                        <XCircle className="w-4 h-4 text-content-error flex-shrink-0" />
-                        <span className="text-sm text-content-error">{error}</span>
-                        <button onClick={() => setError(null)} className="ml-auto text-content-error hover:text-content-error">
-                            <XCircle className="w-3.5 h-3.5" />
-                        </button>
-                    </div>
+                    <InlineNotice
+                        variant="error"
+                        id="roles-error"
+                        onDismiss={() => setError(null)}
+                    >
+                        {error}
+                    </InlineNotice>
                 )}
                 {success && (
-                    <div className="p-3 bg-bg-success border border-border-success rounded-lg flex items-center gap-2" id="roles-success">
-                        <CheckCircle className="w-4 h-4 text-content-success flex-shrink-0" />
-                        <span className="text-sm text-content-success">{success}</span>
-                        <button onClick={() => setSuccess(null)} className="ml-auto text-content-success hover:text-content-success">
-                            <XCircle className="w-3.5 h-3.5" />
-                        </button>
-                    </div>
+                    <InlineNotice
+                        variant="success"
+                        id="roles-success"
+                        onDismiss={() => setSuccess(null)}
+                    >
+                        {success}
+                    </InlineNotice>
                 )}
 
                 {/* Create Form */}

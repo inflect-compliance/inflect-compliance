@@ -14,6 +14,7 @@ import { buttonVariants } from '@/components/ui/button-variants';
 import { InfoTooltip } from '@/components/ui/tooltip';
 import { ToggleGroup } from '@/components/ui/toggle-group';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { InlineNotice } from '@/components/ui/inline-notice';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 
@@ -301,16 +302,10 @@ export default function SsoAdminPage() {
 
             {/* Messages */}
             {error && (
-                <div className="p-3 bg-bg-error border border-border-error rounded-lg flex items-center gap-2" id="sso-error">
-                    <XCircle className="w-4 h-4 text-content-error" />
-                    <span className="text-sm text-content-error">{error}</span>
-                </div>
+                <InlineNotice variant="error" id="sso-error">{error}</InlineNotice>
             )}
             {success && (
-                <div className="p-3 bg-bg-success border border-border-success rounded-lg flex items-center gap-2" id="sso-success">
-                    <CheckCircle className="w-4 h-4 text-content-success" />
-                    <span className="text-sm text-content-success">{success}</span>
-                </div>
+                <InlineNotice variant="success" id="sso-success">{success}</InlineNotice>
             )}
 
             {/* Config form */}
@@ -496,12 +491,9 @@ export default function SsoAdminPage() {
                 </div>
 
                 {formEnforced && (
-                    <div className="mt-3 p-3 bg-bg-warning border border-border-warning rounded-lg flex items-start gap-2">
-                        <AlertTriangle className="w-4 h-4 text-content-warning mt-0.5 flex-shrink-0" />
-                        <p className="text-xs text-content-warning">
-                            When enforced, users must authenticate via SSO. Only admins with a local password can bypass (break-glass access).
-                        </p>
-                    </div>
+                    <InlineNotice variant="warning" className="mt-3">
+                        When enforced, users must authenticate via SSO. Only admins with a local password can bypass (break-glass access).
+                    </InlineNotice>
                 )}
 
                 {/* Actions */}

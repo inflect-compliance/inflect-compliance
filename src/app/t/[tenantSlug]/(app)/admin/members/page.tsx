@@ -34,6 +34,7 @@ import { Modal } from '@/components/ui/modal';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { Tooltip } from '@/components/ui/tooltip';
 import { DataTable, createColumns } from '@/components/ui/table';
+import { InlineNotice } from '@/components/ui/inline-notice';
 import { cn } from '@dub/utils';
 import { Heading } from '@/components/ui/typography';
 
@@ -644,22 +645,22 @@ export default function MembersAdminPage() {
 
             {/* Messages */}
             {error && (
-                <div className="p-3 bg-bg-error border border-border-error rounded-lg flex items-center gap-2" id="members-error">
-                    <XCircle className="w-4 h-4 text-content-error" />
-                    <span className="text-sm text-content-error">{error}</span>
-                    <button onClick={() => setError(null)} className="ml-auto text-content-error hover:opacity-75">
-                        <XCircle className="w-3.5 h-3.5" />
-                    </button>
-                </div>
+                <InlineNotice
+                    variant="error"
+                    id="members-error"
+                    onDismiss={() => setError(null)}
+                >
+                    {error}
+                </InlineNotice>
             )}
             {success && (
-                <div className="p-3 bg-bg-success border border-border-success rounded-lg flex items-center gap-2" id="members-success">
-                    <CheckCircle className="w-4 h-4 text-content-success" />
-                    <span className="text-sm text-content-success">{success}</span>
-                    <button onClick={() => setSuccess(null)} className="ml-auto text-content-success hover:opacity-75">
-                        <XCircle className="w-3.5 h-3.5" />
-                    </button>
-                </div>
+                <InlineNotice
+                    variant="success"
+                    id="members-success"
+                    onDismiss={() => setSuccess(null)}
+                >
+                    {success}
+                </InlineNotice>
             )}
 
             {/* Invite Form */}

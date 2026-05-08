@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { InlineNotice } from '@/components/ui/inline-notice';
 import { Heading } from '@/components/ui/typography';
 
 function extractErrorMessage(value: unknown, fallback: string): string {
@@ -183,34 +184,25 @@ function LoginForm() {
                     </Heading>
 
                     {error && (
-                        <div className="mb-4 p-3 rounded-lg bg-bg-error border border-border-error text-content-error text-sm">
+                        <InlineNotice variant="error" className="mb-4" icon={null}>
                             {error}
-                        </div>
+                        </InlineNotice>
                     )}
 
                     {verifyStatus === 'verified' && (
-                        <div
-                            role="status"
-                            className="mb-4 p-3 rounded-lg bg-bg-success border border-border-success text-content-success text-sm"
-                        >
+                        <InlineNotice variant="success" className="mb-4" icon={null}>
                             Email verified — you can sign in now.
-                        </div>
+                        </InlineNotice>
                     )}
                     {verifyStatus === 'expired' && (
-                        <div
-                            role="status"
-                            className="mb-4 p-3 rounded-lg bg-bg-warning border border-border-warning text-content-warning text-sm"
-                        >
+                        <InlineNotice variant="warning" className="mb-4" icon={null}>
                             That verification link has expired. Request a new one below.
-                        </div>
+                        </InlineNotice>
                     )}
                     {verifyStatus === 'invalid' && (
-                        <div
-                            role="status"
-                            className="mb-4 p-3 rounded-lg bg-bg-warning border border-border-warning text-content-warning text-sm"
-                        >
+                        <InlineNotice variant="warning" className="mb-4" icon={null}>
                             That verification link is not valid. Request a new one below.
-                        </div>
+                        </InlineNotice>
                     )}
 
                     {/* OAuth Buttons */}

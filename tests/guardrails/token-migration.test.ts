@@ -191,13 +191,15 @@ describe('Admin members page token migration', () => {
         expect(src).toContain('statusBadgeVariants({');
     });
 
-    it('uses semantic tokens for alerts', () => {
-        expect(src).toContain('bg-bg-error');
-        expect(src).toContain('border-border-error');
-        expect(src).toContain('text-content-error');
-        expect(src).toContain('bg-bg-success');
-        expect(src).toContain('border-border-success');
-        expect(src).toContain('text-content-success');
+    it('uses InlineNotice for alerts (PR-10)', () => {
+        // PR-10 migrated the hand-rolled error/success banner blocks
+        // to the canonical <InlineNotice> primitive — the colour-pair
+        // tokens (bg-bg-error / border-border-error / etc.) now live
+        // inside src/components/ui/inline-notice.tsx, not in the page.
+        expect(src).toContain('<InlineNotice');
+        expect(src).toContain('variant="error"');
+        expect(src).toContain('variant="success"');
+        expect(src).toContain("from '@/components/ui/inline-notice'");
     });
 
     it('uses semantic tokens for dropdown menu', () => {

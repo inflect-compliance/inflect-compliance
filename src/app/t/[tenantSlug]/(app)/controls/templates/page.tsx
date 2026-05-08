@@ -13,6 +13,7 @@ import { AppIcon } from '@/components/icons/AppIcon';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { DataTable, createColumns } from '@/components/ui/table';
+import { InlineNotice } from '@/components/ui/inline-notice';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 
@@ -107,10 +108,10 @@ export default function ControlTemplatesPage() {
             </div>
 
             {error && (
-                <div className="p-3 rounded-lg bg-bg-error border border-border-error text-content-error text-sm">{error}</div>
+                <InlineNotice variant="error" icon={null}>{error}</InlineNotice>
             )}
             {success && (
-                <div className="p-3 rounded-lg bg-bg-success border border-border-success text-content-success text-sm" id="install-success">{success}</div>
+                <InlineNotice variant="success" icon={null} id="install-success">{success}</InlineNotice>
             )}
 
             {/* Filters + Install bar */}

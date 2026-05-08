@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { useCopyToClipboard } from '@/components/ui/hooks';
 import { CopyButton } from '@/components/ui/copy-button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { InlineNotice } from '@/components/ui/inline-notice';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { Card } from '@/components/ui/card';
@@ -161,24 +162,24 @@ export default function ScimAdminPage() {
 
             {/* New Token Alert - Only shown once */}
             {newTokenPlaintext && (
-                <div className="glass-card p-4 border-2 border-border-warning bg-bg-warning" id="new-token-alert">
-                    <div className="flex items-start gap-3">
-                        <AlertTriangle className="w-5 h-5 text-content-warning shrink-0 mt-0.5" />
-                        <div className="flex-1 min-w-0">
-                            <Heading level={3} className="text-content-warning">Copy your SCIM token now</Heading>
-                            <p className="text-xs text-content-warning/80 mt-1">
-                                This token will not be shown again. Store it securely in your identity provider.
-                            </p>
-                            <div className="flex items-center gap-2 mt-3 bg-bg-page/60 rounded px-3 py-2">
-                                <code className="text-xs text-content-emphasis flex-1 break-all select-all" id="scim-token-value">
-                                    {newTokenPlaintext}
-                                </code>
-                                <Button variant="secondary" size="sm" onClick={copyToken} className="shrink-0" id="copy-token-btn">
-                                    {copied ? <Check className="w-3.5 h-3.5 text-content-success" /> : <Copy className="w-3.5 h-3.5" />}
-                                    {copied ? 'Copied' : 'Copy'}
-                                </Button>
-                            </div>
-                        </div>
+                <InlineNotice
+                    variant="warning"
+                    icon={AlertTriangle}
+                    id="new-token-alert"
+                    title="Copy your SCIM token now"
+                    className="flex-col items-stretch p-4"
+                >
+                    <p className="text-xs text-content-warning/80">
+                        This token will not be shown again. Store it securely in your identity provider.
+                    </p>
+                    <div className="flex items-center gap-2 mt-3 bg-bg-page/60 rounded px-3 py-2">
+                        <code className="text-xs text-content-emphasis flex-1 break-all select-all" id="scim-token-value">
+                            {newTokenPlaintext}
+                        </code>
+                        <Button variant="secondary" size="sm" onClick={copyToken} className="shrink-0" id="copy-token-btn">
+                            {copied ? <Check className="w-3.5 h-3.5 text-content-success" /> : <Copy className="w-3.5 h-3.5" />}
+                            {copied ? 'Copied' : 'Copy'}
+                        </Button>
                     </div>
                     <Button
                         variant="secondary"
@@ -188,7 +189,7 @@ export default function ScimAdminPage() {
                     >
                         I&apos;ve copied the token — dismiss
                     </Button>
-                </div>
+                </InlineNotice>
             )}
 
             {/* Token List */}
