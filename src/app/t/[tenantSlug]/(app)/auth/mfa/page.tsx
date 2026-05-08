@@ -11,6 +11,7 @@ import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { ShieldCheck, KeyRound, AlertTriangle } from 'lucide-react';
+import { Heading } from '@/components/ui/typography';
 
 /**
  * MFA Challenge Page — shown when mfaPending is true.
@@ -101,7 +102,7 @@ export default function MfaChallengePage() {
                             <AlertTriangle className="w-8 h-8 text-content-warning" />
                         </div>
                     </div>
-                    <h1 className="text-xl font-bold text-content-emphasis">MFA Enrollment Required</h1>
+                    <Heading level={1}>MFA Enrollment Required</Heading>
                     <p className="text-sm text-content-muted">
                         Your organization requires multi-factor authentication.
                         Please set up MFA to continue.
@@ -129,7 +130,7 @@ export default function MfaChallengePage() {
                 </div>
 
                 <div className="text-center">
-                    <h1 className="text-xl font-bold text-content-emphasis">Verify Your Identity</h1>
+                    <Heading level={1}>Verify Your Identity</Heading>
                     <p className="text-sm text-content-muted mt-2">
                         Enter the 6-digit code from your authenticator app to continue.
                     </p>

@@ -51,6 +51,7 @@ import { Button } from "./button";
 import { useMediaQuery } from "./hooks";
 import { ProgressiveBlur } from "./progressive-blur";
 import { Tooltip } from "./tooltip";
+import { Heading } from '@/components/ui/typography';
 
 // ─── Size variants ──────────────────────────────────────────────────
 
@@ -298,9 +299,9 @@ function Header({
         >
             {title ? (
                 <Dialog.Title asChild>
-                    <h2 className="text-base font-semibold text-content-emphasis">
+                    <Heading level={2}>
                         {title}
-                    </h2>
+                    </Heading>
                 </Dialog.Title>
             ) : null}
             {description ? (
@@ -522,9 +523,9 @@ function Confirm({
                     <span className="mt-0.5 shrink-0">{toneIcon[tone]}</span>
                     <div className="flex min-w-0 flex-col gap-1">
                         <Dialog.Title asChild>
-                            <h2 className="text-base font-semibold text-content-emphasis">
+                            <Heading level={2}>
                                 {title}
-                            </h2>
+                            </Heading>
                         </Dialog.Title>
                         {description ? (
                             <Dialog.Description asChild>

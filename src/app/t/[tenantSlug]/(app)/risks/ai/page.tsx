@@ -8,6 +8,7 @@ import { buttonVariants } from '@/components/ui/button-variants';
 import { RequirePermission } from '@/components/require-permission';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 const SCALE_OPTIONS: ComboboxOption[] = [1,2,3,4,5].map(v => ({ value: String(v), label: String(v) }));
 
@@ -243,7 +244,7 @@ export default function AIRiskAssessmentPage() {
                     <div className="flex items-center gap-3">
                         <Link href={tenantHref('/risks')} className="text-content-muted hover:text-content-emphasis transition text-lg">←</Link>
                         <div>
-                            <h1 className="text-2xl font-bold" id="ai-risk-title">AI-Assisted Risk Assessment</h1>
+                            <Heading level={1} id="ai-risk-title">AI-Assisted Risk Assessment</Heading>
                             <p className="text-content-muted text-sm">Generate and review AI-suggested risks for your organization</p>
                         </div>
                     </div>
@@ -263,7 +264,7 @@ export default function AIRiskAssessmentPage() {
             {/* ═══ PHASE: FORM ═══ */}
             {phase === 'form' && (
                 <div className="glass-card p-6 space-y-6" id="ai-generate-form">
-                    <h2 className="text-lg font-semibold">Configure Assessment</h2>
+                    <Heading level={2}>Configure Assessment</Heading>
 
                     {/* Framework Selection */}
                     <div>
@@ -350,7 +351,7 @@ export default function AIRiskAssessmentPage() {
             {phase === 'generating' && (
                 <div className="glass-card p-12 text-center" id="ai-generating">
                     <div className="animate-pulse text-4xl mb-4">...</div>
-                    <h2 className="text-lg font-semibold text-content-emphasis">Analyzing your environment…</h2>
+                    <Heading level={2}>Analyzing your environment…</Heading>
                     <p className="text-content-muted text-sm mt-2">The AI is generating risk suggestions based on your assets, frameworks, and context.</p>
                     <p className="text-content-subtle text-xs mt-4">This may take a few seconds</p>
                 </div>
@@ -419,7 +420,7 @@ export default function AIRiskAssessmentPage() {
                                                     id={`edit-title-${idx}`}
                                                 />
                                             ) : (
-                                                <h3 className="text-sm font-semibold text-content-emphasis">{item.title}</h3>
+                                                <Heading level={3}>{item.title}</Heading>
                                             )}
                                             {item.category && <StatusBadge variant="info">{item.category}</StatusBadge>}
                                             {confidenceBadge(item.confidence)}
@@ -604,7 +605,7 @@ export default function AIRiskAssessmentPage() {
             {phase === 'applying' && (
                 <div className="glass-card p-12 text-center">
                     <div className="animate-pulse text-4xl mb-4">...</div>
-                    <h2 className="text-lg font-semibold text-content-emphasis">Creating risk records…</h2>
+                    <Heading level={2}>Creating risk records…</Heading>
                     <p className="text-content-muted text-sm mt-2">Adding accepted suggestions to your Risk Register.</p>
                 </div>
             )}
@@ -613,9 +614,9 @@ export default function AIRiskAssessmentPage() {
             {phase === 'done' && (
                 <div className="glass-card p-8 text-center space-y-4" id="ai-done">
                     <div className="text-4xl">Done</div>
-                    <h2 className="text-lg font-semibold text-content-emphasis">
+                    <Heading level={2}>
                         {appliedCount} risk{appliedCount !== 1 ? 's' : ''} added to your register
-                    </h2>
+                    </Heading>
                     <p className="text-sm text-content-muted">
                         AI suggestions have been applied. You can review and refine them in the Risk Register.
                     </p>

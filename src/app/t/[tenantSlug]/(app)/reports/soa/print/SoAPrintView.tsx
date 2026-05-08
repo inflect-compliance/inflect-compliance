@@ -2,6 +2,7 @@
 
 import type { SoAReportDTO, SoAEntryDTO } from '@/lib/dto/soa';
 import { formatDate } from '@/lib/format-date';
+import { Heading } from '@/components/ui/typography';
 
 interface SoAPrintViewProps {
     report: SoAReportDTO;
@@ -55,7 +56,7 @@ export function SoAPrintView({ report, tenantName }: SoAPrintViewProps) {
             {/* ─── Cover section ─── */}
             <div className="print-page">
                 <div className="border-b-2 border-gray-900 pb-4 mb-6">
-                    <h1 className="text-2xl font-bold text-gray-900">Statement of Applicability</h1>
+                    <Heading level={1} className="text-gray-900">Statement of Applicability</Heading>
                     <p className="text-sm text-gray-600 mt-1">ISO/IEC 27001:2022 — Annex A Controls</p>
                 </div>
 

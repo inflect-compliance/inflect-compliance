@@ -30,6 +30,7 @@ import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Button } from '@/components/ui/button';
 import { useTenantApiUrl } from '@/lib/tenant-context-provider';
 import { formatDate } from '@/lib/format-date';
+import { Heading } from '@/components/ui/typography';
 
 // ─── Cadence catalog ───────────────────────────────────────────────
 //
@@ -234,9 +235,9 @@ export function TestPlanScheduleSection({
             data-testid="test-plan-schedule-section"
         >
             <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-content-default">
+                <Heading level={3}>
                     Schedule
-                </h3>
+                </Heading>
                 <span className="text-xs text-content-subtle">
                     All times in {browserTz}
                 </span>

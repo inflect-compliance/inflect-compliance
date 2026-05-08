@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import * as Sentry from '@sentry/nextjs';
+import { Heading } from '@/components/ui/typography';
 
 /**
  * Global Error Boundary for the Next.js App Router.
@@ -37,9 +38,9 @@ export default function GlobalError({
                 </div>
 
                 <div>
-                    <h2 className="text-2xl font-bold text-content-emphasis mb-2">
+                    <Heading level={1} className="mb-2">
                         Something went wrong
-                    </h2>
+                    </Heading>
                     <p className="text-sm text-content-muted">
                         We&apos;re sorry, an unexpected error has occurred. Our team has been notified.
                         {error.digest && (

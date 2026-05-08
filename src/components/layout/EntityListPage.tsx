@@ -54,6 +54,7 @@ import { type ReactNode } from 'react';
 import { ListPageShell } from '@/components/layout/ListPageShell';
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
 import { DataTable, type DataTableProps } from '@/components/ui/table';
+import { Heading, Caption } from '@/components/ui/typography';
 import type { FilterType } from '@/components/ui/filter';
 import {
     Breadcrumbs,
@@ -189,19 +190,16 @@ export function EntityListPage<TRow>(props: EntityListPageProps<TRow>) {
                                 data-testid="entity-list-breadcrumbs"
                             />
                         )}
-                        <h1
-                            className="text-2xl font-bold text-content-emphasis"
+                        <Heading
+                            level={1}
                             data-testid="entity-list-title"
                         >
                             {header.title}
-                        </h1>
+                        </Heading>
                         {header.count !== undefined && header.count !== null && (
-                            <p
-                                className="text-content-muted text-sm"
-                                data-testid="entity-list-count"
-                            >
+                            <Caption data-testid="entity-list-count">
                                 {header.count}
-                            </p>
+                            </Caption>
                         )}
                     </div>
                     {header.actions && (

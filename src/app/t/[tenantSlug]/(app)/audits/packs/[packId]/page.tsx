@@ -15,6 +15,7 @@ import { useCelebration } from '@/components/ui/hooks';
 import { scopedMilestone } from '@/lib/celebrations';
 import { Package } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 const ENTITY_ICON: Record<string, AppIconName> = {
     CONTROL: 'controls', POLICY: 'policies', EVIDENCE: 'evidence', FILE: 'overview', ISSUE: 'warning',
@@ -117,7 +118,7 @@ export default function PackDetailPage() {
             <div className="glass-card p-6">
                 <div className="flex items-start justify-between">
                     <div>
-                        <h1 className="text-xl font-bold" id="pack-name">{pack.name}</h1>
+                        <Heading level={1} id="pack-name">{pack.name}</Heading>
                         <p className="text-sm text-content-muted">
                             {pack.cycle?.frameworkKey} · {pack._count?.items || 0} items ·
                             <StatusBadge variant={isDraft ? 'neutral' : 'info'} className="ml-2" id="pack-status">{pack.status}</StatusBadge>
@@ -198,11 +199,11 @@ export default function PackDetailPage() {
             ) : (
                 Object.entries(grouped).map(([type, items]) => (
                     <div key={type} className="space-y-2">
-                        <h3 className="text-sm font-semibold text-content-default flex items-center gap-2">
+                        <Heading level={3} className="flex items-center gap-2">
                             <AppIcon name={ENTITY_ICON[type] || 'overview'} size={16} />
                             <span>{type}</span>
                             <span className="text-content-subtle">({items.length})</span>
-                        </h3>
+                        </Heading>
                         <div className="glass-card divide-y divide-border-default/50">
                             {items.slice(0, 50).map((item: any) => {
                                 let snap: any = {};
@@ -239,7 +240,7 @@ export default function PackDetailPage() {
             {/* Export area (placeholder) */}
             {isFrozen && (
                 <div className="glass-card p-6">
-                    <h3 className="text-sm font-semibold mb-2 inline-flex items-center gap-2"><AppIcon name="export" size={16} /> Exports</h3>
+                    <Heading level={3} className="mb-2 inline-flex items-center gap-2"><AppIcon name="export" size={16} /> Exports</Heading>
                     <div className="flex gap-2">
                         <a href={apiUrl(`/audits/packs/${packId}?action=export&format=json`)}
                             target="_blank" rel="noopener" className={buttonVariants({ variant: 'secondary', size: 'sm', className: 'inline-flex items-center gap-1' })}><AppIcon name="download" size={14} /> Export JSON</a>

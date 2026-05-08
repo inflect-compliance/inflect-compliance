@@ -19,6 +19,7 @@ import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { CopyText } from '@/components/ui/copy-text';
 import { TERMINAL_WORK_ITEM_STATUSES } from '@/app-layer/domain/work-item-status';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
     OPEN: 'neutral', TRIAGED: 'info', IN_PROGRESS: 'info',
@@ -288,7 +289,7 @@ export default function TaskDetailPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <Link href={tenantHref('/tasks')} className="text-content-muted text-xs hover:text-content-emphasis transition">← Tasks</Link>
-                    <h1 className="text-2xl font-bold mt-1" id="task-title">{task.title}</h1>
+                    <Heading level={1} className="mt-1" id="task-title">{task.title}</Heading>
                     <div className="flex gap-2 mt-1 flex-wrap items-center">
                         {task.key && (
                             <CopyText
@@ -434,7 +435,7 @@ export default function TaskDetailPage() {
                     {/* Audit / Finding Fields from metadataJson */}
                     {(task.type === 'AUDIT_FINDING' || task.type === 'CONTROL_GAP') && (metadata.findingSource || metadata.controlGapType) && (
                         <div className="border-t border-border-default pt-4 mt-4">
-                            <h3 className="text-sm font-semibold text-content-default mb-3">Audit Details</h3>
+                            <Heading level={3} className="mb-3">Audit Details</Heading>
                             <div className="grid grid-cols-2 gap-4">
                                 {metadata.findingSource && (
                                     <div>

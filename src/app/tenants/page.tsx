@@ -12,6 +12,7 @@
  */
 import { auth, signOut } from '@/auth';
 import { redirect } from 'next/navigation';
+import { Heading } from '@/components/ui/typography';
 
 export default async function TenantsPage() {
     const session = await auth();
@@ -35,9 +36,9 @@ export default async function TenantsPage() {
         <main className="min-h-screen bg-bg-default flex items-center justify-center p-4">
             <div className="max-w-lg w-full">
                 <div className="mb-8 text-center">
-                    <h1 className="text-2xl font-semibold text-content-default mb-2">
+                    <Heading level={1} className="mb-2">
                         Choose a workspace
-                    </h1>
+                    </Heading>
                     <p className="text-content-muted">
                         You are a member of multiple workspaces. Select one to continue.
                     </p>

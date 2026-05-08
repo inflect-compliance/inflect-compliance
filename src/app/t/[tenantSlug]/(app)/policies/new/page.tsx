@@ -9,6 +9,7 @@ import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useFormTelemetry } from '@/lib/telemetry/form-telemetry';
+import { Heading } from '@/components/ui/typography';
 
 const POLICY_CATEGORIES: ComboboxOption[] = [
     'Information Security',
@@ -119,9 +120,9 @@ export default function NewPolicyPage() {
     return (
         <div className="max-w-3xl mx-auto space-y-6 animate-fadeIn">
             <div>
-                <h1 className="text-2xl font-bold">
+                <Heading level={1}>
                     {isTemplateMode ? 'New Policy from Template' : 'New Policy'}
-                </h1>
+                </Heading>
                 <p className="text-content-muted text-sm mt-1">
                     {isTemplateMode
                         ? 'Select a template to start with pre-written content.'
@@ -142,7 +143,7 @@ export default function NewPolicyPage() {
             {/* Template picker */}
             {isTemplateMode && (
                 <div className="glass-card p-4 space-y-3">
-                    <h3 className="text-sm font-semibold text-content-default">Choose a Template</h3>
+                    <Heading level={3}>Choose a Template</Heading>
                     {templates.length === 0 ? (
                         <p className="text-sm text-content-subtle">No templates available.</p>
                     ) : (

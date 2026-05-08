@@ -16,6 +16,7 @@
 import { auth } from '@/auth';
 import { previewOrgInviteByToken } from '@/app-layer/usecases/org-invites';
 import { formatDateLong } from '@/lib/format-date';
+import { Heading } from '@/components/ui/typography';
 
 interface InvitePageProps {
     params: Promise<{ token: string }>;
@@ -40,9 +41,9 @@ export default async function OrgInvitePage({ params, searchParams }: InvitePage
             <main className="min-h-screen bg-bg-default flex items-center justify-center p-4">
                 <div className="max-w-md w-full bg-bg-surface rounded-lg border border-border-subtle p-8 text-center">
                     <div className="text-4xl mb-4">&#x26A0;&#xFE0F;</div>
-                    <h1 className="text-xl font-semibold text-content-default mb-2">
+                    <Heading level={1} className="mb-2">
                         Invite not available
-                    </h1>
+                    </Heading>
                     <p className="text-content-muted">
                         This invite link has expired, been revoked, or already been used.
                         Ask your admin to send a new invite.
@@ -60,9 +61,9 @@ export default async function OrgInvitePage({ params, searchParams }: InvitePage
     return (
         <main className="min-h-screen bg-bg-default flex items-center justify-center p-4">
             <div className="max-w-md w-full bg-bg-surface rounded-lg border border-border-subtle p-8">
-                <h1 className="text-2xl font-semibold text-content-default mb-2 text-center">
+                <Heading level={1} className="mb-2 text-center">
                     You have been invited
-                </h1>
+                </Heading>
                 <p className="text-content-muted text-center mb-6">
                     Join the{' '}
                     <span className="font-semibold text-content-default">

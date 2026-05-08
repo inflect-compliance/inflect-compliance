@@ -14,6 +14,7 @@ import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Tooltip } from '@/components/ui/tooltip';
 import { formatDate } from '@/lib/format-date';
+import { Heading } from '@/components/ui/typography';
 
 interface MemberRow {
     membershipId: string;
@@ -165,9 +166,9 @@ export function MembersTable({ orgSlug, currentUserId, rows, invites }: Props) {
             <ListPageShell.Header>
                 <div className="flex items-end justify-between gap-4 flex-wrap">
                     <div>
-                        <h1 className="text-2xl font-semibold text-content-emphasis">
+                        <Heading level={1}>
                             Org Members
-                        </h1>
+                        </Heading>
                         <p className="text-sm text-content-muted mt-1">
                             {rows.length} member{rows.length === 1 ? '' : 's'}
                             {' '}across this organization. ORG_ADMINs are auto-
@@ -1132,12 +1133,12 @@ function PendingInvitesSection({ orgSlug, invites, onMutate }: PendingInvitesSec
 
     return (
         <div className="mt-8" data-testid="org-pending-invites-section">
-            <h2 className="text-lg font-semibold text-content-emphasis mb-2">
+            <Heading level={2} className="mb-2">
                 Pending invitations
                 <span className="ml-2 text-sm font-normal text-content-muted">
                     ({invites.length})
                 </span>
-            </h2>
+            </Heading>
             {error && (
                 <p
                     className="text-sm text-content-error mb-2"

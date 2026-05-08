@@ -30,6 +30,7 @@ import { Button } from '@/components/ui/button';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { SkeletonDetailPage } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 interface Question {
     id: string;
@@ -335,7 +336,7 @@ export function VendorTemplateBuilderClient({
                     >
                         ← All templates
                     </Link>
-                    <h1 className="text-2xl font-bold mt-1">{tree.name}</h1>
+                    <Heading level={1} className="mt-1">{tree.name}</Heading>
                     <div className="flex items-center gap-2 mt-1 text-xs text-content-subtle">
                         <span>{tree.key}</span>
                         <span>·</span>
@@ -483,9 +484,9 @@ function SectionCard({
                             ⋮⋮
                         </span>
                     )}
-                    <h3 className="text-base font-semibold">
+                    <Heading level={2}>
                         {section.title}
-                    </h3>
+                    </Heading>
                 </div>
                 {section.description && (
                     <p className="text-xs text-content-subtle ml-2">

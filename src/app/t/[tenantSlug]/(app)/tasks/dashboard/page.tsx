@@ -18,6 +18,7 @@ import {
     type StatusBreakdownVariant,
 } from '@/components/ui/status-breakdown';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 const STATUS_LABELS: Record<string, string> = {
     OPEN: 'Open', TRIAGED: 'Triaged', IN_PROGRESS: 'In Progress',
@@ -110,7 +111,7 @@ export default function TaskDashboardPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold"><AppIcon name="dashboard" className="inline-block mr-2 align-text-bottom" /> Task Dashboard</h1>
+                    <Heading level={1}><AppIcon name="dashboard" className="inline-block mr-2 align-text-bottom" /> Task Dashboard</Heading>
                     <p className="text-content-muted text-sm">{metrics.total} total tasks</p>
                 </div>
                 <Link href={tenantHref('/tasks')} className={buttonVariants({ variant: 'secondary' })}>← Task Register</Link>
@@ -138,7 +139,7 @@ export default function TaskDashboardPage() {
 
             {/* My Tasks */}
             <div className="glass-card p-4" id="my-tasks-section">
-                <h3 className="text-sm font-semibold mb-3 text-content-default"><User size={14} className="inline-block mr-1" /> My Tasks</h3>
+                <Heading level={3} className="mb-3"><User size={14} className="inline-block mr-1" /> My Tasks</Heading>
                 {myTasks.length === 0 ? (
                     <p className="text-content-subtle text-sm text-center py-4">No open tasks assigned to you</p>
                 ) : (
@@ -167,7 +168,7 @@ export default function TaskDashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* By Status — Epic 59: StatusBreakdown primitive. */}
                 <div className="glass-card p-4">
-                    <h3 className="text-sm font-semibold mb-3 text-content-default">By Status</h3>
+                    <Heading level={3} className="mb-3">By Status</Heading>
                     <StatusBreakdown
                         ariaLabel="Tasks by status"
                         total={metrics.total}
@@ -189,7 +190,7 @@ export default function TaskDashboardPage() {
 
                 {/* By Severity — Epic 59: StatusBreakdown primitive. */}
                 <div className="glass-card p-4">
-                    <h3 className="text-sm font-semibold mb-3 text-content-default">By Severity</h3>
+                    <Heading level={3} className="mb-3">By Severity</Heading>
                     <StatusBreakdown
                         ariaLabel="Tasks by severity"
                         total={metrics.total}
@@ -205,7 +206,7 @@ export default function TaskDashboardPage() {
 
                 {/* 30-Day Trend */}
                 <div className="glass-card p-4">
-                    <h3 className="text-sm font-semibold mb-3 text-content-default">30-Day Trend</h3>
+                    <Heading level={3} className="mb-3">30-Day Trend</Heading>
                     <div className="flex items-end gap-4 h-24 mt-4">
                         <div className="flex-1 flex flex-col items-center gap-1">
                             <div className="w-full bg-bg-info rounded-t" style={{ height: `${(metrics.trend.created30d / maxBar) * 80}px` }}>
@@ -227,7 +228,7 @@ export default function TaskDashboardPage() {
 
             {/* By Type */}
             <div className="glass-card p-4">
-                <h3 className="text-sm font-semibold mb-3 text-content-default">By Type</h3>
+                <Heading level={3} className="mb-3">By Type</Heading>
                 <div className="flex flex-wrap gap-3">
                     {Object.entries(TYPE_LABELS).map(([key, label]) => (
                         <div key={key} className="px-3 py-2 rounded-lg bg-bg-default/50 border border-border-default/50 text-xs">
@@ -241,7 +242,7 @@ export default function TaskDashboardPage() {
             {/* Top Controls with Open Tasks */}
             {metrics.topControls && metrics.topControls.length > 0 && (
                 <div className="glass-card p-4" id="top-controls-section">
-                    <h3 className="text-sm font-semibold mb-3 text-content-default"><AppIcon name="controls" size={14} className="inline-block mr-1" /> Top Controls with Open Tasks</h3>
+                    <Heading level={3} className="mb-3"><AppIcon name="controls" size={14} className="inline-block mr-1" /> Top Controls with Open Tasks</Heading>
                     <div className="space-y-2">
                         {metrics.topControls.map((ctrl) => (
                             <Link
@@ -261,7 +262,7 @@ export default function TaskDashboardPage() {
             {/* Top Linked Entities (Assets/Risks) */}
             {metrics.topLinkedEntities && metrics.topLinkedEntities.length > 0 && (
                 <div className="glass-card p-4" id="top-linked-entities-section">
-                    <h3 className="text-sm font-semibold mb-3 text-content-default"><Link2 size={14} className="inline-block mr-1" /> Top Assets & Risks with Open Tasks</h3>
+                    <Heading level={3} className="mb-3"><Link2 size={14} className="inline-block mr-1" /> Top Assets & Risks with Open Tasks</Heading>
                     <div className="space-y-2">
                         {metrics.topLinkedEntities.map((entity) => (
                             <div
@@ -282,7 +283,7 @@ export default function TaskDashboardPage() {
             {/* Overdue Tasks */}
             {overdueTasks.length > 0 && (
                 <div className="glass-card p-4" id="overdue-tasks-section">
-                    <h3 className="text-sm font-semibold mb-3 text-content-error"><AlertOctagon size={14} className="inline-block mr-1" /> Overdue Tasks</h3>
+                    <Heading level={3} className="mb-3 text-content-error"><AlertOctagon size={14} className="inline-block mr-1" /> Overdue Tasks</Heading>
                     <div className="space-y-2">
                         {overdueTasks.slice(0, 10).map((task: any) => (
                             <Link

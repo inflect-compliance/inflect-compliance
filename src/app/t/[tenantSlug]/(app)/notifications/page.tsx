@@ -6,6 +6,7 @@ import { useTenantApiUrl } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
 import { AppIcon } from '@/components/icons/AppIcon';
 import { useOptimisticUpdate } from '@/components/ui/hooks';
+import { Heading } from '@/components/ui/typography';
 
 type Notification = {
     id: string;
@@ -67,7 +68,7 @@ export default function NotificationsPage() {
 
     return (
         <div className="space-y-6 animate-fadeIn">
-            <h1 className="text-2xl font-bold">{t('title')}</h1>
+            <Heading level={1}>{t('title')}</Heading>
             <div className="space-y-2">
                 {optimisticList.map(n => (
                     <div key={n.id} className={`glass-card p-4 flex items-start gap-3 ${!n.read ? 'border-l-2 border-[var(--brand-default)]' : 'opacity-60'}`}>

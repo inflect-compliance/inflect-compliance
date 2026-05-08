@@ -7,6 +7,7 @@ import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-c
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { DataTable, createColumns } from '@/components/ui/table';
+import { Heading } from '@/components/ui/typography';
 
 type ParsedRow = {
     title: string;
@@ -131,14 +132,14 @@ export default function RiskImportPage() {
             <div className="flex items-center gap-3">
                 <Link href={href('/risks')} className="text-content-muted hover:text-content-emphasis transition">←</Link>
                 <div>
-                    <h1 className="text-2xl font-bold">{t('importTitle')}</h1>
+                    <Heading level={1}>{t('importTitle')}</Heading>
                     <p className="text-content-muted text-sm">{tenant.tenantName}</p>
                 </div>
             </div>
 
             {/* Format info */}
             <div className="glass-card p-4 border-border-emphasis/50">
-                <h3 className="text-sm font-semibold mb-2">{t('csvFormat')}</h3>
+                <Heading level={3} className="mb-2">{t('csvFormat')}</Heading>
                 <p className="text-xs text-content-muted">{t('csvDesc')}</p>
                 <pre className="mt-2 text-xs text-content-subtle bg-bg-page/50 p-2 rounded overflow-x-auto">
                     title,description,category,likelihood,impact,owner{'\n'}

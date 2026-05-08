@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/format-date';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 interface TemplateRow {
     id: string;
@@ -92,9 +93,9 @@ export function VendorTemplatesIndexClient() {
     return (
         <div className="space-y-6 animate-fadeIn">
             <header>
-                <h1 className="text-2xl font-bold" id="vendor-templates-title">
+                <Heading level={1} id="vendor-templates-title">
                     Vendor questionnaire templates
-                </h1>
+                </Heading>
                 <p className="text-sm text-content-muted mt-1">
                     Author and publish reusable assessment templates. Edits
                     on a published template require cloning to a new draft
@@ -104,9 +105,9 @@ export function VendorTemplatesIndexClient() {
 
             {permissions.canWrite && (
                 <div className="glass-card p-4">
-                    <h2 className="text-sm font-semibold mb-3">
+                    <Heading level={3} className="mb-3">
                         Create a new template
-                    </h2>
+                    </Heading>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
                         <div>
                             <label
@@ -164,9 +165,9 @@ export function VendorTemplatesIndexClient() {
             )}
 
             <div className="glass-card p-4">
-                <h2 className="text-sm font-semibold mb-3">
+                <Heading level={3} className="mb-3">
                     All templates ({items?.length ?? 0})
-                </h2>
+                </Heading>
                 {loading ? (
                     <SkeletonCard lines={3} />
                 ) : items === null || items.length === 0 ? (

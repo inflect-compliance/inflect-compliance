@@ -18,6 +18,7 @@ import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { Heading, Eyebrow } from '@/components/ui/typography';
 
 const TraceabilityPanel = dynamic(() => import('@/components/TraceabilityPanel'), {
     loading: () => <div className="animate-pulse h-48" aria-busy="true" />,
@@ -110,7 +111,7 @@ export default function AssetDetailPage() {
                 <div className="flex items-center gap-3">
                     <Link href={tenantHref('/assets')} className="text-content-muted hover:text-content-emphasis transition text-lg">←</Link>
                     <div>
-                        <h1 className="text-2xl font-bold" id="asset-title-heading">{asset.name}</h1>
+                        <Heading level={1} id="asset-title-heading">{asset.name}</Heading>
                         <div className="flex items-center gap-2 mt-1">
                             <StatusBadge variant="info">{asset.type?.replace(/_/g, ' ')}</StatusBadge>
                             {asset.criticality && <StatusBadge variant={critColor(asset.criticality)}>{asset.criticality}</StatusBadge>}
@@ -149,12 +150,12 @@ export default function AssetDetailPage() {
                     </>
                 ) : (
                     <>
-                        {asset.classification && <div><h3 className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">Classification</h3><p className="text-sm">{asset.classification}</p></div>}
+                        {asset.classification && <div><Eyebrow className="mb-1">Classification</Eyebrow><p className="text-sm">{asset.classification}</p></div>}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div><h3 className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">Owner</h3><p className="text-sm">{asset.owner || '—'}</p></div>
-                            <div><h3 className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">Location</h3><p className="text-sm">{asset.location || '—'}</p></div>
+                            <div><Eyebrow className="mb-1">Owner</Eyebrow><p className="text-sm">{asset.owner || '—'}</p></div>
+                            <div><Eyebrow className="mb-1">Location</Eyebrow><p className="text-sm">{asset.location || '—'}</p></div>
                             <div>
-                                <h3 className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">External Ref</h3>
+                                <Eyebrow className="mb-1">External Ref</Eyebrow>
                                 {asset.externalRef ? (
                                     <CopyText
                                         value={asset.externalRef}
@@ -168,7 +169,7 @@ export default function AssetDetailPage() {
                                     <p className="text-sm">—</p>
                                 )}
                             </div>
-                            <div><h3 className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">Data Residency</h3><p className="text-sm">{asset.dataResidency || '—'}</p></div>
+                            <div><Eyebrow className="mb-1">Data Residency</Eyebrow><p className="text-sm">{asset.dataResidency || '—'}</p></div>
                         </div>
                         <div className="grid grid-cols-3 gap-4">
                             <div className="glass-card p-4 text-center"><p className="text-xs text-content-muted uppercase">Confidentiality</p><p className="text-2xl font-bold mt-1">{asset.confidentiality ?? '—'}</p></div>
@@ -176,8 +177,8 @@ export default function AssetDetailPage() {
                             <div className="glass-card p-4 text-center"><p className="text-xs text-content-muted uppercase">Availability</p><p className="text-2xl font-bold mt-1">{asset.availability ?? '—'}</p></div>
                         </div>
                         <div className="grid grid-cols-2 gap-4 border-t border-border-default/50 pt-4">
-                            <div><h3 className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">Created</h3><p className="text-sm text-content-muted">{formatDate(asset.createdAt)}</p></div>
-                            <div><h3 className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">Updated</h3><p className="text-sm text-content-muted">{formatDate(asset.updatedAt)}</p></div>
+                            <div><Eyebrow className="mb-1">Created</Eyebrow><p className="text-sm text-content-muted">{formatDate(asset.createdAt)}</p></div>
+                            <div><Eyebrow className="mb-1">Updated</Eyebrow><p className="text-sm text-content-muted">{formatDate(asset.updatedAt)}</p></div>
                         </div>
                     </>
                 )}
@@ -185,7 +186,7 @@ export default function AssetDetailPage() {
 
             {/* Linked Tasks */}
             <div className="glass-card p-6" id="linked-tasks-section">
-                <h2 className="text-lg font-semibold text-content-emphasis mb-4 inline-flex items-center gap-2"><AppIcon name="tasks" size={18} /> Linked Tasks</h2>
+                <Heading level={2} className="mb-4 inline-flex items-center gap-2"><AppIcon name="tasks" size={18} /> Linked Tasks</Heading>
                 <LinkedTasksPanel
                     apiBase={apiUrl('')}
                     entityType="ASSET"
@@ -196,7 +197,7 @@ export default function AssetDetailPage() {
 
             {/* Traceability */}
             <div className="glass-card p-6">
-                <h2 className="text-lg font-semibold text-content-emphasis mb-4 inline-flex items-center gap-2"><AppIcon name="link" size={18} /> Traceability</h2>
+                <Heading level={2} className="mb-4 inline-flex items-center gap-2"><AppIcon name="link" size={18} /> Traceability</Heading>
                 <TraceabilityPanel
                     apiBase={apiUrl('')}
                     entityType="asset"

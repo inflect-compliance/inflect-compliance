@@ -49,6 +49,7 @@ import { cn } from '@dub/utils';
 import * as React from 'react';
 
 import { useCardListContext } from './card-list';
+import { Heading } from '@/components/ui/typography';
 
 // ─── Card context ──────────────────────────────────────────────────
 
@@ -239,9 +240,9 @@ export function CardListCardHeader({
         >
             <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                    <h3 className="truncate text-sm font-semibold text-content-emphasis">
+                    <Heading level={3} className="truncate">
                         {title}
-                    </h3>
+                    </Heading>
                     {badge && (
                         <span data-card-header-badge className="shrink-0">
                             {badge}

@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useTenantApiUrl } from '@/lib/tenant-context-provider';
 import { ToggleGroup } from '@/components/ui/toggle-group';
 import { ProgressBar } from '@/components/ui/progress-bar';
+import { Heading } from '@/components/ui/typography';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export default function MappingPage() {
@@ -21,7 +22,7 @@ export default function MappingPage() {
     return (
         <div className="space-y-6 animate-fadeIn">
             <div>
-                <h1 className="text-2xl font-bold">{t('title')}</h1>
+                <Heading level={1}>{t('title')}</Heading>
                 <p className="text-content-muted text-sm">{t('subtitle')}</p>
             </div>
 

@@ -15,6 +15,7 @@ import {
     type DashboardUpcomingItem,
 } from '@/components/TestDashboardG2Section';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 interface DashboardMetrics {
     periodDays: number;
@@ -106,7 +107,7 @@ export default function TestDashboardPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold" id="dashboard-title">Test Dashboard</h1>
+                    <Heading level={1} id="dashboard-title">Test Dashboard</Heading>
                     <p className="text-sm text-content-muted mt-1">Testing health and framework readiness</p>
                 </div>
                 <div className="flex gap-3">
@@ -140,7 +141,7 @@ export default function TestDashboardPage() {
             {/* Result Distribution */}
             <div className="grid md:grid-cols-2 gap-6">
                 <div className="glass-card p-6">
-                    <h2 className="text-lg font-semibold mb-4">Result Distribution ({period}d)</h2>
+                    <Heading level={2} className="mb-4">Result Distribution ({period}d)</Heading>
                     {metrics.completedRuns === 0 ? (
                         <p className="text-content-subtle text-sm">No completed runs in this period</p>
                     ) : (
@@ -185,7 +186,7 @@ export default function TestDashboardPage() {
                 </div>
 
                 <div className="glass-card p-6">
-                    <h2 className="text-lg font-semibold mb-4">Repeated Failures</h2>
+                    <Heading level={2} className="mb-4">Repeated Failures</Heading>
                     {metrics.repeatedFailures.length === 0 ? (
                         <p className="text-content-subtle text-sm">No controls with repeated failures</p>
                     ) : (
@@ -224,7 +225,7 @@ export default function TestDashboardPage() {
             {/* Framework Test Readiness */}
             {readiness.length > 0 && (
                 <div className="glass-card p-6">
-                    <h2 className="text-lg font-semibold mb-4" id="framework-readiness-title">Framework Test Coverage</h2>
+                    <Heading level={2} className="mb-4" id="framework-readiness-title">Framework Test Coverage</Heading>
                     <p className="text-sm text-content-muted mb-4">
                         How well your mapped controls are covered by active test plans and recent test runs
                     </p>
@@ -232,7 +233,7 @@ export default function TestDashboardPage() {
                         {readiness.map(fw => (
                             <div key={fw.frameworkKey} className="border border-border-default/30 rounded-lg p-4">
                                 <div className="flex items-center justify-between mb-3">
-                                    <h3 className="font-semibold text-content-emphasis">{fw.frameworkName}</h3>
+                                    <Heading level={3}>{fw.frameworkName}</Heading>
                                     <span className="text-xs text-content-muted">{fw.totalMappedControls} mapped controls</span>
                                 </div>
                                 <div className="grid grid-cols-3 gap-4">

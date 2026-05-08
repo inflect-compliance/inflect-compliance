@@ -59,6 +59,7 @@ import {
 } from '@/components/ui/RiskMatrixCell';
 import { RiskMatrixLegend } from '@/components/ui/RiskMatrixLegend';
 import type { RiskMatrixConfigShape } from '@/lib/risk-matrix/types';
+import { Heading } from '@/components/ui/typography';
 
 // ─── Public types ───────────────────────────────────────────────────
 
@@ -194,9 +195,9 @@ export function RiskMatrix({
         >
             {showHeader && (
                 <div className="mb-3 flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-content-default">
+                    <Heading level={3}>
                         {title}
-                    </h3>
+                    </Heading>
                     <div className="flex items-center gap-3">
                         {showSwapToggle && swapAxesProp === undefined && (
                             <button

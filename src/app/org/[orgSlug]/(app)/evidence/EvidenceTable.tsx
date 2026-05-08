@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { useCursorPagination } from '@/components/ui/hooks';
 import { formatDate } from '@/lib/format-date';
 import type { OverdueEvidenceRow } from '@/app-layer/schemas/portfolio';
+import { Heading } from '@/components/ui/typography';
 
 interface Props {
     rows: OverdueEvidenceRow[];
@@ -127,9 +128,9 @@ export function EvidenceTable({ rows: initialRows, nextCursor: initialNextCursor
         <ListPageShell>
             <ListPageShell.Header>
                 <div>
-                    <h1 className="text-2xl font-semibold text-content-emphasis">
+                    <Heading level={1}>
                         Overdue Evidence
-                    </h1>
+                    </Heading>
                     <p className="text-sm text-content-muted mt-1">
                         {pagination.rows.length} evidence item{pagination.rows.length === 1 ? '' : 's'} past review across the portfolio
                         {pagination.hasMore ? ' (more available)' : ''}

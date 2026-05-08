@@ -10,6 +10,7 @@ import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-c
 import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBreakdown, type StatusBreakdownItem } from '@/components/ui/status-breakdown';
 import { type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 const CRIT_BADGE: Record<string, StatusBadgeVariant> = { LOW: 'neutral', MEDIUM: 'warning', HIGH: 'error', CRITICAL: 'error' };
 
@@ -71,7 +72,7 @@ export default function VendorDashboardPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold">Vendor Dashboard</h1>
+                    <Heading level={1}>Vendor Dashboard</Heading>
                     <p className="text-content-muted text-sm">{metrics.totalVendors} total vendors</p>
                 </div>
                 <Link href={tenantHref('/vendors')} className={buttonVariants({ variant: 'secondary' })}>← Register</Link>
@@ -91,19 +92,19 @@ export default function VendorDashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {/* By Criticality */}
                 <div className="card p-5 space-y-3">
-                    <h3 className="font-semibold">By Criticality</h3>
+                    <Heading level={3}>By Criticality</Heading>
                     <BreakdownBar data={metrics.byCriticality} colors={CRIT_COLORS} />
                 </div>
 
                 {/* By Status */}
                 <div className="card p-5 space-y-3">
-                    <h3 className="font-semibold">By Status</h3>
+                    <Heading level={3}>By Status</Heading>
                     <BreakdownBar data={metrics.byStatus} colors={STATUS_COLORS} />
                 </div>
 
                 {/* By Risk Rating */}
                 <div className="card p-5 space-y-3">
-                    <h3 className="font-semibold">By Risk Rating</h3>
+                    <Heading level={3}>By Risk Rating</Heading>
                     {Object.keys(metrics.byRiskRating).length > 0
                         ? <BreakdownBar data={metrics.byRiskRating} colors={CRIT_COLORS} />
                         : <div className="text-sm text-content-subtle">No assessments completed yet</div>}

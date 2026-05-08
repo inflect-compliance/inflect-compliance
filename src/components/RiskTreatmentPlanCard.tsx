@@ -22,6 +22,7 @@ import { FormField } from '@/components/ui/form-field';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { DatePicker } from '@/components/ui/date-picker';
 import { formatDate } from '@/lib/format-date';
+import { Heading } from '@/components/ui/typography';
 
 type Strategy = 'MITIGATE' | 'ACCEPT' | 'TRANSFER' | 'AVOID';
 type Status = 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'OVERDUE';
@@ -142,9 +143,9 @@ export function RiskTreatmentPlanCard({
             data-testid="risk-treatment-plan-card"
         >
             <header className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-content-emphasis inline-flex items-center gap-2">
+                <Heading level={2} className="inline-flex items-center gap-2">
                     Treatment Plan
-                </h2>
+                </Heading>
                 {canWrite && !activeSummary ? (
                     <Button
                         onClick={() => setCreateOpen(true)}

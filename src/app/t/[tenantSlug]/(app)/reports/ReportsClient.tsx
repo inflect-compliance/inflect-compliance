@@ -10,6 +10,7 @@ import { DataTable, createColumns } from '@/components/ui/table';
 import { ListPageShell } from '@/components/layout/ListPageShell';
 import { ToggleGroup } from '@/components/ui/toggle-group';
 import { Button } from '@/components/ui/button';
+import { Heading } from '@/components/ui/typography';
 
 interface ControlOption {
     id: string;
@@ -104,7 +105,7 @@ export function ReportsClient({ data, soaReport, controls, tenantSlug, canEdit, 
         <ListPageShell className="gap-4">
             <ListPageShell.Header>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div><h1 className="text-2xl font-bold" id="reports-heading">{t.title}</h1><p className="text-content-muted text-sm">{t.subtitle}</p></div>
+                    <div><Heading level={1} id="reports-heading">{t.title}</Heading><p className="text-content-muted text-sm">{t.subtitle}</p></div>
                     <RequirePermission resource="reports" action="export">
                         <div className="flex flex-wrap gap-2">
                             <Button variant="secondary" onClick={() => downloadCSV(data.riskRegister, 'risk-register.csv')} id="export-risks-btn">{t.exportRisks}</Button>

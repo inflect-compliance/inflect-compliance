@@ -21,6 +21,7 @@
  * see only what they need.
  */
 import { useEffect, useState } from 'react';
+import { Heading } from '@/components/ui/typography';
 
 interface Question {
     id: string;
@@ -222,9 +223,9 @@ export function VendorAssessmentClient({
                     <p className="text-xs uppercase tracking-wide text-gray-500">
                         Vendor assessment for {data.vendor.name}
                     </p>
-                    <h1 className="text-2xl font-semibold text-gray-900 mt-1">
+                    <Heading level={1} className="text-gray-900 mt-1">
                         {data.template.name}
-                    </h1>
+                    </Heading>
                     {data.template.description && (
                         <p className="text-sm text-gray-600 mt-2">
                             {data.template.description}
@@ -258,9 +259,9 @@ export function VendorAssessmentClient({
                 >
                     {data.template.sections.map((section) => (
                         <section key={section.id}>
-                            <h2 className="text-lg font-semibold text-gray-900 mb-1">
+                            <Heading level={2} className="text-gray-900 mb-1">
                                 {section.title}
-                            </h2>
+                            </Heading>
                             {section.description && (
                                 <p className="text-sm text-gray-600 mb-4">
                                     {section.description}

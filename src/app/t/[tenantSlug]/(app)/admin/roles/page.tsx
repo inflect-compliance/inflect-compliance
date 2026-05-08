@@ -40,6 +40,7 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { ListPageShell } from '@/components/layout/ListPageShell';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { Heading, Eyebrow } from '@/components/ui/typography';
 
 // ─── Types ───
 
@@ -274,7 +275,7 @@ function RoleForm({
                 {showGrid && (
                     <div className="mt-3 glass-card p-4">
                         <div className="flex items-center justify-between mb-3">
-                            <h4 className="text-xs text-content-muted uppercase tracking-wider">Permissions</h4>
+                            <Eyebrow>Permissions</Eyebrow>
                             <div className="flex gap-1">
                                 <span className="text-[10px] text-content-subtle">Preset from:</span>
                                 {BASE_ROLES.map((r) => (
@@ -543,10 +544,10 @@ export default function CustomRolesPage() {
     if (loading) {
         return (
             <div className="space-y-6 animate-fadeIn">
-                <h1 className="text-2xl font-bold flex items-center gap-2">
+                <Heading level={1} className="flex items-center gap-2">
                     <Shield className="w-6 h-6 text-[var(--brand-default)]" />
                     Custom Roles
-                </h1>
+                </Heading>
                 <div className="glass-card p-8 space-y-4">
                     <div className="h-4 bg-bg-elevated/50 rounded w-1/3 animate-pulse" />
                     <div className="h-4 bg-bg-elevated/50 rounded w-2/3 animate-pulse" />
@@ -561,10 +562,10 @@ export default function CustomRolesPage() {
             <ListPageShell.Header>
                 <div className="flex items-center justify-between flex-wrap gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold flex items-center gap-2">
+                        <Heading level={1} className="flex items-center gap-2">
                             <Shield className="w-6 h-6 text-[var(--brand-default)]" />
                             Custom Roles
-                        </h1>
+                        </Heading>
                         <p className="text-sm text-content-muted mt-1">
                             {roles.length} custom role{roles.length !== 1 ? 's' : ''} defined.
                             Members assigned a custom role use its permissions instead of the built-in role defaults.
@@ -607,7 +608,7 @@ export default function CustomRolesPage() {
                 {/* Create Form */}
                 {showCreate && (
                     <div className="glass-card p-6 border border-[var(--brand-default)]/30" id="create-role-form">
-                        <h3 className="text-sm font-semibold text-content-emphasis mb-4">Create Custom Role</h3>
+                        <Heading level={3} className="mb-4">Create Custom Role</Heading>
                         <RoleForm
                             onSubmit={handleCreate}
                             onCancel={() => setShowCreate(false)}
@@ -621,9 +622,9 @@ export default function CustomRolesPage() {
                     above-table panel; matches the create-form pattern) */}
                 {editingRole && (
                     <div className="glass-card p-6 border border-[var(--brand-default)]/30" id="edit-role-form">
-                        <h3 className="text-sm font-semibold text-content-emphasis mb-4">
+                        <Heading level={3} className="mb-4">
                             Edit: {editingRole.name}
-                        </h3>
+                        </Heading>
                         <RoleForm
                             initial={editingRole}
                             onSubmit={(data) => handleUpdate(editingRole.id, data)}

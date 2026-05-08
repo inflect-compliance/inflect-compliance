@@ -2,6 +2,7 @@ import { getTranslations } from 'next-intl/server';
 import { getTenantCtx } from '@/app-layer/context';
 import { listClauses } from '@/app-layer/usecases/clause';
 import { ClausesBrowser } from './ClausesBrowser';
+import { Heading } from '@/components/ui/typography';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +26,7 @@ export default async function ClausesPage({
 
     return (
         <div className="space-y-6 animate-fadeIn">
-            <h1 className="text-2xl font-bold">{t('title')}</h1>
+            <Heading level={1}>{t('title')}</Heading>
             <p className="text-content-muted text-sm">{t('subtitle')}</p>
 
             <ClausesBrowser

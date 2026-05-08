@@ -12,6 +12,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { useCelebration } from '@/components/ui/hooks';
 import { MILESTONES, scopedMilestone } from '@/lib/celebrations';
 import type { FrameworkTreePayload } from '@/lib/framework-tree/types';
+import { Heading } from '@/components/ui/typography';
 
 type Tab = 'requirements' | 'packs' | 'coverage' | 'builder';
 
@@ -113,7 +114,7 @@ export default function FrameworkDetailPage() {
                     <div className="flex items-center gap-3">
                         <Link href={tenantHref('/frameworks')} className="text-content-muted hover:text-content-emphasis transition-colors">← Frameworks</Link>
                     </div>
-                    <h1 className="text-2xl font-bold text-content-emphasis mt-2" id="framework-detail-heading">{framework.name}</h1>
+                    <Heading level={1} className="mt-2" id="framework-detail-heading">{framework.name}</Heading>
                     <div className="flex items-center gap-2 mt-1">
                         {framework.version && <StatusBadge variant="info">v{framework.version}</StatusBadge>}
                         {framework.kind && <span className="text-xs text-content-subtle">{framework.kind.replace('_', ' ')}</span>}
@@ -168,7 +169,7 @@ export default function FrameworkDetailPage() {
                         <div key={p.id} className="glass-card">
                             <div className="flex items-start justify-between">
                                 <div>
-                                    <h3 className="text-lg font-semibold text-content-emphasis">{p.name}</h3>
+                                    <Heading level={2}>{p.name}</Heading>
                                     {p.description && <p className="text-sm text-content-muted mt-1">{p.description}</p>}
                                     <div className="flex items-center gap-3 mt-2 text-xs text-content-subtle">
                                         <span>{p._count?.templateLinks || 0} templates</span>
@@ -215,7 +216,7 @@ export default function FrameworkDetailPage() {
                     {/* Coverage donut */}
                     <div className="glass-card">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-semibold text-content-emphasis">Overall Coverage</h3>
+                            <Heading level={2}>Overall Coverage</Heading>
                             <span className={`text-2xl font-bold ${coverage.coveragePercent === 100 ? 'text-content-success' : 'text-[var(--brand-default)]'}`}>
                                 {coverage.coveragePercent}%
                             </span>
@@ -231,7 +232,7 @@ export default function FrameworkDetailPage() {
                     {/* Section breakdown */}
                     {coverage.bySection?.length > 0 && (
                         <div className="glass-card">
-                            <h3 className="text-sm font-semibold text-content-emphasis mb-3">Coverage by Section</h3>
+                            <Heading level={3} className="mb-3">Coverage by Section</Heading>
                             <div className="space-y-3">
                                 {coverage.bySection.map((s: any) => (
                                     <div key={s.section}>
@@ -260,9 +261,9 @@ export default function FrameworkDetailPage() {
                     {/* Unmapped requirements */}
                     {coverage.unmappedRequirements?.length > 0 && (
                         <div className="glass-card">
-                            <h3 className="text-sm font-semibold text-content-warning mb-3">
+                            <Heading level={3} className="text-content-warning mb-3">
                                 Unmapped Requirements ({coverage.unmappedRequirements.length})
-                            </h3>
+                            </Heading>
                             <div className="space-y-1 max-h-64 overflow-y-auto">
                                 {coverage.unmappedRequirements.map((r: any, i: number) => (
                                     <div key={i} className="flex items-center gap-3 px-3 py-1.5 rounded-md hover:bg-bg-elevated/20 text-sm">

@@ -58,6 +58,7 @@ import {
     buildEvidenceFilters,
     EVIDENCE_FILTER_KEYS,
 } from './filter-defs';
+import { Heading } from '@/components/ui/typography';
 
 interface Permissions {
     canRead: boolean;
@@ -606,7 +607,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             <ListPageShell.Header>
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold">{t.title}</h1>
+                        <Heading level={1}>{t.title}</Heading>
                         <p className="text-content-muted text-sm">{evidence.length} evidence items</p>
                     </div>
                     {permissions.canWrite && (

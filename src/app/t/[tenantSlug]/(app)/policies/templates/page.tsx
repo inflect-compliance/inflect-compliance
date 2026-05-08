@@ -9,6 +9,7 @@ import { Combobox } from '@/components/ui/combobox';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FileText, SearchX } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 export default function TemplatesPage() {
     const apiUrl = useTenantApiUrl();
@@ -71,7 +72,7 @@ export default function TemplatesPage() {
         <div className="space-y-6 animate-fadeIn">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold">Policy Templates</h1>
+                    <Heading level={1}>Policy Templates</Heading>
                     <p className="text-content-muted text-sm">{templates.length} templates available</p>
                 </div>
                 <Link href={tenantHref('/policies')} className={buttonVariants({ variant: 'secondary' })}>← Back to Policies</Link>
@@ -121,7 +122,7 @@ export default function TemplatesPage() {
                     {filtered.map(tpl => (
                         <div key={tpl.id} className="glass-card p-5 flex flex-col justify-between hover:ring-1 hover:ring-[var(--brand-default)]/30 transition">
                             <div>
-                                <h3 className="font-semibold text-content-emphasis text-sm mb-1">{tpl.title}</h3>
+                                <Heading level={3} className="mb-1">{tpl.title}</Heading>
                                 <div className="flex gap-2 mb-2">
                                     {tpl.category && <StatusBadge variant="neutral">{tpl.category}</StatusBadge>}
                                     {tpl.language && <span className="text-xs text-content-subtle">{tpl.language.toUpperCase()}</span>}

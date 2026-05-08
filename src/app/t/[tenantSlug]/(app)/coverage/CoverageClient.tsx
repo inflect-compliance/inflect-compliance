@@ -7,6 +7,7 @@ import DonutChart from '@/components/ui/DonutChart';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -155,9 +156,9 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
                         <ArrowLeft className="w-5 h-5" aria-hidden="true" />
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold text-content-emphasis" id="coverage-heading">
+                        <Heading level={1} id="coverage-heading">
                             Coverage Dashboard
-                        </h1>
+                        </Heading>
                         <p className="text-content-muted text-sm">
                             How your assets are protected by controls and what risks remain unmitigated
                         </p>
@@ -198,7 +199,7 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
 
             {/* ── Summary Bar ─────────────────────────────────────── */}
             <div className="glass-card p-5" id="coverage-summary-bar">
-                <h3 className="text-sm font-semibold text-content-emphasis mb-4">Overall Coverage</h3>
+                <Heading level={3} className="mb-4">Overall Coverage</Heading>
                 <div className="space-y-3">
                     <CoverageBar
                         label="Asset Protection"
@@ -224,9 +225,9 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
                 <div className="glass-card p-5" id="uncovered-assets-section">
                     <div className="flex items-center gap-2 mb-4">
                         <Cpu className="w-4 h-4 text-content-error" />
-                        <h3 className="text-sm font-semibold text-content-emphasis">
+                        <Heading level={3}>
                             Uncovered Critical Assets
-                        </h3>
+                        </Heading>
                         {data.uncoveredCriticalAssets.length > 0 && (
                             <StatusBadge variant="error" className="ml-auto">
                                 {data.uncoveredCriticalAssets.length}
@@ -248,9 +249,9 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
                 <div className="glass-card p-5" id="unmapped-risks-section">
                     <div className="flex items-center gap-2 mb-4">
                         <AlertTriangle className="w-4 h-4 text-content-warning" />
-                        <h3 className="text-sm font-semibold text-content-emphasis">
+                        <Heading level={3}>
                             Unmapped Risks
-                        </h3>
+                        </Heading>
                         {data.unmappedRisks.length > 0 && (
                             <StatusBadge variant="warning" className="ml-auto">
                                 {data.unmappedRisks.length}
@@ -274,9 +275,9 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
                 <div className="glass-card p-5" id="hot-controls-section">
                     <div className="flex items-center gap-2 mb-4">
                         <Flame className="w-4 h-4 text-orange-400" />
-                        <h3 className="text-sm font-semibold text-content-emphasis">
+                        <Heading level={3}>
                             Top Controls by Risk Coverage
-                        </h3>
+                        </Heading>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                         {data.hotControls.map((ctrl, idx) => (

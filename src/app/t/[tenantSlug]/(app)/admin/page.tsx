@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { AdminClient } from './AdminClient';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { Heading } from '@/components/ui/typography';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,7 +52,7 @@ export default async function AdminPage({
     return (
         <div className="space-y-6 animate-fadeIn">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold">{t('title')}</h1>
+                <Heading level={1}>{t('title')}</Heading>
                 <div className="flex items-center gap-3 glass-card px-4 py-2" id="admin-theme-section">
                     <Palette className="w-4 h-4 text-content-muted" />
                     <span className="text-sm text-content-muted">Theme</span>

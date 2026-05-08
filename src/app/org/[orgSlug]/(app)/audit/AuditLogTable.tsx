@@ -8,6 +8,7 @@ import { DataTable, createColumns, TableEmptyState } from '@/components/ui/table
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
 import { formatDateTime } from '@/lib/format-date';
+import { Heading } from '@/components/ui/typography';
 
 interface UserRef {
     id: string;
@@ -195,10 +196,10 @@ export function AuditLogTable({ orgSlug, initialRows, initialNextCursor }: Props
             <ListPageShell.Header>
                 <div className="flex items-start justify-between gap-4">
                     <div>
-                        <h1 className="text-xl font-semibold text-content-emphasis flex items-center gap-2">
+                        <Heading level={1} className="flex items-center gap-2">
                             <ScrollText className="w-5 h-5" aria-hidden="true" />
                             Audit Log
-                        </h1>
+                        </Heading>
                         <p className="text-sm text-content-muted mt-1">
                             Immutable, hash-chained record of org-level privilege changes.
                             Append-only — entries cannot be modified or removed.

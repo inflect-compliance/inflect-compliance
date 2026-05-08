@@ -7,6 +7,7 @@ import { BillingActions } from './BillingActions';
 import { BillingEventLog } from './BillingEventLog';
 import { getBillingMode } from '@/lib/billing/entitlements';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 export const dynamic = 'force-dynamic';
 
@@ -73,7 +74,7 @@ export default async function BillingPage({
         <div className="space-y-8 animate-fadeIn">
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold">Billing</h1>
+                <Heading level={1}>Billing</Heading>
                 <p className="text-sm text-content-muted mt-1">
                     Manage your workspace plan and billing for <span className="text-content-emphasis font-medium">{tenantCtx.tenant.name}</span>.
                 </p>
@@ -104,7 +105,7 @@ export default async function BillingPage({
 
             {/* Current Plan Card */}
             <section className="glass-card p-6">
-                <h2 className="text-lg font-semibold mb-4">Current Plan</h2>
+                <Heading level={2} className="mb-4">Current Plan</Heading>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div>
                         <p className="text-xs text-content-subtle uppercase tracking-wider mb-1">Plan</p>
@@ -181,11 +182,11 @@ export default async function BillingPage({
             {/* Upgrade Options */}
             {billingMode === 'SAAS' && (plan === 'FREE' || plan === 'TRIAL') && (
                 <section>
-                    <h2 className="text-lg font-semibold mb-4">Upgrade</h2>
+                    <Heading level={2} className="mb-4">Upgrade</Heading>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="glass-card p-6 border border-[var(--brand-default)]/30 hover:border-[var(--brand-default)]/60 transition">
                             <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-content-emphasis font-semibold">Pro</h3>
+                                <Heading level={3}>Pro</Heading>
                                 <StatusBadge variant="info">Recommended</StatusBadge>
                             </div>
                             <ul className="text-sm text-content-muted space-y-1 mb-4">
@@ -198,7 +199,7 @@ export default async function BillingPage({
                         </div>
                         <div className="glass-card p-6 border border-purple-500/30 hover:border-purple-500/60 transition">
                             <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-content-emphasis font-semibold">Enterprise</h3>
+                                <Heading level={3}>Enterprise</Heading>
                                 <StatusBadge variant="warning">Premium</StatusBadge>
                             </div>
                             <ul className="text-sm text-content-muted space-y-1 mb-4">
@@ -216,7 +217,7 @@ export default async function BillingPage({
             {/* Manage Subscription */}
             {billingMode === 'SAAS' && hasSubscription && (
                 <section>
-                    <h2 className="text-lg font-semibold mb-4">Manage Subscription</h2>
+                    <Heading level={2} className="mb-4">Manage Subscription</Heading>
                     <div className="glass-card p-6">
                         <p className="text-sm text-content-muted mb-4">
                             Update payment method, view invoices, or change your plan via the Stripe Customer Portal.
@@ -228,7 +229,7 @@ export default async function BillingPage({
 
             {/* Billing Event History */}
             <section>
-                <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
+                <Heading level={2} className="mb-4">Recent Activity</Heading>
                 <BillingEventLog
                     events={recentEvents.map(e => ({
                         id: e.id,

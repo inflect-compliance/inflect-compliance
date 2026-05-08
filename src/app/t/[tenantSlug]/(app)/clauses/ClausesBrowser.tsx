@@ -3,6 +3,7 @@ import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { Heading, Eyebrow } from '@/components/ui/typography';
 
 const STATUS_COLORS: Record<string, StatusBadgeVariant> = {
     NOT_STARTED: 'neutral', IN_PROGRESS: 'info', READY: 'success', NEEDS_REVIEW: 'warning',
@@ -70,7 +71,7 @@ export function ClausesBrowser({ clauses: initialClauses, tenantSlug }: ClausesB
                 {selected ? (
                     <div className="glass-card p-6 animate-slideIn">
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-                            <h2 className="text-lg font-bold">{t('clause')} {selected.number}: {selected.title}</h2>
+                            <Heading level={2}>{t('clause')} {selected.number}: {selected.title}</Heading>
                             <div className="w-full sm:w-48">
                                 <Combobox
                                     id="clause-status-select"
@@ -90,11 +91,11 @@ export function ClausesBrowser({ clauses: initialClauses, tenantSlug }: ClausesB
                         </div>
                         <p className="text-sm text-content-default mb-4">{selected.description}</p>
                         <div className="mb-4">
-                            <h3 className="text-xs font-semibold text-content-muted uppercase mb-2">{t('requiredArtifacts')}</h3>
+                            <Eyebrow className="block mb-2">{t('requiredArtifacts')}</Eyebrow>
                             <p className="text-sm text-content-muted">{selected.artifacts}</p>
                         </div>
                         <div>
-                            <h3 className="text-xs font-semibold text-content-muted uppercase mb-2">{t('checklist')}</h3>
+                            <Eyebrow className="block mb-2">{t('checklist')}</Eyebrow>
                             <div className="space-y-2">
                                 {selected.checklist?.map((item: string, i: number) => (
                                     <label key={i} className="flex items-start gap-2 text-sm text-content-default cursor-pointer group">

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 const FW_META: Record<string, { icon: AppIconName; label: string }> = {
     ISO27001: { icon: 'shield', label: 'ISO/IEC 27001:2022' },
@@ -80,7 +81,7 @@ export default function CycleDetailPage() {
                     <div className="flex items-center gap-4">
                         <div><AppIcon name={meta.icon} size={32} /></div>
                         <div>
-                            <h1 className="text-xl font-bold" id="cycle-name">{cycle.name}</h1>
+                            <Heading level={1} id="cycle-name">{cycle.name}</Heading>
                             <p className="text-sm text-content-muted">{meta.label} · v{cycle.frameworkVersion} · {cycle.status}</p>
                         </div>
                     </div>
@@ -90,7 +91,7 @@ export default function CycleDetailPage() {
             {/* Default Pack Preview */}
             <div className="glass-card p-6 space-y-4">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-semibold">Default Pack Preview</h2>
+                    <Heading level={2}>Default Pack Preview</Heading>
                     <Button variant="primary" onClick={createDefaultPack} disabled={creating} id="create-default-pack-btn" icon={<AppIcon name="package" size={16} />}>
                         {creating ? 'Creating...' : 'Create Pack from Default Selection'}
                     </Button>
@@ -127,7 +128,7 @@ export default function CycleDetailPage() {
             {/* Existing Packs */}
             {cycle.packs?.length > 0 && (
                 <div className="space-y-3">
-                    <h2 className="text-lg font-semibold">Packs</h2>
+                    <Heading level={2}>Packs</Heading>
                     {cycle.packs.map((p: any) => (
                         <Link key={p.id} href={`/t/${tenantSlug}/audits/packs/${p.id}`}
                             className="glass-card p-4 flex items-center justify-between hover:bg-bg-elevated/30 transition block" id={`pack-link-${p.id}`}>

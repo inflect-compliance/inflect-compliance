@@ -21,6 +21,7 @@
  */
 
 import { formatDateCompact } from '@/lib/format-date';
+import { Heading } from '@/components/ui/typography';
 
 // ─── Props ──────────────────────────────────────────────────────────
 
@@ -94,7 +95,7 @@ export default function ExpiryCalendar({
     if (!items || items.length === 0) {
         return (
             <div id={id} className={`glass-card p-5 ${className}`}>
-                <h3 className="text-sm font-semibold text-content-default mb-3">Evidence Expiry</h3>
+                <Heading level={3} className="mb-3">Evidence Expiry</Heading>
                 <p className="text-xs text-content-subtle">No upcoming evidence expirations.</p>
             </div>
         );
@@ -114,7 +115,7 @@ export default function ExpiryCalendar({
     return (
         <div id={id} className={`glass-card p-5 ${className}`}>
             <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-content-default">Evidence Expiry</h3>
+                <Heading level={3}>Evidence Expiry</Heading>
                 <span className="text-xs text-content-subtle tabular-nums">{items.length} item{items.length !== 1 ? 's' : ''}</span>
             </div>
 

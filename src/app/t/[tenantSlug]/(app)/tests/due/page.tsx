@@ -14,6 +14,7 @@ import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-c
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 interface DuePlan {
     id: string;
@@ -97,7 +98,7 @@ export default function DueQueuePage() {
             <ListPageShell.Header>
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold" id="due-queue-title">Due Queue</h1>
+                        <Heading level={1} id="due-queue-title">Due Queue</Heading>
                         <p className="text-sm text-content-muted mt-1">Test plans due or overdue for execution</p>
                     </div>
                     <div className="flex gap-3">

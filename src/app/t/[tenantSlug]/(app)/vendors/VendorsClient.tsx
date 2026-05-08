@@ -25,6 +25,7 @@ import { ListPageShell } from '@/components/layout/ListPageShell';
 import { toApiSearchParams } from '@/lib/filters/url-sync';
 import { useHydratedNow } from '@/lib/hooks/use-hydrated-now';
 import { buildVendorFilters, VENDOR_FILTER_KEYS } from './filter-defs';
+import { Heading } from '@/components/ui/typography';
 
 const STATUS_VARIANT: Record<string, 'success' | 'info' | 'warning' | 'neutral'> = {
     ACTIVE: 'success', ONBOARDING: 'info',
@@ -185,7 +186,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
             <ListPageShell.Header>
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-content-emphasis">Vendor Register</h1>
+                        <Heading level={1}>Vendor Register</Heading>
                         <p className="text-content-muted text-sm">{vendors.length} vendors</p>
                     </div>
                     <div className="flex gap-2">

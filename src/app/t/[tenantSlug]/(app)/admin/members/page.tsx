@@ -34,6 +34,7 @@ import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { Tooltip } from '@/components/ui/tooltip';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { cn } from '@dub/utils';
+import { Heading } from '@/components/ui/typography';
 
 // ─── Types ───
 
@@ -603,10 +604,10 @@ export default function MembersAdminPage() {
     if (loading) {
         return (
             <div className="space-y-6 animate-fadeIn">
-                <h1 className="text-2xl font-bold flex items-center gap-2 text-content-emphasis">
+                <Heading level={1} className="flex items-center gap-2">
                     <Users className="w-6 h-6 text-[var(--brand-default)]" />
                     Members &amp; Roles
-                </h1>
+                </Heading>
                 <div className="glass-card p-8 space-y-4">
                     <div className="h-4 bg-bg-subtle rounded w-1/3 animate-pulse" />
                     <div className="h-4 bg-bg-subtle rounded w-2/3 animate-pulse" />
@@ -621,10 +622,10 @@ export default function MembersAdminPage() {
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-2 text-content-emphasis">
+                    <Heading level={1} className="flex items-center gap-2">
                         <Users className="w-6 h-6 text-[var(--brand-default)]" />
                         Members &amp; Roles
-                    </h1>
+                    </Heading>
                     <p className="text-sm text-content-muted mt-1">
                         {members.filter(m => m.status === 'ACTIVE').length} active members
                         {invites.length > 0 && ` · ${invites.length} pending invites`}
@@ -663,7 +664,7 @@ export default function MembersAdminPage() {
             {/* Invite Form */}
             {showInvite && (
                 <div className="glass-card p-6 border border-[var(--brand-default)]/30" id="invite-form">
-                    <h3 className="text-sm font-semibold text-content-emphasis mb-4">Invite a New Member</h3>
+                    <Heading level={3} className="mb-4">Invite a New Member</Heading>
                     <div className="flex gap-3 items-end flex-wrap">
                         <div className="flex-1 min-w-[200px]">
                             <label className="text-xs text-content-muted uppercase tracking-wider mb-1 block">
@@ -752,7 +753,7 @@ export default function MembersAdminPage() {
             {/* Pending Invites DataTable */}
             {invites.length > 0 && (
                 <div>
-                    <h2 className="text-lg font-semibold text-content-emphasis mb-3">Pending Invitations</h2>
+                    <Heading level={2} className="mb-3">Pending Invitations</Heading>
                     <div className="glass-card overflow-hidden" id="invites-table-card">
                         <DataTable
                             data={invites}

@@ -27,6 +27,7 @@ import { DataTable, createColumns } from '@/components/ui/table';
 import { formatDateTime as formatDate } from '@/lib/format-date';
 import { toast } from 'sonner';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 // ─── Types ───
 
@@ -468,10 +469,10 @@ export default function ApiKeysPage() {
     if (loading) {
         return (
             <div className="space-y-6 animate-fadeIn">
-                <h1 className="text-2xl font-bold flex items-center gap-2">
+                <Heading level={1} className="flex items-center gap-2">
                     <KeyRound className="w-6 h-6 text-[var(--brand-default)]" />
                     API Keys
-                </h1>
+                </Heading>
                 <div className="glass-card p-8 space-y-4">
                     <div className="h-4 bg-bg-elevated/50 rounded w-1/3 animate-pulse" />
                     <div className="h-4 bg-bg-elevated/50 rounded w-2/3 animate-pulse" />
@@ -493,10 +494,10 @@ export default function ApiKeysPage() {
                         ]}
                         className="mb-1"
                     />
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                    <Heading level={1} className="flex items-center gap-2">
                         <KeyRound className="w-6 h-6 text-[var(--brand-default)]" />
                         API Keys
-                    </h1>
+                    </Heading>
                     <p className="text-sm text-content-muted mt-1">
                         Manage machine-to-machine API keys for programmatic access.
                         Keys are scoped to specific resources and actions.
@@ -544,7 +545,7 @@ export default function ApiKeysPage() {
             {/* Create Form */}
             {showCreate && (
                 <div className="glass-card p-6 border border-[var(--brand-default)]/30 space-y-4" id="create-key-form">
-                    <h3 className="text-sm font-semibold text-content-emphasis">Create API Key</h3>
+                    <Heading level={3}>Create API Key</Heading>
 
                     <div>
                         <label className="text-xs text-content-muted uppercase tracking-wider mb-1 block">Name *</label>
@@ -599,7 +600,7 @@ export default function ApiKeysPage() {
             {/* Active Keys */}
             <div className="glass-card overflow-hidden" id="active-keys-card">
                 <div className="px-4 py-3 border-b border-border-default/50">
-                    <h3 className="text-sm font-semibold text-content-emphasis">Active Keys ({activeKeys.length})</h3>
+                    <Heading level={3}>Active Keys ({activeKeys.length})</Heading>
                 </div>
                 <DataTable
                     data={activeKeys}
@@ -615,7 +616,7 @@ export default function ApiKeysPage() {
             {inactiveKeys.length > 0 && (
                 <div className="glass-card overflow-hidden opacity-60" id="inactive-keys-card">
                     <div className="px-4 py-3 border-b border-border-default/50">
-                        <h3 className="text-sm font-semibold text-content-muted">Revoked / Expired ({inactiveKeys.length})</h3>
+                        <Heading level={3}>Revoked / Expired ({inactiveKeys.length})</Heading>
                     </div>
                     <DataTable
                         data={inactiveKeys}

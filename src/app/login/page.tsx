@@ -5,6 +5,7 @@ import { getProviders, signIn } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
+import { Heading } from '@/components/ui/typography';
 
 function extractErrorMessage(value: unknown, fallback: string): string {
     if (typeof value === 'string') return value;
@@ -168,17 +169,17 @@ function LoginForm() {
                             </svg>
                         </div>
                     </div>
-                    <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+                    <Heading level={1} className="bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
                         {t('title')}
-                    </h1>
+                    </Heading>
                     <p className="text-slate-400 text-sm mt-1">{t('subtitle')}</p>
                 </div>
 
                 {/* Form */}
                 <div className="glass-card p-8 animate-fadeIn">
-                    <h2 className="text-lg font-semibold mb-6">
+                    <Heading level={2} className="mb-6">
                         {mode === 'login' ? t('signIn') : t('register')}
-                    </h2>
+                    </Heading>
 
                     {error && (
                         <div className="mb-4 p-3 rounded-lg bg-bg-error border border-border-error text-content-error text-sm">

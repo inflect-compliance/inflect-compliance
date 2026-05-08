@@ -27,6 +27,7 @@ import {
     Sparkles,
 } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 // ─── Step Definitions ───
 
@@ -203,7 +204,7 @@ export default function OnboardingWizard() {
             <div className="flex items-center justify-center min-h-[60vh]">
                 <div className="glass-card p-8 text-center max-w-md">
                     <ShieldCheck className="w-12 h-12 text-slate-500 mx-auto mb-4" />
-                    <h2 className="text-lg font-semibold text-slate-200 mb-2">Access Restricted</h2>
+                    <Heading level={2} className="text-slate-200 mb-2">Access Restricted</Heading>
                     <p className="text-sm text-slate-400">Only tenant administrators can access the onboarding wizard.</p>
                 </div>
             </div>
@@ -287,7 +288,7 @@ export default function OnboardingWizard() {
             {/* Header */}
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold">Setup Wizard</h1>
+                    <Heading level={1}>Setup Wizard</Heading>
                     <p className="text-slate-400 text-sm mt-1">Complete these steps to configure your compliance workspace.</p>
                 </div>
                 <Button variant="ghost" size="sm" onClick={handleSaveAndExit}>
@@ -354,7 +355,7 @@ export default function OnboardingWizard() {
                                 <currentStep.icon className="w-4.5 h-4.5 text-white" />
                             </div>
                             <div>
-                                <h2 className="text-lg font-semibold text-white">{currentStep.label}</h2>
+                                <Heading level={2} className="text-white">{currentStep.label}</Heading>
                                 <p className="text-xs text-slate-400">Step {activeStepIdx + 1} of {STEPS.length}</p>
                             </div>
                             {isComplete(currentStep.key) && (

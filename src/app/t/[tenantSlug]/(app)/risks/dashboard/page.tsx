@@ -6,6 +6,7 @@ import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-c
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBreakdown } from '@/components/ui/status-breakdown';
+import { Heading } from '@/components/ui/typography';
 
 type Risk = {
     id: string;
@@ -72,7 +73,7 @@ export default function RiskDashboardPage() {
         <div className="space-y-6 animate-fadeIn">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold">{t('dashboardTitle')}</h1>
+                    <Heading level={1}>{t('dashboardTitle')}</Heading>
                     <p className="text-content-muted text-sm">{tenant.tenantName} — {t('riskCount', { count: total })}</p>
                 </div>
                 <Link href={href('/risks')} className={buttonVariants({ variant: 'secondary' })} id="back-to-register">
@@ -103,7 +104,7 @@ export default function RiskDashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Status Breakdown — Epic 59: StatusBreakdown primitive. */}
                 <div className="glass-card p-5">
-                    <h2 className="font-semibold mb-4">{t('statusBreakdown')}</h2>
+                    <Heading level={3} className="mb-4">{t('statusBreakdown')}</Heading>
                     <StatusBreakdown
                         ariaLabel="Risk status breakdown"
                         total={total}
@@ -126,7 +127,7 @@ export default function RiskDashboardPage() {
 
                 {/* Heatmap */}
                 <div className="glass-card p-5">
-                    <h2 className="font-semibold mb-4">{t('heatmapTitle')}</h2>
+                    <Heading level={3} className="mb-4">{t('heatmapTitle')}</Heading>
                     <div className="grid grid-cols-[auto_repeat(5,1fr)] gap-1 text-xs">
                         <div></div>
                         {[1, 2, 3, 4, 5].map(i => (
@@ -159,7 +160,7 @@ export default function RiskDashboardPage() {
             {/* Overdue */}
             {overdueRisks.length > 0 && (
                 <div className="glass-card p-5 border-border-error">
-                    <h2 className="font-semibold mb-3 text-content-error">{t('overdueReviewsTitle')}</h2>
+                    <Heading level={2} className="mb-3 text-content-error">{t('overdueReviewsTitle')}</Heading>
                     <div className="space-y-2">
                         {overdueRisks.map(r => {
                             const daysOverdue = Math.floor((now.getTime() - new Date(r.nextReviewAt!).getTime()) / 86400000);

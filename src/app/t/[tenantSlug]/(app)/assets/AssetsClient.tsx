@@ -20,6 +20,7 @@ import { NumberStepper } from '@/components/ui/number-stepper';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 const ASSET_TYPES = ['INFORMATION', 'APPLICATION', 'SYSTEM', 'SERVICE', 'DATA_STORE', 'INFRASTRUCTURE', 'VENDOR', 'PROCESS', 'PEOPLE_PROCESS', 'OTHER'];
 const ASSET_TYPE_OPTIONS: ComboboxOption[] = ASSET_TYPES.map(t => ({ value: t, label: t.replace(/_/g, ' ') }));
@@ -168,7 +169,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
             <ListPageShell.Header>
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold">{t.title}</h1>
+                        <Heading level={1}>{t.title}</Heading>
                         <p className="text-content-muted text-sm">{assets.length} assets</p>
                     </div>
                     <div className="flex gap-2">

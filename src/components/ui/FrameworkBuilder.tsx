@@ -44,6 +44,7 @@ import {
     serializeForApi,
 } from '@/lib/framework-tree/builder-state';
 import type { FrameworkTreePayload } from '@/lib/framework-tree/types';
+import { Heading } from '@/components/ui/typography';
 
 // ─── Drag payload encoding ─────────────────────────────────────────────
 
@@ -192,9 +193,9 @@ export function FrameworkBuilder({
             {/* Header / actions */}
             <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
-                    <h3 className="text-sm font-semibold text-content-emphasis">
+                    <Heading level={3}>
                         Builder — reorder mode
-                    </h3>
+                    </Heading>
                     <p className="text-xs text-content-muted">
                         Drag the handle on any row to reorder. Changes are saved per-tenant — the
                         framework stays unchanged for everyone else.
@@ -254,9 +255,9 @@ export function FrameworkBuilder({
                                     className="w-4 h-4 text-content-subtle flex-shrink-0"
                                     aria-hidden="true"
                                 />
-                                <h4 className="text-sm font-semibold text-content-emphasis flex-1">
+                                <Heading level={3} className="flex-1">
                                     {section.label}
-                                </h4>
+                                </Heading>
                                 <span className="text-xs text-content-subtle">
                                     {section.requirements.length}
                                 </span>

@@ -35,6 +35,7 @@ import { AlertCircle, Inbox, SearchX } from "lucide-react";
 import { type PropsWithChildren, type ReactNode } from "react";
 import { Button } from "./button";
 import { buttonVariants } from "./button-variants";
+import { TextLink } from "./typography";
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -121,14 +122,14 @@ export function EmptyState({
                 <p className="max-w-sm text-balance text-center text-sm text-content-muted">
                     {description}{" "}
                     {learnMore && (
-                        <a
+                        <TextLink
                             href={learnMore}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="underline underline-offset-2 hover:text-content-emphasis transition-colors"
+                            tone="underline"
                         >
                             Learn more ↗
-                        </a>
+                        </TextLink>
                     )}
                 </p>
             )}

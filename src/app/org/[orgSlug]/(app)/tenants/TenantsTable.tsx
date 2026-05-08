@@ -11,6 +11,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { buttonVariants } from '@/components/ui/button';
 import { useOrgPermissions } from '@/lib/org-context-provider';
 import type { TenantHealthRow, RagBadge } from '@/app-layer/schemas/portfolio';
+import { Heading } from '@/components/ui/typography';
 
 interface Props {
     rows: TenantHealthRow[];
@@ -143,9 +144,9 @@ export function TenantsTable({ rows, orgSlug }: Props) {
             <ListPageShell.Header>
                 <div className="flex items-end justify-between gap-4 flex-wrap">
                     <div>
-                        <h1 className="text-2xl font-semibold text-content-emphasis">
+                        <Heading level={1}>
                             Tenant Health
-                        </h1>
+                        </Heading>
                         <p className="text-sm text-content-muted mt-1">
                             {rows.length} tenant{rows.length === 1 ? '' : 's'} linked to this organization
                         </p>

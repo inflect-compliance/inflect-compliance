@@ -10,6 +10,7 @@ import { useSWRConfig } from 'swr';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 // Inline pencil icon to avoid lucide-react barrel import issue with Next.js 14
 const PencilIcon = ({ size = 14 }: { size?: number }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
@@ -840,7 +841,7 @@ export default function ControlDetailPage() {
             {/* Applicability modal */}
             {showApplicability && permissions.canWrite && (
                 <div className="glass-card p-4 space-y-3">
-                    <h3 className="text-sm font-semibold">Set Applicability</h3>
+                    <Heading level={3}>Set Applicability</Heading>
                     <div className="flex gap-4">
                         <label className="flex items-center gap-2 text-sm text-content-default">
                             <input type="radio" value="APPLICABLE" checked={appChoice === 'APPLICABLE'} onChange={() => setAppChoice('APPLICABLE')} />
@@ -928,7 +929,7 @@ export default function ControlDetailPage() {
                     {/* Automation Section */}
                     <div className="border-t border-border-default pt-4 mt-4">
                         <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-sm font-semibold text-content-default">Automation</h3>
+                            <Heading level={3}>Automation</Heading>
                             <div className="flex items-center gap-2">
                                 {/* Sync Now button — only when automationKey is set */}
                                 {control.automationKey && permissions.canWrite && !editingAutomation && (
@@ -1234,7 +1235,7 @@ export default function ControlDetailPage() {
                     </div>
                     {/* Linked Work Items (via TaskLink) */}
                     <div className="glass-card p-4 mt-4" id="linked-work-items-section">
-                        <h3 className="text-sm font-semibold mb-3 text-content-default">Linked Work Items (Tasks)</h3>
+                        <Heading level={3} className="mb-3">Linked Work Items (Tasks)</Heading>
                         <LinkedTasksPanel
                             apiBase={apiUrl('')}
                             entityType="CONTROL"
@@ -1260,7 +1261,7 @@ export default function ControlDetailPage() {
                     {/* File upload form for this control */}
                     {showFileUpload && permissions.canWrite && (
                         <form onSubmit={handleFileUpload} className="glass-card p-4 space-y-3" id="control-upload-form">
-                            <h4 className="text-sm font-semibold text-content-emphasis">Upload Evidence for {control.name}</h4>
+                            <Heading level={3}>Upload Evidence for {control.name}</Heading>
                             <input
                                 ref={fileUploadRef}
                                 type="file"

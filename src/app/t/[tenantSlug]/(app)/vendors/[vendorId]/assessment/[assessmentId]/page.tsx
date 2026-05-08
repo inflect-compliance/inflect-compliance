@@ -13,6 +13,7 @@ import { SkeletonDetailPage } from '@/components/ui/skeleton';
 import { Combobox } from '@/components/ui/combobox';
 import { Tooltip } from '@/components/ui/tooltip';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 const CRIT_BADGE: Record<string, StatusBadgeVariant> = { LOW: 'neutral', MEDIUM: 'warning', HIGH: 'error', CRITICAL: 'error' };
 const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
@@ -172,7 +173,7 @@ export default function AssessmentPage(
 
             <div className="card p-5 space-y-2">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-xl font-bold" id="assessment-title">{assessment.template?.name || 'Assessment'}</h1>
+                    <Heading level={1} id="assessment-title">{assessment.template?.name || 'Assessment'}</Heading>
                     <StatusBadge variant={STATUS_BADGE[assessment.status]} id="assessment-status">{assessment.status}</StatusBadge>
                 </div>
                 <div className="flex gap-4 text-sm text-content-muted">
@@ -190,7 +191,7 @@ export default function AssessmentPage(
             {/* Questions by section */}
             {Object.entries(sections).map(([section, sQuestions]) => (
                 <div key={section} className="card p-5 space-y-4">
-                    <h2 className="text-lg font-semibold border-b border-border-default pb-2">{section}</h2>
+                    <Heading level={2} className="border-b border-border-default pb-2">{section}</Heading>
                     {sQuestions.map((q, idx) => (
                         <div key={q.id} className="space-y-1.5">
                             <div className="flex items-start gap-2">

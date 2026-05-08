@@ -30,6 +30,7 @@ import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { SkeletonDetailPage } from '@/components/ui/skeleton';
 import { formatDate } from '@/lib/format-date';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 interface Question {
     id: string;
@@ -291,9 +292,9 @@ export function VendorAssessmentReviewClient({
                         <p className="text-xs text-content-subtle">
                             {view.vendor.name}
                         </p>
-                        <h1 className="text-2xl font-bold mt-0.5">
+                        <Heading level={1} className="mt-0.5">
                             {view.template.name}
-                        </h1>
+                        </Heading>
                         <div className="flex items-center gap-2 mt-1 text-xs text-content-subtle">
                             <span>{view.template.key}</span>
                             <span>·</span>
@@ -393,9 +394,9 @@ export function VendorAssessmentReviewClient({
                         className="glass-card p-4"
                         data-testid={`section-${s.id}`}
                     >
-                        <h2 className="text-base font-semibold mb-3">
+                        <Heading level={2} className="mb-3">
                             {s.title}
-                        </h2>
+                        </Heading>
                         <div className="space-y-3">
                             {s.questions.map((q) => {
                                 const a = answerByQ.get(q.id);

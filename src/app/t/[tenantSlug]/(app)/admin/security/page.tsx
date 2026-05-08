@@ -10,6 +10,7 @@ import { useTenantApiUrl } from '@/lib/tenant-context-provider';
 import { ShieldCheck, Save, AlertTriangle, CheckCircle, LogOut, Users, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { InfoTooltip } from '@/components/ui/tooltip';
+import { Heading } from '@/components/ui/typography';
 
 type MfaPolicy = 'DISABLED' | 'OPTIONAL' | 'REQUIRED';
 
@@ -155,10 +156,10 @@ export default function AdminSecurityPage() {
     if (loading) {
         return (
             <div className="space-y-6 animate-fadeIn">
-                <h1 className="text-2xl font-bold flex items-center gap-2">
+                <Heading level={1} className="flex items-center gap-2">
                     <ShieldCheck className="w-6 h-6 text-[var(--brand-default)]" />
                     Security & MFA
-                </h1>
+                </Heading>
                 <div className="glass-card p-8">
                     <div className="animate-pulse space-y-4">
                         <div className="h-4 bg-bg-elevated rounded w-1/3" />
@@ -173,10 +174,10 @@ export default function AdminSecurityPage() {
 
     return (
         <div className="space-y-6 animate-fadeIn">
-            <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Heading level={1} className="flex items-center gap-2">
                 <ShieldCheck className="w-6 h-6 text-[var(--brand-default)]" />
                 Security & MFA
-            </h1>
+            </Heading>
 
             {error && (
                 <div className="glass-card p-4 border border-border-error bg-bg-error flex items-center gap-2">
@@ -196,7 +197,7 @@ export default function AdminSecurityPage() {
             <div className="glass-card p-6 space-y-5">
                 <div>
                     <div className="flex items-center gap-2">
-                        <h2 className="text-lg font-semibold text-content-emphasis">Multi-Factor Authentication Policy</h2>
+                        <Heading level={2}>Multi-Factor Authentication Policy</Heading>
                         <InfoTooltip
                             aria-label="About the MFA policy"
                             iconClassName="h-4 w-4"
@@ -263,7 +264,7 @@ export default function AdminSecurityPage() {
             {/* Session Settings */}
             <div className="glass-card p-6 space-y-4">
                 <div>
-                    <h2 className="text-lg font-semibold text-content-emphasis mb-1">Session Settings</h2>
+                    <Heading level={2} className="mb-1">Session Settings</Heading>
                     <p className="text-sm text-content-muted">
                         Configure session timeout for your organization. Leave blank for the default.
                     </p>
@@ -311,7 +312,7 @@ export default function AdminSecurityPage() {
             {/* ──── Session Management ──── */}
             <div className="glass-card p-6 space-y-5">
                 <div>
-                    <h2 className="text-lg font-semibold text-content-emphasis mb-1">Session Management</h2>
+                    <Heading level={2} className="mb-1">Session Management</Heading>
                     <p className="text-sm text-content-muted">
                         Revoke active sessions. Revoked users must sign in again.
                     </p>

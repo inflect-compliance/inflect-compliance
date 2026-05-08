@@ -15,6 +15,7 @@ import { DateRangePicker } from '@/components/ui/date-picker/date-range-picker';
 import { selectDateRangePresets } from '@/components/ui/date-picker/presets-catalogue';
 import type { DateRangeValue } from '@/components/ui/date-picker/types';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 // Epic 58 — audit periods are reporting windows. The curated preset
 // subset favours periods auditors actually request ("the most recent
@@ -114,7 +115,7 @@ export default function AuditCyclesPage() {
         <div className="space-y-6 animate-fadeIn">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold">Audit Readiness</h1>
+                    <Heading level={1}>Audit Readiness</Heading>
                     <p className="text-content-muted text-sm">{cycles.length} audit cycle{cycles.length !== 1 ? 's' : ''}</p>
                 </div>
                 <Button variant="primary" onClick={() => setShowForm(!showForm)} id="create-cycle-btn">
@@ -221,7 +222,7 @@ export default function AuditCyclesPage() {
                                     </div>
                                     <StatusBadge variant={STATUS_BADGE[c.status] || 'neutral'}>{c.status}</StatusBadge>
                                 </div>
-                                <h3 className="font-semibold text-sm group-hover:text-content-emphasis transition">{c.name}</h3>
+                                <Heading level={3} className="group-hover:text-content-emphasis transition">{c.name}</Heading>
                                 <p className="text-xs text-content-muted mt-1">{meta.label} · v{c.frameworkVersion}</p>
                                 <div className="flex items-center gap-2 mt-3 text-xs text-content-subtle">
                                     <span>{c.packs?.length || 0} pack{(c.packs?.length || 0) !== 1 ? 's' : ''}</span>

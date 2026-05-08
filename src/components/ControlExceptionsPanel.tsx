@@ -24,6 +24,7 @@ import { FormField } from '@/components/ui/form-field';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { DatePicker } from '@/components/ui/date-picker';
 import { formatDate, formatDateTime } from '@/lib/format-date';
+import { Heading } from '@/components/ui/typography';
 
 type Status = 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
 
@@ -112,9 +113,9 @@ export function ControlExceptionsPanel({
         >
             <header className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <h2 className="text-lg font-semibold text-content-default">
+                    <Heading level={2}>
                         Control Exceptions
-                    </h2>
+                    </Heading>
                     <ExceptionHeaderBadge ex={activeException} />
                 </div>
                 {canWrite ? (

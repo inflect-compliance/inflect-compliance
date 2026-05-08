@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 export default function ControlTemplatesPage() {
     const apiUrl = useTenantApiUrl();
@@ -97,7 +98,7 @@ export default function ControlTemplatesPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold" id="templates-heading"><AppIcon name="templates" className="inline-block mr-2 align-text-bottom" /> Control Templates</h1>
+                    <Heading level={1} id="templates-heading"><AppIcon name="templates" className="inline-block mr-2 align-text-bottom" /> Control Templates</Heading>
                     <p className="text-content-muted text-sm">Select templates to install as controls in your register</p>
                 </div>
                 <Link href={tenantHref('/controls')} className={buttonVariants({ variant: 'secondary' })}>

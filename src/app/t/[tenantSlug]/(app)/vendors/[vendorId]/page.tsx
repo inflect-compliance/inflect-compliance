@@ -15,6 +15,7 @@ import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { useToastWithUndo } from '@/components/ui/hooks';
 import { normaliseHref } from '@/lib/security/safe-url';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
     ACTIVE: 'success', ONBOARDING: 'info', OFFBOARDING: 'warning', OFFBOARDED: 'neutral',
@@ -214,7 +215,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <Link href={tenantHref('/vendors')} className="text-content-muted hover:text-content-emphasis">← Back</Link>
-                    <h1 className="text-2xl font-bold" id="vendor-detail-name">{vendor.name}</h1>
+                    <Heading level={1} id="vendor-detail-name">{vendor.name}</Heading>
                     <StatusBadge variant={STATUS_BADGE[vendor.status]}>{vendor.status}</StatusBadge>
                     <StatusBadge variant={CRIT_BADGE[vendor.criticality]}>{vendor.criticality}</StatusBadge>
                 </div>
@@ -259,7 +260,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                     {/* Enrichment Fields */}
                     {(vendor.privacyPolicyUrl || vendor.securityPageUrl || vendor.certificationsJson) && (
                         <div className="border-t border-border-default pt-3 mt-3 space-y-2">
-                            <h3 className="text-sm font-semibold text-content-default">Enrichment Data</h3>
+                            <Heading level={3}>Enrichment Data</Heading>
                             <div className="grid grid-cols-2 gap-3 text-sm">
                                 {normaliseHref(vendor.privacyPolicyUrl) && <div><span className="text-content-muted">Privacy Policy:</span> <a href={normaliseHref(vendor.privacyPolicyUrl)!} target="_blank" rel="noopener noreferrer" className="text-content-info underline ml-1" id="enrichment-privacy">View ↗</a></div>}
                                 {normaliseHref(vendor.securityPageUrl) && <div><span className="text-content-muted">Security Page:</span> <a href={normaliseHref(vendor.securityPageUrl)!} target="_blank" rel="noopener noreferrer" className="text-content-info underline ml-1" id="enrichment-security">View ↗</a></div>}
@@ -469,7 +470,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                         if (typeLinks.length === 0) return null;
                         return (
                             <div key={type} className="card p-4 space-y-2">
-                                <h3 className="text-sm font-semibold text-content-default">{type}s ({typeLinks.length})</h3>
+                                <Heading level={3}>{type}s ({typeLinks.length})</Heading>
                                 {typeLinks.map((l: any) => (
                                     <div key={l.id} className="flex items-center justify-between text-sm border-b border-border-subtle py-1">
                                         <span><code className="text-xs text-content-info">{l.entityId}</code> <StatusBadge variant="neutral" className="ml-1">{l.relation}</StatusBadge></span>

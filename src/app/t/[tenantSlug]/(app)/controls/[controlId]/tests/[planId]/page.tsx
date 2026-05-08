@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { TestPlanScheduleSection } from '@/components/TestPlanScheduleSection';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 interface TestPlanDetail {
     id: string;
@@ -158,7 +159,7 @@ export default function TestPlanDetailPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold" id="test-plan-title">{plan.name}</h1>
+                    <Heading level={1} id="test-plan-title">{plan.name}</Heading>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <StatusBadge variant={plan.status === 'ACTIVE' ? 'success' : 'warning'} id="test-plan-status">
                             {plan.status}
@@ -259,7 +260,7 @@ export default function TestPlanDetailPage() {
             {/* Description */}
             {plan.description && (
                 <div className="glass-card p-4">
-                    <h3 className="text-sm font-semibold text-content-default mb-2">Description</h3>
+                    <Heading level={3} className="mb-2">Description</Heading>
                     <p className="text-sm text-content-muted whitespace-pre-wrap">{plan.description}</p>
                 </div>
             )}
@@ -267,7 +268,7 @@ export default function TestPlanDetailPage() {
             {/* Steps */}
             {plan.steps.length > 0 && (
                 <div className="glass-card p-4">
-                    <h3 className="text-sm font-semibold text-content-default mb-3">Test Procedure</h3>
+                    <Heading level={3} className="mb-3">Test Procedure</Heading>
                     <ol className="space-y-2">
                         {plan.steps.map((step, i) => (
                             <li key={step.id} className="flex gap-3 text-sm">
@@ -289,7 +290,7 @@ export default function TestPlanDetailPage() {
             {/* Runs History */}
             <div className="glass-card p-4">
                 <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-content-default">Test Run History</h3>
+                    <Heading level={3}>Test Run History</Heading>
                     {permissions.canWrite && plan.status === 'ACTIVE' && (
                         <Button variant="primary" size="xs" onClick={createRun} disabled={creatingRun}>
                             {creatingRun ? '...' : 'New Run'}

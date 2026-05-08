@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const ENTITY_ICON: Record<string, AppIconName> = {
@@ -43,7 +44,7 @@ export default function SharedPackPage() {
         <div className="min-h-screen bg-slate-900 flex items-center justify-center">
             <div className="glass-card p-8 max-w-md text-center">
                 <div className="mb-4"><AppIcon name="lock" size={48} className="text-slate-400" /></div>
-                <h1 className="text-xl font-bold mb-2">Access Denied</h1>
+                <Heading level={1} className="mb-2">Access Denied</Heading>
                 <p className="text-slate-400 text-sm">{error}</p>
             </div>
         </div>
@@ -65,7 +66,7 @@ export default function SharedPackPage() {
                 {/* Header */}
                 <div className="text-center py-4">
                     <div className="text-sm text-slate-500 uppercase tracking-wide mb-2">Shared Audit Pack</div>
-                    <h1 className="text-2xl font-bold" id="shared-pack-name">{pack?.name}</h1>
+                    <Heading level={1} id="shared-pack-name">{pack?.name}</Heading>
                     <p className="text-slate-400 text-sm mt-1">
                         {cycle?.name} · {cycle?.frameworkKey} · {pack?.status}
                     </p>
@@ -92,11 +93,11 @@ export default function SharedPackPage() {
                 {/* Items */}
                 {Object.entries(grouped).map(([type, typeItems]) => (
                     <div key={type} className="space-y-2">
-                        <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
+                        <Heading level={3} className="text-slate-300 flex items-center gap-2">
                             <AppIcon name={ENTITY_ICON[type] || 'overview'} size={16} />
                             <span>{type}</span>
                             <span className="text-slate-500">({typeItems.length})</span>
-                        </h3>
+                        </Heading>
                         <div className="glass-card divide-y divide-slate-700/50">
                             {typeItems.map((item: any) => {
                                 let snap: any = {};

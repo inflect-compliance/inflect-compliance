@@ -15,6 +15,7 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 const EV_KIND_OPTIONS: ComboboxOption[] = [
     { value: 'FILE_UPLOAD', label: 'Upload File' },
@@ -218,9 +219,9 @@ export default function TestRunPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold" id="test-run-title">
+                    <Heading level={1} id="test-run-title">
                         Test Run {run.testPlan ? `— ${run.testPlan.name}` : ''}
-                    </h1>
+                    </Heading>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <StatusBadge variant={run.status === 'COMPLETED' ? 'success' : run.status === 'RUNNING' ? 'info' : 'neutral'} id="test-run-status">
                             {run.status}
@@ -240,7 +241,7 @@ export default function TestRunPage() {
             {/* Complete Form — only if not completed */}
             {!isCompleted && permissions.canWrite && (
                 <div className="glass-card p-5 space-y-4 border-l-4 border-[var(--brand-default)]">
-                    <h3 className="text-sm font-semibold text-content-emphasis">Complete This Test Run</h3>
+                    <Heading level={3}>Complete This Test Run</Heading>
 
                     <div>
                         <label className="text-xs text-content-muted block mb-1">Result *</label>
@@ -336,7 +337,7 @@ export default function TestRunPage() {
             {/* Evidence Section */}
             <div className="glass-card p-4">
                 <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-content-default">Evidence ({run.evidence?.length ?? 0})</h3>
+                    <Heading level={3}>Evidence ({run.evidence?.length ?? 0})</Heading>
                     {permissions.canWrite && (
                         <Button
                             variant="secondary"

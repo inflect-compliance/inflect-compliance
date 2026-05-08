@@ -26,6 +26,7 @@ import type { RichTextContentType } from '@/components/ui/RichTextEditor';
 import { ApprovalBanner } from '@/components/ui/ApprovalBanner';
 import { VersionDiff } from '@/components/ui/VersionDiff';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 // Lazy-load Tiptap. The editor + ProseMirror chunks land at
 // ~200KB gzipped; deferring the import means the static parts of
@@ -393,7 +394,7 @@ export default function PolicyDetailPage() {
                 <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-2">
-                            <h1 className="text-xl font-bold truncate" id="policy-title">{policy.title}</h1>
+                            <Heading level={1} className="truncate" id="policy-title">{policy.title}</Heading>
                             <StatusBadge variant={STATUS_BADGE[policy.status] || 'neutral'} id="policy-status">{policy.status}</StatusBadge>
                             {isOverdue && <StatusBadge variant="error">Overdue</StatusBadge>}
                         </div>
@@ -636,7 +637,7 @@ export default function PolicyDetailPage() {
             {tab === 'editor' && canWrite && (
                 <div className="glass-card p-6 space-y-4">
                     <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-semibold text-content-default">Create New Version</h3>
+                        <Heading level={3}>Create New Version</Heading>
                     </div>
 
                     {/* Content type selector */}
@@ -707,7 +708,7 @@ export default function PolicyDetailPage() {
             {/* ── Activity Feed ── */}
             {tab === 'activity' && (
                 <div className="glass-card p-6" id="activity-feed">
-                    <h3 className="text-sm font-semibold text-content-default mb-4">Activity Timeline</h3>
+                    <Heading level={3} className="mb-4">Activity Timeline</Heading>
                     {activitiesLoading ? (
                         <div className="text-center text-content-subtle animate-pulse py-8">Loading activity...</div>
                     ) : activities.length === 0 ? (

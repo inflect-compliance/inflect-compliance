@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ShieldX } from 'lucide-react';
 import { useTenantHref } from '@/lib/tenant-context-provider';
 import { buttonVariants } from '@/components/ui/button';
+import { Heading } from '@/components/ui/typography';
 
 /**
  * Shared forbidden/access-denied page for tenant routes.
@@ -26,7 +27,7 @@ export function ForbiddenPage({
             <div className="w-16 h-16 rounded-2xl bg-bg-error border border-border-error flex items-center justify-center mb-6">
                 <ShieldX className="w-8 h-8 text-content-error" />
             </div>
-            <h1 className="text-2xl font-bold text-white mb-2" id="forbidden-heading">{title}</h1>
+            <Heading level={1} className="text-white mb-2" id="forbidden-heading">{title}</Heading>
             <p className="text-content-muted text-sm max-w-md mb-8">{message}</p>
             <Link
                 href={tenantHref('/dashboard')}
@@ -57,7 +58,7 @@ export function ServerForbiddenPage({
             <div className="w-16 h-16 rounded-2xl bg-bg-error border border-border-error flex items-center justify-center mb-6">
                 <ShieldX className="w-8 h-8 text-content-error" />
             </div>
-            <h1 className="text-2xl font-bold text-white mb-2" id="forbidden-heading">{title}</h1>
+            <Heading level={1} className="text-white mb-2" id="forbidden-heading">{title}</Heading>
             <p className="text-content-muted text-sm max-w-md mb-8">{message}</p>
             <a
                 href={`/t/${tenantSlug}/dashboard`}

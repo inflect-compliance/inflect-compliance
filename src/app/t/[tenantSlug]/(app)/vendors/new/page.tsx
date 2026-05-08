@@ -17,6 +17,7 @@ import {
     startOfUtcDay,
     toYMD,
 } from '@/components/ui/date-picker/date-utils';
+import { Heading } from '@/components/ui/typography';
 
 // Epic 55 — vendor status is a two-option choice ("onboarding" vs
 // "active"). RadioGroup is the right primitive: both options are
@@ -95,7 +96,7 @@ export default function CreateVendorPage() {
         <div className="max-w-2xl mx-auto space-y-6">
             <div className="flex items-center gap-3">
                 <Link href={tenantHref('/vendors')} className="text-content-muted hover:text-content-emphasis">← Back</Link>
-                <h1 className="text-2xl font-bold">New Vendor</h1>
+                <Heading level={1}>New Vendor</Heading>
             </div>
 
             {error && (

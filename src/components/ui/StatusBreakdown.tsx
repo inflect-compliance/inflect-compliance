@@ -1,3 +1,4 @@
+import { Heading } from '@/components/ui/typography';
 /**
  * StatusBreakdown — Horizontal stacked bar with legend.
  *
@@ -55,7 +56,7 @@ export default function StatusBreakdown({
         <div id={id} className={`glass-card p-5 ${className}`}>
             {/* Header */}
             <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-content-default">{label}</h3>
+                <Heading level={3}>{label}</Heading>
                 {showTotal && (
                     <span className="text-xs text-content-subtle tabular-nums">{total} total</span>
                 )}

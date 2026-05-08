@@ -14,6 +14,7 @@ import { InfoTooltip } from '@/components/ui/tooltip';
 import { ToggleGroup } from '@/components/ui/toggle-group';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 interface SsoProvider {
     id: string;
@@ -256,7 +257,7 @@ export default function SsoAdminPage() {
     if (loading) {
         return (
             <div className="space-y-6 animate-fadeIn">
-                <h1 className="text-2xl font-bold">SSO &amp; Identity</h1>
+                <Heading level={1}>SSO &amp; Identity</Heading>
                 <div className="glass-card p-8 space-y-4">
                     <div className="h-4 bg-bg-elevated/50 rounded w-1/3 animate-pulse" />
                     <div className="h-4 bg-bg-elevated/50 rounded w-2/3 animate-pulse" />
@@ -270,10 +271,10 @@ export default function SsoAdminPage() {
         <div className="space-y-6 animate-fadeIn">
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold flex items-center gap-2">
+                <Heading level={1} className="flex items-center gap-2">
                     <Shield className="w-6 h-6 text-[var(--brand-default)]" />
                     SSO &amp; Identity
-                </h1>
+                </Heading>
                 <p className="text-sm text-content-muted mt-1">
                     Configure enterprise single sign-on for your workspace.
                 </p>
@@ -313,7 +314,7 @@ export default function SsoAdminPage() {
 
             {/* Config form */}
             <div className="glass-card p-6">
-                <h2 className="text-lg font-semibold mb-4">{tab} Configuration</h2>
+                <Heading level={2} className="mb-4">{tab} Configuration</Heading>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Provider name */}
@@ -544,7 +545,7 @@ export default function SsoAdminPage() {
 
             {/* Info card */}
             <div className="glass-card p-4 border border-border-default/50">
-                <h3 className="text-sm font-semibold text-content-emphasis mb-2">How SSO works</h3>
+                <Heading level={3} className="mb-2">How SSO works</Heading>
                 <ul className="text-xs text-content-muted space-y-1.5">
                     <li>• Users must already have an account and tenant membership to login via SSO</li>
                     <li>• SSO links are created automatically on first successful login</li>

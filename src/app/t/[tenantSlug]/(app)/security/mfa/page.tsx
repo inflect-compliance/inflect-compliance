@@ -13,6 +13,7 @@ import { ShieldCheck, QrCode, Copy, CheckCircle, XCircle, Trash2, AlertTriangle,
 import { toast } from 'sonner';
 import { useCopyToClipboard } from '@/components/ui/hooks';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { Heading } from '@/components/ui/typography';
 
 interface MfaStatus {
     isEnrolled: boolean;
@@ -141,10 +142,10 @@ export default function UserMfaPage() {
     if (loading) {
         return (
             <div className="space-y-6 animate-fadeIn">
-                <h1 className="text-2xl font-bold flex items-center gap-2">
+                <Heading level={1} className="flex items-center gap-2">
                     <ShieldCheck className="w-6 h-6 text-[var(--brand-default)]" />
                     Multi-Factor Authentication
-                </h1>
+                </Heading>
                 <div className="glass-card p-8">
                     <div className="animate-pulse space-y-4">
                         <div className="h-4 bg-bg-elevated rounded w-1/3" />
@@ -157,10 +158,10 @@ export default function UserMfaPage() {
 
     return (
         <div className="space-y-6 animate-fadeIn max-w-2xl">
-            <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Heading level={1} className="flex items-center gap-2">
                 <ShieldCheck className="w-6 h-6 text-[var(--brand-default)]" />
                 Multi-Factor Authentication
-            </h1>
+            </Heading>
 
             {error && (
                 <div className="glass-card p-4 border border-border-error bg-bg-error flex items-center gap-2">
@@ -184,7 +185,7 @@ export default function UserMfaPage() {
                 <div className="glass-card p-6 space-y-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h2 className="text-lg font-semibold text-content-emphasis">MFA Status</h2>
+                            <Heading level={2}>MFA Status</Heading>
                             <p className="text-sm text-content-muted mt-1">
                                 Tenant policy: <span className="font-medium text-content-default">{status.tenantMfaPolicy}</span>
                             </p>
@@ -249,7 +250,7 @@ export default function UserMfaPage() {
             {step === 'enrolling' && enrollment && (
                 <div className="glass-card p-6 space-y-5">
                     <div>
-                        <h2 className="text-lg font-semibold text-content-emphasis mb-1">Set Up Authenticator App</h2>
+                        <Heading level={2} className="mb-1">Set Up Authenticator App</Heading>
                         <p className="text-sm text-content-muted">
                             1. Open your authenticator app (Google Authenticator, Authy, 1Password, etc.)
                         </p>
@@ -292,9 +293,9 @@ export default function UserMfaPage() {
 
                     {/* Verification */}
                     <div>
-                        <h3 className="text-sm font-semibold text-content-emphasis mb-2">
+                        <Heading level={3} className="mb-2">
                             3. Enter the 6-digit code from your authenticator app
-                        </h3>
+                        </Heading>
                         <div className="flex gap-2">
                             <input
                                 type="text"

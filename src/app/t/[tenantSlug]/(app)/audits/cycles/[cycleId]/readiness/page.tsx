@@ -7,6 +7,7 @@ import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
     const r = (size - 8) / 2;
@@ -104,7 +105,7 @@ export default function CycleReadinessPage() {
             {/* Recommendations */}
             {result.recommendations?.length > 0 && (
                 <div className="glass-card p-6" id="recommendations">
-                    <h3 className="text-sm font-semibold mb-3 inline-flex items-center gap-2"><AppIcon name="info" size={16} /> Recommended Next Actions</h3>
+                    <Heading level={3} className="mb-3 inline-flex items-center gap-2"><AppIcon name="info" size={16} /> Recommended Next Actions</Heading>
                     <div className="space-y-2">
                         {result.recommendations.map((r: string, i: number) => (
                             <div key={i} className="flex items-start gap-2 text-sm">
@@ -119,7 +120,7 @@ export default function CycleReadinessPage() {
             {/* Gaps */}
             {result.gaps?.length > 0 && (
                 <div className="space-y-3" id="gaps-section">
-                    <h3 className="text-sm font-semibold">Top Gaps ({result.gaps.length})</h3>
+                    <Heading level={3}>Top Gaps ({result.gaps.length})</Heading>
                     <div className="glass-card divide-y divide-border-default/50">
                         {result.gaps.map((g: any, i: number) => (
                             <div key={i} className="p-3 flex items-center justify-between text-sm">
@@ -139,7 +140,7 @@ export default function CycleReadinessPage() {
 
             {/* Exports */}
             <div className="glass-card p-6" id="exports-section">
-                <h3 className="text-sm font-semibold mb-3 inline-flex items-center gap-2"><AppIcon name="export" size={16} /> Exports</h3>
+                <Heading level={3} className="mb-3 inline-flex items-center gap-2"><AppIcon name="export" size={16} /> Exports</Heading>
                 <div className="flex flex-wrap gap-2">
                     <a href={apiUrl(`/audits/cycles/${cycleId}/readiness?action=export-json`)}
                         target="_blank" rel="noopener" className={buttonVariants({ variant: 'secondary', size: 'sm' })}>Readiness Report (JSON)</a>

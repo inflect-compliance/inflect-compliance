@@ -52,6 +52,7 @@ import type {
     FrameworkTreePayload,
 } from '@/lib/framework-tree/types';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 // ─── Coverage shapes (subset of the existing coverage usecase output) ──
 
@@ -462,7 +463,7 @@ function SectionDetail({ node }: { node: FrameworkTreeNode }) {
             <p className="text-xs uppercase tracking-wider text-content-subtle mb-1">
                 Section
             </p>
-            <h3 className="text-base font-semibold text-content-emphasis">{node.label}</h3>
+            <Heading level={2}>{node.label}</Heading>
             <p className="text-xs text-content-muted mt-2">
                 {node.descendantCount} requirement
                 {node.descendantCount === 1 ? '' : 's'} in this section.
@@ -488,9 +489,9 @@ function RequirementDetail({
                     <code className="text-sm font-mono text-[var(--brand-default)]">
                         {node.code}
                     </code>
-                    <h3 className="text-base font-semibold text-content-emphasis">
+                    <Heading level={2}>
                         {node.title}
-                    </h3>
+                    </Heading>
                     {node.complianceStatus && (
                         <ComplianceStatusIndicator
                             status={node.complianceStatus}

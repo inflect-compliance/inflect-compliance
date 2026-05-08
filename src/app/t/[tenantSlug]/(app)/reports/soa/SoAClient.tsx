@@ -15,6 +15,7 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBadge as StatusBadgePrimitive, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 // ─── Types ───
 
@@ -175,7 +176,7 @@ export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientPr
             {/* Header */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold" id="soa-heading">Statement of Applicability</h1>
+                    <Heading level={1} id="soa-heading">Statement of Applicability</Heading>
                     <p className="text-content-muted text-sm">ISO 27001:2022 Annex A — {summary.total} requirements</p>
                 </div>
                 <RequirePermission resource="reports" action="export">

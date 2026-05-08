@@ -42,6 +42,7 @@ import type {
 } from '@/app-layer/schemas/org-dashboard-widget.schemas';
 
 import { DispatchedWidget, type PortfolioData } from './widget-dispatcher';
+import { Heading } from '@/components/ui/typography';
 
 // ─── Props ──────────────────────────────────────────────────────────
 
@@ -180,9 +181,9 @@ export function PortfolioDashboard({
             {/* Header bar */}
             <header className="flex items-end justify-between gap-4 flex-wrap">
                 <div>
-                    <h1 className="text-2xl font-semibold text-content-emphasis">
+                    <Heading level={1}>
                         Portfolio Overview
-                    </h1>
+                    </Heading>
                     <p
                         className="text-sm text-content-muted mt-1"
                         data-portfolio-header-stats

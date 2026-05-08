@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { Heading } from '@/components/ui/typography';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export default function DiffPage() {
@@ -46,9 +47,9 @@ export default function DiffPage() {
                 <Link href={tenantHref(`/frameworks/${frameworkKey}`)} className="text-content-muted hover:text-content-emphasis transition-colors text-sm">
                     ← Back to {framework?.name || frameworkKey}
                 </Link>
-                <h1 className="text-2xl font-bold text-content-emphasis mt-2" id="diff-heading">
+                <Heading level={1} className="mt-2" id="diff-heading">
                     Requirements Diff
-                </h1>
+                </Heading>
                 {diff && (
                     <p className="text-sm text-content-muted mt-1">
                         Comparing <span className="text-[var(--brand-default)]">{diff.from.name} v{diff.from.version}</span>

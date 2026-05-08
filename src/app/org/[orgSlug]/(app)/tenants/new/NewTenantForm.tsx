@@ -26,6 +26,7 @@ import { ArrowLeft } from 'lucide-react';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { Heading } from '@/components/ui/typography';
 
 interface Props {
     orgSlug: string;
@@ -176,9 +177,9 @@ export function NewTenantForm({ orgSlug }: Props) {
                     <ArrowLeft className="size-4" aria-hidden="true" />
                     Back to tenants
                 </Link>
-                <h1 className="mt-3 text-2xl font-semibold text-content-emphasis">
+                <Heading level={1} className="mt-3">
                     Create a new tenant
-                </h1>
+                </Heading>
                 <p className="text-sm text-content-muted mt-1">
                     Tenants are isolated workspaces under this organization. Other
                     org admins are auto-provisioned with AUDITOR access on creation.

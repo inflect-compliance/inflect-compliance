@@ -6,6 +6,7 @@
 import { cn } from "@dub/utils";
 import { InputHTMLAttributes, ReactNode, useMemo, useState } from "react";
 import { Button } from "./button";
+import { Heading } from '@/components/ui/typography';
 
 export function Form({
   title,
@@ -44,7 +45,7 @@ export function Form({
     >
       <div className="relative flex flex-col space-y-6 p-6">
         <div className="flex flex-col space-y-1">
-          <h2 className="text-base font-semibold">{title}</h2>
+          <Heading level={2}>{title}</Heading>
           <p className="text-sm text-neutral-500">{description}</p>
         </div>
         {typeof inputAttrs.defaultValue === "string" ? (

@@ -12,6 +12,7 @@ import {
     type StatusBreakdownVariant,
 } from '@/components/ui/status-breakdown';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 const STATUS_LABELS: Record<string, string> = {
     NOT_STARTED: 'Not Started', IN_PROGRESS: 'In Progress', IMPLEMENTED: 'Implemented', NEEDS_REVIEW: 'Needs Review',
@@ -73,13 +74,13 @@ export default function ControlsDashboard() {
 
     if (loading) return (
         <div className="space-y-6 animate-fadeIn">
-            <h1 className="text-2xl font-bold" id="dashboard-heading"><AppIcon name="dashboard" className="inline-block mr-2 align-text-bottom" /> Controls Dashboard</h1>
+            <Heading level={1} id="dashboard-heading"><AppIcon name="dashboard" className="inline-block mr-2 align-text-bottom" /> Controls Dashboard</Heading>
             <div className="p-12 text-center text-content-subtle animate-pulse">Loading dashboard...</div>
         </div>
     );
     if (!data) return (
         <div className="space-y-6 animate-fadeIn">
-            <h1 className="text-2xl font-bold" id="dashboard-heading"><AppIcon name="dashboard" className="inline-block mr-2 align-text-bottom" /> Controls Dashboard</h1>
+            <Heading level={1} id="dashboard-heading"><AppIcon name="dashboard" className="inline-block mr-2 align-text-bottom" /> Controls Dashboard</Heading>
             <div className="p-12 text-center text-content-error">Failed to load dashboard.</div>
         </div>
     );
@@ -89,7 +90,7 @@ export default function ControlsDashboard() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold" id="dashboard-heading"><AppIcon name="dashboard" className="inline-block mr-2 align-text-bottom" /> Controls Dashboard</h1>
+                    <Heading level={1} id="dashboard-heading"><AppIcon name="dashboard" className="inline-block mr-2 align-text-bottom" /> Controls Dashboard</Heading>
                     <p className="text-content-muted text-sm">{data.totalControls} controls in register</p>
                 </div>
                 <div className="flex gap-2">
@@ -138,7 +139,7 @@ export default function ControlsDashboard() {
             {/* Status Distribution */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="glass-card p-5">
-                    <h3 className="text-sm font-semibold text-content-default mb-4">Status Distribution</h3>
+                    <Heading level={3} className="mb-4">Status Distribution</Heading>
                     {/* Epic 59 — StatusBreakdown primitive. Bar widths are
                         proportional to the row's share of `total`
                         (maxStatus in the local scope was the previous
@@ -163,7 +164,7 @@ export default function ControlsDashboard() {
                     </div>
                 </div>
                 <div className="glass-card p-5">
-                    <h3 className="text-sm font-semibold text-content-default mb-4">Top Owners by Open Tasks</h3>
+                    <Heading level={3} className="mb-4">Top Owners by Open Tasks</Heading>
                     {data.topOwners?.length > 0 ? (
                         <div className="space-y-2" id="top-owners">
                             {data.topOwners.map((o) => (
@@ -182,7 +183,7 @@ export default function ControlsDashboard() {
             {/* Consistency Check */}
             {showConsistency && consistency && (
                 <div className="glass-card p-5" id="consistency-results">
-                    <h3 className="text-sm font-semibold text-content-default mb-3"><AppIcon name="search" size={16} className="inline-block mr-1" /> Consistency Check Results</h3>
+                    <Heading level={3} className="mb-3"><AppIcon name="search" size={16} className="inline-block mr-1" /> Consistency Check Results</Heading>
                     <div className="grid grid-cols-3 gap-4 mb-4">
                         <div className="text-center">
                             <p className={`text-xl font-bold ${consistency.summary.missingCodeCount > 0 ? 'text-content-warning' : 'text-content-success'}`}>

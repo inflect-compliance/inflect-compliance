@@ -86,6 +86,7 @@ import { CACHE_KEYS } from '@/lib/swr-keys';
 import type { ExecutiveDashboardPayload } from '@/app-layer/repositories/DashboardRepository';
 import type { TrendPayload } from '@/app-layer/usecases/compliance-trends';
 import type { RiskMatrixConfigShape } from '@/lib/risk-matrix/types';
+import { Heading } from '@/components/ui/typography';
 
 // ─── KPI trend bundle ─────────────────────────────────────────────────
 
@@ -187,9 +188,9 @@ export default function DashboardClient({
             {/* ─── Header ─── */}
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold text-content-emphasis">
+                    <Heading level={1}>
                         {t('title')}
-                    </h1>
+                    </Heading>
                     <p className="text-content-muted text-sm mt-1">
                         {t('subtitle')}
                     </p>
@@ -340,9 +341,9 @@ export default function DashboardClient({
             {/* ─── Quick Actions + Recent Activity ─── */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="glass-card p-5">
-                    <h3 className="text-sm font-semibold text-content-default mb-3">
+                    <Heading level={3} className="mb-3">
                         {t('quickActions')}
-                    </h3>
+                    </Heading>
                     <div className="grid grid-cols-2 gap-2">
                         <Link
                             href={href('/assets')}
@@ -415,9 +416,9 @@ function RiskDistributionSection({
     const { riskBySeverity, riskByStatus } = exec;
     return (
         <div className="glass-card p-5" id="risk-distribution">
-            <h3 className="text-sm font-semibold text-content-default mb-3">
+            <Heading level={3} className="mb-3">
                 Risk Distribution
-            </h3>
+            </Heading>
             <div className="grid grid-cols-2 gap-4 items-center">
                 <DonutChart
                     id="risk-severity-donut"
@@ -513,9 +514,9 @@ function ComplianceAlerts({ exec, t }: { exec: ExecutiveDashboardPayload; t: (ke
 
     return (
         <div className="glass-card p-5" id="compliance-alerts">
-            <h3 className="text-sm font-semibold text-content-default mb-3">
+            <Heading level={3} className="mb-3">
                 {t('complianceAlerts')}
-            </h3>
+            </Heading>
             <div className="space-y-2">
                 {alerts.length === 0 ? (
                     <p className="text-content-success text-sm">{t('noAlerts')}</p>
@@ -556,9 +557,9 @@ function TrendSection({ trends }: { trends: TrendPayload }) {
     return (
         <div className="glass-card p-5" id="trend-section">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-content-default">
+                <Heading level={3}>
                     Compliance Trends
-                </h3>
+                </Heading>
                 <span className="text-xs text-content-subtle">
                     {trends.daysAvailable} day{trends.daysAvailable !== 1 ? 's' : ''} of data
                 </span>

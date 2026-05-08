@@ -12,6 +12,7 @@ import { AppIcon } from '@/components/icons/AppIcon';
 import { useTenantContext, useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import dynamic from 'next/dynamic';
 import LinkedTasksPanel from '@/components/LinkedTasksPanel';
+import { Heading, Eyebrow } from '@/components/ui/typography';
 // Epic G-7 — treatment plan card. Dynamic-imported so the modal +
 // react-query machinery only loads on risks the user actually opens.
 const RiskTreatmentPlanCard = dynamic(
@@ -243,7 +244,7 @@ export default function RiskDetailPage() {
                 <div className="flex items-center gap-3">
                     <Link href={href('/risks')} className="text-content-muted hover:text-content-emphasis transition text-lg">←</Link>
                     <div>
-                        <h1 className="text-2xl font-bold text-content-emphasis" id="risk-title-heading">{risk.title}</h1>
+                        <Heading level={1} id="risk-title-heading">{risk.title}</Heading>
                         <div className="flex items-center gap-2 mt-1">
                             <StatusBadge variant={STATUS_VARIANT[risk.status] || 'neutral'} icon={null}>
                                 {risk.status}
@@ -393,26 +394,26 @@ export default function RiskDetailPage() {
                     <>
                         {risk.description && (
                             <div>
-                                <h3 className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">Description</h3>
+                                <Eyebrow className="mb-1">Description</Eyebrow>
                                 <p className="text-sm text-content-default whitespace-pre-wrap">{risk.description}</p>
                             </div>
                         )}
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div>
-                                <h3 className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">Category</h3>
+                                <Eyebrow className="mb-1">Category</Eyebrow>
                                 <p className="text-sm">{risk.category || '—'}</p>
                             </div>
                             <div>
-                                <h3 className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">Treatment Owner</h3>
+                                <Eyebrow className="mb-1">Treatment Owner</Eyebrow>
                                 <p className="text-sm">{risk.treatmentOwner || '—'}</p>
                             </div>
                             <div>
-                                <h3 className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">Treatment</h3>
+                                <Eyebrow className="mb-1">Treatment</Eyebrow>
                                 <p className="text-sm">{risk.treatment || 'Untreated'}</p>
                             </div>
                             <div>
-                                <h3 className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">Target Date</h3>
+                                <Eyebrow className="mb-1">Target Date</Eyebrow>
                                 <p className="text-sm">{risk.targetDate ? formatDate(risk.targetDate) : '—'}</p>
                             </div>
                         </div>
@@ -436,26 +437,26 @@ export default function RiskDetailPage() {
 
                         {risk.threat && (
                             <div>
-                                <h3 className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">Threat</h3>
+                                <Eyebrow className="mb-1">Threat</Eyebrow>
                                 <p className="text-sm text-content-default">{risk.threat}</p>
                             </div>
                         )}
                         {risk.vulnerability && (
                             <div>
-                                <h3 className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">Vulnerability</h3>
+                                <Eyebrow className="mb-1">Vulnerability</Eyebrow>
                                 <p className="text-sm text-content-default whitespace-pre-wrap">{risk.vulnerability}</p>
                             </div>
                         )}
                         {risk.treatmentNotes && (
                             <div>
-                                <h3 className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">Treatment Notes</h3>
+                                <Eyebrow className="mb-1">Treatment Notes</Eyebrow>
                                 <p className="text-sm text-content-default whitespace-pre-wrap">{risk.treatmentNotes}</p>
                             </div>
                         )}
 
                         <div className="grid grid-cols-2 gap-4 border-t border-border-subtle pt-4">
                             <div>
-                                <h3 className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">Next Review</h3>
+                                <Eyebrow className="mb-1">Next Review</Eyebrow>
                                 <p className={`text-sm ${overdue ? 'text-content-error font-semibold' : ''}`}>
                                     {risk.nextReviewAt
                                         ? `${overdue ? '! ' : ''}${formatDate(risk.nextReviewAt)}`
@@ -464,7 +465,7 @@ export default function RiskDetailPage() {
                                 </p>
                             </div>
                             <div>
-                                <h3 className="text-xs font-semibold text-content-muted uppercase tracking-wider mb-1">Created</h3>
+                                <Eyebrow className="mb-1">Created</Eyebrow>
                                 <p className="text-sm text-content-muted">{formatDate(risk.createdAt)}</p>
                             </div>
                         </div>
@@ -474,7 +475,7 @@ export default function RiskDetailPage() {
 
             {/* Linked Tasks */}
             <div className="glass-card p-6">
-                <h2 className="text-lg font-semibold text-content-emphasis mb-4 inline-flex items-center gap-2"><AppIcon name="tasks" size={18} /> Linked Tasks</h2>
+                <Heading level={2} className="mb-4 inline-flex items-center gap-2"><AppIcon name="tasks" size={18} /> Linked Tasks</Heading>
                 <LinkedTasksPanel
                     apiBase={apiUrl('')}
                     entityType="RISK"
@@ -485,7 +486,7 @@ export default function RiskDetailPage() {
 
             {/* Traceability */}
             <div className="glass-card p-6">
-                <h2 className="text-lg font-semibold text-content-emphasis mb-4 inline-flex items-center gap-2"><AppIcon name="link" size={18} /> Traceability</h2>
+                <Heading level={2} className="mb-4 inline-flex items-center gap-2"><AppIcon name="link" size={18} /> Traceability</Heading>
                 <TraceabilityPanel
                     apiBase={apiUrl('')}
                     entityType="risk"

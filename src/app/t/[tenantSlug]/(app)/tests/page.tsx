@@ -13,6 +13,7 @@ import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-c
 import { buttonVariants } from '@/components/ui/button-variants';
 import { ToggleGroup } from '@/components/ui/toggle-group';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 interface TestPlanSummary {
     id: string;
@@ -92,7 +93,7 @@ export default function TestsRollupPage() {
             <ListPageShell.Header>
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold" id="tests-page-title">Tests</h1>
+                        <Heading level={1} id="tests-page-title">Tests</Heading>
                         <p className="text-sm text-content-muted mt-1">Test plans and recent results across all controls</p>
                     </div>
                     <div className="flex gap-2">

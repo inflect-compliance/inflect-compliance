@@ -6,6 +6,7 @@ import { DataTable, createColumns } from '@/components/ui/table';
 import { useTenantApiUrl } from '@/lib/tenant-context-provider';
 import { ToggleGroup } from '@/components/ui/toggle-group';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 interface NotificationSettings {
     enabled: boolean;
@@ -87,7 +88,7 @@ export default function NotificationSettingsPage() {
         <div className="space-y-6 animate-fadeIn">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex flex-wrap items-center gap-3">
-                    <h1 className="text-2xl font-bold">Email Notifications</h1>
+                    <Heading level={1}>Email Notifications</Heading>
                     <StatusBadge variant={settings.enabled ? 'success' : 'warning'}>
                         {settings.enabled ? 'Enabled' : 'Disabled'}
                     </StatusBadge>

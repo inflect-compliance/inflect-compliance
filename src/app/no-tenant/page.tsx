@@ -10,6 +10,7 @@
  */
 import { auth, signOut } from '@/auth';
 import { redirect } from 'next/navigation';
+import { Heading } from '@/components/ui/typography';
 
 export default async function NoTenantPage() {
     const session = await auth();
@@ -23,9 +24,9 @@ export default async function NoTenantPage() {
         <main className="min-h-screen bg-bg-default flex items-center justify-center p-4">
             <div className="max-w-md w-full bg-bg-surface rounded-lg border border-border-subtle p-8 text-center">
                 <div className="text-4xl mb-4">&#x1F512;</div>
-                <h1 className="text-xl font-semibold text-content-default mb-2">
+                <Heading level={1} className="mb-2">
                     No access yet
-                </h1>
+                </Heading>
                 <p className="text-content-muted mb-2">
                     You are signed in as{' '}
                     <span className="font-medium text-content-default">{email}</span>.

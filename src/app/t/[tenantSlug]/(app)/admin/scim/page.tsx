@@ -15,6 +15,7 @@ import { useCopyToClipboard } from '@/components/ui/hooks';
 import { CopyButton } from '@/components/ui/copy-button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 interface ScimToken {
     id: string;
@@ -115,10 +116,10 @@ export default function ScimAdminPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                    <Heading level={1} className="flex items-center gap-2">
                         <CloudCog className="w-6 h-6 text-[var(--brand-default)]" />
                         SCIM Provisioning
-                    </h1>
+                    </Heading>
                     <p className="text-sm text-content-muted mt-1">
                         Automate user provisioning from your identity provider (Okta, Azure AD, OneLogin).
                     </p>
@@ -135,7 +136,7 @@ export default function ScimAdminPage() {
             {/* Endpoint Info — render the slot eagerly so #scim-endpoint-url
                 is queryable before the GET /admin/scim fetch resolves. */}
             <div className="glass-card p-4">
-                <h3 className="text-sm font-medium text-content-default mb-2">SCIM Endpoint</h3>
+                <Heading level={3} className="mb-2">SCIM Endpoint</Heading>
                 <div className="flex items-center gap-2 bg-bg-default/50 rounded px-3 py-2">
                     <code
                         className="text-xs text-[var(--brand-muted)] flex-1 select-all min-h-[1.25rem] inline-block"
@@ -163,7 +164,7 @@ export default function ScimAdminPage() {
                     <div className="flex items-start gap-3">
                         <AlertTriangle className="w-5 h-5 text-content-warning shrink-0 mt-0.5" />
                         <div className="flex-1 min-w-0">
-                            <h3 className="text-sm font-bold text-content-warning">Copy your SCIM token now</h3>
+                            <Heading level={3} className="text-content-warning">Copy your SCIM token now</Heading>
                             <p className="text-xs text-content-warning/80 mt-1">
                                 This token will not be shown again. Store it securely in your identity provider.
                             </p>
@@ -192,7 +193,7 @@ export default function ScimAdminPage() {
             {/* Token List */}
             <div className="glass-card">
                 <div className="flex items-center justify-between p-4 border-b border-border-default/50">
-                    <h2 className="text-sm font-semibold">SCIM Tokens</h2>
+                    <Heading level={3}>SCIM Tokens</Heading>
                     <Button
                         variant="primary"
                         size="sm"
@@ -303,7 +304,7 @@ export default function ScimAdminPage() {
 
             {/* Setup guide */}
             <div className="glass-card p-5">
-                <h3 className="text-sm font-semibold mb-3">Setup Guide</h3>
+                <Heading level={3} className="mb-3">Setup Guide</Heading>
                 <ol className="space-y-2 text-xs text-content-muted list-decimal list-inside">
                     <li>Generate a SCIM token above and copy it securely.</li>
                     <li>In your IdP (Okta, Azure AD, etc.), configure a SCIM 2.0 provisioning connector.</li>

@@ -35,6 +35,7 @@ import {
 import { getTenantCtx } from '@/app-layer/context';
 import { getReadinessOverview } from '@/app-layer/usecases/audit-readiness';
 import type { ReadinessResult } from '@/app-layer/usecases/audit-readiness-scoring';
+import { Heading } from '@/components/ui/typography';
 
 export const dynamic = 'force-dynamic';
 
@@ -103,9 +104,9 @@ export default async function ReadinessOverviewPage({
         <div className="space-y-6 animate-fadeIn">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold" id="readiness-heading">
+                    <Heading level={1} id="readiness-heading">
                         Audit Readiness
-                    </h1>
+                    </Heading>
                     <p className="text-content-muted text-sm">
                         Framework readiness scores across all audit cycles
                     </p>
@@ -130,9 +131,9 @@ export default async function ReadinessOverviewPage({
                     <div className="mb-4">
                         <BarChart3 className="size-10 text-content-muted mx-auto" aria-hidden="true" />
                     </div>
-                    <h3 className="text-lg font-semibold mb-2 text-content-emphasis">
+                    <Heading level={2} className="mb-2">
                         No audit cycles yet
-                    </h3>
+                    </Heading>
                     <p className="text-content-muted text-sm mb-4">
                         Create an audit cycle to see readiness scores.
                     </p>
@@ -173,7 +174,7 @@ export default async function ReadinessOverviewPage({
                                             >
                                                 <FwIcon className="w-4 h-4 text-content-emphasis" aria-hidden="true" />
                                             </span>
-                                            <h3 className="font-semibold text-sm truncate">{c.name}</h3>
+                                            <Heading level={3} className="truncate">{c.name}</Heading>
                                         </div>
                                         <p className="text-xs text-content-muted">{meta.label}</p>
                                         {sc && (

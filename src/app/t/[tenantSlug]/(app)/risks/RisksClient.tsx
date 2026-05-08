@@ -47,6 +47,7 @@ import { RiskMatrix } from '@/components/ui/RiskMatrix';
 import { resolveBandForScore } from '@/lib/risk-matrix/scoring';
 import type { RiskMatrixConfigShape } from '@/lib/risk-matrix/types';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 interface RiskListItem {
     id: string;
@@ -468,7 +469,7 @@ function RisksPageInner({
             <ListPageShell.Header>
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold">{t.title}</h1>
+                        <Heading level={1}>{t.title}</Heading>
                         <p className="text-content-muted text-sm">{t.risksIdentified}</p>
                     </div>
                     <div className="flex gap-2">

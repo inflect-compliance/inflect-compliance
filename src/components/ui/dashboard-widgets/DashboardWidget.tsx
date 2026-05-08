@@ -35,6 +35,7 @@
  */
 
 import type { ReactNode } from 'react';
+import { Heading } from '@/components/ui/typography';
 
 export interface DashboardWidgetProps {
     /** Header headline. Optional — when omitted, no header row is rendered. */
@@ -107,9 +108,9 @@ export function DashboardWidget({
                 >
                     <div className="min-w-0">
                         {title && (
-                            <h3 className="truncate text-sm font-semibold text-content-emphasis">
+                            <Heading level={3} className="truncate">
                                 {title}
-                            </h3>
+                            </Heading>
                         )}
                         {subtitle && (
                             <p className="mt-0.5 truncate text-xs text-content-muted">

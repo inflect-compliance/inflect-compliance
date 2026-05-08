@@ -11,6 +11,7 @@ import { AppIcon } from '@/components/icons/AppIcon';
 import { Button } from '@/components/ui/button';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 interface TestPlan {
     id: string;
@@ -114,7 +115,7 @@ export default function TestPlansPanel({ controlId }: { controlId: string }) {
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-content-default">Test Plans</h3>
+                <Heading level={3}>Test Plans</Heading>
                 {permissions.canWrite && (
                     <Button
                         variant="primary"

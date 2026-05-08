@@ -20,6 +20,7 @@ import { useState } from 'react';
 import { ArrowLeft, Search } from 'lucide-react';
 import { SankeyChart } from '@/components/ui/SankeyChart';
 import type { TraceabilityGraph } from '@/lib/traceability-graph/types';
+import { Heading } from '@/components/ui/typography';
 
 export interface ControlsSankeyClientProps {
     initialGraph: TraceabilityGraph;
@@ -45,12 +46,9 @@ export function ControlsSankeyClient({
                         <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
                         Back to Controls
                     </Link>
-                    <h1
-                        className="text-2xl font-bold text-content-emphasis mt-2"
-                        id="controls-sankey-heading"
-                    >
+                    <Heading level={1} className="mt-2" id="controls-sankey-heading">
                         Controls flow
-                    </h1>
+                    </Heading>
                     <p className="text-sm text-content-muted mt-1">
                         How assets expose risks and how controls mitigate them, at a glance.
                     </p>

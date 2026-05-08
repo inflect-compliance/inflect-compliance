@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Heading, Eyebrow } from '@/components/ui/typography';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export default function TemplateLibraryPage() {
@@ -124,9 +125,9 @@ export default function TemplateLibraryPage() {
                     <Link href={tenantHref(`/frameworks/${frameworkKey}`)} className="text-content-muted hover:text-content-emphasis transition-colors text-sm">
                         ← Back to {framework?.name || frameworkKey}
                     </Link>
-                    <h1 className="text-2xl font-bold text-content-emphasis mt-2" id="template-library-heading">
+                    <Heading level={1} className="mt-2" id="template-library-heading">
                         Template Library — {framework?.name}
-                    </h1>
+                    </Heading>
                     <div className="flex gap-3 mt-1 text-xs text-content-subtle">
                         <span>{templates.length} templates</span>
                         <span className="text-content-success">{installed} installed</span>
@@ -246,7 +247,7 @@ export default function TemplateLibraryPage() {
 
                                             {/* Requirements */}
                                             <div>
-                                                <h4 className="text-xs font-semibold text-content-subtle mb-1">Mapped Requirements</h4>
+                                                <Eyebrow className="block mb-1 text-content-subtle">Mapped Requirements</Eyebrow>
                                                 <div className="space-y-1">
                                                     {t.requirements.map((r: any, i: number) => (
                                                         <div key={i} className="flex items-center gap-2 text-xs">
@@ -260,7 +261,7 @@ export default function TemplateLibraryPage() {
 
                                             {/* Tasks */}
                                             <div>
-                                                <h4 className="text-xs font-semibold text-content-subtle mb-1">Default Tasks</h4>
+                                                <Eyebrow className="block mb-1 text-content-subtle">Default Tasks</Eyebrow>
                                                 <div className="space-y-1">
                                                     {t.tasks.map((task: any, i: number) => (
                                                         <div key={i} className="flex items-center gap-2 text-xs">
@@ -273,7 +274,7 @@ export default function TemplateLibraryPage() {
 
                                             {/* Suggested evidence */}
                                             <div>
-                                                <h4 className="text-xs font-semibold text-content-subtle mb-1">Suggested Evidence Types</h4>
+                                                <Eyebrow className="block mb-1 text-content-subtle">Suggested Evidence Types</Eyebrow>
                                                 <div className="flex flex-wrap gap-1">
                                                     {['DOCUMENT', 'SCREENSHOT', 'LOG'].map(type => (
                                                         <span key={type} className="text-xs bg-bg-default text-content-muted px-2 py-0.5 rounded">{type}</span>

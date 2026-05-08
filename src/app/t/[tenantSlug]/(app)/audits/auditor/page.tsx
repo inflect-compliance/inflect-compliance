@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 const FW_META: Record<string, { icon: AppIconName; label: string }> = {
     ISO27001: { icon: 'shield', label: 'ISO/IEC 27001:2022' },
@@ -42,14 +43,14 @@ export default function AuditorPortalPage() {
     return (
         <div className="space-y-6 animate-fadeIn">
             <div>
-                <h1 className="text-2xl font-bold" id="auditor-heading">Auditor Portal</h1>
+                <Heading level={1} id="auditor-heading">Auditor Portal</Heading>
                 <p className="text-content-muted text-sm">Review assigned audit packs</p>
             </div>
 
             {packs.length === 0 ? (
                 <div className="glass-card p-12 text-center">
                     <div className="mb-4"><AppIcon name="lock" size={48} className="text-content-muted" /></div>
-                    <h3 className="text-lg font-semibold mb-2">No assigned packs</h3>
+                    <Heading level={2} className="mb-2">No assigned packs</Heading>
                     <p className="text-content-muted text-sm">You have not been assigned any audit packs yet.</p>
                 </div>
             ) : (
@@ -77,7 +78,7 @@ export default function AuditorPortalPage() {
                             <div className="glass-card p-6 space-y-4 animate-fadeIn">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <h2 className="text-lg font-bold" id="auditor-pack-name">{selectedPack.name}</h2>
+                                        <Heading level={2} id="auditor-pack-name">{selectedPack.name}</Heading>
                                         <p className="text-sm text-content-muted">
                                             {selectedPack.status} · {selectedPack._count?.items || 0} items
                                             {selectedPack.frozenAt && ` · Frozen: ${formatDate(selectedPack.frozenAt)}`}
@@ -97,7 +98,7 @@ export default function AuditorPortalPage() {
                                     });
                                     return Object.entries(grouped).map(([type, items]) => (
                                         <div key={type}>
-                                            <h3 className="text-sm font-semibold text-content-default mb-1">{type} ({items.length})</h3>
+                                            <Heading level={3} className="mb-1">{type} ({items.length})</Heading>
                                             <div className="border border-border-default/50 rounded-lg divide-y divide-border-default/50">
                                                 {items.map((item: any) => {
                                                     let snap: any = {};

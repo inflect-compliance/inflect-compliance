@@ -25,6 +25,7 @@
 import { Fragment } from 'react';
 
 import { ShimmerDots } from '@/components/ui/shimmer-dots';
+import { Heading } from '@/components/ui/typography';
 
 // ─── Props ──────────────────────────────────────────────────────────
 
@@ -87,9 +88,9 @@ export default function RiskHeatmap({
                 className={`glass-card p-5 ${className}`}
                 data-heatmap-loading
             >
-                <h3 className="text-sm font-semibold text-content-default mb-3">
+                <Heading level={3} className="mb-3">
                     Risk Heatmap
-                </h3>
+                </Heading>
                 <ShimmerDots
                     rows={scale}
                     cols={scale}
@@ -113,7 +114,7 @@ export default function RiskHeatmap({
     if (totalRisks === 0) {
         return (
             <div id={id} className={`glass-card p-5 ${className}`}>
-                <h3 className="text-sm font-semibold text-content-default mb-3">Risk Heatmap</h3>
+                <Heading level={3} className="mb-3">Risk Heatmap</Heading>
                 <p className="text-xs text-content-subtle">No risks registered yet.</p>
             </div>
         );
@@ -126,7 +127,7 @@ export default function RiskHeatmap({
     return (
         <div id={id} className={`glass-card p-5 ${className}`}>
             <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-content-default">Risk Heatmap</h3>
+                <Heading level={3}>Risk Heatmap</Heading>
                 <span className="text-xs text-content-subtle tabular-nums">{totalRisks} risks</span>
             </div>
 

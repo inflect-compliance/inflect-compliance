@@ -39,6 +39,7 @@
 import { useMemo, useState } from "react";
 import { useKeyboardShortcut, useRegisteredShortcuts } from "@/lib/hooks/use-keyboard-shortcut";
 import { Modal } from "@/components/ui/modal";
+import { Heading } from '@/components/ui/typography';
 
 const OPEN_HELP_KEY = "?";
 const OPEN_HELP_DESCRIPTION = "Show keyboard shortcuts";
@@ -203,18 +204,18 @@ function Group({
     if (rows.length === 0) {
         return (
             <div>
-                <h3 className="text-sm font-semibold text-content-emphasis mb-2">
+                <Heading level={3} className="mb-2">
                     {title}
-                </h3>
+                </Heading>
                 <p className="text-sm text-content-subtle">{emptyHint}</p>
             </div>
         );
     }
     return (
         <div>
-            <h3 className="text-sm font-semibold text-content-emphasis mb-2">
+            <Heading level={3} className="mb-2">
                 {title}
-            </h3>
+            </Heading>
             <ul className="divide-y divide-border-subtle" role="list">
                 {rows.map((row) => (
                     <li

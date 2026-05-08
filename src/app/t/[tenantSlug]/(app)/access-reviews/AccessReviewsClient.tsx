@@ -24,6 +24,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import type { CappedList } from '@/lib/list-backfill-cap';
 import { TruncationBanner } from '@/components/ui/TruncationBanner';
 import { formatDate } from '@/lib/format-date';
+import { Heading } from '@/components/ui/typography';
 
 /// SSR returns Prisma rows with native Date instances; the SWR
 /// fetcher returns the same shape but the dates round-trip through
@@ -165,12 +166,9 @@ export function AccessReviewsClient({ tenantSlug, initialReviews }: Props) {
             <ListPageShell.Header>
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1
-                            className="text-2xl font-semibold text-content-default"
-                            data-testid="access-reviews-title"
-                        >
+                        <Heading level={1} data-testid="access-reviews-title">
                             Access Reviews
-                        </h1>
+                        </Heading>
                         <p className="text-sm text-content-muted">
                             {reviews.length} campaign{reviews.length === 1 ? '' : 's'}
                         </p>

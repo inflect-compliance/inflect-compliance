@@ -34,6 +34,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { ViewToggle } from '@/components/ui/view-toggle';
 import { useViewMode } from '@/components/ui/hooks';
+import { Heading } from '@/components/ui/typography';
 
 const FW_META: Record<string, { icon: LucideIcon; color: string }> = {
     ISO27001: { icon: ShieldCheck, color: 'from-indigo-500 to-purple-600' },
@@ -108,12 +109,9 @@ export function FrameworksClient({
         <div className="space-y-6">
             <div className="flex items-end justify-between gap-4 flex-wrap">
                 <div>
-                    <h1
-                        className="text-2xl font-bold text-content-emphasis"
-                        id="frameworks-heading"
-                    >
+                    <Heading level={1} id="frameworks-heading">
                         Compliance Frameworks
-                    </h1>
+                    </Heading>
                     <p className="text-sm text-content-muted mt-1">
                         Browse standards, install control packs, and track requirement coverage
                     </p>

@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { useCursorPagination } from '@/components/ui/hooks';
 import { formatDate } from '@/lib/format-date';
 import type { CriticalRiskRow } from '@/app-layer/schemas/portfolio';
+import { Heading } from '@/components/ui/typography';
 
 interface Props {
     rows: CriticalRiskRow[];
@@ -123,9 +124,9 @@ export function RisksTable({ rows: initialRows, nextCursor: initialNextCursor, o
         <ListPageShell>
             <ListPageShell.Header>
                 <div>
-                    <h1 className="text-2xl font-semibold text-content-emphasis">
+                    <Heading level={1}>
                         Critical Risks
-                    </h1>
+                    </Heading>
                     <p className="text-sm text-content-muted mt-1">
                         {pagination.rows.length} critical risk{pagination.rows.length === 1 ? '' : 's'} (score ≥ 15, not closed) across the portfolio
                         {pagination.hasMore ? ' (more available)' : ''}

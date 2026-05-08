@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Heading } from '@/components/ui/typography';
 
 /**
  * Error boundary for the tenant-scoped app shell.
@@ -36,9 +37,9 @@ export default function AppSectionError({
                     </svg>
                 </div>
 
-                <h2 className="text-xl font-bold text-content-emphasis mb-2">
+                <Heading level={1} className="mb-2">
                     Something went wrong
-                </h2>
+                </Heading>
 
                 <p className="text-sm text-content-muted mb-6">
                     This page encountered an error. You can try again or navigate to

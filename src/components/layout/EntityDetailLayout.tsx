@@ -42,6 +42,7 @@ import {
     Breadcrumbs,
     type BreadcrumbItem,
 } from '@/components/ui/breadcrumbs';
+import { Heading } from '@/components/ui/typography';
 
 // ─── Tab descriptor ───────────────────────────────────────────────
 
@@ -201,12 +202,13 @@ export function EntityDetailLayout<TKey extends string = string>({
                             ← {back.label}
                         </Link>
                     )}
-                    <h1
-                        className="text-2xl font-bold mt-1 text-content-emphasis"
+                    <Heading
+                        level={1}
+                        className="mt-1"
                         data-testid="entity-detail-title"
                     >
                         {title}
-                    </h1>
+                    </Heading>
                     {meta && (
                         <div
                             className="flex gap-2 mt-1 flex-wrap items-center"

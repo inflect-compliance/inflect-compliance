@@ -9,6 +9,7 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
+import { Heading } from '@/components/ui/typography';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export default function InstallWizardPage() {
@@ -99,9 +100,9 @@ export default function InstallWizardPage() {
                 <Link href={tenantHref(`/frameworks/${frameworkKey}`)} className="text-content-muted hover:text-content-emphasis transition-colors text-sm">
                     ← Back to {framework.name}
                 </Link>
-                <h1 className="text-2xl font-bold text-content-emphasis mt-2" id="install-wizard-heading">
+                <Heading level={1} className="mt-2" id="install-wizard-heading">
                     Install {framework.name} Pack
-                </h1>
+                </Heading>
                 <p className="text-sm text-content-muted mt-1">
                     This will create controls, tasks, and requirement mappings for your tenant.
                 </p>
@@ -126,7 +127,7 @@ export default function InstallWizardPage() {
             {/* Step 1: Select Pack */}
             {step === 'select' && (
                 <div className="glass-card space-y-4">
-                    <h2 className="text-lg font-semibold text-content-emphasis">Select a Pack</h2>
+                    <Heading level={2}>Select a Pack</Heading>
                     {packs.length === 0 ? (
                         <p className="text-content-subtle">No packs available for this framework.</p>
                     ) : (
@@ -157,7 +158,7 @@ export default function InstallWizardPage() {
             {step === 'preview' && preview && (
                 <div className="space-y-4">
                     <div className="glass-card">
-                        <h2 className="text-lg font-semibold text-content-emphasis mb-4">Install Preview</h2>
+                        <Heading level={2} className="mb-4">Install Preview</Heading>
                         <div className="grid grid-cols-3 gap-4 mb-4">
                             <div className="text-center p-3 rounded-lg bg-bg-default/50">
                                 <div className="text-2xl font-bold text-[var(--brand-default)]" id="preview-new-controls">{preview.newControls}</div>
@@ -220,7 +221,7 @@ export default function InstallWizardPage() {
             {step === 'done' && result && (
                 <div className="glass-card text-center space-y-4" id="install-result">
                     <div className="text-4xl"></div>
-                    <h2 className="text-xl font-bold text-content-emphasis">Pack Installed Successfully!</h2>
+                    <Heading level={1}>Pack Installed Successfully!</Heading>
                     <div className="grid grid-cols-3 gap-4">
                         <div className="p-3 rounded-lg bg-bg-success">
                             <div className="text-2xl font-bold text-content-success" id="result-controls">{result.controlsCreated}</div>

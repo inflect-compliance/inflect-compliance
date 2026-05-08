@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import type { CappedList } from '@/lib/list-backfill-cap';
 import { TruncationBanner } from '@/components/ui/TruncationBanner';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
@@ -126,7 +127,7 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
     return (
         <>
             <div className="flex flex-wrap items-center justify-between gap-3">
-                <div><h1 className="text-2xl font-bold">{t.title}</h1><p className="text-content-muted text-sm">{audits.length} audits</p></div>
+                <div><Heading level={1}>{t.title}</Heading><p className="text-content-muted text-sm">{audits.length} audits</p></div>
                 <Button variant="primary" onClick={() => setShowForm(!showForm)} id="new-audit-btn">{t.newAudit}</Button>
             </div>
 
@@ -161,7 +162,7 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
                     {selected ? (
                         <div className="glass-card p-6 animate-slideIn space-y-4">
                                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                                <h2 className="text-lg font-bold">{selected.title}</h2>
+                                <Heading level={2}>{selected.title}</Heading>
                                 <div className="flex flex-wrap gap-2">
                                     {selected.status === 'PLANNED' && <Button variant="primary" size="sm" onClick={() => updateAuditStatus('IN_PROGRESS')}>{t.inProgress}</Button>}
                                     {selected.status === 'IN_PROGRESS' && <Button variant="success" size="sm" onClick={() => updateAuditStatus('COMPLETED')}>{t.completed}</Button>}
@@ -170,7 +171,7 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
                             {selected.scope && <p className="text-sm text-content-muted">{selected.scope}</p>}
 
                             <div>
-                                <h3 className="text-sm font-semibold text-content-default mb-3">{t.checklist} ({selected.checklist?.length || 0})</h3>
+                                <Heading level={3} className="mb-3">{t.checklist} ({selected.checklist?.length || 0})</Heading>
                                 <div className="space-y-2">
                                     {selected.checklist?.map((item: any) => (
                                         <div key={item.id} className="flex flex-col sm:flex-row items-start gap-3 p-3 border border-border-default/50 rounded-lg">
@@ -196,7 +197,7 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
 
                             {selected.findings?.length > 0 && (
                                 <div>
-                                    <h3 className="text-sm font-semibold text-content-default mb-2">{t.findingsTab} ({selected.findings.length})</h3>
+                                    <Heading level={3} className="mb-2">{t.findingsTab} ({selected.findings.length})</Heading>
                                     {selected.findings.map((f: any) => (
                                         <div key={f.id} className="p-3 border border-border-default/50 rounded-lg mb-2">
                                             <div className="flex items-center justify-between">

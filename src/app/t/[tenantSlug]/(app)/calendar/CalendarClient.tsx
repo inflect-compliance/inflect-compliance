@@ -31,6 +31,7 @@ import type {
     CalendarEvent,
     CalendarResponse,
 } from '@/app-layer/schemas/calendar.schemas';
+import { Heading } from '@/components/ui/typography';
 
 const DAY_MS = 86_400_000;
 
@@ -164,10 +165,10 @@ export function CalendarClient({
             {/* Header */}
             <header className="flex items-start justify-between gap-4 flex-wrap">
                 <div className="min-w-0">
-                    <h1 className="text-2xl font-bold text-content-emphasis flex items-center gap-2">
+                    <Heading level={1} className="flex items-center gap-2">
                         <CalIcon className="size-6 text-content-muted" aria-hidden="true" />
                         Compliance Calendar
-                    </h1>
+                    </Heading>
                     <p className="text-sm text-content-muted mt-1">
                         Track every compliance deadline — evidence reviews, policy renewals,
                         vendor renewals, audit cycles, control tests — in one place.
@@ -266,9 +267,9 @@ export function CalendarClient({
                 >
                     {selectedDate ? (
                         <>
-                            <h2 className="text-sm font-semibold text-content-emphasis mb-2">
+                            <Heading level={3} className="mb-2">
                                 {formatDate(new Date(selectedDate))}
-                            </h2>
+                            </Heading>
                             {selectedEvents.length === 0 ? (
                                 <p className="text-xs text-content-muted">
                                     No events on this day.

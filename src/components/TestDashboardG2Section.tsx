@@ -23,6 +23,7 @@ import { MiniAreaChart } from '@/components/ui/mini-area-chart';
 import { useTenantHref } from '@/lib/tenant-context-provider';
 import { formatDate } from '@/lib/format-date';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 // ─── Types ─────────────────────────────────────────────────────────
 
@@ -114,7 +115,7 @@ export function TestDashboardG2Section({
             data-testid="test-dashboard-g2-section"
         >
             <div className="flex items-baseline justify-between">
-                <h2 className="text-lg font-semibold">Automation</h2>
+                <Heading level={2}>Automation</Heading>
                 <span className="text-xs text-content-subtle">
                     {automation.plansScheduledActive} scheduled •{' '}
                     {automation.plansManual} manual •{' '}
@@ -129,9 +130,9 @@ export function TestDashboardG2Section({
                     className="glass-card p-6"
                     data-testid="test-dashboard-g2-donut"
                 >
-                    <h3 className="text-sm font-semibold mb-4">
+                    <Heading level={3} className="mb-4">
                         Result distribution ({period}d)
-                    </h3>
+                    </Heading>
                     {totalCompleted === 0 ? (
                         <p className="text-content-subtle text-sm">
                             No completed runs in this period yet.
@@ -154,9 +155,9 @@ export function TestDashboardG2Section({
                     data-testid="test-dashboard-g2-overdue"
                 >
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-semibold">
+                        <Heading level={3}>
                             Overdue scheduled
-                        </h3>
+                        </Heading>
                         <StatusBadge variant={automation.overdueScheduled > 0
                                     ? 'error'
                                     : 'success'} size="sm" data-testid="test-dashboard-g2-overdue-count">
@@ -213,9 +214,9 @@ export function TestDashboardG2Section({
                     data-testid="test-dashboard-g2-trend"
                 >
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-semibold">
+                        <Heading level={3}>
                             Daily runs ({period}d)
-                        </h3>
+                        </Heading>
                         <span className="text-xs text-content-subtle">
                             {totalCompleted} total
                         </span>

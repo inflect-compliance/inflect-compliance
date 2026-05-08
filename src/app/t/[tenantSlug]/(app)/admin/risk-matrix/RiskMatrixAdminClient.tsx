@@ -42,6 +42,7 @@ import type {
     RiskMatrixBand,
     RiskMatrixConfigShape,
 } from '@/lib/risk-matrix/types';
+import { Heading } from '@/components/ui/typography';
 
 interface RiskMatrixAdminClientProps {
     tenantSlug: string;
@@ -262,9 +263,9 @@ export function RiskMatrixAdminClient({
         >
             <header className="flex flex-wrap items-end justify-between gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold text-content-emphasis">
+                    <Heading level={1}>
                         Risk matrix configuration
-                    </h1>
+                    </Heading>
                     <p className="mt-1 text-sm text-content-muted">
                         Tenant-scoped likelihood × impact dimensions, axis
                         labels, and severity bands. Changes apply to every
@@ -320,9 +321,9 @@ export function RiskMatrixAdminClient({
                 <section className="space-y-6">
                     {/* Dimensions */}
                     <div className="glass-card space-y-4 p-5">
-                        <h2 className="text-sm font-semibold text-content-default">
+                        <Heading level={3}>
                             Dimensions
-                        </h2>
+                        </Heading>
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <label className="block">
                                 <span className="mb-1 block text-xs text-content-muted">
@@ -358,9 +359,9 @@ export function RiskMatrixAdminClient({
 
                     {/* Axis titles */}
                     <div className="glass-card space-y-4 p-5">
-                        <h2 className="text-sm font-semibold text-content-default">
+                        <Heading level={3}>
                             Axis titles
-                        </h2>
+                        </Heading>
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <label className="block">
                                 <span className="mb-1 block text-xs text-content-muted">
@@ -403,9 +404,9 @@ export function RiskMatrixAdminClient({
 
                     {/* Per-level labels */}
                     <div className="glass-card space-y-4 p-5">
-                        <h2 className="text-sm font-semibold text-content-default">
+                        <Heading level={3}>
                             Per-level labels
-                        </h2>
+                        </Heading>
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div>
                                 <p className="mb-2 text-xs text-content-muted">
@@ -463,9 +464,9 @@ export function RiskMatrixAdminClient({
                     {/* Bands */}
                     <div className="glass-card space-y-3 p-5">
                         <div className="flex items-center justify-between">
-                            <h2 className="text-sm font-semibold text-content-default">
+                            <Heading level={3}>
                                 Severity bands
-                            </h2>
+                            </Heading>
                             <Button
                                 variant="secondary"
                                 size="sm"
@@ -565,9 +566,9 @@ export function RiskMatrixAdminClient({
 
                 {/* ── Live preview ───────────────────────────────── */}
                 <aside className="space-y-2">
-                    <h2 className="text-sm font-semibold text-content-default">
+                    <Heading level={3}>
                         Preview
-                    </h2>
+                    </Heading>
                     <p className="text-xs text-content-muted">
                         Synthetic 1-risk-per-cell payload — colour bands +
                         axis labels reflect the current draft.

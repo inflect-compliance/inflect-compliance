@@ -20,6 +20,7 @@
  */
 
 import { AnimatedNumber } from '@/components/ui/animated-number';
+import { Heading } from '@/components/ui/typography';
 
 // ─── Props ──────────────────────────────────────────────────────────
 
@@ -64,7 +65,7 @@ export default function ProgressCard({
 
     return (
         <div id={id} className={`glass-card p-5 ${className}`}>
-            <h3 className="text-sm font-semibold text-content-default mb-3">{label}</h3>
+            <Heading level={3} className="mb-3">{label}</Heading>
 
             {/* Main progress bar */}
             <div className="flex items-center gap-3">

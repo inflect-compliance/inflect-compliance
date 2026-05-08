@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/date-picker/date-utils';
 import { useFormTelemetry } from '@/lib/telemetry/form-telemetry';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 const TYPE_OPTIONS: ComboboxOption[] = [
     { value: 'TASK', label: 'Task' },
@@ -172,7 +173,7 @@ export default function NewTaskPage() {
         <div className="max-w-2xl mx-auto space-y-6 animate-fadeIn">
             <div>
                 <Link href={tenantHref('/tasks')} className="text-content-muted text-xs hover:text-content-emphasis transition">← Tasks</Link>
-                <h1 className="text-2xl font-bold mt-1" id="new-task-heading">New Task</h1>
+                <Heading level={1} className="mt-1" id="new-task-heading">New Task</Heading>
                 <p className="text-content-muted text-sm">Create a new task to track.</p>
             </div>
 
@@ -300,7 +301,7 @@ export default function NewTaskPage() {
                 {/* Audit fields — shown for AUDIT_FINDING / CONTROL_GAP */}
                 {(form.type === 'AUDIT_FINDING' || form.type === 'CONTROL_GAP') && (
                     <div className="border-t border-border-default pt-4 space-y-4">
-                        <h3 className="text-sm font-semibold text-content-default">Audit Details</h3>
+                        <Heading level={3}>Audit Details</Heading>
                         <div className="grid grid-cols-2 gap-4">
                             <FormField label="Finding Source">
                                 <Combobox
@@ -338,7 +339,7 @@ export default function NewTaskPage() {
 
                 {/* Links section */}
                 <div className="border-t border-border-default pt-4 space-y-3">
-                    <h3 className="text-sm font-semibold text-content-default">Links</h3>
+                    <Heading level={3}>Links</Heading>
                     {validationMessage && (
                         <FormError
                             id="link-validation-hint"

@@ -16,6 +16,7 @@ import { Combobox } from '@/components/ui/combobox';
 import { Tooltip } from '@/components/ui/tooltip';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Heading } from '@/components/ui/typography';
 
 interface ConnectionDTO {
     id: string;
@@ -184,7 +185,7 @@ export default function AdminIntegrationsPage() {
                     <Link href={tenantHref('/admin')} className={buttonVariants({ variant: 'secondary', size: 'sm' })}>
                         <ArrowLeft className="w-3.5 h-3.5" /> Back
                     </Link>
-                    <h1 className="text-2xl font-bold">Integrations</h1>
+                    <Heading level={1}>Integrations</Heading>
                 </div>
 
                 {/* Message banner */}
@@ -210,7 +211,7 @@ export default function AdminIntegrationsPage() {
                 {/* Connections list */}
                 <div className="glass-card overflow-hidden">
                     <div className="flex justify-between items-center p-4 border-b border-border-default">
-                        <h2 className="text-lg font-semibold">Configured Connections</h2>
+                        <Heading level={2}>Configured Connections</Heading>
                         <Button
                             variant="primary"
                             size="sm"
@@ -285,9 +286,9 @@ export default function AdminIntegrationsPage() {
                 {/* Add/Edit Form */}
                 {showForm && (
                     <div className="glass-card p-6 space-y-4">
-                        <h3 className="text-lg font-semibold">
+                        <Heading level={2}>
                             {editingId ? 'Edit Integration' : 'Add Integration'}
-                        </h3>
+                        </Heading>
 
                         {/* Provider select */}
                         <div>
@@ -322,7 +323,7 @@ export default function AdminIntegrationsPage() {
                         {/* Config fields */}
                         {selectedProvider && selectedProvider.configSchema.configFields.length > 0 && (
                             <div className="space-y-3">
-                                <h4 className="text-sm font-medium text-content-default">Configuration</h4>
+                                <Heading level={3}>Configuration</Heading>
                                 {selectedProvider.configSchema.configFields.map(field => (
                                     <div key={field.key}>
                                         <label className="block text-xs text-content-muted mb-1">
@@ -347,7 +348,7 @@ export default function AdminIntegrationsPage() {
                         {selectedProvider && selectedProvider.configSchema.secretFields.length > 0 && (
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">
-                                    <h4 className="text-sm font-medium text-content-default">Secrets</h4>
+                                    <Heading level={3}>Secrets</Heading>
                                     <Button
                                         variant="secondary"
                                         size="xs"
@@ -383,7 +384,7 @@ export default function AdminIntegrationsPage() {
                         {/* Supported checks */}
                         {selectedProvider && (
                             <div>
-                                <h4 className="text-sm font-medium text-content-default mb-1">Supported Checks</h4>
+                                <Heading level={3} className="mb-1">Supported Checks</Heading>
                                 <div className="flex flex-wrap gap-1">
                                     {selectedProvider.supportedChecks.map(check => (
                                         <StatusBadge variant="neutral" key={check}>

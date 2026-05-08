@@ -2,6 +2,7 @@ import { formatDateTime } from '@/lib/format-date';
 import { getTenantCtx } from '@/app-layer/context';
 import { runInTenantContext } from '@/lib/db-context';
 import { DashboardRepository } from '@/app-layer/repositories/DashboardRepository';
+import { Heading } from '@/components/ui/typography';
 
 interface RecentActivityCardProps {
     tenantSlug: string;
@@ -27,12 +28,9 @@ export default async function RecentActivityCard({
 
     return (
         <div className="glass-card p-5">
-            <h3
-                id="recent-activity-heading"
-                className="text-sm font-semibold text-content-default mb-3"
-            >
+            <Heading level={3} className="mb-3" id="recent-activity-heading">
                 {label}
-            </h3>
+            </Heading>
             {/*
               tabIndex=0 + role=region + aria-labelledby satisfies axe's
               `scrollable-region-focusable` rule (WCAG 2.1.1 Keyboard).

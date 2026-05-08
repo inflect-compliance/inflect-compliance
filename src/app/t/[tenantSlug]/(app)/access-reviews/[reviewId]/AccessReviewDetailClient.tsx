@@ -30,6 +30,7 @@ import { ProgressBar } from '@/components/ui/progress-bar';
 import { Modal } from '@/components/ui/modal';
 import { FormField } from '@/components/ui/form-field';
 import { formatDate, formatDateTime } from '@/lib/format-date';
+import { Heading } from '@/components/ui/typography';
 
 const ALL_ROLES = ['OWNER', 'ADMIN', 'EDITOR', 'READER', 'AUDITOR'] as const;
 type Role = (typeof ALL_ROLES)[number];
@@ -141,12 +142,9 @@ export function AccessReviewDetailClient({
             <header className="flex flex-wrap items-start justify-between gap-4">
                 <div className="space-y-2">
                     <div className="flex items-center gap-3">
-                        <h1
-                            className="text-2xl font-semibold text-content-default"
-                            data-testid="access-review-detail-title"
-                        >
+                        <Heading level={1} data-testid="access-review-detail-title">
                             {review.name}
-                        </h1>
+                        </Heading>
                         <StatusBadge variant={STATUS_VARIANT[review.status]}>
                             {review.status}
                         </StatusBadge>
