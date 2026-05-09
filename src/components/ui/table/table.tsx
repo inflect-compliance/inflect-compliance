@@ -370,7 +370,15 @@ const ResizableTableRow = memo(
         key={row.id}
         className={cn(
           "group/row",
-          onRowClick && "cursor-pointer select-none",
+          // v2-PR-12 — hover affordance for clickable rows. The
+          // `group/row` class above lets the chevron-cell rendering
+          // toggle on group hover. The 1px brand-coloured left
+          // border is rendered via the box-shadow inset trick so it
+          // doesn't shift the row content sideways on hover. Sits on
+          // the v2-PR-4 motion language (transition-colors / no
+          // transform).
+          onRowClick &&
+            "cursor-pointer select-none transition-colors duration-150 ease-out hover:shadow-[inset_2px_0_0_0_var(--brand-default)]",
           // hacky fix: if there are more than 8 rows, remove the bottom border from the last row
           table.getRowModel().rows.length > 8 &&
             row.index === table.getRowModel().rows.length - 1 &&

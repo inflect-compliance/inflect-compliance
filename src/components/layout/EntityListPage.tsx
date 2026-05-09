@@ -68,10 +68,31 @@ export interface EntityListPageHeader {
      * shape (truncation, separators, custom current).
      */
     breadcrumbs?: ReadonlyArray<BreadcrumbItem>;
+    /**
+     * Optional uppercase eyebrow rendered above the title (v2-PR-12).
+     * Conventionally the resource name in screaming-quiet caps —
+     * e.g. "Controls" above a "Compliance register" title. The trio
+     * (eyebrow + title + description) gives every list page the same
+     * 3-line composition signature.
+     */
+    eyebrow?: ReactNode;
     /** Title rendered in the page header (string or ReactNode). */
     title: ReactNode;
-    /** Optional count / subtitle line beneath the title. */
+    /**
+     * Optional count / subtitle line beneath the title. Threaded
+     * through to the PageHeader's `description` slot — the v2 polish
+     * convention is one sentence ≤ 80 chars, ending with an action
+     * prompt or a count summary.
+     */
     count?: ReactNode;
+    /**
+     * Optional descriptive sentence below the title (v2-PR-12).
+     * Distinct from `count` — `description` carries narrative
+     * context ("Track and treat enterprise risk in one register"),
+     * `count` is the rolling tally. When both are passed,
+     * `description` wins; when neither is, the line is omitted.
+     */
+    description?: ReactNode;
     /** Right-side action area (create button, dashboard nav, etc.). */
     actions?: ReactNode;
 }
@@ -186,8 +207,15 @@ export function EntityListPage<TRow>(props: EntityListPageProps<TRow>) {
             <ListPageShell.Header>
                 <PageHeader
                     breadcrumbs={header.breadcrumbs}
+                    eyebrow={header.eyebrow}
                     title={header.title}
-                    description={header.count}
+                    // v2-PR-12 — `description` wins over `count` so
+                    // pages migrating to the new trio (eyebrow +
+                    // title + description) drop into the slot
+                    // cleanly. Pages that still pass only `count`
+                    // keep their current rendering until they
+                    // migrate.
+                    description={header.description ?? header.count}
                     actions={header.actions}
                     data-testid="entity-list-header"
                 />
