@@ -82,6 +82,7 @@ import { cn } from '@dub/utils';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useTenantHref } from '@/lib/tenant-context-provider';
 import { CACHE_KEYS } from '@/lib/swr-keys';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 
 import type { ExecutiveDashboardPayload } from '@/app-layer/repositories/DashboardRepository';
 import type { TrendPayload } from '@/app-layer/usecases/compliance-trends';
@@ -182,34 +183,27 @@ export default function DashboardClient({
     const exec = execFromCache ?? initialExec;
     const trendBundle = deriveTrendBundle(trends ?? initialTrends ?? undefined);
 
-    return (
-        <div className="space-y-section animate-fadeIn">
-            <OnboardingBanner />
+    const headerActions = exec.stats.unreadNotifications > 0 ? (
+        <Link
+            href={href('/notifications')}
+            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}
+        >
+            <Bell className="w-4 h-4" aria-hidden="true" />
+            <StatusBadge variant="error" icon={null} size="sm">
+                {exec.stats.unreadNotifications}
+            </StatusBadge>
+        </Link>
+    ) : undefined;
 
-            {/* ─── Header ─── */}
-            <div className="flex flex-wrap items-center justify-between gap-compact">
-                <div>
-                    <Heading level={1}>
-                        {t('title')}
-                    </Heading>
-                    <p className="text-content-muted text-sm mt-1">
-                        {t('subtitle')}
-                    </p>
-                </div>
-                <div className="flex items-center gap-tight">
-                    {exec.stats.unreadNotifications > 0 && (
-                        <Link
-                            href={href('/notifications')}
-                            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}
-                        >
-                            <Bell className="w-4 h-4" aria-hidden="true" />
-                            <StatusBadge variant="error" icon={null} size="sm">
-                                {exec.stats.unreadNotifications}
-                            </StatusBadge>
-                        </Link>
-                    )}
-                </div>
-            </div>
+    return (
+        <DashboardLayout
+            header={{
+                title: t('title'),
+                description: t('subtitle'),
+                actions: headerActions,
+            }}
+        >
+            <OnboardingBanner />
 
             {/* ─── KPI Grid (6 cards) ─── */}
             <div
@@ -403,7 +397,7 @@ export default function DashboardClient({
                     </Card>
                 )}
             </div>
-        </div>
+        </DashboardLayout>
     );
 }
 
