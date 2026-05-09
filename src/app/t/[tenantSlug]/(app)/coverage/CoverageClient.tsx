@@ -37,18 +37,18 @@ interface CoverageClientProps {
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
+/**
+ * Elevation PR-7 — DonutChart segments now consume CSS-var tokens
+ * directly. SVG `stroke` and `fill` accept `var(...)` natively so a
+ * theme flip re-tones every chart automatically. Returns a string
+ * suitable for the DonutChart `color` prop.
+ */
 function pctColor(pct: number): string {
-    if (pct >= 80) return '#22c55e';
-    if (pct >= 50) return '#f59e0b';
-    return '#ef4444';
+    if (pct >= 80) return 'var(--bg-success-emphasis)';
+    if (pct >= 50) return 'var(--bg-warning-emphasis)';
+    return 'var(--bg-error-emphasis)';
 }
 
-/**
- * Polish PR-7 — text class delegates to the shared `getStatusTone`
- * helper (`pct-0-100` scale). DonutChart SVG fills still use the hex
- * `pctColor` above because SVG fill colours aren't gated by the
- * WCAG text rules.
- */
 function pctTextClass(pct: number): string {
     return getStatusTone(pct, 'pct-0-100').content;
 }
@@ -349,7 +349,7 @@ function CoverageKpiCard({
                 <DonutChart
                     segments={[
                         { label: 'Covered', value: covered, color },
-                        { label: 'Uncovered', value: Math.max(0, total - covered), color: '#334155' },
+                        { label: 'Uncovered', value: Math.max(0, total - covered), color: 'var(--bg-muted)' },
                     ]}
                     size={100}
                     strokeWidth={14}

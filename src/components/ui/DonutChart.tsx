@@ -34,7 +34,16 @@ export interface DonutSegment {
     label: string;
     /** Numeric value */
     value: number;
-    /** CSS/SVG color (hex, rgb, or Tailwind-compatible) */
+    /**
+     * Segment colour. Accepts either:
+     *   - a CSS colour string (hex, rgb, …) for back-compat
+     *   - a CSS custom-property name (`var(--bg-success-emphasis)`)
+     *
+     * Elevation PR-7 — prefer the CSS-var form. Theme flips re-tone
+     * the chart automatically because `var()` resolves at paint time
+     * against the active theme's tokens. SVG `stroke` and `fill`
+     * support `var(...)` natively — no JS resolver needed.
+     */
     color: string;
 }
 
@@ -121,7 +130,7 @@ export default function DonutChart({
                         cy={center}
                         r={radius}
                         fill="none"
-                        stroke="#334155"
+                        stroke="var(--bg-muted)"
                         strokeWidth={strokeWidth}
                         opacity={0.5}
                     />
@@ -130,7 +139,7 @@ export default function DonutChart({
                         y={center}
                         textAnchor="middle"
                         dominantBaseline="central"
-                        fill="#64748b"
+                        fill="var(--content-muted)"
                         fontSize="14"
                         fontFamily="Inter, system-ui, sans-serif"
                     >
@@ -159,7 +168,7 @@ export default function DonutChart({
                     cy={center}
                     r={radius}
                     fill="none"
-                    stroke="#1e293b"
+                    stroke="var(--bg-muted)"
                     strokeWidth={strokeWidth}
                 />
 
@@ -206,7 +215,7 @@ export default function DonutChart({
                         y={centerSub ? center - 6 : center}
                         textAnchor="middle"
                         dominantBaseline="central"
-                        fill="#f1f5f9"
+                        fill="var(--content-emphasis)"
                         fontSize="22"
                         fontWeight="700"
                         fontFamily="Inter, system-ui, sans-serif"
@@ -220,7 +229,7 @@ export default function DonutChart({
                         y={center + 14}
                         textAnchor="middle"
                         dominantBaseline="central"
-                        fill="#94a3b8"
+                        fill="var(--content-muted)"
                         fontSize="11"
                         fontFamily="Inter, system-ui, sans-serif"
                     >
