@@ -175,7 +175,6 @@ describe('EntityDetailLayout — lifecycle states', () => {
             screen.getByTestId('entity-detail-loading'),
         ).toBeInTheDocument();
         expect(screen.queryByTestId('body-content')).toBeNull();
-        expect(screen.queryByTestId('page-header-title')).toBeNull();
     });
 
     it('error replaces the body with a token-error inline message', () => {
@@ -203,5 +202,85 @@ describe('EntityDetailLayout — lifecycle states', () => {
             screen.getByTestId('entity-detail-empty').textContent,
         ).toBe('Control not found.');
         expect(screen.queryByTestId('body-content')).toBeNull();
+    });
+});
+
+// v2-fu-4 — breadcrumbs/back must survive every lifecycle state so
+// the user always has navigation affordance, especially during the
+// data fetch. Previously loading/error/empty branches returned
+// before the PageHeader was rendered.
+describe('EntityDetailLayout — breadcrumbs survive every state', () => {
+    const breadcrumbs = [
+        { label: 'Dashboard', href: '/t/acme/dashboard' },
+        { label: 'Risks', href: '/t/acme/risks' },
+        { label: 'Risk' },
+    ];
+
+    it('breadcrumbs render during loading', () => {
+        render(
+            <EntityDetailLayout
+                loading
+                title="Loading…"
+                breadcrumbs={breadcrumbs}
+            >
+                <></>
+            </EntityDetailLayout>,
+        );
+        const crumb = screen.getByTestId('page-header-breadcrumbs');
+        expect(crumb).toBeInTheDocument();
+        expect(crumb.textContent).toContain('Dashboard');
+        expect(crumb.textContent).toContain('Risks');
+    });
+
+    it('breadcrumbs render during error', () => {
+        render(
+            <EntityDetailLayout
+                error="Boom"
+                title=""
+                breadcrumbs={breadcrumbs}
+            >
+                <></>
+            </EntityDetailLayout>,
+        );
+        expect(
+            screen.getByTestId('page-header-breadcrumbs'),
+        ).toBeInTheDocument();
+        // Error message also renders alongside.
+        expect(
+            screen.getByTestId('entity-detail-error').textContent,
+        ).toBe('Boom');
+    });
+
+    it('breadcrumbs render during empty (entity not found)', () => {
+        render(
+            <EntityDetailLayout
+                empty={{ message: 'Risk not found.' }}
+                title=""
+                breadcrumbs={breadcrumbs}
+            >
+                <></>
+            </EntityDetailLayout>,
+        );
+        expect(
+            screen.getByTestId('page-header-breadcrumbs'),
+        ).toBeInTheDocument();
+        expect(
+            screen.getByTestId('entity-detail-empty').textContent,
+        ).toBe('Risk not found.');
+    });
+
+    it('back link renders during loading too', () => {
+        render(
+            <EntityDetailLayout
+                loading
+                title="Loading…"
+                back={{ href: '/t/acme/risks', label: 'Risks' }}
+            >
+                <></>
+            </EntityDetailLayout>,
+        );
+        const back = screen.getByTestId('page-header-back');
+        expect(back).toHaveAttribute('href', '/t/acme/risks');
+        expect(back.textContent).toContain('Risks');
     });
 });

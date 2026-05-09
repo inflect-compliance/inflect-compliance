@@ -148,27 +148,66 @@ export function EntityDetailLayout<TKey extends string = string>({
     id,
     children,
 }: EntityDetailLayoutProps<TKey>) {
+    // v2-fu-4 — render the breadcrumbs / back link in EVERY state
+    // (loading / error / empty / main). Previously the loading
+    // skeleton, error block, and empty block returned early before
+    // the PageHeader was rendered, leaving the user without any
+    // navigation affordance for the duration of the data fetch.
+    // The header is now always present; only the body changes.
+    const headerNode = (
+        <PageHeader
+            breadcrumbs={breadcrumbs}
+            back={back}
+            title={loading || error || empty ? '' : title}
+            meta={loading || error || empty ? undefined : meta}
+            actions={loading || error || empty ? undefined : actions}
+            data-testid="entity-detail-header"
+        />
+    );
+
     if (loading) {
-        return <DetailLoadingSkeleton tabCount={tabs?.length ?? 4} />;
+        return (
+            <div
+                className={cn('space-y-section animate-fadeIn', className)}
+                aria-busy="true"
+                data-entity-detail-layout
+                data-testid="entity-detail-loading"
+            >
+                {headerNode}
+                <DetailLoadingSkeleton tabCount={tabs?.length ?? 4} />
+            </div>
+        );
     }
     if (error) {
         return (
             <div
-                className="p-12 text-center text-content-error"
-                role="alert"
-                data-testid="entity-detail-error"
+                className={cn('space-y-section animate-fadeIn', className)}
+                data-entity-detail-layout
             >
-                {error}
+                {headerNode}
+                <div
+                    className="p-12 text-center text-content-error"
+                    role="alert"
+                    data-testid="entity-detail-error"
+                >
+                    {error}
+                </div>
             </div>
         );
     }
     if (empty) {
         return (
             <div
-                className="p-12 text-center text-content-subtle text-sm"
-                data-testid="entity-detail-empty"
+                className={cn('space-y-section animate-fadeIn', className)}
+                data-entity-detail-layout
             >
-                {empty.message}
+                {headerNode}
+                <div
+                    className="p-12 text-center text-content-subtle text-sm"
+                    data-testid="entity-detail-empty"
+                >
+                    {empty.message}
+                </div>
             </div>
         );
     }
@@ -180,14 +219,7 @@ export function EntityDetailLayout<TKey extends string = string>({
             data-entity-detail-layout
         >
             {/* Header */}
-            <PageHeader
-                breadcrumbs={breadcrumbs}
-                back={back}
-                title={title}
-                meta={meta}
-                actions={actions}
-                data-testid="entity-detail-header"
-            />
+            {headerNode}
 
 
             {/* Tab bar (optional) */}
@@ -257,17 +289,15 @@ export function EntityDetailLayout<TKey extends string = string>({
 // the layout: header + tab bar + content card.
 
 function DetailLoadingSkeleton({ tabCount }: { tabCount: number }) {
+    // v2-fu-4 — the surrounding wrapper + breadcrumbs/back link are
+    // owned by the parent `<EntityDetailLayout>` so the skeleton can
+    // focus on the body shape (title placeholder + tab strip + content
+    // card). The header (breadcrumbs + back) renders unchanged in all
+    // states, giving the user navigation affordance during the fetch.
     return (
-        <div
-            className="space-y-section animate-fadeIn"
-            aria-busy="true"
-            data-testid="entity-detail-loading"
-        >
-            <div className="flex items-center justify-between">
-                <div className="space-y-tight">
-                    <div className="animate-pulse rounded bg-bg-elevated/60 h-4 w-24" />
-                    <div className="animate-pulse rounded bg-bg-elevated/60 h-7 w-64" />
-                </div>
+        <>
+            <div className="space-y-tight">
+                <div className="animate-pulse rounded bg-bg-elevated/60 h-7 w-64" />
             </div>
             <div className="flex gap-1 border-b border-border-default">
                 {Array.from({ length: tabCount }).map((_, i) => (
@@ -287,6 +317,6 @@ function DetailLoadingSkeleton({ tabCount }: { tabCount: number }) {
                     ))}
                 </div>
             </div>
-        </div>
+        </>
     );
 }
