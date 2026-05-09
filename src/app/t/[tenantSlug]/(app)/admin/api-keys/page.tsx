@@ -509,8 +509,7 @@ export default function ApiKeysPage() {
                 </div>
                 {!showCreate && !createdKey && (
                     <Button variant="primary" onClick={() => setShowCreate(true)} id="create-api-key-btn">
-                        <Plus className="w-3.5 h-3.5" />
-                        Create API Key
+                        + API Key
                     </Button>
                 )}
             </div>

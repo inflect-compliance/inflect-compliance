@@ -589,8 +589,7 @@ export default function CustomRolesPage() {
                             onClick={() => setShowCreate(true)}
                             id="create-role-btn"
                         >
-                            <Plus className="w-3.5 h-3.5" />
-                            Create Custom Role
+                            + Role
                         </Button>
                     )}
                 </div>

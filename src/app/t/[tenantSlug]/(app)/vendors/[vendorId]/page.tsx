@@ -353,7 +353,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                 <label className="block text-sm text-content-muted mb-1">Notes</label>
                                 <input className="input w-full" value={docForm.notes} onChange={e => setDocForm(p => ({ ...p, notes: e.target.value }))} id="doc-notes-input" />
                             </div>
-                            <Button type="submit" variant="primary" id="submit-doc-btn">Add Document</Button>
+                            <Button type="submit" variant="primary" id="submit-doc-btn">+ Document</Button>
                         </form>
                     )}
                     <div className="card overflow-x-auto">

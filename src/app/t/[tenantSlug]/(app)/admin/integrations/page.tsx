@@ -220,11 +220,10 @@ export default function AdminIntegrationsPage() {
                         <Heading level={2}>Configured Connections</Heading>
                         <Button
                             variant="primary"
-                            size="sm"
                             onClick={() => { resetForm(); setShowForm(true); }}
                             id="add-integration-btn"
                         >
-                            <Plus className="w-3.5 h-3.5" /> Add Integration
+                            + Integration
                         </Button>
                     </div>
 

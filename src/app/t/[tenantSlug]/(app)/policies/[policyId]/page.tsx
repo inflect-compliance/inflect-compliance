@@ -397,7 +397,7 @@ export default function PolicyDetailPage() {
                                     ? 'HTML'
                                     : 'MARKDOWN',
                             );
-                        }} className={buttonVariants({ variant: 'primary', size: 'sm' })} id="new-version-btn">New Version</button>
+                        }} className={buttonVariants({ variant: 'primary' })} id="new-version-btn">+ Version</button>
                     )}
                     {canAdmin && policy.status !== 'ARCHIVED' && (
                         <Button variant="ghost" size="sm" className="text-content-muted hover:text-content-error" onClick={archivePolicy} disabled={actionLoading === 'archive'} id="archive-btn">

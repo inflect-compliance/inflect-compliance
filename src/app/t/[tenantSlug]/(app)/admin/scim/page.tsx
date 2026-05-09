@@ -208,13 +208,11 @@ export default function ScimAdminPage() {
                     <Heading level={3}>SCIM Tokens</Heading>
                     <Button
                         variant="primary"
-                        size="sm"
                         onClick={() => setShowForm(true)}
                         id="generate-token-btn"
                         disabled={generating}
                     >
-                        <Plus className="w-3.5 h-3.5" />
-                        Generate Token
+                        + Token
                     </Button>
                 </div>
 
