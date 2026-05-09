@@ -39,6 +39,11 @@ const SCAN_FILES: string[] = [
     // user sees. Migrated from per-step gradients + slate tones to
     // semantic tokens; ratchet covers it now to prevent drift back.
     'src/components/onboarding/OnboardingWizard.tsx',
+    // Elevation PR-9 — print views are how customers SHARE the
+    // product with auditors. They were a different design system
+    // (bg-slate-100, text-gray-900). Migrated to semantic tokens;
+    // ratchet covers print files now to prevent drift back.
+    'src/app/t/[tenantSlug]/(app)/reports/soa/print/SoAPrintView.tsx',
 ];
 
 const SLATE_RE = /\b(bg|text|border|ring|shadow)-slate-/;

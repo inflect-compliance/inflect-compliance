@@ -30,12 +30,12 @@ export function SoAPrintView({ report, tenantName }: SoAPrintViewProps) {
     }));
 
     return (
-        <div className="soa-print-body bg-white text-black min-h-screen text-sm">
+        <div className="soa-print-body bg-bg-page text-content-default min-h-screen text-sm">
             {/* ─── Print toolbar (screen only) ─── */}
-            <div className="no-print flex items-center justify-between mb-6 p-4 bg-slate-100 rounded-lg">
+            <div className="no-print flex items-center justify-between mb-6 p-4 bg-bg-muted rounded-lg">
                 <div>
-                    <h2 className="text-lg font-bold text-gray-900">SoA Print Preview</h2>
-                    <p className="text-xs text-gray-500">Use Ctrl+P (or Cmd+P) to print or save as PDF</p>
+                    <h2 className="text-lg font-bold text-content-emphasis">SoA Print Preview</h2>
+                    <p className="text-xs text-content-muted">Use Ctrl+P (or Cmd+P) to print or save as PDF</p>
                 </div>
                 <div className="flex gap-tight">
                     <button
@@ -46,7 +46,7 @@ export function SoAPrintView({ report, tenantName }: SoAPrintViewProps) {
                     </button>
                     <button
                         onClick={() => window.history.back()}
-                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors"
+                        className="px-4 py-2 bg-bg-default text-content-default rounded-lg text-sm font-medium hover:bg-bg-muted transition-colors"
                     >
                         Back
                     </button>
@@ -55,22 +55,22 @@ export function SoAPrintView({ report, tenantName }: SoAPrintViewProps) {
 
             {/* ─── Cover section ─── */}
             <div className="print-page">
-                <div className="border-b-2 border-gray-900 pb-4 mb-6">
-                    <Heading level={1} className="text-gray-900">Statement of Applicability</Heading>
-                    <p className="text-sm text-gray-600 mt-1">ISO/IEC 27001:2022 — Annex A Controls</p>
+                <div className="border-b-2 border-border-emphasis pb-4 mb-6">
+                    <Heading level={1} className="text-content-emphasis">Statement of Applicability</Heading>
+                    <p className="text-sm text-content-muted mt-1">ISO/IEC 27001:2022 — Annex A Controls</p>
                 </div>
 
                 <table className="w-full text-sm mb-8">
                     <tbody>
-                        <tr><td className="py-1 pr-4 font-semibold text-gray-700 w-48">Organization</td><td className="py-1">{tenantName}</td></tr>
-                        <tr><td className="py-1 pr-4 font-semibold text-gray-700">Framework</td><td className="py-1">ISO/IEC 27001:2022</td></tr>
-                        <tr><td className="py-1 pr-4 font-semibold text-gray-700">Generated</td><td className="py-1">{generatedDate}</td></tr>
-                        <tr><td className="py-1 pr-4 font-semibold text-gray-700">Total Controls</td><td className="py-1">{summary.total}</td></tr>
+                        <tr><td className="py-1 pr-4 font-semibold text-content-default w-48">Organization</td><td className="py-1">{tenantName}</td></tr>
+                        <tr><td className="py-1 pr-4 font-semibold text-content-default">Framework</td><td className="py-1">ISO/IEC 27001:2022</td></tr>
+                        <tr><td className="py-1 pr-4 font-semibold text-content-default">Generated</td><td className="py-1">{generatedDate}</td></tr>
+                        <tr><td className="py-1 pr-4 font-semibold text-content-default">Total Controls</td><td className="py-1">{summary.total}</td></tr>
                     </tbody>
                 </table>
 
                 {/* Summary */}
-                <h2 className="text-lg font-bold text-gray-900 mb-3 border-b border-gray-300 pb-1">Summary</h2>
+                <h2 className="text-lg font-bold text-content-emphasis mb-3 border-b border-border-default pb-1">Summary</h2>
                 <div className="grid grid-cols-3 gap-default mb-8">
                     <SummaryBox label="Applicable" value={summary.applicable} total={summary.total} color="green" />
                     <SummaryBox label="Not Applicable" value={summary.notApplicable} total={summary.total} color="gray" />
@@ -83,20 +83,20 @@ export function SoAPrintView({ report, tenantName }: SoAPrintViewProps) {
             {/* ─── Detail tables per section ─── */}
             {bySection.map(section => (
                 <div key={section.name} className="print-page">
-                    <h2 className="text-lg font-bold text-gray-900 mb-3 border-b border-gray-300 pb-1">
+                    <h2 className="text-lg font-bold text-content-emphasis mb-3 border-b border-border-default pb-1">
                         {section.name} Controls
-                        <span className="text-sm font-normal text-gray-500 ml-2">({section.entries.length})</span>
+                        <span className="text-sm font-normal text-content-muted ml-2">({section.entries.length})</span>
                     </h2>
 
                     <table className="print-table w-full text-xs border-collapse mb-6">
                         <thead>
-                            <tr className="bg-gray-100">
-                                <th className="border border-gray-300 px-2 py-1.5 text-left font-semibold w-16">Code</th>
-                                <th className="border border-gray-300 px-2 py-1.5 text-left font-semibold">Requirement</th>
-                                <th className="border border-gray-300 px-2 py-1.5 text-left font-semibold w-20">Applicable</th>
-                                <th className="border border-gray-300 px-2 py-1.5 text-left font-semibold w-28">Status</th>
-                                <th className="border border-gray-300 px-2 py-1.5 text-left font-semibold">Control References</th>
-                                <th className="border border-gray-300 px-2 py-1.5 text-left font-semibold">Justification</th>
+                            <tr className="bg-bg-muted">
+                                <th className="border border-border-default px-2 py-1.5 text-left font-semibold w-16">Code</th>
+                                <th className="border border-border-default px-2 py-1.5 text-left font-semibold">Requirement</th>
+                                <th className="border border-border-default px-2 py-1.5 text-left font-semibold w-20">Applicable</th>
+                                <th className="border border-border-default px-2 py-1.5 text-left font-semibold w-28">Status</th>
+                                <th className="border border-border-default px-2 py-1.5 text-left font-semibold">Control References</th>
+                                <th className="border border-border-default px-2 py-1.5 text-left font-semibold">Justification</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -109,7 +109,7 @@ export function SoAPrintView({ report, tenantName }: SoAPrintViewProps) {
             ))}
 
             {/* ─── Footer ─── */}
-            <div className="text-xs text-gray-400 border-t border-gray-200 pt-4 mt-8">
+            <div className="text-xs text-content-subtle border-t border-border-subtle pt-4 mt-8">
                 <p>Generated by Inflect Compliance on {generatedDate}. This document is a point-in-time snapshot and should be verified against current controls.</p>
             </div>
         </div>
@@ -124,7 +124,7 @@ function PrintRow({ entry }: { entry: SoAEntryDTO }) {
         : 'Unmapped';
 
     const applicableClass = entry.applicable === true ? 'text-content-success'
-        : entry.applicable === false ? 'text-gray-600'
+        : entry.applicable === false ? 'text-content-muted'
         : 'text-content-error font-semibold';
 
     const controlRefs = entry.mappedControls
@@ -133,12 +133,12 @@ function PrintRow({ entry }: { entry: SoAEntryDTO }) {
 
     return (
         <tr className={entry.applicable === null ? 'bg-bg-error-emphasis' : ''}>
-            <td className="border border-gray-300 px-2 py-1.5 font-mono text-xs">{entry.requirementCode}</td>
-            <td className="border border-gray-300 px-2 py-1.5">{entry.requirementTitle}</td>
-            <td className={`border border-gray-300 px-2 py-1.5 font-medium ${applicableClass}`}>{applicable}</td>
-            <td className="border border-gray-300 px-2 py-1.5">{entry.implementationStatus?.replace(/_/g, ' ') || '—'}</td>
-            <td className="border border-gray-300 px-2 py-1.5 whitespace-pre-line">{controlRefs || '—'}</td>
-            <td className="border border-gray-300 px-2 py-1.5 text-gray-600">{entry.justification || '—'}</td>
+            <td className="border border-border-default px-2 py-1.5 font-mono text-xs">{entry.requirementCode}</td>
+            <td className="border border-border-default px-2 py-1.5">{entry.requirementTitle}</td>
+            <td className={`border border-border-default px-2 py-1.5 font-medium ${applicableClass}`}>{applicable}</td>
+            <td className="border border-border-default px-2 py-1.5">{entry.implementationStatus?.replace(/_/g, ' ') || '—'}</td>
+            <td className="border border-border-default px-2 py-1.5 whitespace-pre-line">{controlRefs || '—'}</td>
+            <td className="border border-border-default px-2 py-1.5 text-content-muted">{entry.justification || '—'}</td>
         </tr>
     );
 }
@@ -149,15 +149,15 @@ function SummaryBox({ label, value, total, color }: { label: string; value: numb
     const percent = total > 0 ? Math.round((value / total) * 100) : 0;
     const colorMap: Record<string, string> = {
         green: 'border-border-success bg-bg-success-emphasis',
-        gray: 'border-gray-400 bg-gray-50',
+        gray: 'border-border-default bg-bg-default',
         red: 'border-border-error bg-bg-error-emphasis',
         amber: 'border-border-warning bg-bg-warning-emphasis',
     };
 
     return (
-        <div className={`border-l-4 ${colorMap[color] || 'border-gray-300'} px-3 py-2`}>
-            <div className="text-xl font-bold text-gray-900">{value} <span className="text-xs font-normal text-gray-500">({percent}%)</span></div>
-            <div className="text-xs text-gray-600">{label}</div>
+        <div className={`border-l-4 ${colorMap[color] || 'border-border-default'} px-3 py-2`}>
+            <div className="text-xl font-bold text-content-emphasis">{value} <span className="text-xs font-normal text-content-muted">({percent}%)</span></div>
+            <div className="text-xs text-content-muted">{label}</div>
         </div>
     );
 }
