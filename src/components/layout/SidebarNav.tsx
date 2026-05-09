@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { useCalendarBadge } from './use-calendar-badge';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Eyebrow } from '@/components/ui/typography';
 
 // ─── Types ───
 
@@ -109,6 +110,28 @@ interface NavItemProps {
     onClick?: () => void;
 }
 
+// Elevation PR-3 — sidebar nav item state language.
+//
+// All four states expressed inline via tokens (no .nav-link CSS
+// class). The state tokens mirror the canonical state language
+// from Polish PR-8:
+//
+//   default       text-content-muted, no background
+//   hover         text-content-emphasis + bg-bg-muted/50
+//                 (colour-only transition, duration-150 ease-out)
+//   active        text-content-emphasis + bg-brand-subtle +
+//                 2px brand left-border accent
+//   focus-visible 2px ring at --ring (the canonical yellow)
+//
+// The transition is `transition-colors` not `transition-all`
+// (motion-language ratchet — duration must enumerate the property).
+
+const NAV_ITEM_BASE =
+    'flex items-center gap-compact px-3 py-2.5 min-h-[44px] rounded-lg text-sm transition-colors duration-150 ease-out border-l-2 border-l-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]';
+const NAV_ITEM_DEFAULT = 'text-content-muted hover:text-content-emphasis hover:bg-bg-muted/50';
+const NAV_ITEM_ACTIVE =
+    'text-content-emphasis bg-[var(--brand-subtle)] border-l-[var(--brand-default)] font-medium';
+
 function NavItem({ href, icon: Icon, label, active, badge, onClick }: NavItemProps) {
     const slug = href.split('/').pop() ?? '';
 
@@ -116,11 +139,11 @@ function NavItem({ href, icon: Icon, label, active, badge, onClick }: NavItemPro
         <Link
             href={href}
             onClick={onClick}
-            className={`nav-link ${active ? 'active' : ''}`}
+            className={`${NAV_ITEM_BASE} ${active ? NAV_ITEM_ACTIVE : NAV_ITEM_DEFAULT}`}
             data-testid={`nav-${slug}`}
         >
             <Icon className="w-[18px] h-[18px] flex-shrink-0" aria-hidden="true" />
-            <span className="nav-link-label">{label}</span>
+            <span className="truncate">{label}</span>
             {badge != null && (
                 <StatusBadge variant="info" size="sm" className="ml-auto tabular-nums">
                     {badge}
@@ -139,11 +162,11 @@ interface NavSectionProps {
 
 function NavSection({ title, children }: NavSectionProps) {
     return (
-        <div className="nav-section">
+        <div>
             {title && (
-                <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-content-subtle">
+                <Eyebrow className="px-3 pt-4 pb-1">
                     {title}
-                </p>
+                </Eyebrow>
             )}
             <div className="space-y-0.5">{children}</div>
         </div>
@@ -313,10 +336,12 @@ export function MobileDrawer({ open, onClose, children }: MobileDrawerProps) {
                 data-testid="nav-drawer"
                 data-open={open ? 'true' : 'false'}
             >
-                {/* Close button — 44px touch target */}
+                {/* Close button — 44px touch target.
+                    Elevation PR-3 — adds canonical focus ring + uses
+                    transition-colors (motion-language compliant). */}
                 <button
                     type="button"
-                    className="absolute top-3 right-3 p-2 rounded-lg text-content-muted hover:text-content-emphasis hover:bg-bg-muted transition-colors"
+                    className="absolute top-3 right-3 p-2 rounded-lg text-content-muted hover:text-content-emphasis hover:bg-bg-muted transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
                     onClick={onClose}
                     aria-label="Close navigation"
                     data-testid="nav-drawer-close"

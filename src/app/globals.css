@@ -198,24 +198,11 @@ textarea.input { @apply resize-y min-h-[80px]; }
 @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
 .animate-slideIn { animation: slideIn 0.3s ease-out; }
 
-/* Sidebar nav */
-.nav-link {
-  @apply flex items-center gap-3 px-3 py-2.5 min-h-[44px] rounded-lg transition-all duration-200 text-sm;
-  color: var(--content-muted);
-}
-.nav-link:hover {
-  color: var(--content-emphasis);
-  background: var(--bg-muted);
-}
-.nav-link.active {
-  @apply border-l-[3px] font-medium;
-  color: var(--content-emphasis);
-  background: var(--brand-subtle);
-  border-left-color: var(--brand-default);
-}
-.nav-link-label {
-  @apply truncate;
-}
+/* Sidebar nav — Elevation PR-3 retired the .nav-link CSS class.
+   The state language now lives inline in SidebarNav.tsx as Tailwind
+   tokens (NAV_ITEM_BASE / NAV_ITEM_DEFAULT / NAV_ITEM_ACTIVE) so
+   hover/active/focus are part of the state-language ratchet
+   (Polish PR-8) and motion-language ratchet (Polish PR-9). */
 
 /* Page header — sticky on mobile, wraps actions */
 .page-header {
@@ -226,9 +213,11 @@ textarea.input { @apply resize-y min-h-[80px]; }
   background: color-mix(in srgb, var(--bg-page) 80%, transparent);
 }
 
-/* Focus-visible — accessible keyboard focus rings */
-.btn:focus-visible,
-.nav-link:focus-visible {
+/* Focus-visible — accessible keyboard focus rings. Sidebar nav
+   focus migrated to inline focus-visible:ring-2 in SidebarNav.tsx
+   (Elevation PR-3). The .btn rule remains for the legacy CSS-class
+   button consumers still being migrated to <Button>. */
+.btn:focus-visible {
   outline: 2px solid var(--brand-default);
   outline-offset: 2px;
 }
