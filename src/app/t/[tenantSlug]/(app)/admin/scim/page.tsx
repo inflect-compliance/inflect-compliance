@@ -254,7 +254,7 @@ export default function ScimAdminPage() {
                                 <div>
                                     <div className="flex items-center gap-tight">
                                         <span className="text-sm font-medium text-content-emphasis">{token.label}</span>
-                                        <StatusBadge variant="success" className="text-[10px]">Active</StatusBadge>
+                                        <StatusBadge variant="success" size="sm">Active</StatusBadge>
                                     </div>
                                     <div className="flex items-center gap-compact mt-1">
                                         <span className="text-xs text-content-subtle">
@@ -293,7 +293,7 @@ export default function ScimAdminPage() {
                             <div key={token.id} className="flex items-center justify-between p-4 opacity-50">
                                 <div>
                                     <span className="text-sm text-content-muted">{token.label}</span>
-                                    <StatusBadge variant="error" className="text-[10px] ml-2">Revoked</StatusBadge>
+                                    <StatusBadge variant="error" size="sm" className="ml-2">Revoked</StatusBadge>
                                     <div className="text-xs text-content-subtle mt-1">
                                         Revoked {formatDate(token.revokedAt!)}
                                     </div>

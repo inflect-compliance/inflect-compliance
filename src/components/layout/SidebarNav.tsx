@@ -122,7 +122,7 @@ function NavItem({ href, icon: Icon, label, active, badge, onClick }: NavItemPro
             <Icon className="w-[18px] h-[18px] flex-shrink-0" aria-hidden="true" />
             <span className="nav-link-label">{label}</span>
             {badge != null && (
-                <StatusBadge variant="info" className="ml-auto text-[10px] tabular-nums">
+                <StatusBadge variant="info" size="sm" className="ml-auto tabular-nums">
                     {badge}
                 </StatusBadge>
             )}

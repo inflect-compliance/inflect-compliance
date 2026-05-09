@@ -12,32 +12,55 @@ import {
 } from "./icons";
 import { DynamicTooltipWrapper } from "./tooltip";
 
+// v2-PR-3 — pill shape locked. Status surfaces in premium products
+// (Linear / Stripe / Vercel) all converge on `rounded-full`. The
+// previous `rounded-md` read more "label" than "status".
 const statusBadgeVariants = cva(
-  "inline-flex gap-1.5 items-center max-w-fit rounded-md px-2 py-1 text-xs font-medium whitespace-nowrap",
+  "inline-flex gap-1.5 items-center max-w-fit rounded-full font-medium whitespace-nowrap",
   {
     variants: {
       variant: {
-        neutral: "bg-bg-subtle text-content-muted",
-        info: "bg-bg-info text-content-info",
-        success: "bg-bg-success text-content-success",
-        pending: "bg-bg-attention text-content-attention",
-        warning: "bg-bg-warning text-content-warning",
-        error: "bg-bg-error text-content-error",
-        // Subtle variants — neutral surface with status-tinted text only.
-        // For tertiary status displays (draft / low-risk / passive states)
-        // where the standard variant would feel too loud.
-        "info-subtle": "bg-bg-subtle text-content-info",
-        "success-subtle": "bg-bg-subtle text-content-success",
-        "warning-subtle": "bg-bg-subtle text-content-warning",
-        "error-subtle": "bg-bg-subtle text-content-error",
+        neutral: "",
+        info: "",
+        success: "",
+        pending: "",
+        warning: "",
+        error: "",
+      },
+      tone: {
+        // solid = the default tinted surface + tinted text (the
+        // current visual). Tone-specific bg comes from the
+        // `compoundVariants` table below.
+        solid: "",
+        // subtle = neutral surface with tone-tinted text only. For
+        // tertiary status displays (draft, low-risk, passive states)
+        // where the standard tone would feel too loud.
+        subtle: "bg-bg-subtle",
       },
       size: {
         sm: "px-1.5 py-0.5 text-[10px]",
         md: "px-2 py-1 text-xs",
       },
     },
+    compoundVariants: [
+      // ── Solid (default) — tinted bg + tinted text ─────────────────
+      { variant: "neutral", tone: "solid", class: "bg-bg-subtle text-content-muted" },
+      { variant: "info", tone: "solid", class: "bg-bg-info text-content-info" },
+      { variant: "success", tone: "solid", class: "bg-bg-success text-content-success" },
+      { variant: "pending", tone: "solid", class: "bg-bg-attention text-content-attention" },
+      { variant: "warning", tone: "solid", class: "bg-bg-warning text-content-warning" },
+      { variant: "error", tone: "solid", class: "bg-bg-error text-content-error" },
+      // ── Subtle — neutral bg already applied; only the text color picks the tone ──
+      { variant: "neutral", tone: "subtle", class: "text-content-muted" },
+      { variant: "info", tone: "subtle", class: "text-content-info" },
+      { variant: "success", tone: "subtle", class: "text-content-success" },
+      { variant: "pending", tone: "subtle", class: "text-content-attention" },
+      { variant: "warning", tone: "subtle", class: "text-content-warning" },
+      { variant: "error", tone: "subtle", class: "text-content-error" },
+    ],
     defaultVariants: {
       variant: "neutral",
+      tone: "solid",
       size: "md",
     },
   },
@@ -50,10 +73,6 @@ const defaultIcons: Record<string, Icon> = {
   pending: CircleHalfDottedClock,
   warning: CircleWarning,
   error: CircleWarning,
-  "info-subtle": CircleHalfDottedCheck,
-  "success-subtle": CircleCheck,
-  "warning-subtle": CircleWarning,
-  "error-subtle": CircleWarning,
 };
 
 /**
@@ -75,6 +94,7 @@ interface StatusBadgeProps
 function StatusBadge({
   className,
   variant,
+  tone,
   size,
   icon,
   tooltip,
@@ -91,7 +111,7 @@ function StatusBadge({
     >
       <span
         className={cn(
-          statusBadgeVariants({ variant, size }),
+          statusBadgeVariants({ variant, tone, size }),
           tooltip && "cursor-help",
           onClick &&
             "cursor-pointer select-none transition-[filter] duration-150 hover:brightness-75 hover:saturate-[1.25]",
@@ -115,7 +135,7 @@ function StatusBadge({
  * this helper when the parent element MUST be something else.
  */
 function statusBadgeClassName(variant: StatusBadgeVariant): string {
-  return statusBadgeVariants({ variant });
+  return statusBadgeVariants({ variant, tone: "solid" });
 }
 
 export { StatusBadge, statusBadgeVariants, statusBadgeClassName };
