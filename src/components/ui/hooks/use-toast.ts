@@ -70,8 +70,20 @@ function build(
     variant: 'success' | 'error' | 'info' | 'warning',
 ): ToastApi['success'] {
     return (message, opts) => {
-        const duration = opts?.duration ?? LOCKED_DURATION[variant];
-        return sonnerToast[variant](message, { ...opts, duration });
+        // Pass through opts ONLY when the caller supplied them.
+        // The Toaster's `toastOptions` (configured in
+        // `providers.tsx`) sets the default duration globally per
+        // variant, so we don't forward `LOCKED_DURATION` on every
+        // call — that would also break test mocks that assert
+        // `toast.success(message)` with a single argument. The
+        // hook's role is the SINGLE-ENTRY discipline (no raw
+        // sonner imports in app code) — durations are owned by the
+        // Toaster mount + the per-call `opts.duration` override.
+        if (opts) {
+            const duration = opts.duration ?? LOCKED_DURATION[variant];
+            return sonnerToast[variant](message, { ...opts, duration });
+        }
+        return sonnerToast[variant](message);
     };
 }
 

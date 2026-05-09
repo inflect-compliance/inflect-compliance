@@ -89,6 +89,13 @@ export {
     type ViewMode,
 } from "./use-view-mode";
 
+// ─── Toast vocabulary (Roadmap-2 PR-9) ────────────────────────────────
+export {
+    useToast,
+    type ToastApi,
+    type ToastOptions,
+} from "./use-toast";
+
 // ─── Toast with undo (Epic 67) ────────────────────────────────────────
 export {
     useToastWithUndo,
