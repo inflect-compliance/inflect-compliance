@@ -59,7 +59,7 @@ import {
     buildEvidenceFilters,
     EVIDENCE_FILTER_KEYS,
 } from './filter-defs';
-import { Heading } from '@/components/ui/typography';
+import { Heading, Caption } from '@/components/ui/typography';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 
 interface Permissions {
@@ -617,6 +617,9 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                             className="mb-1"
                         />
                         <Heading level={1}>{t.title}</Heading>
+                        {t.listDescription && (
+                            <Caption className="mt-1">{t.listDescription}</Caption>
+                        )}
                         <p className="text-content-muted text-sm">{evidence.length} evidence items</p>
                     </div>
                     {permissions.canWrite && (

@@ -45,6 +45,7 @@ export default async function EvidencePage({
             permissions={ctx.permissions}
             translations={{
                 title: t('title'),
+                listDescription: t('listDescription'),
                 evidenceItems: t('evidenceItems', { count: 0 }),
                 evidenceTitle: t('evidenceTitle'),
                 type: t('type'),

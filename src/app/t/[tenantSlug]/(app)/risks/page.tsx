@@ -79,6 +79,7 @@ export default async function RisksPage({
             permissions={ctx.permissions}
             translations={{
                 title: t('title'),
+                listDescription: t('listDescription'),
                 risksIdentified: t('risksIdentified', { count: risks.length }),
                 heatmap: t('heatmap'),
                 register: t('register'),

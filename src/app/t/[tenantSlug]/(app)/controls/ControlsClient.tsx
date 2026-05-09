@@ -717,6 +717,12 @@ function ControlsPageInner({
                         Controls
                     </>
                 ),
+                // Roadmap-2 PR-4 — editorial framing for the list
+                // page. The description wins over count in
+                // EntityListPageHeader's render path, so the count
+                // is preserved separately for the chip below.
+                description:
+                    'Every control mapped to its requirements and evidence.',
                 count: `${controls.length} controls in register`,
                 actions: (
                     <>

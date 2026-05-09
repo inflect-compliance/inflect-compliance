@@ -54,6 +54,7 @@ export default async function PoliciesPage({
             permissions={ctx.permissions}
             translations={{
                 title: t('title'),
+                listDescription: t('listDescription'),
             }}
         />
     );

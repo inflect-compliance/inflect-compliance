@@ -45,6 +45,7 @@ export default async function AssetsPage({
                 permissions={{ canWrite: ctx.permissions.canWrite }}
                 translations={{
                     title: t('title'),
+                listDescription: t('listDescription'),
                     addAsset: t('addAsset'),
                     createAsset: t('createAsset'),
                     name: t('name'),

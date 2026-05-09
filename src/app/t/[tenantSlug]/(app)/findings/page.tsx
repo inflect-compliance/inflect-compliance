@@ -38,6 +38,7 @@ export default async function FindingsPage({
                 tenantSlug={tenantSlug}
                 translations={{
                     title: t('title'),
+                listDescription: t('listDescription'),
                     open: t('open'),
                     newFinding: t('newFinding'),
                     findingTitle: t('findingTitle'),

@@ -47,7 +47,7 @@ import { RiskMatrix } from '@/components/ui/RiskMatrix';
 import { resolveBandForScore } from '@/lib/risk-matrix/scoring';
 import type { RiskMatrixConfigShape } from '@/lib/risk-matrix/types';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
-import { Heading } from '@/components/ui/typography';
+import { Heading, Caption } from '@/components/ui/typography';
 import { Card } from '@/components/ui/card';
 import { KPIStat } from '@/components/ui/metric';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
@@ -91,6 +91,7 @@ interface RisksClientProps {
     };
     translations: {
         title: string;
+        listDescription: string;
         risksIdentified: string;
         heatmap: string;
         register: string;
@@ -480,6 +481,9 @@ function RisksPageInner({
                             className="mb-1"
                         />
                         <Heading level={1}>{t.title}</Heading>
+                        {t.listDescription && (
+                            <Caption className="mt-1">{t.listDescription}</Caption>
+                        )}
                         <p className="text-content-muted text-sm">{t.risksIdentified}</p>
                     </div>
                     <div className="flex gap-tight">

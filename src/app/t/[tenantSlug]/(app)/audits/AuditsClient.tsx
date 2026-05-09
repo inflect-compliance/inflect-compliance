@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import type { CappedList } from '@/lib/list-backfill-cap';
 import { TruncationBanner } from '@/components/ui/TruncationBanner';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
-import { Heading } from '@/components/ui/typography';
+import { Heading, Caption } from '@/components/ui/typography';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -23,6 +23,7 @@ interface AuditsClientProps {
     tenantSlug: string;
     translations: {
         title: string;
+        listDescription: string;
         auditsCount: string;
         newAudit: string;
         auditTitle: string;
@@ -137,6 +138,9 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
                         className="mb-1"
                     />
                     <Heading level={1}>{t.title}</Heading>
+                    {t.listDescription && (
+                        <Caption className="mt-1">{t.listDescription}</Caption>
+                    )}
                     <p className="text-content-muted text-sm">{audits.length} audits</p>
                 </div>
                 <Button variant="primary" onClick={() => setShowForm(!showForm)} id="new-audit-btn">{t.newAudit}</Button>

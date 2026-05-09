@@ -20,7 +20,7 @@ import { NumberStepper } from '@/components/ui/number-stepper';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { Heading } from '@/components/ui/typography';
+import { Heading, Caption } from '@/components/ui/typography';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 
 const ASSET_TYPES = ['INFORMATION', 'APPLICATION', 'SYSTEM', 'SERVICE', 'DATA_STORE', 'INFRASTRUCTURE', 'VENDOR', 'PROCESS', 'PEOPLE_PROCESS', 'OTHER'];
@@ -33,6 +33,7 @@ interface AssetsClientProps {
     permissions: { canWrite: boolean };
     translations: {
         title: string;
+        listDescription: string;
         addAsset: string;
         createAsset: string;
         name: string;
@@ -178,6 +179,9 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                             className="mb-1"
                         />
                         <Heading level={1}>{t.title}</Heading>
+                        {t.listDescription && (
+                            <Caption className="mt-1">{t.listDescription}</Caption>
+                        )}
                         <p className="text-content-muted text-sm">{assets.length} assets</p>
                     </div>
                     <div className="flex gap-tight">

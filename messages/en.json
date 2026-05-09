@@ -106,6 +106,7 @@
     },
     "assets": {
         "title": "Asset Inventory",
+        "listDescription": "Every asset under management — classified, owned, and linked to its risks.",
         "assetsRegistered": "{count} assets registered",
         "addAsset": "+ Asset",
         "loading": "Loading assets...",
@@ -137,6 +138,7 @@
     },
     "risks": {
         "title": "Risk Register",
+        "listDescription": "The single register of business risk — track, treat, and evidence.",
         "risksIdentified": "{count} risks identified",
         "addRisk": "+ Risk",
         "heatmap": "🗺️ Heatmap",
@@ -168,6 +170,7 @@
     },
     "controls": {
         "title": "Controls Library",
+        "listDescription": "Every control mapped to its requirements and evidence.",
         "stats": "{implemented}/{total} implemented · {implementing} in progress",
         "addCustom": "+ Custom Control",
         "loading": "Loading controls...",
@@ -213,6 +216,7 @@
     },
     "evidence": {
         "title": "Evidence Library",
+        "listDescription": "Proof for every control — collected, reviewed, and audit-ready.",
         "evidenceItems": "{count} evidence items",
         "addEvidence": "+ Evidence",
         "loading": "Loading evidence...",
@@ -241,6 +245,7 @@
     },
     "policies": {
         "title": "Policy Management",
+        "listDescription": "Authored, approved, and acknowledged — your live policy library.",
         "policiesCount": "{count} policies",
         "addPolicy": "+ Policy",
         "loading": "Loading policies...",
@@ -267,6 +272,7 @@
     },
     "audits": {
         "title": "Internal Audits",
+        "listDescription": "Cycles, packs, and findings — the audit trail your assessors will see.",
         "auditsCount": "{count} audits",
         "newAudit": "+ Audit",
         "loading": "Loading audits...",
@@ -293,6 +299,7 @@
     },
     "findings": {
         "title": "Findings Register",
+        "listDescription": "Issues raised in audit and assessment — owned, dated, closed.",
         "findingsCount": "{count} findings",
         "newFinding": "+ Finding",
         "loading": "Loading findings...",
