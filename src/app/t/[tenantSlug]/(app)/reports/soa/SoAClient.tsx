@@ -5,17 +5,13 @@ import { useRouter } from 'next/navigation';
 import {
     Search, X, FilterX, Link2, FileText, AlertTriangle,
     CheckCircle2, XCircle, HelpCircle, ChevronDown, Check,
-    Download, Plus, MessageSquare,
+    Plus, MessageSquare,
 } from 'lucide-react';
 import type { SoAReportDTO, SoAEntryDTO } from '@/lib/dto/soa';
-import { PdfExportButton } from '@/components/PdfExportButton';
-import { RequirePermission } from '@/components/require-permission';
 import { Modal } from '@/components/ui/modal';
 import { Tooltip } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
-import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBadge as StatusBadgePrimitive, type StatusBadgeVariant } from '@/components/ui/status-badge';
-import { Heading } from '@/components/ui/typography';
 
 // ─── Types ───
 
@@ -175,37 +171,20 @@ export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientPr
     const { summary } = report;
 
     return (
-        <>
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-compact">
-                <div>
-                    <Heading level={1} id="soa-heading">Statement of Applicability</Heading>
-                    <p className="text-content-muted text-sm">ISO 27001:2022 Annex A — {summary.total} requirements</p>
-                </div>
-                <RequirePermission resource="reports" action="export">
-                    <div className="flex flex-wrap gap-tight">
-                        <a
-                            href={`/api/t/${tenantSlug}/reports/soa/export.csv`}
-                            className={buttonVariants({ variant: 'secondary' })}
-                            download
-                            id="export-soa-btn"
-                        >
-                            <Download className="w-3.5 h-3.5" /> Export CSV
-                        </a>
-                        <PdfExportButton
-                            tenantSlug={tenantSlug}
-                            reportType="AUDIT_READINESS"
-                            label="Audit Readiness PDF"
-                            allowSave={canEdit}
-                        />
-                        <PdfExportButton
-                            tenantSlug={tenantSlug}
-                            reportType="GAP_ANALYSIS"
-                            label="Gap Analysis PDF"
-                            allowSave={canEdit}
-                        />
-                    </div>
-                </RequirePermission>
+        // Roadmap-2 PR-12 — SoAClient is embedded inside the
+        // Reports page now; the parent owns the H1 + breadcrumbs.
+        // The duplicate H1 + subtitle + export-button cluster
+        // that used to live here are gone (the export buttons
+        // moved up to the Reports header so they sit in the
+        // same place as the Risk Register's exports). The body
+        // gets `space-y-section` so summary / banner / filters /
+        // table breathe at the canonical 32px rhythm.
+        <div className="space-y-section">
+            {/* Eyebrow + summary line — section-level, not page-level */}
+            <div>
+                <p className="text-sm text-content-muted">
+                    ISO 27001:2022 Annex A — {summary.total} requirements
+                </p>
             </div>
 
             {/* Summary cards */}
@@ -461,7 +440,7 @@ export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientPr
                     </Button>
                 </Modal.Actions>
             </Modal>
-        </>
+        </div>
     );
 }
 

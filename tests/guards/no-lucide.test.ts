@@ -73,6 +73,11 @@ const LEGACY_LUCIDE_USERS = new Set<string>([
     'src/app/t/[tenantSlug]/(app)/frameworks/FrameworksClient.tsx',
     'src/app/t/[tenantSlug]/(app)/policies/filter-defs.ts',
     'src/app/t/[tenantSlug]/(app)/policies/templates/page.tsx',
+    // Roadmap-2 PR-12 — moved a single `Download` icon import
+    // from SoAClient to ReportsClient when lifting the SoA
+    // export-buttons cluster up into the Reports header. Net
+    // change: one new lucide consumer on the allowlist.
+    'src/app/t/[tenantSlug]/(app)/reports/ReportsClient.tsx',
     'src/app/t/[tenantSlug]/(app)/reports/soa/SoAClient.tsx',
     'src/app/t/[tenantSlug]/(app)/risks/filter-defs.ts',
     'src/app/t/[tenantSlug]/(app)/security/mfa/page.tsx',

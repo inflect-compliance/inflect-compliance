@@ -290,7 +290,15 @@ export function EntityDetailLayout<TKey extends string = string>({
                 is provided (Roadmap-2 PR-5). The grid kicks in at
                 `xl` (1280px); below that the rail stacks under the
                 main column so phones/laptops keep the prior
-                single-column shape. */}
+                single-column shape.
+
+                PR-12: every body container carries
+                `space-y-section` so multiple sibling cards
+                (risk-detail, traceability, treatment plan, …)
+                breathe at the canonical 32px rhythm. Without it
+                the cards rendered with zero vertical gap between
+                them — pages that own multi-card stacks looked
+                fused together. */}
             {rail ? (
                 <div
                     className="grid gap-default xl:grid-cols-[minmax(0,1fr)_320px]"
@@ -302,14 +310,14 @@ export function EntityDetailLayout<TKey extends string = string>({
                             id={`tabpanel-${activeTab}`}
                             aria-labelledby={`tab-${activeTab}`}
                             data-testid="entity-detail-tabpanel"
-                            className="min-w-0"
+                            className="min-w-0 space-y-section"
                         >
                             {children}
                         </div>
                     ) : (
                         <div
                             data-testid="entity-detail-body"
-                            className="min-w-0"
+                            className="min-w-0 space-y-section"
                         >
                             {children}
                         </div>
@@ -328,11 +336,17 @@ export function EntityDetailLayout<TKey extends string = string>({
                     id={`tabpanel-${activeTab}`}
                     aria-labelledby={`tab-${activeTab}`}
                     data-testid="entity-detail-tabpanel"
+                    className="space-y-section"
                 >
                     {children}
                 </div>
             ) : (
-                <div data-testid="entity-detail-body">{children}</div>
+                <div
+                    data-testid="entity-detail-body"
+                    className="space-y-section"
+                >
+                    {children}
+                </div>
             )}
         </div>
     );

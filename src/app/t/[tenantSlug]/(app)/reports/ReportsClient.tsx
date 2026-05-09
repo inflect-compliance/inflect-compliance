@@ -1,6 +1,7 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any -- Client component receiving server-rendered domain data; tanstack column callbacks; or library-boundary callbacks. Per-site narrowing requires generated DTOs / per-cell CellContext imports — out of scope for the lint cleanup PR. */
 import { useState, useMemo } from 'react';
+import { Download } from 'lucide-react';
 import { SoAClient } from './soa/SoAClient';
 import { PdfExportButton } from '@/components/PdfExportButton';
 import { RequirePermission } from '@/components/require-permission';
@@ -10,6 +11,7 @@ import { DataTable, createColumns } from '@/components/ui/table';
 import { ListPageShell } from '@/components/layout/ListPageShell';
 import { ToggleGroup } from '@/components/ui/toggle-group';
 import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button-variants';
 import { Heading } from '@/components/ui/typography';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 
@@ -115,19 +117,58 @@ export function ReportsClient({ data, soaReport, controls, tenantSlug, canEdit, 
                             className="mb-1"
                         />
                         <Heading level={1} id="reports-heading">{t.title}</Heading>
-                        <p className="text-content-muted text-sm">{t.subtitle}</p>
+                        <p className="text-sm text-content-muted mt-1">{t.subtitle}</p>
                     </div>
+                    {/* Roadmap-2 PR-12 — tab-aware exports.
+                        SoA tab gets SoA-specific exports
+                        (CSV + Audit Readiness PDF + Gap
+                        Analysis PDF). Risk Register tab gets
+                        the Risk Register exports. The buttons
+                        live ONCE in the page header — they used
+                        to live both here AND inside SoAClient,
+                        which read as a doubled chrome. */}
                     <RequirePermission resource="reports" action="export">
                         <div className="flex flex-wrap gap-tight">
-                            <Button variant="secondary" onClick={() => downloadCSV(data.riskRegister, 'risk-register.csv')} id="export-risks-btn">{t.exportRisks}</Button>
-                            <UpgradeGate feature="PDF_EXPORTS">
-                                <PdfExportButton
-                                    tenantSlug={tenantSlug}
-                                    reportType="RISK_REGISTER"
-                                    label="Risk Register PDF"
-                                    allowSave={canEdit}
-                                />
-                            </UpgradeGate>
+                            {tab === 'soa' ? (
+                                <>
+                                    <a
+                                        href={`/api/t/${tenantSlug}/reports/soa/export.csv`}
+                                        className={buttonVariants({ variant: 'secondary' })}
+                                        download
+                                        id="export-soa-btn"
+                                    >
+                                        <Download className="w-3.5 h-3.5" /> Export CSV
+                                    </a>
+                                    <UpgradeGate feature="PDF_EXPORTS">
+                                        <PdfExportButton
+                                            tenantSlug={tenantSlug}
+                                            reportType="AUDIT_READINESS"
+                                            label="Audit Readiness PDF"
+                                            allowSave={canEdit}
+                                        />
+                                    </UpgradeGate>
+                                    <UpgradeGate feature="PDF_EXPORTS">
+                                        <PdfExportButton
+                                            tenantSlug={tenantSlug}
+                                            reportType="GAP_ANALYSIS"
+                                            label="Gap Analysis PDF"
+                                            allowSave={canEdit}
+                                        />
+                                    </UpgradeGate>
+                                </>
+                            ) : (
+                                <>
+                                    <Button variant="secondary" onClick={() => downloadCSV(data.riskRegister, 'risk-register.csv')} id="export-risks-btn">{t.exportRisks}</Button>
+                                    <UpgradeGate feature="PDF_EXPORTS">
+                                        <PdfExportButton
+                                            tenantSlug={tenantSlug}
+                                            reportType="RISK_REGISTER"
+                                            label="Risk Register PDF"
+                                            allowSave={canEdit}
+                                        />
+                                    </UpgradeGate>
+                                </>
+                            )}
                         </div>
                     </RequirePermission>
                 </div>
