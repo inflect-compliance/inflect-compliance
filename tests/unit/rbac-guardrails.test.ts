@@ -129,9 +129,20 @@ describe('RBAC Guardrail Scans', () => {
         });
 
         test('SoA export buttons are wrapped in RequirePermission', () => {
-            const content = readFile('app/t/[tenantSlug]/(app)/reports/soa/SoAClient.tsx');
+            // Roadmap-2 PR-12 — the SoA export buttons (CSV +
+            // Audit Readiness PDF + Gap Analysis PDF) lifted up
+            // from SoAClient into the Reports page header so the
+            // user sees ONE export cluster, tab-aware. The
+            // RequirePermission gate is now in ReportsClient
+            // wrapping the tab-aware buttons; the test still
+            // anchors there.
+            const content = readFile('app/t/[tenantSlug]/(app)/reports/ReportsClient.tsx');
             expect(content).toMatch(/RequirePermission/);
             expect(content).toMatch(/resource="reports" action="export"/);
+            // The SoA-specific export anchors must still exist
+            // somewhere on the page — assert by id so a future
+            // refactor that drops the export entirely fails CI.
+            expect(content).toContain('id="export-soa-btn"');
         });
     });
 
