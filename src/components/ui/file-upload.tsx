@@ -1,7 +1,7 @@
 import { cn, resizeImage } from "@dub/utils";
 import { VariantProps, cva } from "class-variance-authority";
 import { DragEvent, ReactNode, useState } from "react";
-import { toast } from "sonner";
+import { useToast } from "./hooks/use-toast";
 import { CloudUpload, Icon, LoadingCircle } from "./icons";
 
 type AcceptedFileFormats =
@@ -184,6 +184,7 @@ export function FileUpload({
 }: FileUploadProps) {
   const [dragActive, setDragActive] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
+  const toast = useToast();
   // The `document` variant paints on semantic tokens (dark-theme-safe);
   // the original `default` / `plain` variants keep their opaque-white
   // behaviour for the image-upload callers.

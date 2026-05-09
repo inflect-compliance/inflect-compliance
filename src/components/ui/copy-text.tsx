@@ -26,7 +26,7 @@
 import { cn } from "@dub/utils";
 import { Check, Copy } from "lucide-react";
 import { type ReactNode, forwardRef } from "react";
-import { toast } from "sonner";
+import { useToast } from "./hooks/use-toast";
 import { Tooltip } from "./tooltip";
 import { useCopyToClipboard } from "./hooks";
 
@@ -69,6 +69,7 @@ export const CopyText = forwardRef<HTMLButtonElement, CopyTextProps>(
         ref,
     ) {
         const { copy, copied } = useCopyToClipboard();
+        const toast = useToast();
 
         const handleClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
             event.stopPropagation();

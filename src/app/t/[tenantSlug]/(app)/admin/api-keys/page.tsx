@@ -27,7 +27,7 @@ import { InlineNotice } from '@/components/ui/inline-notice';
 // `toLocaleDateString('en-US', …)` that diverged from the rest of
 // the app.
 import { formatDateTime as formatDate } from '@/lib/format-date';
-import { toast } from 'sonner';
+import { useToast } from '@/components/ui/hooks/use-toast';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 
@@ -179,6 +179,7 @@ function ScopePicker({
 export function KeyDisplay({ plaintext }: { plaintext: string }) {
     const [visible, setVisible] = useState(false);
     const { copy, copied } = useCopyToClipboard({ timeout: 2500 });
+    const toast = useToast();
 
     const handleCopy = async () => {
         const ok = await copy(plaintext);

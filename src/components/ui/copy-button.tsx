@@ -24,7 +24,7 @@ import { cn } from "@dub/utils";
 import { type VariantProps, cva } from "class-variance-authority";
 import { Check, Copy, type LucideIcon } from "lucide-react";
 import { forwardRef } from "react";
-import { toast } from "sonner";
+import { useToast } from "./hooks/use-toast";
 import { Tooltip } from "./tooltip";
 import { useCopyToClipboard } from "./hooks";
 
@@ -100,6 +100,7 @@ export const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
         ref,
     ) {
         const { copy, copied } = useCopyToClipboard();
+        const toast = useToast();
         const Glyph = icon ?? Copy;
         const iconSize = size === "sm" ? "h-3 w-3" : size === "lg" ? "h-4 w-4" : "h-3.5 w-3.5";
 

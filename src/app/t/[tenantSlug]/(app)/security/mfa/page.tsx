@@ -11,7 +11,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTenantApiUrl } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
 import { ShieldCheck, QrCode, Copy, CheckCircle, XCircle, Trash2, AlertTriangle, X } from 'lucide-react';
-import { toast } from 'sonner';
+import { useToast } from '@/components/ui/hooks/use-toast';
 import { useCopyToClipboard } from '@/components/ui/hooks';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Heading } from '@/components/ui/typography';
@@ -45,6 +45,7 @@ export default function UserMfaPage() {
     const [submitting, setSubmitting] = useState(false);
     const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
     const { copy, copied } = useCopyToClipboard({ timeout: 2500 });
+    const toast = useToast();
 
     const fetchStatus = useCallback(async () => {
         try {

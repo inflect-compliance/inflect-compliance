@@ -9,7 +9,7 @@ import { formatDate } from '@/lib/format-date';
 import { useState, useEffect, useCallback } from 'react';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import { CloudCog, Plus, Trash2, Copy, Check, AlertTriangle, Clock, ExternalLink } from 'lucide-react';
-import { toast } from 'sonner';
+import { useToast } from '@/components/ui/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { useCopyToClipboard } from '@/components/ui/hooks';
 import { CopyButton } from '@/components/ui/copy-button';
@@ -44,6 +44,7 @@ export default function ScimAdminPage() {
     const [newLabel, setNewLabel] = useState('');
     const [showForm, setShowForm] = useState(false);
     const { copy, copied } = useCopyToClipboard({ timeout: 2500 });
+    const toast = useToast();
     const [error, setError] = useState<string | null>(null);
     const [tokenIdToRevoke, setTokenIdToRevoke] = useState<string | null>(null);
 

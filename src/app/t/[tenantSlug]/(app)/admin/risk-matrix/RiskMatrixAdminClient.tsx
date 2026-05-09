@@ -28,7 +28,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
+import { useToast } from '@/components/ui/hooks/use-toast';
 
 import { Button } from '@/components/ui/button';
 import { NumberStepper } from '@/components/ui/number-stepper';
@@ -93,6 +93,7 @@ export function RiskMatrixAdminClient({
     );
     const [saving, setSaving] = useState(false);
     const [serverError, setServerError] = useState<string | null>(null);
+    const toast = useToast();
 
     // Synthetic preview cells — every (L, I) carries one risk so the
     // band colours light up across the whole matrix without needing
