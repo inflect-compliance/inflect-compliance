@@ -210,9 +210,9 @@ export function RiskMatrixCell({
                     : undefined
             }
             className={[
-                'group relative flex min-h-[28px] items-center justify-center rounded-sm text-xs font-semibold tabular-nums transition-all',
+                'group relative flex min-h-[28px] items-center justify-center rounded-sm text-xs font-semibold tabular-nums transition-colors duration-150 ease-out',
                 'focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-default)] focus-visible:ring-offset-1',
-                interactive ? 'cursor-pointer hover:scale-[1.04]' : 'cursor-default',
+                interactive ? 'cursor-pointer hover:brightness-110' : 'cursor-default',
                 selected ? 'ring-2 ring-[var(--brand-default)] ring-offset-1' : '',
                 className,
             ]

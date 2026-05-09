@@ -143,7 +143,7 @@ export default function RiskDashboardPage() {
                                     return (
                                         <div
                                             key={`${l}-${i}`}
-                                            className={`h-10 rounded flex items-center justify-center font-medium transition hover:scale-105 cursor-default ${HEATMAP_COLOR(s)}`}
+                                            className={`h-10 rounded flex items-center justify-center font-medium transition-colors duration-150 ease-out cursor-default ${HEATMAP_COLOR(s)}`}
                                             title={`L${l}×I${i} = ${s} (${count})`}
                                         >
                                             {count > 0 ? count : ''}

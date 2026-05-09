@@ -167,9 +167,9 @@ export default function RiskHeatmap({
                                                 flex items-center justify-center
                                                 rounded-sm min-h-[28px]
                                                 text-xs font-semibold tabular-nums
-                                                transition-all duration-200
+                                                transition-colors duration-150 ease-out
                                                 ${getCellColor(likelihood, impact, count)}
-                                                ${count > 0 ? 'hover:scale-110 cursor-default' : ''}
+                                                ${count > 0 ? 'cursor-default' : ''}
                                             `.trim()}
                                             title={`L${likelihood} × I${impact} = ${score} (${getScoreLabel(score)}) — ${count} risk${count !== 1 ? 's' : ''}`}
                                         >

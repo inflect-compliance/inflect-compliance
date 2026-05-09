@@ -143,9 +143,13 @@ export function CardListCard({
             data-selected={selected || undefined}
             className={cn(
                 'group relative flex flex-col rounded-xl border border-border-subtle bg-bg-default',
-                'transition-all',
+                // v2-PR-4 — single motion language: bg + border-color
+                // only, no transform/shadow. The hover affordance is
+                // the border darkening (`hover:border-border-emphasis`)
+                // — quiet, decisive, doesn't perturb layout.
+                'transition-colors duration-150 ease-out',
                 interactive &&
-                    'cursor-pointer hover:border-border-default hover:shadow-md hover:-translate-y-0.5',
+                    'cursor-pointer hover:border-border-emphasis',
                 selected && 'ring-2 ring-[var(--brand-default)] border-[var(--brand-default)]',
                 loading && 'pointer-events-none',
                 className,

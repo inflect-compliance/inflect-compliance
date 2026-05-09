@@ -315,7 +315,7 @@ export default function KpiCard({
     return (
         <div
             id={id}
-            className={`glass-card p-4 hover:scale-[1.02] transition-transform ${className}`}
+            className={`glass-card p-4 hover:border-border-emphasis transition-colors duration-150 ease-out ${className}`}
         >
             {/* Header: icon + label */}
             <div className="flex items-center gap-tight mb-2">

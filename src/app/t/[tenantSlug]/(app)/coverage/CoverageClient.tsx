@@ -285,7 +285,7 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
                             <Link
                                 key={ctrl.id}
                                 href={tenantHref(`/controls/${ctrl.id}`)}
-                                className="glass-card p-4 hover:scale-[1.03] transition-transform group cursor-pointer"
+                                className="glass-card p-4 hover:border-border-emphasis transition-colors duration-150 ease-out group cursor-pointer"
                             >
                                 <div className="flex items-center gap-tight mb-2">
                                     <span className={`
@@ -338,7 +338,7 @@ function CoverageKpiCard({
     const gradientClass = pctGradient(pct);
 
     return (
-        <Card className="hover:scale-[1.02] transition-transform" id={id}>
+        <Card className="hover:border-border-emphasis transition-colors duration-150 ease-out" id={id}>
             <div className="flex items-center gap-tight mb-3">
                 <span className="text-content-muted">{icon}</span>
                 <span className="text-xs text-content-muted uppercase tracking-wide font-medium">
