@@ -52,14 +52,11 @@
 import { type ReactNode } from 'react';
 
 import { ListPageShell } from '@/components/layout/ListPageShell';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
 import { DataTable, type DataTableProps } from '@/components/ui/table';
-import { Heading, Caption } from '@/components/ui/typography';
 import type { FilterType } from '@/components/ui/filter';
-import {
-    Breadcrumbs,
-    type BreadcrumbItem,
-} from '@/components/ui/breadcrumbs';
+import { type BreadcrumbItem } from '@/components/ui/breadcrumbs';
 
 // ─── Header ────────────────────────────────────────────────────────
 
@@ -178,39 +175,13 @@ export function EntityListPage<TRow>(props: EntityListPageProps<TRow>) {
             data-entity-list-page
         >
             <ListPageShell.Header>
-                <div
-                    className="flex items-center justify-between gap-default flex-wrap"
+                <PageHeader
+                    breadcrumbs={header.breadcrumbs}
+                    title={header.title}
+                    description={header.count}
+                    actions={header.actions}
                     data-testid="entity-list-header"
-                >
-                    <div className="min-w-0">
-                        {header.breadcrumbs && header.breadcrumbs.length > 0 && (
-                            <Breadcrumbs
-                                items={header.breadcrumbs}
-                                className="mb-1"
-                                data-testid="entity-list-breadcrumbs"
-                            />
-                        )}
-                        <Heading
-                            level={1}
-                            data-testid="entity-list-title"
-                        >
-                            {header.title}
-                        </Heading>
-                        {header.count !== undefined && header.count !== null && (
-                            <Caption data-testid="entity-list-count">
-                                {header.count}
-                            </Caption>
-                        )}
-                    </div>
-                    {header.actions && (
-                        <div
-                            className="flex gap-tight flex-wrap"
-                            data-testid="entity-list-header-actions"
-                        >
-                            {header.actions}
-                        </div>
-                    )}
-                </div>
+                />
             </ListPageShell.Header>
 
             {filters && (

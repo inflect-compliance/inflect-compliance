@@ -114,15 +114,17 @@ describe('EntityListPage — header', () => {
             </FilterShell>,
         );
 
-        expect(screen.getByTestId('entity-list-title').textContent).toBe(
+        // v2-PR-5 — EntityListPage now delegates to <PageHeader>;
+        // assert via the canonical page-header-* test ids.
+        expect(screen.getByTestId('page-header-title').textContent).toBe(
             'Controls',
         );
-        expect(screen.getByTestId('entity-list-count').textContent).toBe(
-            '2 controls in register',
-        );
+        expect(
+            screen.getByTestId('page-header-description').textContent,
+        ).toBe('2 controls in register');
         expect(screen.getByTestId('header-create')).toBeInTheDocument();
         expect(
-            screen.getByTestId('entity-list-header-actions'),
+            screen.getByTestId('page-header-actions'),
         ).toBeInTheDocument();
     });
 
@@ -139,10 +141,8 @@ describe('EntityListPage — header', () => {
                 />
             </FilterShell>,
         );
-        expect(screen.queryByTestId('entity-list-count')).toBeNull();
-        expect(
-            screen.queryByTestId('entity-list-header-actions'),
-        ).toBeNull();
+        expect(screen.queryByTestId('page-header-description')).toBeNull();
+        expect(screen.queryByTestId('page-header-actions')).toBeNull();
     });
 });
 

@@ -34,15 +34,11 @@
  * prop) — useful for risks-style pages that stack sections instead.
  */
 
-import Link from 'next/link';
 import { type ReactNode } from 'react';
 
 import { cn } from '@dub/utils';
-import {
-    Breadcrumbs,
-    type BreadcrumbItem,
-} from '@/components/ui/breadcrumbs';
-import { Heading } from '@/components/ui/typography';
+import { type BreadcrumbItem } from '@/components/ui/breadcrumbs';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 // ─── Tab descriptor ───────────────────────────────────────────────
 
@@ -184,49 +180,15 @@ export function EntityDetailLayout<TKey extends string = string>({
             data-entity-detail-layout
         >
             {/* Header */}
-            <header className="flex items-start justify-between gap-default flex-wrap">
-                <div className="min-w-0">
-                    {breadcrumbs && breadcrumbs.length > 0 && (
-                        <Breadcrumbs
-                            items={breadcrumbs}
-                            className="mb-1"
-                            data-testid="entity-detail-breadcrumbs"
-                        />
-                    )}
-                    {back && (
-                        <Link
-                            href={back.href}
-                            className="text-content-muted text-xs hover:text-content-emphasis transition"
-                            data-testid="entity-detail-back"
-                        >
-                            ← {back.label}
-                        </Link>
-                    )}
-                    <Heading
-                        level={1}
-                        className="mt-1"
-                        data-testid="entity-detail-title"
-                    >
-                        {title}
-                    </Heading>
-                    {meta && (
-                        <div
-                            className="flex gap-tight mt-1 flex-wrap items-center"
-                            data-testid="entity-detail-meta"
-                        >
-                            {meta}
-                        </div>
-                    )}
-                </div>
-                {actions && (
-                    <div
-                        className="flex gap-tight flex-wrap"
-                        data-testid="entity-detail-actions"
-                    >
-                        {actions}
-                    </div>
-                )}
-            </header>
+            <PageHeader
+                breadcrumbs={breadcrumbs}
+                back={back}
+                title={title}
+                meta={meta}
+                actions={actions}
+                data-testid="entity-detail-header"
+            />
+
 
             {/* Tab bar (optional) */}
             {tabs && tabs.length > 0 && (

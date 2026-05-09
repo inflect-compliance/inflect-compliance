@@ -36,11 +36,13 @@ describe('EntityDetailLayout — header', () => {
             </EntityDetailLayout>,
         );
 
-        const back = screen.getByTestId('entity-detail-back');
+        // v2-PR-5 — EntityDetailLayout now delegates to <PageHeader>;
+        // assert via the canonical page-header-* test ids.
+        const back = screen.getByTestId('page-header-back');
         expect(back).toHaveAttribute('href', '/t/acme/controls');
         expect(back.textContent).toContain('Controls');
 
-        expect(screen.getByTestId('entity-detail-title').textContent).toBe(
+        expect(screen.getByTestId('page-header-title').textContent).toBe(
             'AC-1: Access Control',
         );
         expect(screen.getByTestId('meta-badge')).toBeInTheDocument();
@@ -53,7 +55,7 @@ describe('EntityDetailLayout — header', () => {
                 <div>body</div>
             </EntityDetailLayout>,
         );
-        expect(screen.queryByTestId('entity-detail-back')).toBeNull();
+        expect(screen.queryByTestId('page-header-back')).toBeNull();
     });
 
     it('omits the meta row when not supplied', () => {
@@ -62,7 +64,7 @@ describe('EntityDetailLayout — header', () => {
                 <div>body</div>
             </EntityDetailLayout>,
         );
-        expect(screen.queryByTestId('entity-detail-meta')).toBeNull();
+        expect(screen.queryByTestId('page-header-meta')).toBeNull();
     });
 
     it('omits the actions slot when not supplied', () => {
@@ -71,7 +73,7 @@ describe('EntityDetailLayout — header', () => {
                 <div>body</div>
             </EntityDetailLayout>,
         );
-        expect(screen.queryByTestId('entity-detail-actions')).toBeNull();
+        expect(screen.queryByTestId('page-header-actions')).toBeNull();
     });
 });
 
@@ -173,7 +175,7 @@ describe('EntityDetailLayout — lifecycle states', () => {
             screen.getByTestId('entity-detail-loading'),
         ).toBeInTheDocument();
         expect(screen.queryByTestId('body-content')).toBeNull();
-        expect(screen.queryByTestId('entity-detail-title')).toBeNull();
+        expect(screen.queryByTestId('page-header-title')).toBeNull();
     });
 
     it('error replaces the body with a token-error inline message', () => {
