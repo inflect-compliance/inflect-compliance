@@ -17,6 +17,7 @@ import { buttonVariants } from '@/components/ui/button-variants';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
+import { MetaStrip } from '@/components/ui/meta-strip';
 import { Card } from '@/components/ui/card';
 
 const EV_KIND_OPTIONS: ComboboxOption[] = [
@@ -250,19 +251,40 @@ export default function TestRunPage() {
                 </span>
             }
             meta={
-                <>
-                    <StatusBadge variant={run.status === 'COMPLETED' ? 'success' : run.status === 'RUNNING' ? 'info' : 'neutral'} id="test-run-status">
-                        {run.status}
-                    </StatusBadge>
-                    {run.result && (
-                        <StatusBadge variant={RESULT_BADGE[run.result] || 'neutral'} id="test-run-result">
-                            {run.result}
-                        </StatusBadge>
-                    )}
-                    {run.executedAt && (
-                        <span className="text-xs text-content-muted">Executed: {formatDate(run.executedAt)}</span>
-                    )}
-                </>
+                <MetaStrip
+                    items={[
+                        {
+                            kind: 'status',
+                            label: 'Status',
+                            value: run.status,
+                            variant:
+                                run.status === 'COMPLETED'
+                                    ? 'success'
+                                    : run.status === 'RUNNING'
+                                      ? 'info'
+                                      : 'neutral',
+                        },
+                        ...(run.result
+                            ? [
+                                  {
+                                      kind: 'status' as const,
+                                      label: 'Result',
+                                      value: run.result,
+                                      variant:
+                                          RESULT_BADGE[run.result] ?? 'neutral',
+                                  },
+                              ]
+                            : []),
+                        ...(run.executedAt
+                            ? [
+                                  {
+                                      label: 'Executed',
+                                      value: formatDate(run.executedAt),
+                                  } as const,
+                              ]
+                            : []),
+                    ]}
+                />
             }
         >
             {/* Complete Form — only if not completed */}

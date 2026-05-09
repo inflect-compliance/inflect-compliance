@@ -14,6 +14,7 @@ import { MILESTONES, scopedMilestone } from '@/lib/celebrations';
 import type { FrameworkTreePayload } from '@/lib/framework-tree/types';
 import { Heading, Caption } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
+import { MetaStrip } from '@/components/ui/meta-strip';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 
 type Tab = 'requirements' | 'packs' | 'coverage' | 'builder';
@@ -132,10 +133,28 @@ export default function FrameworkDetailPage() {
 
             title={<span id="framework-detail-heading">{framework.name}</span>}
             meta={
-                <>
-                    {framework.version && <StatusBadge variant="info">v{framework.version}</StatusBadge>}
-                    {framework.kind && <span className="text-xs text-content-subtle">{framework.kind.replace('_', ' ')}</span>}
-                </>
+                <MetaStrip
+                    items={[
+                        ...(framework.version
+                            ? [
+                                  {
+                                      kind: 'status' as const,
+                                      label: 'Version',
+                                      value: `v${framework.version}`,
+                                      variant: 'info' as const,
+                                  },
+                              ]
+                            : []),
+                        ...(framework.kind
+                            ? [
+                                  {
+                                      label: 'Kind',
+                                      value: framework.kind.replace('_', ' '),
+                                  } as const,
+                              ]
+                            : []),
+                    ]}
+                />
             }
             actions={
                 <>

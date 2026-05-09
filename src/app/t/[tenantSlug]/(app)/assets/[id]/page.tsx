@@ -21,6 +21,7 @@ import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading, Eyebrow } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
+import { MetaStrip } from '@/components/ui/meta-strip';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 
 const TraceabilityPanel = dynamic(() => import('@/components/TraceabilityPanel'), {
@@ -137,11 +138,33 @@ export default function AssetDetailPage() {
 
             title={<span id="asset-title-heading">{asset.name}</span>}
             meta={
-                <>
-                    <StatusBadge variant="info">{asset.type?.replace(/_/g, ' ')}</StatusBadge>
-                    {asset.criticality && <StatusBadge variant={critColor(asset.criticality)}>{asset.criticality}</StatusBadge>}
-                    <StatusBadge variant={asset.status === 'RETIRED' ? 'neutral' : 'success'}>{asset.status || 'ACTIVE'}</StatusBadge>
-                </>
+                <MetaStrip
+                    items={[
+                        {
+                            label: 'Type',
+                            value: asset.type?.replace(/_/g, ' '),
+                        },
+                        ...(asset.criticality
+                            ? [
+                                  {
+                                      kind: 'status' as const,
+                                      label: 'Criticality',
+                                      value: asset.criticality,
+                                      variant: critColor(asset.criticality),
+                                  },
+                              ]
+                            : []),
+                        {
+                            kind: 'status' as const,
+                            label: 'Status',
+                            value: asset.status || 'ACTIVE',
+                            variant:
+                                asset.status === 'RETIRED'
+                                    ? 'neutral'
+                                    : 'success',
+                        },
+                    ]}
+                />
             }
             actions={
                 permissions.canWrite && !editing && (

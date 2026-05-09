@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
+import { MetaStrip } from '@/components/ui/meta-strip';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 
 const FW_META: Record<string, { icon: AppIconName; label: string }> = {
@@ -103,7 +104,13 @@ export default function CycleDetailPage() {
                 </span>
             }
             meta={
-                <span className="text-sm text-content-muted">{fw.label} · v{cycle.frameworkVersion} · {cycle.status}</span>
+                <MetaStrip
+                    items={[
+                        { label: 'Framework', value: fw.label },
+                        { label: 'Version', value: `v${cycle.frameworkVersion}` },
+                        { label: 'Status', value: cycle.status },
+                    ]}
+                />
             }
         >
             {/* Default Pack Preview */}

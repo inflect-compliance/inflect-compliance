@@ -17,19 +17,24 @@ import { normaliseHref } from '@/lib/security/safe-url';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 import { Heading } from '@/components/ui/typography';
+import { MetaStrip } from '@/components/ui/meta-strip';
+import {
+    VENDOR_STATUS_VARIANT,
+    VENDOR_CRITICALITY_VARIANT,
+    VENDOR_ASSESSMENT_VARIANT,
+} from '@/app-layer/domain/entity-status-mapping';
 
-const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
-    ACTIVE: 'success', ONBOARDING: 'info', OFFBOARDING: 'warning', OFFBOARDED: 'neutral',
-};
-const CRIT_BADGE: Record<string, StatusBadgeVariant> = { LOW: 'neutral', MEDIUM: 'warning', HIGH: 'error', CRITICAL: 'error' };
+// Polish PR-1 — STATUS_BADGE / CRIT_BADGE moved to shared domain
+// mapping. Local aliases preserved so the dozens of inline-table
+// consumers below stay short and readable.
+const STATUS_BADGE = VENDOR_STATUS_VARIANT;
+const CRIT_BADGE = VENDOR_CRITICALITY_VARIANT;
 const DOC_TYPE_LABELS: Record<string, string> = {
     CONTRACT: 'Contract', SOC2: 'SOC 2', ISO_CERT: 'ISO 27001', DPA: 'DPA',
     SECURITY_POLICY: 'Security Policy', PEN_TEST: 'Pen Test Report', OTHER: 'Other',
 };
 const DOC_TYPES = Object.keys(DOC_TYPE_LABELS);
-const ASSESSMENT_STATUS_BADGE: Record<string, StatusBadgeVariant> = {
-    DRAFT: 'neutral', IN_REVIEW: 'warning', APPROVED: 'success', REJECTED: 'error',
-};
+const ASSESSMENT_STATUS_BADGE = VENDOR_ASSESSMENT_VARIANT;
 const VENDOR_STATUS_OPTIONS: ComboboxOption[] = ['ACTIVE', 'ONBOARDING', 'OFFBOARDING', 'OFFBOARDED'].map(s => ({ value: s, label: s }));
 const VENDOR_CRIT_OPTIONS: ComboboxOption[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map(c => ({ value: c, label: c }));
 const DOC_TYPE_CB_OPTIONS: ComboboxOption[] = DOC_TYPES.map(t => ({ value: t, label: DOC_TYPE_LABELS[t] || t }));
@@ -242,10 +247,35 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
 
             title={<span id="vendor-detail-name">{vendor.name}</span>}
             meta={
-                <>
-                    <StatusBadge variant={STATUS_BADGE[vendor.status]}>{vendor.status}</StatusBadge>
-                    <StatusBadge variant={CRIT_BADGE[vendor.criticality]}>{vendor.criticality}</StatusBadge>
-                </>
+                <MetaStrip
+                    items={[
+                        {
+                            kind: 'status',
+                            label: 'Status',
+                            value: vendor.status,
+                            variant:
+                                VENDOR_STATUS_VARIANT[vendor.status] ??
+                                'neutral',
+                        },
+                        {
+                            kind: 'status',
+                            label: 'Criticality',
+                            value: vendor.criticality,
+                            variant:
+                                VENDOR_CRITICALITY_VARIANT[
+                                    vendor.criticality
+                                ] ?? 'neutral',
+                        },
+                        ...(vendor.contractEnd
+                            ? [
+                                  {
+                                      label: 'Contract End',
+                                      value: formatDate(vendor.contractEnd),
+                                  } as const,
+                              ]
+                            : []),
+                    ]}
+                />
             }
             actions={
                 <>

@@ -25,6 +25,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { MetaStrip } from '@/components/ui/meta-strip';
 import { Button } from '@/components/ui/button';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { Modal } from '@/components/ui/modal';
@@ -141,9 +142,17 @@ export function AccessReviewDetailClient({
             ]}
             title={<span data-testid="access-review-detail-title">{review.name}</span>}
             meta={
-                <StatusBadge variant={STATUS_VARIANT[review.status]}>
-                    {review.status}
-                </StatusBadge>
+                <MetaStrip
+                    items={[
+                        {
+                            kind: 'status',
+                            label: 'Status',
+                            value: review.status,
+                            variant:
+                                STATUS_VARIANT[review.status] ?? 'neutral',
+                        },
+                    ]}
+                />
             }
             actions={
                 <div className="flex flex-col items-end gap-tight">

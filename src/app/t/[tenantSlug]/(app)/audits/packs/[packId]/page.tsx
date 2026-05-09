@@ -16,6 +16,7 @@ import { scopedMilestone } from '@/lib/celebrations';
 import { Package } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
+import { MetaStrip } from '@/components/ui/meta-strip';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 
 const ENTITY_ICON: Record<string, AppIconName> = {
@@ -135,17 +136,36 @@ export default function PackDetailPage() {
 
             title={<span id="pack-name">{pack.name}</span>}
             meta={
-                <>
-                    <span className="text-sm text-content-muted">
-                        {pack.cycle?.frameworkKey} · {pack._count?.items || 0} items
-                    </span>
-                    <StatusBadge variant={isDraft ? 'neutral' : 'info'} id="pack-status">{pack.status}</StatusBadge>
-                    {pack.frozenAt && (
-                        <span className="text-xs text-content-subtle">
-                            Frozen {formatDateTime(pack.frozenAt)} by {pack.frozenBy?.name || pack.frozenBy?.email || 'Admin'}
-                        </span>
-                    )}
-                </>
+                <MetaStrip
+                    items={[
+                        ...(pack.cycle?.frameworkKey
+                            ? [
+                                  {
+                                      label: 'Framework',
+                                      value: pack.cycle.frameworkKey,
+                                  } as const,
+                              ]
+                            : []),
+                        {
+                            label: 'Items',
+                            value: pack._count?.items || 0,
+                        },
+                        {
+                            kind: 'status',
+                            label: 'Status',
+                            value: pack.status,
+                            variant: isDraft ? 'neutral' : 'info',
+                        },
+                        ...(pack.frozenAt
+                            ? [
+                                  {
+                                      label: 'Frozen',
+                                      value: `${formatDateTime(pack.frozenAt)} · ${pack.frozenBy?.name || pack.frozenBy?.email || 'Admin'}`,
+                                  } as const,
+                              ]
+                            : []),
+                    ]}
+                />
             }
             actions={
                 <>

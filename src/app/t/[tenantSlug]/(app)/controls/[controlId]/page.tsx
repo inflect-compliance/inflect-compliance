@@ -13,6 +13,8 @@ import Link from 'next/link';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { EditControlModal } from './_modals/EditControlModal';
+import { MetaStrip } from '@/components/ui/meta-strip';
+import { CONTROL_STATUS_VARIANT } from '@/app-layer/domain/entity-status-mapping';
 // Inline pencil icon to avoid lucide-react barrel import issue with Next.js 14
 const PencilIcon = ({ size = 14 }: { size?: number }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
@@ -71,10 +73,9 @@ import type {
 } from '@/lib/dto';
 import type { FrameworkDTO, RequirementDTO } from '@/lib/dto';
 
-const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
-    NOT_STARTED: 'neutral', IN_PROGRESS: 'info', IMPLEMENTED: 'success',
-    NEEDS_REVIEW: 'warning',
-};
+// Polish PR-1 — STATUS_BADGE moved to shared domain mapping as
+// CONTROL_STATUS_VARIANT in @/app-layer/domain/entity-status-mapping.
+// Labels stay local because they're presentation copy.
 const STATUS_LABELS: Record<string, string> = {
     NOT_STARTED: 'Not Started', IN_PROGRESS: 'In Progress', IMPLEMENTED: 'Implemented',
     NEEDS_REVIEW: 'Needs Review',
@@ -739,40 +740,68 @@ export default function ControlDetailPage() {
         { key: 'tests', label: 'Tests' },
     ];
 
-    // ── Header meta (badges) ──
+    // ── Header meta strip (Polish PR-1) ──
     //
-    // Domain-specific metadata row. The shell renders this as its
-    // `meta` slot so layout/spacing/wrapping is consistent across
-    // detail pages while the badges themselves stay specific to
-    // controls (status, applicability, sync state).
+    // Replaced a 6-badge fragment with the shared <MetaStrip>
+    // primitive. Sync-state indicators (CONFLICT / FAILED / SYNCED)
+    // moved OUT of meta into a per-page InlineNotice — they're
+    // alerts, not metadata. The exception badge stays as a
+    // status-shaped meta entry; the per-control code stays as a
+    // copyable text entry.
     const headerMeta = (
+        <MetaStrip
+            items={[
+                ...(control.code
+                    ? [
+                          {
+                              label: 'Code',
+                              value: (
+                                  <CopyText
+                                      value={control.code}
+                                      label={`Copy control code ${control.code}`}
+                                      successMessage="Control code copied"
+                                      className="text-xs text-content-subtle"
+                                  >
+                                      {control.code}
+                                  </CopyText>
+                              ),
+                          } as const,
+                      ]
+                    : []),
+                {
+                    kind: 'status' as const,
+                    label: 'Status',
+                    value: STATUS_LABELS[control.status] ?? control.status,
+                    variant:
+                        CONTROL_STATUS_VARIANT[control.status] ?? 'neutral',
+                },
+                {
+                    kind: 'status' as const,
+                    label: 'Applicability',
+                    value:
+                        control.applicability === 'NOT_APPLICABLE'
+                            ? 'Not Applicable'
+                            : 'Applicable',
+                    variant:
+                        control.applicability === 'NOT_APPLICABLE'
+                            ? 'warning'
+                            : 'success',
+                },
+            ]}
+        />
+    );
+
+    // Sync state migrated out of the meta strip — shown as a banner
+    // below the page header so the meta strip stays at 3 stable
+    // items.
+    const syncBanner = (
         <>
-            {control.code && (
-                <CopyText
-                    value={control.code}
-                    label={`Copy control code ${control.code}`}
-                    successMessage="Control code copied"
-                    className="text-xs text-content-subtle"
-                >
-                    {control.code}
-                </CopyText>
-            )}
-            <StatusBadge variant={STATUS_BADGE[control.status] || 'neutral'} id="control-status">
-                {STATUS_LABELS[control.status] || control.status}
-            </StatusBadge>
-            <StatusBadge variant={control.applicability === 'NOT_APPLICABLE' ? 'warning' : 'success'} id="control-applicability">
-                {control.applicability === 'NOT_APPLICABLE' ? 'Not Applicable' : 'Applicable'}
-            </StatusBadge>
-            <ControlExceptionHeaderBadge
-                tenantSlug={tenantSlug}
-                controlId={control.id}
-            />
             {syncStatus === 'CONFLICT' && (
                 <Tooltip
                     title="Sync conflict"
                     content={syncError ?? 'Local and remote state diverged — resolve before editing.'}
                 >
-                    <StatusBadge variant="error" className="flex items-center gap-1 animate-pulse cursor-help" id="sync-conflict-badge">
+                    <StatusBadge variant="error" className="flex items-center gap-1 cursor-help" id="sync-conflict-badge">
                         <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
                         Sync Conflict
                     </StatusBadge>
@@ -797,6 +826,10 @@ export default function ControlDetailPage() {
                     </StatusBadge>
                 </Tooltip>
             )}
+            <ControlExceptionHeaderBadge
+                tenantSlug={tenantSlug}
+                controlId={control.id}
+            />
         </>
     );
 
@@ -840,6 +873,13 @@ export default function ControlDetailPage() {
             activeTab={tab}
             onTabChange={(next) => setTab(next as Tab)}
         >
+            {/* Sync state + exception badges (moved out of meta strip
+                in Polish PR-1). Renders inline above tab content. */}
+            {(syncStatus !== 'NONE' || true) && (
+                <div className="flex flex-wrap gap-tight" data-testid="control-sync-banner">
+                    {syncBanner}
+                </div>
+            )}
             {/* Applicability modal */}
             {showApplicability && permissions.canWrite && (
                 <div className="glass-card p-4 space-y-compact">

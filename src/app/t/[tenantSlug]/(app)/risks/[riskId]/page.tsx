@@ -15,6 +15,11 @@ import dynamic from 'next/dynamic';
 import LinkedTasksPanel from '@/components/LinkedTasksPanel';
 import { Heading, Eyebrow } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
+import { MetaStrip } from '@/components/ui/meta-strip';
+import {
+    RISK_STATUS_VARIANT,
+    getRiskScoreBand,
+} from '@/app-layer/domain/entity-status-mapping';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 // Epic G-7 — treatment plan card. Dynamic-imported so the modal +
 // react-query machinery only loads on risks the user actually opens.
@@ -83,23 +88,17 @@ const TREATMENT_OPTIONS: ComboboxOption[] = [
     { value: 'AVOID', label: 'Avoid' },
 ];
 
-const STATUS_VARIANT: Record<string, 'warning' | 'success' | 'info' | 'neutral'> = {
-    OPEN: 'warning',
-    MITIGATING: 'info',
-    ACCEPTED: 'neutral',
-    CLOSED: 'success',
-};
+// Polish PR-1 — STATUS_VARIANT moved to shared domain mapping.
+// Imported from @/app-layer/domain/entity-status-mapping as
+// `RISK_STATUS_VARIANT` so risks list / dashboard / detail all read
+// the same vocabulary.
 
 function isOverdue(nextReviewAt: string | null): boolean {
     if (!nextReviewAt) return false;
     return new Date(nextReviewAt) < new Date();
 }
 
-function getRiskBadge(score: number): { label: string; variant: 'success' | 'warning' | 'error' } {
-    if (score <= 5) return { label: 'Low', variant: 'success' };
-    if (score <= 12) return { label: 'Medium', variant: 'warning' };
-    return { label: 'High', variant: 'error' };
-}
+// getRiskBadge → getRiskScoreBand from shared domain mapping.
 
 export default function RiskDetailPage() {
     const { riskId } = useParams<{ riskId: string }>();
@@ -241,7 +240,7 @@ export default function RiskDetailPage() {
         );
     }
 
-    const badge = getRiskBadge(risk.inherentScore);
+    const band = getRiskScoreBand(risk.inherentScore);
     const overdue = isOverdue(risk.nextReviewAt);
 
     return (
@@ -251,15 +250,41 @@ export default function RiskDetailPage() {
 
             title={<span id="risk-title-heading">{risk.title}</span>}
             meta={
-                <>
-                    <StatusBadge variant={STATUS_VARIANT[risk.status] || 'neutral'} icon={null}>
-                        {risk.status}
-                    </StatusBadge>
-                    <StatusBadge variant={badge.variant} icon={null}>
-                        {risk.inherentScore} · {badge.label}
-                    </StatusBadge>
-                    {overdue && <StatusBadge variant="error" icon={null}>Overdue Review</StatusBadge>}
-                </>
+                <MetaStrip
+                    items={[
+                        {
+                            kind: 'status',
+                            label: 'Status',
+                            value: risk.status,
+                            variant: RISK_STATUS_VARIANT[risk.status] ?? 'neutral',
+                        },
+                        {
+                            kind: 'status',
+                            label: 'Inherent Score',
+                            value: `${risk.inherentScore} · ${band.label}`,
+                            variant: band.variant,
+                        },
+                        ...(risk.treatmentOwner
+                            ? [
+                                  {
+                                      label: 'Owner',
+                                      value: risk.treatmentOwner,
+                                  } as const,
+                              ]
+                            : []),
+                        ...(risk.nextReviewAt
+                            ? [
+                                  {
+                                      label: 'Next Review',
+                                      value: formatDate(risk.nextReviewAt),
+                                      tone: overdue
+                                          ? ('critical' as const)
+                                          : undefined,
+                                  } as const,
+                              ]
+                            : []),
+                    ]}
+                />
             }
             actions={
                 canWrite && !editing && (

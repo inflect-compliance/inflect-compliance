@@ -27,6 +27,8 @@ import { ApprovalBanner } from '@/components/ui/ApprovalBanner';
 import { VersionDiff } from '@/components/ui/VersionDiff';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
+import { MetaStrip } from '@/components/ui/meta-strip';
+import { POLICY_STATUS_VARIANT } from '@/app-layer/domain/entity-status-mapping';
 import { Card } from '@/components/ui/card';
 import { InlineNotice } from '@/components/ui/inline-notice';
 
@@ -46,9 +48,8 @@ const RichTextEditor = dynamic(
     },
 );
 
-const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
-    DRAFT: 'neutral', PUBLISHED: 'success', ARCHIVED: 'warning',
-};
+// Polish PR-1 — STATUS_BADGE moved to shared domain mapping as
+// POLICY_STATUS_VARIANT in @/app-layer/domain/entity-status-mapping.
 const APPROVAL_BADGE: Record<string, StatusBadgeVariant> = {
     PENDING: 'info', APPROVED: 'success', REJECTED: 'error',
 };
@@ -390,10 +391,39 @@ export default function PolicyDetailPage() {
             onTabChange={setTab}
             title={<span className="truncate" id="policy-title">{policy.title}</span>}
             meta={
-                <>
-                    <StatusBadge variant={STATUS_BADGE[policy.status] || 'neutral'} id="policy-status">{policy.status}</StatusBadge>
-                    {isOverdue && <StatusBadge variant="error">Overdue</StatusBadge>}
-                </>
+                <MetaStrip
+                    items={[
+                        {
+                            kind: 'status',
+                            label: 'Status',
+                            value: policy.status,
+                            variant:
+                                POLICY_STATUS_VARIANT[policy.status] ??
+                                'neutral',
+                        },
+                        ...(policy.owner
+                            ? [
+                                  {
+                                      label: 'Owner',
+                                      value: policy.owner.name,
+                                  } as const,
+                              ]
+                            : []),
+                        ...(policy.nextReviewAt
+                            ? [
+                                  {
+                                      label: 'Next Review',
+                                      value: formatDate(
+                                          policy.nextReviewAt,
+                                      ),
+                                      tone: isOverdue
+                                          ? ('critical' as const)
+                                          : undefined,
+                                  } as const,
+                              ]
+                            : []),
+                    ]}
+                />
             }
             actions={
                 <>

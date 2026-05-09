@@ -135,9 +135,16 @@ describe('Risk detail page token migration', () => {
         expect(src).toContain('<Button variant="secondary"');
     });
 
-    it('uses StatusBadge for risk status and severity', () => {
-        expect(src).toContain('<StatusBadge');
-        expect(src).toContain('STATUS_VARIANT');
+    it('uses StatusBadge for risk status and severity (via MetaStrip)', () => {
+        // Elevation PR-1 — risk detail page migrated from inline
+        // <StatusBadge> jumble in the meta slot to <MetaStrip
+        // items=[...status-shaped...]>. The MetaStrip primitive
+        // renders <StatusBadge> internally for `kind: 'status'`
+        // items. Status semantics moved to the shared domain
+        // mapping `RISK_STATUS_VARIANT` in
+        // `@/app-layer/domain/entity-status-mapping`.
+        expect(src).toMatch(/<MetaStrip|<StatusBadge/);
+        expect(src).toMatch(/RISK_STATUS_VARIANT|STATUS_VARIANT/);
     });
 
     it('uses semantic tokens for text content', () => {

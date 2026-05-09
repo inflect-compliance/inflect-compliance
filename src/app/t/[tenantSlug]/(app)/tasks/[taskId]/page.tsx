@@ -21,18 +21,18 @@ import { CopyText } from '@/components/ui/copy-text';
 import { TERMINAL_WORK_ITEM_STATUSES } from '@/app-layer/domain/work-item-status';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
+import { MetaStrip } from '@/components/ui/meta-strip';
+import {
+    TASK_STATUS_VARIANT,
+    TASK_SEVERITY_VARIANT,
+} from '@/app-layer/domain/entity-status-mapping';
 
-const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
-    OPEN: 'neutral', TRIAGED: 'info', IN_PROGRESS: 'info',
-    BLOCKED: 'error', RESOLVED: 'success', CLOSED: 'neutral', CANCELED: 'neutral',
-};
+// Polish PR-1 — STATUS_BADGE / SEVERITY_BADGE moved to shared
+// domain mapping (TASK_STATUS_VARIANT / TASK_SEVERITY_VARIANT).
+// Labels stay local because they're presentation copy.
 const STATUS_LABELS: Record<string, string> = {
     OPEN: 'Open', TRIAGED: 'Triaged', IN_PROGRESS: 'In Progress',
     BLOCKED: 'Blocked', RESOLVED: 'Resolved', CLOSED: 'Closed', CANCELED: 'Canceled',
-};
-const SEVERITY_BADGE: Record<string, StatusBadgeVariant> = {
-    INFO: 'neutral', LOW: 'neutral', MEDIUM: 'warning',
-    HIGH: 'error', CRITICAL: 'error',
 };
 const PRIORITY_LABELS: Record<string, string> = {
     P0: 'P0 — Critical', P1: 'P1 — High', P2: 'P2 — Medium', P3: 'P3 — Low',
@@ -301,32 +301,58 @@ export default function TaskDetailPage() {
 
             title={<span id="task-title">{task.title}</span>}
             meta={
-                <>
-                    {task.key && (
-                        <CopyText
-                            value={task.key}
-                            label={`Copy task key ${task.key}`}
-                            successMessage="Task key copied"
-                            className="text-xs text-content-subtle"
-                        >
-                            {task.key}
-                        </CopyText>
-                    )}
-                    <StatusBadge variant={STATUS_BADGE[task.status] || 'neutral'} id="task-status">
-                        {STATUS_LABELS[task.status] || task.status}
-                    </StatusBadge>
-                    <StatusBadge variant={SEVERITY_BADGE[task.severity] || 'neutral'} id="task-severity">
-                        {task.severity}
-                    </StatusBadge>
-                    <StatusBadge variant="info">{TYPE_LABELS[task.type] || task.type}</StatusBadge>
-                    {isOverdue && <StatusBadge variant="error">Overdue</StatusBadge>}
-                    {sla.breach && <StatusBadge variant="error" id="sla-badge">{sla.label}</StatusBadge>}
-                    {relevance.satisfied ? (
-                        <StatusBadge variant="success" id="relevance-badge">Relevance satisfied</StatusBadge>
-                    ) : (
-                        <StatusBadge variant="warning" id="relevance-badge">{relevance.message}</StatusBadge>
-                    )}
-                </>
+                <MetaStrip
+                    items={[
+                        ...(task.key
+                            ? [
+                                  {
+                                      label: 'Key',
+                                      value: (
+                                          <CopyText
+                                              value={task.key}
+                                              label={`Copy task key ${task.key}`}
+                                              successMessage="Task key copied"
+                                              className="text-xs text-content-subtle"
+                                          >
+                                              {task.key}
+                                          </CopyText>
+                                      ),
+                                  } as const,
+                              ]
+                            : []),
+                        {
+                            kind: 'status' as const,
+                            label: 'Status',
+                            value:
+                                STATUS_LABELS[task.status] ?? task.status,
+                            variant:
+                                TASK_STATUS_VARIANT[task.status] ??
+                                'neutral',
+                        },
+                        {
+                            kind: 'status' as const,
+                            label: 'Severity',
+                            value: task.severity,
+                            variant:
+                                TASK_SEVERITY_VARIANT[task.severity] ??
+                                'neutral',
+                        },
+                        {
+                            label: 'Type',
+                            value: TYPE_LABELS[task.type] ?? task.type,
+                        },
+                        ...(isOverdue
+                            ? [
+                                  {
+                                      kind: 'status' as const,
+                                      label: 'SLA',
+                                      value: 'Overdue',
+                                      variant: 'error' as const,
+                                  },
+                              ]
+                            : []),
+                    ]}
+                />
             }
             actions={
                 permissions.canWrite && (
