@@ -35,6 +35,10 @@ const SCAN_FILES: string[] = [
     'src/app/error.tsx',
     'src/app/no-tenant/page.tsx',
     'src/app/not-found.tsx',
+    // Elevation PR-6 — OnboardingWizard is the second surface a new
+    // user sees. Migrated from per-step gradients + slate tones to
+    // semantic tokens; ratchet covers it now to prevent drift back.
+    'src/components/onboarding/OnboardingWizard.tsx',
 ];
 
 const SLATE_RE = /\b(bg|text|border|ring|shadow)-slate-/;

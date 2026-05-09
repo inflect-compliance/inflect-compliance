@@ -32,15 +32,18 @@ import { Card } from '@/components/ui/card';
 import { InlineNotice } from '@/components/ui/inline-notice';
 
 // ─── Step Definitions ───
-
+//
+// Elevation PR-6 — per-step gradient strings retired. Step icons
+// render in the canonical state colours (muted at rest, brand when
+// active, success when completed).
 const STEPS = [
-    { key: 'COMPANY_PROFILE', label: 'Company Profile', icon: Building2, color: 'from-blue-500 to-cyan-500' },
-    { key: 'FRAMEWORK_SELECTION', label: 'Frameworks', icon: Map, color: 'from-indigo-500 to-purple-500' },
-    { key: 'ASSET_SETUP', label: 'Assets', icon: Server, color: 'from-emerald-500 to-teal-500' },
-    { key: 'CONTROL_BASELINE_INSTALL', label: 'Controls', icon: ShieldCheck, color: 'from-cyan-500 to-blue-500' },
-    { key: 'INITIAL_RISK_REGISTER', label: 'Risks', icon: AlertTriangle, color: 'from-amber-500 to-orange-500' },
-    { key: 'TEAM_SETUP', label: 'Team', icon: Users, color: 'from-pink-500 to-rose-500' },
-    { key: 'REVIEW_AND_FINISH', label: 'Review & Finish', icon: CheckCircle2, color: 'from-emerald-500 to-green-500' },
+    { key: 'COMPANY_PROFILE', label: 'Company Profile', icon: Building2 },
+    { key: 'FRAMEWORK_SELECTION', label: 'Frameworks', icon: Map },
+    { key: 'ASSET_SETUP', label: 'Assets', icon: Server },
+    { key: 'CONTROL_BASELINE_INSTALL', label: 'Controls', icon: ShieldCheck },
+    { key: 'INITIAL_RISK_REGISTER', label: 'Risks', icon: AlertTriangle },
+    { key: 'TEAM_SETUP', label: 'Team', icon: Users },
+    { key: 'REVIEW_AND_FINISH', label: 'Review & Finish', icon: CheckCircle2 },
 ] as const;
 
 type StepKey = (typeof STEPS)[number]['key'];
@@ -205,9 +208,9 @@ export default function OnboardingWizard() {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
                 <Card className="text-center max-w-md">
-                    <ShieldCheck className="w-12 h-12 text-slate-500 mx-auto mb-4" />
-                    <Heading level={2} className="text-slate-200 mb-2">Access Restricted</Heading>
-                    <p className="text-sm text-slate-400">Only tenant administrators can access the onboarding wizard.</p>
+                    <ShieldCheck className="w-12 h-12 text-content-subtle mx-auto mb-4" />
+                    <Heading level={2} className="text-content-emphasis mb-2">Access Restricted</Heading>
+                    <p className="text-sm text-content-muted">Only tenant administrators can access the onboarding wizard.</p>
                 </Card>
             </div>
         );
@@ -217,10 +220,10 @@ export default function OnboardingWizard() {
     if (loading) {
         return (
             <div className="space-y-section animate-fadeIn">
-                <div className="h-8 w-48 bg-slate-800 rounded animate-pulse" />
+                <div className="h-8 w-48 bg-bg-default rounded animate-pulse" />
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-section">
-                    <div className="h-96 bg-slate-800/50 rounded-xl animate-pulse" />
-                    <div className="lg:col-span-3 h-96 bg-slate-800/50 rounded-xl animate-pulse" />
+                    <div className="h-96 bg-bg-default/50 rounded-xl animate-pulse" />
+                    <div className="lg:col-span-3 h-96 bg-bg-default/50 rounded-xl animate-pulse" />
                 </div>
             </div>
         );
@@ -231,11 +234,11 @@ export default function OnboardingWizard() {
         return (
             <div className="flex items-center justify-center min-h-[60vh] animate-fadeIn">
                 <div className="glass-card p-10 text-center max-w-lg">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center">
-                        <CheckCircle2 className="w-8 h-8 text-white" />
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-bg-success-emphasis flex items-center justify-center">
+                        <CheckCircle2 className="w-8 h-8 text-content-inverted" />
                     </div>
-                    <h2 className="text-xl font-bold text-white mb-2">Onboarding Complete!</h2>
-                    <p className="text-slate-400 text-sm">Your workspace is ready. Redirecting to dashboard...</p>
+                    <h2 className="text-xl font-bold text-content-inverted mb-2">Onboarding Complete!</h2>
+                    <p className="text-content-muted text-sm">Your workspace is ready. Redirecting to dashboard...</p>
                     <div className="mt-4">
                         <Loader2 className="w-5 h-5 mx-auto text-brand-400 animate-spin" />
                     </div>
@@ -249,11 +252,11 @@ export default function OnboardingWizard() {
         return (
             <div className="flex items-center justify-center min-h-[60vh] animate-fadeIn">
                 <div className="glass-card p-10 text-center max-w-lg">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center">
-                        <Sparkles className="w-8 h-8 text-white" />
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[var(--brand-default)] flex items-center justify-center">
+                        <Sparkles className="w-8 h-8 text-content-inverted" />
                     </div>
-                    <h2 className="text-xl font-bold text-white mb-2">Welcome! Let&apos;s set up your workspace.</h2>
-                    <p className="text-slate-400 text-sm mb-6">This wizard will guide you through configuring your compliance platform in just a few steps.</p>
+                    <h2 className="text-xl font-bold text-content-inverted mb-2">Welcome! Let&apos;s set up your workspace.</h2>
+                    <p className="text-content-muted text-sm mb-6">This wizard will guide you through configuring your compliance platform in just a few steps.</p>
                     <Button variant="primary" size="lg" onClick={handleStart} disabled={saving}>
                         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                         Start Setup
@@ -268,11 +271,11 @@ export default function OnboardingWizard() {
         return (
             <div className="flex items-center justify-center min-h-[60vh] animate-fadeIn">
                 <div className="glass-card p-10 text-center max-w-lg">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center">
-                        <CheckCircle2 className="w-8 h-8 text-white" />
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-bg-success-emphasis flex items-center justify-center">
+                        <CheckCircle2 className="w-8 h-8 text-content-inverted" />
                     </div>
-                    <h2 className="text-xl font-bold text-white mb-2">Onboarding Complete</h2>
-                    <p className="text-slate-400 text-sm mb-6">Your workspace has been configured. You can always update settings from the admin panel.</p>
+                    <h2 className="text-xl font-bold text-content-inverted mb-2">Onboarding Complete</h2>
+                    <p className="text-content-muted text-sm mb-6">Your workspace has been configured. You can always update settings from the admin panel.</p>
                     <Button variant="primary" size="lg" onClick={() => router.push(tenantHref('/dashboard'))}>
                         Go to Dashboard
                     </Button>
@@ -291,7 +294,7 @@ export default function OnboardingWizard() {
             <div className="flex flex-wrap items-center justify-between gap-compact">
                 <div>
                     <Heading level={1}>Setup Wizard</Heading>
-                    <p className="text-slate-400 text-sm mt-1">Complete these steps to configure your compliance workspace.</p>
+                    <p className="text-content-muted text-sm mt-1">Complete these steps to configure your compliance workspace.</p>
                 </div>
                 <Button variant="ghost" size="sm" onClick={handleSaveAndExit}>
                     <Save className="w-3.5 h-3.5" /> Save & Exit
@@ -302,21 +305,21 @@ export default function OnboardingWizard() {
                 <div className="glass-card border-border-error p-3 text-sm text-content-error flex items-center gap-tight">
                     <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                     {error}
-                    <button onClick={() => setError(null)} className="ml-auto text-content-error hover:text-white text-xs">&times;</button>
+                    <button onClick={() => setError(null)} className="ml-auto text-content-error hover:text-content-inverted text-xs">&times;</button>
                 </div>
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-section">
                 {/* ─── Progress Sidebar ─── */}
                 <div className="glass-card p-0 overflow-hidden">
-                    <div className="p-4 border-b border-slate-700/50">
-                        <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">Progress</p>
+                    <div className="p-4 border-b border-border-subtle">
+                        <p className="text-xs text-content-muted font-medium uppercase tracking-wider">Progress</p>
                         <div className="flex items-center gap-tight mt-2">
-                            <div className="flex-1 bg-slate-800 rounded-full h-2 overflow-hidden">
-                                <div className="h-full bg-gradient-to-r from-brand-500 to-emerald-500 rounded-full transition-all duration-500"
+                            <div className="flex-1 bg-bg-default rounded-full h-2 overflow-hidden">
+                                <div className="h-full bg-[var(--brand-default)] rounded-full transition-all duration-500"
                                     style={{ width: `${(state.completedSteps.length / STEPS.length) * 100}%` }} />
                             </div>
-                            <span className="text-xs text-slate-400 font-medium">{state.completedSteps.length}/{STEPS.length}</span>
+                            <span className="text-xs text-content-muted font-medium">{state.completedSteps.length}/{STEPS.length}</span>
                         </div>
                     </div>
                     <nav className="p-2">
@@ -328,21 +331,21 @@ export default function OnboardingWizard() {
                                 <button key={step.key}
                                     onClick={() => setActiveStepIdx(i)}
                                     data-testid={`step-nav-${step.key}`}
-                                    className={`w-full flex items-center gap-compact px-3 py-2.5 rounded-lg text-sm transition-all duration-200 ${
-                                        active ? 'bg-brand-600/20 text-white font-medium' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/30'
+                                    className={`w-full flex items-center gap-compact px-3 py-2.5 rounded-lg text-sm transition-colors duration-150 ease-out ${
+                                        active ? 'bg-brand-subtle text-content-inverted font-medium' : 'text-content-muted hover:text-content-emphasis hover:bg-bg-muted/30'
                                     }`}
                                 >
                                     <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                        completed ? 'bg-bg-success' : active ? `bg-gradient-to-br ${step.color} opacity-80` : 'bg-slate-700/50'
+                                        completed ? 'bg-bg-success' : active ? `bg-[var(--brand-default)]` : 'bg-bg-muted/50'
                                     }`}>
                                         {completed ? (
                                             <CheckCircle2 className="w-4 h-4 text-content-success" />
                                         ) : (
-                                            <Icon className={`w-3.5 h-3.5 ${active ? 'text-white' : 'text-slate-500'}`} />
+                                            <Icon className={`w-3.5 h-3.5 ${active ? 'text-content-inverted' : 'text-content-subtle'}`} />
                                         )}
                                     </div>
                                     <span className="truncate">{step.label}</span>
-                                    {active && <ChevronRight className="w-3.5 h-3.5 ml-auto text-slate-500" />}
+                                    {active && <ChevronRight className="w-3.5 h-3.5 ml-auto text-content-subtle" />}
                                 </button>
                             );
                         })}
@@ -352,13 +355,13 @@ export default function OnboardingWizard() {
                 {/* ─── Step Content ─── */}
                 <div className="lg:col-span-3">
                     <div className="glass-card">
-                        <div className="p-5 border-b border-slate-700/50 flex items-center gap-compact">
-                            <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${currentStep.color} flex items-center justify-center`}>
-                                <currentStep.icon className="w-4.5 h-4.5 text-white" />
+                        <div className="p-5 border-b border-border-subtle flex items-center gap-compact">
+                            <div className={`w-9 h-9 rounded-full bg-[var(--brand-default)] flex items-center justify-center`}>
+                                <currentStep.icon className="w-4.5 h-4.5 text-content-inverted" />
                             </div>
                             <div>
-                                <Heading level={2} className="text-white">{currentStep.label}</Heading>
-                                <p className="text-xs text-slate-400">Step {activeStepIdx + 1} of {STEPS.length}</p>
+                                <Heading level={2} className="text-content-inverted">{currentStep.label}</Heading>
+                                <p className="text-xs text-content-muted">Step {activeStepIdx + 1} of {STEPS.length}</p>
                             </div>
                             {isComplete(currentStep.key) && (
                                 <StatusBadge variant="success" className="ml-auto">Completed</StatusBadge>
@@ -374,7 +377,7 @@ export default function OnboardingWizard() {
                             />
                         </div>
                         {/* Navigation footer */}
-                        <div className="p-4 border-t border-slate-700/50 flex items-center justify-between gap-compact">
+                        <div className="p-4 border-t border-border-subtle flex items-center justify-between gap-compact">
                             <Button
                                 variant="ghost"
                                 size="sm"
@@ -431,7 +434,7 @@ function StepContent({ step, data, onUpdate, completedSteps, allData }: {
         case 'INITIAL_RISK_REGISTER': return <RiskRegisterStep data={data} onUpdate={onUpdate} />;
         case 'TEAM_SETUP': return <TeamSetupStep data={data} onUpdate={onUpdate} />;
         case 'REVIEW_AND_FINISH': return <ReviewStep completedSteps={completedSteps} allData={allData} />;
-        default: return <p className="text-slate-400">Unknown step</p>;
+        default: return <p className="text-content-muted">Unknown step</p>;
     }
 }
 
@@ -440,7 +443,7 @@ function StepContent({ step, data, onUpdate, completedSteps, allData }: {
 function CompanyProfileStep({ data, onUpdate }: { data: StepData; onUpdate: (d: StepData) => void }) {
     return (
         <div className="space-y-default max-w-lg animate-fadeIn">
-            <p className="text-sm text-slate-400 mb-4">Tell us about your organization. This information helps tailor your compliance experience.</p>
+            <p className="text-sm text-content-muted mb-4">Tell us about your organization. This information helps tailor your compliance experience.</p>
             <div>
                 <label className="input-label">Company / Legal Name *</label>
                 <input className="input" placeholder="Acme Corporation" value={data.name || ''}
@@ -523,21 +526,21 @@ function FrameworkSelectionStep({ data, onUpdate }: { data: StepData; onUpdate: 
 
     return (
         <div className="space-y-default animate-fadeIn">
-            <p className="text-sm text-slate-400 mb-4">Select the compliance frameworks you want to implement. You can add more later.</p>
+            <p className="text-sm text-content-muted mb-4">Select the compliance frameworks you want to implement. You can add more later.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-default">
                 {frameworks.map(fw => {
                     const active = selected.includes(fw.key);
                     return (
                         <button key={fw.key} onClick={() => toggle(fw.key)} data-testid={`fw-${fw.key}`}
-                            className={`text-left p-4 rounded-xl border-2 transition-all duration-200 ${
-                                active ? 'border-brand-500 bg-brand-600/10' : 'border-slate-700/50 bg-slate-800/30 hover:border-slate-600/50'
+                            className={`text-left p-4 rounded-xl border-2 transition-colors duration-150 ease-out ${
+                                active ? 'border-[var(--brand-default)] bg-brand-subtle' : 'border-border-subtle bg-bg-default/30 hover:border-border-default'
                             }`}
                         >
                             <div className="flex items-center justify-between mb-2">
-                                <span className="font-semibold text-white text-sm">{fw.name}</span>
+                                <span className="font-semibold text-content-inverted text-sm">{fw.name}</span>
                                 {fw.badge && <StatusBadge variant="info" size="sm">{fw.badge}</StatusBadge>}
                             </div>
-                            <p className="text-xs text-slate-400 leading-relaxed">{fw.desc}</p>
+                            <p className="text-xs text-content-muted leading-relaxed">{fw.desc}</p>
                             {active && <div className="mt-2 flex items-center gap-1 text-brand-400 text-xs font-medium"><CheckCircle2 className="w-3.5 h-3.5" /> Selected</div>}
                         </button>
                     );
@@ -574,7 +577,7 @@ function AssetSetupStep({ data, onUpdate }: { data: StepData; onUpdate: (d: Step
 
     return (
         <div className="space-y-default max-w-lg animate-fadeIn">
-            <p className="text-sm text-slate-400 mb-4">Add your key information assets. These are the systems, databases, and services you need to protect.</p>
+            <p className="text-sm text-content-muted mb-4">Add your key information assets. These are the systems, databases, and services you need to protect.</p>
             <div className="flex gap-tight">
                 <input className="input flex-1" placeholder="e.g. Customer Database, Cloud Infrastructure..." value={newAsset}
                     onChange={(e) => setNewAsset(e.target.value)} onKeyDown={assetKeyDown} data-testid="asset-input" />
@@ -583,17 +586,17 @@ function AssetSetupStep({ data, onUpdate }: { data: StepData; onUpdate: (d: Step
             {assets.length > 0 && (
                 <div className="space-y-1">
                     {assets.map(a => (
-                        <div key={a} className="flex items-center justify-between bg-slate-800/50 rounded-lg px-3 py-2 text-sm">
+                        <div key={a} className="flex items-center justify-between bg-bg-default/50 rounded-lg px-3 py-2 text-sm">
                             <div className="flex items-center gap-tight">
-                                <Server className="w-3.5 h-3.5 text-slate-500" />
-                                <span className="text-slate-200">{a}</span>
+                                <Server className="w-3.5 h-3.5 text-content-subtle" />
+                                <span className="text-content-emphasis">{a}</span>
                             </div>
-                            <button onClick={() => removeAsset(a)} className="text-slate-500 hover:text-content-error text-xs">&times;</button>
+                            <button onClick={() => removeAsset(a)} className="text-content-subtle hover:text-content-error text-xs">&times;</button>
                         </div>
                     ))}
                 </div>
             )}
-            <p className="text-xs text-slate-500">You can import assets in bulk later from the Assets page.</p>
+            <p className="text-xs text-content-subtle">You can import assets in bulk later from the Assets page.</p>
         </div>
     );
 }
@@ -606,7 +609,7 @@ function ControlInstallStep({ data, onUpdate, allData }: { data: StepData; onUpd
 
     return (
         <div className="space-y-default max-w-lg animate-fadeIn">
-            <p className="text-sm text-slate-400 mb-4">We&apos;ll install baseline controls from your selected frameworks. This creates your initial control register.</p>
+            <p className="text-sm text-content-muted mb-4">We&apos;ll install baseline controls from your selected frameworks. This creates your initial control register.</p>
             {selectedFrameworks.length === 0 ? (
                 <InlineNotice variant="warning" icon={null}>
                     No frameworks selected. Go back to the Frameworks step to select at least one.
@@ -614,20 +617,20 @@ function ControlInstallStep({ data, onUpdate, allData }: { data: StepData; onUpd
             ) : (
                 <div className="space-y-compact">
                     {selectedFrameworks.map(fw => (
-                        <div key={fw} className="flex items-center gap-compact p-3 bg-slate-800/50 rounded-lg">
+                        <div key={fw} className="flex items-center gap-compact p-3 bg-bg-default/50 rounded-lg">
                             <ShieldCheck className="w-5 h-5 text-brand-400" />
                             <div>
-                                <span className="text-sm font-medium text-slate-200">{fwLabels[fw] || fw}</span>
-                                <p className="text-xs text-slate-500">Baseline controls will be installed</p>
+                                <span className="text-sm font-medium text-content-emphasis">{fwLabels[fw] || fw}</span>
+                                <p className="text-xs text-content-subtle">Baseline controls will be installed</p>
                             </div>
                             <CheckCircle2 className="w-4 h-4 text-content-success ml-auto" />
                         </div>
                     ))}
                 </div>
             )}
-            <label className="flex items-center gap-tight text-sm text-slate-300 cursor-pointer">
+            <label className="flex items-center gap-tight text-sm text-content-default cursor-pointer">
                 <input type="checkbox" checked={data.confirmed || false} onChange={(e) => onUpdate({ confirmed: e.target.checked })}
-                    className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-brand-500 focus:ring-brand-500" />
+                    className="w-4 h-4 rounded border-border-default bg-bg-default text-brand-500 focus:ring-brand-500" />
                 I confirm installing baseline controls
             </label>
         </div>
@@ -639,17 +642,17 @@ function ControlInstallStep({ data, onUpdate, allData }: { data: StepData; onUpd
 function RiskRegisterStep({ data, onUpdate }: { data: StepData; onUpdate: (d: StepData) => void }) {
     return (
         <div className="space-y-default max-w-lg animate-fadeIn">
-            <p className="text-sm text-slate-400 mb-4">Generate a starter risk register based on your assets and selected frameworks.</p>
+            <p className="text-sm text-content-muted mb-4">Generate a starter risk register based on your assets and selected frameworks.</p>
             <div className="p-4 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-border-warning">
                 <div className="flex items-center gap-compact mb-3">
                     <AlertTriangle className="w-5 h-5 text-content-warning" />
-                    <span className="font-medium text-white text-sm">Starter Risk Register</span>
+                    <span className="font-medium text-content-inverted text-sm">Starter Risk Register</span>
                 </div>
-                <p className="text-xs text-slate-400 leading-relaxed">We&apos;ll generate common information security risks based on industry best practices. You can customize, add, or remove risks later.</p>
+                <p className="text-xs text-content-muted leading-relaxed">We&apos;ll generate common information security risks based on industry best practices. You can customize, add, or remove risks later.</p>
             </div>
-            <label className="flex items-center gap-tight text-sm text-slate-300 cursor-pointer">
+            <label className="flex items-center gap-tight text-sm text-content-default cursor-pointer">
                 <input type="checkbox" checked={data.generate !== false} onChange={(e) => onUpdate({ generate: e.target.checked })}
-                    className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-brand-500 focus:ring-brand-500" />
+                    className="w-4 h-4 rounded border-border-default bg-bg-default text-brand-500 focus:ring-brand-500" />
                 Generate starter risks
             </label>
         </div>
@@ -679,7 +682,7 @@ function TeamSetupStep({ data, onUpdate }: { data: StepData; onUpdate: (d: StepD
 
     return (
         <div className="space-y-default max-w-lg animate-fadeIn">
-            <p className="text-sm text-slate-400 mb-4">Invite your team members. They&apos;ll receive an email invitation to join your workspace.</p>
+            <p className="text-sm text-content-muted mb-4">Invite your team members. They&apos;ll receive an email invitation to join your workspace.</p>
             <div className="flex gap-tight">
                 <input className="input flex-1" placeholder="colleague@company.com" type="email" value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)} onKeyDown={emailKeyDown} data-testid="invite-email" />
@@ -688,17 +691,17 @@ function TeamSetupStep({ data, onUpdate }: { data: StepData; onUpdate: (d: StepD
             {emails.length > 0 && (
                 <div className="space-y-1">
                     {emails.map(e => (
-                        <div key={e} className="flex items-center justify-between bg-slate-800/50 rounded-lg px-3 py-2 text-sm">
+                        <div key={e} className="flex items-center justify-between bg-bg-default/50 rounded-lg px-3 py-2 text-sm">
                             <div className="flex items-center gap-tight">
-                                <Users className="w-3.5 h-3.5 text-slate-500" />
-                                <span className="text-slate-200">{e}</span>
+                                <Users className="w-3.5 h-3.5 text-content-subtle" />
+                                <span className="text-content-emphasis">{e}</span>
                             </div>
-                            <button onClick={() => removeEmail(e)} className="text-slate-500 hover:text-content-error text-xs">&times;</button>
+                            <button onClick={() => removeEmail(e)} className="text-content-subtle hover:text-content-error text-xs">&times;</button>
                         </div>
                     ))}
                 </div>
             )}
-            <p className="text-xs text-slate-500">You can skip this step and invite team members later from the Admin panel.</p>
+            <p className="text-xs text-content-subtle">You can skip this step and invite team members later from the Admin panel.</p>
         </div>
     );
 }
@@ -717,20 +720,20 @@ function ReviewStep({ completedSteps, allData }: { completedSteps: string[]; all
 
     return (
         <div className="space-y-default animate-fadeIn">
-            <p className="text-sm text-slate-400 mb-4">Review your setup before completing onboarding.</p>
+            <p className="text-sm text-content-muted mb-4">Review your setup before completing onboarding.</p>
             <div className="space-y-tight">
                 {summaryItems.map(item => {
                     const done = completedSteps.includes(item.key);
                     return (
-                        <div key={item.key} className="flex items-center gap-compact p-3 bg-slate-800/30 rounded-lg" data-testid={`review-${item.key}`}>
+                        <div key={item.key} className="flex items-center gap-compact p-3 bg-bg-default/30 rounded-lg" data-testid={`review-${item.key}`}>
                             {done ? (
                                 <CheckCircle2 className="w-5 h-5 text-content-success flex-shrink-0" />
                             ) : (
-                                <div className="w-5 h-5 rounded-full border-2 border-slate-600 flex-shrink-0" />
+                                <div className="w-5 h-5 rounded-full border-2 border-border-default flex-shrink-0" />
                             )}
                             <div className="flex-1 min-w-0">
-                                <span className="text-sm font-medium text-slate-200">{item.label}</span>
-                                <p className="text-xs text-slate-500 truncate">{item.detail}</p>
+                                <span className="text-sm font-medium text-content-emphasis">{item.label}</span>
+                                <p className="text-xs text-content-subtle truncate">{item.detail}</p>
                             </div>
                         </div>
                     );
