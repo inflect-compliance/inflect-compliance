@@ -6,8 +6,7 @@ import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { AdminClient } from './AdminClient';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
-import { Heading } from '@/components/ui/typography';
-import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,23 +51,23 @@ export default async function AdminPage({
 
     return (
         <div className="space-y-section animate-fadeIn">
-            <div className="flex items-center justify-between">
-                <div>
-                    <Breadcrumbs
-                        items={[
-                            { label: 'Dashboard', href: tenantHref('/dashboard') },
-                            { label: t('title') },
-                        ]}
-                        className="mb-1"
-                    />
-                    <Heading level={1}>{t('title')}</Heading>
-                </div>
-                <div className="flex items-center gap-compact glass-card px-4 py-2" id="admin-theme-section">
-                    <Palette className="w-4 h-4 text-content-muted" />
-                    <span className="text-sm text-content-muted">Theme</span>
-                    <ThemeToggle id="admin-theme-toggle" />
-                </div>
-            </div>
+            <PageHeader
+                breadcrumbs={[
+                    { label: 'Dashboard', href: tenantHref('/dashboard') },
+                    { label: t('title') },
+                ]}
+                title={t('title')}
+                actions={
+                    <div
+                        className="flex items-center gap-compact rounded-lg border border-border-subtle bg-bg-default px-3 py-1.5"
+                        id="admin-theme-section"
+                    >
+                        <Palette className="w-4 h-4 text-content-muted" />
+                        <span className="text-sm text-content-muted">Theme</span>
+                        <ThemeToggle id="admin-theme-toggle" />
+                    </div>
+                }
+            />
 
             {/* Navigation links — server-rendered, no JS needed */}
             <div className="flex gap-tight flex-wrap">

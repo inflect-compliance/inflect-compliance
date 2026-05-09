@@ -9,7 +9,9 @@
  *   2. Auth gate: redirects unauthenticated callers to /login.
  *   3. Membership gate: a thrown ForbiddenError/NotFoundError from
  *      `getOrgServerContext` collapses to `notFound()` (no slug echo).
- *   4. The layout wraps children in `OrgProvider` + `OrgAppShell`.
+ *   4. The layout wraps children in `OrgProvider` + the unified
+ *      `<AppShell variant="org">` (Roadmap-2 PR-1; previously a
+ *      separate `OrgAppShell` component).
  *   5. The org sidebar enumerates all 7 nav entries the spec calls for.
  *   6. Drill-down nav entries are gated by `canDrillDown`.
  *
@@ -23,7 +25,7 @@ const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf-8');
 
 const LAYOUT_PATH = 'src/app/org/[orgSlug]/layout.tsx';
-const SHELL_PATH = 'src/components/layout/OrgAppShell.tsx';
+const SHELL_PATH = 'src/components/layout/AppShell.tsx';
 const NAV_PATH = 'src/components/layout/OrgSidebarNav.tsx';
 const PROVIDER_PATH = 'src/lib/org-context-provider.tsx';
 const SERVER_CTX_PATH = 'src/lib/server/org-context.server.ts';
@@ -57,10 +59,15 @@ describe('Epic O-4 — org shell structural contract', () => {
         expect(src).toMatch(/dynamic\s*=\s*['"]force-dynamic['"]/);
     });
 
-    it('layout wraps children in OrgProvider and OrgAppShell', () => {
+    it('layout wraps children in OrgProvider and the unified AppShell with variant="org"', () => {
         const src = read(LAYOUT_PATH);
         expect(src).toMatch(/<OrgProvider/);
-        expect(src).toMatch(/<OrgAppShell/);
+        // Roadmap-2 PR-1 collapsed the separate OrgAppShell into the
+        // canonical AppShell. The org route now mounts the same
+        // primitive every authenticated surface uses, distinguished
+        // only by `variant="org"`.
+        expect(src).toMatch(/<AppShell[\s\S]*?variant=["']org["']/);
+        expect(src).toMatch(/from\s+['"]@\/components\/layout\/AppShell['"]/);
     });
 
     // ── Sidebar nav structure ─────────────────────────────────────────
@@ -103,11 +110,14 @@ describe('Epic O-4 — org shell structural contract', () => {
         expect(src).toMatch(/canManageTenants/);
     });
 
-    it('OrgSidebarNav reuses MobileDrawer from the existing SidebarNav', () => {
+    it('the unified AppShell reuses MobileDrawer from SidebarNav', () => {
         const shellSrc = read(SHELL_PATH);
-        // OrgAppShell imports MobileDrawer from SidebarNav (no
-        // duplication of the off-canvas chrome).
-        expect(shellSrc).toMatch(/MobileDrawer.*from\s+['"]@\/components\/layout\/SidebarNav['"]/);
+        // Post Roadmap-2 PR-1, the org shell no longer exists as a
+        // separate file — the unified AppShell imports MobileDrawer
+        // once and mounts it for both tenant and org variants.
+        expect(shellSrc).toMatch(
+            /MobileDrawer.*from\s+['"]@\/components\/layout\/SidebarNav['"]/,
+        );
     });
 
     // ── Provider + server context ────────────────────────────────────
