@@ -186,17 +186,20 @@ describe('Widget Dependency Guard', () => {
         //     and the TrendPolarity type. Lives outside the component so
         //     the math is reusable + tested + server-renderable.)
         // Cap raised 3 → 5 with Epic 61 + Epic 64 (animated-number,
-        // shimmer-dots). Each addition is a deliberate KpiCard polish
-        // pass on a shared primitive — kept tight so new chart/state
-        // libraries don't leak in uninvited.
+        // shimmer-dots). Then 5 → 6 with v2-PR-8 (MetricCard chassis
+        // — KpiCard now composes via the layout primitive instead of
+        // hand-rolling the glass-card frame). Each addition is a
+        // deliberate KpiCard polish pass on a shared primitive — kept
+        // tight so new chart/state libraries don't leak in uninvited.
         const externalImports = importLines.filter(l => !l.includes('./') && !l.includes('../'));
-        expect(externalImports.length).toBeLessThanOrEqual(5);
+        expect(externalImports.length).toBeLessThanOrEqual(6);
         for (const line of externalImports) {
             const allowed =
                 line.includes('lucide-react') ||
                 line.includes('@/components/ui/mini-area-chart') ||
                 line.includes('@/components/ui/animated-number') ||
                 line.includes('@/components/ui/shimmer-dots') ||
+                line.includes('@/components/ui/MetricCard') ||
                 line.includes('@/lib/kpi-trend');
             expect(allowed).toBe(true);
         }

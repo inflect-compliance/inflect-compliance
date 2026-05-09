@@ -29,6 +29,7 @@
 import { type LucideIcon } from 'lucide-react';
 
 import { AnimatedNumber, type AnimatedNumberFormat } from '@/components/ui/animated-number';
+import { MetricCard } from '@/components/ui/MetricCard';
 import { MiniAreaChart, type MiniAreaChartVariant } from '@/components/ui/mini-area-chart';
 import { ShimmerDots } from '@/components/ui/shimmer-dots';
 import { computeKpiTrend, formatTrendAbsolute, formatTrendPercent, trendDirectionIcon, type TrendPolarity } from '@/lib/kpi-trend';
@@ -312,86 +313,76 @@ export default function KpiCard({
               polarity: trendPolarity,
           });
 
-    return (
-        <div
-            id={id}
-            className={`glass-card p-4 hover:border-border-emphasis transition-colors duration-150 ease-out ${className}`}
+    // v2-PR-8 — KpiCard now composes via the <MetricCard> chassis.
+    // The chassis owns layout + frame + spacing rhythm; KpiCard owns
+    // the smart logic (animated number, shimmer, gradient text,
+    // trend resolution, sparkline rendering).
+    const valueSlot = loading ? (
+        <span className="inline-flex h-8 items-center" data-kpi-loading>
+            <ShimmerDots
+                rows={2}
+                cols={20}
+                className="h-6"
+                aria-label={`${label} loading`}
+            />
+        </span>
+    ) : isEmpty ? (
+        <span className="text-content-subtle">{'—'}</span>
+    ) : (
+        <span
+            className={`bg-gradient-to-r ${gradient} bg-clip-text text-transparent`}
         >
-            {/* Header: icon + label */}
-            <div className="flex items-center gap-tight mb-2">
-                {Icon && <Icon className="w-4 h-4 text-content-muted" aria-hidden="true" />}
-                <span className="text-xs text-content-muted uppercase tracking-wide font-medium">
-                    {label}
-                </span>
-            </div>
+            <AnimatedNumber value={value} format={animatedFormat} />
+        </span>
+    );
 
-            {/* Headline value — shimmer while loading, "—" when null,
-                animated otherwise. Loading wins over null because a
-                resolved-null value rendered alongside a "loading
-                things" page would feel like a flash of bad data. */}
-            {loading ? (
-                <div className="h-8 flex items-center" data-kpi-loading>
-                    <ShimmerDots
-                        rows={2}
-                        cols={20}
-                        className="h-6"
-                        aria-label={`${label} loading`}
-                    />
-                </div>
-            ) : (
-                <p
-                    className={`text-2xl font-bold ${
-                        isEmpty
-                            ? 'text-content-subtle'
-                            : `bg-gradient-to-r ${gradient} bg-clip-text text-transparent`
-                    }`}
-                >
-                    {isEmpty ? (
-                        '—'
-                    ) : (
-                        <AnimatedNumber value={value} format={animatedFormat} />
-                    )}
-                </p>
+    // The legacy `data-kpi-trend-row` marker is preserved for E2E +
+    // rendered-test selectors that target the row. The chassis owns
+    // the indicator slot positioning; this span carries the marker
+    // INSIDE the chassis's `data-metric-card-indicator` wrapper.
+    const indicatorSlot = indicator ? (
+        <span data-kpi-trend-row className="contents">
+            <span
+                className={`text-xs font-medium ${SEMANTIC_TEXT_TOKEN[indicator.semantic]}`}
+                data-kpi-trend-direction={indicator.direction}
+                data-kpi-trend-semantic={indicator.semantic}
+            >
+                {indicator.icon}
+                {' '}
+                {indicator.sign}
+                <AnimatedNumber
+                    value={indicator.magnitude}
+                    format={indicator.animatedFormat}
+                />
+                {indicator.unit}
+            </span>
+            {deltaLabel && (
+                <span className="text-xs text-content-subtle">{deltaLabel}</span>
             )}
+        </span>
+    ) : undefined;
 
-            {/* Trend indicator (delta direction + magnitude + optional label) */}
-            {indicator && (
-                <div className="flex items-center gap-1 mt-1" data-kpi-trend-row>
-                    <span
-                        className={`text-xs font-medium ${SEMANTIC_TEXT_TOKEN[indicator.semantic]}`}
-                        data-kpi-trend-direction={indicator.direction}
-                        data-kpi-trend-semantic={indicator.semantic}
-                    >
-                        {indicator.icon}
-                        {' '}
-                        {indicator.sign}
-                        <AnimatedNumber
-                            value={indicator.magnitude}
-                            format={indicator.animatedFormat}
-                        />
-                        {indicator.unit}
-                    </span>
-                    {deltaLabel && (
-                        <span className="text-xs text-content-subtle">{deltaLabel}</span>
-                    )}
-                </div>
-            )}
-
-            {/* Subtitle */}
-            {subtitle && (
-                <p className="text-xs text-content-subtle mt-1">{subtitle}</p>
-            )}
-
-            {/* Sparkline */}
-            {trend && trend.length > 0 && (
-                <div className="mt-2 h-8 w-full" data-kpi-trend>
-                    <MiniAreaChart
-                        data={trend}
-                        variant={trendVariant}
-                        aria-label={trendAriaLabel ?? `${label} 30-day trend`}
-                    />
-                </div>
-            )}
+    const trailingSlot = trend && trend.length > 0 ? (
+        <div className="h-8 w-full" data-kpi-trend>
+            <MiniAreaChart
+                data={trend}
+                variant={trendVariant}
+                aria-label={trendAriaLabel ?? `${label} 30-day trend`}
+            />
         </div>
+    ) : undefined;
+
+    return (
+        <MetricCard
+            id={id}
+            icon={Icon}
+            eyebrow={label}
+            indicator={indicatorSlot}
+            subtitle={subtitle}
+            trailing={trailingSlot}
+            className={className}
+        >
+            {valueSlot}
+        </MetricCard>
     );
 }

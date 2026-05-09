@@ -114,7 +114,12 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # 25-minute budget. Mirrors the bump applied to the Coverage gate
+    # in v2-PR-1 — the unit + integration suite has been hitting the
+    # previous 15-minute ceiling on PRs that touch many primitives
+    # (v2-PR-8 cancelled at 15m16s). Both jobs run effectively the
+    # same suite; keeping their budgets aligned.
+    timeout-minutes: 25
 
     env:
       DATABASE_URL: postgresql://ci:ci_password@localhost:5432/ci_testdb?schema=public
