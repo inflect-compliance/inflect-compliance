@@ -40,6 +40,11 @@ const SCAN_FILES: string[] = [
     'src/components/ui/CalendarHeatmap.tsx',
     'src/components/ui/CalendarMonth.tsx',
     'src/components/ui/GanttTimeline.tsx',
+    // Elevation PR-7 — DonutChart now uses CSS-var tokens directly
+    // (SVG `stroke` / `fill` accept `var(...)`), so it joins the
+    // ratchet net.
+    'src/components/ui/DonutChart.tsx',
+    'src/app/t/[tenantSlug]/(app)/coverage/CoverageClient.tsx',
     'src/app/t/[tenantSlug]/(app)/risks/dashboard/page.tsx',
     'src/app/t/[tenantSlug]/(app)/tasks/dashboard/page.tsx',
     'src/app/t/[tenantSlug]/(app)/controls/dashboard/page.tsx',
@@ -49,13 +54,12 @@ const SCAN_FILES: string[] = [
 
 // Allowlisted (file, line-substring, reason) tuples for hex literals
 // that are still acceptable. Keep small.
-const ALLOWLIST: Array<{ file: string; substring: string; reason: string }> = [
-    {
-        file: 'src/app/t/[tenantSlug]/(app)/coverage/CoverageClient.tsx',
-        substring: "#334155",
-        reason: 'DonutChart inactive-segment SVG fill — needs runtime CSS-var resolver before tokenizing.',
-    },
-];
+//
+// Elevation PR-7 — DonutChart entry retired. SVG `stroke` and
+// `fill` accept `var(...)` natively, so segment colours now use
+// `var(--bg-success-emphasis)` etc. Theme flips re-tone the chart
+// automatically without a JS resolver.
+const ALLOWLIST: Array<{ file: string; substring: string; reason: string }> = [];
 
 const HEX_RE = /#[0-9a-fA-F]{3,8}\b/;
 const RGB_RE = /\brgba?\s*\(/;
