@@ -53,21 +53,24 @@ function StatusBadge({ value }: { value: string | null }) {
 }
 
 function GapBadges({ entry }: { entry: SoAEntryDTO }) {
+    // Roadmap-2 PR-7 — gap badges flow through the canonical
+    // `<StatusBadgePrimitive>` so the pill shape, size, and tone-
+    // mapping match every other status across the product.
     const gaps: React.JSX.Element[] = [];
     if (entry.applicable === null) {
         gaps.push(
-            <span key="unmapped" className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-bg-error text-content-error border border-border-error">
+            <StatusBadgePrimitive key="unmapped" variant="error">
                 <AlertTriangle className="w-3 h-3" /> Unmapped
-            </span>
+            </StatusBadgePrimitive>
         );
     }
     if (entry.applicable === false) {
         const hasMissing = entry.mappedControls.some(c => c.applicability === 'NOT_APPLICABLE' && !c.justification);
         if (hasMissing) {
             gaps.push(
-                <span key="justification" className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-bg-warning text-content-warning border border-border-warning">
+                <StatusBadgePrimitive key="justification" variant="warning">
                     <MessageSquare className="w-3 h-3" /> Justification missing
-                </span>
+                </StatusBadgePrimitive>
             );
         }
     }

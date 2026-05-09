@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import { ShieldCheck, Save, AlertTriangle, CheckCircle, LogOut, Users, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -249,9 +250,7 @@ export default function AdminSecurityPage() {
                                 }`}>
                                     {option.label}
                                     {option.value === 'REQUIRED' && (
-                                        <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-bg-warning text-content-warning border border-border-warning">
-                                            Strict
-                                        </span>
+                                        <StatusBadge variant="warning" className="ml-2">Strict</StatusBadge>
                                     )}
                                 </span>
                                 <p className="text-xs text-content-muted mt-1">{option.description}</p>

@@ -219,11 +219,17 @@ export default function AIRiskAssessmentPage() {
         return <StatusBadge variant="error">Critical</StatusBadge>;
     };
 
+    // Roadmap-2 PR-7 — confidence indicators are tone-mapped pills
+    // identical in shape to every other status across the product.
+    // Previously hand-rolled with `px-2 py-0.5 rounded ring-1` —
+    // now consumed via the canonical `<StatusBadge>` so a theme flip
+    // re-tones the indicator and the visual vocabulary stays
+    // singular.
     const confidenceBadge = (c: string | null) => {
         switch (c) {
-            case 'high': return <span className="text-xs px-2 py-0.5 rounded bg-bg-success text-content-success ring-1 ring-[var(--border-success)]">● High confidence</span>;
-            case 'medium': return <span className="text-xs px-2 py-0.5 rounded bg-bg-warning text-content-warning ring-1 ring-[var(--border-warning)]">● Medium confidence</span>;
-            case 'low': return <span className="text-xs px-2 py-0.5 rounded bg-bg-elevated/40 text-content-muted ring-1 ring-slate-500/30">● Low confidence</span>;
+            case 'high': return <StatusBadge variant="success">● High confidence</StatusBadge>;
+            case 'medium': return <StatusBadge variant="warning">● Medium confidence</StatusBadge>;
+            case 'low': return <StatusBadge variant="neutral">● Low confidence</StatusBadge>;
             default: return null;
         }
     };

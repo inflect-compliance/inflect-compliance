@@ -6,6 +6,7 @@
 
 import { formatDate } from '@/lib/format-date';
 import { Card } from '@/components/ui/card';
+import { StatusBadge } from '@/components/ui/status-badge';
 
 import { useState, useEffect, useCallback } from 'react';
 import { useTenantApiUrl } from '@/lib/tenant-context-provider';
@@ -192,15 +193,22 @@ export default function UserMfaPage() {
                             </p>
                         </div>
                         <div>
+                            {/* Roadmap-2 PR-7 — canonical StatusBadge
+                                replaces the hand-rolled enrolment
+                                pill. CheckCircle stays inline as
+                                an icon-prefix because the badge
+                                doesn't own iconography; future PR
+                                may extend StatusBadge to take an
+                                `icon` slot. */}
                             {status.isVerified ? (
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-bg-success text-content-success border border-border-success">
-                                    <CheckCircle className="w-4 h-4" />
+                                <StatusBadge variant="success">
+                                    <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />
                                     Enrolled
-                                </span>
+                                </StatusBadge>
                             ) : (
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-bg-elevated/50 text-content-muted border border-border-emphasis">
+                                <StatusBadge variant="neutral">
                                     Not Enrolled
-                                </span>
+                                </StatusBadge>
                             )}
                         </div>
                     </div>
