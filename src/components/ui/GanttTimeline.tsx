@@ -221,7 +221,7 @@ export function GanttTimeline({
                                 title={`${ev.title}${ev.detail ? ` — ${ev.detail}` : ''}`}
                                 className={cn(
                                     'absolute top-1 bottom-1 rounded border px-1 flex items-center text-[10px] font-medium text-content-emphasis truncate min-w-[8px]',
-                                    'hover:ring-1 hover:ring-content-emphasis/40 transition-all',
+                                    'hover:ring-1 hover:ring-content-emphasis/40 transition-colors duration-150 ease-out',
                                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]',
                                     CATEGORY_BAR_CLASS[ev.category],
                                     ev.status === 'overdue' && 'border-status-danger',
