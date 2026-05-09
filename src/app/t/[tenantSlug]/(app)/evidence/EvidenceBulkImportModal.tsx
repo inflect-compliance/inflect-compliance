@@ -38,6 +38,7 @@ import {
 } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Modal } from '@/components/ui/modal';
 import {
     FileDropzone,
@@ -282,8 +283,10 @@ export function EvidenceBulkImportModal({
                     />
 
                     {jobId && (
-                        <div
-                            className="mt-4 rounded-lg border border-border-default bg-bg-subtle p-3 text-sm"
+                        <Card
+                            elevation="inset"
+                            density="none"
+                            className="mt-4 p-3 text-sm"
                             data-testid="evidence-bulk-import-status"
                         >
                             <p className="text-content-emphasis">
@@ -321,7 +324,7 @@ export function EvidenceBulkImportModal({
                                     {status.failedReason ?? 'Job failed'}
                                 </p>
                             )}
-                        </div>
+                        </Card>
                     )}
                 </Modal.Body>
 

@@ -40,9 +40,9 @@ const RichTextEditor = dynamic(
     {
         ssr: false,
         loading: () => (
-            <div className="rounded-lg border border-border-default bg-bg-subtle p-4 text-center text-sm text-content-muted">
+            <Card elevation="inset" density="compact" className="text-center text-sm text-content-muted">
                 Loading editor…
-            </div>
+            </Card>
         ),
     },
 );

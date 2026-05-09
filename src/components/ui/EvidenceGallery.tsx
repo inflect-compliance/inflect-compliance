@@ -35,6 +35,8 @@
  */
 
 import { useMemo, type CSSProperties } from 'react';
+import { cn } from '@dub/utils';
+import { Card } from '@/components/ui/card';
 import {
     FileTypeIcon,
     resolveFileTypeIcon,
@@ -129,12 +131,14 @@ export function EvidenceGallery<T extends EvidenceGalleryRow>({
 
     if (rows.length === 0) {
         return (
-            <div
-                className="rounded-lg border border-border-default bg-bg-subtle p-8 text-center text-sm text-content-muted"
+            <Card
+                elevation="inset"
+                className="text-center text-sm text-content-muted p-8"
+                density="none"
                 data-testid={`${dataTestId}-empty`}
             >
                 {emptyState ?? 'No evidence to show.'}
-            </div>
+            </Card>
         );
     }
 
@@ -197,13 +201,16 @@ function GalleryCard<T extends EvidenceGalleryRow>({
     };
 
     return (
-        <div
+        <Card
+            elevation="inset"
+            density="none"
             role="gridcell"
             data-testid={`evidence-gallery-card-${row.id}`}
             data-file-kind={match.label.toLowerCase()}
-            className={`group relative flex flex-col overflow-hidden rounded-lg border border-border-default bg-bg-subtle transition-colors hover:border-border-emphasis hover:bg-bg-muted ${
-                onRowClick && !isPending ? 'cursor-pointer' : ''
-            }`}
+            className={cn(
+                'group relative flex flex-col overflow-hidden transition-colors duration-150 ease-out hover:border-border-emphasis hover:bg-bg-muted',
+                onRowClick && !isPending && 'cursor-pointer',
+            )}
             onClick={onClick}
             onKeyDown={(e) => {
                 if (!onRowClick || isPending) return;
@@ -306,7 +313,7 @@ function GalleryCard<T extends EvidenceGalleryRow>({
                     )}
                 </div>
             </div>
-        </div>
+        </Card>
     );
 }
 

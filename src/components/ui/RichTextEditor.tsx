@@ -40,6 +40,7 @@ import { EditorContent, useEditor, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
+import { Card } from '@/components/ui/card';
 import {
     Bold,
     Italic,
@@ -216,11 +217,13 @@ export function RichTextEditor({
 
     // ── Render ─────────────────────────────────────────────────────
     return (
-        <div
+        <Card
+            elevation="inset"
+            density="none"
             id={id}
             data-testid={dataTestId}
             data-content-type={mode}
-            className={`rounded-lg border border-border-default bg-bg-subtle ${className}`.trim()}
+            className={className}
         >
             <Toolbar
                 mode={mode}
@@ -252,7 +255,7 @@ export function RichTextEditor({
                     <EditorContent editor={editor} />
                 </div>
             )}
-        </div>
+        </Card>
     );
 }
 

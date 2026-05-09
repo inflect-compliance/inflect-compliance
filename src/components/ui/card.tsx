@@ -8,11 +8,16 @@
  *     "compact"                 p-4   — stat cards, inline cards
  *     "none"                    p-0   — children own padding
  *
- *   elevation — visual depth (v2-PR-9). Three levels expressed via
+ *   elevation — visual depth (v2-PR-9). Four levels expressed via
  *               background tone — never via shadow:
  *     "flat"     — bg-bg-page; matches the page background. Use for
  *                  nested sub-cards inside a `raised` card so the
  *                  inner card reads as part of the outer plane.
+ *     "inset"    — bg-bg-subtle (Polish PR-3). Faint tinted surface
+ *                  for sub-panels INSIDE a raised/floating parent —
+ *                  diff blocks, rich-text editor chrome, evidence
+ *                  preview tiles. Reads as "inset into the card" not
+ *                  "next card on the same plane".
  *     "raised" (default) — the glass-card recipe (bg-bg-default +
  *                  backdrop-blur + glass border). The standard
  *                  section-level card.
@@ -41,6 +46,10 @@ const cardVariants = cva("", {
     elevation: {
       // Matches page background — for nested sub-cards.
       flat: "bg-bg-page border border-border-subtle rounded-lg",
+      // Faint tint for sub-panels inside a raised/floating parent
+      // (diff blocks, rich-text chrome, evidence preview tiles).
+      // Reads as "inset" not "next card on the same plane".
+      inset: "rounded-lg border border-border-default bg-bg-subtle",
       // Default section-level card. Maps to the existing glass-card
       // recipe so the visual is unchanged for every consumer that
       // doesn't pass `elevation`.

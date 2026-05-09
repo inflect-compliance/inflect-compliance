@@ -36,6 +36,8 @@
 
 import { diffLines } from 'diff';
 import { useMemo } from 'react';
+import { cn } from '@dub/utils';
+import { Card } from '@/components/ui/card';
 
 export interface VersionDiffOption {
     id: string;
@@ -114,12 +116,14 @@ export function VersionDiff({
 
     if (sorted.length < 2) {
         return (
-            <div
-                className={`rounded-lg border border-border-default bg-bg-subtle p-4 text-sm text-content-muted ${className}`.trim()}
+            <Card
+                elevation="inset"
+                density="compact"
+                className={cn('text-sm text-content-muted', className)}
                 data-testid={`${dataTestId}-empty`}
             >
                 Add a second version to enable comparison.
-            </div>
+            </Card>
         );
     }
 
@@ -135,9 +139,11 @@ export function VersionDiff({
     const sameVersion = fromV?.id === toV?.id;
 
     return (
-        <div
+        <Card
+            elevation="inset"
+            density="none"
             data-testid={dataTestId}
-            className={`rounded-lg border border-border-default bg-bg-subtle ${className}`.trim()}
+            className={className}
         >
             <header className="flex flex-wrap items-center gap-compact border-b border-border-default px-3 py-2 text-xs text-content-muted">
                 <label className="inline-flex items-center gap-1.5">
@@ -195,7 +201,7 @@ export function VersionDiff({
                     ))}
                 </pre>
             )}
-        </div>
+        </Card>
     );
 }
 
