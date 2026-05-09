@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { Menu } from 'lucide-react';
 import { SidebarContent, MobileDrawer } from '@/components/layout/SidebarNav';
+import { OrgSidebarContent } from '@/components/layout/OrgSidebarNav';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 // ─── Types ───
@@ -13,28 +14,50 @@ interface AppShellUser {
     name?: string | null;
 }
 
+export type AppShellVariant = 'tenant' | 'org';
+
 interface AppShellProps {
     /** Serializable user data resolved server-side */
     user: AppShellUser;
     /** Pre-resolved app name (from server-side i18n) */
     appName: string;
+    /**
+     * Roadmap-2 PR-1 — picks which sidebar nav this shell mounts.
+     * 'tenant' = SidebarContent (Dashboard, Risks, Controls, …).
+     * 'org'    = OrgSidebarContent (Portfolio, Tenants, Members, …).
+     * Default: 'tenant' to preserve historical behaviour for callers
+     * that omit the prop.
+     */
+    variant?: AppShellVariant;
     children: React.ReactNode;
 }
 
 /**
- * Client-side app shell.
+ * Client-side app shell — Roadmap-2 PR-1 unified.
  *
- * Contains all interactive layout UI that cannot live in a Server Component:
- * - Mobile drawer toggle state
- * - Sign-out handler (requires next-auth/react)
- * - Route-change auto-close for mobile drawer
+ * Mounts the chrome that wraps every authenticated app surface
+ * (tenant `/t/:slug/(app)/**` AND org `/org/:slug/**`):
+ *   • Mobile drawer toggle state.
+ *   • Sign-out handler (requires next-auth/react).
+ *   • Route-change auto-close for the mobile drawer.
  *
- * Data-layer providers (QueryClientProvider) live in ClientProviders,
- * composed separately by the server layout.
+ * Variant only changes WHICH sidebar nav we mount — the chrome
+ * (mobile top bar, scrolling rules, viewport-clamp behaviour,
+ * keyboard-shortcut wiring through MobileDrawer) is identical so
+ * the two contexts feel the same to the user.
  *
  * Receives only serializable props from the server layout.
+ *
+ * Note: `data-testid="nav-toggle"` and `data-testid="org-nav-toggle"`
+ * differ deliberately — Playwright tests bind to the variant-specific
+ * selector to assert the right shell mounted.
  */
-export function AppShell({ user, appName, children }: AppShellProps) {
+export function AppShell({
+    user,
+    appName,
+    variant = 'tenant',
+    children,
+}: AppShellProps) {
     const [drawerOpen, setDrawerOpen] = useState(false);
 
     const handleLogout = useCallback(async () => {
@@ -52,6 +75,20 @@ export function AppShell({ user, appName, children }: AppShellProps) {
             prevPathname.current = pathname;
         }
     }, [pathname]);
+
+    // Variant-driven slot resolution. Two pieces:
+    //   1. The sidebar content component itself.
+    //   2. Mobile-toggle a11y label + test-id (kept variant-specific
+    //      because Playwright tests target the variant deliberately).
+    const Sidebar = variant === 'org' ? OrgSidebarContent : SidebarContent;
+    const mobileToggleLabel =
+        variant === 'org'
+            ? 'Open organization navigation menu'
+            : 'Open navigation menu';
+    const mobileToggleTestId =
+        variant === 'org' ? 'org-nav-toggle' : 'nav-toggle';
+    const themeToggleId =
+        variant === 'org' ? 'org-theme-toggle-mobile' : 'theme-toggle-mobile';
 
     // Layout chain (Phase 1 of list-page-shell):
     //   • Mobile (<md): natural document scroll. `min-h-screen` on
@@ -79,12 +116,12 @@ export function AppShell({ user, appName, children }: AppShellProps) {
         <div className="min-h-screen md:h-full md:overflow-hidden flex">
             {/* Desktop sidebar — hidden on mobile, visible on md+ */}
             <aside className="hidden md:flex w-56 bg-bg-default border-r border-border-subtle flex-col flex-shrink-0">
-                <SidebarContent user={user} onLogout={handleLogout} />
+                <Sidebar user={user} onLogout={handleLogout} />
             </aside>
 
             {/* Mobile drawer — only renders overlay on <md */}
             <MobileDrawer open={drawerOpen} onClose={closeDrawer}>
-                <SidebarContent user={user} onLogout={handleLogout} onNavClick={closeDrawer} />
+                <Sidebar user={user} onLogout={handleLogout} onNavClick={closeDrawer} />
             </MobileDrawer>
 
             {/* Main content */}
@@ -95,8 +132,8 @@ export function AppShell({ user, appName, children }: AppShellProps) {
                         type="button"
                         className="p-2 rounded-lg text-content-muted hover:text-content-emphasis hover:bg-bg-muted transition-colors"
                         onClick={() => setDrawerOpen(true)}
-                        aria-label="Open navigation menu"
-                        data-testid="nav-toggle"
+                        aria-label={mobileToggleLabel}
+                        data-testid={mobileToggleTestId}
                     >
                         <Menu className="w-5 h-5" />
                     </button>
@@ -107,7 +144,7 @@ export function AppShell({ user, appName, children }: AppShellProps) {
                         <span className="text-sm font-semibold text-content-emphasis">{appName}</span>
                     </div>
                     <div className="ml-auto">
-                        <ThemeToggle id="theme-toggle-mobile" />
+                        <ThemeToggle id={themeToggleId} />
                     </div>
                 </div>
 

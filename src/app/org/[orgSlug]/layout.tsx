@@ -4,7 +4,7 @@ import { getTranslations } from 'next-intl/server';
 import { auth } from '@/auth';
 import { getOrgServerContext } from '@/lib/server/org-context.server';
 import { OrgProvider } from '@/lib/org-context-provider';
-import { OrgAppShell } from '@/components/layout/OrgAppShell';
+import { AppShell } from '@/components/layout/AppShell';
 import { ClientProviders } from '@/components/layout/ClientProviders';
 
 /**
@@ -74,12 +74,13 @@ export default async function OrgLayout({
                 permissions: orgCtx.permissions,
             }}
         >
-            <OrgAppShell
+            <AppShell
+                variant="org"
                 user={{ name: session.user.name }}
                 appName={tc('appName')}
             >
                 <ClientProviders>{children}</ClientProviders>
-            </OrgAppShell>
+            </AppShell>
         </OrgProvider>
     );
 }
