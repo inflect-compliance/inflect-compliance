@@ -173,6 +173,8 @@ export interface KPIStatProps {
     size?: 'md' | 'sm';
     /** Optional href — wraps the stat in a Link-style hover. */
     href?: string;
+    /** Optional DOM id placed on the value span — preserves E2E test anchors. */
+    id?: string;
     className?: string;
     'data-testid'?: string;
 }
@@ -185,6 +187,7 @@ export function KPIStat({
     tone = 'default',
     size = 'md',
     href,
+    id,
     className,
     'data-testid': testId = 'kpi-stat',
 }: KPIStatProps) {
@@ -202,6 +205,7 @@ export function KPIStat({
             </span>
             <div className="flex items-baseline gap-tight flex-wrap">
                 <span
+                    id={id}
                     className={cn(
                         'font-semibold leading-none tabular-nums',
                         size === 'md' ? 'text-3xl' : 'text-xl',

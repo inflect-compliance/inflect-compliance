@@ -162,7 +162,7 @@ export default function InstallWizardPage() {
                         <Heading level={2} className="mb-4">Install Preview</Heading>
                         <div className="grid grid-cols-3 gap-default mb-4">
                             <div className="p-3 rounded-lg bg-bg-default/50">
-                                <KPIStat value={preview.newControls} label="New Controls" />
+                                <KPIStat id="preview-new-controls" value={preview.newControls} label="New Controls" />
                             </div>
                             <div className="p-3 rounded-lg bg-bg-default/50">
                                 <KPIStat value={preview.existingControls} label="Already Exist" tone="attention" />
@@ -222,13 +222,13 @@ export default function InstallWizardPage() {
                     <Heading level={1}>Pack Installed Successfully!</Heading>
                     <div className="grid grid-cols-3 gap-default">
                         <div className="p-3 rounded-lg bg-bg-success">
-                            <KPIStat value={result.controlsCreated} label="Controls Created" tone="success" />
+                            <KPIStat id="result-controls" value={result.controlsCreated} label="Controls Created" tone="success" />
                         </div>
                         <div className="p-3 rounded-lg bg-[var(--brand-subtle)]">
-                            <KPIStat value={result.tasksCreated} label="Tasks Created" />
+                            <KPIStat id="result-tasks" value={result.tasksCreated} label="Tasks Created" />
                         </div>
                         <div className="p-3 rounded-lg bg-bg-info/40">
-                            <KPIStat value={result.mappingsCreated} label="Mappings Created" />
+                            <KPIStat id="result-mappings" value={result.mappingsCreated} label="Mappings Created" />
                         </div>
                     </div>
                     <div className="flex gap-compact justify-center">

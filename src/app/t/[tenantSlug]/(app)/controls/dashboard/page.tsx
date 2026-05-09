@@ -111,6 +111,7 @@ export default function ControlsDashboard() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-default" id="dashboard-stats">
                 <div className="glass-card p-4">
                     <KPIStat
+                        id="implementation-progress"
                         value={`${data.implementationProgress}%`}
                         label="Implementation Progress"
                         tone="success"
@@ -126,6 +127,7 @@ export default function ControlsDashboard() {
                 </div>
                 <div className="glass-card p-4">
                     <KPIStat
+                        id="overdue-tasks"
                         value={data.overdueTasks}
                         label="Overdue Tasks"
                         tone={data.overdueTasks > 0 ? 'critical' : 'default'}
@@ -134,6 +136,7 @@ export default function ControlsDashboard() {
                 </div>
                 <div className="glass-card p-4">
                     <KPIStat
+                        id="due-soon"
                         value={data.controlsDueSoon}
                         label="Controls Due Soon"
                         tone={data.controlsDueSoon > 0 ? 'attention' : 'default'}

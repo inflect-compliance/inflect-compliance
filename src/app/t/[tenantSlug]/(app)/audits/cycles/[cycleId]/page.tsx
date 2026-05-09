@@ -118,16 +118,16 @@ export default function CycleDetailPage() {
                 {preview ? (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-default" id="preview-counts">
                         <div className="p-4 rounded-lg bg-bg-default border border-border-default">
-                            <KPIStat value={preview.selection?.controls?.count || 0} label="Controls" />
+                            <KPIStat id="preview-controls" value={preview.selection?.controls?.count || 0} label="Controls" />
                         </div>
                         <div className="p-4 rounded-lg bg-bg-default border border-border-default">
-                            <KPIStat value={preview.selection?.policies?.count || 0} label="Policies" />
+                            <KPIStat id="preview-policies" value={preview.selection?.policies?.count || 0} label="Policies" />
                         </div>
                         <div className="p-4 rounded-lg bg-bg-default border border-border-default">
-                            <KPIStat value={preview.selection?.evidence?.count || 0} label="Evidence" tone="success" />
+                            <KPIStat id="preview-evidence" value={preview.selection?.evidence?.count || 0} label="Evidence" tone="success" />
                         </div>
                         <div className="p-4 rounded-lg bg-bg-default border border-border-default">
-                            <KPIStat value={preview.selection?.issues?.count || 0} label="Issues" tone="attention" />
+                            <KPIStat id="preview-issues" value={preview.selection?.issues?.count || 0} label="Issues" tone="attention" />
                         </div>
                     </div>
                 ) : (
