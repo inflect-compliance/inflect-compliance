@@ -83,6 +83,7 @@ import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useTenantHref } from '@/lib/tenant-context-provider';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { HeroMetric } from '@/components/ui/HeroMetric';
 
 import type { ExecutiveDashboardPayload } from '@/app-layer/repositories/DashboardRepository';
 import type { TrendPayload } from '@/app-layer/usecases/compliance-trends';
@@ -195,6 +196,20 @@ export default function DashboardClient({
         </Link>
     ) : undefined;
 
+    // v2-PR-10 — masthead hero metric. Single 72px control-coverage
+    // figure as the user's first verdict on the page. Trend delta
+    // resolved from the 30-day coverage trend bundle (last point
+    // minus the previous point — same calculation the per-KPI trend
+    // chip uses, just expressed as a 7-day window).
+    const coverageTrend = trendBundle?.coverage;
+    const coverageDelta = (() => {
+        if (!coverageTrend || coverageTrend.length < 2) return null;
+        const last = coverageTrend[coverageTrend.length - 1];
+        const prev = coverageTrend[coverageTrend.length - 2];
+        if (!last || !prev) return null;
+        return last.value - prev.value;
+    })();
+
     return (
         <DashboardLayout
             header={{
@@ -204,6 +219,23 @@ export default function DashboardClient({
             }}
         >
             <OnboardingBanner />
+
+            {/* ─── Masthead — Hero readiness metric (v2-PR-10) ─── */}
+            <HeroMetric
+                eyebrow={t('controls')}
+                value={exec.controlCoverage.coveragePercent}
+                format="percent"
+                description={`${exec.controlCoverage.implemented} of ${exec.controlCoverage.applicable} controls implemented`}
+                delta={coverageDelta}
+                deltaPolarity="up-good"
+                deltaLabel="vs prev"
+                action={{
+                    label: t('viewAllClauses'),
+                    href: href('/clauses'),
+                    'data-testid': 'hero-action-clauses',
+                }}
+                data-testid="dashboard-hero"
+            />
 
             {/* ─── KPI Grid (6 cards) ─── */}
             <div
