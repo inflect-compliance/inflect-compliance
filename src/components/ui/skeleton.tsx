@@ -86,6 +86,53 @@ export function SkeletonDetailPage() {
  * sub-tables that have not yet been migrated. Do NOT use in new code.
  * See: src/components/ui/table/GUIDE.md
  */
+/**
+ * v2-PR-15 — full-table skeleton with header row + N body rows.
+ *
+ * Use when a list page wants structural-fidelity loading state
+ * instead of a single `<SkeletonCard>`. Renders a `<table>` whose
+ * column widths approximate the real DataTable so the loading
+ * state doesn't reflow when data lands.
+ *
+ * Default 8 cols × 6 rows — typical list-page shape. Pages with
+ * dense tables can pass `rows={10} cols={6}` etc. The default for
+ * cols matches `SkeletonTableRow`.
+ */
+export function SkeletonTable({
+    rows = 6,
+    cols = 8,
+    className = "",
+}: {
+    rows?: number;
+    cols?: number;
+    className?: string;
+}) {
+    return (
+        <div
+            className={`glass-card overflow-hidden ${className}`}
+            aria-hidden="true"
+            data-skeleton-table
+        >
+            <table className="w-full">
+                <thead className="border-b border-border-default/50">
+                    <tr>
+                        {Array.from({ length: cols }).map((_, i) => (
+                            <th key={i} className="px-3 py-3 text-left">
+                                <Skeleton className="h-3 w-20" />
+                            </th>
+                        ))}
+                    </tr>
+                </thead>
+                <tbody>
+                    {Array.from({ length: rows }).map((_, i) => (
+                        <SkeletonTableRow key={i} cols={cols} />
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+}
+
 export function SkeletonTableRow({ cols = 8 }: { cols?: number }) {
     return (
         <tr>

@@ -52,6 +52,8 @@ export interface EmptyStateAction {
     disabled?: boolean;
 }
 
+export type EmptyStateSize = "sm" | "md";
+
 export interface EmptyStateProps extends PropsWithChildren {
     /**
      * Override the default icon for the variant. Pass any lucide-react
@@ -67,6 +69,14 @@ export interface EmptyStateProps extends PropsWithChildren {
      * conventions. Defaults to `"no-records"`.
      */
     variant?: EmptyStateVariant;
+    /**
+     * Size axis (v2-PR-15). Defaults to `"md"`.
+     *   "sm" — for in-card empties (DataTable empty state, sub-tab
+     *          empties). 40px icon container, 8px vertical padding.
+     *   "md" — for full-pane empties (list-page-with-no-rows).
+     *          56px icon container, 48px vertical padding.
+     */
+    size?: EmptyStateSize;
     /** Primary action button (filled). */
     primaryAction?: EmptyStateAction;
     /** Secondary action button (ghost). Renders to the right of primary. */
@@ -92,6 +102,7 @@ export function EmptyState({
     description,
     learnMore,
     variant = "no-records",
+    size = "md",
     primaryAction,
     secondaryAction,
     children,
@@ -103,15 +114,27 @@ export function EmptyState({
     return (
         <div
             className={cn(
-                "flex flex-col items-center justify-center gap-y-4 py-12 px-6",
+                "flex flex-col items-center justify-center",
+                size === "sm"
+                    ? "gap-y-2 py-2 px-3"
+                    : "gap-y-4 py-12 px-6",
                 className,
             )}
             data-testid={dataTestId ?? "empty-state"}
             data-empty-state-variant={variant}
+            data-empty-state-size={size}
         >
-            <div className="flex size-14 items-center justify-center rounded-xl border border-border-subtle bg-bg-muted">
+            <div
+                className={cn(
+                    "flex items-center justify-center rounded-xl border border-border-subtle bg-bg-muted",
+                    size === "sm" ? "size-10" : "size-14",
+                )}
+            >
                 <Icon
-                    className="size-6 text-content-muted"
+                    className={cn(
+                        "text-content-muted",
+                        size === "sm" ? "size-4" : "size-6",
+                    )}
                     aria-hidden="true"
                 />
             </div>
