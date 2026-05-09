@@ -9,6 +9,7 @@ import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { useKeyboardShortcut } from '@/lib/hooks/use-keyboard-shortcut';
 import { StartTourButton } from '@/components/ui/OnboardingTour';
+import { useCommandPalette } from '@/components/command-palette/command-palette-provider';
 import {
     X,
     LayoutDashboard,
@@ -61,6 +62,12 @@ export function useNavSections(): NavSectionDef[] {
 
     return [
         {
+            // Roadmap-2 PR-3 — quiet eyebrow gives the primary nav
+            // group a label, mirroring "Management" below. Without
+            // this, the user reads the sidebar as an unstructured
+            // list and the visual hierarchy of "core entities vs
+            // management" is invisible.
+            title: 'Workspace',
             items: [
                 { href: tenantHref('/dashboard'), label: t('dashboard'), icon: LayoutDashboard },
                 { href: tenantHref('/assets'), label: t('assets'), icon: Building2 },
@@ -186,6 +193,7 @@ export function SidebarContent({ user, onLogout, onNavClick }: SidebarContentPro
     const tc = useTranslations('common');
     const tenant = useTenantContext();
     const sections = useNavSections();
+    const { open: openPalette } = useCommandPalette();
 
     return (
         <div className="flex flex-col h-full">
@@ -217,6 +225,45 @@ export function SidebarContent({ user, onLogout, onNavClick }: SidebarContentPro
                     </NavSection>
                 ))}
             </nav>
+
+            {/* Roadmap-2 PR-3 — inline command-palette opener.
+                Sits below the scrolling nav and above the user
+                block. The chrome's `<SearchAnchor>` is the
+                primary affordance on desktop; this row is the
+                mobile equivalent (chrome is hidden on <md) AND
+                a discoverable secondary anchor on desktop. */}
+            <button
+                type="button"
+                onClick={() => {
+                    onNavClick?.();
+                    openPalette();
+                }}
+                className="mx-2 mb-2 flex items-center gap-tight rounded-lg border border-border-subtle bg-bg-default px-3 py-2 text-xs text-content-muted transition-colors hover:bg-bg-muted/40 hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                aria-label="Open command palette"
+                data-testid="sidebar-search-anchor"
+            >
+                <svg
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5 shrink-0"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                >
+                    <circle cx="7" cy="7" r="5" />
+                    <path d="M11 11l3 3" />
+                </svg>
+                <span className="flex-1 text-left">Search</span>
+                <span
+                    className="hidden items-center gap-[2px] rounded border border-border-subtle bg-bg-muted px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-content-subtle md:flex"
+                    aria-hidden="true"
+                >
+                    <span>⌘</span>
+                    <span>K</span>
+                </span>
+            </button>
 
             {/* User */}
             <div className="p-3 border-t border-border-subtle">

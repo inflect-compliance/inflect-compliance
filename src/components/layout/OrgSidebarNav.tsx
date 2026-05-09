@@ -55,6 +55,11 @@ export function useOrgNavSections(): OrgNavSectionDef[] {
 
     const sections: OrgNavSectionDef[] = [
         {
+            // Roadmap-2 PR-3 — quiet eyebrow on the primary org
+            // group (mirrors "Manage" below + "Workspace" on the
+            // tenant sidebar). Gives the org sidebar the same
+            // visual hierarchy the tenant sidebar carries.
+            title: 'Portfolio',
             items: [
                 { href: orgHref('/'), label: 'Portfolio Overview', icon: LayoutDashboard },
                 { href: orgHref('/tenants'), label: 'All Tenants', icon: Building2 },
