@@ -13,6 +13,7 @@ import { type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { KPIStat, type MetricTone } from '@/components/ui/metric';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { SkeletonDashboard } from '@/components/ui/skeleton';
 
 const CRIT_BADGE: Record<string, StatusBadgeVariant> = { LOW: 'neutral', MEDIUM: 'warning', HIGH: 'error', CRITICAL: 'error' };
 
@@ -66,7 +67,7 @@ export default function VendorDashboardPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { fetchMetrics(); }, [fetchMetrics]);
 
-    if (loading) return <div className="text-content-muted py-8 text-center">Loading dashboard…</div>;
+    if (loading) return <SkeletonDashboard />;
     if (!metrics) return <div className="text-content-error py-8 text-center">Failed to load metrics</div>;
 
     return (

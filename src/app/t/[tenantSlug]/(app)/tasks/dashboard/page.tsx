@@ -21,6 +21,7 @@ import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-bad
 import { Heading } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { SkeletonDashboard } from '@/components/ui/skeleton';
 
 const STATUS_LABELS: Record<string, string> = {
     OPEN: 'Open', TRIAGED: 'Triaged', IN_PROGRESS: 'In Progress',
@@ -103,7 +104,7 @@ export default function TaskDashboardPage() {
     useEffect(() => { fetchData(); }, [fetchData]);
 
     if (loading || !metrics) {
-        return <div className="p-12 text-center text-content-subtle animate-pulse">Loading dashboard...</div>;
+        return <SkeletonDashboard />;
     }
 
     const maxBar = Math.max(metrics.trend.created30d, metrics.trend.resolved30d, 1);

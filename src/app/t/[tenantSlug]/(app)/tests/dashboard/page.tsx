@@ -17,6 +17,7 @@ import {
 import { StatusBadge } from '@/components/ui/status-badge';
 import { KPIStat, type MetricTone } from '@/components/ui/metric';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { SkeletonDashboard } from '@/components/ui/skeleton';
 import { Heading } from '@/components/ui/typography';
 
 interface DashboardMetrics {
@@ -102,7 +103,7 @@ export default function TestDashboardPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { fetchData(); }, [fetchData]);
 
-    if (loading || !metrics) return <div className="p-12 text-center text-content-subtle animate-pulse">Loading dashboard...</div>;
+    if (loading || !metrics) return <SkeletonDashboard />;
 
     return (
         <DashboardLayout

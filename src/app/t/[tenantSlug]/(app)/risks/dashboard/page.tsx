@@ -10,6 +10,7 @@ import { Heading } from '@/components/ui/typography';
 import { Card } from '@/components/ui/card';
 import { KPIStat } from '@/components/ui/metric';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { SkeletonDashboard } from '@/components/ui/skeleton';
 import { getStatusTone } from '@/lib/design/status-tone';
 
 type Risk = {
@@ -70,7 +71,7 @@ export default function RiskDashboardPage() {
     });
 
     if (loading) {
-        return <div className="glass-card p-12 text-center animate-pulse text-content-subtle">{t('loading')}</div>;
+        return <SkeletonDashboard />;
     }
 
     return (

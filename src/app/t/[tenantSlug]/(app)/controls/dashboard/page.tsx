@@ -16,6 +16,7 @@ import { Heading } from '@/components/ui/typography';
 import { Card } from '@/components/ui/card';
 import { KPIStat } from '@/components/ui/metric';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { SkeletonDashboard } from '@/components/ui/skeleton';
 
 const STATUS_LABELS: Record<string, string> = {
     NOT_STARTED: 'Not Started', IN_PROGRESS: 'In Progress', IMPLEMENTED: 'Implemented', NEEDS_REVIEW: 'Needs Review',
@@ -75,11 +76,7 @@ export default function ControlsDashboard() {
         if (res.ok) setConsistency(await res.json());
     };
 
-    if (loading) return (
-        <DashboardLayout header={{ title: 'Controls Dashboard', titleId: 'dashboard-heading' }}>
-            <div className="p-12 text-center text-content-subtle animate-pulse">Loading dashboard...</div>
-        </DashboardLayout>
-    );
+    if (loading) return <SkeletonDashboard />;
     if (!data) return (
         <DashboardLayout header={{ title: 'Controls Dashboard', titleId: 'dashboard-heading' }}>
             <div className="p-12 text-center text-content-error">Failed to load dashboard.</div>
