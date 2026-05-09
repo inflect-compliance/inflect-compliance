@@ -199,23 +199,28 @@ export default function TestRunPage() {
     };
 
     const fallbackBack = { href: tenantHref('/tests'), label: 'Tests' };
+    const fallbackBreadcrumbs = [
+        { label: 'Dashboard', href: tenantHref('/dashboard') },
+        { label: 'Tests', href: tenantHref('/tests') },
+        { label: run?.testPlan?.name ?? 'Run' },
+    ];
     if (loading) {
         return (
-            <EntityDetailLayout loading title="" back={fallbackBack}>
+            <EntityDetailLayout loading title="" breadcrumbs={fallbackBreadcrumbs} back={fallbackBack}>
                 <></>
             </EntityDetailLayout>
         );
     }
     if (error) {
         return (
-            <EntityDetailLayout error={error} title="" back={fallbackBack}>
+            <EntityDetailLayout error={error} title="" breadcrumbs={fallbackBreadcrumbs} back={fallbackBack}>
                 <></>
             </EntityDetailLayout>
         );
     }
     if (!run) {
         return (
-            <EntityDetailLayout empty={{ message: 'Run not found.' }} title="" back={fallbackBack}>
+            <EntityDetailLayout empty={{ message: 'Run not found.' }} title="" breadcrumbs={fallbackBreadcrumbs} back={fallbackBack}>
                 <></>
             </EntityDetailLayout>
         );
@@ -229,10 +234,19 @@ export default function TestRunPage() {
     const back = run.testPlan
         ? { href: tenantHref(`/controls/${run.testPlan.controlId}/tests/${run.testPlanId}`), label: run.testPlan.name }
         : fallbackBack;
+    const breadcrumbs = run.testPlan
+        ? [
+            { label: 'Dashboard', href: tenantHref('/dashboard') },
+            { label: 'Controls', href: tenantHref('/controls') },
+            { label: run.testPlan.name, href: tenantHref(`/controls/${run.testPlan.controlId}/tests/${run.testPlanId}`) },
+            { label: 'Run' },
+        ]
+        : fallbackBreadcrumbs;
 
     return (
         <EntityDetailLayout
             id="test-run-detail-page"
+            breadcrumbs={breadcrumbs}
             back={back}
             title={
                 <span id="test-run-title">

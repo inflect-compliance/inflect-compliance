@@ -103,23 +103,28 @@ export default function AssetDetailPage() {
     const critColor = (c: string): StatusBadgeVariant => c === 'HIGH' ? 'error' : c === 'MEDIUM' ? 'warning' : 'success';
 
     const back = { href: tenantHref('/assets'), label: 'Assets' };
+    const breadcrumbs = [
+        { label: 'Dashboard', href: tenantHref('/dashboard') },
+        { label: 'Assets', href: tenantHref('/assets') },
+        { label: asset?.name ?? 'Asset' },
+    ];
     if (loading) {
         return (
-            <EntityDetailLayout loading title="" back={back}>
+            <EntityDetailLayout loading title="" breadcrumbs={breadcrumbs} back={back}>
                 <></>
             </EntityDetailLayout>
         );
     }
     if (error && !asset) {
         return (
-            <EntityDetailLayout error={error} title="" back={back}>
+            <EntityDetailLayout error={error} title="" breadcrumbs={breadcrumbs} back={back}>
                 <></>
             </EntityDetailLayout>
         );
     }
     if (!asset) {
         return (
-            <EntityDetailLayout empty={{ message: 'Asset not found.' }} title="" back={back}>
+            <EntityDetailLayout empty={{ message: 'Asset not found.' }} title="" breadcrumbs={breadcrumbs} back={back}>
                 <></>
             </EntityDetailLayout>
         );
@@ -128,6 +133,7 @@ export default function AssetDetailPage() {
     return (
         <EntityDetailLayout
             id="asset-detail-page"
+            breadcrumbs={breadcrumbs}
             back={{ href: tenantHref('/assets'), label: 'Assets' }}
             title={<span id="asset-title-heading">{asset.name}</span>}
             meta={

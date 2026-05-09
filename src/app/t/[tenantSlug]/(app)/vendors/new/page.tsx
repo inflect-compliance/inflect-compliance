@@ -263,7 +263,7 @@ export default function CreateVendorPage() {
 
                 <div className="flex gap-compact pt-2">
                     <Button type="submit" variant="primary" disabled={submitting || !form.name} id="create-vendor-submit">
-                        {submitting ? 'Creating…' : 'Create Vendor'}
+                        {submitting ? 'Creating…' : '+ Vendor'}
                     </Button>
                     <Link href={tenantHref('/vendors')} className={buttonVariants({ variant: 'secondary' })}>Cancel</Link>
                 </div>

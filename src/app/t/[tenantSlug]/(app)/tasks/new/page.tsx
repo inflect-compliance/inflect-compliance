@@ -392,7 +392,7 @@ export default function NewTaskPage() {
 
                 <div className="flex gap-compact pt-2">
                     <Button type="submit" variant="primary" disabled={saving} id="create-task-btn">
-                        {saving ? 'Creating...' : 'Create Task'}
+                        {saving ? 'Creating...' : '+ Task'}
                     </Button>
                     <Link href={tenantHref('/tasks')} className={buttonVariants({ variant: 'secondary' })}>Cancel</Link>
                 </div>

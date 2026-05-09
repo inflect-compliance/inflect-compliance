@@ -97,16 +97,22 @@ export default function PackDetailPage() {
     }, [packComplete, packId, packName, celebrate]);
 
     const back = { href: `/t/${tenantSlug}/audits/cycles`, label: 'Cycles' };
+    const breadcrumbs = [
+        { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
+        { label: 'Audits', href: `/t/${tenantSlug}/audits` },
+        { label: 'Cycles', href: `/t/${tenantSlug}/audits/cycles` },
+        { label: pack?.name ?? 'Pack' },
+    ];
     if (loading) {
         return (
-            <EntityDetailLayout loading title="" back={back}>
+            <EntityDetailLayout loading title="" breadcrumbs={breadcrumbs} back={back}>
                 <></>
             </EntityDetailLayout>
         );
     }
     if (!pack) {
         return (
-            <EntityDetailLayout empty={{ message: 'Pack not found.' }} title="" back={back}>
+            <EntityDetailLayout empty={{ message: 'Pack not found.' }} title="" breadcrumbs={breadcrumbs} back={back}>
                 <></>
             </EntityDetailLayout>
         );
@@ -125,6 +131,7 @@ export default function PackDetailPage() {
     return (
         <EntityDetailLayout
             id="pack-detail-page"
+            breadcrumbs={breadcrumbs}
             back={back}
             title={<span id="pack-name">{pack.name}</span>}
             meta={

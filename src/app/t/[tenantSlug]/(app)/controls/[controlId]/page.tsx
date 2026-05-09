@@ -1176,7 +1176,7 @@ export default function ControlDetailPage() {
                     {permissions.canWrite && (
                         <div className="flex justify-end">
                             <Button variant="primary" onClick={() => setShowTaskForm(!showTaskForm)} id="create-task-btn">
-                                + Create Task
+                                + Task
                             </Button>
                         </div>
                     )}

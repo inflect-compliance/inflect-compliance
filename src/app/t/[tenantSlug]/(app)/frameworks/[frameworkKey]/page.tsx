@@ -80,16 +80,21 @@ export default function FrameworkDetailPage() {
     }, [apiUrl, frameworkKey]);
 
     const back = { href: tenantHref('/frameworks'), label: 'Frameworks' };
+    const breadcrumbs = [
+        { label: 'Dashboard', href: tenantHref('/dashboard') },
+        { label: 'Frameworks', href: tenantHref('/frameworks') },
+        { label: framework?.name ?? frameworkKey },
+    ];
     if (loading) {
         return (
-            <EntityDetailLayout loading title="" back={back}>
+            <EntityDetailLayout loading title="" breadcrumbs={breadcrumbs} back={back}>
                 <></>
             </EntityDetailLayout>
         );
     }
     if (error || !framework) {
         return (
-            <EntityDetailLayout error={error ?? 'Framework not found'} title="" back={back}>
+            <EntityDetailLayout error={error ?? 'Framework not found'} title="" breadcrumbs={breadcrumbs} back={back}>
                 <></>
             </EntityDetailLayout>
         );
@@ -123,6 +128,7 @@ export default function FrameworkDetailPage() {
     return (
         <EntityDetailLayout
             id="framework-detail-page"
+            breadcrumbs={breadcrumbs}
             back={back}
             title={<span id="framework-detail-heading">{framework.name}</span>}
             meta={

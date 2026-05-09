@@ -223,7 +223,7 @@ export default function NewPolicyPage() {
 
                 <div className="flex gap-tight pt-2">
                     <Button type="submit" variant="primary" disabled={loading} id="create-policy-btn">
-                        {loading ? 'Creating...' : 'Create Policy'}
+                        {loading ? 'Creating...' : '+ Policy'}
                     </Button>
                     <Button type="button" variant="secondary" onClick={() => router.back()}>
                         Cancel

@@ -134,6 +134,11 @@ export function AccessReviewDetailClient({
     return (
         <EntityDetailLayout
             id="access-review-detail-page"
+            breadcrumbs={[
+                { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
+                { label: 'Access Reviews', href: `/t/${tenantSlug}/access-reviews` },
+                { label: review.name },
+            ]}
             back={{ href: `/t/${tenantSlug}/access-reviews`, label: 'All campaigns' }}
             title={<span data-testid="access-review-detail-title">{review.name}</span>}
             meta={

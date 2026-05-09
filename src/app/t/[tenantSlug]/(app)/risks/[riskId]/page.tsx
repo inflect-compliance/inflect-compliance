@@ -214,23 +214,28 @@ export default function RiskDetailPage() {
         setEditForm(f => ({ ...f, [field]: e.target.value }));
 
     const back = { href: href('/risks'), label: 'Risks' };
+    const breadcrumbs = [
+        { label: 'Dashboard', href: href('/dashboard') },
+        { label: 'Risks', href: href('/risks') },
+        { label: risk?.title ?? 'Risk' },
+    ];
     if (loading) {
         return (
-            <EntityDetailLayout loading title="" back={back}>
+            <EntityDetailLayout loading title="" breadcrumbs={breadcrumbs} back={back}>
                 <></>
             </EntityDetailLayout>
         );
     }
     if (error && !risk) {
         return (
-            <EntityDetailLayout error={error} title="" back={back}>
+            <EntityDetailLayout error={error} title="" breadcrumbs={breadcrumbs} back={back}>
                 <></>
             </EntityDetailLayout>
         );
     }
     if (!risk) {
         return (
-            <EntityDetailLayout empty={{ message: 'Risk not found.' }} title="" back={back}>
+            <EntityDetailLayout empty={{ message: 'Risk not found.' }} title="" breadcrumbs={breadcrumbs} back={back}>
                 <></>
             </EntityDetailLayout>
         );
@@ -242,6 +247,7 @@ export default function RiskDetailPage() {
     return (
         <EntityDetailLayout
             id="risk-detail-page"
+            breadcrumbs={breadcrumbs}
             back={back}
             title={<span id="risk-title-heading">{risk.title}</span>}
             meta={

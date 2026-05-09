@@ -206,16 +206,21 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
     };
 
     const back = { href: tenantHref('/vendors'), label: 'Vendors' };
+    const breadcrumbs = [
+        { label: 'Dashboard', href: tenantHref('/dashboard') },
+        { label: 'Vendors', href: tenantHref('/vendors') },
+        { label: vendor?.name ?? 'Vendor' },
+    ];
     if (loading) {
         return (
-            <EntityDetailLayout loading title="" back={back}>
+            <EntityDetailLayout loading title="" breadcrumbs={breadcrumbs} back={back}>
                 <></>
             </EntityDetailLayout>
         );
     }
     if (!vendor) {
         return (
-            <EntityDetailLayout empty={{ message: 'Vendor not found.' }} title="" back={back}>
+            <EntityDetailLayout empty={{ message: 'Vendor not found.' }} title="" breadcrumbs={breadcrumbs} back={back}>
                 <></>
             </EntityDetailLayout>
         );
@@ -234,6 +239,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
     return (
         <EntityDetailLayout
             id="vendor-detail-page"
+            breadcrumbs={breadcrumbs}
             back={back}
             title={<span id="vendor-detail-name">{vendor.name}</span>}
             meta={
@@ -329,7 +335,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                     {canWrite && (
                         <div className="flex justify-end">
                             <Button variant="primary" onClick={() => setShowDocForm(!showDocForm)} id="add-doc-btn">
-                                {showDocForm ? 'Cancel' : '+ Add Document'}
+                                {showDocForm ? 'Cancel' : '+ Document'}
                             </Button>
                         </div>
                     )}

@@ -320,23 +320,28 @@ export default function PolicyDetailPage() {
     // ── Render ──
 
     const back = { href: tenantHref('/policies'), label: 'Policies' };
+    const breadcrumbs = [
+        { label: 'Dashboard', href: tenantHref('/dashboard') },
+        { label: 'Policies', href: tenantHref('/policies') },
+        { label: policy?.title ?? 'Policy' },
+    ];
     if (loading) {
         return (
-            <EntityDetailLayout loading title="" back={back}>
+            <EntityDetailLayout loading title="" breadcrumbs={breadcrumbs} back={back}>
                 <></>
             </EntityDetailLayout>
         );
     }
     if (error && !policy) {
         return (
-            <EntityDetailLayout error={error} title="" back={back}>
+            <EntityDetailLayout error={error} title="" breadcrumbs={breadcrumbs} back={back}>
                 <></>
             </EntityDetailLayout>
         );
     }
     if (!policy) {
         return (
-            <EntityDetailLayout empty={{ message: 'Policy not found.' }} title="" back={back}>
+            <EntityDetailLayout empty={{ message: 'Policy not found.' }} title="" breadcrumbs={breadcrumbs} back={back}>
                 <></>
             </EntityDetailLayout>
         );
@@ -378,6 +383,7 @@ export default function PolicyDetailPage() {
     return (
         <EntityDetailLayout
             id="policy-detail-page"
+            breadcrumbs={breadcrumbs}
             back={back}
             title={<span className="truncate" id="policy-title">{policy.title}</span>}
             meta={
@@ -710,7 +716,7 @@ export default function PolicyDetailPage() {
                     </div>
 
                     <Button variant="primary" onClick={createVersion} disabled={saving} id="save-version-btn">
-                        {saving ? 'Saving...' : 'Save as New Version'}
+                        {saving ? 'Saving...' : '+ Version'}
                     </Button>
                 </div>
             )}

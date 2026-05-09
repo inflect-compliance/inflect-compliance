@@ -129,7 +129,7 @@ export default function AuditCyclesPage() {
                     <p className="text-content-muted text-sm">{cycles.length} audit cycle{cycles.length !== 1 ? 's' : ''}</p>
                 </div>
                 <Button variant="primary" onClick={() => setShowForm(!showForm)} id="create-cycle-btn">
-                    {showForm ? 'Cancel' : '+ New Audit Cycle'}
+                    {showForm ? 'Cancel' : '+ Cycle'}
                 </Button>
             </div>
 

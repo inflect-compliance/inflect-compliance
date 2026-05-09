@@ -75,7 +75,12 @@ const EXEMPT_FILES = new Set<string>([
 // require the line to contain `<Button` / `<button` / `<Link...
 // buttonVariants` so headings (`<Heading>Create API Key</Heading>`)
 // and other JSX text don't false-positive.
-const JSX_LEGACY_VERB_RE = />\s*(New|Add|Create)\s+[A-Z]/;
+// Accepts:
+//   - `>New X<` — direct JSX text
+//   - `>+ New X<` — already-prefixed-but-still-legacy text (we want
+//     the noun shape `+ X`, not `+ New X`)
+const JSX_LEGACY_VERB_RE =
+    />\s*(?:\+\s*)?(New|Add|Create)\s+[A-Z]/;
 const JSX_BUTTON_CONTEXT_RE = /<[Bb]utton\b|buttonVariants/;
 
 // i18n values that start with the legacy verbs OR with a banner emoji
@@ -126,16 +131,51 @@ describe("Action label vocabulary (v2-fu-2)", () => {
                         trimmed.startsWith("*")
                     )
                         return;
-                    if (!JSX_LEGACY_VERB_RE.test(line)) return;
-                    // Skip if the line isn't a button-context (e.g.
-                    // `<Heading>Create API Key</Heading>` is a page
-                    // title, not a button label).
-                    if (!JSX_BUTTON_CONTEXT_RE.test(line)) return;
-                    offenders.push({
-                        file: path.relative(ROOT, file),
-                        line: i + 1,
-                        text: trimmed.slice(0, 200),
-                    });
+                    if (JSX_LEGACY_VERB_RE.test(line)) {
+                        // Skip if the line isn't a button-context
+                        // (e.g. `<Heading>Create API Key</Heading>`
+                        // is a page title, not a button label).
+                        if (!JSX_BUTTON_CONTEXT_RE.test(line)) return;
+                        offenders.push({
+                            file: path.relative(ROOT, file),
+                            line: i + 1,
+                            text: trimmed.slice(0, 200),
+                        });
+                        return;
+                    }
+                    // Multi-line scan: when a line opens a `<Button`
+                    // tag, peek at the next 3 lines for inline text
+                    // matching the legacy-verb pattern (e.g. the
+                    // common shape `<Button>\n  {loading ? ... :
+                    // 'Create X'}\n</Button>`).
+                    if (!/<[Bb]utton\b/.test(line)) return;
+                    for (
+                        let j = i + 1;
+                        j < Math.min(i + 4, lines.length);
+                        j++
+                    ) {
+                        const next = lines[j];
+                        // Stop at the closing `</Button>` so we
+                        // don't accidentally reach into sibling
+                        // text.
+                        if (/<\/[Bb]utton>/.test(next)) break;
+                        // Match a quoted legacy-verb literal in the
+                        // next line. Body copy ("Create one above.")
+                        // doesn't follow the terse 1-3 capitalised-
+                        // word shape so the I18N regex (reused
+                        // here) is appropriate.
+                        const m = next.match(
+                            /['"](?:\+\s*)?(New|Add|Create)\s+([A-Z][A-Za-z]*(?:\s+[A-Z][A-Za-z]*){0,3})\s*['"]/,
+                        );
+                        if (m) {
+                            offenders.push({
+                                file: path.relative(ROOT, file),
+                                line: j + 1,
+                                text: next.trim().slice(0, 200),
+                            });
+                            break;
+                        }
+                    }
                 });
             }
         }
