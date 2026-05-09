@@ -16,6 +16,7 @@ import {
 } from '@/components/TestDashboardG2Section';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { KPIStat, type MetricTone } from '@/components/ui/metric';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Heading } from '@/components/ui/typography';
 
 interface DashboardMetrics {
@@ -104,30 +105,31 @@ export default function TestDashboardPage() {
     if (loading || !metrics) return <div className="p-12 text-center text-content-subtle animate-pulse">Loading dashboard...</div>;
 
     return (
-        <div className="space-y-page animate-fadeIn">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <Heading level={1} id="dashboard-title">Test Dashboard</Heading>
-                    <p className="text-sm text-content-muted mt-1">Testing health and framework readiness</p>
-                </div>
-                <div className="flex gap-compact">
-                    <Link href={tenantHref('/tests')} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>← Tests</Link>
-                    <Link href={tenantHref('/tests/due')} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>Due Queue</Link>
-                    <div className="flex gap-1 bg-bg-default/50 rounded-lg p-1">
-                        {[30, 90].map(d => (
-                            <button
-                                key={d}
-                                onClick={() => setPeriod(d)}
-                                className={`px-3 py-1 rounded text-xs font-medium transition ${period === d ? 'bg-[var(--brand-default)] text-content-emphasis' : 'text-content-muted hover:text-content-emphasis'}`}
-                                id={`period-${d}-btn`}
-                            >
-                                {d}d
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            </div>
+        <DashboardLayout
+            header={{
+                title: 'Test Dashboard',
+                titleId: 'dashboard-title',
+                description: 'Testing health and framework readiness',
+                actions: (
+                    <>
+                        <Link href={tenantHref('/tests')} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>Tests</Link>
+                        <Link href={tenantHref('/tests/due')} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>Due Queue</Link>
+                        <div className="flex gap-1 bg-bg-default/50 rounded-lg p-1">
+                            {[30, 90].map(d => (
+                                <button
+                                    key={d}
+                                    onClick={() => setPeriod(d)}
+                                    className={`px-3 py-1 rounded text-xs font-medium transition-colors duration-150 ease-out ${period === d ? 'bg-[var(--brand-default)] text-content-emphasis' : 'text-content-muted hover:text-content-emphasis'}`}
+                                    id={`period-${d}-btn`}
+                                >
+                                    {d}d
+                                </button>
+                            ))}
+                        </div>
+                    </>
+                ),
+            }}
+        >
 
             {/* KPI Cards */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-default">
@@ -280,7 +282,7 @@ export default function TestDashboardPage() {
                     </div>
                 </div>
             )}
-        </div>
+        </DashboardLayout>
     );
 }
 

@@ -85,6 +85,8 @@ export interface PageHeaderProps {
     eyebrow?: React.ReactNode;
     /** Required `<Heading level={1}>` content. */
     title: React.ReactNode;
+    /** Optional DOM id placed on the title <Heading> element (E2E anchor). */
+    titleId?: string;
     /**
      * Optional descriptive sentence below the title. One sentence,
      * ≤ 80 chars per the v2 polish copy convention.
@@ -108,6 +110,7 @@ export function PageHeader({
     back,
     eyebrow,
     title,
+    titleId,
     description,
     meta,
     actions,
@@ -146,6 +149,7 @@ export function PageHeader({
                 )}
                 <Heading
                     level={1}
+                    id={titleId}
                     className={cn(back && "mt-1")}
                     data-testid="page-header-title"
                 >

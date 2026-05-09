@@ -9,6 +9,7 @@ import { StatusBreakdown } from '@/components/ui/status-breakdown';
 import { Heading } from '@/components/ui/typography';
 import { Card } from '@/components/ui/card';
 import { KPIStat } from '@/components/ui/metric';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 
 type Risk = {
     id: string;
@@ -72,16 +73,17 @@ export default function RiskDashboardPage() {
     }
 
     return (
-        <div className="space-y-section animate-fadeIn">
-            <div className="flex items-center justify-between">
-                <div>
-                    <Heading level={1}>{t('dashboardTitle')}</Heading>
-                    <p className="text-content-muted text-sm">{tenant.tenantName} — {t('riskCount', { count: total })}</p>
-                </div>
-                <Link href={href('/risks')} className={buttonVariants({ variant: 'secondary' })} id="back-to-register">
-                    {t('riskRegister')}
-                </Link>
-            </div>
+        <DashboardLayout
+            header={{
+                title: t('dashboardTitle'),
+                description: `${tenant.tenantName} — ${t('riskCount', { count: total })}`,
+                actions: (
+                    <Link href={href('/risks')} className={buttonVariants({ variant: 'secondary' })} id="back-to-register">
+                        {t('riskRegister')}
+                    </Link>
+                ),
+            }}
+        >
 
             {/* KPI Cards — Polish PR-2: KPIStat primitive. */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
@@ -176,6 +178,6 @@ export default function RiskDashboardPage() {
                     </div>
                 </Card>
             )}
-        </div>
+        </DashboardLayout>
     );
 }

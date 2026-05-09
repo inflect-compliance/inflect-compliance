@@ -12,6 +12,7 @@ import { StatusBreakdown, type StatusBreakdownItem } from '@/components/ui/statu
 import { type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { KPIStat, type MetricTone } from '@/components/ui/metric';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 
 const CRIT_BADGE: Record<string, StatusBadgeVariant> = { LOW: 'neutral', MEDIUM: 'warning', HIGH: 'error', CRITICAL: 'error' };
 
@@ -69,14 +70,15 @@ export default function VendorDashboardPage() {
     if (!metrics) return <div className="text-content-error py-8 text-center">Failed to load metrics</div>;
 
     return (
-        <div className="space-y-section">
-            <div className="flex items-center justify-between">
-                <div>
-                    <Heading level={1}>Vendor Dashboard</Heading>
-                    <p className="text-content-muted text-sm">{metrics.totalVendors} total vendors</p>
-                </div>
-                <Link href={tenantHref('/vendors')} className={buttonVariants({ variant: 'secondary' })}>← Register</Link>
-            </div>
+        <DashboardLayout
+            header={{
+                title: 'Vendor Dashboard',
+                description: `${metrics.totalVendors} total vendors`,
+                actions: (
+                    <Link href={tenantHref('/vendors')} className={buttonVariants({ variant: 'secondary' })}>Register</Link>
+                ),
+            }}
+        >
 
             {/* KPI Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-default">
@@ -121,6 +123,6 @@ export default function VendorDashboardPage() {
                     <p className="text-sm text-content-muted mt-1">Review vendor documents tab to check validity dates.</p>
                 </div>
             )}
-        </div>
+        </DashboardLayout>
     );
 }

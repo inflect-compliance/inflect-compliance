@@ -15,6 +15,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { Card } from '@/components/ui/card';
 import { KPIStat } from '@/components/ui/metric';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 
 const STATUS_LABELS: Record<string, string> = {
     NOT_STARTED: 'Not Started', IN_PROGRESS: 'In Progress', IMPLEMENTED: 'Implemented', NEEDS_REVIEW: 'Needs Review',
@@ -75,38 +76,36 @@ export default function ControlsDashboard() {
     };
 
     if (loading) return (
-        <div className="space-y-section animate-fadeIn">
-            <Heading level={1} id="dashboard-heading"><AppIcon name="dashboard" className="inline-block mr-2 align-text-bottom" /> Controls Dashboard</Heading>
+        <DashboardLayout header={{ title: 'Controls Dashboard', titleId: 'dashboard-heading' }}>
             <div className="p-12 text-center text-content-subtle animate-pulse">Loading dashboard...</div>
-        </div>
+        </DashboardLayout>
     );
     if (!data) return (
-        <div className="space-y-section animate-fadeIn">
-            <Heading level={1} id="dashboard-heading"><AppIcon name="dashboard" className="inline-block mr-2 align-text-bottom" /> Controls Dashboard</Heading>
+        <DashboardLayout header={{ title: 'Controls Dashboard', titleId: 'dashboard-heading' }}>
             <div className="p-12 text-center text-content-error">Failed to load dashboard.</div>
-        </div>
+        </DashboardLayout>
     );
 
     return (
-        <div className="space-y-section animate-fadeIn">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <Heading level={1} id="dashboard-heading"><AppIcon name="dashboard" className="inline-block mr-2 align-text-bottom" /> Controls Dashboard</Heading>
-                    <p className="text-content-muted text-sm">{data.totalControls} controls in register</p>
-                </div>
-                <div className="flex gap-tight">
-                    {permissions.canAdmin && (
-                        <Button variant="secondary" onClick={fetchConsistency} id="consistency-check-btn">
-                            <AppIcon name="search" size={16} className="inline-block" /> Consistency Check
-                        </Button>
-                    )}
-                    <Link href={tenantHref('/controls')} className={buttonVariants({ variant: 'secondary' })}>
-                        ← Back to Controls
-                    </Link>
-                </div>
-            </div>
-
+        <DashboardLayout
+            header={{
+                title: 'Controls Dashboard',
+                titleId: 'dashboard-heading',
+                description: `${data.totalControls} controls in register`,
+                actions: (
+                    <>
+                        {permissions.canAdmin && (
+                            <Button variant="secondary" onClick={fetchConsistency} id="consistency-check-btn">
+                                <AppIcon name="search" size={16} className="inline-block" /> Consistency Check
+                            </Button>
+                        )}
+                        <Link href={tenantHref('/controls')} className={buttonVariants({ variant: 'secondary' })}>
+                            Back to Controls
+                        </Link>
+                    </>
+                ),
+            }}
+        >
             {/* Stat Cards Row — Polish PR-2: KPIStat primitive. */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-default" id="dashboard-stats">
                 <div className="glass-card p-4">
@@ -225,6 +224,6 @@ export default function ControlsDashboard() {
                     )}
                 </Card>
             )}
-        </div>
+        </DashboardLayout>
     );
 }

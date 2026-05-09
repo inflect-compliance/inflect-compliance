@@ -20,6 +20,7 @@ import {
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 
 const STATUS_LABELS: Record<string, string> = {
     OPEN: 'Open', TRIAGED: 'Triaged', IN_PROGRESS: 'In Progress',
@@ -108,15 +109,15 @@ export default function TaskDashboardPage() {
     const maxBar = Math.max(metrics.trend.created30d, metrics.trend.resolved30d, 1);
 
     return (
-        <div className="space-y-section animate-fadeIn">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <Heading level={1}><AppIcon name="dashboard" className="inline-block mr-2 align-text-bottom" /> Task Dashboard</Heading>
-                    <p className="text-content-muted text-sm">{metrics.total} total tasks</p>
-                </div>
-                <Link href={tenantHref('/tasks')} className={buttonVariants({ variant: 'secondary' })}>← Task Register</Link>
-            </div>
+        <DashboardLayout
+            header={{
+                title: 'Task Dashboard',
+                description: `${metrics.total} total tasks`,
+                actions: (
+                    <Link href={tenantHref('/tasks')} className={buttonVariants({ variant: 'secondary' })}>Task Register</Link>
+                ),
+            }}
+        >
 
             {/* KPI Cards — Polish PR-2: KPIStat primitive. */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-default" id="dashboard-metrics">
@@ -307,6 +308,6 @@ export default function TaskDashboardPage() {
                     </div>
                 </div>
             )}
-        </div>
+        </DashboardLayout>
     );
 }
