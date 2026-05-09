@@ -721,7 +721,7 @@ export function Table<T>({
                             // z-20 sits above row cells (z-10 below
                             // for the first-row sticky) and above
                             // the pinned-column z-index.
-                            "sticky top-0 z-20",
+                            "sticky top-0 z-20 group/th",
                             "text-xs font-semibold text-content-muted uppercase tracking-wider bg-bg-muted select-none",
                             getCommonPinningClassNames(
                               header.column,
@@ -802,13 +802,21 @@ export function Table<T>({
                                       </HeaderWithTooltip>
                                     );
                                   })()}
-                              {isSortableColumn &&
-                                sortBy === header.column.id && (
-                                  <SortOrder
-                                    className="h-3 w-3 shrink-0"
-                                    order={sortOrder || "desc"}
-                                  />
-                                )}
+                              {isSortableColumn && (
+                                <SortOrder
+                                  className={cn(
+                                    "h-3 w-3 shrink-0 transition-opacity",
+                                    sortBy === header.column.id
+                                      ? "opacity-100"
+                                      : "opacity-30 group-hover/th:opacity-60",
+                                  )}
+                                  order={
+                                    sortBy === header.column.id
+                                      ? sortOrder || "desc"
+                                      : null
+                                  }
+                                />
+                              )}
                             </ButtonOrDiv>
                           </div>
                           {enableColumnResizing &&
