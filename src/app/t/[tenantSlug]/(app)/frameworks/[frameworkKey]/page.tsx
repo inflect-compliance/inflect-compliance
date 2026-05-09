@@ -79,7 +79,6 @@ export default function FrameworkDetailPage() {
         })();
     }, [apiUrl, frameworkKey]);
 
-    const back = { href: tenantHref('/frameworks'), label: 'Frameworks' };
     const breadcrumbs = [
         { label: 'Dashboard', href: tenantHref('/dashboard') },
         { label: 'Frameworks', href: tenantHref('/frameworks') },
@@ -87,14 +86,14 @@ export default function FrameworkDetailPage() {
     ];
     if (loading) {
         return (
-            <EntityDetailLayout loading title="" breadcrumbs={breadcrumbs} back={back}>
+            <EntityDetailLayout loading title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
     }
     if (error || !framework) {
         return (
-            <EntityDetailLayout error={error ?? 'Framework not found'} title="" breadcrumbs={breadcrumbs} back={back}>
+            <EntityDetailLayout error={error ?? 'Framework not found'} title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
@@ -129,7 +128,7 @@ export default function FrameworkDetailPage() {
         <EntityDetailLayout
             id="framework-detail-page"
             breadcrumbs={breadcrumbs}
-            back={back}
+
             title={<span id="framework-detail-heading">{framework.name}</span>}
             meta={
                 <>

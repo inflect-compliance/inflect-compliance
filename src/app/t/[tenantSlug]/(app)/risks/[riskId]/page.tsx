@@ -213,7 +213,6 @@ export default function RiskDetailPage() {
     const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
         setEditForm(f => ({ ...f, [field]: e.target.value }));
 
-    const back = { href: href('/risks'), label: 'Risks' };
     const breadcrumbs = [
         { label: 'Dashboard', href: href('/dashboard') },
         { label: 'Risks', href: href('/risks') },
@@ -221,21 +220,21 @@ export default function RiskDetailPage() {
     ];
     if (loading) {
         return (
-            <EntityDetailLayout loading title="" breadcrumbs={breadcrumbs} back={back}>
+            <EntityDetailLayout loading title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
     }
     if (error && !risk) {
         return (
-            <EntityDetailLayout error={error} title="" breadcrumbs={breadcrumbs} back={back}>
+            <EntityDetailLayout error={error} title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
     }
     if (!risk) {
         return (
-            <EntityDetailLayout empty={{ message: 'Risk not found.' }} title="" breadcrumbs={breadcrumbs} back={back}>
+            <EntityDetailLayout empty={{ message: 'Risk not found.' }} title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
@@ -248,7 +247,7 @@ export default function RiskDetailPage() {
         <EntityDetailLayout
             id="risk-detail-page"
             breadcrumbs={breadcrumbs}
-            back={back}
+
             title={<span id="risk-title-heading">{risk.title}</span>}
             meta={
                 <>

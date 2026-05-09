@@ -105,14 +105,14 @@ export default function PackDetailPage() {
     ];
     if (loading) {
         return (
-            <EntityDetailLayout loading title="" breadcrumbs={breadcrumbs} back={back}>
+            <EntityDetailLayout loading title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
     }
     if (!pack) {
         return (
-            <EntityDetailLayout empty={{ message: 'Pack not found.' }} title="" breadcrumbs={breadcrumbs} back={back}>
+            <EntityDetailLayout empty={{ message: 'Pack not found.' }} title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
@@ -132,7 +132,7 @@ export default function PackDetailPage() {
         <EntityDetailLayout
             id="pack-detail-page"
             breadcrumbs={breadcrumbs}
-            back={back}
+
             title={<span id="pack-name">{pack.name}</span>}
             meta={
                 <>

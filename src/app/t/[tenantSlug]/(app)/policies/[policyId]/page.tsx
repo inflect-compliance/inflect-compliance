@@ -319,7 +319,6 @@ export default function PolicyDetailPage() {
 
     // ── Render ──
 
-    const back = { href: tenantHref('/policies'), label: 'Policies' };
     const breadcrumbs = [
         { label: 'Dashboard', href: tenantHref('/dashboard') },
         { label: 'Policies', href: tenantHref('/policies') },
@@ -327,21 +326,21 @@ export default function PolicyDetailPage() {
     ];
     if (loading) {
         return (
-            <EntityDetailLayout loading title="" breadcrumbs={breadcrumbs} back={back}>
+            <EntityDetailLayout loading title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
     }
     if (error && !policy) {
         return (
-            <EntityDetailLayout error={error} title="" breadcrumbs={breadcrumbs} back={back}>
+            <EntityDetailLayout error={error} title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
     }
     if (!policy) {
         return (
-            <EntityDetailLayout empty={{ message: 'Policy not found.' }} title="" breadcrumbs={breadcrumbs} back={back}>
+            <EntityDetailLayout empty={{ message: 'Policy not found.' }} title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
@@ -384,7 +383,7 @@ export default function PolicyDetailPage() {
         <EntityDetailLayout
             id="policy-detail-page"
             breadcrumbs={breadcrumbs}
-            back={back}
+
             title={<span className="truncate" id="policy-title">{policy.title}</span>}
             meta={
                 <>

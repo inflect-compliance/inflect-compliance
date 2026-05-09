@@ -44,6 +44,7 @@ import type {
 } from '@/lib/risk-matrix/types';
 import { Heading } from '@/components/ui/typography';
 import { Card } from '@/components/ui/card';
+import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 
 interface RiskMatrixAdminClientProps {
     tenantSlug: string;
@@ -264,6 +265,14 @@ export function RiskMatrixAdminClient({
         >
             <header className="flex flex-wrap items-end justify-between gap-compact">
                 <div>
+                    <Breadcrumbs
+                        items={[
+                            { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
+                            { label: 'Admin', href: `/t/${tenantSlug}/admin` },
+                            { label: 'Risk Matrix' },
+                        ]}
+                        className="mb-1"
+                    />
                     <Heading level={1}>
                         Risk matrix configuration
                     </Heading>

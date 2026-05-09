@@ -75,14 +75,14 @@ export default function CycleDetailPage() {
     ];
     if (loading) {
         return (
-            <EntityDetailLayout loading title="" breadcrumbs={breadcrumbs} back={back}>
+            <EntityDetailLayout loading title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
     }
     if (!cycle) {
         return (
-            <EntityDetailLayout empty={{ message: 'Audit cycle not found.' }} title="" breadcrumbs={breadcrumbs} back={back}>
+            <EntityDetailLayout empty={{ message: 'Audit cycle not found.' }} title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
@@ -94,7 +94,7 @@ export default function CycleDetailPage() {
         <EntityDetailLayout
             id="cycle-detail-page"
             breadcrumbs={breadcrumbs}
-            back={back}
+
             title={
                 <span className="inline-flex items-center gap-compact" id="cycle-name">
                     <AppIcon name={fw.icon} size={28} />

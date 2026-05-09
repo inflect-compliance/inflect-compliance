@@ -205,7 +205,6 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
         setEnriching(false);
     };
 
-    const back = { href: tenantHref('/vendors'), label: 'Vendors' };
     const breadcrumbs = [
         { label: 'Dashboard', href: tenantHref('/dashboard') },
         { label: 'Vendors', href: tenantHref('/vendors') },
@@ -213,14 +212,14 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
     ];
     if (loading) {
         return (
-            <EntityDetailLayout loading title="" breadcrumbs={breadcrumbs} back={back}>
+            <EntityDetailLayout loading title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
     }
     if (!vendor) {
         return (
-            <EntityDetailLayout empty={{ message: 'Vendor not found.' }} title="" breadcrumbs={breadcrumbs} back={back}>
+            <EntityDetailLayout empty={{ message: 'Vendor not found.' }} title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
@@ -240,7 +239,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
         <EntityDetailLayout
             id="vendor-detail-page"
             breadcrumbs={breadcrumbs}
-            back={back}
+
             title={<span id="vendor-detail-name">{vendor.name}</span>}
             meta={
                 <>

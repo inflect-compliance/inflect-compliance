@@ -23,6 +23,7 @@ import { formatDate } from '@/lib/format-date';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
+import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 
 interface TemplateRow {
     id: string;
@@ -93,6 +94,14 @@ export function VendorTemplatesIndexClient() {
     return (
         <div className="space-y-section animate-fadeIn">
             <header>
+                <Breadcrumbs
+                    items={[
+                        { label: 'Dashboard', href: tenantHref('/dashboard') },
+                        { label: 'Admin', href: tenantHref('/admin') },
+                        { label: 'Vendor Templates' },
+                    ]}
+                    className="mb-1"
+                />
                 <Heading level={1} id="vendor-templates-title">
                     Vendor questionnaire templates
                 </Heading>

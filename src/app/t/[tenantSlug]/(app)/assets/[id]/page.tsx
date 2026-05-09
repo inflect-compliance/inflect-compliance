@@ -102,7 +102,6 @@ export default function AssetDetailPage() {
     const STATUS_OPTIONS: ComboboxOption[] = [{ value: 'ACTIVE', label: 'Active' }, { value: 'RETIRED', label: 'Retired' }];
     const critColor = (c: string): StatusBadgeVariant => c === 'HIGH' ? 'error' : c === 'MEDIUM' ? 'warning' : 'success';
 
-    const back = { href: tenantHref('/assets'), label: 'Assets' };
     const breadcrumbs = [
         { label: 'Dashboard', href: tenantHref('/dashboard') },
         { label: 'Assets', href: tenantHref('/assets') },
@@ -110,21 +109,21 @@ export default function AssetDetailPage() {
     ];
     if (loading) {
         return (
-            <EntityDetailLayout loading title="" breadcrumbs={breadcrumbs} back={back}>
+            <EntityDetailLayout loading title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
     }
     if (error && !asset) {
         return (
-            <EntityDetailLayout error={error} title="" breadcrumbs={breadcrumbs} back={back}>
+            <EntityDetailLayout error={error} title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
     }
     if (!asset) {
         return (
-            <EntityDetailLayout empty={{ message: 'Asset not found.' }} title="" breadcrumbs={breadcrumbs} back={back}>
+            <EntityDetailLayout empty={{ message: 'Asset not found.' }} title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
@@ -134,7 +133,7 @@ export default function AssetDetailPage() {
         <EntityDetailLayout
             id="asset-detail-page"
             breadcrumbs={breadcrumbs}
-            back={{ href: tenantHref('/assets'), label: 'Assets' }}
+
             title={<span id="asset-title-heading">{asset.name}</span>}
             meta={
                 <>

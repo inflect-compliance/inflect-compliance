@@ -31,6 +31,7 @@ import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { SkeletonDetailPage } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
+import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 
 interface Question {
     id: string;
@@ -330,13 +331,16 @@ export function VendorTemplateBuilderClient({
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <Link
-                        href={tenantHref('/admin/vendor-templates')}
-                        className="text-content-muted text-xs hover:text-content-emphasis transition"
-                    >
-                        ← All templates
-                    </Link>
-                    <Heading level={1} className="mt-1">{tree.name}</Heading>
+                    <Breadcrumbs
+                        items={[
+                            { label: 'Dashboard', href: tenantHref('/dashboard') },
+                            { label: 'Admin', href: tenantHref('/admin') },
+                            { label: 'Vendor Templates', href: tenantHref('/admin/vendor-templates') },
+                            { label: tree.name },
+                        ]}
+                        className="mb-1"
+                    />
+                    <Heading level={1}>{tree.name}</Heading>
                     <div className="flex items-center gap-tight mt-1 text-xs text-content-subtle">
                         <span>{tree.key}</span>
                         <span>·</span>

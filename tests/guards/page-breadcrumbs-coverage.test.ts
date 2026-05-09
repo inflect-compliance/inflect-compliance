@@ -122,15 +122,9 @@ const EXEMPT_FILES = new Set<string>([
     "src/app/t/[tenantSlug]/(app)/reports/soa/SoAClient.tsx",
     "src/app/t/[tenantSlug]/(app)/reports/soa/print/SoAPrintView.tsx",
 
-    // ── Admin sub-pages — TODO migrate ──────────────────────────
-    // These admin sub-pages render their own client component with
-    // a hand-rolled header. Migrating them follows the same shape
-    // as admin/billing / admin/scim / admin/sso (Dashboard › Admin
-    // › <Section> breadcrumbs). Tracked as follow-up; exempt today
-    // so the ratchet doesn't block on these specific files.
-    "src/app/t/[tenantSlug]/(app)/admin/risk-matrix/RiskMatrixAdminClient.tsx",
-    "src/app/t/[tenantSlug]/(app)/admin/vendor-templates/VendorTemplatesIndexClient.tsx",
-    "src/app/t/[tenantSlug]/(app)/admin/vendor-templates/[templateId]/VendorTemplateBuilderClient.tsx",
+    // (Admin sub-pages risk-matrix, vendor-templates index +
+    // builder were on this list with a "TODO migrate" label;
+    // v2-fu-5 migrated them and removed them from the exempts.)
 ]);
 
 const HEADING_RE = /<Heading\s+[^>]*level=\{1\}/;

@@ -198,7 +198,6 @@ export default function TestRunPage() {
         }
     };
 
-    const fallbackBack = { href: tenantHref('/tests'), label: 'Tests' };
     const fallbackBreadcrumbs = [
         { label: 'Dashboard', href: tenantHref('/dashboard') },
         { label: 'Tests', href: tenantHref('/tests') },
@@ -206,21 +205,21 @@ export default function TestRunPage() {
     ];
     if (loading) {
         return (
-            <EntityDetailLayout loading title="" breadcrumbs={fallbackBreadcrumbs} back={fallbackBack}>
+            <EntityDetailLayout loading title="" breadcrumbs={fallbackBreadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
     }
     if (error) {
         return (
-            <EntityDetailLayout error={error} title="" breadcrumbs={fallbackBreadcrumbs} back={fallbackBack}>
+            <EntityDetailLayout error={error} title="" breadcrumbs={fallbackBreadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
     }
     if (!run) {
         return (
-            <EntityDetailLayout empty={{ message: 'Run not found.' }} title="" breadcrumbs={fallbackBreadcrumbs} back={fallbackBack}>
+            <EntityDetailLayout empty={{ message: 'Run not found.' }} title="" breadcrumbs={fallbackBreadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
@@ -231,9 +230,6 @@ export default function TestRunPage() {
     // Determine if "Link" button should be disabled
     const canSubmitEvidence = evKind === 'LINK' ? !!evUrl : evKind === 'EVIDENCE' ? !!evEvidenceId : !!evFile;
 
-    const back = run.testPlan
-        ? { href: tenantHref(`/controls/${run.testPlan.controlId}/tests/${run.testPlanId}`), label: run.testPlan.name }
-        : fallbackBack;
     const breadcrumbs = run.testPlan
         ? [
             { label: 'Dashboard', href: tenantHref('/dashboard') },
@@ -247,7 +243,7 @@ export default function TestRunPage() {
         <EntityDetailLayout
             id="test-run-detail-page"
             breadcrumbs={breadcrumbs}
-            back={back}
+
             title={
                 <span id="test-run-title">
                     Test Run {run.testPlan ? `— ${run.testPlan.name}` : ''}
