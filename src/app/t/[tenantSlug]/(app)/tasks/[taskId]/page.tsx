@@ -473,7 +473,7 @@ export default function TaskDetailPage() {
                                 <Combobox hideSearch id="link-relation" selected={RELATION_CB_OPTIONS.find(o => o.value === linkRelation) ?? null} setSelected={(opt) => setLinkRelation(opt?.value ?? linkRelation)} options={RELATION_CB_OPTIONS} matchTriggerWidth />
                             </div>
                             <Button type="submit" variant="primary" disabled={savingLink} id="submit-link-btn">
-                                {savingLink ? 'Linking...' : 'Add Link'}
+                                {savingLink ? 'Linking...' : '+ Link'}
                             </Button>
                         </form>
                     )}
@@ -529,7 +529,7 @@ export default function TaskDetailPage() {
                                 id="comment-body"
                             />
                             <Button type="submit" variant="primary" disabled={savingComment} id="submit-comment-btn">
-                                {savingComment ? 'Posting...' : 'Add Comment'}
+                                {savingComment ? 'Posting...' : '+ Comment'}
                             </Button>
                         </form>
                     )}

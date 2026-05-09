@@ -110,7 +110,7 @@ export default function CycleDetailPage() {
                 <div className="flex items-center justify-between">
                     <Heading level={2}>Default Pack Preview</Heading>
                     <Button variant="primary" onClick={createDefaultPack} disabled={creating} id="create-default-pack-btn" icon={<AppIcon name="package" size={16} />}>
-                        {creating ? 'Creating...' : 'Create Pack from Default Selection'}
+                        {creating ? 'Creating...' : '+ Pack'}
                     </Button>
                 </div>
 

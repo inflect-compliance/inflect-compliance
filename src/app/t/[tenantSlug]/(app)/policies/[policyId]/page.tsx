@@ -716,7 +716,7 @@ export default function PolicyDetailPage() {
                     </div>
 
                     <Button variant="primary" onClick={createVersion} disabled={saving} id="save-version-btn">
-                        {saving ? 'Saving...' : 'Save as New Version'}
+                        {saving ? 'Saving...' : '+ Version'}
                     </Button>
                 </div>
             )}

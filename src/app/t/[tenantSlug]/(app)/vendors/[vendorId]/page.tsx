@@ -335,7 +335,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                     {canWrite && (
                         <div className="flex justify-end">
                             <Button variant="primary" onClick={() => setShowDocForm(!showDocForm)} id="add-doc-btn">
-                                {showDocForm ? 'Cancel' : '+ Add Document'}
+                                {showDocForm ? 'Cancel' : '+ Document'}
                             </Button>
                         </div>
                     )}
