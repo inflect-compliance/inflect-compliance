@@ -191,6 +191,62 @@ describe("Action label vocabulary (v2-fu-2)", () => {
         expect(offenders).toHaveLength(0);
     });
 
+    // v2-fu-7 (2026-05-09) — context-free literal scan.
+    //
+    // The original ratchet required either `<Button` on the same
+    // line OR a multi-line scan inside `<Button>...</Button>`.
+    // This missed every case where the button is `<Link
+    // className={buttonVariants(...)}>` or a raw `<button
+    // className={buttonVariants(...)}>` because the multi-line scan
+    // only triggered on `<Button` opens. It also missed object-
+    // literal labels like `primaryAction={{ label: '+ New X', … }}`
+    // passed to EmptyState.
+    //
+    // The literal `+ (New|Add|Create) Word` phrase is unambiguous:
+    // it can only ever be a button label. There's no body-copy
+    // sentence that starts with `+ `. So we ban the literal phrase
+    // anywhere in src/app or src/components — regardless of JSX
+    // context.
+    it("zero literal '+ (New|Add|Create) Word' phrases anywhere in app/components", () => {
+        const offenders: Hit[] = [];
+        // Match `+ <verb> <Capitalised>` whether the line opens with
+        // whitespace (text node), `>`, `'`, or `"`. The `\b` after
+        // `(?:[+])` is unreliable since `+` is non-word, so we
+        // require either start-of-line/whitespace or a quoted/JSX
+        // boundary character.
+        const RE = /(?:^|['"`>\s])\+\s+(New|Add|Create)\s+[A-Z]/;
+        for (const dir of SCAN_DIRS) {
+            for (const file of walk(path.join(ROOT, dir))) {
+                const content = fs.readFileSync(file, "utf8");
+                const lines = content.split("\n");
+                lines.forEach((line, i) => {
+                    const trimmed = line.trim();
+                    if (
+                        trimmed.startsWith("//") ||
+                        trimmed.startsWith("*")
+                    )
+                        return;
+                    if (!RE.test(line)) return;
+                    offenders.push({
+                        file: path.relative(ROOT, file),
+                        line: i + 1,
+                        text: trimmed.slice(0, 200),
+                    });
+                });
+            }
+        }
+        if (offenders.length > 0) {
+            const sample = offenders
+                .slice(0, 15)
+                .map((o) => `  ${o.file}:${o.line}\n    ${o.text}`)
+                .join("\n");
+            throw new Error(
+                `Found ${offenders.length} legacy '+ (New|Add|Create) X' phrase(s). The convention is '+ <Singular Noun>' — drop the verb. e.g. '+ Task', '+ Policy', '+ Audit Cycle'.\n\nFirst ${Math.min(15, offenders.length)} offender(s):\n${sample}`,
+            );
+        }
+        expect(offenders).toHaveLength(0);
+    });
+
     it("zero legacy i18n button values starting with `(New|Add|Create) X`", () => {
         const offenders: Hit[] = [];
         const i18nDir = path.join(ROOT, I18N_DIR);

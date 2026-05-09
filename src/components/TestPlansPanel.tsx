@@ -119,11 +119,10 @@ export default function TestPlansPanel({ controlId }: { controlId: string }) {
                 {permissions.canWrite && (
                     <Button
                         variant="primary"
-                        size="sm"
                         onClick={() => setShowForm(!showForm)}
                         id="create-test-plan-btn"
                     >
-                        {showForm ? 'Cancel' : '+ New Test Plan'}
+                        {showForm ? 'Cancel' : '+ Test Plan'}
                     </Button>
                 )}
             </div>

@@ -443,7 +443,7 @@ function TasksPageInner({
                         <Link href={tenantHref('/tasks/dashboard')} className={buttonVariants({ variant: 'secondary', className: 'inline-flex items-center gap-tight' })} id="dashboard-btn"><AppIcon name="dashboard" size={16} /> Dashboard</Link>
                         {appPermissions.tasks.create && (
                             <Link href={tenantHref('/tasks/new')} className={buttonVariants({ variant: 'primary' })} id="new-task-btn">
-                                + New Task
+                                + Task
                             </Link>
                         )}
                     </div>

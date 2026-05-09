@@ -361,7 +361,7 @@ function PoliciesPageInner({
                             className={buttonVariants({ variant: 'primary' })}
                             id="new-policy-btn"
                         >
-                            + New Policy
+                            + Policy
                         </Link>
                     </>
                 ) : null,

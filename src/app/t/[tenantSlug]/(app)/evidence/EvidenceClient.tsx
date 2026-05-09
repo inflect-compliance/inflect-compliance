@@ -622,7 +622,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                     {permissions.canWrite && (
                         <div className="flex gap-tight">
                             <Button
-                                variant="primary"
+                                variant="secondary"
                                 onClick={() => setShowUpload(true)}
                                 id="upload-evidence-btn"
                             >
@@ -636,7 +636,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                                 Import ZIP
                             </Button>
                             <Button
-                                variant="secondary"
+                                variant="primary"
                                 onClick={() => setShowTextForm(true)}
                                 id="add-text-evidence-btn"
                             >

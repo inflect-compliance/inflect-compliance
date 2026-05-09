@@ -478,13 +478,12 @@ export function RiskMatrixAdminClient({
                                 Severity bands
                             </Heading>
                             <Button
-                                variant="secondary"
-                                size="sm"
+                                variant="primary"
                                 type="button"
                                 id="rm-add-band-btn"
                                 onClick={addBand}
                             >
-                                + Add band
+                                + Band
                             </Button>
                         </div>
                         <p className="text-xs text-content-subtle">

@@ -202,8 +202,8 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                             Dashboard
                         </Link>
                         {permissions.canCreate && (
-                            <Link href={tenantHref('/vendors/new')} className={cn(buttonVariants({ variant: 'primary', size: 'md' }))} id="new-vendor-btn">
-                                + New Vendor
+                            <Link href={tenantHref('/vendors/new')} className={cn(buttonVariants({ variant: 'primary' }))} id="new-vendor-btn">
+                                + Vendor
                             </Link>
                         )}
                     </div>

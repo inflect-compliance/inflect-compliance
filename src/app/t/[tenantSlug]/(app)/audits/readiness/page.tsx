@@ -150,7 +150,7 @@ export default async function ReadinessOverviewPage({
                         href={`/t/${tenantSlug}/audits/cycles`}
                         className={buttonVariants({ variant: 'primary' })}
                     >
-                        + New Audit Cycle
+                        + Audit Cycle
                     </Link>
                 </div>
             ) : (

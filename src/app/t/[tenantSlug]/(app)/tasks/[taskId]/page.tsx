@@ -460,7 +460,7 @@ export default function TaskDetailPage() {
                     {permissions.canWrite && (
                         <div className="flex justify-end">
                             <Button variant="primary" onClick={() => setShowLinkForm(!showLinkForm)} id="add-link-btn">
-                                + Add Link
+                                + Link
                             </Button>
                         </div>
                     )}

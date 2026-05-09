@@ -575,12 +575,11 @@ function AddSectionForm({ onSubmit }: { onSubmit: (title: string) => void }) {
                 aria-label="New section title"
             />
             <Button
-                variant="secondary"
-                size="sm"
+                variant="primary"
                 type="submit"
                 disabled={!title.trim()}
             >
-                + Add section
+                + Section
             </Button>
         </form>
     );
@@ -679,13 +678,12 @@ function AddQuestionForm({
             <div className="md:col-span-2">
                 <Button
                     variant="primary"
-                    size="sm"
                     className="w-full"
                     type="submit"
                     disabled={busy || !prompt.trim()}
                     loading={busy}
                 >
-                    {busy ? 'Adding…' : '+ Add question'}
+                    {busy ? 'Adding…' : '+ Question'}
                 </Button>
             </div>
         </form>

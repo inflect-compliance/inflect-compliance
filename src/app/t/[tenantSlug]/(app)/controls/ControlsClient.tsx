@@ -740,11 +740,11 @@ function ControlsPageInner({
                                 </Link>
                                 <button
                                     type="button"
-                                    className={buttonVariants({ variant: 'primary', size: 'sm' })}
+                                    className={buttonVariants({ variant: 'primary' })}
                                     id="new-control-btn"
                                     onClick={() => setIsCreateOpen(true)}
                                 >
-                                    + New Control
+                                    + Control
                                 </button>
                             </>
                         )}

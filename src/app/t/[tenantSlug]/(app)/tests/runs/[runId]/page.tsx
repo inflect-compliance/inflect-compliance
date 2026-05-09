@@ -367,12 +367,11 @@ export default function TestRunPage() {
                     <Heading level={3}>Evidence ({run.evidence?.length ?? 0})</Heading>
                     {permissions.canWrite && (
                         <Button
-                            variant="secondary"
-                            size="xs"
+                            variant="primary"
                             onClick={() => setShowEvForm(!showEvForm)}
                             id="link-evidence-btn"
                         >
-                            {showEvForm ? 'Cancel' : '+ Link Evidence'}
+                            {showEvForm ? 'Cancel' : '+ Evidence'}
                         </Button>
                     )}
                 </div>

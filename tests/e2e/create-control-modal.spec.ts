@@ -30,7 +30,7 @@ test.describe('Epic 54 — Create Control modal', () => {
 
     let tenantSlug: string;
 
-    test('clicking + New Control opens the modal without navigating away', async ({ page }) => {
+    test('clicking + Control opens the modal without navigating away', async ({ page }) => {
         tenantSlug = await loginAndGetTenant(page);
         await safeGoto(page, `/t/${tenantSlug}/controls`);
         // Reload to shake off any Radix/Vaul portal residue from a

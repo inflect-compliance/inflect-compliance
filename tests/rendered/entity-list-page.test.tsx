@@ -101,7 +101,7 @@ describe('EntityListPage — header', () => {
                         count: '2 controls in register',
                         actions: (
                             <button type="button" data-testid="header-create">
-                                + New Control
+                                + Control
                             </button>
                         ),
                     }}

@@ -1251,11 +1251,11 @@ export default function ControlDetailPage() {
                 <div className="space-y-default">
                     {permissions.canWrite && (
                         <div className="flex justify-end gap-tight">
-                            <Button variant="primary" onClick={() => { setShowFileUpload(!showFileUpload); setShowEvidenceForm(false); }} id="upload-evidence-btn">
+                            <Button variant="secondary" onClick={() => { setShowFileUpload(!showFileUpload); setShowEvidenceForm(false); }} id="upload-evidence-btn">
                                 Upload Evidence
                             </Button>
-                            <Button variant="secondary" onClick={() => { setShowEvidenceForm(!showEvidenceForm); setShowFileUpload(false); }} id="link-evidence-btn">
-                                + Link Evidence
+                            <Button variant="primary" onClick={() => { setShowEvidenceForm(!showEvidenceForm); setShowFileUpload(false); }} id="link-evidence-btn">
+                                + Evidence
                             </Button>
                         </div>
                     )}

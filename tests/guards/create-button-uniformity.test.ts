@@ -66,26 +66,98 @@ function walk(dir: string): string[] {
 }
 
 /**
- * Scan a single line for a `<Button>+ Word</Button>` pattern (or
- * `<button className={buttonVariants(...)}>+ Word</button>`). Returns
- * the position of the start tag in the line if matched, plus the
- * full attribute substring of that tag.
+ * Multi-line + multi-tag scan for create-button-shaped JSX blocks.
+ *
+ * Strategy:
+ *   1. Find any `+ <CapitalisedWord>` text node in the file (whether
+ *      it's on its own line, inline `>+ X<`, or inside a string).
+ *   2. Walk BACKWARDS up to ~6 lines looking for the most recent
+ *      open tag of `<Button`, `<button`, or `<Link`. Capture the
+ *      attribute substring between `<TagName` and the matching `>`.
+ *      Attributes can span multiple lines.
+ *   3. Skip JSX text inside the open-tag bracket (we only want the
+ *      *children* text node).
+ *   4. If the captured attrs contain `buttonVariants(` (for `<Link>`
+ *      / `<button>`) or the tag is `<Button` (CVA primitive), it's a
+ *      create-button site. Yield the attrs for variant/size checks.
  */
-function findCreateButton(
-    line: string,
-):
-    | { tagAttrs: string; afterText: string }
-    | null {
-    // Match `<Button` or `<button ... className={buttonVariants(...)}>`
-    // followed (within the same line) by a `+ <Word>` literal.
-    const m = line.match(
-        /<([Bb]utton)(\s+[^>]*?)?>(?:\s*)\+\s+[A-Z][A-Za-z]*\b/,
-    );
-    if (!m) return null;
-    return {
-        tagAttrs: m[2] ?? "",
-        afterText: line.slice(m.index! + m[0].length),
-    };
+interface CreateBtnHit {
+    line: number;
+    text: string;
+    tagAttrs: string;
+}
+
+function findCreateButtons(content: string): CreateBtnHit[] {
+    const lines = content.split("\n");
+    const out: CreateBtnHit[] = [];
+    // The `+ Word` text matcher. We require the `+` to be on its
+    // own (preceded by start-of-line/whitespace/quote/`>`) and the
+    // word to be capitalised. Skip lines that are clearly comments
+    // or include "(New|Add|Create) X" — those are picked up by
+    // action-label-vocabulary.
+    const TEXT_RE =
+        /(?:^|['"`>\s])\+\s+([A-Z][A-Za-z]*(?:\s+[A-Z][A-Za-z]*){0,3})/;
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const trimmed = line.trim();
+        if (trimmed.startsWith("//") || trimmed.startsWith("*"))
+            continue;
+        if (!TEXT_RE.test(line)) continue;
+        // Skip the legacy-verb form (handled by the other ratchet).
+        if (/\+\s+(New|Add|Create)\s+/.test(line)) continue;
+
+        // Walk back up to 6 lines for the most recent open tag.
+        let openLineIdx = -1;
+        let openMatch: RegExpExecArray | null = null;
+        for (
+            let j = i;
+            j >= Math.max(0, i - 6) && openMatch === null;
+            j--
+        ) {
+            const re = /<([Bb]utton|Link)\b/g;
+            let m: RegExpExecArray | null = null;
+            let last: RegExpExecArray | null = null;
+            while ((m = re.exec(lines[j])) !== null) last = m;
+            if (last) {
+                openLineIdx = j;
+                openMatch = last;
+            }
+        }
+        if (!openMatch) continue;
+
+        // Build the attribute substring from `<TagName` to the next `>`
+        // — possibly spanning multiple lines.
+        let attrs = "";
+        let foundClose = false;
+        const startIdx = openMatch.index + openMatch[0].length;
+        for (let j = openLineIdx; j <= i && !foundClose; j++) {
+            const segment =
+                j === openLineIdx ? lines[j].slice(startIdx) : lines[j];
+            const closeIdx = segment.indexOf(">");
+            if (closeIdx >= 0) {
+                attrs += segment.slice(0, closeIdx);
+                foundClose = true;
+            } else {
+                attrs += segment + " ";
+            }
+        }
+        if (!foundClose) continue;
+
+        const tagName = openMatch[1];
+        // For `<Link>` / `<button>`, only count it as a create-button
+        // if the attrs reference `buttonVariants(...)` (otherwise
+        // it's just a plain link/button).
+        if (tagName !== "Button" && !/buttonVariants\s*\(/.test(attrs))
+            continue;
+
+        out.push({
+            line: i + 1,
+            text: trimmed.slice(0, 200),
+            tagAttrs: attrs,
+        });
+    }
+    return out;
 }
 
 describe("v2-fu-2 create-button uniformity", () => {
@@ -94,21 +166,9 @@ describe("v2-fu-2 create-button uniformity", () => {
         for (const dir of SCAN_DIRS) {
             for (const file of walk(path.join(ROOT, dir))) {
                 const content = fs.readFileSync(file, "utf8");
-                const lines = content.split("\n");
-                lines.forEach((line, i) => {
-                    const trimmed = line.trim();
-                    if (
-                        trimmed.startsWith("//") ||
-                        trimmed.startsWith("*")
-                    )
-                        return;
-                    const hit = findCreateButton(line);
-                    if (!hit) return;
-                    // If the start tag explicitly declares a non-
-                    // primary variant, that's a violation. No
-                    // declaration = default primary → OK.
+                for (const hit of findCreateButtons(content)) {
                     const variantMatch = hit.tagAttrs.match(
-                        /variant=["']([a-z-]+)["']/,
+                        /variant\s*[:=]\s*["']([a-z-]+)["']/,
                     );
                     if (
                         variantMatch &&
@@ -116,12 +176,12 @@ describe("v2-fu-2 create-button uniformity", () => {
                     ) {
                         offenders.push({
                             file: path.relative(ROOT, file),
-                            line: i + 1,
-                            text: trimmed.slice(0, 200),
+                            line: hit.line,
+                            text: hit.text,
                             issue: `variant="${variantMatch[1]}" — must be variant="primary"`,
                         });
                     }
-                });
+                }
             }
         }
         if (offenders.length > 0) {
@@ -144,28 +204,19 @@ describe("v2-fu-2 create-button uniformity", () => {
         for (const dir of SCAN_DIRS) {
             for (const file of walk(path.join(ROOT, dir))) {
                 const content = fs.readFileSync(file, "utf8");
-                const lines = content.split("\n");
-                lines.forEach((line, i) => {
-                    const trimmed = line.trim();
-                    if (
-                        trimmed.startsWith("//") ||
-                        trimmed.startsWith("*")
-                    )
-                        return;
-                    const hit = findCreateButton(line);
-                    if (!hit) return;
+                for (const hit of findCreateButtons(content)) {
                     const sizeMatch = hit.tagAttrs.match(
-                        /size=["'](xs|sm)["']/,
+                        /size\s*[:=]\s*["'](xs|sm)["']/,
                     );
                     if (sizeMatch) {
                         offenders.push({
                             file: path.relative(ROOT, file),
-                            line: i + 1,
-                            text: trimmed.slice(0, 200),
+                            line: hit.line,
+                            text: hit.text,
                             issue: `size="${sizeMatch[1]}" — drop the prop (default 'md' is the canonical pill height)`,
                         });
                     }
-                });
+                }
             }
         }
         if (offenders.length > 0) {

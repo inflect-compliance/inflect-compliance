@@ -214,7 +214,7 @@ export default function AuditCyclesPage() {
                         title="No audit cycles yet"
                         description="Create your first audit cycle for ISO 27001 or NIS2."
                         primaryAction={{
-                            label: '+ New Audit Cycle',
+                            label: '+ Audit Cycle',
                             onClick: () => setShowForm(true),
                         }}
                     />
