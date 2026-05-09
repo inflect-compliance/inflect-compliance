@@ -20,7 +20,6 @@ import {
     startOfUtcDay,
     toYMD,
 } from '@/components/ui/date-picker/date-utils';
-import { TabSelect } from '@/components/ui/tab-select';
 import { NumberStepper } from '@/components/ui/number-stepper';
 import { sanitizeRichTextHtml } from '@/lib/security/sanitize';
 import type { RichTextContentType } from '@/components/ui/RichTextEditor';
@@ -351,10 +350,13 @@ export default function PolicyDetailPage() {
     const canWrite = tenant.permissions.canWrite;
     const canAdmin = tenant.permissions.canAdmin;
 
-    const tabItems = ['current', 'versions', ...(canWrite ? ['editor'] : []), 'activity'] as const;
-    const tabLabels: Record<string, string> = {
-        current: 'Current', versions: 'Versions', editor: 'Editor', activity: 'Activity',
-    };
+    type PolicyTab = 'current' | 'versions' | 'editor' | 'activity';
+    const tabs: ReadonlyArray<{ key: PolicyTab; label: string }> = [
+        { key: 'current', label: 'Current' },
+        { key: 'versions', label: 'Versions' },
+        ...(canWrite ? ([{ key: 'editor' as const, label: 'Editor' }]) : []),
+        { key: 'activity', label: 'Activity' },
+    ];
 
     // Epic 45.3 — surface the active pending approval (if any) above
     // the page chrome so reviewers see it on first paint. Approvals
@@ -383,7 +385,9 @@ export default function PolicyDetailPage() {
         <EntityDetailLayout
             id="policy-detail-page"
             breadcrumbs={breadcrumbs}
-
+            tabs={tabs}
+            activeTab={tab}
+            onTabChange={setTab}
             title={<span className="truncate" id="policy-title">{policy.title}</span>}
             meta={
                 <>
@@ -525,22 +529,10 @@ export default function PolicyDetailPage() {
                 </div>
             </div>
 
-            {/* Tabs — Epic 60: TabSelect gives us tablist ARIA + Arrow/Home/End
-                keyboard nav for free. `idPrefix="tab-"` preserves the
-                #tab-current / #tab-versions / #tab-editor / #tab-activity
-                DOM ids that long-lived E2E selectors rely on. */}
-            <TabSelect<'current' | 'versions' | 'editor' | 'activity'>
-                ariaLabel="Policy sections"
-                variant="accent"
-                idPrefix="tab-"
-                className="border-b border-border-default/50"
-                options={tabItems.map((t) => ({
-                    id: t as 'current' | 'versions' | 'editor' | 'activity',
-                    label: tabLabels[t],
-                }))}
-                selected={tab}
-                onSelect={setTab}
-            />
+            {/* Polish PR-5 — tab strip is now owned by EntityDetailLayout
+                via the `tabs` slot. The shell paints a tablist with the
+                same #tab-current / #tab-versions / #tab-editor /
+                #tab-activity DOM ids E2E selectors rely on. */}
 
             {/* ── Current Version ── */}
             {tab === 'current' && (
