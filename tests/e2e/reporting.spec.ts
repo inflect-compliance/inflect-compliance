@@ -71,17 +71,20 @@ test.describe('Reporting & Audit Narrative', () => {
         await expect(page.locator('#risk-tab-btn')).toBeVisible();
         await expect(page.locator('#soa-table')).toBeVisible({ timeout: 5000 });
 
-        // Export buttons
+        // Roadmap-2 PR-12 — exports are tab-aware: SoA tab shows
+        // SoA exports, Risk Register tab shows Risk Register
+        // exports. Only one cluster is visible at a time.
         await expect(page.locator('#export-soa-btn')).toBeVisible();
-        await expect(page.locator('#export-risks-btn')).toBeVisible();
 
         // Switch to Risk Register tab
         await page.click('#risk-tab-btn');
         await expect(page.locator('#risk-table')).toBeVisible({ timeout: 5000 });
+        await expect(page.locator('#export-risks-btn')).toBeVisible();
 
         // Switch back to SOA tab
         await page.click('#soa-tab-btn');
         await expect(page.locator('#soa-table')).toBeVisible({ timeout: 5000 });
+        await expect(page.locator('#export-soa-btn')).toBeVisible();
     });
 
     // ─── E) Create Audit Cycle ───────────────────────────────────────
