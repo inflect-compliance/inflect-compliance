@@ -171,7 +171,7 @@ export default function AssessmentPage(
                 </div>
             </div>
 
-            <div className="card p-5 space-y-tight">
+            <div className="glass-card p-6 space-y-tight">
                 <div className="flex items-center justify-between">
                     <Heading level={1} id="assessment-title">{assessment.template?.name || 'Assessment'}</Heading>
                     <StatusBadge variant={STATUS_BADGE[assessment.status]} id="assessment-status">{assessment.status}</StatusBadge>
@@ -190,7 +190,7 @@ export default function AssessmentPage(
 
             {/* Questions by section */}
             {Object.entries(sections).map(([section, sQuestions]) => (
-                <div key={section} className="card p-5 space-y-default">
+                <div key={section} className="glass-card p-6 space-y-default">
                     <Heading level={2} className="border-b border-border-default pb-2">{section}</Heading>
                     {sQuestions.map((q, idx) => (
                         <div key={q.id} className="space-y-1.5">

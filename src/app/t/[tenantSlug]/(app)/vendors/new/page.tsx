@@ -109,7 +109,7 @@ export default function CreateVendorPage() {
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="card space-y-default p-6" noValidate>
+            <form onSubmit={handleSubmit} className="glass-card space-y-default p-6" noValidate>
                 {/* Name */}
                 <FormField label="Vendor Name" required>
                     <Input

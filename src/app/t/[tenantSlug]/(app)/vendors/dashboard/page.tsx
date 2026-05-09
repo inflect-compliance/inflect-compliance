@@ -94,19 +94,19 @@ export default function VendorDashboardPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-section">
                 {/* By Criticality */}
-                <div className="card p-5 space-y-compact">
+                <div className="glass-card p-6 space-y-compact">
                     <Heading level={3}>By Criticality</Heading>
                     <BreakdownBar data={metrics.byCriticality} colors={CRIT_COLORS} />
                 </div>
 
                 {/* By Status */}
-                <div className="card p-5 space-y-compact">
+                <div className="glass-card p-6 space-y-compact">
                     <Heading level={3}>By Status</Heading>
                     <BreakdownBar data={metrics.byStatus} colors={STATUS_COLORS} />
                 </div>
 
                 {/* By Risk Rating */}
-                <div className="card p-5 space-y-compact">
+                <div className="glass-card p-6 space-y-compact">
                     <Heading level={3}>By Risk Rating</Heading>
                     {Object.keys(metrics.byRiskRating).length > 0
                         ? <BreakdownBar data={metrics.byRiskRating} colors={CRIT_COLORS} />
@@ -116,7 +116,7 @@ export default function VendorDashboardPage() {
 
             {/* Expiring Documents */}
             {metrics.expiringDocuments > 0 && (
-                <div className="card p-5 border border-orange-500/30">
+                <div className="glass-card p-6 border border-orange-500/30">
                     <div className="flex items-center gap-tight">
                         <span className="text-orange-400 text-lg font-semibold">!</span>
                         <span className="font-semibold">{metrics.expiringDocuments} document(s) expiring within 30 days</span>

@@ -25,6 +25,7 @@ import { ArrowLeft } from 'lucide-react';
 
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Heading } from '@/components/ui/typography';
 
@@ -229,15 +230,25 @@ export function NewTenantForm({ orgSlug }: Props) {
                     />
                 </FormField>
 
-                <fieldset className="space-y-tight" data-testid="org-new-tenant-framework-group">
-                    <legend className="text-sm font-medium text-content-emphasis">
+                {/* Elevation PR-8 — fieldset/legend/native-radio cocktail
+                    replaced with the canonical <RadioGroup> primitive
+                    (Radix-backed). Card-shape labels preserved, but
+                    state + a11y now flow through Radix. data-testid
+                    naming preserved verbatim — no spec changes. */}
+                <div className="space-y-tight" data-testid="org-new-tenant-framework-group">
+                    <p className="text-sm font-medium text-content-emphasis">
                         Starting framework
-                    </legend>
+                    </p>
                     <p className="text-xs text-content-muted">
                         Pick the compliance framework you want to install first. You can
                         add more (or change this choice) from the new tenant dashboard.
                     </p>
-                    <div className="space-y-1.5 pt-1">
+                    <RadioGroup
+                        value={framework}
+                        onValueChange={(v) => setFramework(v as typeof framework)}
+                        aria-label="Starting framework"
+                        className="space-y-1.5 pt-1"
+                    >
                         {FRAMEWORK_OPTIONS.map((opt) => {
                             const id = `org-new-tenant-framework-${opt.key}`;
                             const checked = framework === opt.key;
@@ -245,19 +256,16 @@ export function NewTenantForm({ orgSlug }: Props) {
                                 <label
                                     key={opt.key}
                                     htmlFor={id}
-                                    className={`flex items-start gap-compact rounded-lg border p-3 cursor-pointer transition-colors ${
+                                    className={`flex items-start gap-compact rounded-lg border p-3 cursor-pointer transition-colors duration-150 ease-out ${
                                         checked
                                             ? 'border-border-emphasis bg-bg-subtle'
                                             : 'border-border-subtle hover:bg-bg-muted'
                                     }`}
                                 >
-                                    <input
+                                    <RadioGroupItem
                                         id={id}
-                                        type="radio"
-                                        name="framework"
                                         value={opt.key}
-                                        checked={checked}
-                                        onChange={() => setFramework(opt.key)}
+                                        size="sm"
                                         className="mt-0.5"
                                         data-testid={id}
                                     />
@@ -272,8 +280,8 @@ export function NewTenantForm({ orgSlug }: Props) {
                                 </label>
                             );
                         })}
-                    </div>
-                </fieldset>
+                    </RadioGroup>
+                </div>
 
                 {submitError && (
                     <p
