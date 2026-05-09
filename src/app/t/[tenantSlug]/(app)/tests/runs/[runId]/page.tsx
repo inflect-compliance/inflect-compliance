@@ -255,6 +255,7 @@ export default function TestRunPage() {
                     items={[
                         {
                             kind: 'status',
+                            id: 'test-run-status',
                             label: 'Status',
                             value: run.status,
                             variant:
@@ -268,6 +269,7 @@ export default function TestRunPage() {
                             ? [
                                   {
                                       kind: 'status' as const,
+                                      id: 'test-run-result',
                                       label: 'Result',
                                       value: run.result,
                                       variant:

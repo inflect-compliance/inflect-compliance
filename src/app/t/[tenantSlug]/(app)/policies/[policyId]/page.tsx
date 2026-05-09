@@ -395,6 +395,7 @@ export default function PolicyDetailPage() {
                     items={[
                         {
                             kind: 'status',
+                            id: 'policy-status',
                             label: 'Status',
                             value: policy.status,
                             variant:

@@ -53,6 +53,12 @@ interface MetaItemBase {
     label: React.ReactNode;
     /** Optional href — wraps the entire item in a hover-tinted Link. */
     href?: string;
+    /**
+     * Optional DOM id placed on the value element (status badge for
+     * `kind: 'status'`, value span for text/metric). Preserves long-
+     * lived E2E test anchors.
+     */
+    id?: string;
 }
 
 interface MetaItemText extends MetaItemBase {
@@ -116,7 +122,7 @@ function MetaItemRender({ item }: { item: MetaItem }) {
         const inner = (
             <div className="flex flex-col gap-0.5">
                 <span className={labelClass}>{item.label}</span>
-                <StatusBadge variant={item.variant} size="sm">
+                <StatusBadge variant={item.variant} size="sm" id={item.id}>
                     {item.value}
                 </StatusBadge>
             </div>
@@ -127,6 +133,7 @@ function MetaItemRender({ item }: { item: MetaItem }) {
     if (item.kind === 'metric') {
         const inner = (
             <KPIStat
+                id={item.id}
                 value={item.value}
                 label={item.label}
                 tone={item.tone}
@@ -141,6 +148,7 @@ function MetaItemRender({ item }: { item: MetaItem }) {
         <div className="flex flex-col gap-0.5 min-w-0">
             <span className={labelClass}>{item.label}</span>
             <span
+                id={item.id}
                 className={cn(
                     'text-sm tabular-nums truncate',
                     item.tone === 'success' && 'text-content-success',

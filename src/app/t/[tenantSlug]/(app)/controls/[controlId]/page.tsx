@@ -770,6 +770,7 @@ export default function ControlDetailPage() {
                     : []),
                 {
                     kind: 'status' as const,
+                    id: 'control-status',
                     label: 'Status',
                     value: STATUS_LABELS[control.status] ?? control.status,
                     variant:
@@ -777,6 +778,7 @@ export default function ControlDetailPage() {
                 },
                 {
                     kind: 'status' as const,
+                    id: 'control-applicability',
                     label: 'Applicability',
                     value:
                         control.applicability === 'NOT_APPLICABLE'

@@ -152,6 +152,7 @@ export default function PackDetailPage() {
                         },
                         {
                             kind: 'status',
+                            id: 'pack-status',
                             label: 'Status',
                             value: pack.status,
                             variant: isDraft ? 'neutral' : 'info',

@@ -322,6 +322,7 @@ export default function TaskDetailPage() {
                             : []),
                         {
                             kind: 'status' as const,
+                            id: 'task-status',
                             label: 'Status',
                             value:
                                 STATUS_LABELS[task.status] ?? task.status,
@@ -331,6 +332,7 @@ export default function TaskDetailPage() {
                         },
                         {
                             kind: 'status' as const,
+                            id: 'task-severity',
                             label: 'Severity',
                             value: task.severity,
                             variant:
