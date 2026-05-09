@@ -6,7 +6,7 @@ import { ToggleGroup } from '@/components/ui/toggle-group';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { Heading } from '@/components/ui/typography';
 import { Card } from '@/components/ui/card';
-import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export default function MappingPage() {
@@ -25,7 +25,7 @@ export default function MappingPage() {
     return (
         <div className="space-y-section animate-fadeIn">
             <div>
-                <Breadcrumbs
+                <PageBreadcrumbs
                     items={[
                         { label: 'Dashboard', href: tenantHref('/dashboard') },
                         { label: t('title') },

@@ -35,7 +35,7 @@ import { DataTable, createColumns } from '@/components/ui/table';
 import { ViewToggle } from '@/components/ui/view-toggle';
 import { useViewMode } from '@/components/ui/hooks';
 import { Heading } from '@/components/ui/typography';
-import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
 const FW_META: Record<string, { icon: LucideIcon; color: string }> = {
     ISO27001: { icon: ShieldCheck, color: 'from-indigo-500 to-purple-600' },
@@ -110,7 +110,7 @@ export function FrameworksClient({
         <div className="space-y-section">
             <div className="flex items-end justify-between gap-default flex-wrap">
                 <div>
-                    <Breadcrumbs
+                    <PageBreadcrumbs
                         items={[
                             { label: 'Dashboard', href: href('/dashboard') },
                             { label: 'Frameworks' },

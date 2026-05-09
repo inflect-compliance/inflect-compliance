@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { InfoTooltip } from '@/components/ui/tooltip';
 import { InlineNotice } from '@/components/ui/inline-notice';
 import { Heading } from '@/components/ui/typography';
-import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
 type MfaPolicy = 'DISABLED' | 'OPTIONAL' | 'REQUIRED';
 
@@ -161,7 +161,7 @@ export default function AdminSecurityPage() {
     if (loading) {
         return (
             <div className="space-y-section animate-fadeIn">
-                <Breadcrumbs
+                <PageBreadcrumbs
                     items={[
                         { label: 'Dashboard', href: tenantHref('/dashboard') },
                         { label: 'Admin', href: tenantHref('/admin') },
@@ -188,7 +188,7 @@ export default function AdminSecurityPage() {
     return (
         <div className="space-y-section animate-fadeIn">
             <div>
-                <Breadcrumbs
+                <PageBreadcrumbs
                     items={[
                         { label: 'Dashboard', href: tenantHref('/dashboard') },
                         { label: 'Admin', href: tenantHref('/admin') },

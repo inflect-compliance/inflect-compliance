@@ -8,7 +8,7 @@ import type { Role } from '@prisma/client';
 import { Check } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
-import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,7 +66,7 @@ export default async function RbacPage({
         <div className="space-y-page animate-fadeIn">
             {/* Header */}
             <div>
-                <Breadcrumbs
+                <PageBreadcrumbs
                     items={[
                         { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
                         { label: 'Admin', href: `/t/${tenantSlug}/admin` },

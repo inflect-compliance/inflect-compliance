@@ -8,7 +8,7 @@ import type { CappedList } from '@/lib/list-backfill-cap';
 import { TruncationBanner } from '@/components/ui/TruncationBanner';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
-import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
@@ -130,7 +130,7 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
         <>
             <div className="flex flex-wrap items-center justify-between gap-compact">
                 <div>
-                    <Breadcrumbs
+                    <PageBreadcrumbs
                         items={[
                             { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
                             { label: t.title },

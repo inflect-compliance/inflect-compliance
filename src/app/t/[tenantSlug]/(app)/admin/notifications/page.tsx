@@ -7,7 +7,7 @@ import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import { ToggleGroup } from '@/components/ui/toggle-group';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
-import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
 interface NotificationSettings {
     enabled: boolean;
@@ -89,7 +89,7 @@ export default function NotificationSettingsPage() {
     return (
         <div className="space-y-section animate-fadeIn">
             <div>
-                <Breadcrumbs
+                <PageBreadcrumbs
                     items={[
                         { label: 'Dashboard', href: tenantHref('/dashboard') },
                         { label: 'Admin', href: tenantHref('/admin') },

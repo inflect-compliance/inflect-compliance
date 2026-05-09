@@ -11,7 +11,7 @@ import { ListPageShell } from '@/components/layout/ListPageShell';
 import { ToggleGroup } from '@/components/ui/toggle-group';
 import { Button } from '@/components/ui/button';
 import { Heading } from '@/components/ui/typography';
-import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
 interface ControlOption {
     id: string;
@@ -107,7 +107,7 @@ export function ReportsClient({ data, soaReport, controls, tenantSlug, canEdit, 
             <ListPageShell.Header>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-compact">
                     <div>
-                        <Breadcrumbs
+                        <PageBreadcrumbs
                             items={[
                                 { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
                                 { label: t.title },

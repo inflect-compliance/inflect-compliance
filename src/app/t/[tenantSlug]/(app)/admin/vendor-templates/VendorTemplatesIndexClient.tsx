@@ -24,7 +24,7 @@ import { SkeletonCard } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
-import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
 interface TemplateRow {
     id: string;
@@ -95,7 +95,7 @@ export function VendorTemplatesIndexClient() {
     return (
         <div className="space-y-section animate-fadeIn">
             <header>
-                <Breadcrumbs
+                <PageBreadcrumbs
                     items={[
                         { label: 'Dashboard', href: tenantHref('/dashboard') },
                         { label: 'Admin', href: tenantHref('/admin') },

@@ -128,7 +128,11 @@ const EXEMPT_FILES = new Set<string>([
 ]);
 
 const HEADING_RE = /<Heading\s+[^>]*level=\{1\}/;
-const BREADCRUMBS_RE = /<Breadcrumbs\b|breadcrumbs:\s*\[/;
+// Roadmap-2 PR-13 — `<PageBreadcrumbs>` is the page-level
+// wrapper that pushes the trail into the chrome (PR-2)
+// context AND keeps a mobile inline render. Either shape
+// satisfies the coverage requirement.
+const BREADCRUMBS_RE = /<Breadcrumbs\b|<PageBreadcrumbs\b|breadcrumbs:\s*\[/;
 
 interface Hit {
     file: string;

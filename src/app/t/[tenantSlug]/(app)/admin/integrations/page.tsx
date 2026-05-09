@@ -17,7 +17,7 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
-import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
 interface ConnectionDTO {
     id: string;
@@ -183,7 +183,7 @@ export default function AdminIntegrationsPage() {
     return (
             <div className="space-y-section animate-fadeIn">
                 <div>
-                    <Breadcrumbs
+                    <PageBreadcrumbs
                         items={[
                             { label: 'Dashboard', href: tenantHref('/dashboard') },
                             { label: 'Admin', href: tenantHref('/admin') },

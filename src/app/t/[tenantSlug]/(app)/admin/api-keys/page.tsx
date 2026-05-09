@@ -8,7 +8,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
-import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { VALID_SCOPES } from '@/lib/auth/api-key-auth';
 import {
     KeyRound, Plus, Trash2, XCircle, CheckCircle, Copy, Check,
@@ -491,7 +491,7 @@ export default function ApiKeysPage() {
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-default">
                 <div>
-                    <Breadcrumbs
+                    <PageBreadcrumbs
                         items={[
                             { label: 'Dashboard', href: tenantHref('/dashboard') },
                             { label: 'Admin', href: tenantHref('/admin') },

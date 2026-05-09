@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/date-picker/date-utils';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
-import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
 const SEV_BADGE: Record<string, StatusBadgeVariant> = { LOW: 'info', MEDIUM: 'warning', HIGH: 'error', CRITICAL: 'error' };
 const STATUS_BADGE: Record<string, StatusBadgeVariant> = { OPEN: 'error', IN_PROGRESS: 'info', READY_FOR_VERIFICATION: 'warning', CLOSED: 'success' };
@@ -209,7 +209,7 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
                 <div className="flex items-center justify-between">
                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     <div>
-                        <Breadcrumbs
+                        <PageBreadcrumbs
                             items={[
                                 { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
                                 { label: t.title },

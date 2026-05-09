@@ -60,7 +60,7 @@ import {
     EVIDENCE_FILTER_KEYS,
 } from './filter-defs';
 import { Heading } from '@/components/ui/typography';
-import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
 interface Permissions {
     canRead: boolean;
@@ -609,7 +609,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             <ListPageShell.Header>
                 <div className="flex items-center justify-between">
                     <div>
-                        <Breadcrumbs
+                        <PageBreadcrumbs
                             items={[
                                 { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
                                 { label: t.title },

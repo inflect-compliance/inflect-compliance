@@ -11,7 +11,7 @@ import { Heading } from '@/components/ui/typography';
 import { Card } from '@/components/ui/card';
 import { KPIStat } from '@/components/ui/metric';
 import { getStatusTone } from '@/lib/design/status-tone';
-import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -150,7 +150,7 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
                         <ArrowLeft className="w-5 h-5" aria-hidden="true" />
                     </Link>
                     <div>
-                        <Breadcrumbs
+                        <PageBreadcrumbs
                             items={[
                                 { label: 'Dashboard', href: tenantHref('/dashboard') },
                                 { label: 'Coverage' },

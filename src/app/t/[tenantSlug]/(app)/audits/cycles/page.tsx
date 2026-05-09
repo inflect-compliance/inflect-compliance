@@ -17,7 +17,7 @@ import { selectDateRangePresets } from '@/components/ui/date-picker/presets-cata
 import type { DateRangeValue } from '@/components/ui/date-picker/types';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
-import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
 // Epic 58 — audit periods are reporting windows. The curated preset
 // subset favours periods auditors actually request ("the most recent
@@ -117,7 +117,7 @@ export default function AuditCyclesPage() {
         <div className="space-y-section animate-fadeIn">
             <div className="flex items-center justify-between">
                 <div>
-                    <Breadcrumbs
+                    <PageBreadcrumbs
                         items={[
                             { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
                             { label: 'Audits', href: `/t/${tenantSlug}/audits` },

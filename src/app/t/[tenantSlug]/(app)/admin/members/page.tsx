@@ -37,7 +37,7 @@ import { DataTable, createColumns } from '@/components/ui/table';
 import { InlineNotice } from '@/components/ui/inline-notice';
 import { cn } from '@dub/utils';
 import { Heading } from '@/components/ui/typography';
-import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
 // ─── Types ───
 
@@ -608,7 +608,7 @@ export default function MembersAdminPage() {
     if (loading) {
         return (
             <div className="space-y-section animate-fadeIn">
-                <Breadcrumbs
+                <PageBreadcrumbs
                     items={[
                         { label: 'Dashboard', href: tenantHref('/dashboard') },
                         { label: 'Admin', href: tenantHref('/admin') },

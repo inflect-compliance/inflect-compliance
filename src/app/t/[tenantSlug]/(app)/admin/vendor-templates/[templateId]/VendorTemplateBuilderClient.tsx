@@ -31,7 +31,7 @@ import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { SkeletonDetailPage } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
-import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
 interface Question {
     id: string;
@@ -331,7 +331,7 @@ export function VendorTemplateBuilderClient({
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <Breadcrumbs
+                    <PageBreadcrumbs
                         items={[
                             { label: 'Dashboard', href: tenantHref('/dashboard') },
                             { label: 'Admin', href: tenantHref('/admin') },

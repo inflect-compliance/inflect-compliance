@@ -17,7 +17,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { InlineNotice } from '@/components/ui/inline-notice';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
-import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
 interface SsoProvider {
     id: string;
@@ -261,7 +261,7 @@ export default function SsoAdminPage() {
     if (loading) {
         return (
             <div className="space-y-section animate-fadeIn">
-                <Breadcrumbs
+                <PageBreadcrumbs
                     items={[
                         { label: 'Dashboard', href: tenantHref('/dashboard') },
                         { label: 'Admin', href: tenantHref('/admin') },
@@ -283,7 +283,7 @@ export default function SsoAdminPage() {
         <div className="space-y-section animate-fadeIn">
             {/* Header */}
             <div>
-                <Breadcrumbs
+                <PageBreadcrumbs
                     items={[
                         { label: 'Dashboard', href: tenantHref('/dashboard') },
                         { label: 'Admin', href: tenantHref('/admin') },

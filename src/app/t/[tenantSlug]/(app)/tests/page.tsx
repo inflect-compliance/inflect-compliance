@@ -15,7 +15,7 @@ import { ToggleGroup } from '@/components/ui/toggle-group';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
-import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
 interface TestPlanSummary {
     id: string;
@@ -95,7 +95,7 @@ export default function TestsRollupPage() {
             <ListPageShell.Header>
                 <div className="flex items-center justify-between">
                     <div>
-                        <Breadcrumbs
+                        <PageBreadcrumbs
                             items={[
                                 { label: 'Dashboard', href: tenantHref('/dashboard') },
                                 { label: 'Tests' },

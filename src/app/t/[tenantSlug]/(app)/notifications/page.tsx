@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { AppIcon } from '@/components/icons/AppIcon';
 import { useOptimisticUpdate } from '@/components/ui/hooks';
 import { Heading } from '@/components/ui/typography';
-import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
 type Notification = {
     id: string;
@@ -71,7 +71,7 @@ export default function NotificationsPage() {
     return (
         <div className="space-y-section animate-fadeIn">
             <div>
-                <Breadcrumbs
+                <PageBreadcrumbs
                     items={[
                         { label: 'Dashboard', href: tenantHref('/dashboard') },
                         { label: t('title') },

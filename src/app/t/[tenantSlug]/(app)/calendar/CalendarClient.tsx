@@ -32,7 +32,7 @@ import type {
     CalendarResponse,
 } from '@/app-layer/schemas/calendar.schemas';
 import { Heading } from '@/components/ui/typography';
-import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
 const DAY_MS = 86_400_000;
 
@@ -166,7 +166,7 @@ export function CalendarClient({
             {/* Header */}
             <header className="flex items-start justify-between gap-default flex-wrap">
                 <div className="min-w-0">
-                    <Breadcrumbs
+                    <PageBreadcrumbs
                         items={[
                             { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
                             { label: 'Calendar' },

@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
-import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
 const ASSET_TYPES = ['INFORMATION', 'APPLICATION', 'SYSTEM', 'SERVICE', 'DATA_STORE', 'INFRASTRUCTURE', 'VENDOR', 'PROCESS', 'PEOPLE_PROCESS', 'OTHER'];
 const ASSET_TYPE_OPTIONS: ComboboxOption[] = ASSET_TYPES.map(t => ({ value: t, label: t.replace(/_/g, ' ') }));
@@ -171,7 +171,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
             <ListPageShell.Header>
                 <div className="flex items-center justify-between">
                     <div>
-                        <Breadcrumbs
+                        <PageBreadcrumbs
                             items={[
                                 { label: 'Dashboard', href: tenantHref('/dashboard') },
                                 { label: t.title },

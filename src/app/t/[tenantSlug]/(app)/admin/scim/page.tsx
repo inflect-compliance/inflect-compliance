@@ -18,7 +18,7 @@ import { InlineNotice } from '@/components/ui/inline-notice';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { Card } from '@/components/ui/card';
-import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
 interface ScimToken {
     id: string;
@@ -121,7 +121,7 @@ export default function ScimAdminPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <Breadcrumbs
+                    <PageBreadcrumbs
                         items={[
                             { label: 'Dashboard', href: tenantHref('/dashboard') },
                             { label: 'Admin', href: tenantHref('/admin') },

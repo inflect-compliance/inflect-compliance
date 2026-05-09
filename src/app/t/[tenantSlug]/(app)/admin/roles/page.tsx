@@ -43,7 +43,7 @@ import { InlineNotice } from '@/components/ui/inline-notice';
 import { ListPageShell } from '@/components/layout/ListPageShell';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading, Eyebrow } from '@/components/ui/typography';
-import { Breadcrumbs } from '@/components/ui/breadcrumbs';
+import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
 // ─── Types ───
 
@@ -548,7 +548,7 @@ export default function CustomRolesPage() {
     if (loading) {
         return (
             <div className="space-y-section animate-fadeIn">
-                <Breadcrumbs
+                <PageBreadcrumbs
                     items={[
                         { label: 'Dashboard', href: tenantHref('/dashboard') },
                         { label: 'Admin', href: tenantHref('/admin') },
