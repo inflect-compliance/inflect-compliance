@@ -70,16 +70,6 @@ interface AllowlistEntry {
 
 const ALLOWLIST: AllowlistEntry[] = [
     {
-        file: 'src/components/ui/modal.tsx',
-        reason:
-            'Modal `sm:rounded-2xl` — pending Roadmap-5 PR-8 collapse to `rounded-lg` along with Sheet, unifying the lifted-surface curvature.',
-    },
-    {
-        file: 'src/components/ui/sheet.tsx',
-        reason:
-            'Sheet `rounded-xl` — pending Roadmap-5 PR-8 collapse to `rounded-lg`.',
-    },
-    {
         file: 'src/components/command-palette/command-palette.tsx',
         reason:
             'Command palette is a floating overlay; the slightly larger `rounded-xl` differentiates it from page-level surfaces.',

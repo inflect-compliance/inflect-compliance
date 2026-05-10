@@ -153,7 +153,7 @@ function SheetRoot({
                     <div
                         data-sheet-content
                         className={cn(
-                            "flex size-full grow flex-col overflow-hidden rounded-xl border border-border-subtle bg-bg-default text-content-emphasis shadow-lg",
+                            "flex size-full grow flex-col overflow-hidden rounded-lg border border-border-subtle bg-bg-default text-content-emphasis shadow-lg",
                         )}
                     >
                         {fallbackTitle}

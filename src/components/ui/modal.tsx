@@ -63,7 +63,7 @@ const modalContentVariants = cva(
         "fixed inset-0 z-40 m-auto h-fit w-full",
         "flex max-h-[min(85vh,680px)] flex-col",
         "border border-border-subtle bg-bg-default text-content-emphasis",
-        "p-0 shadow-lg sm:rounded-2xl",
+        "p-0 shadow-lg sm:rounded-lg",
         "scrollbar-hide animate-scale-in overflow-hidden",
     ],
     {
