@@ -78,7 +78,12 @@ describe('Epic 49 — calendar feature wiring', () => {
     it('the sidebar Calendar nav item is registered with a live badge', () => {
         const src = read('src/components/layout/SidebarNav.tsx');
         expect(src).toMatch(/useCalendarBadge/);
-        expect(src).toMatch(/label:\s*['"]Calendar['"]/);
+        // Roadmap-2 PR-14 — sidebar label renamed from a hardcoded
+        // 'Calendar' literal to the i18n-keyed `t('calendar')`. The
+        // English translation reads "Review" now (the page surfaces
+        // upcoming reviews / renewals, not a generic calendar). The
+        // structural anchor stays the route + the badge wiring.
+        expect(src).toMatch(/label:\s*t\(['"]calendar['"]\)/);
         expect(src).toMatch(/tenantHref\(['"]\/calendar['"]\)/);
     });
 
