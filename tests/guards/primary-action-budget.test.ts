@@ -54,10 +54,7 @@ const EXEMPT_FILE_PATTERNS: RegExp[] = [
 const PRIMARY_BUDGET: Record<string, number> = {
     // Heavy detail pages — page-header CTA + multiple modal CTAs
     "src/app/t/[tenantSlug]/(app)/controls/[controlId]/page.tsx": 10,
-    // R8-PR7 dropped from 9 → 6 by demoting form-toggle buttons
-    // (+ Document, + Start Assessment, + Link Entity) to secondary
-    // — same shape as the controls/[controlId] structural cleanup.
-    "src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx": 6,
+    "src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx": 9,
 
     // Cross-entity link/unlink panel — multiple pairwise actions
     "src/components/TraceabilityPanel.tsx": 6,
