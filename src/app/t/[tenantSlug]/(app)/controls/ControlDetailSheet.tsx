@@ -40,6 +40,7 @@ import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-bad
 import { UserCombobox } from '@/components/ui/user-combobox';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { FormField } from '@/components/ui/form-field';
+import { RequiredMarker } from '@/components/ui/required-marker';
 import { queryKeys } from '@/lib/queryKeys';
 import { extractMutationError } from '@/lib/mutations';
 
@@ -362,7 +363,7 @@ export function ControlDetailSheet({
                                         className="mb-1 block text-sm text-content-default"
                                         htmlFor="sheet-name-input"
                                     >
-                                        Name <span className="text-content-error">*</span>
+                                        Name <RequiredMarker />
                                     </label>
                                     <input
                                         id="sheet-name-input"

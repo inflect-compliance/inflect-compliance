@@ -14,6 +14,7 @@ import { Combobox } from '@/components/ui/combobox';
 import { Tooltip } from '@/components/ui/tooltip';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
+import { RequiredMarker } from '@/components/ui/required-marker';
 
 const CRIT_BADGE: Record<string, StatusBadgeVariant> = { LOW: 'neutral', MEDIUM: 'warning', HIGH: 'error', CRITICAL: 'error' };
 const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
@@ -197,7 +198,7 @@ export default function AssessmentPage(
                             <div className="flex items-start gap-tight">
                                 <span className="text-xs text-content-subtle font-mono mt-0.5">{q.sortOrder}.</span>
                                 <div className="flex-1">
-                                    <p className="text-sm font-medium">{q.prompt}{q.required && <span className="text-content-error ml-1">*</span>}</p>
+                                    <p className="text-sm font-medium">{q.prompt}{q.required && <RequiredMarker />}</p>
                                     <div className="mt-1.5">{renderInput(q)}</div>
                                 </div>
                                 <Tooltip content="Question weight — multiplies the response score in the overall risk calculation.">

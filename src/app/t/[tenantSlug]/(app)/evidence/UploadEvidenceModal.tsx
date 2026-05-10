@@ -62,6 +62,7 @@ import {
 } from '@/components/ui/FileDropzone';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { FormField } from '@/components/ui/form-field';
+import { RequiredMarker } from '@/components/ui/required-marker';
 import { InfoTooltip } from '@/components/ui/tooltip';
 import { DatePicker } from '@/components/ui/date-picker/date-picker';
 import {
@@ -409,8 +410,7 @@ export function UploadEvidenceModal({
                                 className="mb-1 block text-sm text-content-default"
                                 htmlFor="file-input"
                             >
-                                Files{' '}
-                                <span className="text-content-error">*</span>
+                                Files <RequiredMarker />
                             </label>
                             <FileDropzone
                                 ref={dropzoneRef}

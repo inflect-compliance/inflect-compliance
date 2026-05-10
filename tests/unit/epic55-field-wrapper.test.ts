@@ -218,9 +218,14 @@ describe('FormField — composition with FormDescription + FormError', () => {
         expect(FIELD_SRC).toMatch(/flex flex-col gap-1\.5/);
     });
 
-    it('renders required asterisk as aria-hidden', () => {
-        expect(FIELD_SRC).toMatch(/aria-hidden=["']true["']/);
-        expect(FIELD_SRC).toMatch(/text-content-error/);
+    it('renders required asterisk via RequiredMarker primitive', () => {
+        // Roadmap-4 PR-4 — the asterisk markup moved into
+        // <RequiredMarker>. The wrapper now mounts the primitive
+        // when `required` is true; aria-hidden + text-content-error
+        // shape is asserted on the primitive itself by
+        // tests/guards/required-marker-discipline.test.ts.
+        expect(FIELD_SRC).toMatch(/from\s+["']\.\/required-marker["']/);
+        expect(FIELD_SRC).toMatch(/required\s*&&\s*<RequiredMarker\s*\/>/);
     });
 
     it('supports vertical (default) and horizontal orientations', () => {

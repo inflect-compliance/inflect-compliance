@@ -31,6 +31,7 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { FormField } from '@/components/ui/form-field';
+import { RequiredMarker } from '@/components/ui/required-marker';
 import { queryKeys } from '@/lib/queryKeys';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import { useFormTelemetry } from '@/lib/telemetry/form-telemetry';
@@ -208,7 +209,7 @@ export function NewEvidenceTextModal({
                                     className="mb-1 block text-sm text-content-default"
                                     htmlFor="text-evidence-title-input"
                                 >
-                                    Title <span className="text-content-error">*</span>
+                                    Title <RequiredMarker />
                                 </label>
                                 <input
                                     id="text-evidence-title-input"
