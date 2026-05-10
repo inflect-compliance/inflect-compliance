@@ -156,7 +156,7 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
                         <div><label className="input-label">{t.auditors}</label><input className="input" value={form.auditors} onChange={e => setForm(f => ({ ...f, auditors: e.target.value }))} /></div>
                         <div className="sm:col-span-2"><label className="input-label">{t.scope}</label><textarea className="input" value={form.scope} onChange={e => setForm(f => ({ ...f, scope: e.target.value }))} id="audit-scope-input" /></div>
                     </div>
-                    <div className="flex flex-wrap gap-tight"><Button type="submit" variant="primary" id="create-audit-btn">{t.createAudit}</Button><Button type="button" variant="secondary" onClick={() => setShowForm(false)}>{t.cancel}</Button></div>
+                    <div className="flex flex-wrap gap-tight"><Button type="button" variant="secondary" onClick={() => setShowForm(false)}>{t.cancel}</Button><Button type="submit" variant="primary" id="create-audit-btn">{t.createAudit}</Button></div>
                 </form>
             )}
 
