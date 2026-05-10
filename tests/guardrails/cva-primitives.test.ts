@@ -107,7 +107,10 @@ describe('StatusBadge primitive', () => {
     });
 
     it('defines expected semantic variant keys', () => {
-        for (const v of ['neutral', 'info', 'success', 'pending', 'warning', 'error']) {
+        // Roadmap-6 PR-10 retired `pending` (zero callsites; redundant
+        // with `info` for in-progress / `warning` for needs-attention).
+        // The `*-attention` token pair that backed it is also gone.
+        for (const v of ['neutral', 'info', 'success', 'warning', 'error']) {
             expect(src).toContain(`${v}:`);
         }
     });
@@ -121,8 +124,6 @@ describe('StatusBadge primitive', () => {
         expect(src).toContain('text-content-warning');
         expect(src).toContain('bg-bg-error');
         expect(src).toContain('text-content-error');
-        expect(src).toContain('bg-bg-attention');
-        expect(src).toContain('text-content-attention');
     });
 
     it('neutral variant uses semantic tokens', () => {
