@@ -748,7 +748,7 @@ export default function MembersAdminPage() {
                 ) : filteredMembers.length === 0 ? (
                     <EmptyState
                         icon={Users}
-                        title="No members found"
+                        title="No members yet"
                     />
                 ) : (
                     <DataTable

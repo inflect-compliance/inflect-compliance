@@ -107,7 +107,7 @@ export default function TemplatesPage() {
                         <EmptyState
                             icon={FileText}
                             variant="no-records"
-                            title="No templates available yet"
+                            title="No templates yet"
                             description="Policy templates will appear here once your tenant or admin loads them."
                         />
                     ) : (
