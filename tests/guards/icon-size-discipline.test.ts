@@ -41,7 +41,12 @@ import * as path from 'path';
 const ROOT = path.resolve(__dirname, '../..');
 const SCAN_ROOT = path.join(ROOT, 'src/app');
 
-const OFF_TOKEN_RE = /\bw-3\s+h-3\b/;
+// Roadmap-7 PR-10 (subtraction sweep) — extend to also catch the
+// modern Tailwind `size-N` shorthand. Zero offenders today;
+// forward enforcement guarantees the shorthand never drifts to
+// the off-token 12px rung. Lookahead `(?!\.)` excludes
+// `size-3.5` which IS the canonical sm rung.
+const OFF_TOKEN_RE = /\bw-3\s+h-3\b|\bsize-3(?!\.)\b/;
 
 interface Hit {
     file: string;
