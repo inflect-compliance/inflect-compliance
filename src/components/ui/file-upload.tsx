@@ -74,7 +74,7 @@ const imageUploadVariants = cva(
     variants: {
       variant: {
         default:
-          "aspect-[1200/630] rounded-md border border-neutral-300 bg-white shadow-sm hover:bg-bg-muted/50",
+          "aspect-[1200/630] rounded-md border border-neutral-300 bg-white hover:bg-bg-muted/50",
         plain: "aspect-[1200/630] bg-white hover:bg-bg-muted/50",
         // Document-oriented dropzone for file-evidence / modal contexts.
         // Uses semantic tokens so the same component works in Epic 54
@@ -353,7 +353,7 @@ export function FileUpload({
           />
         ))}
       {clickToUpload && (
-        <div className="sr-only mt-1 flex shadow-sm">
+        <div className="sr-only mt-1 flex">
           <input
             id={id}
             key={fileName} // Gets us a fresh input every time a file is uploaded
