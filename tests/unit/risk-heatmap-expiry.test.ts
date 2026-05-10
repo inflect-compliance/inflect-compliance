@@ -87,8 +87,12 @@ describe('RiskHeatmap Widget', () => {
         expect(content).toContain("id?: string");
     });
 
-    test('uses glass-card design', () => {
-        expect(content).toContain('glass-card');
+    test('uses the canonical Card primitive surface', () => {
+        // Roadmap-5 PR-1 — the glass-card literal moved into the
+        // Card primitive. Components now compose cardVariants()
+        // (or render `<Card>`) instead of referencing the legacy
+        // class string directly.
+        expect(content).toMatch(/cardVariants\(|<Card\b/);
     });
 });
 
@@ -151,8 +155,12 @@ describe('ExpiryCalendar Widget', () => {
         expect(content).toContain("id?: string");
     });
 
-    test('uses glass-card design', () => {
-        expect(content).toContain('glass-card');
+    test('uses the canonical Card primitive surface', () => {
+        // Roadmap-5 PR-1 — the glass-card literal moved into the
+        // Card primitive. Components now compose cardVariants()
+        // (or render `<Card>`) instead of referencing the legacy
+        // class string directly.
+        expect(content).toMatch(/cardVariants\(|<Card\b/);
     });
 });
 
