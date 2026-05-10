@@ -10,11 +10,9 @@ import { CACHE_KEYS } from '@/lib/swr-keys';
 import type { CappedList } from '@/lib/list-backfill-cap';
 import { TruncationBanner } from '@/components/ui/TruncationBanner';
 import {
-    ColumnsDropdown,
     createColumns,
-    getDefaultVisibility,
+    useColumnsDropdown,
 } from '@/components/ui/table';
-import { useColumnVisibility } from '@/components/ui/hooks';
 import {
     FilterProvider,
     useFilterContext,
@@ -151,23 +149,8 @@ function PoliciesPageInner({
         [policies],
     );
 
-    // ─── Column visibility (Epic 52) ───
-    const policyColumnConfig = useMemo(
-        () => ({
-            all: ['title', 'status', 'category', 'owner', 'version', 'nextReviewAt', 'updatedAt'],
-            defaultVisible: ['title', 'status', 'category', 'owner', 'version', 'nextReviewAt', 'updatedAt'],
-        }),
-        [],
-    );
-    const { columnVisibility, setColumnVisibility } = useColumnVisibility(
-        'inflect:col-vis:policies',
-        policyColumnConfig,
-    );
-    const defaultPolicyVisibility = useMemo(
-        () => getDefaultVisibility(policyColumnConfig),
-        [policyColumnConfig],
-    );
-    const policyColumnDropdown = useMemo(
+    // ─── Column visibility (Epic 52 / R10-PR6) ───
+    const policyColumnList = useMemo(
         () => [
             { id: 'title', label: 'Title' },
             { id: 'status', label: 'Status' },
@@ -179,6 +162,14 @@ function PoliciesPageInner({
         ],
         [],
     );
+    const {
+        columnVisibility,
+        setColumnVisibility,
+        dropdown: columnsDropdown,
+    } = useColumnsDropdown({
+        storageKey: 'inflect:col-vis:policies',
+        columns: policyColumnList,
+    });
 
     const policyColumns = useMemo(() => createColumns<any>([
         {
@@ -372,14 +363,7 @@ function PoliciesPageInner({
                 defs: liveFilters,
                 searchId: 'policy-search',
                 searchPlaceholder: 'Search policies…',
-                toolbarActions: (
-                    <ColumnsDropdown
-                        columns={policyColumnDropdown}
-                        visibility={columnVisibility}
-                        onChange={(v) => setColumnVisibility(v)}
-                        defaultVisibility={defaultPolicyVisibility}
-                    />
-                ),
+                toolbarActions: columnsDropdown,
             }}
             table={{
                 data: policies,

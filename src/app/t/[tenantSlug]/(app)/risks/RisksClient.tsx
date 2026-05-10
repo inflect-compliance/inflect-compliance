@@ -22,12 +22,10 @@ import { NewRiskModal } from './NewRiskModal';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
 import {
-    ColumnsDropdown,
     DataTable,
     createColumns,
-    getDefaultVisibility,
+    useColumnsDropdown,
 } from '@/components/ui/table';
-import { useColumnVisibility } from '@/components/ui/hooks';
 import {
     FilterProvider,
     useFilterContext,
@@ -230,31 +228,11 @@ function RisksPageInner({
     const truncated = risksQuery.data?.truncated ?? false;
     const loading = risksQuery.isLoading && !risksQuery.data;
 
-    // ─── Column visibility (Epic 52) ───
+    // ─── Column visibility (Epic 52 / R10-PR6) ───
     // Pagination removed in favour of internal scroll inside the
     // table card (see ListPageShell.Body + DataTable fillBody).
     // All filtered rows render at once; the card scrolls.
-    const riskColumnConfig = useMemo(
-        () => ({
-            // Epic 44.4 — added `status` and `owner` to the column
-            // set; default-visible KEEPS the pre-Epic-44 columns
-            // (asset / threat / lxi) so existing operators don't
-            // see a quietly-pruned first view. The new columns sit
-            // alongside, toggleable via the ColumnsDropdown.
-            all: ['title', 'asset', 'threat', 'lxi', 'inherentScore', 'level', 'status', 'owner', 'treatment', 'controls'],
-            defaultVisible: ['title', 'asset', 'threat', 'lxi', 'inherentScore', 'level', 'status', 'owner', 'treatment', 'controls'],
-        }),
-        [],
-    );
-    const { columnVisibility, setColumnVisibility } = useColumnVisibility(
-        'inflect:col-vis:risks',
-        riskColumnConfig,
-    );
-    const defaultRiskVisibility = useMemo(
-        () => getDefaultVisibility(riskColumnConfig),
-        [riskColumnConfig],
-    );
-    const riskColumnDropdown = useMemo(
+    const riskColumns = useMemo(
         () => [
             { id: 'title', label: 'Title' },
             { id: 'asset', label: 'Asset' },
@@ -269,6 +247,14 @@ function RisksPageInner({
         ],
         [],
     );
+    const {
+        columnVisibility,
+        setColumnVisibility,
+        dropdown: columnsDropdown,
+    } = useColumnsDropdown({
+        storageKey: 'inflect:col-vis:risks',
+        columns: riskColumns,
+    });
 
     // ── KPI Computations ──
     // Local aggregations over the already-fetched page of risks — these
@@ -327,7 +313,7 @@ function RisksPageInner({
     };
 
     // ── Column Definitions ──
-    const riskColumns = useMemo(() => createColumns<RiskListItem>([
+    const riskTableColumns = useMemo(() => createColumns<RiskListItem>([
         {
             accessorKey: 'title',
             header: t.riskTitle,
@@ -529,14 +515,7 @@ function RisksPageInner({
 
                 <RisksFilterToolbar
                     risks={risks}
-                    columnsDropdown={
-                        <ColumnsDropdown
-                            columns={riskColumnDropdown}
-                            visibility={columnVisibility}
-                            onChange={(v) => setColumnVisibility(v)}
-                            defaultVisibility={defaultRiskVisibility}
-                        />
-                    }
+                    columnsDropdown={columnsDropdown}
                 />
             </ListPageShell.Filters>
 
@@ -563,7 +542,7 @@ function RisksPageInner({
                     <DataTable<RiskListItem>
                         fillBody
                         data={risks}
-                        columns={riskColumns}
+                        columns={riskTableColumns}
                         loading={loading}
                         getRowId={(r) => r.id}
                         onRowClick={(row) => router.push(tenantHref(`/risks/${row.original.id}`))}
