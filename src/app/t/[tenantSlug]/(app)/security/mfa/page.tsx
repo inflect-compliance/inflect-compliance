@@ -274,7 +274,7 @@ export default function UserMfaPage() {
                         <div className="bg-white p-4 rounded-xl">
                             {/* Simple QR fallback: render as a monospace URI block */}
                             <div className="w-full sm:w-48 h-48 flex items-center justify-center">
-                                <QrCode className="w-full sm:w-32 h-32 text-slate-800" />
+                                <QrCode className="w-full sm:w-32 h-32 text-content-emphasis" />
                             </div>
                         </div>
                         <p className="text-xs text-content-subtle">
