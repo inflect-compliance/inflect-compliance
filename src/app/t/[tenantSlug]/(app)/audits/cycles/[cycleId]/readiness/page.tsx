@@ -10,6 +10,7 @@ import { ProgressBar } from '@/components/ui/progress-bar';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { cardVariants } from '@/components/ui/card';
+import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 import { cn } from '@dub/utils';
 
 function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
@@ -56,19 +57,47 @@ export default function CycleReadinessPage() {
         ]).then(([r, c]) => { setResult(r); setCycle(c); }).finally(() => setLoading(false));
     }, [apiUrl, cycleId]);
 
-    if (loading) return <div className="p-8"><SkeletonCard lines={5} /></div>;
-    if (!result) return <div className="p-8 text-center text-content-muted">Could not compute readiness.</div>;
+    const breadcrumbs = [
+        { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
+        { label: 'Audits', href: `/t/${tenantSlug}/audits` },
+        { label: 'Readiness', href: `/t/${tenantSlug}/audits/readiness` },
+        { label: cycle?.name || 'Cycle', href: `/t/${tenantSlug}/audits/cycles/${cycleId}` },
+        { label: 'Readiness Report' },
+    ];
+
+    if (loading) {
+        return (
+            <EntityDetailLayout
+                back={{ href: `/t/${tenantSlug}/audits/cycles/${cycleId}`, label: cycle?.name || 'Cycle' }}
+                title=""
+                breadcrumbs={breadcrumbs}
+                loading
+            >
+                {null}
+            </EntityDetailLayout>
+        );
+    }
+    if (!result) {
+        return (
+            <EntityDetailLayout
+                back={{ href: `/t/${tenantSlug}/audits/cycles/${cycleId}`, label: cycle?.name || 'Cycle' }}
+                title=""
+                breadcrumbs={breadcrumbs}
+                error="Could not compute readiness."
+            >
+                {null}
+            </EntityDetailLayout>
+        );
+    }
 
     const bd = result.breakdown;
 
     return (
-        <div className="space-y-section animate-fadeIn">
-            <div className="flex items-center gap-compact">
-                <Link href={`/t/${tenantSlug}/audits/readiness`} className="text-content-muted hover:text-content-emphasis transition">← Readiness</Link>
-                <span className="text-content-subtle">·</span>
-                <Link href={`/t/${tenantSlug}/audits/cycles/${cycleId}`} className="text-content-muted hover:text-content-emphasis transition">{cycle?.name || 'Cycle'}</Link>
-            </div>
-
+        <EntityDetailLayout
+            back={{ href: `/t/${tenantSlug}/audits/cycles/${cycleId}`, label: cycle?.name || 'Cycle' }}
+            title={`${cycle?.name || 'Cycle'} — Readiness`}
+            breadcrumbs={breadcrumbs}
+        >
             {/* Score + Breakdown */}
             <div className={cardVariants()}>
                 <div className="flex items-start gap-page">
@@ -153,7 +182,7 @@ export default function CycleReadinessPage() {
                         target="_blank" rel="noopener" className={buttonVariants({ variant: 'secondary', size: 'sm' })}>Control Gaps (CSV)</a>
                 </div>
             </div>
-        </div>
+        </EntityDetailLayout>
     );
 }
 
