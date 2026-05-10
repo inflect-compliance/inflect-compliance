@@ -1,0 +1,186 @@
+/**
+ * Roadmap-7 PR-4 — FilterToolbar coverage ratchet.
+ *
+ * Heavy entity-level list pages — Risks, Vendors, Audits, Frameworks
+ * (templates), Tasks, Evidence, Controls — wear `<FilterToolbar>` so
+ * search, faceted filters, view-toggle, and primary action sit in
+ * the same order, with the same spacing, on every page. New pages
+ * mounting `<DataTable>` should reach for `<FilterToolbar>` before
+ * inventing their own toolbar chrome.
+ *
+ * The ratchet enforces that any file mounting `<DataTable>` either
+ * also mounts `<FilterToolbar>` OR appears in EXEMPTIONS with a
+ * written reason describing why the page legitimately doesn't need
+ * faceted filters. Today's exemption list captures the empirical
+ * pattern after surveying production: cross-tenant read-only
+ * aggregation tables, admin sub-pages with one fixed entity-type
+ * and inline controls, wizards, dashboard composites, and detail-
+ * tab sub-tables.
+ *
+ * The direction of travel: this list shrinks as pages organically
+ * gain faceted filtering. New pages added to the codebase should
+ * either mount FilterToolbar or land in this list with reasoning —
+ * never bypass silently.
+ */
+import * as fs from "fs";
+import * as path from "path";
+
+const ROOT = path.resolve(__dirname, "../..");
+const SCAN_DIR = "src/app";
+
+const EXEMPT_DIR_NAMES = new Set<string>([
+    "node_modules",
+    "__tests__",
+    "__mocks__",
+]);
+const EXEMPT_FILE_PATTERNS: RegExp[] = [
+    /\.test\.tsx?$/,
+    /\.spec\.tsx?$/,
+    /\.stories\.tsx?$/,
+];
+
+/**
+ * Files mounting `<DataTable>` without `<FilterToolbar>`. Each entry
+ * documents the structural reason the page doesn't need (or doesn't
+ * yet have) faceted filters. PRs that ADD a new entry must carry a
+ * non-trivial reason in this map; the ratchet validates the reason
+ * length to stop hand-waved exemptions.
+ */
+const EXEMPTIONS: Record<string, string> = {
+    // ── Cross-tenant read-only aggregation views (org-level) ──
+    // These render a portfolio of tenant-scoped data without the
+    // per-tenant filtering surface that FilterToolbar provides.
+    // Sort + cursor pagination is the entire interaction surface.
+    "src/app/org/[orgSlug]/(app)/audit/AuditLogTable.tsx":
+        "Org-level cross-tenant audit log — chronological view with sort + load-more, no faceted filters appropriate at the portfolio aggregation tier.",
+    "src/app/org/[orgSlug]/(app)/controls/ControlsTable.tsx":
+        "Org-level non-performing controls digest — fixed scope (status != IMPLEMENTED) + sort, no per-tenant facets.",
+    "src/app/org/[orgSlug]/(app)/evidence/EvidenceTable.tsx":
+        "Org-level overdue-evidence digest — fixed scope (review past due) + sort, no per-tenant facets.",
+    "src/app/org/[orgSlug]/(app)/members/MembersTable.tsx":
+        "Org-level membership list — small aggregate with sort, faceted filtering not yet a need at this scale.",
+    "src/app/org/[orgSlug]/(app)/risks/RisksTable.tsx":
+        "Org-level critical-risk digest — fixed scope (severity >= HIGH) + sort.",
+    "src/app/org/[orgSlug]/(app)/tenants/TenantsTable.tsx":
+        "Org-level tenant health roll-up — fixed scope, no faceted filtering at portfolio tier.",
+
+    // ── Admin sub-pages with one fixed entity-type ──
+    // Each surface owns a small fixed entity list with inline
+    // controls (toggle / revoke / archive) baked into the page chrome.
+    // FilterToolbar is overkill — the entity volume sits in the
+    // dozens, not the thousands.
+    "src/app/t/[tenantSlug]/(app)/admin/AdminClient.tsx":
+        "Admin landing page audit-log table — chronological history bound to one tenant, not a faceted-filter surface.",
+    "src/app/t/[tenantSlug]/(app)/admin/api-keys/page.tsx":
+        "API keys admin — small fixed list (typical: <20) with inline create + revoke controls.",
+    "src/app/t/[tenantSlug]/(app)/admin/billing/BillingEventLog.tsx":
+        "Detail-tab sub-table inside the billing page — chronological event log with fixed scope.",
+    "src/app/t/[tenantSlug]/(app)/admin/integrations/page.tsx":
+        "Integrations admin — small fixed catalogue with inline toggle controls.",
+    "src/app/t/[tenantSlug]/(app)/admin/members/page.tsx":
+        "Members admin — single tenant's roster with inline role + invite controls; faceting belongs to the org-level view.",
+    "src/app/t/[tenantSlug]/(app)/admin/notifications/page.tsx":
+        "Notifications admin — small fixed channel list with inline rule controls.",
+    "src/app/t/[tenantSlug]/(app)/admin/roles/page.tsx":
+        "Custom roles admin — small fixed list with inline create + permission controls.",
+
+    // ── Section dashboards / composite pages ──
+    // Pages composed of multiple cards + sub-tables, where the page
+    // body is itself the navigation/filter surface. FilterToolbar
+    // would compete with the page's existing composition.
+    "src/app/t/[tenantSlug]/(app)/access-reviews/AccessReviewsClient.tsx":
+        "Multi-section dashboard — review cycle list lives inside a tabbed dashboard composition with per-tab filtering.",
+    "src/app/t/[tenantSlug]/(app)/coverage/CoverageClient.tsx":
+        "Multi-section coverage dashboard — already in the Epic 52 EXEMPTIONS list for ListPageShell; same shape applies here.",
+    "src/app/t/[tenantSlug]/(app)/findings/FindingsClient.tsx":
+        "Findings list — currently uses inline filter controls; planned for FilterToolbar migration in a follow-up.",
+    "src/app/t/[tenantSlug]/(app)/frameworks/FrameworksClient.tsx":
+        "Framework picker — small fixed catalogue of installable frameworks; tile + status surface, not a filter-driven list.",
+    "src/app/t/[tenantSlug]/(app)/reports/ReportsClient.tsx":
+        "Reports landing — composite of discrete report tiles, not an entity list.",
+
+    // ── Wizards / multi-step flows ──
+    "src/app/t/[tenantSlug]/(app)/risks/import/page.tsx":
+        "Risk import wizard — staged workflow, each step has its own controls; not an ongoing browse surface.",
+
+    // ── Templates / sub-resource lists ──
+    "src/app/t/[tenantSlug]/(app)/controls/templates/page.tsx":
+        "Control template catalogue — small fixed catalogue browsed by section; faceting not yet a need.",
+
+    // ── Tests / planning surfaces ──
+    "src/app/t/[tenantSlug]/(app)/tests/due/page.tsx":
+        "Due-tests planning surface — fixed scope (tests due in the next window) with one tab selector.",
+    "src/app/t/[tenantSlug]/(app)/tests/page.tsx":
+        "Tests landing — multiple sub-tables driven by tab + tenant scope, not faceted filters.",
+};
+
+function isExempt(rel: string): boolean {
+    const segments = rel.split(path.sep);
+    if (segments.some((s) => EXEMPT_DIR_NAMES.has(s))) return true;
+    if (EXEMPT_FILE_PATTERNS.some((rx) => rx.test(rel))) return true;
+    return false;
+}
+
+function walk(dir: string): string[] {
+    const out: string[] = [];
+    if (!fs.existsSync(dir)) return out;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        const rel = path.relative(ROOT, full);
+        if (isExempt(rel)) continue;
+        if (entry.isDirectory()) out.push(...walk(full));
+        else if (/\.tsx$/.test(entry.name)) out.push(full);
+    }
+    return out;
+}
+
+interface Violation {
+    file: string;
+}
+
+describe("FilterToolbar coverage", () => {
+    it("every file mounting <DataTable> either mounts <FilterToolbar> or is in EXEMPTIONS", () => {
+        const violations: Violation[] = [];
+        for (const file of walk(path.join(ROOT, SCAN_DIR))) {
+            const content = fs.readFileSync(file, "utf8");
+            if (!/<DataTable\b/.test(content)) continue;
+            if (/FilterToolbar/.test(content)) continue;
+            const rel = path.relative(ROOT, file);
+            if (rel in EXEMPTIONS) continue;
+            violations.push({ file: rel });
+        }
+        if (violations.length > 0) {
+            const sample = violations
+                .slice(0, 15)
+                .map((v) => `  ${v.file}`)
+                .join("\n");
+            throw new Error(
+                `Found ${violations.length} file(s) mounting <DataTable> without <FilterToolbar>. Either wire the page through <FilterToolbar> + <FilterProvider> for a consistent toolbar shape, OR add the file to EXEMPTIONS with a written structural reason (cross-tenant aggregation, admin sub-page with inline controls, dashboard composite, wizard, sub-table — see existing entries for the vocabulary).\n\nFirst ${Math.min(15, violations.length)} offender(s):\n${sample}`,
+            );
+        }
+        expect(violations).toHaveLength(0);
+    });
+
+    it("EXEMPTIONS entries point at real files", () => {
+        for (const exemptPath of Object.keys(EXEMPTIONS)) {
+            const full = path.join(ROOT, exemptPath);
+            if (!fs.existsSync(full)) {
+                throw new Error(
+                    `EXEMPTIONS contains a path that no longer exists: ${exemptPath}. Drop the entry — the ratchet only enforces real files.`,
+                );
+            }
+            // The file must still mount DataTable, otherwise the
+            // exemption is stale (the file was refactored, etc.).
+            const content = fs.readFileSync(full, "utf8");
+            expect(content).toMatch(/<DataTable\b/);
+        }
+    });
+
+    it("EXEMPTIONS entries each have a non-trivial reason", () => {
+        for (const [, reason] of Object.entries(EXEMPTIONS)) {
+            // 40+ chars rules out hand-waves; force a real
+            // sentence about the structural shape.
+            expect(reason.length).toBeGreaterThan(40);
+        }
+    });
+});
