@@ -11,6 +11,7 @@ import type { SoAReportDTO, SoAEntryDTO } from '@/lib/dto/soa';
 import { Modal } from '@/components/ui/modal';
 import { Tooltip } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
+import { textLinkVariants } from '@/components/ui/typography';
 import { StatusBadge as StatusBadgePrimitive, type StatusBadgeVariant } from '@/components/ui/status-badge';
 
 // ─── Types ───
@@ -509,7 +510,7 @@ function SoARow({
                                     <div className="flex items-center gap-compact">
                                         <a
                                             href={`/t/${tenantSlug}/controls/${c.controlId}`}
-                                            className="font-mono text-[var(--brand-default)] hover:underline"
+                                            className={`${textLinkVariants({ tone: 'link' })} font-mono`}
                                             onClick={e => e.stopPropagation()}
                                         >
                                             {c.code || c.controlId.slice(0, 8)}

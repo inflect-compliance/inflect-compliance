@@ -11,7 +11,7 @@ import { useSWRConfig } from 'swr';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
-import { Heading } from '@/components/ui/typography';
+import { Heading, textLinkVariants } from '@/components/ui/typography';
 import { EditControlModal } from './_modals/EditControlModal';
 import { MetaStrip } from '@/components/ui/meta-strip';
 import { CONTROL_STATUS_VARIANT } from '@/app-layer/domain/entity-status-mapping';
@@ -996,7 +996,7 @@ export default function ControlDetailPage() {
                                     </Tooltip>
                                 )}
                                 {permissions.canWrite && (
-                                    <button className="text-xs text-[var(--brand-default)] hover:underline" onClick={() => { setAutoEvidenceSource(control.evidenceSource || ''); setAutoKey(control.automationKey || ''); setEditingAutomation(!editingAutomation); }} id="edit-automation-btn">
+                                    <button className={`${textLinkVariants({ tone: 'link' })} text-xs`} onClick={() => { setAutoEvidenceSource(control.evidenceSource || ''); setAutoKey(control.automationKey || ''); setEditingAutomation(!editingAutomation); }} id="edit-automation-btn">
                                         {editingAutomation ? 'Cancel' : 'Edit'}
                                     </button>
                                 )}
@@ -1252,7 +1252,7 @@ export default function ControlDetailPage() {
                                             <tr key={`link-${el.id}`}>
                                                 <td><StatusBadge variant={el.kind === 'FILE' ? 'success' : 'info'}>{el.kind}</StatusBadge></td>
                                                 <td className="text-sm">
-                                                    {el.url ? <a href={el.url} target="_blank" rel="noopener noreferrer" className="text-[var(--brand-default)] hover:underline">{el.url}</a> : (el.note || '—')}
+                                                    {el.url ? <a href={el.url} target="_blank" rel="noopener noreferrer" className={textLinkVariants({ tone: 'link' })}>{el.url}</a> : (el.note || '—')}
                                                 </td>
                                                 <td className="text-xs text-content-muted">{el.createdBy?.name || '—'}</td>
                                                 <td className="text-xs text-content-muted">{el.createdAt ? formatDate(el.createdAt) : '—'}</td>
@@ -1270,7 +1270,7 @@ export default function ControlDetailPage() {
                                             <tr key={`ev-${ev.id}`}>
                                                 <td><StatusBadge variant={ev.type === 'FILE' ? 'success' : ev.type === 'TEXT' ? 'neutral' : 'info'}>{ev.type}</StatusBadge></td>
                                                 <td className="text-sm">
-                                                    <Link href={tenantHref(`/evidence`)} className="text-[var(--brand-default)] hover:underline">{ev.title}</Link>
+                                                    <Link href={tenantHref(`/evidence`)} className={textLinkVariants({ tone: 'link' })}>{ev.title}</Link>
                                                 </td>
                                                 <td>
                                                     <StatusBadge variant={ev.status === 'APPROVED' ? 'success' : ev.status === 'REJECTED' ? 'error' : ev.status === 'SUBMITTED' ? 'info' : 'neutral'}>

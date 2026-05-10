@@ -9,6 +9,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Paperclip } from 'lucide-react';
+import { textLinkVariants } from '@/components/ui/typography';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -489,7 +490,7 @@ export default function TestRunPage() {
                                             <span className="text-sm text-content-default">{ev.evidence.title}</span>
                                         )}
                                         {ev.url && (
-                                            <a href={ev.url} target="_blank" rel="noopener noreferrer" className="text-sm text-[var(--brand-default)] hover:underline truncate">
+                                            <a href={ev.url} target="_blank" rel="noopener noreferrer" className={`${textLinkVariants({ tone: 'link' })} text-sm truncate`}>
                                                 {ev.url}
                                             </a>
                                         )}

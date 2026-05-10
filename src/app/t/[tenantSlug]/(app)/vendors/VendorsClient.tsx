@@ -25,7 +25,7 @@ import { ListPageShell } from '@/components/layout/ListPageShell';
 import { toApiSearchParams } from '@/lib/filters/url-sync';
 import { useHydratedNow } from '@/lib/hooks/use-hydrated-now';
 import { buildVendorFilters, VENDOR_FILTER_KEYS } from './filter-defs';
-import { Heading } from '@/components/ui/typography';
+import { Heading, textLinkVariants } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
 const STATUS_VARIANT: Record<string, 'success' | 'info' | 'warning' | 'neutral'> = {
@@ -122,7 +122,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
             header: 'Name',
             cell: ({ row }: any) => (
                 <div className="font-medium">
-                    <Link href={tenantHref(`/vendors/${row.original.id}`)} className="text-[var(--brand-default)] hover:underline" id={`vendor-link-${row.original.id}`} onClick={(e) => e.stopPropagation()}>
+                    <Link href={tenantHref(`/vendors/${row.original.id}`)} className={textLinkVariants({ tone: 'link' })} id={`vendor-link-${row.original.id}`} onClick={(e) => e.stopPropagation()}>
                         {row.original.name}
                     </Link>
                     {row.original.isSubprocessor && <span className="ml-2 text-xs bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded">Sub-processor</span>}

@@ -7,6 +7,7 @@
 import { formatDate } from '@/lib/format-date';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
+import { textLinkVariants } from '@/components/ui/typography';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { ListPageShell } from '@/components/layout/ListPageShell';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
@@ -199,7 +200,7 @@ export default function TestsRollupPage() {
                     {
                         id: 'actions', header: '',
                         cell: ({ row }) => (
-                            <Link href={tenantHref(`/controls/${row.original.control.id}/tests/${row.original.id}`)} className="text-xs text-[var(--brand-default)] hover:underline">
+                            <Link href={tenantHref(`/controls/${row.original.control.id}/tests/${row.original.id}`)} className={`${textLinkVariants({ tone: 'link' })} text-xs`}>
                                 View →
                             </Link>
                         ),
