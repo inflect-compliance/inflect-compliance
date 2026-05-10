@@ -247,7 +247,7 @@ export default function TemplateLibraryPage() {
 
                                             {/* Requirements */}
                                             <div>
-                                                <Eyebrow className="block mb-1 text-content-subtle">Mapped Requirements</Eyebrow>
+                                                <Eyebrow>Mapped Requirements</Eyebrow>
                                                 <div className="space-y-1">
                                                     {t.requirements.map((r: any, i: number) => (
                                                         <div key={i} className="flex items-center gap-tight text-xs">
@@ -261,7 +261,7 @@ export default function TemplateLibraryPage() {
 
                                             {/* Tasks */}
                                             <div>
-                                                <Eyebrow className="block mb-1 text-content-subtle">Default Tasks</Eyebrow>
+                                                <Eyebrow>Default Tasks</Eyebrow>
                                                 <div className="space-y-1">
                                                     {t.tasks.map((task: any, i: number) => (
                                                         <div key={i} className="flex items-center gap-tight text-xs">
@@ -274,7 +274,7 @@ export default function TemplateLibraryPage() {
 
                                             {/* Suggested evidence */}
                                             <div>
-                                                <Eyebrow className="block mb-1 text-content-subtle">Suggested Evidence Types</Eyebrow>
+                                                <Eyebrow>Suggested Evidence Types</Eyebrow>
                                                 <div className="flex flex-wrap gap-1">
                                                     {['DOCUMENT', 'SCREENSHOT', 'LOG'].map(type => (
                                                         <span key={type} className="text-xs bg-bg-default text-content-muted px-2 py-0.5 rounded">{type}</span>

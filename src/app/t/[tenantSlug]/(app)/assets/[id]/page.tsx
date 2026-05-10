@@ -198,12 +198,12 @@ export default function AssetDetailPage() {
                     </>
                 ) : (
                     <>
-                        {asset.classification && <div><Eyebrow className="mb-1">Classification</Eyebrow><p className="text-sm">{asset.classification}</p></div>}
+                        {asset.classification && <div><Eyebrow>Classification</Eyebrow><p className="text-sm">{asset.classification}</p></div>}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
-                            <div><Eyebrow className="mb-1">Owner</Eyebrow><p className="text-sm">{asset.owner || '—'}</p></div>
-                            <div><Eyebrow className="mb-1">Location</Eyebrow><p className="text-sm">{asset.location || '—'}</p></div>
+                            <div><Eyebrow>Owner</Eyebrow><p className="text-sm">{asset.owner || '—'}</p></div>
+                            <div><Eyebrow>Location</Eyebrow><p className="text-sm">{asset.location || '—'}</p></div>
                             <div>
-                                <Eyebrow className="mb-1">External Ref</Eyebrow>
+                                <Eyebrow>External Ref</Eyebrow>
                                 {asset.externalRef ? (
                                     <CopyText
                                         value={asset.externalRef}
@@ -217,7 +217,7 @@ export default function AssetDetailPage() {
                                     <p className="text-sm">—</p>
                                 )}
                             </div>
-                            <div><Eyebrow className="mb-1">Data Residency</Eyebrow><p className="text-sm">{asset.dataResidency || '—'}</p></div>
+                            <div><Eyebrow>Data Residency</Eyebrow><p className="text-sm">{asset.dataResidency || '—'}</p></div>
                         </div>
                         <div className="grid grid-cols-3 gap-default">
                             <div className="glass-card p-4">
@@ -231,8 +231,8 @@ export default function AssetDetailPage() {
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-default border-t border-border-default/50 pt-4">
-                            <div><Eyebrow className="mb-1">Created</Eyebrow><p className="text-sm text-content-muted">{formatDate(asset.createdAt)}</p></div>
-                            <div><Eyebrow className="mb-1">Updated</Eyebrow><p className="text-sm text-content-muted">{formatDate(asset.updatedAt)}</p></div>
+                            <div><Eyebrow>Created</Eyebrow><p className="text-sm text-content-muted">{formatDate(asset.createdAt)}</p></div>
+                            <div><Eyebrow>Updated</Eyebrow><p className="text-sm text-content-muted">{formatDate(asset.updatedAt)}</p></div>
                         </div>
                     </>
                 )}

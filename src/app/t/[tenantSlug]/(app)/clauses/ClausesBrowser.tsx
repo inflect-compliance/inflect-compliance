@@ -91,11 +91,11 @@ export function ClausesBrowser({ clauses: initialClauses, tenantSlug }: ClausesB
                         </div>
                         <p className="text-sm text-content-default mb-4">{selected.description}</p>
                         <div className="mb-4">
-                            <Eyebrow className="block mb-2">{t('requiredArtifacts')}</Eyebrow>
+                            <Eyebrow className="mb-2">{t('requiredArtifacts')}</Eyebrow>
                             <p className="text-sm text-content-muted">{selected.artifacts}</p>
                         </div>
                         <div>
-                            <Eyebrow className="block mb-2">{t('checklist')}</Eyebrow>
+                            <Eyebrow className="mb-2">{t('checklist')}</Eyebrow>
                             <div className="space-y-tight">
                                 {selected.checklist?.map((item: string, i: number) => (
                                     <label key={i} className="flex items-start gap-tight text-sm text-content-default cursor-pointer group">

@@ -445,26 +445,26 @@ export default function RiskDetailPage() {
                     <>
                         {risk.description && (
                             <div>
-                                <Eyebrow className="mb-1">Description</Eyebrow>
+                                <Eyebrow>Description</Eyebrow>
                                 <p className="text-sm text-content-default whitespace-pre-wrap">{risk.description}</p>
                             </div>
                         )}
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
                             <div>
-                                <Eyebrow className="mb-1">Category</Eyebrow>
+                                <Eyebrow>Category</Eyebrow>
                                 <p className="text-sm">{risk.category || '—'}</p>
                             </div>
                             <div>
-                                <Eyebrow className="mb-1">Treatment Owner</Eyebrow>
+                                <Eyebrow>Treatment Owner</Eyebrow>
                                 <p className="text-sm">{risk.treatmentOwner || '—'}</p>
                             </div>
                             <div>
-                                <Eyebrow className="mb-1">Treatment</Eyebrow>
+                                <Eyebrow>Treatment</Eyebrow>
                                 <p className="text-sm">{risk.treatment || 'Untreated'}</p>
                             </div>
                             <div>
-                                <Eyebrow className="mb-1">Target Date</Eyebrow>
+                                <Eyebrow>Target Date</Eyebrow>
                                 <p className="text-sm">{risk.targetDate ? formatDate(risk.targetDate) : '—'}</p>
                             </div>
                         </div>
@@ -488,26 +488,26 @@ export default function RiskDetailPage() {
 
                         {risk.threat && (
                             <div>
-                                <Eyebrow className="mb-1">Threat</Eyebrow>
+                                <Eyebrow>Threat</Eyebrow>
                                 <p className="text-sm text-content-default">{risk.threat}</p>
                             </div>
                         )}
                         {risk.vulnerability && (
                             <div>
-                                <Eyebrow className="mb-1">Vulnerability</Eyebrow>
+                                <Eyebrow>Vulnerability</Eyebrow>
                                 <p className="text-sm text-content-default whitespace-pre-wrap">{risk.vulnerability}</p>
                             </div>
                         )}
                         {risk.treatmentNotes && (
                             <div>
-                                <Eyebrow className="mb-1">Treatment Notes</Eyebrow>
+                                <Eyebrow>Treatment Notes</Eyebrow>
                                 <p className="text-sm text-content-default whitespace-pre-wrap">{risk.treatmentNotes}</p>
                             </div>
                         )}
 
                         <div className="grid grid-cols-2 gap-default border-t border-border-subtle pt-4">
                             <div>
-                                <Eyebrow className="mb-1">Next Review</Eyebrow>
+                                <Eyebrow>Next Review</Eyebrow>
                                 <p className={`text-sm ${overdue ? 'text-content-error font-semibold' : ''}`}>
                                     {risk.nextReviewAt
                                         ? `${overdue ? '! ' : ''}${formatDate(risk.nextReviewAt)}`
@@ -516,7 +516,7 @@ export default function RiskDetailPage() {
                                 </p>
                             </div>
                             <div>
-                                <Eyebrow className="mb-1">Created</Eyebrow>
+                                <Eyebrow>Created</Eyebrow>
                                 <p className="text-sm text-content-muted">{formatDate(risk.createdAt)}</p>
                             </div>
                         </div>

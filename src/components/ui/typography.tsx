@@ -100,6 +100,22 @@ interface EyebrowProps extends HTMLAttributes<HTMLSpanElement> {
   className?: string;
 }
 
+// Roadmap-4 PR-3 — Eyebrow intrinsic styling lock.
+//
+// Every Eyebrow renders with the same weight / size / tracking /
+// color and the same `mb-1` spacing below it. The primitive owns
+// all five — consumers never override them via inline className.
+//
+// Audit found 17 sites passing `mb-1`, 3 passing
+// `block mb-1 text-content-subtle`, 2 passing `block mb-2`, 1
+// passing `px-3 pt-4 pb-1`. All of those overrides become
+// no-ops here (they're already what the primitive does) or
+// migrate to a different mechanism (the sidebar's `px-3 pt-4
+// pb-1` exists because the eyebrow inside SidebarNav needs
+// section padding — handled there separately).
+const EYEBROW_INTRINSIC =
+  "block mb-1 text-xs font-semibold uppercase tracking-wider text-content-muted";
+
 const Eyebrow = forwardRef<HTMLSpanElement, EyebrowProps>(function Eyebrow(
   { className, children, ...rest },
   ref,
@@ -107,10 +123,7 @@ const Eyebrow = forwardRef<HTMLSpanElement, EyebrowProps>(function Eyebrow(
   return (
     <span
       ref={ref}
-      className={cn(
-        "text-xs font-semibold uppercase tracking-wider text-content-muted",
-        className,
-      )}
+      className={cn(EYEBROW_INTRINSIC, className)}
       {...rest}
     >
       {children}
