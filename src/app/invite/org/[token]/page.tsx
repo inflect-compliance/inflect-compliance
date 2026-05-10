@@ -40,7 +40,7 @@ export default async function OrgInvitePage({ params, searchParams }: InvitePage
     if (!preview) {
         return (
             <main className="min-h-screen bg-bg-default flex items-center justify-center p-4">
-                <div className="max-w-md w-full bg-bg-surface rounded-lg border border-border-subtle p-8 text-center">
+                <div className="max-w-md w-full bg-bg-default rounded-lg border border-border-subtle p-8 text-center">
                     <div className="text-4xl mb-4">&#x26A0;&#xFE0F;</div>
                     <Heading level={1} className="mb-2">
                         Invite not available
@@ -61,7 +61,7 @@ export default async function OrgInvitePage({ params, searchParams }: InvitePage
 
     return (
         <main className="min-h-screen bg-bg-default flex items-center justify-center p-4">
-            <div className="max-w-md w-full bg-bg-surface rounded-lg border border-border-subtle p-8">
+            <div className="max-w-md w-full bg-bg-default rounded-lg border border-border-subtle p-8">
                 <Heading level={1} className="mb-2 text-center">
                     You have been invited
                 </Heading>
