@@ -38,6 +38,10 @@ const SCAN_DIRS = ['src/app', 'src/components'];
 const EXEMPT_FILES = new Set<string>([
     // The primitive owns this recipe.
     'src/components/ui/card.tsx',
+    // Roadmap-5 hotfix — the cva definition lives in a server-safe
+    // sibling so non-`"use client"` callers (server components) can
+    // import + call it. The recipe text moved from card.tsx to here.
+    'src/components/ui/card-variants.ts',
 ]);
 
 const EXEMPT_FILE_PATTERNS: RegExp[] = [
