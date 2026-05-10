@@ -258,10 +258,15 @@ describe('TestDashboardG2Section — overdue list', () => {
         );
         const badge = screen.getByTestId('test-dashboard-g2-overdue-count');
         // PR-2: <StatusBadge variant="error"> replaces the legacy
-        // <span className="badge badge-danger">. The element now carries
-        // the StatusBadge CVA classes — assert the canonical token.
+        // <span className="badge badge-danger">.
+        // R9-PR11 (2026-05-11): StatusBadge default tone flipped
+        // `solid` → `subtle` (Dell light treatment). The error
+        // variant now renders `bg-bg-subtle text-content-error`
+        // by default — the canonical token is the text color, not
+        // the background. If a future PR explicitly re-passes
+        // `tone="solid"` here, the bg-bg-error assertion comes
+        // back.
         expect(badge).toHaveClass('text-content-error');
-        expect(badge).toHaveClass('bg-bg-error');
         expect(badge).toHaveTextContent('1');
     });
 });
