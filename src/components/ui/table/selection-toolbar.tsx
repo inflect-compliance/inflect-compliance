@@ -230,7 +230,7 @@ export function SelectionToolbar<T>({
                     ? "Deselect all rows"
                     : "Select all rows"
                 }
-                className="border-border-emphasis pointer-events-none size-4 rounded data-[state=checked]:bg-[var(--brand-emphasis)] data-[state=indeterminate]:bg-[var(--brand-emphasis)]"
+                className="border-border-emphasis pointer-events-none size-4 rounded-full data-[state=checked]:bg-[var(--brand-emphasis)] data-[state=indeterminate]:bg-[var(--brand-emphasis)]"
                 checked={
                   table.getIsAllRowsSelected()
                     ? true
