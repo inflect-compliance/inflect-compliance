@@ -643,7 +643,7 @@ export function Table<T>({
             aria-label="Table contents (scrollable)"
             className={cn(
               "relative min-h-[400px] overflow-x-auto rounded-[inherit]",
-              "focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--brand-default)]/40",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-default)]/40",
               // Scroll-snap so rows align cleanly with the sticky
               // header instead of stopping mid-row. `snap-proximity`
               // only snaps when you stop near a snap point, so free

@@ -350,7 +350,7 @@ export function VirtualTable<T>({
                     tabIndex={0}
                     className={cn(
                         className,
-                        "focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--brand-default)]/40",
+                        "focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-default)]/40",
                         state.scrollWrapperClassName,
                     )}
                 >

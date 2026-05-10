@@ -432,7 +432,7 @@ function OperatorFilterPill({
             "transition-[color,background-color,transform] duration-150 ease-out motion-reduce:transition-none",
             "hover:bg-bg-muted hover:text-content-emphasis [@media(hover:none)]:hover:bg-transparent",
             "active:scale-[0.97] motion-reduce:active:scale-100",
-            "focus:outline-none focus-visible:ring-1",
+            "focus:outline-none focus-visible:ring-2",
           )}
           onClick={() => {
             if (onRemoveFilter) {
@@ -700,7 +700,7 @@ function OperatorFilterPill({
           "transition-[color,background-color,transform] duration-150 ease-out motion-reduce:transition-none",
           "hover:bg-bg-muted hover:text-content-emphasis [@media(hover:none)]:hover:bg-transparent",
           "active:scale-[0.97] motion-reduce:active:scale-100",
-          "focus:outline-none focus-visible:ring-1",
+          "focus:outline-none focus-visible:ring-2",
         )}
         onClick={() => {
           if (onRemoveFilter) {
