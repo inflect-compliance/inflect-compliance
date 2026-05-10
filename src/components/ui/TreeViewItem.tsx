@@ -106,7 +106,7 @@ export const TreeViewItem = forwardRef<HTMLDivElement, TreeViewItemProps>(
                     }}
                     className={cn(
                         'flex-shrink-0 w-5 h-5 flex items-center justify-center rounded',
-                        hasChildren ? 'hover:bg-bg-emphasis text-content-muted' : 'invisible',
+                        hasChildren ? 'hover:bg-bg-elevated text-content-muted' : 'invisible',
                     )}
                 >
                     {loading ? (

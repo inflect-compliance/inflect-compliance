@@ -48,7 +48,7 @@ export default async function TenantsPage() {
                         <a
                             key={m.slug}
                             href={`/t/${m.slug}/dashboard`}
-                            className="flex items-center justify-between rounded-lg border border-border-subtle bg-bg-surface px-5 py-4 hover:bg-bg-muted/50 transition-colors"
+                            className="flex items-center justify-between rounded-lg border border-border-subtle bg-bg-default px-5 py-4 hover:bg-bg-muted/50 transition-colors"
                         >
                             <div>
                                 <p className="font-medium text-content-default">{m.slug}</p>
