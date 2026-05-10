@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
 import { Button } from '@/components/ui/button';
-import { DataTable, createColumns } from '@/components/ui/table';
+import { DataTable, createColumns, useColumnsDropdown } from '@/components/ui/table';
 import { ListPageShell } from '@/components/layout/ListPageShell';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { DatePicker } from '@/components/ui/date-picker/date-picker';
@@ -151,6 +151,26 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
         const map: Record<string, string> = { OPEN: t.open, IN_PROGRESS: t.inProgress, READY_FOR_VERIFICATION: t.readyForVerification, CLOSED: t.closed };
         return map[status] || status;
     };
+
+    // R10-PR11 — column-visibility gear.
+    const findingColumnList = useMemo(
+        () => [
+            { id: 'title', label: 'Title' },
+            { id: 'severity', label: 'Severity' },
+            { id: 'type', label: 'Type' },
+            { id: 'owner', label: 'Owner' },
+            { id: 'status', label: 'Status' },
+        ],
+        [],
+    );
+    const {
+        columnVisibility,
+        setColumnVisibility,
+        dropdown: columnsDropdown,
+    } = useColumnsDropdown({
+        storageKey: 'inflect:col-vis:findings',
+        columns: findingColumnList,
+    });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const findingColumns = useMemo(() => createColumns<any>([
@@ -312,11 +332,16 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
 
             <ListPageShell.Body>
                 <TruncationBanner truncated={truncated} />
+                <div className="flex justify-end mb-tight">
+                    {columnsDropdown}
+                </div>
                 <DataTable
                     fillBody
                     data={findings}
                     columns={findingColumns}
                     getRowId={(f: any) => f.id}
+                    columnVisibility={columnVisibility}
+                    onColumnVisibilityChange={setColumnVisibility}
                     emptyState={t.noFindings}
                     resourceName={(p) => p ? 'findings' : 'finding'}
                     data-testid="findings-table"
