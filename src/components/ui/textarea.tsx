@@ -26,11 +26,11 @@ export const textareaVariants = cva(
     [
         "block w-full rounded-lg border text-sm transition-colors",
         "bg-bg-default text-content-emphasis placeholder-content-subtle",
-        "border-border-default",
+        "border-border-subtle",
         "hover:border-border-emphasis",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-border-emphasis",
-        "disabled:cursor-not-allowed disabled:bg-bg-muted disabled:text-content-muted disabled:hover:border-border-default",
-        "read-only:bg-bg-muted read-only:text-content-muted read-only:hover:border-border-default",
+        "disabled:cursor-not-allowed disabled:bg-bg-muted disabled:text-content-muted disabled:hover:border-border-subtle",
+        "read-only:bg-bg-muted read-only:text-content-muted read-only:hover:border-border-subtle",
         "px-3 py-2",
     ],
     {

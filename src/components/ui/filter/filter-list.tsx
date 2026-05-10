@@ -259,14 +259,14 @@ export function FilterList({
             className={cn(
               "group mt-px flex h-[38px] items-center gap-tight whitespace-nowrap rounded-lg border border-transparent px-3 py-2 text-sm text-content-muted",
               "transition-[color,border-color,background-color,transform] duration-150 ease-out motion-reduce:transition-none",
-              "hover:border-border-default hover:bg-bg-muted hover:text-content-emphasis [@media(hover:none)]:hover:border-transparent [@media(hover:none)]:hover:bg-transparent",
+              "hover:border-border-emphasis hover:bg-bg-muted hover:text-content-emphasis [@media(hover:none)]:hover:border-transparent [@media(hover:none)]:hover:bg-transparent",
               "active:scale-[0.98] motion-reduce:active:scale-100",
               "focus:outline-none",
             )}
             onClick={onRemoveAll}
           >
             Clear Filters
-            <kbd className="rounded-md border border-border-default px-1.5 py-0.5 text-xs text-content-emphasis group-hover:bg-bg-muted">
+            <kbd className="rounded-md border border-border-subtle px-1.5 py-0.5 text-xs text-content-emphasis group-hover:bg-bg-muted">
               ESC
             </kbd>
           </button>
@@ -542,7 +542,7 @@ function OperatorFilterPill({
           <div>
             <AnimatedSizeContainer width height className="rounded-[inherit]">
               <Command loop shouldFilter={false}>
-                <div className="flex items-center overflow-hidden rounded-t-lg border-b border-border-default">
+                <div className="flex items-center overflow-hidden rounded-t-lg border-b border-border-subtle">
                   <Command.Input
                     placeholder={`${filter.label}...`}
                     value={search}
@@ -618,7 +618,7 @@ function OperatorFilterPill({
                                     "flex h-4 w-4 items-center justify-center rounded border",
                                     isSelected
                                       ? "border-brand-emphasis bg-brand-emphasis"
-                                      : "border-border-default",
+                                      : "border-border-subtle",
                                   )}
                                 >
                                   {isSelected && (
