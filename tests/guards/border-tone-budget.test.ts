@@ -63,8 +63,15 @@ const ROOT = path.resolve(__dirname, '../..');
  * (Roadmap-5 PR-10, 2026-05-10). Future PRs that migrate
  * `border-border-default` → `border-border-subtle` MUST
  * decrement this number to lock in the win.
+ *
+ * Roadmap-7 PR-2 (2026-05-10) lowered the budget from 133 → 120 by
+ * migrating form-field outlines (input / textarea), filter-primitive
+ * resting borders, internal popover dividers, and kbd-shortcut hints
+ * from `default` to `subtle` — the documented default tone for
+ * structural separators. Future PRs continue to ratchet down toward
+ * the rough 4:1 subtle-to-default target ratio.
  */
-const BORDER_DEFAULT_BUDGET = 133;
+const BORDER_DEFAULT_BUDGET = 120;
 
 function countMatches(re: RegExp): number {
     let total = 0;

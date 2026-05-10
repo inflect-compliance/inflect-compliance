@@ -259,7 +259,7 @@ export function FilterSelect({
                 !selectedFilter || selectedFilter.shouldFilter !== false
               }
             >
-              <div className="flex items-center overflow-hidden rounded-t-lg border-b border-border-default">
+              <div className="flex items-center overflow-hidden rounded-t-lg border-b border-border-subtle">
                 <CommandInput
                   placeholder={`${selectedFilter?.label || "Filter"}...`}
                   value={search}
@@ -290,7 +290,7 @@ export function FilterSelect({
                   }}
                 />
                 {!selectedFilter && (
-                  <kbd className="mr-2 hidden shrink-0 rounded border border-border-default bg-bg-muted px-2 py-0.5 text-xs font-light text-content-muted md:block">
+                  <kbd className="mr-2 hidden shrink-0 rounded border border-border-subtle bg-bg-muted px-2 py-0.5 text-xs font-light text-content-muted md:block">
                     F
                   </kbd>
                 )}
@@ -398,7 +398,7 @@ export function FilterSelect({
         className={cn(
           "group flex h-10 cursor-pointer appearance-none items-center gap-x-2 truncate rounded-lg border px-3 text-sm outline-none",
           "transition-[color,border-color,box-shadow] duration-150 ease-out motion-reduce:transition-none",
-          "border-border-default bg-bg-default text-content-emphasis placeholder:text-content-subtle",
+          "border-border-subtle bg-bg-default text-content-emphasis placeholder:text-content-subtle",
           "focus-visible:border-border-emphasis data-[state=open]:border-border-emphasis data-[state=open]:ring-4 data-[state=open]:ring-ring",
           "active:scale-[0.98] motion-reduce:active:scale-100",
           className,
@@ -519,7 +519,7 @@ function FilterButton({
             "flex h-4 w-4 items-center justify-center rounded border",
             isChecked
               ? "border-brand-emphasis bg-brand-emphasis"
-              : "border-border-default",
+              : "border-border-subtle",
           )}
         >
           {isChecked && <Check className="h-3 w-3 text-content-inverted" />}
