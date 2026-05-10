@@ -26,7 +26,6 @@ import {
     BarChart3,
     Settings,
     LogOut,
-    Bell,
     Calendar as CalendarIcon,
     type LucideIcon,
 } from 'lucide-react';
@@ -98,7 +97,6 @@ export function useNavSections(): NavSectionDef[] {
                 { href: tenantHref('/frameworks'), label: 'Framework', icon: Map },
                 { href: tenantHref('/reports'), label: t('reports'), icon: BarChart3, visible: perms.reports.view },
                 { href: tenantHref('/admin'), label: t('admin'), icon: Settings, visible: perms.admin.view },
-                { href: tenantHref('/admin/notifications'), label: 'Notify', icon: Bell, visible: perms.admin.view },
             ].filter(item => {
                 // DEFENSE-IN-DEPTH (Layer 2 of 2):
                 // Layer 1: Server layout uses noStore() to ensure fresh permissions per request.

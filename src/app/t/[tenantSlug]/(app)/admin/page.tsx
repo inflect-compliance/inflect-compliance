@@ -1,7 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import { getTenantCtx } from '@/app-layer/context';
 import { listAuditLogs } from '@/app-layer/usecases/auditLog';
-import { Shield, CreditCard, KeyRound, ShieldCheck, ShieldPlus, Users, CloudCog, Plug, Palette, Grid3x3 } from 'lucide-react';
+import { Shield, CreditCard, KeyRound, ShieldCheck, ShieldPlus, Users, CloudCog, Plug, Palette, Grid3x3, Bell } from 'lucide-react';
 import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { AdminClient } from './AdminClient';
@@ -155,6 +155,14 @@ export default async function AdminPage({
                 >
                     <Grid3x3 className="w-3.5 h-3.5" />
                     Risk Matrix
+                </Link>
+                <Link
+                    href={tenantHref('/admin/notifications')}
+                    className={buttonVariants({ variant: 'secondary' })}
+                    id="notifications-pill-btn"
+                >
+                    <Bell className="w-3.5 h-3.5" />
+                    Notifications
                 </Link>
             </div>
 
