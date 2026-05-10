@@ -165,6 +165,16 @@ const textLinkVariants = cva(
           "text-content-muted hover:text-content-emphasis",
         brand:
           "text-[var(--brand-default)] hover:text-[var(--brand-emphasis)]",
+        // Roadmap-4 PR-10 — `link` is the conventional inline-link
+        // affordance: brand-coloured at rest, brand-emphasis +
+        // underlined on hover. Use when the surrounding paragraph
+        // reads "click here to ..." — i.e. the link is mid-text and
+        // the click target needs visual affirmation. The other
+        // tones (default, muted, brand) are for chrome (sidebar
+        // nav, headings, table cell links) where the click target
+        // is already communicated by the layout context.
+        link:
+          "text-[var(--brand-default)] hover:text-[var(--brand-emphasis)] hover:underline",
         underline:
           "text-content-default underline underline-offset-2 hover:text-content-emphasis",
       },
