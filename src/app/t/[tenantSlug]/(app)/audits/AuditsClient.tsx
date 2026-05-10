@@ -8,6 +8,7 @@ import type { CappedList } from '@/lib/list-backfill-cap';
 import { TruncationBanner } from '@/components/ui/TruncationBanner';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
+import { CardHeader } from '@/components/ui/card-header';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@dub/utils';
@@ -187,7 +188,7 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
                             {selected.scope && <p className="text-sm text-content-muted">{selected.scope}</p>}
 
                             <div>
-                                <Heading level={3} className="mb-3">{t.checklist} ({selected.checklist?.length || 0})</Heading>
+                                <CardHeader title={`${t.checklist} (${selected.checklist?.length || 0})`} className="mb-3" />
                                 <div className="space-y-tight">
                                     {selected.checklist?.map((item: any) => (
                                         <div key={item.id} className="flex flex-col sm:flex-row items-start gap-compact p-3 border border-border-default/50 rounded-lg">
