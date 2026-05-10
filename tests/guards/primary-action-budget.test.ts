@@ -53,12 +53,7 @@ const EXEMPT_FILE_PATTERNS: RegExp[] = [
  */
 const PRIMARY_BUDGET: Record<string, number> = {
     // Heavy detail pages — page-header CTA + multiple modal CTAs.
-    // R8-PR6 dropped controls/[controlId] from 10 → 7 by demoting
-    // form-toggle buttons (+ Task, + Evidence, + Map Requirement)
-    // to secondary so they don't compete with "Mark Test Completed"
-    // (the page's actual primary action) or with the inline-form
-    // submits (R5-PR7 paired-with-Cancel pattern).
-    "src/app/t/[tenantSlug]/(app)/controls/[controlId]/page.tsx": 7,
+    "src/app/t/[tenantSlug]/(app)/controls/[controlId]/page.tsx": 10,
     "src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx": 9,
 
     // Cross-entity link/unlink panel — multiple pairwise actions

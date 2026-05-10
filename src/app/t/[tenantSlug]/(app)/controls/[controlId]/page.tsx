@@ -1097,7 +1097,7 @@ export default function ControlDetailPage() {
                 <div className="space-y-default">
                     {permissions.canWrite && (
                         <div className="flex justify-end">
-                            <Button variant="secondary" onClick={() => setShowTaskForm(!showTaskForm)} id="create-task-btn">
+                            <Button variant="primary" onClick={() => setShowTaskForm(!showTaskForm)} id="create-task-btn">
                                 + Task
                             </Button>
                         </div>
@@ -1176,7 +1176,7 @@ export default function ControlDetailPage() {
                             <Button variant="secondary" onClick={() => { setShowFileUpload(!showFileUpload); setShowEvidenceForm(false); }} id="upload-evidence-btn">
                                 Upload Evidence
                             </Button>
-                            <Button variant="secondary" onClick={() => { setShowEvidenceForm(!showEvidenceForm); setShowFileUpload(false); }} id="link-evidence-btn">
+                            <Button variant="primary" onClick={() => { setShowEvidenceForm(!showEvidenceForm); setShowFileUpload(false); }} id="link-evidence-btn">
                                 + Evidence
                             </Button>
                         </div>
@@ -1295,7 +1295,7 @@ export default function ControlDetailPage() {
                 <div className="space-y-default">
                     {permissions.canWrite && (
                         <div className="flex justify-end">
-                            <Button variant="secondary" onClick={() => setShowMapForm(!showMapForm)} id="map-requirement-btn">
+                            <Button variant="primary" onClick={() => setShowMapForm(!showMapForm)} id="map-requirement-btn">
                                 + Map Requirement
                             </Button>
                         </div>
