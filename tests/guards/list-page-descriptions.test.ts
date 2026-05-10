@@ -76,9 +76,12 @@ describe('List-page editorial descriptions (Roadmap-2 PR-4)', () => {
         const offenders: string[] = [];
         for (const { entity, file } of CLIENTS) {
             const src = read(file);
-            // Three valid shapes:
+            // Four valid shapes:
             //   (a) EntityListPage `description:` slot — used by
             //       controls + policies.
+            //   (a') PageHeader `description=` JSX prop — R9-PR1
+            //       migration shape. Same semantics as (a) but
+            //       authored as a React prop, not an object key.
             //   (b) PR-11 Calendar-style `<p>` subtitle directly
             //       under the heading — used by every raw-Heading
             //       page after PR-11 retired the count chip.
@@ -86,7 +89,7 @@ describe('List-page editorial descriptions (Roadmap-2 PR-4)', () => {
             //       valid shape for pages that haven't yet
             //       migrated to (b).
             const usesEntityListPageDescription =
-                /description:\s*(t\.listDescription|t\(['"]listDescription['"]\)|['"][^'"]+['"])/.test(
+                /description[:=]\s*\{?(t\.listDescription|t\(['"]listDescription['"]\)|['"][^'"]+['"])/.test(
                     src,
                 );
             const usesPSubtitle =
