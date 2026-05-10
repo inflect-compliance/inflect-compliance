@@ -86,6 +86,12 @@ const EXEMPTIONS: Record<string, string> = {
     'admin/billing/BillingEventLog.tsx':
         'sub-component (parent owns layout)',
 
+    // R10-PR2 — detail page (EntityDetailLayout). The DataTable is
+    // the roster sub-table inside the detail body; the page itself
+    // is not a list page.
+    'access-reviews/[reviewId]/AccessReviewDetailClient.tsx':
+        'detail page — DataTable is the inner roster sub-table',
+
     // Browse-and-install template picker — multi-section browser,
     // not a list page in the perf-complaint sense.
     'controls/templates/page.tsx':

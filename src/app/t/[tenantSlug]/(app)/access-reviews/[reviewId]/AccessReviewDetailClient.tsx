@@ -30,6 +30,7 @@ import { Button } from '@/components/ui/button';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { Modal } from '@/components/ui/modal';
 import { FormField } from '@/components/ui/form-field';
+import { DataTable, createColumns } from '@/components/ui/table';
 import { formatDate, formatDateTime } from '@/lib/format-date';
 import { Heading } from '@/components/ui/typography';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
@@ -132,6 +133,95 @@ export function AccessReviewDetailClient({
     const decided = review.decisions.filter((d) => d.decision !== null).length;
     const pct = decisionsTotal === 0 ? 0 : Math.round((decided / decisionsTotal) * 100);
 
+    const decisionColumns = useMemo(
+        () => createColumns<DecisionRow>([
+            {
+                id: 'subject',
+                header: 'Subject',
+                cell: ({ row }) => (
+                    <div data-testid={`decision-row-${row.original.id}`}>
+                        <div className="font-medium text-content-default">
+                            {row.original.subjectUser.name || '—'}
+                        </div>
+                        <div className="text-xs text-content-muted">
+                            {row.original.subjectUser.email}
+                        </div>
+                    </div>
+                ),
+            },
+            {
+                id: 'snapshotRole',
+                header: 'Snapshot role',
+                cell: ({ row }) => (
+                    <span className="text-sm">{row.original.snapshotRole}</span>
+                ),
+            },
+            {
+                id: 'liveRole',
+                header: 'Live role',
+                cell: ({ row }) =>
+                    row.original.membership ? (
+                        <span className="text-sm">{row.original.membership.role}</span>
+                    ) : (
+                        <span className="text-sm text-content-muted italic">(deleted)</span>
+                    ),
+            },
+            {
+                id: 'lastActive',
+                header: 'Last active',
+                cell: ({ row }) => {
+                    const lastActiveAt =
+                        review.lastActivityByUser[row.original.subjectUserId] ?? null;
+                    return (
+                        <span className="text-sm text-content-muted">
+                            {lastActiveAt ? formatDate(lastActiveAt) : 'never'}
+                        </span>
+                    );
+                },
+            },
+            {
+                id: 'decision',
+                header: 'Decision',
+                cell: ({ row }) => {
+                    const d = row.original;
+                    if (d.decision) {
+                        return (
+                            <StatusBadge variant={DECISION_VARIANT[d.decision]}>
+                                {d.decision}
+                                {d.decision === 'MODIFY' && d.modifiedToRole
+                                    ? ` → ${d.modifiedToRole}`
+                                    : ''}
+                            </StatusBadge>
+                        );
+                    }
+                    if (canDecide) {
+                        return (
+                            <select
+                                className="input"
+                                defaultValue=""
+                                data-testid={`decision-select-${d.id}`}
+                                onChange={(e) => {
+                                    const v = e.target.value as DecisionType | '';
+                                    if (v) setActiveDecision({ row: d, type: v });
+                                    e.target.value = '';
+                                }}
+                            >
+                                <option value="" disabled>Decide…</option>
+                                <option value="CONFIRM">Confirm access</option>
+                                <option value="REVOKE">Revoke access</option>
+                                <option value="MODIFY">Modify role</option>
+                            </select>
+                        );
+                    }
+                    return (
+                        <span className="text-xs text-content-muted">pending</span>
+                    );
+                },
+            },
+        ]),
+        [canDecide, review.lastActivityByUser],
+    );
+
     return (
         <EntityDetailLayout
             id="access-review-detail-page"
@@ -223,36 +313,15 @@ export function AccessReviewDetailClient({
                 </dl>
             </div>
 
-            {/* Roster table */}
-            <div className="overflow-hidden rounded border border-border-subtle">
-                <table className="w-full">
-                    <thead className="bg-bg-subtle text-left text-xs uppercase text-content-muted">
-                        <tr>
-                            <th className="px-4 py-2">Subject</th>
-                            <th className="px-4 py-2">Snapshot role</th>
-                            <th className="px-4 py-2">Live role</th>
-                            <th className="px-4 py-2">Last active</th>
-                            <th className="px-4 py-2">Decision</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {review.decisions.map((row) => (
-                            <DecisionRow
-                                key={row.id}
-                                row={row}
-                                lastActiveAt={
-                                    review.lastActivityByUser[row.subjectUserId] ??
-                                    null
-                                }
-                                canDecide={canDecide}
-                                onDecide={(type) =>
-                                    setActiveDecision({ row, type })
-                                }
-                            />
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+            {/* Roster — DataTable */}
+            <DataTable
+                data={review.decisions}
+                columns={decisionColumns}
+                getRowId={(d) => d.id}
+                emptyState="No subjects in this review."
+                resourceName={(p) => (p ? 'subjects' : 'subject')}
+                data-testid="access-review-roster-table"
+            />
 
             {activeDecision ? (
                 <DecisionDialog
@@ -286,77 +355,6 @@ export function AccessReviewDetailClient({
                 />
             ) : null}
         </EntityDetailLayout>
-    );
-}
-
-// ─── Roster row ──────────────────────────────────────────────────────
-
-function DecisionRow({
-    row,
-    lastActiveAt,
-    canDecide,
-    onDecide,
-}: {
-    row: DecisionRow;
-    lastActiveAt: string | Date | null;
-    canDecide: boolean;
-    onDecide: (type: DecisionType) => void;
-}) {
-    return (
-        <tr
-            className="border-t border-border-subtle"
-            data-testid={`decision-row-${row.id}`}
-        >
-            <td className="px-4 py-3">
-                <div className="font-medium text-content-default">
-                    {row.subjectUser.name || '—'}
-                </div>
-                <div className="text-xs text-content-muted">
-                    {row.subjectUser.email}
-                </div>
-            </td>
-            <td className="px-4 py-3 text-sm">{row.snapshotRole}</td>
-            <td className="px-4 py-3 text-sm">
-                {row.membership ? row.membership.role : (
-                    <span className="text-content-muted italic">(deleted)</span>
-                )}
-            </td>
-            <td className="px-4 py-3 text-sm text-content-muted">
-                {lastActiveAt ? formatDate(lastActiveAt) : 'never'}
-            </td>
-            <td className="px-4 py-3">
-                {row.decision ? (
-                    <div className="flex items-center gap-tight">
-                        <StatusBadge variant={DECISION_VARIANT[row.decision]}>
-                            {row.decision}
-                            {row.decision === 'MODIFY' && row.modifiedToRole
-                                ? ` → ${row.modifiedToRole}`
-                                : ''}
-                        </StatusBadge>
-                    </div>
-                ) : canDecide ? (
-                    <select
-                        className="input"
-                        defaultValue=""
-                        data-testid={`decision-select-${row.id}`}
-                        onChange={(e) => {
-                            const v = e.target.value as DecisionType | '';
-                            if (v) onDecide(v);
-                            e.target.value = '';
-                        }}
-                    >
-                        <option value="" disabled>
-                            Decide…
-                        </option>
-                        <option value="CONFIRM">Confirm access</option>
-                        <option value="REVOKE">Revoke access</option>
-                        <option value="MODIFY">Modify role</option>
-                    </select>
-                ) : (
-                    <span className="text-xs text-content-muted">pending</span>
-                )}
-            </td>
-        </tr>
     );
 }
 
