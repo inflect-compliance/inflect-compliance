@@ -365,7 +365,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                 <div className="space-y-default">
                     {canWrite && (
                         <div className="flex justify-end">
-                            <Button variant="primary" onClick={() => setShowDocForm(!showDocForm)} id="add-doc-btn">
+                            <Button variant="secondary" onClick={() => setShowDocForm(!showDocForm)} id="add-doc-btn">
                                 {showDocForm ? 'Cancel' : '+ Document'}
                             </Button>
                         </div>
@@ -431,7 +431,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                     {canWrite && (
                         <div className="flex items-center gap-compact justify-end">
                             {!showStartAssessment ? (
-                                <Button variant="primary" onClick={() => setShowStartAssessment(true)} id="start-assessment-btn">
+                                <Button variant="secondary" onClick={() => setShowStartAssessment(true)} id="start-assessment-btn">
                                     + Start Assessment
                                 </Button>
                             ) : (
@@ -490,7 +490,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                 <div className="space-y-default">
                     {canWrite && (
                         <div className="flex justify-end">
-                            <Button variant="primary" onClick={() => setShowLinkForm(!showLinkForm)} id="add-link-btn">
+                            <Button variant="secondary" onClick={() => setShowLinkForm(!showLinkForm)} id="add-link-btn">
                                 {showLinkForm ? 'Cancel' : '+ Link Entity'}
                             </Button>
                         </div>
