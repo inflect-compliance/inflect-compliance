@@ -43,7 +43,7 @@ import {
     type ReactElement,
 } from 'react';
 
-import { formatDate as formatDateForDisplay } from '@/lib/format-date';
+import { formatDate } from '@/lib/format-date';
 
 import { Popover } from '../popover';
 import { Calendar as CalendarPrimitive } from './calendar';
@@ -145,7 +145,7 @@ export function DatePicker({
     // printed in a table cell or detail page.
     const displayValue =
         selected && !Number.isNaN(selected.getTime())
-            ? formatDateForDisplay(selected)
+            ? formatDate(selected)
             : null;
 
     return (

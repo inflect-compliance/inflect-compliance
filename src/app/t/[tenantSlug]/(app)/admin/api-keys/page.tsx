@@ -21,12 +21,7 @@ import { InfoTooltip, Tooltip } from '@/components/ui/tooltip';
 import { useCopyToClipboard } from '@/components/ui/hooks';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { InlineNotice } from '@/components/ui/inline-notice';
-// Epic 58 — route through the canonical app-wide formatter so
-// api-keys reads in the same date dialect (UTC, en-GB, em-dash
-// fallback) as every other page. Previously used a local
-// `toLocaleDateString('en-US', …)` that diverged from the rest of
-// the app.
-import { formatDateTime as formatDate } from '@/lib/format-date';
+import { formatDateTime } from '@/lib/format-date';
 import { useToast } from '@/components/ui/hooks/use-toast';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
@@ -380,7 +375,7 @@ export default function ApiKeysPage() {
                         row.original.expiresAt ? (
                             <span className="flex items-center gap-1 text-xs text-content-muted">
                                 <Clock className="w-3.5 h-3.5" />
-                                {formatDate(row.original.expiresAt)}
+                                {formatDateTime(row.original.expiresAt)}
                             </span>
                         ) : (
                             <span className="text-xs text-content-subtle">Never</span>
@@ -390,7 +385,7 @@ export default function ApiKeysPage() {
                     accessorKey: 'lastUsedAt',
                     header: 'Last Used',
                     cell: ({ row }) => (
-                        <span className="text-xs text-content-muted">{formatDate(row.original.lastUsedAt)}</span>
+                        <span className="text-xs text-content-muted">{formatDateTime(row.original.lastUsedAt)}</span>
                     ),
                 },
                 {
@@ -398,7 +393,7 @@ export default function ApiKeysPage() {
                     header: 'Created',
                     cell: ({ row }) => (
                         <span className="text-xs text-content-subtle">
-                            {formatDate(row.original.createdAt)}
+                            {formatDateTime(row.original.createdAt)}
                             <br />
                             <span className="text-content-subtle">
                                 by {row.original.createdBy?.name || row.original.createdBy?.email || '—'}
@@ -464,7 +459,7 @@ export default function ApiKeysPage() {
                     accessorKey: 'createdAt',
                     header: 'Created',
                     cell: ({ row }) => (
-                        <span className="text-xs text-content-subtle">{formatDate(row.original.createdAt)}</span>
+                        <span className="text-xs text-content-subtle">{formatDateTime(row.original.createdAt)}</span>
                     ),
                 },
             ]),
