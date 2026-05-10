@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Link from 'next/link';
 import { useMemo } from 'react';
-import { ShieldCheck, AlertTriangle, Cpu, Flame, ArrowLeft } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, Cpu, Flame } from 'lucide-react';
 import DonutChart from '@/components/ui/DonutChart';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { ProgressBar } from '@/components/ui/progress-bar';
@@ -11,7 +11,7 @@ import { Heading } from '@/components/ui/typography';
 import { Card, cardVariants } from '@/components/ui/card';
 import { KPIStat } from '@/components/ui/metric';
 import { getStatusTone } from '@/lib/design/status-tone';
-import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { cn } from '@dub/utils';
 
 // ─── Types ──────────────────────────────────────────────────────────
@@ -138,36 +138,20 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
     ]), []);
 
     return (
-        <>
-            {/* ── Header ─────────────────────────────────────────── */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-compact">
-                    <Link
-                        href={tenantHref('/assets')}
-                        className="text-content-muted hover:text-content-emphasis transition"
-                        id="coverage-back-link"
-                        aria-label="Back to assets"
-                    >
-                        <ArrowLeft className="w-5 h-5" aria-hidden="true" />
-                    </Link>
-                    <div>
-                        <PageBreadcrumbs
-                            items={[
-                                { label: 'Dashboard', href: tenantHref('/dashboard') },
-                                { label: 'Coverage' },
-                            ]}
-                            className="mb-1"
-                        />
-                        <Heading level={1} id="coverage-heading">
-                            Coverage Dashboard
-                        </Heading>
-                        <p className="text-content-muted text-sm">
-                            How your assets are protected by controls and what risks remain unmitigated
-                        </p>
-                    </div>
-                </div>
-            </div>
-
+        <DashboardLayout
+            header={{
+                breadcrumbs: [
+                    { label: 'Dashboard', href: tenantHref('/dashboard') },
+                    { label: 'Coverage' },
+                ],
+                title: 'Coverage Dashboard',
+                description: 'How your assets are protected by controls and what risks remain unmitigated',
+                back: {
+                    href: tenantHref('/assets'),
+                    label: 'Assets',
+                },
+            }}
+        >
             {/* ── KPI Strip: 3 Coverage Donuts ────────────────────── */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-default" id="coverage-kpi-strip">
                 <CoverageKpiCard
@@ -312,7 +296,7 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
                     </div>
                 </Card>
             )}
-        </>
+        </DashboardLayout>
     );
 }
 
