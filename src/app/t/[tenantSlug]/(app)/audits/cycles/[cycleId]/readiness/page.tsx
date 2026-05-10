@@ -68,7 +68,6 @@ export default function CycleReadinessPage() {
     if (loading) {
         return (
             <EntityDetailLayout
-                back={{ href: `/t/${tenantSlug}/audits/cycles/${cycleId}`, label: cycle?.name || 'Cycle' }}
                 title=""
                 breadcrumbs={breadcrumbs}
                 loading
@@ -80,7 +79,6 @@ export default function CycleReadinessPage() {
     if (!result) {
         return (
             <EntityDetailLayout
-                back={{ href: `/t/${tenantSlug}/audits/cycles/${cycleId}`, label: cycle?.name || 'Cycle' }}
                 title=""
                 breadcrumbs={breadcrumbs}
                 error="Could not compute readiness."
@@ -94,7 +92,6 @@ export default function CycleReadinessPage() {
 
     return (
         <EntityDetailLayout
-            back={{ href: `/t/${tenantSlug}/audits/cycles/${cycleId}`, label: cycle?.name || 'Cycle' }}
             title={`${cycle?.name || 'Cycle'} — Readiness`}
             breadcrumbs={breadcrumbs}
         >
