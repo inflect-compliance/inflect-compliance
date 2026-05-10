@@ -14,6 +14,8 @@ import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-c
 import { Button } from '@/components/ui/button';
 import { useToastWithUndo } from '@/components/ui/hooks';
 import { SkeletonLine, SkeletonCard } from '@/components/ui/skeleton';
+import { InlineEmptyState } from '@/components/ui/inline-empty-state';
+import { Link2, MessageSquare, Activity } from 'lucide-react';
 import { UserCombobox } from '@/components/ui/user-combobox';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
@@ -514,7 +516,11 @@ export default function TaskDetailPage() {
                                 ))}
                             </div>
                         ) : links.length === 0 ? (
-                            <div className="p-8 text-center text-content-subtle text-sm">No links yet</div>
+                            <InlineEmptyState
+                                icon={Link2}
+                                title="No links yet"
+                                description="Cross-link this task to related tasks, controls, evidence, or risks via + Link."
+                            />
                         ) : (
                             <table className="data-table" id="links-list">
                                 <thead>
@@ -573,7 +579,11 @@ export default function TaskDetailPage() {
                                 ))}
                             </div>
                         ) : comments.length === 0 ? (
-                            <div className="p-8 text-center text-content-subtle text-sm">No comments yet</div>
+                            <InlineEmptyState
+                                icon={MessageSquare}
+                                title="No comments yet"
+                                description="Use the comment box above to leave context, observations, or questions."
+                            />
                         ) : (
                             <div className="divide-y divide-border-default/50">
                                 {comments.map((c: any) => (
@@ -607,7 +617,11 @@ export default function TaskDetailPage() {
                             ))}
                         </div>
                     ) : activity.length === 0 ? (
-                        <div className="p-8 text-center text-content-subtle text-sm">No activity yet</div>
+                        <InlineEmptyState
+                            icon={Activity}
+                            title="No activity yet"
+                            description="Status changes, assignments, and link updates show up here once anything moves."
+                        />
                     ) : (
                         <div className="divide-y divide-border-default/50">
                             {activity.map((evt: any) => (
