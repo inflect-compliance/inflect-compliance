@@ -73,7 +73,7 @@ const NavigationButton = forwardRef<HTMLButtonElement, NavigationButtonProps>(
                     'hover:bg-bg-muted hover:text-content-emphasis',
                     'active:bg-bg-subtle',
                     'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg-default',
-                    'disabled:pointer-events-none disabled:text-content-subtle disabled:opacity-60',
+                    'disabled:pointer-events-none disabled:text-content-subtle disabled:opacity-50',
                 )}
                 onClick={onClick}
                 {...props}

@@ -77,7 +77,7 @@ export function TreeExpandCollapseToggle({
                 className={cn(
                     'flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium transition-colors',
                     'text-content-muted hover:text-content-emphasis hover:bg-bg-muted',
-                    'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent',
+                    'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent',
                     'focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-default)] focus-visible:ring-inset',
                 )}
             >
@@ -94,7 +94,7 @@ export function TreeExpandCollapseToggle({
                 className={cn(
                     'flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium transition-colors',
                     'text-content-muted hover:text-content-emphasis hover:bg-bg-muted',
-                    'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent',
+                    'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent',
                     'focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-default)] focus-visible:ring-inset',
                 )}
             >

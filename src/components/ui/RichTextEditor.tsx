@@ -278,7 +278,7 @@ function Toolbar({
                 type="button"
                 onClick={onToggleMode}
                 disabled={disabled}
-                className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] text-content-muted hover:bg-bg-muted hover:text-content-emphasis disabled:opacity-40"
+                className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] text-content-muted hover:bg-bg-muted hover:text-content-emphasis disabled:opacity-50"
                 aria-label={mode === 'MARKDOWN' ? 'Switch to WYSIWYG' : 'Switch to Markdown'}
                 data-testid="rich-text-editor-toggle"
                 data-mode={mode}
