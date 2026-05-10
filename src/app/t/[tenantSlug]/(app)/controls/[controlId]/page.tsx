@@ -13,6 +13,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading, textLinkVariants } from '@/components/ui/typography';
+import { CardHeader } from '@/components/ui/card-header';
 import { EditControlModal } from './_modals/EditControlModal';
 import { MetaStrip } from '@/components/ui/meta-strip';
 import { CONTROL_STATUS_VARIANT } from '@/app-layer/domain/entity-status-mapping';
@@ -1162,7 +1163,7 @@ export default function ControlDetailPage() {
                     </div>
                     {/* Linked Work Items (via TaskLink) */}
                     <div className={cn(cardVariants({ density: 'compact' }), 'mt-4')} id="linked-work-items-section">
-                        <Heading level={3} className="mb-3">Linked Work Items (Tasks)</Heading>
+                        <CardHeader title="Linked Work Items (Tasks)" className="mb-3" />
                         <LinkedTasksPanel
                             apiBase={apiUrl('')}
                             entityType="CONTROL"

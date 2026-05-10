@@ -14,6 +14,7 @@ import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { TestPlanScheduleSection } from '@/components/TestPlanScheduleSection';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
+import { CardHeader } from '@/components/ui/card-header';
 import { KPIStat } from '@/components/ui/metric';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@dub/utils';
@@ -271,7 +272,7 @@ export default function TestPlanDetailPage() {
             {/* Steps */}
             {plan.steps.length > 0 && (
                 <div className={cardVariants({ density: 'compact' })}>
-                    <Heading level={3} className="mb-3">Test Procedure</Heading>
+                    <CardHeader title="Test Procedure" className="mb-3" />
                     <ol className="space-y-tight">
                         {plan.steps.map((step, i) => (
                             <li key={step.id} className="flex gap-compact text-sm">
