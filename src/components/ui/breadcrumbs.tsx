@@ -112,7 +112,7 @@ export function Breadcrumbs({
                             {item.href && !isCurrent ? (
                                 <Link
                                     href={item.href}
-                                    className="text-content-muted hover:text-content-emphasis transition truncate max-w-[16rem]"
+                                    className="text-content-muted hover:text-content-emphasis transition truncate max-w-trunc-loose"
                                     data-testid={item["data-testid"]}
                                 >
                                     {item.label}
@@ -120,7 +120,7 @@ export function Breadcrumbs({
                             ) : (
                                 <span
                                     className={cn(
-                                        "truncate max-w-[20rem]",
+                                        "truncate max-w-trunc-loose",
                                         isCurrent
                                             ? "text-content-emphasis font-medium"
                                             : "text-content-muted",

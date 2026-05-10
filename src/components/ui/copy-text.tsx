@@ -104,7 +104,7 @@ export const CopyText = forwardRef<HTMLButtonElement, CopyTextProps>(
                 <span
                     className={cn(
                         "inline-block align-middle",
-                        truncate && "max-w-[28ch] truncate",
+                        truncate && "max-w-trunc-default truncate",
                     )}
                 >
                     {children ?? value}

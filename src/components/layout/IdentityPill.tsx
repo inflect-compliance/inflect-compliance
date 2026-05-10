@@ -52,7 +52,7 @@ export function TenantIdentityPill() {
             <span className={AVATAR_CLASS} aria-hidden="true">
                 {initials(tenantName)}
             </span>
-            <span className="max-w-[14ch] truncate">{tenantName}</span>
+            <span className="max-w-trunc-tight truncate">{tenantName}</span>
         </Link>
     );
 }
@@ -74,7 +74,7 @@ export function OrgIdentityPill() {
             <span className={AVATAR_CLASS} aria-hidden="true">
                 {initials(orgName)}
             </span>
-            <span className="max-w-[14ch] truncate">{orgName}</span>
+            <span className="max-w-trunc-tight truncate">{orgName}</span>
         </Link>
     );
 }

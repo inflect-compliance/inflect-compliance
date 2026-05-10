@@ -116,6 +116,33 @@ module.exports = {
                 page: '2.5rem',
             },
 
+            // ── Truncation max-width scale (Roadmap-4 PR-6) ──
+            // Three semantic ceilings for `truncate` callsites. The
+            // unit is `ch` so the visible character count stays
+            // stable across font weight / size variants — the same
+            // 14-character tenant name reads the same in the
+            // sidebar identity pill (text-sm) and in a sheet header
+            // (text-base).
+            //
+            //   trunc-tight    14 ch — identity labels (tenant name,
+            //                          org name), code chips, badges.
+            //   trunc-default  28 ch — typical truncated copy
+            //                          (justification cells, copy-text).
+            //   trunc-loose    40 ch — breadcrumb crumbs, long-prose
+            //                          fields where the ceiling
+            //                          should still allow most full
+            //                          values to render.
+            //
+            // The arbitrary `max-w-[…]` shape is banned by
+            // `tests/guards/truncation-max-width-tokens.test.ts`
+            // when paired with a `truncate` class — every truncated
+            // surface must reach for one of these tokens.
+            maxWidth: {
+                'trunc-tight': '14ch',
+                'trunc-default': '28ch',
+                'trunc-loose': '40ch',
+            },
+
             // ── Animations required by Dub-ported components ──
             keyframes: {
                 'slide-up-fade': {

@@ -545,7 +545,7 @@ function RequirementDetail({
                                 key={`${c.controlCode}-${i}`}
                                 className="flex items-center gap-tight text-xs"
                             >
-                                <code className="font-mono text-[var(--brand-default)] truncate max-w-[8rem]">
+                                <code className="font-mono text-[var(--brand-default)] truncate max-w-trunc-tight">
                                     {c.controlCode}
                                 </code>
                                 <span className="text-content-default flex-1 truncate">
