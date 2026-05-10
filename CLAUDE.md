@@ -669,6 +669,23 @@ stands for that PR only — not as a precedent.
       `Link Control`, `Link Asset` on the traceability panel). The
       thing already exists; you're connecting it.
   Forward enforcement at `tests/guards/action-label-vocabulary.test.ts`.
+- **Destructive-action vocabulary** (Roadmap-4 PR-9): every
+  `<ConfirmDialog tone="danger">` confirmLabel MUST start with one of
+  the canonical verbs below. Pick the one that matches the actual
+  effect — the verb is the user's last clue before they commit.
+    - **`Delete {Entity}`** — permanent erasure of a top-level entity
+      or configuration (`Delete configuration`). The data is gone.
+    - **`Remove {Item}`** — detach an item from a parent OR turn off
+      an enrollment (`Remove MFA`, `Remove document`). Source row may
+      live on.
+    - **`Revoke {Credential}`** — invalidate an authority / credential
+      (`Revoke API key`, `Revoke SCIM token`, `Revoke session`).
+    - **`Discard {Draft}`** — abandon unsaved or draft state.
+    - **`Archive {Entity}`** — soft delete with history preserved.
+    - **`Unlink {Entity}`** / **`Detach {Entity}`** — break an
+      association without deleting either side.
+    - **`Reject {Request}`** — refuse an approval request or finding.
+  Forward enforcement at `tests/guards/destructive-vocabulary.test.ts`.
 - **Search placeholder vocabulary** (PR-9): every `<FilterToolbar
   searchPlaceholder>` value follows `Search {entityPlural}…`. One
   ellipsis (`…`, single character — not `...`). NEVER append a
