@@ -1,0 +1,146 @@
+/**
+ * Roadmap-8 PR-8 — DashboardLayout coverage ratchet.
+ *
+ * `<DashboardLayout>` (v2-PR-6) is the composition shell for
+ * dashboard composites — pages composed of multiple metric / chart /
+ * list cards in a vertical-section cadence. It sits alongside
+ * `<EntityListPage>` (lists) and `<EntityDetailLayout>` (detail) as
+ * the third public layout primitive.
+ *
+ * Six dashboard composites already adopt it:
+ *   • Main tenant dashboard (DashboardClient)
+ *   • Risks dashboard
+ *   • Controls dashboard
+ *   • Tasks dashboard
+ *   • Tests dashboard
+ *   • Vendors dashboard
+ *
+ * One known dashboard composite still hand-rolls its layout:
+ *   • Coverage (CoverageClient)
+ *
+ * R7-PR4's FilterToolbar EXEMPTIONS list Coverage as "multi-section
+ * dashboard". That framing is now wrong — once Coverage migrates to
+ * `<DashboardLayout>`, it stops being multi-section-by-accident and
+ * starts being multi-section-by-design.
+ *
+ * This ratchet:
+ *   1. Locks the 6 adopters via a registry — strip-and-revert is
+ *      caught by the assertion that `adopted: true` files actually
+ *      mount the shell.
+ *   2. Lists Coverage as `adopted: false, pending: true` so the
+ *      migration in R8-PR9 flips the flag.
+ *
+ * Pairs with `entity-detail-layout-coverage.test.ts` (R7-PR9
+ * registry pattern, copied here for the dashboard shell).
+ */
+import * as fs from "fs";
+import * as path from "path";
+
+const ROOT = path.resolve(__dirname, "../..");
+
+interface DashboardEntry {
+    file: string;
+    adopted: boolean;
+    note: string;
+}
+
+const DASHBOARDS: DashboardEntry[] = [
+    // ── Adopted ──
+    {
+        file: "src/app/t/[tenantSlug]/(app)/dashboard/DashboardClient.tsx",
+        adopted: true,
+        note: "Main tenant dashboard — Epic 69 SWR-first composition. <DashboardLayout> wraps the executive metric stack + recent activity rail.",
+    },
+    {
+        file: "src/app/t/[tenantSlug]/(app)/risks/dashboard/page.tsx",
+        adopted: true,
+        note: "Risks portfolio dashboard with severity breakdown + trend cards.",
+    },
+    {
+        file: "src/app/t/[tenantSlug]/(app)/controls/dashboard/page.tsx",
+        adopted: true,
+        note: "Controls performance dashboard with status breakdown + owner workload tiles.",
+    },
+    {
+        file: "src/app/t/[tenantSlug]/(app)/tasks/dashboard/page.tsx",
+        adopted: true,
+        note: "Tasks productivity dashboard with assignment + SLA + trend cards.",
+    },
+    {
+        file: "src/app/t/[tenantSlug]/(app)/tests/dashboard/page.tsx",
+        adopted: true,
+        note: "Tests pipeline dashboard with run cadence + result distribution.",
+    },
+    {
+        file: "src/app/t/[tenantSlug]/(app)/vendors/dashboard/page.tsx",
+        adopted: true,
+        note: "Vendors portfolio dashboard with risk-rating breakdown + assessment status.",
+    },
+
+    // ── Pending migration ──
+    {
+        file: "src/app/t/[tenantSlug]/(app)/coverage/CoverageClient.tsx",
+        adopted: false,
+        note: "Multi-section coverage dashboard — currently hand-rolls space-y-section + animate-fadeIn instead of <DashboardLayout>. Migration scheduled for R8-PR9; once flipped, the FilterToolbar EXEMPTION 'multi-section dashboard' becomes correct-by-design.",
+    },
+];
+
+describe("DashboardLayout coverage", () => {
+    it("every registered dashboard exists in the codebase", () => {
+        const missing: string[] = [];
+        for (const entry of DASHBOARDS) {
+            const full = path.join(ROOT, entry.file);
+            if (!fs.existsSync(full)) {
+                missing.push(entry.file);
+            }
+        }
+        if (missing.length > 0) {
+            throw new Error(
+                `DASHBOARDS references files that no longer exist:\n${missing.map((m) => `  ${m}`).join("\n")}`,
+            );
+        }
+        expect(missing).toHaveLength(0);
+    });
+
+    it("every page marked `adopted: true` actually mounts <DashboardLayout>", () => {
+        const violations: string[] = [];
+        for (const entry of DASHBOARDS) {
+            if (!entry.adopted) continue;
+            const full = path.join(ROOT, entry.file);
+            const content = fs.readFileSync(full, "utf8");
+            if (!/<DashboardLayout\b/.test(content)) {
+                violations.push(entry.file);
+            }
+        }
+        if (violations.length > 0) {
+            throw new Error(
+                `Pages marked \`adopted: true\` but missing <DashboardLayout>:\n${violations.map((v) => `  ${v}`).join("\n")}`,
+            );
+        }
+        expect(violations).toHaveLength(0);
+    });
+
+    it("every page marked `adopted: false` actually does NOT mount <DashboardLayout> (otherwise flip the flag)", () => {
+        const violations: string[] = [];
+        for (const entry of DASHBOARDS) {
+            if (entry.adopted) continue;
+            const full = path.join(ROOT, entry.file);
+            const content = fs.readFileSync(full, "utf8");
+            if (/<DashboardLayout\b/.test(content)) {
+                violations.push(entry.file);
+            }
+        }
+        if (violations.length > 0) {
+            throw new Error(
+                `Pages marked \`adopted: false\` but ALREADY mount <DashboardLayout>:\n${violations.map((v) => `  ${v}`).join("\n")}\n\nFlip the registry entry to \`adopted: true\` and update the note. The migration completed; the registry should reflect it.`,
+            );
+        }
+        expect(violations).toHaveLength(0);
+    });
+
+    it("every entry has a non-trivial note", () => {
+        for (const entry of DASHBOARDS) {
+            expect(entry.note.length).toBeGreaterThan(40);
+        }
+    });
+});
