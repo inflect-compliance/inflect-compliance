@@ -308,7 +308,7 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
                             />
                         </div>
                     </div>
-                    <div className="flex gap-tight"><Button type="submit" variant="primary">{t.createFinding}</Button><Button variant="secondary" onClick={() => setShowForm(false)}>{t.cancel}</Button></div>
+                    <div className="flex gap-tight"><Button variant="secondary" onClick={() => setShowForm(false)}>{t.cancel}</Button><Button type="submit" variant="primary">{t.createFinding}</Button></div>
                 </form>
             )}
 

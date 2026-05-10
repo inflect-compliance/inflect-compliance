@@ -203,8 +203,8 @@ export default function AuditCyclesPage() {
                         </FormField>
                     </div>
                     <div className="mt-4 flex gap-tight">
-                        <Button type="submit" variant="primary" id="submit-cycle-btn">+ Cycle</Button>
                         <Button type="button" variant="secondary" onClick={() => setShowForm(false)}>Cancel</Button>
+                        <Button type="submit" variant="primary" id="submit-cycle-btn">+ Cycle</Button>
                     </div>
                 </form>
             )}
