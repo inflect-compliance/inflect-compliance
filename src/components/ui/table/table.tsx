@@ -201,7 +201,7 @@ export function useTable<T extends any>(
                 >
                   <Checkbox
                     aria-label="Select all rows"
-                    className="border-border-emphasis pointer-events-none size-4 rounded data-[state=checked]:bg-[var(--brand-emphasis)] data-[state=indeterminate]:bg-[var(--brand-emphasis)]"
+                    className="border-border-emphasis pointer-events-none size-4 rounded-full data-[state=checked]:bg-[var(--brand-emphasis)] data-[state=indeterminate]:bg-[var(--brand-emphasis)]"
                     checked={
                       table.getIsAllRowsSelected()
                         ? true
@@ -286,7 +286,7 @@ export function useTable<T extends any>(
                   >
                     <Checkbox
                       aria-label="Select row"
-                      className="border-border-emphasis pointer-events-none size-4 rounded data-[state=checked]:bg-[var(--brand-emphasis)] data-[state=indeterminate]:bg-[var(--brand-emphasis)]"
+                      className="border-border-emphasis pointer-events-none size-4 rounded-full data-[state=checked]:bg-[var(--brand-emphasis)] data-[state=indeterminate]:bg-[var(--brand-emphasis)]"
                       checked={row.getIsSelected()}
                     />
                   </div>
