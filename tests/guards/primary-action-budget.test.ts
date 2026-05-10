@@ -122,8 +122,11 @@ function walk(dir: string): string[] {
 function countPrimaries(content: string): number {
     // Match <Button variant="primary"> or variant='primary'.
     // Single-line and JSX-multi-line attribute splits both caught.
+    // `[\s\S]` instead of `.` so newlines match without needing the
+    // `s` (dotAll) regex flag — that flag requires the regex engine
+    // target to be ES2018+ which our tsconfig does not enable.
     const matches = content.match(
-        /<Button\b[^>]*\bvariant=["']primary["']/gs,
+        /<Button\b[\s\S]*?\bvariant=["']primary["']/g,
     );
     return matches ? matches.length : 0;
 }
