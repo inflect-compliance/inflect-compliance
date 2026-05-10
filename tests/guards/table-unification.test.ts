@@ -147,6 +147,45 @@ const FIRST_COLUMN_TABLES: FirstColumnEntry[] = [
         adopted: true,
         note: "Frameworks catalogue — the framework name is the canonical scannable identifier (the `key` field is a slug, used in URLs, not the user-facing identifier).",
     },
+    // R10-PR5 — registry expansion across the remaining list-page
+    // tables. Every entity converges on the same shape: column 0 is
+    // the canonical scannable identifier (name, title, or code).
+    {
+        file: "src/app/t/[tenantSlug]/(app)/assets/AssetsClient.tsx",
+        firstColumnId: "name",
+        adopted: true,
+        note: "Assets list — name is the canonical scannable identifier (e.g. 'Customer DB'). Assets have no separate code field; type/classification are filters, not identifiers.",
+    },
+    {
+        file: "src/app/t/[tenantSlug]/(app)/evidence/EvidenceClient.tsx",
+        firstColumnId: "title",
+        adopted: true,
+        note: "Evidence list — title is the canonical identifier of an evidence record (e.g. 'Q3 access review PDF'). No separate code or key.",
+    },
+    {
+        file: "src/app/t/[tenantSlug]/(app)/policies/PoliciesClient.tsx",
+        firstColumnId: "title",
+        adopted: true,
+        note: "Policies list — title is the canonical identifier (e.g. 'Information Security Policy v2.1'). Versions are a separate column.",
+    },
+    {
+        file: "src/app/t/[tenantSlug]/(app)/tasks/TasksClient.tsx",
+        firstColumnId: "title",
+        adopted: true,
+        note: "Tasks list — first content column is `id: 'title'` (header 'Key / Title'). A utility `id: 'select'` column may precede it; the canonical content column is title.",
+    },
+    {
+        file: "src/app/t/[tenantSlug]/(app)/findings/FindingsClient.tsx",
+        firstColumnId: "title",
+        adopted: true,
+        note: "Findings list — title is the canonical identifier (the finding's short name). No separate code field on findings.",
+    },
+    {
+        file: "src/app/t/[tenantSlug]/(app)/vendors/VendorsClient.tsx",
+        firstColumnId: "name",
+        adopted: true,
+        note: "Vendors list — name is the canonical identifier (e.g. 'Stripe Inc'). No separate code field on vendors.",
+    },
 ];
 
 describe("DataTable first-column registry", () => {
