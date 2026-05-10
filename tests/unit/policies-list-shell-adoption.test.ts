@@ -102,10 +102,17 @@ describe('Policies list — Epic 45.1 shell + column wiring', () => {
         }
     });
 
-    it('column visibility config carries every new column under defaultVisible', () => {
-        expect(clientSrc).toMatch(
-            /defaultVisible:\s*\[[^\]]*'status'[^\]]*'owner'[^\]]*'version'/,
-        );
+    it('column visibility config carries every new column as default-visible', () => {
+        // R10-PR6 migrated to `useColumnsDropdown` — defaultVisible is
+        // now a per-column flag (omitted = visible). Lock that the
+        // three columns are present and none opt out.
+        for (const id of ['status', 'owner', 'version']) {
+            expect(clientSrc).toMatch(new RegExp(`id:\\s*['"]${id}['"]`));
+            const entry = clientSrc.match(
+                new RegExp(`\\{\\s*id:\\s*['"]${id}['"][^}]*\\}`),
+            )?.[0] ?? '';
+            expect(entry).not.toMatch(/defaultVisible:\s*false/);
+        }
     });
 
     it('keeps the overdue-review badge visible when nextReviewAt < now', () => {

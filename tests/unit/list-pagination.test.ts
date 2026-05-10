@@ -181,15 +181,23 @@ describe('Epic 52 adoption — migrated pages wire column visibility', () => {
         expect(src).not.toMatch(/onPaginationChange=\{pg\.setPagination\}/);
     });
 
-    it.each(MIGRATED)('%s wires useColumnVisibility with a namespaced storage key', (page) => {
+    it.each(MIGRATED)('%s wires column visibility with a namespaced storage key', (page) => {
         const src = read(`src/app/t/[tenantSlug]/(app)/${page.dir}/${page.client}`);
-        expect(src).toMatch(/useColumnVisibility/);
+        // R10-PR6 unified the gear behind `useColumnsDropdown`; the
+        // older `useColumnVisibility` is still a valid lower-level
+        // hook. Accept either name — the storage-key contract is
+        // what we lock.
+        expect(src).toMatch(/useColumns?(Visibility|Dropdown)/);
         expect(src).toContain(`'${page.storageKey}'`);
     });
 
-    it.each(MIGRATED)('%s renders ColumnsDropdown inside the FilterToolbar actions slot', (page) => {
+    it.each(MIGRATED)('%s renders the columns gear inside the FilterToolbar actions slot', (page) => {
         const src = read(`src/app/t/[tenantSlug]/(app)/${page.dir}/${page.client}`);
-        expect(src).toMatch(/ColumnsDropdown/);
+        // After R10-PR6 the gear can be sourced two ways:
+        //   - Legacy: literal `<ColumnsDropdown>` JSX
+        //   - Canonical: `useColumnsDropdown(...)` → `dropdown` node
+        // Either is acceptable; the slot wiring is what we lock.
+        expect(src).toMatch(/(ColumnsDropdown|columnsDropdown)/);
         // Two equivalent shapes:
         //   (a) Direct FilterToolbar usage: `<FilterToolbar actions={...}>`
         //   (b) EntityListPage shell: `filters={{ ..., toolbarActions: ... }}`

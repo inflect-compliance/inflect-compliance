@@ -27,12 +27,10 @@ import {
     toYMD,
 } from '@/components/ui/date-picker/date-utils';
 import {
-    ColumnsDropdown,
     DataTable,
     createColumns,
-    getDefaultVisibility,
+    useColumnsDropdown,
 } from '@/components/ui/table';
-import { useColumnVisibility } from '@/components/ui/hooks';
 import { Tooltip } from '@/components/ui/tooltip';
 import {
     FilterProvider,
@@ -354,26 +352,10 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
         celebrate,
     ]);
 
-    // ─── Column visibility (Epic 52) ───
+    // ─── Column visibility (Epic 52 / R10-PR6) ───
     // Pagination removed — internal scroll inside the table card
     // (ListPageShell.Body + DataTable fillBody) shows all rows.
-    const evidenceColumnConfig = useMemo(
-        () => ({
-            all: ['title', 'type', 'control', 'retention', 'freshness', 'status', 'owner', 'actions'],
-            defaultVisible: ['title', 'type', 'control', 'retention', 'freshness', 'status', 'owner', 'actions'],
-            fixed: ['actions'],
-        }),
-        [],
-    );
-    const { columnVisibility, setColumnVisibility } = useColumnVisibility(
-        'inflect:col-vis:evidence',
-        evidenceColumnConfig,
-    );
-    const defaultEvidenceVisibility = useMemo(
-        () => getDefaultVisibility(evidenceColumnConfig),
-        [evidenceColumnConfig],
-    );
-    const evidenceColumnDropdown = useMemo(
+    const evidenceColumnList = useMemo(
         () => [
             { id: 'title', label: 'Title' },
             { id: 'type', label: 'Type' },
@@ -386,6 +368,14 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
         ],
         [],
     );
+    const {
+        columnVisibility,
+        setColumnVisibility,
+        dropdown: columnsDropdown,
+    } = useColumnsDropdown({
+        storageKey: 'inflect:col-vis:evidence',
+        columns: evidenceColumnList,
+    });
 
     // ── Evidence Column Definitions ──
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -724,14 +714,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                         <EvidenceFilterToolbar
                             controls={controls}
                             columnsDropdown={
-                                viewMode === 'list' ? (
-                                    <ColumnsDropdown
-                                        columns={evidenceColumnDropdown}
-                                        visibility={columnVisibility}
-                                        onChange={(v) => setColumnVisibility(v)}
-                                        defaultVisibility={defaultEvidenceVisibility}
-                                    />
-                                ) : null
+                                viewMode === 'list' ? columnsDropdown : null
                             }
                         />
                     </div>

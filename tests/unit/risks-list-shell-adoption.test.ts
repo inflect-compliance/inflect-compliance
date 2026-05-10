@@ -105,10 +105,23 @@ describe('Risks list — Epic 44.4 column + matrix wiring', () => {
         );
     });
 
-    it('column visibility config includes status + owner under defaultVisible', () => {
-        expect(clientSrc).toMatch(
-            /defaultVisible:\s*\[[^\]]*'status'[^\]]*'owner'/,
-        );
+    it('column visibility config includes status + owner as default-visible columns', () => {
+        // R10-PR6 migrated this page to `useColumnsDropdown` — the
+        // `defaultVisible` array literal is replaced by per-column
+        // records where `defaultVisible: false` opts out (omitted =
+        // visible). Lock that status + owner both appear in the
+        // column list AND neither carries an explicit
+        // `defaultVisible: false`.
+        expect(clientSrc).toMatch(/id:\s*['"]status['"]/);
+        expect(clientSrc).toMatch(/id:\s*['"]owner['"]/);
+        const statusEntry = clientSrc.match(
+            /\{\s*id:\s*['"]status['"][^}]*\}/,
+        )?.[0] ?? '';
+        const ownerEntry = clientSrc.match(
+            /\{\s*id:\s*['"]owner['"][^}]*\}/,
+        )?.[0] ?? '';
+        expect(statusEntry).not.toMatch(/defaultVisible:\s*false/);
+        expect(ownerEntry).not.toMatch(/defaultVisible:\s*false/);
     });
 
     it('server page fetches the matrix config alongside risks and threads it through', () => {

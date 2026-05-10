@@ -85,8 +85,10 @@ describe('Epic 43.2 — view toggle wiring', () => {
     it('keeps the columns dropdown out of the gallery view', () => {
         // The columns dropdown is only meaningful for the list view —
         // hiding it under viewMode === 'list' is the correct shape.
+        // R10-PR6 unified the mount via `useColumnsDropdown` returning a
+        // `dropdown` node; accept either shape.
         expect(src).toMatch(
-            /viewMode === ['"]list['"]\s*\?\s*\(\s*<ColumnsDropdown/,
+            /viewMode === ['"]list['"]\s*\?\s*(<ColumnsDropdown|columnsDropdown)/,
         );
     });
 

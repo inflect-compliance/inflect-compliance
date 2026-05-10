@@ -21,12 +21,10 @@ import { queryKeys } from '@/lib/queryKeys';
 import { AppIcon } from '@/components/icons/AppIcon';
 import { Paperclip, CheckCircle2, AlertTriangle, X } from 'lucide-react';
 import {
-    ColumnsDropdown,
     DataTable,
     createColumns,
-    getDefaultVisibility,
+    useColumnsDropdown,
 } from '@/components/ui/table';
-import { useColumnVisibility } from '@/components/ui/hooks';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -269,37 +267,30 @@ function ControlsPageInner({
         [controls],
     );
 
-    // ─── Column visibility (Epic 52) ───
+    // ─── Column visibility (Epic 52 / R10-PR6) ───
     // Pagination removed — internal scroll inside the table card
     // (ListPageShell.Body + DataTable fillBody) shows all rows.
-    const controlColumnConfig = useMemo(
-        () => ({
-            all: ['code', 'name', 'status', 'applicability', 'owner', 'frequency', 'tasks', 'evidence'],
-            defaultVisible: ['code', 'name', 'status', 'applicability', 'owner', 'tasks', 'evidence'],
-        }),
-        [],
-    );
-    const { columnVisibility, setColumnVisibility } = useColumnVisibility(
-        'inflect:col-vis:controls',
-        controlColumnConfig,
-    );
-    const columnDropdownItems = useMemo(
+    const controlColumnList = useMemo(
         () => [
             { id: 'code', label: 'Code' },
             { id: 'name', label: 'Title' },
             { id: 'status', label: 'Status' },
             { id: 'applicability', label: 'Applicability' },
             { id: 'owner', label: 'Owner' },
-            { id: 'frequency', label: 'Frequency' },
+            { id: 'frequency', label: 'Frequency', defaultVisible: false },
             { id: 'tasks', label: 'Tasks' },
             { id: 'evidence', label: 'Evidence' },
         ],
         [],
     );
-    const defaultControlVisibility = useMemo(
-        () => getDefaultVisibility(controlColumnConfig),
-        [controlColumnConfig],
-    );
+    const {
+        columnVisibility,
+        setColumnVisibility,
+        dropdown: columnsDropdown,
+    } = useColumnsDropdown({
+        storageKey: 'inflect:col-vis:controls',
+        columns: controlColumnList,
+    });
     const activeFilters = useMemo(
         () => filterStateToActiveFilters(state),
         [state],
@@ -760,14 +751,7 @@ function ControlsPageInner({
                 defs: liveFilterDefs,
                 searchId: 'control-search',
                 searchPlaceholder: 'Search controls…',
-                toolbarActions: (
-                    <ColumnsDropdown
-                        columns={columnDropdownItems}
-                        visibility={columnVisibility}
-                        onChange={(v) => setColumnVisibility(v)}
-                        defaultVisibility={defaultControlVisibility}
-                    />
-                ),
+                toolbarActions: columnsDropdown,
             }}
             table={{
                 data: controls,
