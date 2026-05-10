@@ -41,7 +41,7 @@ export function Form({
         });
         setSaving(false);
       }}
-      className="rounded-xl border border-neutral-200 bg-white"
+      className="rounded-lg border border-neutral-200 bg-white"
     >
       <div className="relative flex flex-col space-y-section p-6">
         <div className="flex flex-col space-y-1">

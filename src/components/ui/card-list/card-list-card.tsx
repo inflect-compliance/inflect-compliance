@@ -142,7 +142,7 @@ export function CardListCard({
             data-testid={testId}
             data-selected={selected || undefined}
             className={cn(
-                'group relative flex flex-col rounded-xl border border-border-subtle bg-bg-default',
+                'group relative flex flex-col rounded-lg border border-border-subtle bg-bg-default',
                 // v2-PR-4 — single motion language: bg + border-color
                 // only, no transform/shadow. The hover affordance is
                 // the border darkening (`hover:border-border-emphasis`)
@@ -203,7 +203,7 @@ export function CardListCard({
                 className={cn(
                     'flex flex-1 flex-col p-4',
                     interactive &&
-                        'outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-default)] focus-visible:ring-offset-2 rounded-xl',
+                        'outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-default)] focus-visible:ring-offset-2 rounded-lg',
                     innerClassName,
                 )}
             >

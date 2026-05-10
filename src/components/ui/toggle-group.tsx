@@ -41,7 +41,7 @@ import {
  */
 
 const toggleGroupVariants = cva(
-    "border-border-subtle bg-bg-default relative z-0 inline-flex items-center rounded-xl border",
+    "border-border-subtle bg-bg-default relative z-0 inline-flex items-center rounded-lg border",
     {
         variants: {
             size: {

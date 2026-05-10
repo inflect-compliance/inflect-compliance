@@ -223,8 +223,8 @@ export default function OnboardingWizard() {
             <div className="space-y-section animate-fadeIn">
                 <div className="h-8 w-48 bg-bg-default rounded animate-pulse" />
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-section">
-                    <div className="h-96 bg-bg-default/50 rounded-xl animate-pulse" />
-                    <div className="lg:col-span-3 h-96 bg-bg-default/50 rounded-xl animate-pulse" />
+                    <div className="h-96 bg-bg-default/50 rounded-lg animate-pulse" />
+                    <div className="lg:col-span-3 h-96 bg-bg-default/50 rounded-lg animate-pulse" />
                 </div>
             </div>
         );
@@ -533,7 +533,7 @@ function FrameworkSelectionStep({ data, onUpdate }: { data: StepData; onUpdate: 
                     const active = selected.includes(fw.key);
                     return (
                         <button key={fw.key} onClick={() => toggle(fw.key)} data-testid={`fw-${fw.key}`}
-                            className={`text-left p-4 rounded-xl border-2 transition-colors duration-150 ease-out ${
+                            className={`text-left p-4 rounded-lg border-2 transition-colors duration-150 ease-out ${
                                 active ? 'border-[var(--brand-default)] bg-brand-subtle' : 'border-border-subtle bg-bg-default/30 hover:border-border-default'
                             }`}
                         >
@@ -644,7 +644,7 @@ function RiskRegisterStep({ data, onUpdate }: { data: StepData; onUpdate: (d: St
     return (
         <div className="space-y-default max-w-lg animate-fadeIn">
             <p className="text-sm text-content-muted mb-4">Generate a starter risk register based on your assets and selected frameworks.</p>
-            <div className="p-4 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-border-warning">
+            <div className="p-4 rounded-lg bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-border-warning">
                 <div className="flex items-center gap-compact mb-3">
                     <AlertTriangle className="w-5 h-5 text-content-warning" />
                     <span className="font-medium text-content-inverted text-sm">Starter Risk Register</span>

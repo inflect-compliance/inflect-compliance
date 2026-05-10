@@ -604,7 +604,7 @@ function TrendEmptyState() {
             className={cn(cardVariants({ density: 'none' }), 'flex flex-col items-center justify-center gap-y-4 py-12 px-6')}
             id="trend-section"
         >
-            <div className="flex size-14 items-center justify-center rounded-xl border border-border-subtle bg-bg-muted">
+            <div className="flex size-14 items-center justify-center rounded-lg border border-border-subtle bg-bg-muted">
                 <TrendingUp
                     className="size-6 text-content-muted"
                     aria-hidden="true"

@@ -126,7 +126,7 @@ export function EmptyState({
         >
             <div
                 className={cn(
-                    "flex items-center justify-center rounded-xl border border-border-subtle bg-bg-muted",
+                    "flex items-center justify-center rounded-lg border border-border-subtle bg-bg-muted",
                     size === "sm" ? "size-10" : "size-14",
                 )}
             >

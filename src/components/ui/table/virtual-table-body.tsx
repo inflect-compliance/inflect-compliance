@@ -399,7 +399,7 @@ export function VirtualTable<T>({
                 data-virtual-table=""
                 data-testid={testId}
                 className={cn(
-                    "border-border-subtle bg-bg-default relative z-0 rounded-xl border overflow-hidden",
+                    "border-border-subtle bg-bg-default relative z-0 rounded-lg border overflow-hidden",
                     containerClassName,
                 )}
                 style={{ height }}
@@ -414,7 +414,7 @@ export function VirtualTable<T>({
             data-virtual-table=""
             data-testid={testId}
             className={cn(
-                "border-border-subtle bg-bg-default relative z-0 rounded-xl border overflow-hidden",
+                "border-border-subtle bg-bg-default relative z-0 rounded-lg border overflow-hidden",
                 "h-full w-full",
                 containerClassName,
             )}

@@ -272,7 +272,7 @@ export default function UserMfaPage() {
 
                     {/* QR Code placeholder — render the otpauth URI */}
                     <div className="flex flex-col items-center gap-default py-4">
-                        <div className="bg-white p-4 rounded-xl">
+                        <div className="bg-white p-4 rounded-lg">
                             {/* Simple QR fallback: render as a monospace URI block */}
                             <div className="w-full sm:w-48 h-48 flex items-center justify-center">
                                 <QrCode className="w-full sm:w-32 h-32 text-content-emphasis" />

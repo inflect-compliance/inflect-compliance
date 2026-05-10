@@ -202,7 +202,7 @@ export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientPr
 
             {/* Readiness banner */}
             {(summary.unmapped > 0 || summary.missingJustification > 0) && (
-                <div className="rounded-xl border border-border-error bg-bg-error px-4 py-3 flex items-center justify-between" id="soa-readiness-banner">
+                <div className="rounded-lg border border-border-error bg-bg-error px-4 py-3 flex items-center justify-between" id="soa-readiness-banner">
                     <div className="flex items-center gap-tight">
                         <AlertTriangle className="w-4 h-4 text-content-error flex-shrink-0" />
                         <div className="text-xs text-content-error">

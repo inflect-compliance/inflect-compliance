@@ -24,7 +24,7 @@ export function ForbiddenPage({
 
     return (
         <div className="flex flex-col items-center justify-center min-h-[60vh] text-center animate-fadeIn px-4">
-            <div className="w-16 h-16 rounded-2xl bg-bg-error border border-border-error flex items-center justify-center mb-6">
+            <div className="w-16 h-16 rounded-lg bg-bg-error border border-border-error flex items-center justify-center mb-6">
                 <ShieldX className="w-8 h-8 text-content-error" />
             </div>
             <Heading level={1} className="text-white mb-2" id="forbidden-heading">{title}</Heading>
@@ -55,7 +55,7 @@ export function ServerForbiddenPage({
 }) {
     return (
         <div className="flex flex-col items-center justify-center min-h-[60vh] text-center animate-fadeIn px-4">
-            <div className="w-16 h-16 rounded-2xl bg-bg-error border border-border-error flex items-center justify-center mb-6">
+            <div className="w-16 h-16 rounded-lg bg-bg-error border border-border-error flex items-center justify-center mb-6">
                 <ShieldX className="w-8 h-8 text-content-error" />
             </div>
             <Heading level={1} className="text-white mb-2" id="forbidden-heading">{title}</Heading>
