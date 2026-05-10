@@ -15,7 +15,6 @@ import { Button } from '@/components/ui/button';
 import { useToastWithUndo } from '@/components/ui/hooks';
 import { SkeletonLine, SkeletonCard } from '@/components/ui/skeleton';
 import { InlineEmptyState } from '@/components/ui/inline-empty-state';
-import { Link2, MessageSquare, Activity } from 'lucide-react';
 import { UserCombobox } from '@/components/ui/user-combobox';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
@@ -517,7 +516,6 @@ export default function TaskDetailPage() {
                             </div>
                         ) : links.length === 0 ? (
                             <InlineEmptyState
-                                icon={Link2}
                                 title="No links yet"
                                 description="Cross-link this task to related tasks, controls, evidence, or risks via + Link."
                             />
@@ -580,7 +578,6 @@ export default function TaskDetailPage() {
                             </div>
                         ) : comments.length === 0 ? (
                             <InlineEmptyState
-                                icon={MessageSquare}
                                 title="No comments yet"
                                 description="Use the comment box above to leave context, observations, or questions."
                             />
@@ -618,7 +615,6 @@ export default function TaskDetailPage() {
                         </div>
                     ) : activity.length === 0 ? (
                         <InlineEmptyState
-                            icon={Activity}
                             title="No activity yet"
                             description="Status changes, assignments, and link updates show up here once anything moves."
                         />
