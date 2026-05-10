@@ -28,6 +28,14 @@ interface DetailPageEntry {
     /** Whether this page mounts <EntityDetailLayout>. */
     adopted: boolean;
     note: string;
+    /**
+     * Optional: when the page.tsx is a thin server shell that
+     * delegates to a sibling Client component, point at the file
+     * that actually owns the layout composition. The ratchet checks
+     * <EntityDetailLayout> presence in `compositionFile` if set,
+     * else falls back to `file`.
+     */
+    compositionFile?: string;
 }
 
 /**
@@ -80,17 +88,16 @@ const DETAIL_PAGES: DetailPageEntry[] = [
         note: "Audit pack detail with grouped item rendering.",
     },
 
-    // ── Pending migration ──
-    {
-        file: "src/app/t/[tenantSlug]/(app)/issues/[issueId]/page.tsx",
-        adopted: false,
-        note: "Issue detail with hand-rolled breadcrumb + heading + actions cluster. Migration pending — clean candidate (single tab, clear metadata).",
-    },
+    // ── Adopted via sibling Client file (R8-PR3 ratchet smarting) ──
     {
         file: "src/app/t/[tenantSlug]/(app)/access-reviews/[reviewId]/page.tsx",
-        adopted: false,
-        note: "Access review detail. Pending migration — needs careful handling of the review's run-time state UI.",
+        compositionFile:
+            "src/app/t/[tenantSlug]/(app)/access-reviews/[reviewId]/AccessReviewDetailClient.tsx",
+        adopted: true,
+        note: "Access review detail — server shell delegates to AccessReviewDetailClient which already mounts <EntityDetailLayout>. R7-PR9's coarse ratchet missed this because it only scanned page.tsx; R8-PR3 adds compositionFile pointer so the ratchet checks the right file.",
     },
+
+    // ── Pending migration ──
     {
         file: "src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/assessment/[assessmentId]/page.tsx",
         adopted: false,
@@ -113,8 +120,8 @@ const DETAIL_PAGES: DetailPageEntry[] = [
     },
     {
         file: "src/app/t/[tenantSlug]/(app)/audits/cycles/[cycleId]/readiness/page.tsx",
-        adopted: false,
-        note: "Audit cycle readiness sub-page. Pending migration — sub-route of audit cycle; needs breadcrumb stacking.",
+        adopted: true,
+        note: "Audit cycle readiness sub-page. Migrated R8-PR3 — uses <EntityDetailLayout> with breadcrumb stacking (Audits → Readiness → Cycle → Readiness Report) + back link to the parent cycle.",
     },
 ];
 
@@ -139,10 +146,14 @@ describe("EntityDetailLayout coverage", () => {
         const violations: string[] = [];
         for (const entry of DETAIL_PAGES) {
             if (!entry.adopted) continue;
-            const full = path.join(ROOT, entry.file);
+            // R8-PR3 ratchet smarting: when page.tsx is a server
+            // shell, check the sibling Client file that actually
+            // owns the layout composition.
+            const target = entry.compositionFile ?? entry.file;
+            const full = path.join(ROOT, target);
             const content = fs.readFileSync(full, "utf8");
             if (!/<EntityDetailLayout\b/.test(content)) {
-                violations.push(entry.file);
+                violations.push(`${entry.file} (checked: ${target})`);
             }
         }
         if (violations.length > 0) {
@@ -157,10 +168,11 @@ describe("EntityDetailLayout coverage", () => {
         const violations: string[] = [];
         for (const entry of DETAIL_PAGES) {
             if (entry.adopted) continue;
-            const full = path.join(ROOT, entry.file);
+            const target = entry.compositionFile ?? entry.file;
+            const full = path.join(ROOT, target);
             const content = fs.readFileSync(full, "utf8");
             if (/<EntityDetailLayout\b/.test(content)) {
-                violations.push(entry.file);
+                violations.push(`${entry.file} (checked: ${target})`);
             }
         }
         if (violations.length > 0) {
