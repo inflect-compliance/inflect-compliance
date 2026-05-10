@@ -126,7 +126,7 @@ function ScopePicker({
                     content="Gives this key read + write on every resource — evidence, controls, admin settings. Prefer narrow scopes for automation."
                 />
                 {isFullAccess && (
-                    <span className="text-[10px] text-content-warning/80 flex items-center gap-1">
+                    <span className="text-[10px] text-content-warning flex items-center gap-1">
                         <AlertTriangle className="w-3.5 h-3.5" />
                         Grants all permissions
                     </span>

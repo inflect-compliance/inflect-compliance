@@ -180,7 +180,7 @@ export default function ScimAdminPage() {
                     title="Copy your SCIM token now"
                     className="flex-col items-stretch p-4"
                 >
-                    <p className="text-xs text-content-warning/80">
+                    <p className="text-xs text-content-warning">
                         This token will not be shown again. Store it securely in your identity provider.
                     </p>
                     <div className="flex items-center gap-tight mt-3 bg-bg-page/60 rounded px-3 py-2">

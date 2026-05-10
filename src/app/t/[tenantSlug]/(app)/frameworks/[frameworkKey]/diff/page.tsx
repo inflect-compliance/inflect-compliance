@@ -122,7 +122,7 @@ export default function DiffPage() {
                         {activeTab === 'removed' && diff.removed.map((r: any, i: number) => (
                             <div key={i} className={cn(cardVariants({ density: 'none' }), 'flex items-center gap-compact')}>
                                 <span className="text-content-error text-lg font-bold">−</span>
-                                <code className="text-xs text-content-error/60 font-mono w-28 flex-shrink-0 line-through">{r.code}</code>
+                                <code className="text-xs text-content-muted font-mono w-28 flex-shrink-0 line-through">{r.code}</code>
                                 <span className="text-sm text-content-subtle line-through">{r.title}</span>
                                 {r.section && <span className="text-xs text-content-subtle ml-auto">{r.section}</span>}
                             </div>

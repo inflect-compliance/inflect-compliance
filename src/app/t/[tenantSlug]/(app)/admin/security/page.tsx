@@ -262,7 +262,7 @@ export default function AdminSecurityPage() {
 
                 {settings.mfaPolicy === 'REQUIRED' && (
                     <InlineNotice variant="warning" title="Before enabling Required MFA:">
-                        <ul className="text-xs text-content-warning/80 list-disc pl-4 space-y-1">
+                        <ul className="text-xs text-content-warning list-disc pl-4 space-y-1">
                             <li>Ensure you (the admin) have enrolled in MFA first</li>
                             <li>Users without MFA will be redirected to enrollment on their next login</li>
                             <li>Break-glass admin access is preserved via SSO if configured</li>
@@ -350,7 +350,7 @@ export default function AdminSecurityPage() {
                         className="p-4 border border-border-error rounded-lg hover:border-border-error transition text-left flex items-start gap-compact group"
                         id="revoke-all-sessions-btn"
                     >
-                        <Users className="w-5 h-5 text-content-error/70 group-hover:text-content-error transition mt-0.5 shrink-0" />
+                        <Users className="w-5 h-5 text-content-error transition mt-0.5 shrink-0" />
                         <div>
                             <span className="text-sm font-medium text-content-error">Revoke All User Sessions</span>
                             <p className="text-xs text-content-subtle mt-1">Force all organization members to sign in again. Use for incidents.</p>
