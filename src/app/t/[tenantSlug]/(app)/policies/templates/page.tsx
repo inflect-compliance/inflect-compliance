@@ -100,7 +100,7 @@ export default function TemplatesPage() {
 
             {/* Grid */}
             {loading ? (
-                <div className="p-12 text-center text-content-subtle animate-pulse">Loading templates...</div>
+                <div className="p-12 text-center text-content-subtle animate-pulse">Loading templates…</div>
             ) : filtered.length === 0 ? (
                 <div className={cardVariants({ density: 'none' })}>
                     {templates.length === 0 ? (

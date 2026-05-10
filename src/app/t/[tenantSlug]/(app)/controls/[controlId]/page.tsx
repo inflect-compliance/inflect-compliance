@@ -1381,7 +1381,7 @@ export default function ControlDetailPage() {
             {tab === 'activity' && (
                 <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
                     {activityLoading ? (
-                        <div className="p-8 text-center text-content-subtle animate-pulse">Loading activity...</div>
+                        <div className="p-8 text-center text-content-subtle animate-pulse">Loading activity…</div>
                     ) : activity.length === 0 ? (
                         <div className="p-8 text-center text-content-subtle text-sm">No activity recorded</div>
                     ) : (

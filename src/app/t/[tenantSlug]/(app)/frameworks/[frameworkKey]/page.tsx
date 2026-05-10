@@ -183,7 +183,7 @@ export default function FrameworkDetailPage() {
                         <FrameworkExplorer tree={tree} coverage={coverage ?? null} />
                     ) : (
                         <div className={cn(cardVariants({ density: 'none' }), 'text-center py-10 text-content-subtle')}>
-                            Loading tree...
+                            Loading tree…
                         </div>
                     )}
                 </div>
@@ -324,7 +324,7 @@ export default function FrameworkDetailPage() {
                         </RequirePermission>
                     ) : (
                         <div className={cn(cardVariants({ density: 'none' }), 'text-center py-10 text-content-subtle')}>
-                            Loading tree...
+                            Loading tree…
                         </div>
                     )}
                 </div>

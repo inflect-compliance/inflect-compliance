@@ -145,7 +145,7 @@ export default function ControlTemplatesPage() {
             {/* Template list */}
             <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
                 {loading ? (
-                    <div className="p-12 text-center text-content-subtle animate-pulse">Loading templates...</div>
+                    <div className="p-12 text-center text-content-subtle animate-pulse">Loading templates…</div>
                 ) : filtered.length === 0 ? (
                     <div className="p-12 text-center text-content-subtle">
                         <p className="text-lg mb-2">No templates found</p>

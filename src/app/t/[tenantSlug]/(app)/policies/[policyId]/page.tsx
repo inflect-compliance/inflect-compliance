@@ -749,7 +749,7 @@ export default function PolicyDetailPage() {
                 <div className={cardVariants()} id="activity-feed">
                     <Heading level={3} className="mb-4">Activity Timeline</Heading>
                     {activitiesLoading ? (
-                        <div className="text-center text-content-subtle animate-pulse py-8">Loading activity...</div>
+                        <div className="text-center text-content-subtle animate-pulse py-8">Loading activity…</div>
                     ) : activities.length === 0 ? (
                         <div className="text-center text-content-subtle py-8">No activity recorded yet.</div>
                     ) : (

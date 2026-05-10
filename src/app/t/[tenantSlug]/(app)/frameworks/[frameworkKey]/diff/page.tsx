@@ -42,7 +42,7 @@ export default function DiffPage() {
         })();
     }, [apiUrl, frameworkKey, fromKey]);
 
-    if (loading) return <div className="p-8 animate-pulse text-content-muted">Loading diff...</div>;
+    if (loading) return <div className="p-8 animate-pulse text-content-muted">Loading diff…</div>;
 
     return (
         <div className="space-y-section">

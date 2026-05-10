@@ -240,7 +240,7 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
         });
     };
 
-    if (loading) return <div className="p-6 text-center text-content-subtle animate-pulse">Loading traceability...</div>;
+    if (loading) return <div className="p-6 text-center text-content-subtle animate-pulse">Loading traceability…</div>;
     if (!data) return <div className="p-6 text-center text-content-subtle">Failed to load traceability data</div>;
 
     const risks = data.risks || [];
