@@ -21,6 +21,8 @@
 
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { Heading } from '@/components/ui/typography';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 // ─── Props ──────────────────────────────────────────────────────────
 
@@ -64,7 +66,7 @@ export default function ProgressCard({
     const percent = max > 0 ? Math.min((value / max) * 100, 100) : 0;
 
     return (
-        <div id={id} className={`glass-card p-6 ${className}`}>
+        <div id={id} className={cn(cardVariants(), className)}>
             <Heading level={3} className="mb-3">{label}</Heading>
 
             {/* Main progress bar */}

@@ -9,6 +9,8 @@ import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 const FW_META: Record<string, { icon: AppIconName; label: string }> = {
     ISO27001: { icon: 'shield', label: 'ISO/IEC 27001:2022' },
@@ -58,7 +60,7 @@ export default function AuditorPortalPage() {
             </div>
 
             {packs.length === 0 ? (
-                <div className="glass-card p-12 text-center">
+                <div className={cn(cardVariants({ density: 'none' }), 'p-12 text-center')}>
                     <div className="mb-4"><AppIcon name="lock" size={48} className="text-content-muted" /></div>
                     <Heading level={2} className="mb-2">No assigned packs</Heading>
                     <p className="text-content-muted text-sm">You have not been assigned any audit packs yet.</p>
@@ -70,7 +72,7 @@ export default function AuditorPortalPage() {
                             const meta = FW_META[p.cycle?.frameworkKey] || { icon: 'shield' as AppIconName, label: p.cycle?.frameworkKey || '' };
                             return (
                                 <button key={p.id} onClick={() => loadPack(p.id)}
-                                    className={`w-full text-left glass-card p-4 hover:bg-bg-muted/50 transition ${selectedPack?.id === p.id ? 'ring-2 ring-[var(--ring)]' : ''}`}>
+                                    className={cn(cardVariants({ density: 'compact' }), 'w-full text-left hover:bg-bg-muted/50 transition', selectedPack?.id === p.id && 'ring-2 ring-[var(--ring)]')}>
                                     <div className="flex items-center gap-compact">
                                         <AppIcon name={meta.icon} size={20} />
                                         <div className="min-w-0">
@@ -85,7 +87,7 @@ export default function AuditorPortalPage() {
                     </div>
                     <div className="lg:col-span-2">
                         {selectedPack ? (
-                            <div className="glass-card p-6 space-y-default animate-fadeIn">
+                            <div className={cn(cardVariants(), 'space-y-default animate-fadeIn')}>
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <Heading level={2} id="auditor-pack-name">{selectedPack.name}</Heading>
@@ -126,7 +128,7 @@ export default function AuditorPortalPage() {
                                 })()}
                             </div>
                         ) : (
-                            <div className="glass-card p-12 text-center text-content-subtle">
+                            <div className={cn(cardVariants({ density: 'none' }), 'p-12 text-center text-content-subtle')}>
                                 Select a pack to review
                             </div>
                         )}

@@ -10,6 +10,8 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { useToastWithUndo } from '@/components/ui/hooks';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 interface TraceabilityPanelProps {
     apiBase: string;            // e.g. /api/t/acme-corp
@@ -262,7 +264,7 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
                         )}
                     </div>
                     {showAddRisk && canWrite && (
-                        <div className="glass-card p-3 mb-3 space-y-tight">
+                        <div className={cn(cardVariants({ density: 'none' }), 'p-3 mb-3 space-y-tight')}>
                             <Combobox
                                 id="risk-select"
                                 selected={availableRisks.map((r: any) => ({ value: r.id, label: `${r.title} (${r.status})` })).find((o: { value: string }) => o.value === addId) ?? null}
@@ -277,7 +279,7 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
                             </Button>
                         </div>
                     )}
-                    <div className="glass-card overflow-hidden">
+                    <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
                         {risks.length === 0 ? (
                             <div className="p-6 text-center text-content-subtle text-sm" id="no-risks">No risks linked</div>
                         ) : (
@@ -320,7 +322,7 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
                         )}
                     </div>
                     {showAddControl && canWrite && (
-                        <div className="glass-card p-3 mb-3 space-y-tight">
+                        <div className={cn(cardVariants({ density: 'none' }), 'p-3 mb-3 space-y-tight')}>
                             <Combobox
                                 id="control-select"
                                 selected={availableControls.map((c: any) => ({ value: c.id, label: `${c.code ? `${c.code} — ` : ''}${c.name} (${c.status})` })).find((o: { value: string }) => o.value === addId) ?? null}
@@ -335,7 +337,7 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
                             </Button>
                         </div>
                     )}
-                    <div className="glass-card overflow-hidden">
+                    <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
                         {controls.length === 0 ? (
                             <div className="p-6 text-center text-content-subtle text-sm" id="no-controls">No controls linked</div>
                         ) : (
@@ -378,7 +380,7 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
                         )}
                     </div>
                     {showAddAsset && canWrite && (
-                        <div className="glass-card p-3 mb-3 space-y-tight">
+                        <div className={cn(cardVariants({ density: 'none' }), 'p-3 mb-3 space-y-tight')}>
                             <Combobox
                                 id="asset-select"
                                 selected={availableAssets.map((a: any) => ({ value: a.id, label: `${a.name} (${a.type})` })).find((o: { value: string }) => o.value === addId) ?? null}
@@ -393,7 +395,7 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
                             </Button>
                         </div>
                     )}
-                    <div className="glass-card overflow-hidden">
+                    <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
                         {assets.length === 0 ? (
                             <div className="p-6 text-center text-content-subtle text-sm" id="no-assets">No assets linked</div>
                         ) : (

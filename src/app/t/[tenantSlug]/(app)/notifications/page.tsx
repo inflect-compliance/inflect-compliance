@@ -8,6 +8,8 @@ import { AppIcon } from '@/components/icons/AppIcon';
 import { useOptimisticUpdate } from '@/components/ui/hooks';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 type Notification = {
     id: string;
@@ -83,7 +85,7 @@ export default function NotificationsPage() {
             </div>
             <div className="space-y-tight">
                 {optimisticList.map(n => (
-                    <div key={n.id} className={`glass-card p-4 flex items-start gap-compact ${!n.read ? 'border-l-2 border-[var(--brand-default)]' : 'opacity-60'}`}>
+                    <div key={n.id} className={cn(cardVariants({ density: 'compact' }), 'flex items-start gap-compact', !n.read ? 'border-l-2 border-[var(--brand-default)]' : 'opacity-60')}>
                         <span className="text-lg"><AppIcon name={n.type === 'EVIDENCE' ? 'evidence' : n.type === 'FINDING' ? 'bug' : 'bell'} size={18} /></span>
                         <div className="flex-1">
                             <p className="text-sm text-content-emphasis">{n.message}</p>
@@ -92,7 +94,7 @@ export default function NotificationsPage() {
                         {!n.read && <Button variant="ghost" size="sm" className="text-xs" onClick={() => markRead(n.id)}>{t('markRead')}</Button>}
                     </div>
                 ))}
-                {optimisticList.length === 0 && <div className="glass-card p-12 text-center text-content-subtle">{t('noNotifications')}</div>}
+                {optimisticList.length === 0 && <div className={cn(cardVariants({ density: 'none' }), 'p-12 text-center text-content-subtle')}>{t('noNotifications')}</div>}
             </div>
         </div>
     );

@@ -19,6 +19,8 @@ import { DataTable, createColumns } from '@/components/ui/table';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 interface ConnectionDTO {
     id: string;
@@ -209,14 +211,14 @@ export default function AdminIntegrationsPage() {
 
                 {/* Webhook endpoint info */}
                 {webhookBaseUrl && (
-                    <div className="glass-card p-4">
+                    <div className={cardVariants({ density: 'compact' })}>
                         <p className="text-xs text-content-muted mb-1">Webhook Base URL</p>
                         <code className="text-sm text-[var(--brand-default)] font-mono">{webhookBaseUrl}/&#123;provider&#125;</code>
                     </div>
                 )}
 
                 {/* Connections list */}
-                <div className="glass-card overflow-hidden">
+                <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
                     <div className="flex justify-between items-center p-4 border-b border-border-default">
                         <Heading level={2}>Configured Connections</Heading>
                         <Button
@@ -291,7 +293,7 @@ export default function AdminIntegrationsPage() {
 
                 {/* Add/Edit Form */}
                 {showForm && (
-                    <div className="glass-card p-6 space-y-default">
+                    <div className={cn(cardVariants(), 'space-y-default')}>
                         <Heading level={2}>
                             {editingId ? 'Edit Integration' : 'Add Integration'}
                         </Heading>

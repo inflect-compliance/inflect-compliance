@@ -9,6 +9,8 @@ import { Check } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -84,7 +86,7 @@ export default async function RbacPage({
             {/* Members Table */}
             <section>
                 <Heading level={2} className="mb-3">Team Members</Heading>
-                <div className="glass-card overflow-hidden">
+                <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
                     <table className="data-table">
                         <thead>
                             <tr>
@@ -123,7 +125,7 @@ export default async function RbacPage({
             {/* Permission Matrix */}
             <section>
                 <Heading level={2} className="mb-3">Permission Matrix</Heading>
-                <div className="glass-card overflow-x-auto">
+                <div className={cn(cardVariants({ density: 'none' }), 'overflow-x-auto')}>
                     <table className="data-table">
                         <thead>
                             <tr>

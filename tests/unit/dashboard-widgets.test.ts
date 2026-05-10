@@ -116,19 +116,24 @@ describe('Widget Empty State Handling', () => {
 // ─── Design System Compatibility ───
 
 describe('Widget Design System Compliance', () => {
-    test('all widgets use glass-card where appropriate', () => {
-        // KpiCard, ProgressCard, and StatusBreakdown should use glass-card
+    test('all widgets use the canonical Card surface', () => {
+        // Roadmap-5 PR-1 — the glass-card literal moved into the
+        // Card primitive. Widgets now compose cardVariants(),
+        // render `<Card>` directly, or delegate to a higher-order
+        // wrapper (`<MetricCard>` for KpiCard) that composes the
+        // primitive on their behalf.
         for (const file of ['KpiCard.tsx', 'ProgressCard.tsx', 'StatusBreakdown.tsx']) {
             const content = fs.readFileSync(path.join(UI_DIR, file), 'utf-8');
-            expect(content).toContain('glass-card');
+            expect(content).toMatch(/cardVariants\(|<Card\b|<MetricCard\b/);
         }
     });
 
-    test('DonutChart and TrendCard do NOT use glass-card (embeddable)', () => {
-        // These are embeddable in other cards — no outer card wrapper
+    test('DonutChart and TrendCard do NOT carry the canonical Card surface (embeddable)', () => {
+        // These are embeddable in other cards — no outer card wrapper.
         for (const file of ['DonutChart.tsx', 'TrendCard.tsx']) {
             const content = fs.readFileSync(path.join(UI_DIR, file), 'utf-8');
             expect(content).not.toContain('glass-card');
+            expect(content).not.toMatch(/cardVariants\(/);
         }
     });
 

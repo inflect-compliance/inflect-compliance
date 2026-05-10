@@ -37,6 +37,8 @@ import { getReadinessOverview } from '@/app-layer/usecases/audit-readiness';
 import type { ReadinessResult } from '@/app-layer/usecases/audit-readiness-scoring';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -136,7 +138,7 @@ export default async function ReadinessOverviewPage({
                 // for client-page empty states; this server-rendered
                 // page renders the icon JSX inline so the SSR
                 // boundary only sees serialised React nodes.
-                <div className="glass-card p-12 text-center">
+                <div className={cn(cardVariants({ density: 'none' }), 'p-12 text-center')}>
                     <div className="mb-4">
                         <BarChart3 className="size-10 text-content-muted mx-auto" aria-hidden="true" />
                     </div>
@@ -163,7 +165,7 @@ export default async function ReadinessOverviewPage({
                             <Link
                                 key={c.id}
                                 href={`/t/${tenantSlug}/audits/cycles/${c.id}/readiness`}
-                                className="glass-card p-6 hover:bg-bg-muted/50 transition group"
+                                className={cn(cardVariants(), 'hover:bg-bg-muted/50 transition group')}
                                 id={`readiness-card-${c.id}`}
                             >
                                 <div className="flex items-start gap-section">

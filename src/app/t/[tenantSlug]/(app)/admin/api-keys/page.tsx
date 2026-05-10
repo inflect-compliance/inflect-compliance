@@ -6,7 +6,7 @@
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Card } from '@/components/ui/card';
+import { Card, cardVariants } from '@/components/ui/card';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { VALID_SCOPES } from '@/lib/auth/api-key-auth';
@@ -25,6 +25,7 @@ import { formatDateTime } from '@/lib/format-date';
 import { useToast } from '@/components/ui/hooks/use-toast';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
+import { cn } from '@dub/utils';
 
 // ─── Types ───
 
@@ -547,7 +548,7 @@ export default function ApiKeysPage() {
 
             {/* Create Form */}
             {showCreate && (
-                <div className="glass-card p-6 border border-[var(--brand-default)]/30 space-y-default" id="create-key-form">
+                <div className={cn(cardVariants(), 'border border-[var(--brand-default)]/30 space-y-default')} id="create-key-form">
                     <Heading level={3}>Create API Key</Heading>
 
                     <div>
@@ -601,7 +602,7 @@ export default function ApiKeysPage() {
             )}
 
             {/* Active Keys */}
-            <div className="glass-card overflow-hidden" id="active-keys-card">
+            <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')} id="active-keys-card">
                 <div className="px-4 py-3 border-b border-border-default/50">
                     <Heading level={3}>Active Keys ({activeKeys.length})</Heading>
                 </div>
@@ -617,7 +618,7 @@ export default function ApiKeysPage() {
 
             {/* Inactive/Revoked Keys */}
             {inactiveKeys.length > 0 && (
-                <div className="glass-card overflow-hidden opacity-60" id="inactive-keys-card">
+                <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden opacity-60')} id="inactive-keys-card">
                     <div className="px-4 py-3 border-b border-border-default/50">
                         <Heading level={3}>Revoked / Expired ({inactiveKeys.length})</Heading>
                     </div>

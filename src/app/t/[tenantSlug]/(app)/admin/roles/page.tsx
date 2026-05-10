@@ -27,7 +27,7 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Card } from '@/components/ui/card';
+import { Card, cardVariants } from '@/components/ui/card';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import { getPermissionsForRole, type PermissionSet } from '@/lib/permissions';
 import {
@@ -44,6 +44,7 @@ import { ListPageShell } from '@/components/layout/ListPageShell';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading, Eyebrow } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { cn } from '@dub/utils';
 
 // ─── Types ───
 
@@ -276,7 +277,7 @@ function RoleForm({
                     {showGrid ? 'Hide' : 'Show'} Permission Grid
                 </button>
                 {showGrid && (
-                    <div className="mt-3 glass-card p-4">
+                    <div className={cn(cardVariants({ density: 'compact' }), 'mt-3')}>
                         <div className="flex items-center justify-between mb-3">
                             <Eyebrow>Permissions</Eyebrow>
                             <div className="flex gap-1">
@@ -618,7 +619,7 @@ export default function CustomRolesPage() {
 
                 {/* Create Form */}
                 {showCreate && (
-                    <div className="glass-card p-6 border border-[var(--brand-default)]/30" id="create-role-form">
+                    <div className={cn(cardVariants(), 'border border-[var(--brand-default)]/30')} id="create-role-form">
                         <Heading level={3} className="mb-4">Create Custom Role</Heading>
                         <RoleForm
                             onSubmit={handleCreate}
@@ -632,7 +633,7 @@ export default function CustomRolesPage() {
                 {/* Edit Form (Epic 48 migration — moved from inline-row expansion to
                     above-table panel; matches the create-form pattern) */}
                 {editingRole && (
-                    <div className="glass-card p-6 border border-[var(--brand-default)]/30" id="edit-role-form">
+                    <div className={cn(cardVariants(), 'border border-[var(--brand-default)]/30')} id="edit-role-form">
                         <Heading level={3} className="mb-4">
                             Edit: {editingRole.name}
                         </Heading>
@@ -648,7 +649,7 @@ export default function CustomRolesPage() {
             </ListPageShell.Filters>
 
             <ListPageShell.Body>
-                <div className="glass-card overflow-hidden" id="roles-table-card">
+                <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')} id="roles-table-card">
                     <DataTable
                         fillBody
                         data={visibleRoles}

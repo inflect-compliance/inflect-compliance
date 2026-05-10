@@ -15,6 +15,8 @@ import { TestPlanScheduleSection } from '@/components/TestPlanScheduleSection';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 interface TestPlanDetail {
     id: string;
@@ -194,7 +196,7 @@ export default function TestPlanDetailPage() {
 
             {/* Edit Form */}
             {editing && permissions.canWrite && (
-                <div className="glass-card p-4 space-y-compact animate-fadeIn">
+                <div className={cn(cardVariants({ density: 'compact' }), 'space-y-compact animate-fadeIn')}>
                     <div>
                         <label className="text-xs text-content-muted block mb-1">Name</label>
                         <input className="input w-full" value={editName} onChange={e => setEditName(e.target.value)} id="edit-plan-name" />
@@ -236,31 +238,31 @@ export default function TestPlanDetailPage() {
 
             {/* Info Cards — Polish PR-2: KPIStat primitive. */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
-                <div className="glass-card p-4">
+                <div className={cardVariants({ density: 'compact' })}>
                     <KPIStat value={plan._count?.runs ?? 0} label="Total Runs" />
                 </div>
-                <div className="glass-card p-4">
+                <div className={cardVariants({ density: 'compact' })}>
                     <KPIStat
                         value={plan.runs?.filter(r => r.result === 'PASS').length ?? 0}
                         label="Passed"
                         tone="success"
                     />
                 </div>
-                <div className="glass-card p-4">
+                <div className={cardVariants({ density: 'compact' })}>
                     <KPIStat
                         value={plan.runs?.filter(r => r.result === 'FAIL').length ?? 0}
                         label="Failed"
                         tone="critical"
                     />
                 </div>
-                <div className="glass-card p-4">
+                <div className={cardVariants({ density: 'compact' })}>
                     <KPIStat value={plan._count?.steps ?? 0} label="Steps" />
                 </div>
             </div>
 
             {/* Description */}
             {plan.description && (
-                <div className="glass-card p-4">
+                <div className={cardVariants({ density: 'compact' })}>
                     <Heading level={3} className="mb-2">Description</Heading>
                     <p className="text-sm text-content-muted whitespace-pre-wrap">{plan.description}</p>
                 </div>
@@ -268,7 +270,7 @@ export default function TestPlanDetailPage() {
 
             {/* Steps */}
             {plan.steps.length > 0 && (
-                <div className="glass-card p-4">
+                <div className={cardVariants({ density: 'compact' })}>
                     <Heading level={3} className="mb-3">Test Procedure</Heading>
                     <ol className="space-y-tight">
                         {plan.steps.map((step, i) => (
@@ -289,7 +291,7 @@ export default function TestPlanDetailPage() {
             )}
 
             {/* Runs History */}
-            <div className="glass-card p-4">
+            <div className={cardVariants({ density: 'compact' })}>
                 <div className="flex items-center justify-between mb-3">
                     <Heading level={3}>Test Run History</Heading>
                     {permissions.canWrite && plan.status === 'ACTIVE' && (

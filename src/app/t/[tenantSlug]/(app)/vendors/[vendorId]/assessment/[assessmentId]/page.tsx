@@ -15,6 +15,8 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { RequiredMarker } from '@/components/ui/required-marker';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 const CRIT_BADGE: Record<string, StatusBadgeVariant> = { LOW: 'neutral', MEDIUM: 'warning', HIGH: 'error', CRITICAL: 'error' };
 const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
@@ -172,7 +174,7 @@ export default function AssessmentPage(
                 </div>
             </div>
 
-            <div className="glass-card p-6 space-y-tight">
+            <div className={cn(cardVariants(), 'space-y-tight')}>
                 <div className="flex items-center justify-between">
                     <Heading level={1} id="assessment-title">{assessment.template?.name || 'Assessment'}</Heading>
                     <StatusBadge variant={STATUS_BADGE[assessment.status]} id="assessment-status">{assessment.status}</StatusBadge>
@@ -191,7 +193,7 @@ export default function AssessmentPage(
 
             {/* Questions by section */}
             {Object.entries(sections).map(([section, sQuestions]) => (
-                <div key={section} className="glass-card p-6 space-y-default">
+                <div key={section} className={cn(cardVariants(), 'space-y-default')}>
                     <Heading level={2} className="border-b border-border-default pb-2">{section}</Heading>
                     {sQuestions.map((q, idx) => (
                         <div key={q.id} className="space-y-1.5">

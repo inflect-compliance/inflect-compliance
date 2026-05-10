@@ -6,7 +6,8 @@ import { useParams } from 'next/navigation';
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
-import { Card } from '@/components/ui/card';
+import { Card, cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const ENTITY_ICON: Record<string, AppIconName> = {
@@ -80,7 +81,7 @@ export default function SharedPackPage() {
                 </div>
 
                 {/* Summary */}
-                <div className="glass-card p-4" id="shared-pack-summary">
+                <div className={cardVariants({ density: 'compact' })} id="shared-pack-summary">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-default text-center">
                         {Object.entries(grouped).map(([type, typeItems]) => (
                             <div key={type} className="p-3">
@@ -100,7 +101,7 @@ export default function SharedPackPage() {
                             <span>{type}</span>
                             <span className="text-slate-500">({typeItems.length})</span>
                         </Heading>
-                        <div className="glass-card divide-y divide-slate-700/50">
+                        <div className={cn(cardVariants({ density: 'none' }), 'divide-y divide-slate-700/50')}>
                             {typeItems.map((item: any) => {
                                 let snap: any = {};
                                 try { snap = JSON.parse(item.snapshotJson || '{}'); } catch { /* */ }

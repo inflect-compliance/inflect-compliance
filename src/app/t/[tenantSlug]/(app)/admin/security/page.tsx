@@ -6,7 +6,7 @@
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Card } from '@/components/ui/card';
+import { Card, cardVariants } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import { ShieldCheck, Save, AlertTriangle, CheckCircle, LogOut, Users, UserX } from 'lucide-react';
@@ -15,6 +15,7 @@ import { InfoTooltip } from '@/components/ui/tooltip';
 import { InlineNotice } from '@/components/ui/inline-notice';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { cn } from '@dub/utils';
 
 type MfaPolicy = 'DISABLED' | 'OPTIONAL' | 'REQUIRED';
 
@@ -211,7 +212,7 @@ export default function AdminSecurityPage() {
             )}
 
             {/* MFA Policy Section */}
-            <div className="glass-card p-6 space-y-default">
+            <div className={cn(cardVariants(), 'space-y-default')}>
                 <div>
                     <div className="flex items-center gap-tight">
                         <Heading level={2}>Multi-Factor Authentication Policy</Heading>
@@ -271,7 +272,7 @@ export default function AdminSecurityPage() {
             </div>
 
             {/* Session Settings */}
-            <div className="glass-card p-6 space-y-default">
+            <div className={cn(cardVariants(), 'space-y-default')}>
                 <div>
                     <Heading level={2} className="mb-1">Session Settings</Heading>
                     <p className="text-sm text-content-muted">
@@ -319,7 +320,7 @@ export default function AdminSecurityPage() {
             </div>
 
             {/* ──── Session Management ──── */}
-            <div className="glass-card p-6 space-y-default">
+            <div className={cn(cardVariants(), 'space-y-default')}>
                 <div>
                     <Heading level={2} className="mb-1">Session Management</Heading>
                     <p className="text-sm text-content-muted">

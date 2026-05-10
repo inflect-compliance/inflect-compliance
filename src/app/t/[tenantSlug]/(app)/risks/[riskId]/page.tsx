@@ -47,6 +47,7 @@ import {
 } from '@/components/ui/date-picker/date-utils';
 import { NumberStepper } from '@/components/ui/number-stepper';
 import { cn } from '@dub/utils';
+import { cardVariants } from '@/components/ui/card';
 
 const TraceabilityPanel = dynamic(() => import('@/components/TraceabilityPanel'), {
     loading: () => <SkeletonCard lines={3} />,
@@ -311,7 +312,7 @@ export default function RiskDetailPage() {
             // collapses below the body and the user sees the same
             // vertical flow they had before.
             rail={
-                <div className="glass-card p-6">
+                <div className={cardVariants()}>
                     <Heading level={2} className="mb-3 inline-flex items-center gap-tight text-base">
                         <AppIcon name="tasks" size={16} /> Linked Tasks
                     </Heading>
@@ -325,11 +326,11 @@ export default function RiskDetailPage() {
             }
         >
             {error && (
-                <div className="glass-card p-4 border-border-error text-content-error text-sm">{error}</div>
+                <div className={cn(cardVariants({ density: 'compact' }), 'border-border-error text-content-error text-sm')}>{error}</div>
             )}
 
             {/* Detail / Edit Card */}
-            <div className="glass-card p-6 space-y-default" id="risk-detail">
+            <div className={cn(cardVariants(), 'space-y-default')} id="risk-detail">
                 {editing ? (
                     /* ─── Edit Mode ─── */
                     <>
@@ -470,13 +471,13 @@ export default function RiskDetailPage() {
                         </div>
 
                         <div className="grid grid-cols-3 gap-default">
-                            <div className="glass-card p-4">
+                            <div className={cardVariants({ density: 'compact' })}>
                                 <KPIStat value={risk.likelihood} label="Likelihood" size="sm" />
                             </div>
-                            <div className="glass-card p-4">
+                            <div className={cardVariants({ density: 'compact' })}>
                                 <KPIStat value={risk.impact} label="Impact" size="sm" />
                             </div>
-                            <div className="glass-card p-4">
+                            <div className={cardVariants({ density: 'compact' })}>
                                 <KPIStat
                                     value={risk.inherentScore}
                                     label="Inherent Score"
@@ -525,7 +526,7 @@ export default function RiskDetailPage() {
             </div>
 
             {/* Traceability */}
-            <div className="glass-card p-6">
+            <div className={cardVariants()}>
                 {/* Roadmap-3 PR-5 — `<CardHeader>` replaces the
                     inline level=2 heading. Card heading level
                     drops to 3 (the canonical for cards inside
@@ -553,7 +554,7 @@ export default function RiskDetailPage() {
               * the typed-in owner via the Combobox); the eventual
               * tenant-roster fetch is a bounded follow-up that will
               * wire admin/editor members through. */}
-            <div className="glass-card p-6">
+            <div className={cardVariants()}>
                 <RiskTreatmentPlanCard
                     tenantSlug={tenant.tenantSlug}
                     riskId={riskId}

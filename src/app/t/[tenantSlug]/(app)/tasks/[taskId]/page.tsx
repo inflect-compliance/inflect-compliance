@@ -26,6 +26,8 @@ import {
     TASK_STATUS_VARIANT,
     TASK_SEVERITY_VARIANT,
 } from '@/app-layer/domain/entity-status-mapping';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 // Polish PR-1 — STATUS_BADGE / SEVERITY_BADGE moved to shared
 // domain mapping (TASK_STATUS_VARIANT / TASK_SEVERITY_VARIANT).
@@ -377,7 +379,7 @@ export default function TaskDetailPage() {
         >
             {/* Assignment controls */}
             {permissions.canWrite && (
-                <div className="glass-card p-4">
+                <div className={cardVariants({ density: 'compact' })}>
                     <div className="flex items-center gap-compact">
                         <span className="text-sm text-content-muted">Assignee:</span>
                         <span className="text-sm text-content-emphasis font-medium" id="task-assignee">
@@ -405,7 +407,7 @@ export default function TaskDetailPage() {
 
             {/* Overview Tab */}
             {tab === 'overview' && (
-                <div className="glass-card p-6 space-y-default">
+                <div className={cn(cardVariants(), 'space-y-default')}>
                     <div className="grid grid-cols-2 gap-section">
                         <div className="col-span-2">
                             <span className="text-xs text-content-subtle uppercase">Description</span>
@@ -493,7 +495,7 @@ export default function TaskDetailPage() {
                         </div>
                     )}
                     {showLinkForm && permissions.canWrite && (
-                        <form onSubmit={addLink} className="glass-card p-4 space-y-compact">
+                        <form onSubmit={addLink} className={cn(cardVariants({ density: 'compact' }), 'space-y-compact')}>
                             <div className="grid grid-cols-3 gap-compact">
                                 <Combobox hideSearch id="link-entity-type" selected={ENTITY_TYPE_CB_OPTIONS.find(o => o.value === linkEntityType) ?? null} setSelected={(opt) => setLinkEntityType(opt?.value ?? linkEntityType)} options={ENTITY_TYPE_CB_OPTIONS} matchTriggerWidth />
                                 <input type="text" className="input" placeholder="Entity ID *" value={linkEntityId} onChange={e => setLinkEntityId(e.target.value)} required id="link-entity-id" />
@@ -504,7 +506,7 @@ export default function TaskDetailPage() {
                             </Button>
                         </form>
                     )}
-                    <div className="glass-card overflow-hidden">
+                    <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
                         {linksLoading ? (
                             <div className="p-4 space-y-tight">
                                 {Array.from({ length: 3 }).map((_, i) => (
@@ -545,7 +547,7 @@ export default function TaskDetailPage() {
             {tab === 'comments' && (
                 <div className="space-y-default">
                     {canComment && (
-                        <form onSubmit={addComment} className="glass-card p-4 space-y-compact">
+                        <form onSubmit={addComment} className={cn(cardVariants({ density: 'compact' }), 'space-y-compact')}>
                             <textarea
                                 className="input w-full"
                                 rows={3}
@@ -560,7 +562,7 @@ export default function TaskDetailPage() {
                             </Button>
                         </form>
                     )}
-                    <div className="glass-card overflow-hidden" id="comments-list">
+                    <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')} id="comments-list">
                         {commentsLoading ? (
                             <div className="p-4 space-y-compact">
                                 {Array.from({ length: 3 }).map((_, i) => (
@@ -591,7 +593,7 @@ export default function TaskDetailPage() {
 
             {/* Activity Tab */}
             {tab === 'activity' && (
-                <div className="glass-card overflow-hidden" id="activity-list">
+                <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')} id="activity-list">
                     {activityLoading ? (
                         <div className="p-4 space-y-compact">
                             {Array.from({ length: 4 }).map((_, i) => (

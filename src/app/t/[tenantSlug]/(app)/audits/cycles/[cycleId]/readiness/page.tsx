@@ -9,6 +9,8 @@ import { buttonVariants } from '@/components/ui/button-variants';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
     const r = (size - 8) / 2;
@@ -68,7 +70,7 @@ export default function CycleReadinessPage() {
             </div>
 
             {/* Score + Breakdown */}
-            <div className="glass-card p-6">
+            <div className={cardVariants()}>
                 <div className="flex items-start gap-page">
                     <div className="flex-shrink-0 text-center">
                         <ScoreRing score={result.score} />
@@ -105,7 +107,7 @@ export default function CycleReadinessPage() {
 
             {/* Recommendations */}
             {result.recommendations?.length > 0 && (
-                <div className="glass-card p-6" id="recommendations">
+                <div className={cardVariants()} id="recommendations">
                     <Heading level={3} className="mb-3 inline-flex items-center gap-tight"><AppIcon name="info" size={16} /> Recommended Next Actions</Heading>
                     <div className="space-y-tight">
                         {result.recommendations.map((r: string, i: number) => (
@@ -122,7 +124,7 @@ export default function CycleReadinessPage() {
             {result.gaps?.length > 0 && (
                 <div className="space-y-compact" id="gaps-section">
                     <Heading level={3}>Top Gaps ({result.gaps.length})</Heading>
-                    <div className="glass-card divide-y divide-border-default/50">
+                    <div className={cn(cardVariants({ density: 'none' }), 'divide-y divide-border-default/50')}>
                         {result.gaps.map((g: any, i: number) => (
                             <div key={i} className="p-3 flex items-center justify-between text-sm">
                                 <div className="flex items-center gap-compact min-w-0">
@@ -140,7 +142,7 @@ export default function CycleReadinessPage() {
             )}
 
             {/* Exports */}
-            <div className="glass-card p-6" id="exports-section">
+            <div className={cardVariants()} id="exports-section">
                 <Heading level={3} className="mb-3 inline-flex items-center gap-tight"><AppIcon name="export" size={16} /> Exports</Heading>
                 <div className="flex flex-wrap gap-tight">
                     <a href={apiUrl(`/audits/cycles/${cycleId}/readiness?action=export-json`)}

@@ -4,6 +4,8 @@ import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Heading } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export default function DiffPage() {
@@ -61,28 +63,28 @@ export default function DiffPage() {
             </div>
 
             {!fromKey && (
-                <div className="glass-card text-center py-8 text-content-muted">
+                <div className={cn(cardVariants({ density: 'none' }), 'text-center py-8 text-content-muted')}>
                     <p>Specify a <code className="text-[var(--brand-default)]">?from=FRAMEWORK_KEY</code> query parameter to compare.</p>
                     <p className="text-xs mt-2 text-content-subtle">This page compares the &quot;from&quot; framework to this framework to show added/removed/changed requirements.</p>
                 </div>
             )}
 
-            {error && <div className="glass-card text-content-error">{error}</div>}
+            {error && <div className={cn(cardVariants({ density: 'none' }), 'text-content-error')}>{error}</div>}
 
             {diff && (
                 <>
                     {/* Summary cards — Polish PR-2: KPIStat primitive. */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-default" id="diff-summary">
-                        <div className="glass-card">
+                        <div className={cardVariants({ density: 'none' })}>
                             <KPIStat value={diff.summary.added} label="Added" tone="success" />
                         </div>
-                        <div className="glass-card">
+                        <div className={cardVariants({ density: 'none' })}>
                             <KPIStat value={diff.summary.removed} label="Removed" tone="critical" />
                         </div>
-                        <div className="glass-card">
+                        <div className={cardVariants({ density: 'none' })}>
                             <KPIStat value={diff.summary.changed} label="Changed" tone="attention" />
                         </div>
-                        <div className="glass-card">
+                        <div className={cardVariants({ density: 'none' })}>
                             <KPIStat
                                 value={diff.summary.unmappedNewRequirements}
                                 label="New Unmapped"
@@ -109,7 +111,7 @@ export default function DiffPage() {
                     {/* Content */}
                     <div className="space-y-tight" id="diff-content">
                         {activeTab === 'added' && diff.added.map((r: any, i: number) => (
-                            <div key={i} className="glass-card flex items-center gap-compact">
+                            <div key={i} className={cn(cardVariants({ density: 'none' }), 'flex items-center gap-compact')}>
                                 <span className="text-content-success text-lg font-bold">+</span>
                                 <code className="text-xs text-[var(--brand-default)] font-mono w-28 flex-shrink-0">{r.code}</code>
                                 <span className="text-sm text-content-default">{r.title}</span>
@@ -118,7 +120,7 @@ export default function DiffPage() {
                         ))}
 
                         {activeTab === 'removed' && diff.removed.map((r: any, i: number) => (
-                            <div key={i} className="glass-card flex items-center gap-compact">
+                            <div key={i} className={cn(cardVariants({ density: 'none' }), 'flex items-center gap-compact')}>
                                 <span className="text-content-error text-lg font-bold">−</span>
                                 <code className="text-xs text-content-error/60 font-mono w-28 flex-shrink-0 line-through">{r.code}</code>
                                 <span className="text-sm text-content-subtle line-through">{r.title}</span>
@@ -127,7 +129,7 @@ export default function DiffPage() {
                         ))}
 
                         {activeTab === 'changed' && diff.changed.map((r: any, i: number) => (
-                            <div key={i} className="glass-card">
+                            <div key={i} className={cardVariants({ density: 'none' })}>
                                 <div className="flex items-center gap-compact mb-2">
                                     <span className="text-content-warning text-lg font-bold">~</span>
                                     <code className="text-xs text-[var(--brand-default)] font-mono">{r.code}</code>
@@ -154,7 +156,7 @@ export default function DiffPage() {
                         ))}
 
                         {diff[activeTab].length === 0 && (
-                            <div className="glass-card text-center py-6 text-content-subtle">
+                            <div className={cn(cardVariants({ density: 'none' }), 'text-center py-6 text-content-subtle')}>
                                 No {activeTab} requirements.
                             </div>
                         )}

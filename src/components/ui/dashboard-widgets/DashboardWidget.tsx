@@ -35,7 +35,9 @@
  */
 
 import type { ReactNode } from 'react';
+import { cn } from '@dub/utils';
 import { Heading } from '@/components/ui/typography';
+import { cardVariants } from '@/components/ui/card';
 
 export interface DashboardWidgetProps {
     /** Header headline. Optional — when omitted, no header row is rendered. */
@@ -89,12 +91,11 @@ export function DashboardWidget({
         <section
             data-widget-id={dataWidgetId}
             id={id}
-            className={[
-                'glass-card relative flex h-full flex-col overflow-hidden',
-                className ?? '',
-            ]
-                .filter(Boolean)
-                .join(' ')}
+            className={cn(
+                cardVariants({ density: 'none' }),
+                'relative flex h-full flex-col overflow-hidden',
+                className,
+            )}
             // The widget is an a11y-meaningful section IF it has a
             // title; otherwise it's a layout container and the
             // section role is dropped to keep the landmark tree clean.

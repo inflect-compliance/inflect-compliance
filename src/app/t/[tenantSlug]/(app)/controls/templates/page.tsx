@@ -16,6 +16,8 @@ import { DataTable, createColumns } from '@/components/ui/table';
 import { InlineNotice } from '@/components/ui/inline-notice';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 export default function ControlTemplatesPage() {
     const apiUrl = useTenantApiUrl();
@@ -115,7 +117,7 @@ export default function ControlTemplatesPage() {
             )}
 
             {/* Filters + Install bar */}
-            <div className="glass-card p-4">
+            <div className={cardVariants({ density: 'compact' })}>
                 <div className="flex flex-wrap gap-compact items-center justify-between">
                     <div className="flex gap-compact items-center flex-1">
                         <input
@@ -141,7 +143,7 @@ export default function ControlTemplatesPage() {
             </div>
 
             {/* Template list */}
-            <div className="glass-card overflow-hidden">
+            <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
                 {loading ? (
                     <div className="p-12 text-center text-content-subtle animate-pulse">Loading templates...</div>
                 ) : filtered.length === 0 ? (

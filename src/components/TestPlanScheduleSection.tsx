@@ -31,6 +31,8 @@ import { Button } from '@/components/ui/button';
 import { useTenantApiUrl } from '@/lib/tenant-context-provider';
 import { formatDate } from '@/lib/format-date';
 import { Heading } from '@/components/ui/typography';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 // ─── Cadence catalog ───────────────────────────────────────────────
 //
@@ -230,7 +232,7 @@ export function TestPlanScheduleSection({
 
     return (
         <div
-            className="glass-card p-4 space-y-compact"
+            className={cn(cardVariants({ density: 'compact' }), 'space-y-compact')}
             id="test-plan-schedule-section"
             data-testid="test-plan-schedule-section"
         >

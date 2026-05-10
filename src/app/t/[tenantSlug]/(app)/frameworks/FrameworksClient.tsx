@@ -27,6 +27,8 @@ import {
     ShieldCheck,
     type LucideIcon,
 } from 'lucide-react';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 import { CardList } from '@/components/ui/card-list';
 import { ProgressBar } from '@/components/ui/progress-bar';
@@ -275,7 +277,7 @@ export function FrameworksClient({
             )}
 
             {rows.length === 0 && (
-                <div className="glass-card text-center py-12">
+                <div className={cn(cardVariants({ density: 'none' }), 'text-center py-12')}>
                     <p className="text-content-subtle">
                         No frameworks available. Run the seed to populate.
                     </p>

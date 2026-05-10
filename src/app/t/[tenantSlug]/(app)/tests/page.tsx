@@ -17,6 +17,8 @@ import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-bad
 import { Heading } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 interface TestPlanSummary {
     id: string;
@@ -117,16 +119,16 @@ export default function TestsRollupPage() {
             <ListPageShell.Filters className="space-y-section">
                 {/* Stats — Polish PR-2: KPIStat primitive. */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
-                <div className="glass-card p-4 cursor-pointer hover:ring-1 hover:ring-[color:var(--ring)] transition-colors duration-150 ease-out" onClick={() => setFilter('all')}>
+                <div className={cn(cardVariants({ density: 'compact' }), 'cursor-pointer hover:ring-1 hover:ring-[color:var(--ring)] transition-colors duration-150 ease-out')} onClick={() => setFilter('all')}>
                     <KPIStat value={plans.length} label="Total Plans" />
                 </div>
-                <div className="glass-card p-4 cursor-pointer hover:ring-1 hover:ring-[color:var(--ring)] transition-colors duration-150 ease-out" onClick={() => setFilter('due')}>
+                <div className={cn(cardVariants({ density: 'compact' }), 'cursor-pointer hover:ring-1 hover:ring-[color:var(--ring)] transition-colors duration-150 ease-out')} onClick={() => setFilter('due')}>
                     <KPIStat value={duePlans.length} label="Overdue" tone={duePlans.length > 0 ? 'critical' : 'success'} />
                 </div>
-                <div className="glass-card p-4 cursor-pointer hover:ring-1 hover:ring-[color:var(--ring)] transition-colors duration-150 ease-out" onClick={() => setFilter('failed')}>
+                <div className={cn(cardVariants({ density: 'compact' }), 'cursor-pointer hover:ring-1 hover:ring-[color:var(--ring)] transition-colors duration-150 ease-out')} onClick={() => setFilter('failed')}>
                     <KPIStat value={failedPlans.length} label="Last Failed" tone={failedPlans.length > 0 ? 'critical' : 'success'} />
                 </div>
-                <div className="glass-card p-4 cursor-pointer hover:ring-1 hover:ring-[color:var(--ring)] transition-colors duration-150 ease-out" onClick={() => setFilter('passed')}>
+                <div className={cn(cardVariants({ density: 'compact' }), 'cursor-pointer hover:ring-1 hover:ring-[color:var(--ring)] transition-colors duration-150 ease-out')} onClick={() => setFilter('passed')}>
                     <KPIStat value={plans.filter(p => getLastResult(p) === 'PASS').length} label="Last Passed" tone="success" />
                 </div>
             </div>

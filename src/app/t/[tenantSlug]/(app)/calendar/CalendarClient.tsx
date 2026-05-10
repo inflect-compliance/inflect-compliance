@@ -18,6 +18,8 @@ import { useQuery } from '@tanstack/react-query';
 import * as React from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalIcon } from 'lucide-react';
 import Link from 'next/link';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 import { buttonVariants } from '@/components/ui/button-variants';
 import { CalendarHeatmap } from '@/components/ui/CalendarHeatmap';
@@ -200,7 +202,7 @@ export function CalendarClient({
             {/* Range navigation (month view only) */}
             {view === 'month' && (
                 <div
-                    className="flex items-center justify-between glass-card px-4 py-2"
+                    className={cn(cardVariants({ density: 'none' }), 'flex items-center justify-between px-4 py-2')}
                     data-testid="calendar-month-nav"
                 >
                     <button
@@ -238,7 +240,7 @@ export function CalendarClient({
 
             {/* Body — view switch */}
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-section">
-                <div className="glass-card p-4">
+                <div className={cardVariants({ density: 'compact' })}>
                     {events.length === 0 && !calQuery.isLoading ? (
                         <EmptyState
                             variant="no-records"
@@ -270,7 +272,7 @@ export function CalendarClient({
 
                 {/* Side panel — selected day's events */}
                 <aside
-                    className="glass-card p-4"
+                    className={cardVariants({ density: 'compact' })}
                     data-testid="calendar-side-panel"
                 >
                     {selectedDate ? (

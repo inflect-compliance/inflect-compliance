@@ -25,6 +25,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { cardVariants } from '@/components/ui/card';
 
 interface TemplateRow {
     id: string;
@@ -114,7 +115,7 @@ export function VendorTemplatesIndexClient() {
             </header>
 
             {permissions.canWrite && (
-                <div className="glass-card p-4">
+                <div className={cardVariants({ density: 'compact' })}>
                     <Heading level={3} className="mb-3">
                         Create a new template
                     </Heading>
@@ -174,7 +175,7 @@ export function VendorTemplatesIndexClient() {
                 </div>
             )}
 
-            <div className="glass-card p-4">
+            <div className={cardVariants({ density: 'compact' })}>
                 <Heading level={3} className="mb-3">
                     All templates ({items?.length ?? 0})
                 </Heading>

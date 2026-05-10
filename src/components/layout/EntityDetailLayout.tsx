@@ -35,6 +35,7 @@
  */
 
 import { type ReactNode } from 'react';
+import { cardVariants } from '@/components/ui/card';
 
 import { cn } from '@dub/utils';
 import { type BreadcrumbItem } from '@/components/ui/breadcrumbs';
@@ -412,7 +413,7 @@ function DetailLoadingSkeleton({ tabCount }: { tabCount: number }) {
                     />
                 ))}
             </div>
-            <div className="glass-card p-6 space-y-default">
+            <div className={cn(cardVariants(), 'space-y-default')}>
                 <div className="grid grid-cols-2 gap-section">
                     {Array.from({ length: 6 }).map((_, i) => (
                         <div key={i} className="space-y-1">

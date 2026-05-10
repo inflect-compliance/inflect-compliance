@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/status-breakdown';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
-import { Card } from '@/components/ui/card';
+import { Card, cardVariants } from '@/components/ui/card';
 import { KPIStat } from '@/components/ui/metric';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { SkeletonDashboard } from '@/components/ui/skeleton';
@@ -105,7 +105,7 @@ export default function ControlsDashboard() {
         >
             {/* Stat Cards Row — Polish PR-2: KPIStat primitive. */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-default" id="dashboard-stats">
-                <div className="glass-card p-4">
+                <div className={cardVariants({ density: 'compact' })}>
                     <KPIStat
                         id="implementation-progress"
                         value={`${data.implementationProgress}%`}
@@ -121,7 +121,7 @@ export default function ControlsDashboard() {
                         className="mt-2"
                     />
                 </div>
-                <div className="glass-card p-4">
+                <div className={cardVariants({ density: 'compact' })}>
                     <KPIStat
                         id="overdue-tasks"
                         value={data.overdueTasks}
@@ -130,7 +130,7 @@ export default function ControlsDashboard() {
                         description="tasks past due date"
                     />
                 </div>
-                <div className="glass-card p-4">
+                <div className={cardVariants({ density: 'compact' })}>
                     <KPIStat
                         id="due-soon"
                         value={data.controlsDueSoon}
@@ -139,7 +139,7 @@ export default function ControlsDashboard() {
                         description="within next 30 days"
                     />
                 </div>
-                <div className="glass-card p-4">
+                <div className={cardVariants({ density: 'compact' })}>
                     <KPIStat
                         value={data.applicabilityDistribution.applicable}
                         label="Applicability"

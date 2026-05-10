@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { Heading } from '@/components/ui/typography';
-import { Card } from '@/components/ui/card';
+import { Card, cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 type ParsedRow = {
     title: string;
@@ -139,7 +140,7 @@ export default function RiskImportPage() {
             </div>
 
             {/* Format info */}
-            <div className="glass-card p-4 border-border-emphasis/50">
+            <div className={cn(cardVariants({ density: 'compact' }), 'border-border-emphasis/50')}>
                 <Heading level={3} className="mb-2">{t('csvFormat')}</Heading>
                 <p className="text-xs text-content-muted">{t('csvDesc')}</p>
                 <pre className="mt-2 text-xs text-content-subtle bg-bg-page/50 p-2 rounded overflow-x-auto">
@@ -160,7 +161,7 @@ export default function RiskImportPage() {
 
             {/* Preview */}
             {rows.length > 0 && !result && (
-                <div className="glass-card overflow-hidden">
+                <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
                     <div className="p-3 border-b border-border-default/50 flex justify-between items-center">
                         <span className="text-sm font-medium">{t('risksToImport', { count: rows.length })}</span>
                         <Button variant="primary" size="sm" onClick={doImport} disabled={importing} id="import-btn">
@@ -203,12 +204,12 @@ export default function RiskImportPage() {
                 catches up. */}
             {/* eslint-disable-next-line react-hooks/refs */}
             {rows.length === 0 && fileRef.current?.files?.length ? (
-                <div className="glass-card p-4 text-sm text-content-warning">{t('noValidRows')}</div>
+                <div className={cn(cardVariants({ density: 'compact' }), 'text-sm text-content-warning')}>{t('noValidRows')}</div>
             ) : null}
 
             {/* Result */}
             {result && (
-                <div className="glass-card p-6 space-y-default">
+                <div className={cn(cardVariants(), 'space-y-default')}>
                     <p className="text-lg font-semibold text-content-success">
                         {t('importComplete', { created: result.created, total: rows.length })}
                     </p>

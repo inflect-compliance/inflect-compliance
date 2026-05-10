@@ -53,6 +53,8 @@ import type {
 } from '@/lib/framework-tree/types';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 // ─── Coverage shapes (subset of the existing coverage usecase output) ──
 
@@ -228,7 +230,7 @@ export function FrameworkExplorer({
     // ── Empty state for the tree side. ────────────────────────────────
     if (tree.nodes.length === 0) {
         return (
-            <div className="glass-card text-center py-10 text-content-subtle" id="framework-explorer-empty">
+            <div className={cn(cardVariants({ density: 'none' }), 'text-center py-10 text-content-subtle')} id="framework-explorer-empty">
                 This framework has no requirements yet.
             </div>
         );
@@ -240,7 +242,7 @@ export function FrameworkExplorer({
             id="framework-explorer"
         >
             {/* ── Tree pane ── */}
-            <div className="glass-card flex flex-col min-h-[24rem]">
+            <div className={cn(cardVariants({ density: 'none' }), 'flex flex-col min-h-[24rem]')}>
                 <div className="flex flex-wrap items-center gap-tight mb-3">
                     <input
                         type="text"
@@ -313,7 +315,7 @@ export function FrameworkExplorer({
             </div>
 
             {/* ── Detail pane ── */}
-            <div className="glass-card min-h-[24rem]" id="framework-explorer-detail">
+            <div className={cn(cardVariants({ density: 'none' }), 'min-h-[24rem]')} id="framework-explorer-detail">
                 {!selectedNode ? (
                     <div className="h-full flex flex-col items-center justify-center text-center text-content-subtle px-6 py-10">
                         <FileText className="w-8 h-8 mb-2 opacity-60" aria-hidden="true" />

@@ -65,8 +65,12 @@ describe("v2-PR-8 MetricCard chassis primitive contract", () => {
         }
     });
 
-    it("renders the canonical glass-card + hover-border frame", () => {
-        expect(src).toMatch(/glass-card\s+p-4/);
+    it("renders the canonical card-compact + hover-border frame", () => {
+        // Roadmap-5 PR-1 — the glass-card literal moved into the
+        // Card primitive. MetricCard now composes
+        // `cardVariants({ density: 'compact' })` + the same hover
+        // affordance.
+        expect(src).toMatch(/cardVariants\(\{\s*density:\s*['"]compact['"]\s*\}\)/);
         expect(src).toMatch(/hover:border-border-emphasis/);
         expect(src).toMatch(/transition-colors\s+duration-150\s+ease-out/);
     });

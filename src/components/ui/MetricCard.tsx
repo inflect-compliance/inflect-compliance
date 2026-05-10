@@ -38,6 +38,7 @@
 
 import * as React from "react";
 import { cn } from "@dub/utils";
+import { cardVariants } from "./card";
 
 export interface MetricCardProps {
     /**
@@ -101,7 +102,8 @@ export function MetricCard({
             id={id}
             data-metric-card
             className={cn(
-                "glass-card p-4 hover:border-border-emphasis transition-colors duration-150 ease-out",
+                cardVariants({ density: 'compact' }),
+                "hover:border-border-emphasis transition-colors duration-150 ease-out",
                 className,
             )}
         >

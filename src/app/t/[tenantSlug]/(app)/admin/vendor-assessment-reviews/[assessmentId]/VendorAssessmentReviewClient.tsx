@@ -31,6 +31,8 @@ import { SkeletonDetailPage } from '@/components/ui/skeleton';
 import { formatDate } from '@/lib/format-date';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 interface Question {
     id: string;
@@ -331,7 +333,7 @@ export function VendorAssessmentReviewClient({
                 view.status === 'SENT' ||
                 view.status === 'IN_PROGRESS') && (
                 <div
-                    className="glass-card p-6"
+                    className={cardVariants()}
                     data-testid="not-yet-submitted-state"
                 >
                     <p className="text-sm text-content-emphasis">
@@ -349,7 +351,7 @@ export function VendorAssessmentReviewClient({
                 view.status === 'REVIEWED' ||
                 view.status === 'CLOSED') && (
                 <div
-                    className="glass-card p-4 grid grid-cols-2 md:grid-cols-5 gap-default"
+                    className={cn(cardVariants({ density: 'compact' }), 'grid grid-cols-2 md:grid-cols-5 gap-default')}
                     data-testid="scoring-panel"
                 >
                     <Stat
@@ -391,7 +393,7 @@ export function VendorAssessmentReviewClient({
                 view.sections.map((s) => (
                     <div
                         key={s.id}
-                        className="glass-card p-4"
+                        className={cardVariants({ density: 'compact' })}
                         data-testid={`section-${s.id}`}
                     >
                         <Heading level={2} className="mb-3">
@@ -528,7 +530,7 @@ export function VendorAssessmentReviewClient({
             {/* Final rating + reviewer notes + actions */}
             {(view.status === 'SUBMITTED' || view.status === 'REVIEWED') && (
                 <div
-                    className="glass-card p-4 space-y-compact"
+                    className={cn(cardVariants({ density: 'compact' }), 'space-y-compact')}
                     data-testid="final-rating-panel"
                 >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-compact">
@@ -616,7 +618,7 @@ export function VendorAssessmentReviewClient({
 
             {view.status === 'CLOSED' && (
                 <div
-                    className="glass-card p-4 text-sm text-content-muted"
+                    className={cn(cardVariants({ density: 'compact' }), 'text-sm text-content-muted')}
                     data-testid="closed-banner"
                 >
                     Closed{view.closedAt ? ` ${formatDate(view.closedAt)}` : ''}.

@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 interface TestPlan {
     id: string;
@@ -128,7 +130,7 @@ export default function TestPlansPanel({ controlId }: { controlId: string }) {
             </div>
 
             {showForm && (
-                <div className="glass-card p-4 space-y-compact animate-fadeIn">
+                <div className={cn(cardVariants({ density: 'compact' }), 'space-y-compact animate-fadeIn')}>
                     <div>
                         <label className="text-xs text-content-muted block mb-1">Plan Name *</label>
                         <input

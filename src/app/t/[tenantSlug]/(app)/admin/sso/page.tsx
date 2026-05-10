@@ -6,7 +6,7 @@
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Card } from '@/components/ui/card';
+import { Card, cardVariants } from '@/components/ui/card';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import { Shield, CheckCircle, XCircle, AlertTriangle, ExternalLink, Trash2, Save, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ import { InlineNotice } from '@/components/ui/inline-notice';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { cn } from '@dub/utils';
 
 interface SsoProvider {
     id: string;
@@ -327,7 +328,7 @@ export default function SsoAdminPage() {
             )}
 
             {/* Config form */}
-            <div className="glass-card p-6">
+            <div className={cardVariants()}>
                 <Heading level={2} className="mb-4">{tab} Configuration</Heading>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-default">
@@ -555,7 +556,7 @@ export default function SsoAdminPage() {
             </div>
 
             {/* Info card */}
-            <div className="glass-card p-4 border border-border-default/50">
+            <div className={cn(cardVariants({ density: 'compact' }), 'border border-border-default/50')}>
                 <Heading level={3} className="mb-2">How SSO works</Heading>
                 <ul className="text-xs text-content-muted space-y-1.5">
                     <li>• Users must already have an account and tenant membership to login via SSO</li>

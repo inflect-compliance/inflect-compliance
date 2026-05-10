@@ -21,6 +21,8 @@ import { ArrowLeft, Search } from 'lucide-react';
 import { SankeyChart } from '@/components/ui/SankeyChart';
 import type { TraceabilityGraph } from '@/lib/traceability-graph/types';
 import { Heading } from '@/components/ui/typography';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 export interface ControlsSankeyClientProps {
     initialGraph: TraceabilityGraph;
@@ -58,7 +60,7 @@ export function ControlsSankeyClient({
             {/* Search filter — narrows the underlying graph before
                 the Sankey projects it. Useful when a tenant has
                 hundreds of assets/risks/controls. */}
-            <div className="glass-card p-3" id="controls-sankey-filters">
+            <div className={cn(cardVariants({ density: 'none' }), 'p-3')} id="controls-sankey-filters">
                 <div className="relative">
                     <Search
                         className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-content-subtle"

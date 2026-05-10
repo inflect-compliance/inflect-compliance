@@ -9,6 +9,8 @@ import { TruncationBanner } from '@/components/ui/TruncationBanner';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
@@ -148,7 +150,7 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
             <TruncationBanner truncated={truncated} />
 
             {showForm && (
-                <form onSubmit={createAudit} className="glass-card p-6 space-y-default animate-fadeIn" id="audit-form">
+                <form onSubmit={createAudit} className={cn(cardVariants(), 'space-y-default animate-fadeIn')} id="audit-form">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-default">
                         <div><label className="input-label">{t.auditTitle} *</label><input className="input" required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} id="audit-title-input" /></div>
                         <div><label className="input-label">{t.auditors}</label><input className="input" value={form.auditors} onChange={e => setForm(f => ({ ...f, auditors: e.target.value }))} /></div>
@@ -162,7 +164,7 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
                 <div className="space-y-tight">
                     {audits.map((a: any) => (
                         <button key={a.id} onClick={() => loadAudit(a.id)}
-                            className={`w-full text-left glass-card p-4 hover:bg-bg-muted/50 transition ${selected?.id === a.id ? 'ring-2 ring-[var(--ring)]' : ''}`}>
+                            className={cn(cardVariants({ density: 'compact' }), 'w-full text-left hover:bg-bg-muted/50 transition', selected?.id === a.id && 'ring-2 ring-[var(--ring)]')}>
                             <div className="flex items-center justify-between">
                                 <span className="font-medium text-sm">{a.title}</span>
                                 <StatusBadge variant={STATUS_BADGE[a.status]}>{statusLabel(a.status)}</StatusBadge>
@@ -174,7 +176,7 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
 
                 <div className="lg:col-span-2">
                     {selected ? (
-                        <div className="glass-card p-6 animate-slideIn space-y-default">
+                        <div className={cn(cardVariants(), 'animate-slideIn space-y-default')}>
                                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-compact">
                                 <Heading level={2}>{selected.title}</Heading>
                                 <div className="flex flex-wrap gap-tight">
@@ -224,7 +226,7 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
                             )}
                         </div>
                     ) : (
-                        <div className="glass-card p-12 text-center text-content-subtle">{t.selectAudit}</div>
+                        <div className={cn(cardVariants({ density: 'none' }), 'p-12 text-center text-content-subtle')}>{t.selectAudit}</div>
                     )}
                 </div>
             </div>

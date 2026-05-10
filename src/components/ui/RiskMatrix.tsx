@@ -60,6 +60,8 @@ import {
 import { RiskMatrixLegend } from '@/components/ui/RiskMatrixLegend';
 import type { RiskMatrixConfigShape } from '@/lib/risk-matrix/types';
 import { Heading } from '@/components/ui/typography';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 // ─── Public types ───────────────────────────────────────────────────
 
@@ -191,7 +193,7 @@ export function RiskMatrix({
             data-testid={dataTestId}
             data-swap-axes={swapAxes ? 'true' : 'false'}
             data-mode={mode}
-            className={`glass-card p-6 ${className}`.trim()}
+            className={cn(cardVariants(), className)}
         >
             {showHeader && (
                 <div className="mb-3 flex items-center justify-between">

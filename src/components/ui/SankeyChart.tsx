@@ -25,6 +25,7 @@
 import { useMemo, useState } from 'react';
 import { cn } from '@dub/utils';
 import Link from 'next/link';
+import { cardVariants } from '@/components/ui/card';
 import {
     type LaidOutLink,
     type LaidOutNode,
@@ -98,7 +99,8 @@ export function SankeyChart({
                 data-sankey-chart="true"
                 data-sankey-empty="true"
                 className={cn(
-                    'glass-card text-center py-10 text-content-subtle',
+                    cardVariants({ density: 'none' }),
+                    'text-center py-10 text-content-subtle',
                     className,
                 )}
             >
@@ -115,7 +117,8 @@ export function SankeyChart({
                 data-sankey-chart="true"
                 data-sankey-no-links="true"
                 className={cn(
-                    'glass-card text-center py-10 text-content-subtle',
+                    cardVariants({ density: 'none' }),
+                    'text-center py-10 text-content-subtle',
                     className,
                 )}
             >
@@ -131,7 +134,8 @@ export function SankeyChart({
             data-sankey-node-count={layout.nodes.length}
             data-sankey-link-count={layout.links.length}
             className={cn(
-                'glass-card p-2 overflow-x-auto',
+                cardVariants({ density: 'none' }),
+                'p-2 overflow-x-auto',
                 className,
             )}
         >

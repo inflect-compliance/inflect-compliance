@@ -39,6 +39,8 @@ import {
 } from '@/components/ui/date-picker/date-utils';
 import dynamic from 'next/dynamic';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 const TraceabilityPanel = dynamic(() => import('@/components/TraceabilityPanel'), {
     loading: () => <SkeletonCard lines={3} />,
@@ -884,7 +886,7 @@ export default function ControlDetailPage() {
             )}
             {/* Applicability modal */}
             {showApplicability && permissions.canWrite && (
-                <div className="glass-card p-4 space-y-compact">
+                <div className={cn(cardVariants({ density: 'compact' }), 'space-y-compact')}>
                     <Heading level={3}>Set Applicability</Heading>
                     <div className="flex gap-default">
                         <label className="flex items-center gap-tight text-sm text-content-default">
@@ -907,7 +909,7 @@ export default function ControlDetailPage() {
 
             {/* Tab content — tab bar is rendered by EntityDetailLayout */}
             {tab === 'overview' && (
-                <div className="glass-card p-6 space-y-default">
+                <div className={cn(cardVariants(), 'space-y-default')}>
                     {/* Overview header with Edit button */}
                     {permissions.canWrite && (
                         <div className="flex justify-end -mt-1 -mb-2">
@@ -1101,7 +1103,7 @@ export default function ControlDetailPage() {
                         </div>
                     )}
                     {showTaskForm && permissions.canWrite && (
-                        <form onSubmit={createTask} className="glass-card p-4 space-y-compact">
+                        <form onSubmit={createTask} className={cn(cardVariants({ density: 'compact' }), 'space-y-compact')}>
                             <input type="text" className="input w-full" placeholder="Task title *" value={taskTitle} onChange={e => setTaskTitle(e.target.value)} required id="task-title-input" />
                             <textarea className="input w-full" rows={2} placeholder="Description (optional)" value={taskDesc} onChange={e => setTaskDesc(e.target.value)} id="task-desc-input" />
                             {/* Epic 58 — shared DatePicker. `taskDue`
@@ -1124,7 +1126,7 @@ export default function ControlDetailPage() {
                             </Button>
                         </form>
                     )}
-                    <div className="glass-card overflow-hidden">
+                    <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
                         {(control.controlTasks?.length ?? 0) === 0 ? (
                             <div className="p-8 text-center text-content-subtle text-sm">No tasks yet</div>
                         ) : (
@@ -1155,7 +1157,7 @@ export default function ControlDetailPage() {
                         )}
                     </div>
                     {/* Linked Work Items (via TaskLink) */}
-                    <div className="glass-card p-4 mt-4" id="linked-work-items-section">
+                    <div className={cn(cardVariants({ density: 'compact' }), 'mt-4')} id="linked-work-items-section">
                         <Heading level={3} className="mb-3">Linked Work Items (Tasks)</Heading>
                         <LinkedTasksPanel
                             apiBase={apiUrl('')}
@@ -1181,7 +1183,7 @@ export default function ControlDetailPage() {
                     )}
                     {/* File upload form for this control */}
                     {showFileUpload && permissions.canWrite && (
-                        <form onSubmit={handleFileUpload} className="glass-card p-4 space-y-compact" id="control-upload-form">
+                        <form onSubmit={handleFileUpload} className={cn(cardVariants({ density: 'compact' }), 'space-y-compact')} id="control-upload-form">
                             <Heading level={3}>Upload Evidence for {control.name}</Heading>
                             <input
                                 ref={fileUploadRef}
@@ -1224,7 +1226,7 @@ export default function ControlDetailPage() {
                         </form>
                     )}
                     {showEvidenceForm && permissions.canWrite && (
-                        <form onSubmit={linkEvidence} className="glass-card p-4 space-y-compact">
+                        <form onSubmit={linkEvidence} className={cn(cardVariants({ density: 'compact' }), 'space-y-compact')}>
                             <input type="url" className="input w-full" placeholder="Evidence URL *" value={evidenceUrl} onChange={e => setEvidenceUrl(e.target.value)} required id="evidence-url-input" />
                             <textarea className="input w-full" rows={2} placeholder="Note (optional)" value={evidenceNote} onChange={e => setEvidenceNote(e.target.value)} id="evidence-note-input" />
                             <Button type="submit" variant="primary" disabled={savingEvidence} id="submit-evidence-btn">
@@ -1232,7 +1234,7 @@ export default function ControlDetailPage() {
                             </Button>
                         </form>
                     )}
-                    <div className="glass-card overflow-hidden">
+                    <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
                         {(() => {
                             const linkedFileIds = new Set(control.evidenceLinks?.map((l: EvidenceLinkDTO) => l.fileId).filter(Boolean) ?? []);
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1299,7 +1301,7 @@ export default function ControlDetailPage() {
                         </div>
                     )}
                     {showMapForm && permissions.canWrite && (
-                        <div className="glass-card p-4 space-y-compact">
+                        <div className={cn(cardVariants({ density: 'compact' }), 'space-y-compact')}>
                             <Combobox
                                 id="framework-select"
                                 selected={frameworks.map((f: FrameworkDTO) => ({ value: f.key ?? f.id ?? '', label: f.name })).find(o => o.value === selectedFramework) ?? null}
@@ -1325,7 +1327,7 @@ export default function ControlDetailPage() {
                             )}
                         </div>
                     )}
-                    <div className="glass-card overflow-hidden">
+                    <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
                         {(control.frameworkMappings?.length ?? 0) === 0 ? (
                             <div className="p-8 text-center text-content-subtle text-sm">No framework mappings</div>
                         ) : (
@@ -1377,7 +1379,7 @@ export default function ControlDetailPage() {
             )}
 
             {tab === 'activity' && (
-                <div className="glass-card overflow-hidden">
+                <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
                     {activityLoading ? (
                         <div className="p-8 text-center text-content-subtle animate-pulse">Loading activity...</div>
                     ) : activity.length === 0 ? (
@@ -1403,7 +1405,7 @@ export default function ControlDetailPage() {
             )}
 
             {tab === 'tests' && (
-                <div className="glass-card p-4">
+                <div className={cardVariants({ density: 'compact' })}>
                     <TestPlansPanel controlId={controlId} />
                 </div>
             )}
@@ -1411,7 +1413,7 @@ export default function ControlDetailPage() {
             {/* Epic G-5 — Control exceptions section. Renders below
               * the active tab on every tab so the workflow is always
               * one scroll away from the control. */}
-            <div className="glass-card mt-6 p-4">
+            <div className={cn(cardVariants({ density: 'compact' }), 'mt-6')}>
                 <ControlExceptionsPanel
                     tenantSlug={tenantSlug}
                     controlId={controlId}

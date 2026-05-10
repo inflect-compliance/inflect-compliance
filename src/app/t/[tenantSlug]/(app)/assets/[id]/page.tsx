@@ -23,6 +23,8 @@ import { Heading, Eyebrow } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
 import { MetaStrip } from '@/components/ui/meta-strip';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 const TraceabilityPanel = dynamic(() => import('@/components/TraceabilityPanel'), {
     loading: () => <SkeletonCard lines={3} />,
@@ -175,10 +177,10 @@ export default function AssetDetailPage() {
                 )
             }
         >
-            {error && <div className="glass-card p-4 border-border-error text-content-error text-sm">{error}</div>}
+            {error && <div className={cn(cardVariants({ density: 'compact' }), 'border-border-error text-content-error text-sm')}>{error}</div>}
 
             {/* Detail card */}
-            <div className="glass-card p-6 space-y-default" id="asset-detail">
+            <div className={cn(cardVariants(), 'space-y-default')} id="asset-detail">
                 {editing ? (
                     <>
                         <div className="grid grid-cols-2 gap-default">
@@ -220,13 +222,13 @@ export default function AssetDetailPage() {
                             <div><Eyebrow>Data Residency</Eyebrow><p className="text-sm">{asset.dataResidency || '—'}</p></div>
                         </div>
                         <div className="grid grid-cols-3 gap-default">
-                            <div className="glass-card p-4">
+                            <div className={cardVariants({ density: 'compact' })}>
                                 <KPIStat value={asset.confidentiality ?? '—'} label="Confidentiality" size="sm" />
                             </div>
-                            <div className="glass-card p-4">
+                            <div className={cardVariants({ density: 'compact' })}>
                                 <KPIStat value={asset.integrity ?? '—'} label="Integrity" size="sm" />
                             </div>
-                            <div className="glass-card p-4">
+                            <div className={cardVariants({ density: 'compact' })}>
                                 <KPIStat value={asset.availability ?? '—'} label="Availability" size="sm" />
                             </div>
                         </div>
@@ -239,7 +241,7 @@ export default function AssetDetailPage() {
             </div>
 
             {/* Linked Tasks */}
-            <div className="glass-card p-6" id="linked-tasks-section">
+            <div className={cardVariants()} id="linked-tasks-section">
                 <Heading level={2} className="mb-4 inline-flex items-center gap-tight"><AppIcon name="tasks" size={18} /> Linked Tasks</Heading>
                 <LinkedTasksPanel
                     apiBase={apiUrl('')}
@@ -250,7 +252,7 @@ export default function AssetDetailPage() {
             </div>
 
             {/* Traceability */}
-            <div className="glass-card p-6">
+            <div className={cardVariants()}>
                 <Heading level={2} className="mb-4 inline-flex items-center gap-tight"><AppIcon name="link" size={18} /> Traceability</Heading>
                 <TraceabilityPanel
                     apiBase={apiUrl('')}

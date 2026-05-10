@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useFormTelemetry } from '@/lib/telemetry/form-telemetry';
 import { Heading } from '@/components/ui/typography';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 const POLICY_CATEGORIES: ComboboxOption[] = [
     'Information Security',
@@ -110,7 +112,7 @@ export default function NewPolicyPage() {
 
     if (!tenant.permissions.canWrite) {
         return (
-            <div className="glass-card p-12 text-center text-content-subtle animate-fadeIn">
+            <div className={cn(cardVariants({ density: 'none' }), 'p-12 text-center text-content-subtle animate-fadeIn')}>
                 <p className="text-lg mb-2">Permission Denied</p>
                 <p className="text-sm">You do not have permission to create policies.</p>
             </div>
@@ -142,7 +144,7 @@ export default function NewPolicyPage() {
 
             {/* Template picker */}
             {isTemplateMode && (
-                <div className="glass-card p-4 space-y-compact">
+                <div className={cn(cardVariants({ density: 'compact' }), 'space-y-compact')}>
                     <Heading level={3}>Choose a Template</Heading>
                     {templates.length === 0 ? (
                         <p className="text-sm text-content-subtle">No templates available.</p>
@@ -168,7 +170,7 @@ export default function NewPolicyPage() {
             )}
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="glass-card p-6 space-y-default" noValidate>
+            <form onSubmit={handleSubmit} className={cn(cardVariants(), 'space-y-default')} noValidate>
                 <FormField
                     label="Title"
                     required

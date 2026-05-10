@@ -9,7 +9,8 @@ import { RequirePermission } from '@/components/require-permission';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
-import { Card } from '@/components/ui/card';
+import { Card, cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 const SCALE_OPTIONS: ComboboxOption[] = [1,2,3,4,5].map(v => ({ value: String(v), label: String(v) }));
 
@@ -262,7 +263,7 @@ export default function AIRiskAssessmentPage() {
             </div>
 
             {error && (
-                <div className="glass-card p-4 border-border-error text-content-error text-sm" id="ai-error">
+                <div className={cn(cardVariants({ density: 'compact' }), 'border-border-error text-content-error text-sm')} id="ai-error">
                     {error}
                     <button onClick={() => setError('')} className="ml-4 text-content-error hover:text-content-emphasis">x</button>
                 </div>
@@ -270,7 +271,7 @@ export default function AIRiskAssessmentPage() {
 
             {/* ═══ PHASE: FORM ═══ */}
             {phase === 'form' && (
-                <div className="glass-card p-6 space-y-section" id="ai-generate-form">
+                <div className={cn(cardVariants(), 'space-y-section')} id="ai-generate-form">
                     <Heading level={2}>Configure Assessment</Heading>
 
                     {/* Framework Selection */}
@@ -356,7 +357,7 @@ export default function AIRiskAssessmentPage() {
 
             {/* ═══ PHASE: GENERATING ═══ */}
             {phase === 'generating' && (
-                <div className="glass-card p-12 text-center" id="ai-generating">
+                <div className={cn(cardVariants({ density: 'none' }), 'p-12 text-center')} id="ai-generating">
                     <div className="animate-pulse text-4xl mb-4">...</div>
                     <Heading level={2}>Analyzing your environment…</Heading>
                     <p className="text-content-muted text-sm mt-2">The AI is generating risk suggestions based on your assets, frameworks, and context.</p>
@@ -368,7 +369,7 @@ export default function AIRiskAssessmentPage() {
             {phase === 'review' && session && (
                 <div className="space-y-default" id="ai-review-section">
                     {/* Summary bar */}
-                    <div className="glass-card p-4 flex items-center justify-between">
+                    <div className={cn(cardVariants({ density: 'compact' }), 'flex items-center justify-between')}>
                         <div className="flex items-center gap-default">
                             <span className="text-sm text-content-muted">
                                 {session.items.length} suggestions • Provider: <strong className="text-content-default">{session.provider}</strong>
@@ -409,10 +410,8 @@ export default function AIRiskAssessmentPage() {
                             <div
                                 key={item.id}
                                 id={`suggestion-${idx}`}
-                                className={`glass-card p-6 transition-all ${
-                                    dec === 'accept' ? 'ring-1 ring-[var(--border-success)] bg-bg-success' :
-                                    dec === 'reject' ? 'ring-1 ring-[var(--border-error)] opacity-60' : ''
-                                }`}
+                                className={cn(cardVariants(), 'transition-all', dec === 'accept' ? 'ring-1 ring-[var(--border-success)] bg-bg-success' :
+                                    dec === 'reject' ? 'ring-1 ring-[var(--border-error)] opacity-60' : '')}
                             >
                                 <div className="flex items-start justify-between gap-default">
                                     <div className="flex-1 space-y-compact">
@@ -592,7 +591,7 @@ export default function AIRiskAssessmentPage() {
                     })}
 
                     {/* Action bar */}
-                    <div className="glass-card p-4 flex items-center justify-between" id="ai-action-bar">
+                    <div className={cn(cardVariants({ density: 'compact' }), 'flex items-center justify-between')} id="ai-action-bar">
                         <Button variant="secondary" onClick={handleDismiss} id="dismiss-btn">Dismiss All</Button>
                         <RequirePermission resource="risks" action="create">
                             <Button
@@ -610,7 +609,7 @@ export default function AIRiskAssessmentPage() {
 
             {/* ═══ PHASE: APPLYING ═══ */}
             {phase === 'applying' && (
-                <div className="glass-card p-12 text-center">
+                <div className={cn(cardVariants({ density: 'none' }), 'p-12 text-center')}>
                     <div className="animate-pulse text-4xl mb-4">...</div>
                     <Heading level={2}>Creating risk records…</Heading>
                     <p className="text-content-muted text-sm mt-2">Adding accepted suggestions to your Risk Register.</p>

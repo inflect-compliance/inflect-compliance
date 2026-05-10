@@ -41,6 +41,8 @@ import { useHydratedNow } from '@/lib/hooks/use-hydrated-now';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
     OPEN: 'neutral', TRIAGED: 'info', IN_PROGRESS: 'info',
@@ -463,7 +465,7 @@ function TasksPageInner({
             {/* Bulk Actions Toolbar — flex-shrink-0 so it keeps its
                 natural height in the ListPageShell column. */}
             {appPermissions.tasks.edit && selected.size > 0 && (
-                <div className="glass-card p-3 flex items-center gap-compact border border-[var(--brand-default)]/30 flex-shrink-0" id="bulk-toolbar">
+                <div className={cn(cardVariants({ density: 'none' }), 'p-3 flex items-center gap-compact border border-[var(--brand-default)]/30 flex-shrink-0')} id="bulk-toolbar">
                     <span className="text-sm text-[var(--brand-default)] font-medium">{selected.size} selected</span>
                     <Combobox
                         hideSearch

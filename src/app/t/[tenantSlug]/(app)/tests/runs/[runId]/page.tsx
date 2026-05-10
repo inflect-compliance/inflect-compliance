@@ -19,7 +19,8 @@ import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { MetaStrip } from '@/components/ui/meta-strip';
-import { Card } from '@/components/ui/card';
+import { Card, cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 const EV_KIND_OPTIONS: ComboboxOption[] = [
     { value: 'FILE_UPLOAD', label: 'Upload File' },
@@ -349,7 +350,7 @@ export default function TestRunPage() {
 
             {/* Completed Info */}
             {isCompleted && (
-                <div className="glass-card p-4 space-y-tight">
+                <div className={cn(cardVariants({ density: 'compact' }), 'space-y-tight')}>
                     {run.notes && (
                         <div>
                             <span className="text-xs text-content-muted">Notes:</span>
@@ -387,7 +388,7 @@ export default function TestRunPage() {
             )}
 
             {/* Evidence Section */}
-            <div className="glass-card p-4">
+            <div className={cardVariants({ density: 'compact' })}>
                 <div className="flex items-center justify-between mb-3">
                     <Heading level={3}>Evidence ({run.evidence?.length ?? 0})</Heading>
                     {permissions.canWrite && (

@@ -16,6 +16,8 @@ import { Heading, Caption } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
 import { MetaStrip } from '@/components/ui/meta-strip';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 type Tab = 'requirements' | 'packs' | 'coverage' | 'builder';
 
@@ -180,7 +182,7 @@ export default function FrameworkDetailPage() {
                     {tree ? (
                         <FrameworkExplorer tree={tree} coverage={coverage ?? null} />
                     ) : (
-                        <div className="glass-card text-center py-10 text-content-subtle">
+                        <div className={cn(cardVariants({ density: 'none' }), 'text-center py-10 text-content-subtle')}>
                             Loading tree...
                         </div>
                     )}
@@ -191,7 +193,7 @@ export default function FrameworkDetailPage() {
             {activeTab === 'packs' && (
                 <div className="space-y-default" id="packs-panel">
                     {packs.map((p: any) => (
-                        <div key={p.id} className="glass-card">
+                        <div key={p.id} className={cardVariants({ density: 'none' })}>
                             <div className="flex items-start justify-between">
                                 <div>
                                     <Heading level={2}>{p.name}</Heading>
@@ -214,7 +216,7 @@ export default function FrameworkDetailPage() {
                         </div>
                     ))}
                     {packs.length === 0 && (
-                        <div className="glass-card text-center py-8 text-content-subtle">No packs available for this framework.</div>
+                        <div className={cn(cardVariants({ density: 'none' }), 'text-center py-8 text-content-subtle')}>No packs available for this framework.</div>
                     )}
                 </div>
             )}
@@ -224,13 +226,13 @@ export default function FrameworkDetailPage() {
                 <div className="space-y-default" id="coverage-panel">
                     {/* Summary cards — Polish PR-2: KPIStat primitive. */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-default">
-                        <div className="glass-card">
+                        <div className={cardVariants({ density: 'none' })}>
                             <KPIStat value={coverage.total} label="Total Requirements" />
                         </div>
-                        <div className="glass-card">
+                        <div className={cardVariants({ density: 'none' })}>
                             <KPIStat value={coverage.mapped} label="Mapped" tone="success" />
                         </div>
-                        <div className="glass-card">
+                        <div className={cardVariants({ density: 'none' })}>
                             <KPIStat
                                 value={coverage.unmapped}
                                 label="Unmapped"
@@ -240,7 +242,7 @@ export default function FrameworkDetailPage() {
                     </div>
 
                     {/* Coverage donut */}
-                    <div className="glass-card">
+                    <div className={cardVariants({ density: 'none' })}>
                         <div className="flex items-center justify-between mb-4">
                             <Heading level={2}>Overall Coverage</Heading>
                             <span className={`text-xl font-semibold tabular-nums ${coverage.coveragePercent === 100 ? 'text-content-success' : 'text-[var(--brand-default)]'}`}>
@@ -257,7 +259,7 @@ export default function FrameworkDetailPage() {
 
                     {/* Section breakdown */}
                     {coverage.bySection?.length > 0 && (
-                        <div className="glass-card">
+                        <div className={cardVariants({ density: 'none' })}>
                             <Heading level={3} className="mb-3">Coverage by Section</Heading>
                             <div className="space-y-compact">
                                 {coverage.bySection.map((s: any) => (
@@ -286,7 +288,7 @@ export default function FrameworkDetailPage() {
 
                     {/* Unmapped requirements */}
                     {coverage.unmappedRequirements?.length > 0 && (
-                        <div className="glass-card">
+                        <div className={cardVariants({ density: 'none' })}>
                             <Heading level={3} className="text-content-warning mb-3">
                                 Unmapped Requirements ({coverage.unmappedRequirements.length})
                             </Heading>
@@ -313,7 +315,7 @@ export default function FrameworkDetailPage() {
                             resource="frameworks"
                             action="install"
                             fallback={
-                                <div className="glass-card text-center py-10 text-content-subtle">
+                                <div className={cn(cardVariants({ density: 'none' }), 'text-center py-10 text-content-subtle')}>
                                     Reordering is restricted to OWNER / ADMIN roles.
                                 </div>
                             }
@@ -321,7 +323,7 @@ export default function FrameworkDetailPage() {
                             <FrameworkBuilder tree={tree} onSave={handleReorderSave} />
                         </RequirePermission>
                     ) : (
-                        <div className="glass-card text-center py-10 text-content-subtle">
+                        <div className={cn(cardVariants({ density: 'none' }), 'text-center py-10 text-content-subtle')}>
                             Loading tree...
                         </div>
                     )}

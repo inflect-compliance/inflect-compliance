@@ -7,6 +7,8 @@ import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading, Eyebrow } from '@/components/ui/typography';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export default function TemplateLibraryPage() {
@@ -188,7 +190,7 @@ export default function TemplateLibraryPage() {
                     const isSelected = selected.has(t.code);
 
                     return (
-                        <div key={t.code} className={`glass-card transition-colors ${isSelected ? 'ring-1 ring-[var(--ring)]/50' : ''}`} id={`template-${t.code}`}>
+                        <div key={t.code} className={cn(cardVariants({ density: 'none' }), 'transition-colors', isSelected ? 'ring-1 ring-[var(--ring)]/50' : '')} id={`template-${t.code}`}>
                             <div className="flex items-start gap-compact">
                                 {/* Checkbox */}
                                 {!t.installed && (
@@ -290,7 +292,7 @@ export default function TemplateLibraryPage() {
                 })}
 
                 {templates.length === 0 && (
-                    <div className="glass-card text-center py-8 text-content-subtle">No templates match your filters.</div>
+                    <div className={cn(cardVariants({ density: 'none' }), 'text-center py-8 text-content-subtle')}>No templates match your filters.</div>
                 )}
             </div>
         </div>

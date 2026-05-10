@@ -76,8 +76,11 @@ describe("v2-PR-10 HeroMetric primitive contract", () => {
         expect(src).toMatch(/<AnimatedNumber\b/);
     });
 
-    it("renders inside a glass-card frame (canonical card recipe)", () => {
-        expect(src).toMatch(/glass-card/);
+    it("renders inside the canonical Card frame (cardVariants raised)", () => {
+        // Roadmap-5 PR-1 — the glass-card literal moved into the
+        // Card primitive. HeroMetric now composes cardVariants()
+        // instead of carrying the literal in its className.
+        expect(src).toMatch(/cardVariants\(\)/);
     });
 
     it("uses the v2-PR-4 transition-colors motion language", () => {

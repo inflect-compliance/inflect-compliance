@@ -41,6 +41,7 @@
  */
 
 import { cn } from '@dub/utils';
+import { cardVariants } from '@/components/ui/card';
 import {
     Background,
     Controls,
@@ -356,7 +357,8 @@ export function GraphExplorer({
             <div
                 id={id}
                 className={cn(
-                    'glass-card text-center py-10 text-content-subtle',
+                    cardVariants({ density: 'none' }),
+                    'text-center py-10 text-content-subtle',
                     className,
                 )}
                 data-graph-empty="true"

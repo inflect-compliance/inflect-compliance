@@ -8,10 +8,11 @@ import { DataTable, createColumns } from '@/components/ui/table';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
-import { Card } from '@/components/ui/card';
+import { Card, cardVariants } from '@/components/ui/card';
 import { KPIStat } from '@/components/ui/metric';
 import { getStatusTone } from '@/lib/design/status-tone';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { cn } from '@dub/utils';
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -285,7 +286,7 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
                             <Link
                                 key={ctrl.id}
                                 href={tenantHref(`/controls/${ctrl.id}`)}
-                                className="glass-card p-4 hover:border-border-emphasis transition-colors duration-150 ease-out group cursor-pointer"
+                                className={cn(cardVariants({ density: 'compact' }), 'hover:border-border-emphasis transition-colors duration-150 ease-out group cursor-pointer')}
                             >
                                 <div className="flex items-center gap-tight mb-2">
                                     <span className={`

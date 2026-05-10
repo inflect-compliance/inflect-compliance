@@ -8,6 +8,8 @@ import { ToggleGroup } from '@/components/ui/toggle-group';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 interface NotificationSettings {
     enabled: boolean;
@@ -141,7 +143,7 @@ export default function NotificationSettingsPage() {
             />
 
             {tab === 'settings' ? (
-                <div className="glass-card p-6 space-y-default">
+                <div className={cn(cardVariants(), 'space-y-default')}>
                     {/* Enable / Disable */}
                     <label className="flex items-center gap-compact cursor-pointer">
                         <input
@@ -199,7 +201,7 @@ export default function NotificationSettingsPage() {
                     </div>
                 </div>
             ) : (
-                <div className="glass-card p-6">
+                <div className={cardVariants()}>
                     {stats ? (() => {
                         const statsColumns = createColumns<{ label: string; pending: number; sent: number; failed: number; total: number }>([
                             { accessorKey: 'label', header: 'Period', cell: ({ getValue }: any) => <span className="font-medium">{getValue()}</span> },

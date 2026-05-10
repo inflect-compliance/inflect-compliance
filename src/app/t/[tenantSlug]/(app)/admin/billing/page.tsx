@@ -10,6 +10,8 @@ import { InlineNotice } from '@/components/ui/inline-notice';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -92,9 +94,7 @@ export default async function BillingPage({
 
             {/* Trial banner */}
             {isTrialing && trialDaysRemaining !== null && (
-                <div className={`glass-card p-4 border ${
-                    trialDaysRemaining <= 3 ? 'border-border-error bg-bg-error' : 'border-border-warning bg-bg-warning'
-                }`} id="trial-banner">
+                <div className={cn(cardVariants({ density: 'compact' }), 'border', trialDaysRemaining <= 3 ? 'border-border-error bg-bg-error' : 'border-border-warning bg-bg-warning')} id="trial-banner">
                     <div className="flex items-center justify-between">
                         <div>
                             <p className={`text-sm font-semibold ${trialDaysRemaining <= 3 ? 'text-content-error' : 'text-content-warning'}`}>
@@ -114,7 +114,7 @@ export default async function BillingPage({
             )}
 
             {/* Current Plan Card */}
-            <section className="glass-card p-6">
+            <section className={cardVariants()}>
                 <Heading level={2} className="mb-4">Current Plan</Heading>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-default">
                     <div>
@@ -177,7 +177,7 @@ export default async function BillingPage({
                 Stripe-backed buttons would 403 with "billing_unavailable". */}
             {billingMode === 'SELFHOSTED' && (
                 <div
-                    className="glass-card p-4 border border-border-warning bg-bg-warning"
+                    className={cn(cardVariants({ density: 'compact' }), 'border border-border-warning bg-bg-warning')}
                     id="billing-self-hosted-banner"
                 >
                     <p className="text-sm font-semibold text-content-warning">
@@ -197,7 +197,7 @@ export default async function BillingPage({
                 <section>
                     <Heading level={2} className="mb-4">Upgrade</Heading>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-default">
-                        <div className="glass-card p-6 border border-[var(--brand-default)]/30 hover:border-[var(--brand-default)]/60 transition">
+                        <div className={cn(cardVariants(), 'border border-[var(--brand-default)]/30 hover:border-[var(--brand-default)]/60 transition')}>
                             <div className="flex items-center justify-between mb-3">
                                 <Heading level={3}>Pro</Heading>
                                 <StatusBadge variant="info">Recommended</StatusBadge>
@@ -210,7 +210,7 @@ export default async function BillingPage({
                             </ul>
                             <BillingActions plan="PRO" tenantSlug={tenantSlug} />
                         </div>
-                        <div className="glass-card p-6 border border-purple-500/30 hover:border-purple-500/60 transition">
+                        <div className={cn(cardVariants(), 'border border-purple-500/30 hover:border-purple-500/60 transition')}>
                             <div className="flex items-center justify-between mb-3">
                                 <Heading level={3}>Enterprise</Heading>
                                 <StatusBadge variant="warning">Premium</StatusBadge>
@@ -231,7 +231,7 @@ export default async function BillingPage({
             {billingMode === 'SAAS' && hasSubscription && (
                 <section>
                     <Heading level={2} className="mb-4">Manage Subscription</Heading>
-                    <div className="glass-card p-6">
+                    <div className={cardVariants()}>
                         <p className="text-sm text-content-muted mb-4">
                             Update payment method, view invoices, or change your plan via the Stripe Customer Portal.
                         </p>

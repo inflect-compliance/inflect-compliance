@@ -19,7 +19,7 @@
  */
 
 import { formatDate } from '@/lib/format-date';
-import { Card } from '@/components/ui/card';
+import { Card, cardVariants } from '@/components/ui/card';
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import {
@@ -675,7 +675,7 @@ export default function MembersAdminPage() {
 
             {/* Invite Form */}
             {showInvite && (
-                <div className="glass-card p-6 border border-[var(--brand-default)]/30" id="invite-form">
+                <div className={cn(cardVariants(), 'border border-[var(--brand-default)]/30')} id="invite-form">
                     <Heading level={3} className="mb-4">Invite a New Member</Heading>
                     <div className="flex gap-compact items-end flex-wrap">
                         <div className="flex-1 min-w-[200px]">
@@ -738,7 +738,7 @@ export default function MembersAdminPage() {
             </div>
 
             {/* Members DataTable (Epic 48 migration) */}
-            <div className="glass-card overflow-hidden" id="members-table-card">
+            <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')} id="members-table-card">
                 {filteredMembers.length === 0 && search ? (
                     <EmptyState
                         icon={Search}
@@ -766,7 +766,7 @@ export default function MembersAdminPage() {
             {invites.length > 0 && (
                 <div>
                     <Heading level={2} className="mb-3">Pending Invitations</Heading>
-                    <div className="glass-card overflow-hidden" id="invites-table-card">
+                    <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')} id="invites-table-card">
                         <DataTable
                             data={invites}
                             columns={inviteColumns}

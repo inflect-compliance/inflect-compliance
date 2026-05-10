@@ -17,7 +17,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { InlineNotice } from '@/components/ui/inline-notice';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
-import { Card } from '@/components/ui/card';
+import { Card, cardVariants } from '@/components/ui/card';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
 interface ScimToken {
@@ -148,7 +148,7 @@ export default function ScimAdminPage() {
 
             {/* Endpoint Info — render the slot eagerly so #scim-endpoint-url
                 is queryable before the GET /admin/scim fetch resolves. */}
-            <div className="glass-card p-4">
+            <div className={cardVariants({ density: 'compact' })}>
                 <Heading level={3} className="mb-2">SCIM Endpoint</Heading>
                 <div className="flex items-center gap-tight bg-bg-default/50 rounded px-3 py-2">
                     <code
@@ -204,7 +204,7 @@ export default function ScimAdminPage() {
             )}
 
             {/* Token List */}
-            <div className="glass-card">
+            <div className={cardVariants({ density: 'none' })}>
                 <div className="flex items-center justify-between p-4 border-b border-border-default/50">
                     <Heading level={3}>SCIM Tokens</Heading>
                     <Button
@@ -293,7 +293,7 @@ export default function ScimAdminPage() {
 
             {/* Revoked tokens */}
             {revokedTokens.length > 0 && (
-                <details className="glass-card">
+                <details className={cardVariants({ density: 'none' })}>
                     <summary className="p-4 cursor-pointer text-sm text-content-muted hover:text-content-default">
                         {revokedTokens.length} revoked token{revokedTokens.length !== 1 ? 's' : ''}
                     </summary>

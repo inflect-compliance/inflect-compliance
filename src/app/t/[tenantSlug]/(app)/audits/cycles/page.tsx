@@ -18,6 +18,8 @@ import type { DateRangeValue } from '@/components/ui/date-picker/types';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 // Epic 58 — audit periods are reporting windows. The curated preset
 // subset favours periods auditors actually request ("the most recent
@@ -134,7 +136,7 @@ export default function AuditCyclesPage() {
             </div>
 
             {showForm && (
-                <form onSubmit={create} className="glass-card p-6 animate-fadeIn" id="cycle-form">
+                <form onSubmit={create} className={cn(cardVariants(), 'animate-fadeIn')} id="cycle-form">
                     <FieldGroup columns={2} gap="md">
                         <FormField
                             label="Framework"
@@ -208,7 +210,7 @@ export default function AuditCyclesPage() {
             )}
 
             {cycles.length === 0 && !showForm ? (
-                <div className="glass-card">
+                <div className={cardVariants({ density: 'none' })}>
                     <EmptyState
                         icon={ClipboardCheck}
                         title="No audit cycles yet"
@@ -225,7 +227,7 @@ export default function AuditCyclesPage() {
                         const meta = FW_META[c.frameworkKey] || { icon: 'shield' as AppIconName, label: c.frameworkKey, color: 'from-gray-500 to-gray-600' };
                         return (
                             <Link key={c.id} href={`/t/${tenantSlug}/audits/cycles/${c.id}`} id={`cycle-link-${c.id}`}
-                                className="glass-card p-6 hover:bg-bg-muted/50 transition group">
+                                className={cn(cardVariants(), 'hover:bg-bg-muted/50 transition group')}>
                                 <div className="flex items-start justify-between mb-3">
                                     <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${meta.color} flex items-center justify-center text-lg`}>
                                         <AppIcon name={meta.icon} size={20} />

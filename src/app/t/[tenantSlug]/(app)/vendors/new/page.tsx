@@ -18,6 +18,8 @@ import {
     toYMD,
 } from '@/components/ui/date-picker/date-utils';
 import { Heading } from '@/components/ui/typography';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 // Epic 55 — vendor status is a two-option choice ("onboarding" vs
 // "active"). RadioGroup is the right primitive: both options are
@@ -109,7 +111,7 @@ export default function CreateVendorPage() {
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="glass-card space-y-default p-6" noValidate>
+            <form onSubmit={handleSubmit} className={cn(cardVariants(), 'space-y-default')} noValidate>
                 {/* Name */}
                 <FormField label="Vendor Name" required>
                     <Input

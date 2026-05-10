@@ -90,7 +90,7 @@ import type { ExecutiveDashboardPayload } from '@/app-layer/repositories/Dashboa
 import type { TrendPayload } from '@/app-layer/usecases/compliance-trends';
 import type { RiskMatrixConfigShape } from '@/lib/risk-matrix/types';
 import { Heading } from '@/components/ui/typography';
-import { Card } from '@/components/ui/card';
+import { Card, cardVariants } from '@/components/ui/card';
 
 // ─── KPI trend bundle ─────────────────────────────────────────────────
 
@@ -601,7 +601,7 @@ function TrendSection({ trends }: { trends: TrendPayload }) {
 function TrendEmptyState() {
     return (
         <div
-            className="glass-card flex flex-col items-center justify-center gap-y-4 py-12 px-6"
+            className={cn(cardVariants({ density: 'none' }), 'flex flex-col items-center justify-center gap-y-4 py-12 px-6')}
             id="trend-section"
         >
             <div className="flex size-14 items-center justify-center rounded-xl border border-border-subtle bg-bg-muted">

@@ -45,6 +45,7 @@ import {
 } from '@/lib/framework-tree/builder-state';
 import type { FrameworkTreePayload } from '@/lib/framework-tree/types';
 import { Heading } from '@/components/ui/typography';
+import { cardVariants } from '@/components/ui/card';
 
 // ─── Drag payload encoding ─────────────────────────────────────────────
 
@@ -230,7 +231,7 @@ export function FrameworkBuilder({
             </div>
 
             {error && (
-                <div className="glass-card border-border-error bg-bg-error p-3 text-xs text-content-error">
+                <div className={cn(cardVariants({ density: 'none' }), 'border-border-error bg-bg-error p-3 text-xs text-content-error')}>
                     {error}
                 </div>
             )}
@@ -248,7 +249,7 @@ export function FrameworkBuilder({
                             draggable
                             onDragStart={(e) => onSectionDragStart(e, section.id)}
                             data-builder-section-id={section.id}
-                            className="glass-card p-3 space-y-tight cursor-grab active:cursor-grabbing"
+                            className={cn(cardVariants({ density: 'none' }), 'p-3 space-y-tight cursor-grab active:cursor-grabbing')}
                         >
                             <div className="flex items-center gap-tight">
                                 <GripVertical

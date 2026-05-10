@@ -1,4 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 /**
  * Coverage dashboard loading skeleton.
@@ -15,7 +17,7 @@ export default function CoverageLoading() {
             {/* KPI cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-default">
                 {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="glass-card p-6 space-y-compact">
+                    <div key={i} className={cn(cardVariants(), 'space-y-compact')}>
                         <Skeleton className="h-4 w-24" />
                         <Skeleton className="h-24 w-24 rounded-full mx-auto" />
                         <Skeleton className="h-3 w-32 mx-auto" />
@@ -26,7 +28,7 @@ export default function CoverageLoading() {
             {/* Tables */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-default">
                 {Array.from({ length: 2 }).map((_, i) => (
-                    <div key={i} className="glass-card p-6 space-y-compact">
+                    <div key={i} className={cn(cardVariants(), 'space-y-compact')}>
                         <Skeleton className="h-5 w-48" />
                         {Array.from({ length: 4 }).map((_, j) => (
                             <Skeleton key={j} className="h-10 w-full" />

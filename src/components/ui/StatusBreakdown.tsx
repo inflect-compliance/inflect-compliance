@@ -1,4 +1,6 @@
 import { Heading } from '@/components/ui/typography';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 /**
  * StatusBreakdown — Horizontal stacked bar with legend.
  *
@@ -53,7 +55,7 @@ export default function StatusBreakdown({
     const total = items.reduce((sum, item) => sum + item.value, 0);
 
     return (
-        <div id={id} className={`glass-card p-6 ${className}`}>
+        <div id={id} className={cn(cardVariants(), className)}>
             {/* Header */}
             <div className="flex items-center justify-between mb-3">
                 <Heading level={3}>{label}</Heading>

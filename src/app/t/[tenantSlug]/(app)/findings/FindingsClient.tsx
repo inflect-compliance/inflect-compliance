@@ -18,6 +18,8 @@ import {
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 const SEV_BADGE: Record<string, StatusBadgeVariant> = { LOW: 'info', MEDIUM: 'warning', HIGH: 'error', CRITICAL: 'error' };
 const STATUS_BADGE: Record<string, StatusBadgeVariant> = { OPEN: 'error', IN_PROGRESS: 'info', READY_FOR_VERIFICATION: 'warning', CLOSED: 'success' };
@@ -226,7 +228,7 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
             </ListPageShell.Header>
 
             {showForm && (
-                <form onSubmit={createFinding} className="glass-card p-6 space-y-default animate-fadeIn">
+                <form onSubmit={createFinding} className={cn(cardVariants(), 'space-y-default animate-fadeIn')}>
                     <div className="grid grid-cols-2 gap-default">
                         <div><label className="input-label">{t.findingTitle} *</label><input className="input" required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} /></div>
                         <div>

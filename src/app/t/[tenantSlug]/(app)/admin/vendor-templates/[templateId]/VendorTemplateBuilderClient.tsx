@@ -32,6 +32,8 @@ import { SkeletonDetailPage } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 interface Question {
     id: string;
@@ -367,7 +369,7 @@ export function VendorTemplateBuilderClient({
 
             {tree.isPublished && (
                 <div
-                    className="glass-card p-4 border border-border-warning"
+                    className={cn(cardVariants({ density: 'compact' }), 'border border-border-warning')}
                     role="alert"
                     data-testid="published-banner"
                 >
@@ -471,7 +473,7 @@ function SectionCard({
 }) {
     return (
         <div
-            className="glass-card p-4"
+            className={cardVariants({ density: 'compact' })}
             draggable={editable}
             onDragStart={onDragStart}
             onDragOver={(e) => e.preventDefault()}
@@ -557,7 +559,7 @@ function AddSectionForm({ onSubmit }: { onSubmit: (title: string) => void }) {
     const [title, setTitle] = useState('');
     return (
         <form
-            className="glass-card p-3 flex items-center gap-tight"
+            className={cn(cardVariants({ density: 'none' }), 'p-3 flex items-center gap-tight')}
             onSubmit={(e) => {
                 e.preventDefault();
                 if (title.trim()) {

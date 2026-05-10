@@ -16,6 +16,8 @@ import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 interface DuePlan {
     id: string;
@@ -123,7 +125,7 @@ export default function DueQueuePage() {
             <ListPageShell.Filters className="space-y-section">
                 {/* Planning result */}
             {planningResult && (
-                <div className="glass-card p-4 border border-border-success bg-bg-success" id="planning-result">
+                <div className={cn(cardVariants({ density: 'compact' }), 'border border-border-success bg-bg-success')} id="planning-result">
                     <p className="text-sm text-content-success">
                         Due planning complete: checked {planningResult.checked} plans,
                         created {planningResult.created} new runs,
@@ -131,17 +133,17 @@ export default function DueQueuePage() {
                     </p>
                 </div>
             )}
-            {error && <div className="glass-card p-4 border border-border-error text-content-error text-sm">{error}</div>}
+            {error && <div className={cn(cardVariants({ density: 'compact' }), 'border border-border-error text-content-error text-sm')}>{error}</div>}
 
             {/* Stats — Polish PR-2: KPIStat primitive. */}
             <div className="grid grid-cols-3 gap-default">
-                <div className="glass-card p-4">
+                <div className={cardVariants({ density: 'compact' })}>
                     <KPIStat value={queue.length} label="Due / Due Soon" />
                 </div>
-                <div className="glass-card p-4">
+                <div className={cardVariants({ density: 'compact' })}>
                     <KPIStat value={overdueCount} label="Overdue" tone={overdueCount > 0 ? 'critical' : 'success'} />
                 </div>
-                <div className="glass-card p-4">
+                <div className={cardVariants({ density: 'compact' })}>
                     <KPIStat value={pendingCount} label="Pending Runs" tone={pendingCount > 0 ? 'attention' : 'default'} />
                 </div>
             </div>

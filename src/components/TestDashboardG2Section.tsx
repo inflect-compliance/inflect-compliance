@@ -24,6 +24,7 @@ import { useTenantHref } from '@/lib/tenant-context-provider';
 import { formatDate } from '@/lib/format-date';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
+import { cardVariants } from '@/components/ui/card';
 
 // ─── Types ─────────────────────────────────────────────────────────
 
@@ -127,7 +128,7 @@ export function TestDashboardG2Section({
             <div className="grid lg:grid-cols-3 gap-section">
                 {/* ─── Pass/Fail Donut ───────────────────────────── */}
                 <div
-                    className="glass-card p-6"
+                    className={cardVariants()}
                     data-testid="test-dashboard-g2-donut"
                 >
                     <Heading level={3} className="mb-4">
@@ -151,7 +152,7 @@ export function TestDashboardG2Section({
 
                 {/* ─── Overdue Scheduled Tests ───────────────────── */}
                 <div
-                    className="glass-card p-6"
+                    className={cardVariants()}
                     data-testid="test-dashboard-g2-overdue"
                 >
                     <div className="flex items-center justify-between mb-4">
@@ -210,7 +211,7 @@ export function TestDashboardG2Section({
 
                 {/* ─── Trend Sparkline ───────────────────────────── */}
                 <div
-                    className="glass-card p-6"
+                    className={cardVariants()}
                     data-testid="test-dashboard-g2-trend"
                 >
                     <div className="flex items-center justify-between mb-4">

@@ -14,6 +14,8 @@ import { Heading } from '@/components/ui/typography';
 import { KPIStat, type MetricTone } from '@/components/ui/metric';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { SkeletonDashboard } from '@/components/ui/skeleton';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 const CRIT_BADGE: Record<string, StatusBadgeVariant> = { LOW: 'neutral', MEDIUM: 'warning', HIGH: 'error', CRITICAL: 'error' };
 
@@ -94,19 +96,19 @@ export default function VendorDashboardPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-section">
                 {/* By Criticality */}
-                <div className="glass-card p-6 space-y-compact">
+                <div className={cn(cardVariants(), 'space-y-compact')}>
                     <Heading level={3}>By Criticality</Heading>
                     <BreakdownBar data={metrics.byCriticality} colors={CRIT_COLORS} />
                 </div>
 
                 {/* By Status */}
-                <div className="glass-card p-6 space-y-compact">
+                <div className={cn(cardVariants(), 'space-y-compact')}>
                     <Heading level={3}>By Status</Heading>
                     <BreakdownBar data={metrics.byStatus} colors={STATUS_COLORS} />
                 </div>
 
                 {/* By Risk Rating */}
-                <div className="glass-card p-6 space-y-compact">
+                <div className={cn(cardVariants(), 'space-y-compact')}>
                     <Heading level={3}>By Risk Rating</Heading>
                     {Object.keys(metrics.byRiskRating).length > 0
                         ? <BreakdownBar data={metrics.byRiskRating} colors={CRIT_COLORS} />
@@ -116,7 +118,7 @@ export default function VendorDashboardPage() {
 
             {/* Expiring Documents */}
             {metrics.expiringDocuments > 0 && (
-                <div className="glass-card p-6 border border-orange-500/30">
+                <div className={cn(cardVariants(), 'border border-orange-500/30')}>
                     <div className="flex items-center gap-tight">
                         <span className="text-orange-400 text-lg font-semibold">!</span>
                         <span className="font-semibold">{metrics.expiringDocuments} document(s) expiring within 30 days</span>

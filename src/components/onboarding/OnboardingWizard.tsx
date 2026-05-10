@@ -28,8 +28,9 @@ import {
 } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
-import { Card } from '@/components/ui/card';
+import { Card, cardVariants } from '@/components/ui/card';
 import { InlineNotice } from '@/components/ui/inline-notice';
+import { cn } from '@dub/utils';
 
 // ─── Step Definitions ───
 //
@@ -233,7 +234,7 @@ export default function OnboardingWizard() {
     if (successBanner) {
         return (
             <div className="flex items-center justify-center min-h-[60vh] animate-fadeIn">
-                <div className="glass-card p-10 text-center max-w-lg">
+                <div className={cn(cardVariants({ density: 'none' }), 'p-10 text-center max-w-lg')}>
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-bg-success-emphasis flex items-center justify-center">
                         <CheckCircle2 className="w-8 h-8 text-content-inverted" />
                     </div>
@@ -251,7 +252,7 @@ export default function OnboardingWizard() {
     if (!state || state.status === 'NOT_STARTED') {
         return (
             <div className="flex items-center justify-center min-h-[60vh] animate-fadeIn">
-                <div className="glass-card p-10 text-center max-w-lg">
+                <div className={cn(cardVariants({ density: 'none' }), 'p-10 text-center max-w-lg')}>
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[var(--brand-default)] flex items-center justify-center">
                         <Sparkles className="w-8 h-8 text-content-inverted" />
                     </div>
@@ -270,7 +271,7 @@ export default function OnboardingWizard() {
     if (state.status === 'COMPLETED') {
         return (
             <div className="flex items-center justify-center min-h-[60vh] animate-fadeIn">
-                <div className="glass-card p-10 text-center max-w-lg">
+                <div className={cn(cardVariants({ density: 'none' }), 'p-10 text-center max-w-lg')}>
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-bg-success-emphasis flex items-center justify-center">
                         <CheckCircle2 className="w-8 h-8 text-content-inverted" />
                     </div>
@@ -302,7 +303,7 @@ export default function OnboardingWizard() {
             </div>
 
             {error && (
-                <div className="glass-card border-border-error p-3 text-sm text-content-error flex items-center gap-tight">
+                <div className={cn(cardVariants({ density: 'none' }), 'border-border-error p-3 text-sm text-content-error flex items-center gap-tight')}>
                     <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                     {error}
                     <button onClick={() => setError(null)} className="ml-auto text-content-error hover:text-content-inverted text-xs">&times;</button>
@@ -311,7 +312,7 @@ export default function OnboardingWizard() {
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-section">
                 {/* ─── Progress Sidebar ─── */}
-                <div className="glass-card p-0 overflow-hidden">
+                <div className={cn(cardVariants({ density: 'none' }), 'p-0 overflow-hidden')}>
                     <div className="p-4 border-b border-border-subtle">
                         <p className="text-xs text-content-muted font-medium uppercase tracking-wider">Progress</p>
                         <div className="flex items-center gap-tight mt-2">
@@ -354,7 +355,7 @@ export default function OnboardingWizard() {
 
                 {/* ─── Step Content ─── */}
                 <div className="lg:col-span-3">
-                    <div className="glass-card">
+                    <div className={cardVariants({ density: 'none' })}>
                         <div className="p-5 border-b border-border-subtle flex items-center gap-compact">
                             <div className={`w-9 h-9 rounded-full bg-[var(--brand-default)] flex items-center justify-center`}>
                                 <currentStep.icon className="w-4.5 h-4.5 text-content-inverted" />

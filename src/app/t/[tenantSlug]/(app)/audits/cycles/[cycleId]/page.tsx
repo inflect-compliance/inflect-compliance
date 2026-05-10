@@ -10,6 +10,8 @@ import { Heading } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
 import { MetaStrip } from '@/components/ui/meta-strip';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 const FW_META: Record<string, { icon: AppIconName; label: string }> = {
     ISO27001: { icon: 'shield', label: 'ISO/IEC 27001:2022' },
@@ -114,7 +116,7 @@ export default function CycleDetailPage() {
             }
         >
             {/* Default Pack Preview */}
-            <div className="glass-card p-6 space-y-default">
+            <div className={cn(cardVariants(), 'space-y-default')}>
                 <div className="flex items-center justify-between">
                     <Heading level={2}>Default Pack Preview</Heading>
                     <Button variant="primary" onClick={createDefaultPack} disabled={creating} id="create-default-pack-btn" icon={<AppIcon name="package" size={16} />}>
@@ -152,7 +154,7 @@ export default function CycleDetailPage() {
                     <Heading level={2}>Packs</Heading>
                     {cycle.packs.map((p: any) => (
                         <Link key={p.id} href={`/t/${tenantSlug}/audits/packs/${p.id}`}
-                            className="glass-card p-4 flex items-center justify-between hover:bg-bg-muted/50 transition block" id={`pack-link-${p.id}`}>
+                            className={cn(cardVariants({ density: 'compact' }), 'flex items-center justify-between hover:bg-bg-muted/50 transition block')} id={`pack-link-${p.id}`}>
                             <div>
                                 <span className="font-medium text-sm">{p.name}</span>
                                 <StatusBadge variant={p.status === 'DRAFT' ? 'neutral' : p.status === 'FROZEN' ? 'info' : 'success'} className="ml-2">{p.status}</StatusBadge>

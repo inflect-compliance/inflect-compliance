@@ -21,6 +21,8 @@ import {
 import { useFormTelemetry } from '@/lib/telemetry/form-telemetry';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 const TYPE_OPTIONS: ComboboxOption[] = [
     { value: 'TASK', label: 'Task' },
@@ -187,7 +189,7 @@ export default function NewTaskPage() {
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="glass-card p-6 space-y-default" noValidate>
+            <form onSubmit={handleSubmit} className={cn(cardVariants(), 'space-y-default')} noValidate>
                 <FormField label="Title" required>
                     <Input
                         id="task-title-input"

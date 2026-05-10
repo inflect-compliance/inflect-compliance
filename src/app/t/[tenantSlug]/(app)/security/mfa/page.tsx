@@ -5,8 +5,9 @@
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
 import { formatDate } from '@/lib/format-date';
-import { Card } from '@/components/ui/card';
+import { Card, cardVariants } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { cn } from '@dub/utils';
 
 import { useState, useEffect, useCallback } from 'react';
 import { useTenantApiUrl } from '@/lib/tenant-context-provider';
@@ -167,7 +168,7 @@ export default function UserMfaPage() {
             </Heading>
 
             {error && (
-                <div className="glass-card p-4 border border-border-error bg-bg-error flex items-center gap-tight">
+                <div className={cn(cardVariants({ density: 'compact' }), 'border border-border-error bg-bg-error flex items-center gap-tight')}>
                     <XCircle className="w-4 h-4 text-content-error shrink-0" />
                     <span className="text-sm text-content-error">{error}</span>
                     <button onClick={() => setError(null)} className="ml-auto text-xs text-content-muted hover:text-content-emphasis">
@@ -177,7 +178,7 @@ export default function UserMfaPage() {
             )}
 
             {success && (
-                <div className="glass-card p-4 border border-border-success bg-bg-success flex items-center gap-tight">
+                <div className={cn(cardVariants({ density: 'compact' }), 'border border-border-success bg-bg-success flex items-center gap-tight')}>
                     <CheckCircle className="w-4 h-4 text-content-success shrink-0" />
                     <span className="text-sm text-content-success">{success}</span>
                 </div>
@@ -185,7 +186,7 @@ export default function UserMfaPage() {
 
             {/* Status Card */}
             {step === 'status' && status && (
-                <div className="glass-card p-6 space-y-default">
+                <div className={cn(cardVariants(), 'space-y-default')}>
                     <div className="flex items-center justify-between">
                         <div>
                             <Heading level={2}>MFA Status</Heading>
@@ -258,7 +259,7 @@ export default function UserMfaPage() {
 
             {/* Enrollment Step: Show Secret + QR */}
             {step === 'enrolling' && enrollment && (
-                <div className="glass-card p-6 space-y-default">
+                <div className={cn(cardVariants(), 'space-y-default')}>
                     <div>
                         <Heading level={2} className="mb-1">Set Up Authenticator App</Heading>
                         <p className="text-sm text-content-muted">

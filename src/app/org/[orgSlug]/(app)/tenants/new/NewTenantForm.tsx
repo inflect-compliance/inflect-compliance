@@ -22,6 +22,8 @@ import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
@@ -191,7 +193,7 @@ export function NewTenantForm({ orgSlug }: Props) {
                 onSubmit={onSubmit}
                 noValidate
                 data-testid="org-new-tenant-form"
-                className="glass-card p-6 space-y-default"
+                className={cn(cardVariants(), 'space-y-default')}
             >
                 <FormField
                     label="Name"

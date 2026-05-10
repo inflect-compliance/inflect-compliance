@@ -23,6 +23,8 @@ import {
     VENDOR_CRITICALITY_VARIANT,
     VENDOR_ASSESSMENT_VARIANT,
 } from '@/app-layer/domain/entity-status-mapping';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 // Polish PR-1 — STATUS_BADGE / CRIT_BADGE moved to shared domain
 // mapping. Local aliases preserved so the dozens of inline-table
@@ -295,7 +297,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
         >
             {/* OVERVIEW */}
             {tab === 'overview' && !editing && (
-                <div className="glass-card p-6 space-y-default">
+                <div className={cn(cardVariants(), 'space-y-default')}>
                     <div className="grid grid-cols-2 gap-default text-sm">
                         <div><span className="text-content-muted">Legal Name:</span> <span className="ml-2">{vendor.legalName || '—'}</span></div>
                         <div><span className="text-content-muted">Domain:</span> <span className="ml-2">{vendor.domain || '—'}</span></div>
@@ -328,7 +330,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
 
             {/* EDIT FORM */}
             {tab === 'overview' && editing && canWrite && (
-                <div className="glass-card p-6 space-y-default">
+                <div className={cn(cardVariants(), 'space-y-default')}>
                     <div className="grid grid-cols-2 gap-default">
                         <div>
                             <label className="block text-sm text-content-muted mb-1">Name</label>
@@ -369,7 +371,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                         </div>
                     )}
                     {showDocForm && canWrite && (
-                        <form onSubmit={addDoc} className="glass-card p-4 space-y-compact">
+                        <form onSubmit={addDoc} className={cn(cardVariants({ density: 'compact' }), 'space-y-compact')}>
                             <div className="grid grid-cols-2 gap-compact">
                                 <div>
                                     <label className="block text-sm text-content-muted mb-1">Type</label>
@@ -391,7 +393,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                             <Button type="submit" variant="primary" id="submit-doc-btn">+ Document</Button>
                         </form>
                     )}
-                    <div className="glass-card overflow-x-auto">
+                    <div className={cn(cardVariants({ density: 'none' }), 'overflow-x-auto')}>
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-border-default text-left text-xs uppercase text-content-muted">
@@ -449,7 +451,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                             )}
                         </div>
                     )}
-                    <div className="glass-card overflow-x-auto">
+                    <div className={cn(cardVariants({ density: 'none' }), 'overflow-x-auto')}>
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-border-default text-left text-xs uppercase text-content-muted">
@@ -494,7 +496,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                         </div>
                     )}
                     {showLinkForm && canWrite && (
-                        <div className="glass-card p-4 flex items-end gap-compact">
+                        <div className={cn(cardVariants({ density: 'compact' }), 'flex items-end gap-compact')}>
                             <div>
                                 <label className="block text-sm text-content-muted mb-1">Type</label>
                                 <Combobox hideSearch id="link-type" selected={VENDOR_LINK_TYPE_OPTIONS.find(o => o.value === linkForm.entityType) ?? null} setSelected={(opt) => setLinkForm(p => ({ ...p, entityType: opt?.value ?? p.entityType }))} options={VENDOR_LINK_TYPE_OPTIONS} matchTriggerWidth />
@@ -520,7 +522,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                         const typeLinks = links.filter((l: any) => l.entityType === type);
                         if (typeLinks.length === 0) return null;
                         return (
-                            <div key={type} className="glass-card p-4 space-y-tight">
+                            <div key={type} className={cn(cardVariants({ density: 'compact' }), 'space-y-tight')}>
                                 <Heading level={3}>{type}s ({typeLinks.length})</Heading>
                                 {typeLinks.map((l: any) => (
                                     <div key={l.id} className="flex items-center justify-between text-sm border-b border-border-subtle py-1">
@@ -533,7 +535,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                             </div>
                         );
                     })}
-                    {links.length === 0 && <div className="glass-card p-6 text-center text-content-subtle">No linked entities</div>}
+                    {links.length === 0 && <div className={cn(cardVariants(), 'text-center text-content-subtle')}>No linked entities</div>}
                 </div>
             )}
 
@@ -554,7 +556,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                         </div>
                     )}
                     {bundles.map((b: any) => (
-                        <div key={b.id} className="glass-card p-4 space-y-tight">
+                        <div key={b.id} className={cn(cardVariants({ density: 'compact' }), 'space-y-tight')}>
                             <div className="flex items-center justify-between">
                                 <div>
                                     <span className="font-medium">{b.name}</span>
@@ -572,7 +574,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                             <div className="text-xs text-content-muted">Created by {b.createdBy?.name || '—'} on {formatDate(b.createdAt)}</div>
                         </div>
                     ))}
-                    {bundles.length === 0 && <div className="glass-card p-6 text-center text-content-subtle">No evidence bundles</div>}
+                    {bundles.length === 0 && <div className={cn(cardVariants(), 'text-center text-content-subtle')}>No evidence bundles</div>}
                 </div>
             )}
 
@@ -580,7 +582,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
             {tab === 'subprocessors' && (
                 <div className="space-y-default">
                     {canWrite && (
-                        <div className="glass-card p-4 flex items-end gap-compact">
+                        <div className={cn(cardVariants({ density: 'compact' }), 'flex items-end gap-compact')}>
                             <div>
                                 <label className="block text-sm text-content-muted mb-1">Subprocessor Vendor ID</label>
                                 <input className="input w-48" value={subForm.subprocessorVendorId}
@@ -600,7 +602,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                             }}>Add</Button>
                         </div>
                     )}
-                    <div className="glass-card overflow-x-auto">
+                    <div className={cn(cardVariants({ density: 'none' }), 'overflow-x-auto')}>
                         <table className="w-full text-sm">
                             <thead><tr className="border-b border-border-default text-left text-xs uppercase text-content-muted">
                                 <th className="p-3">Subprocessor</th><th className="p-3">Country</th>

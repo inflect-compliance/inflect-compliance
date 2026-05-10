@@ -1,4 +1,5 @@
-import { Card } from '@/components/ui/card';
+import { Card, cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 /**
  * Reusable skeleton loading primitives for the dark-themed UI.
  *
@@ -109,7 +110,7 @@ export function SkeletonTable({
 }) {
     return (
         <div
-            className={`glass-card overflow-hidden ${className}`}
+            className={cn(cardVariants({ density: 'none' }), 'overflow-hidden', className)}
             aria-hidden="true"
             data-skeleton-table
         >
@@ -147,7 +148,7 @@ export function SkeletonTableRow({ cols = 8 }: { cols?: number }) {
 
 export function SkeletonCard({ className = '', lines = 3 }: { className?: string; lines?: number }) {
     return (
-        <div className={`glass-card p-6 space-y-compact ${className}`} aria-hidden="true">
+        <div className={cn(cardVariants(), 'space-y-compact', className)} aria-hidden="true">
             {Array.from({ length: lines }).map((_, i) => (
                 <SkeletonLine key={i} className={i === 0 ? 'w-1/3' : i === lines - 1 ? 'w-2/3' : 'w-full'} />
             ))}
@@ -176,7 +177,7 @@ export function SkeletonPageHeader() {
 
 export function SkeletonFilterBar() {
     return (
-        <div className="glass-card p-4">
+        <div className={cardVariants({ density: 'compact' })}>
             <div className="flex flex-wrap gap-compact items-center">
                 <div className="flex-1 min-w-[200px]">
                     <SkeletonInput className="w-full" />
@@ -196,7 +197,7 @@ export function SkeletonFilterBar() {
  */
 export function SkeletonDataTable({ rows = 8, cols = 8 }: { rows?: number; cols?: number }) {
     return (
-        <div className="glass-card overflow-hidden">
+        <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
             <table className="data-table">
                 <thead>
                     <tr>
@@ -359,7 +360,7 @@ export function SkeletonSettings() {
         <div className="space-y-section animate-fadeIn" aria-busy="true" aria-label="Loading settings">
             <SkeletonHeading className="w-36" />
             {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="glass-card p-6 space-y-default">
+                <div key={i} className={cn(cardVariants(), 'space-y-default')}>
                     <Skeleton className="h-5 w-40" />
                     <div className="space-y-compact">
                         <div className="flex items-center gap-default">

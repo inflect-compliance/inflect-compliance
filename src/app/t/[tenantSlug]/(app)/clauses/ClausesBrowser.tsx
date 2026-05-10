@@ -4,6 +4,8 @@ import { useTranslations } from 'next-intl';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading, Eyebrow } from '@/components/ui/typography';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 const STATUS_COLORS: Record<string, StatusBadgeVariant> = {
     NOT_STARTED: 'neutral', IN_PROGRESS: 'info', READY: 'success', NEEDS_REVIEW: 'warning',
@@ -57,7 +59,7 @@ export function ClausesBrowser({ clauses: initialClauses, tenantSlug }: ClausesB
             <div className="lg:col-span-1 space-y-tight">
                 {clauses.map(c => (
                     <button key={c.id} onClick={() => setSelected(c)}
-                        className={`w-full text-left glass-card p-4 hover:bg-bg-muted/50 transition ${selected?.id === c.id ? 'ring-2 ring-[var(--ring)]' : ''}`}>
+                        className={cn(cardVariants({ density: 'compact' }), 'w-full text-left hover:bg-bg-muted/50 transition', selected?.id === c.id && 'ring-2 ring-[var(--ring)]')}>
                         <div className="flex items-center justify-between">
                             <span className="font-medium text-sm">{t('clause')} {c.number}</span>
                             <StatusBadge variant={STATUS_COLORS[c.status]}>{statusLabel(c.status)}</StatusBadge>
@@ -69,7 +71,7 @@ export function ClausesBrowser({ clauses: initialClauses, tenantSlug }: ClausesB
 
             <div className="lg:col-span-2">
                 {selected ? (
-                    <div className="glass-card p-6 animate-slideIn">
+                    <div className={cn(cardVariants(), 'animate-slideIn')}>
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-compact mb-4">
                             <Heading level={2}>{t('clause')} {selected.number}: {selected.title}</Heading>
                             <div className="w-full sm:w-48">
@@ -107,7 +109,7 @@ export function ClausesBrowser({ clauses: initialClauses, tenantSlug }: ClausesB
                         </div>
                     </div>
                 ) : (
-                    <div className="glass-card p-12 text-center text-content-subtle">
+                    <div className={cn(cardVariants({ density: 'none' }), 'p-12 text-center text-content-subtle')}>
                         <p>{t('selectClause')}</p>
                     </div>
                 )}

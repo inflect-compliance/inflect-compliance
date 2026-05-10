@@ -3,6 +3,8 @@
 import { useUrlFilters } from '@/lib/hooks/useUrlFilters';
 import { Combobox } from '@/components/ui/combobox';
 import { Button } from '@/components/ui/button';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 export interface FilterSelectConfig {
     key: string;
@@ -48,7 +50,7 @@ export function FilterBar({
     const { filters, setFilter, clearFilters, hasActiveFilters } = useUrlFilters(filterKeys);
 
     return (
-        <div className={`glass-card p-4 ${className}`}>
+        <div className={cn(cardVariants({ density: 'compact' }), className)}>
             <div className="flex flex-wrap gap-compact items-center">
                 {/* Search input */}
                 <div className="flex-1 min-w-[200px]">

@@ -29,8 +29,9 @@ import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-bad
 import { Heading } from '@/components/ui/typography';
 import { MetaStrip } from '@/components/ui/meta-strip';
 import { POLICY_STATUS_VARIANT } from '@/app-layer/domain/entity-status-mapping';
-import { Card } from '@/components/ui/card';
+import { Card, cardVariants } from '@/components/ui/card';
 import { InlineNotice } from '@/components/ui/inline-notice';
+import { cn } from '@dub/utils';
 
 // Lazy-load Tiptap. The editor + ProseMirror chunks land at
 // ~200KB gzipped; deferring the import means the static parts of
@@ -469,7 +470,7 @@ export default function PolicyDetailPage() {
             )}
 
             {/* Description + meta + review-schedule */}
-            <div className="glass-card p-6">
+            <div className={cardVariants()}>
                 <div className="flex items-start justify-between gap-default">
                     <div className="flex-1 min-w-0">
                         {policy.description && <p className="text-sm text-content-muted mb-3">{policy.description}</p>}
@@ -567,7 +568,7 @@ export default function PolicyDetailPage() {
 
             {/* ── Current Version ── */}
             {tab === 'current' && (
-                <div className="glass-card p-6 space-y-default">
+                <div className={cn(cardVariants(), 'space-y-default')}>
                     {currentVersion ? (
                         <>
                             <div className="flex items-center justify-between mb-4">
@@ -613,7 +614,7 @@ export default function PolicyDetailPage() {
                         const isCurrentPublished = policy.currentVersionId === v.id;
 
                         return (
-                            <div key={v.id} className="glass-card p-4 space-y-compact">
+                            <div key={v.id} className={cn(cardVariants({ density: 'compact' }), 'space-y-compact')}>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-compact">
                                         <span className="text-sm font-semibold text-[var(--brand-default)]">v{v.versionNumber}</span>
@@ -673,7 +674,7 @@ export default function PolicyDetailPage() {
 
             {/* ── Editor ── */}
             {tab === 'editor' && canWrite && (
-                <div className="glass-card p-6 space-y-default">
+                <div className={cn(cardVariants(), 'space-y-default')}>
                     <div className="flex items-center justify-between">
                         <Heading level={3}>Create New Version</Heading>
                     </div>
@@ -745,7 +746,7 @@ export default function PolicyDetailPage() {
 
             {/* ── Activity Feed ── */}
             {tab === 'activity' && (
-                <div className="glass-card p-6" id="activity-feed">
+                <div className={cardVariants()} id="activity-feed">
                     <Heading level={3} className="mb-4">Activity Timeline</Heading>
                     {activitiesLoading ? (
                         <div className="text-center text-content-subtle animate-pulse py-8">Loading activity...</div>

@@ -22,6 +22,8 @@ import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 const ASSET_TYPES = ['INFORMATION', 'APPLICATION', 'SYSTEM', 'SERVICE', 'DATA_STORE', 'INFRASTRUCTURE', 'VENDOR', 'PROCESS', 'PEOPLE_PROCESS', 'OTHER'];
 const ASSET_TYPE_OPTIONS: ComboboxOption[] = ASSET_TYPES.map(t => ({ value: t, label: t.replace(/_/g, ' ') }));
@@ -199,7 +201,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
             </ListPageShell.Filters>
 
             {showForm && (
-                <form onSubmit={createAsset} className="glass-card p-6 space-y-default animate-fadeIn">
+                <form onSubmit={createAsset} className={cn(cardVariants(), 'space-y-default animate-fadeIn')}>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-default">
                         <div><label className="input-label">{t.name} *</label><input className="input" required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
                         <div><label className="input-label">{t.type}</label><Combobox hideSearch selected={ASSET_TYPE_OPTIONS.find(o => o.value === form.type) ?? null} setSelected={(opt) => setForm(f => ({ ...f, type: opt?.value ?? 'SYSTEM' }))} options={ASSET_TYPE_OPTIONS} matchTriggerWidth /></div>

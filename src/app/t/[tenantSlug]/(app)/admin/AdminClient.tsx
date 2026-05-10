@@ -7,6 +7,7 @@ import { DataTable, createColumns } from '@/components/ui/table';
 import { ToggleGroup } from '@/components/ui/toggle-group';
 import { ListPageShell } from '@/components/layout/ListPageShell';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { cardVariants } from '@/components/ui/card';
 
 interface AdminClientProps {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -106,7 +107,7 @@ export function AdminClient({ auditLog, tenantSlug, translations: t }: AdminClie
                         data-testid="audit-log-table"
                     />
                 ) : (
-                    <div className="glass-card p-6">
+                    <div className={cardVariants()}>
                         <p className="text-sm text-content-muted mb-4">{t.templateDescription}</p>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-compact">
                             {templateKeys.map(key => (

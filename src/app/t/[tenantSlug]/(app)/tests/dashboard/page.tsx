@@ -19,6 +19,7 @@ import { KPIStat, type MetricTone } from '@/components/ui/metric';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { SkeletonDashboard } from '@/components/ui/skeleton';
 import { Heading } from '@/components/ui/typography';
+import { cardVariants } from '@/components/ui/card';
 
 interface DashboardMetrics {
     periodDays: number;
@@ -144,7 +145,7 @@ export default function TestDashboardPage() {
 
             {/* Result Distribution */}
             <div className="grid md:grid-cols-2 gap-section">
-                <div className="glass-card p-6">
+                <div className={cardVariants()}>
                     <Heading level={2} className="mb-4">Result Distribution ({period}d)</Heading>
                     {metrics.completedRuns === 0 ? (
                         <p className="text-content-subtle text-sm">No completed runs in this period</p>
@@ -189,7 +190,7 @@ export default function TestDashboardPage() {
                     )}
                 </div>
 
-                <div className="glass-card p-6">
+                <div className={cardVariants()}>
                     <Heading level={2} className="mb-4">Repeated Failures</Heading>
                     {metrics.repeatedFailures.length === 0 ? (
                         <p className="text-content-subtle text-sm">No controls with repeated failures</p>
@@ -228,7 +229,7 @@ export default function TestDashboardPage() {
 
             {/* Framework Test Readiness */}
             {readiness.length > 0 && (
-                <div className="glass-card p-6">
+                <div className={cardVariants()}>
                     <Heading level={2} className="mb-4" id="framework-readiness-title">Framework Test Coverage</Heading>
                     <p className="text-sm text-content-muted mb-4">
                         How well your mapped controls are covered by active test plans and recent test runs
@@ -295,7 +296,7 @@ function MetricCard({ label, value, sub, color }: { label: string; value: string
         brand: 'default',
     };
     return (
-        <div className="glass-card p-4">
+        <div className={cardVariants({ density: 'compact' })}>
             <KPIStat
                 value={value}
                 label={label}

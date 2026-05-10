@@ -10,7 +10,8 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { FileText, SearchX } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
-import { Card } from '@/components/ui/card';
+import { Card, cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 export default function TemplatesPage() {
     const apiUrl = useTenantApiUrl();
@@ -80,7 +81,7 @@ export default function TemplatesPage() {
             </div>
 
             {/* Filters */}
-            <div className="glass-card p-4 flex flex-wrap gap-compact items-center">
+            <div className={cn(cardVariants({ density: 'compact' }), 'flex flex-wrap gap-compact items-center')}>
                 <input
                     type="text" className="input flex-1 min-w-[200px]" placeholder="Search templates..."
                     value={search} onChange={e => setSearch(e.target.value)} id="template-search"
@@ -101,7 +102,7 @@ export default function TemplatesPage() {
             {loading ? (
                 <div className="p-12 text-center text-content-subtle animate-pulse">Loading templates...</div>
             ) : filtered.length === 0 ? (
-                <div className="glass-card">
+                <div className={cardVariants({ density: 'none' })}>
                     {templates.length === 0 ? (
                         <EmptyState
                             icon={FileText}

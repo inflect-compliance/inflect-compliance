@@ -3,6 +3,8 @@ import {
     SkeletonHeading,
     SkeletonButton,
 } from '@/components/ui/skeleton';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 /**
  * Reports loading skeleton — shown via Next.js Suspense while
@@ -27,7 +29,7 @@ export default function ReportsLoading() {
             </div>
 
             {/* Table skeleton */}
-            <div className="glass-card overflow-hidden">
+            <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
                 {/* Header */}
                 <div className="h-12 bg-bg-default/50 border-b border-border-default/50" />
                 {/* Rows */}

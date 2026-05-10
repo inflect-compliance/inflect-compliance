@@ -38,6 +38,7 @@ import { ArrowDown, ArrowUp, Minus } from "lucide-react";
 
 import { AnimatedNumber, type AnimatedNumberFormat } from "./animated-number";
 import { Button } from "./button";
+import { cardVariants } from "./card";
 
 // ─── Types ────────────────────────────────────────────────────────
 
@@ -165,7 +166,8 @@ export function HeroMetric({
     return (
         <section
             className={cn(
-                "glass-card p-6 flex flex-col gap-tight md:flex-row md:items-end md:justify-between",
+                cardVariants(),
+                "flex flex-col gap-tight md:flex-row md:items-end md:justify-between",
                 "transition-colors duration-150 ease-out",
                 className,
             )}

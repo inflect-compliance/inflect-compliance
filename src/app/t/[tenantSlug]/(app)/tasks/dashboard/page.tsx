@@ -22,6 +22,7 @@ import { Heading } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { SkeletonDashboard } from '@/components/ui/skeleton';
+import { cardVariants } from '@/components/ui/card';
 
 const STATUS_LABELS: Record<string, string> = {
     OPEN: 'Open', TRIAGED: 'Triaged', IN_PROGRESS: 'In Progress',
@@ -122,30 +123,30 @@ export default function TaskDashboardPage() {
 
             {/* KPI Cards — Polish PR-2: KPIStat primitive. */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-default" id="dashboard-metrics">
-                <div className="glass-card p-4">
+                <div className={cardVariants({ density: 'compact' })}>
                     <KPIStat value={metrics.total} label="Total Tasks" />
                 </div>
-                <div className="glass-card p-4">
+                <div className={cardVariants({ density: 'compact' })}>
                     <KPIStat
                         value={metrics.overdue}
                         label="Overdue"
                         tone={metrics.overdue > 0 ? 'critical' : 'default'}
                     />
                 </div>
-                <div className="glass-card p-4">
+                <div className={cardVariants({ density: 'compact' })}>
                     <KPIStat
                         value={metrics.dueIn7d}
                         label="Due in 7 days"
                         tone={metrics.dueIn7d > 0 ? 'attention' : 'default'}
                     />
                 </div>
-                <div className="glass-card p-4">
+                <div className={cardVariants({ density: 'compact' })}>
                     <KPIStat value={metrics.dueIn30d} label="Due in 30 days" />
                 </div>
             </div>
 
             {/* My Tasks */}
-            <div className="glass-card p-4" id="my-tasks-section">
+            <div className={cardVariants({ density: 'compact' })} id="my-tasks-section">
                 <Heading level={3} className="mb-3"><User size={14} className="inline-block mr-1" /> My Tasks</Heading>
                 {myTasks.length === 0 ? (
                     <p className="text-content-subtle text-sm text-center py-4">No open tasks assigned to you</p>
@@ -174,7 +175,7 @@ export default function TaskDashboardPage() {
             {/* Breakdown + Trend */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-default">
                 {/* By Status — Epic 59: StatusBreakdown primitive. */}
-                <div className="glass-card p-4">
+                <div className={cardVariants({ density: 'compact' })}>
                     <Heading level={3} className="mb-3">By Status</Heading>
                     <StatusBreakdown
                         ariaLabel="Tasks by status"
@@ -196,7 +197,7 @@ export default function TaskDashboardPage() {
                 </div>
 
                 {/* By Severity — Epic 59: StatusBreakdown primitive. */}
-                <div className="glass-card p-4">
+                <div className={cardVariants({ density: 'compact' })}>
                     <Heading level={3} className="mb-3">By Severity</Heading>
                     <StatusBreakdown
                         ariaLabel="Tasks by severity"
@@ -212,7 +213,7 @@ export default function TaskDashboardPage() {
                 </div>
 
                 {/* 30-Day Trend */}
-                <div className="glass-card p-4">
+                <div className={cardVariants({ density: 'compact' })}>
                     <Heading level={3} className="mb-3">30-Day Trend</Heading>
                     <div className="flex items-end gap-default h-24 mt-4">
                         <div className="flex-1 flex flex-col items-center gap-1">
@@ -234,7 +235,7 @@ export default function TaskDashboardPage() {
             </div>
 
             {/* By Type */}
-            <div className="glass-card p-4">
+            <div className={cardVariants({ density: 'compact' })}>
                 <Heading level={3} className="mb-3">By Type</Heading>
                 <div className="flex flex-wrap gap-compact">
                     {Object.entries(TYPE_LABELS).map(([key, label]) => (
@@ -248,7 +249,7 @@ export default function TaskDashboardPage() {
 
             {/* Top Controls with Open Tasks */}
             {metrics.topControls && metrics.topControls.length > 0 && (
-                <div className="glass-card p-4" id="top-controls-section">
+                <div className={cardVariants({ density: 'compact' })} id="top-controls-section">
                     <Heading level={3} className="mb-3"><AppIcon name="controls" size={14} className="inline-block mr-1" /> Top Controls with Open Tasks</Heading>
                     <div className="space-y-tight">
                         {metrics.topControls.map((ctrl) => (
@@ -268,7 +269,7 @@ export default function TaskDashboardPage() {
 
             {/* Top Linked Entities (Assets/Risks) */}
             {metrics.topLinkedEntities && metrics.topLinkedEntities.length > 0 && (
-                <div className="glass-card p-4" id="top-linked-entities-section">
+                <div className={cardVariants({ density: 'compact' })} id="top-linked-entities-section">
                     <Heading level={3} className="mb-3"><Link2 size={14} className="inline-block mr-1" /> Top Assets & Risks with Open Tasks</Heading>
                     <div className="space-y-tight">
                         {metrics.topLinkedEntities.map((entity) => (
@@ -289,7 +290,7 @@ export default function TaskDashboardPage() {
 
             {/* Overdue Tasks */}
             {overdueTasks.length > 0 && (
-                <div className="glass-card p-4" id="overdue-tasks-section">
+                <div className={cardVariants({ density: 'compact' })} id="overdue-tasks-section">
                     <Heading level={3} className="mb-3 text-content-error"><AlertOctagon size={14} className="inline-block mr-1" /> Overdue Tasks</Heading>
                     <div className="space-y-tight">
                         {overdueTasks.slice(0, 10).map((task: any) => (

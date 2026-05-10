@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { Heading } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export default function InstallWizardPage() {
@@ -127,7 +129,7 @@ export default function InstallWizardPage() {
 
             {/* Step 1: Select Pack */}
             {step === 'select' && (
-                <div className="glass-card space-y-default">
+                <div className={cn(cardVariants({ density: 'none' }), 'space-y-default')}>
                     <Heading level={2}>Select a Pack</Heading>
                     {packs.length === 0 ? (
                         <p className="text-content-subtle">No packs available for this framework.</p>
@@ -158,7 +160,7 @@ export default function InstallWizardPage() {
             {/* Step 2: Preview */}
             {step === 'preview' && preview && (
                 <div className="space-y-default">
-                    <div className="glass-card">
+                    <div className={cardVariants({ density: 'none' })}>
                         <Heading level={2} className="mb-4">Install Preview</Heading>
                         <div className="grid grid-cols-3 gap-default mb-4">
                             <div className="p-3 rounded-lg bg-bg-default/50">
@@ -187,7 +189,7 @@ export default function InstallWizardPage() {
                     </div>
 
                     {error && (
-                        <div className="glass-card border-border-error bg-bg-error text-content-error text-sm">{error}</div>
+                        <div className={cn(cardVariants({ density: 'none' }), 'border-border-error bg-bg-error text-content-error text-sm')}>{error}</div>
                     )}
 
                     <div className="flex gap-compact">
@@ -217,7 +219,7 @@ export default function InstallWizardPage() {
 
             {/* Step 3: Done */}
             {step === 'done' && result && (
-                <div className="glass-card text-center space-y-default" id="install-result">
+                <div className={cn(cardVariants({ density: 'none' }), 'text-center space-y-default')} id="install-result">
                     <div className="text-4xl"></div>
                     <Heading level={1}>Pack Installed Successfully!</Heading>
                     <div className="grid grid-cols-3 gap-default">

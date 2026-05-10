@@ -13,6 +13,8 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { textLinkVariants } from '@/components/ui/typography';
 import { StatusBadge as StatusBadgePrimitive, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 // ─── Types ───
 
@@ -267,7 +269,7 @@ export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientPr
             </div>
 
             {/* Table */}
-            <div className="glass-card overflow-auto">
+            <div className={cn(cardVariants({ density: 'none' }), 'overflow-auto')}>
                 <table className="data-table" id="soa-table">
                     <thead>
                         <tr>
@@ -563,7 +565,7 @@ function SoARow({
 function SummaryCard({ label, value, icon, accent }: { label: string; value: number; icon: React.ReactNode; accent?: 'danger' | 'warning' }) {
     const border = accent === 'danger' ? 'border-border-error' : accent === 'warning' ? 'border-border-warning' : 'border-border-default/50';
     return (
-        <div className={`glass-card px-4 py-3 border ${border}`}>
+        <div className={cn(cardVariants({ density: 'none' }), 'px-4 py-3 border', border)}>
             <div className="flex items-center justify-between">
                 {icon}
                 <span className="text-xl font-bold text-content-emphasis">{value}</span>

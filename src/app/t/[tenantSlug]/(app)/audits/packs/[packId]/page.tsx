@@ -18,6 +18,8 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { MetaStrip } from '@/components/ui/meta-strip';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
+import { cardVariants } from '@/components/ui/card';
+import { cn } from '@dub/utils';
 
 const ENTITY_ICON: Record<string, AppIconName> = {
     CONTROL: 'controls', POLICY: 'policies', EVIDENCE: 'evidence', FILE: 'overview', ISSUE: 'warning',
@@ -210,7 +212,7 @@ export default function PackDetailPage() {
         >
             {/* Share Link */}
             {shareLink && (
-                <div className="glass-card p-4 border border-border-success bg-bg-success animate-fadeIn" id="share-link-card">
+                <div className={cn(cardVariants({ density: 'compact' }), 'border border-border-success bg-bg-success animate-fadeIn')} id="share-link-card">
                     <div className="flex items-center justify-between gap-compact">
                         <div className="min-w-0">
                             <p className="text-sm font-medium text-content-success">Share Link Generated</p>
@@ -228,7 +230,7 @@ export default function PackDetailPage() {
 
             {/* Items grouped by type */}
             {Object.keys(grouped).length === 0 ? (
-                <div className="glass-card">
+                <div className={cardVariants({ density: 'none' })}>
                     <EmptyState
                         icon={Package}
                         title="No items in this pack yet"
@@ -243,7 +245,7 @@ export default function PackDetailPage() {
                             <span>{type}</span>
                             <span className="text-content-subtle">({items.length})</span>
                         </Heading>
-                        <div className="glass-card divide-y divide-border-default/50">
+                        <div className={cn(cardVariants({ density: 'none' }), 'divide-y divide-border-default/50')}>
                             {items.slice(0, 50).map((item: any) => {
                                 let snap: any = {};
                                 try { snap = JSON.parse(item.snapshotJson || '{}'); } catch { /* */ }
@@ -278,7 +280,7 @@ export default function PackDetailPage() {
 
             {/* Export area (placeholder) */}
             {isFrozen && (
-                <div className="glass-card p-6">
+                <div className={cardVariants()}>
                     <Heading level={3} className="mb-2 inline-flex items-center gap-tight"><AppIcon name="export" size={16} /> Exports</Heading>
                     <div className="flex gap-tight">
                         <a href={apiUrl(`/audits/packs/${packId}?action=export&format=json`)}
