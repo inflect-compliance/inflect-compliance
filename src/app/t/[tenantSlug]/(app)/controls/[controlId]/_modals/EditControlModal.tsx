@@ -20,6 +20,7 @@
 import { Button } from '@/components/ui/button';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Modal } from '@/components/ui/modal';
+import { RequiredMarker } from '@/components/ui/required-marker';
 
 export interface EditControlForm {
     name: string;
@@ -95,7 +96,7 @@ export function EditControlModal({
                                 htmlFor="edit-name"
                                 className="mb-1 block text-sm text-content-default"
                             >
-                                Title <span className="text-content-error">*</span>
+                                Title <RequiredMarker />
                             </label>
                             <input
                                 id="edit-name"

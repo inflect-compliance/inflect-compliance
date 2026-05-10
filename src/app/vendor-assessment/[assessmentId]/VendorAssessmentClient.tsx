@@ -22,6 +22,7 @@
  */
 import { useEffect, useState } from 'react';
 import { Heading } from '@/components/ui/typography';
+import { RequiredMarker } from '@/components/ui/required-marker';
 
 interface Question {
     id: string;
@@ -313,11 +314,7 @@ function QuestionField({
     const baseLabel = (
         <label className="block text-sm font-medium text-gray-900 mb-1">
             {question.prompt}
-            {question.required && (
-                <span className="text-content-error ml-1" aria-label="required">
-                    *
-                </span>
-            )}
+            {question.required && <RequiredMarker />}
         </label>
     );
 

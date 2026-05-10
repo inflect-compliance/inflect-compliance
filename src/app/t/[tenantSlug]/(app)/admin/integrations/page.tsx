@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { Combobox } from '@/components/ui/combobox';
+import { RequiredMarker } from '@/components/ui/required-marker';
 import { Tooltip } from '@/components/ui/tooltip';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -332,7 +333,7 @@ export default function AdminIntegrationsPage() {
                                 {selectedProvider.configSchema.configFields.map(field => (
                                     <div key={field.key}>
                                         <label className="block text-xs text-content-muted mb-1">
-                                            {field.label} {field.required && <span className="text-content-error">*</span>}
+                                            {field.label} {field.required && <RequiredMarker />}
                                         </label>
                                         <input
                                             type="text"
@@ -371,7 +372,7 @@ export default function AdminIntegrationsPage() {
                                 {selectedProvider.configSchema.secretFields.map(field => (
                                     <div key={field.key}>
                                         <label className="block text-xs text-content-muted mb-1">
-                                            {field.label} {field.required && <span className="text-content-error">*</span>}
+                                            {field.label} {field.required && <RequiredMarker />}
                                         </label>
                                         <input
                                             type={showSecrets ? 'text' : 'password'}

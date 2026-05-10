@@ -41,6 +41,7 @@ import { Label } from "./label";
 import { FormDescription } from "./form-description";
 import { FormError } from "./form-error";
 import { InfoTooltip } from "./tooltip";
+import { RequiredMarker } from "./required-marker";
 
 export interface FormFieldProps {
     /** The visible label text. Omit to render a label-less field. */
@@ -154,14 +155,7 @@ const FormField = React.forwardRef<HTMLDivElement, FormFieldProps>(
                     >
                         <Label htmlFor={controlId}>
                             {label}
-                            {required && (
-                                <span
-                                    aria-hidden="true"
-                                    className="ml-1 text-content-error"
-                                >
-                                    *
-                                </span>
-                            )}
+                            {required && <RequiredMarker />}
                         </Label>
                         {hint && (
                             <InfoTooltip
