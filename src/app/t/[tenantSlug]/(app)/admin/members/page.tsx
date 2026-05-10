@@ -482,7 +482,7 @@ export default function MembersAdminPage() {
                                 'inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium border transition-colors',
                                 count > 0
                                     ? 'bg-bg-success text-content-success border-border-success hover:bg-bg-success'
-                                    : 'bg-bg-muted text-content-subtle border-border-subtle hover:bg-bg-elevated',
+                                    : 'bg-bg-muted text-content-subtle border-border-subtle hover:bg-bg-muted',
                             )}
                             id={`sessions-count-${m.id}`}
                             aria-label={`View ${count} active sessions for ${m.user.email}`}

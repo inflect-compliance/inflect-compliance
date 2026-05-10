@@ -294,7 +294,7 @@ export default function FrameworkDetailPage() {
                             </Heading>
                             <div className="space-y-1 max-h-64 overflow-y-auto">
                                 {coverage.unmappedRequirements.map((r: any, i: number) => (
-                                    <div key={i} className="flex items-center gap-compact px-3 py-1.5 rounded-md hover:bg-bg-elevated/20 text-sm">
+                                    <div key={i} className="flex items-center gap-compact px-3 py-1.5 rounded-md hover:bg-bg-muted/50 text-sm">
                                         <span className="w-2 h-2 rounded-full bg-border-emphasis flex-shrink-0" />
                                         <code className="text-xs text-content-subtle font-mono w-16 sm:w-28 flex-shrink-0 truncate">{r.code}</code>
                                         <span className="text-content-muted">{r.title}</span>

@@ -21,7 +21,7 @@ const CRIT_BADGE: Record<string, StatusBadgeVariant> = { LOW: 'neutral', MEDIUM:
 
 function MetricCard({ label, value, tone, href }: { label: string; value: number | string; tone?: MetricTone; href?: string }) {
     const inner = (
-        <div className={`card p-4 ${href ? 'hover:bg-bg-elevated/50 cursor-pointer' : ''}`}>
+        <div className={`card p-4 ${href ? 'hover:bg-bg-muted/50 cursor-pointer' : ''}`}>
             <KPIStat value={value} label={label} tone={tone} />
         </div>
     );

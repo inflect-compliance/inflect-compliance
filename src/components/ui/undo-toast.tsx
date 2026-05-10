@@ -120,7 +120,7 @@ export function UndoToast({
                     className={cn(
                         "shrink-0 rounded-md px-2.5 py-1 text-xs font-semibold",
                         "border border-border-default bg-bg-default",
-                        "text-content-default hover:bg-bg-subtle",
+                        "text-content-default hover:bg-bg-muted",
                         "focus-visible:outline-none focus-visible:ring-2",
                         "focus-visible:ring-brand-emphasis focus-visible:ring-offset-2",
                         "focus-visible:ring-offset-bg-elevated",

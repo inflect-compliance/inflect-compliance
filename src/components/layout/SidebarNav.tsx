@@ -243,7 +243,7 @@ export function SidebarContent({ user, onLogout, onNavClick }: SidebarContentPro
                     onNavClick?.();
                     openPalette();
                 }}
-                className="mx-2 mb-2 flex items-center gap-tight rounded-lg border border-border-subtle bg-bg-default px-3 py-2 text-xs text-content-muted transition-colors hover:bg-bg-muted/40 hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                className="mx-2 mb-2 flex items-center gap-tight rounded-lg border border-border-subtle bg-bg-default px-3 py-2 text-xs text-content-muted transition-colors hover:bg-bg-muted hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
                 aria-label="Open command palette"
                 data-testid="sidebar-search-anchor"
             >

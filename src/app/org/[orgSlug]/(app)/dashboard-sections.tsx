@@ -370,7 +370,7 @@ export function DrillDownCtas({
                 <Link
                     key={cta.href}
                     href={cta.href}
-                    className="rounded-lg border border-border-subtle hover:border-border-default hover:bg-bg-muted/30 transition-colors duration-150 ease-out p-3 group"
+                    className="rounded-lg border border-border-subtle hover:border-border-default hover:bg-bg-muted/50 transition-colors duration-150 ease-out p-3 group"
                     data-testid={`org-drilldown-${cta.key}`}
                 >
                     <div className="flex items-center justify-between">

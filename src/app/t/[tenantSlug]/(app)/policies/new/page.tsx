@@ -157,7 +157,7 @@ export default function NewPolicyPage() {
                                     onClick={() => selectTemplate(tpl)}
                                     className={`text-left p-3 rounded-lg border transition text-sm ${templateId === tpl.id
                                         ? 'border-[var(--brand-default)] bg-[var(--brand-subtle)] text-content-emphasis'
-                                        : 'border-border-default bg-bg-default/50 text-content-default hover:bg-bg-elevated/50'
+                                        : 'border-border-default bg-bg-default/50 text-content-default hover:bg-bg-muted/50'
                                         }`}
                                 >
                                     <p className="font-medium">{tpl.title}</p>

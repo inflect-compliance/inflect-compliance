@@ -333,7 +333,7 @@ export default function OnboardingWizard() {
                                     onClick={() => setActiveStepIdx(i)}
                                     data-testid={`step-nav-${step.key}`}
                                     className={`w-full flex items-center gap-compact px-3 py-2.5 rounded-lg text-sm transition-colors duration-150 ease-out ${
-                                        active ? 'bg-brand-subtle text-content-inverted font-medium' : 'text-content-muted hover:text-content-emphasis hover:bg-bg-muted/30'
+                                        active ? 'bg-brand-subtle text-content-inverted font-medium' : 'text-content-muted hover:text-content-emphasis hover:bg-bg-muted/50'
                                     }`}
                                 >
                                     <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${

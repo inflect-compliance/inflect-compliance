@@ -169,7 +169,7 @@ function wrapHref(node: React.ReactNode, href?: string): React.ReactElement {
     return (
         <a
             href={href}
-            className="block rounded-md transition-colors duration-150 ease-out hover:bg-bg-muted/40 -m-1 p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+            className="block rounded-md transition-colors duration-150 ease-out hover:bg-bg-muted/50 -m-1 p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
         >
             {node}
         </a>

@@ -164,7 +164,7 @@ function PermissionGrid({
                                                     inline-flex items-center justify-center w-5 h-5 rounded transition
                                                     ${granted
                                                         ? 'bg-bg-success text-content-success hover:bg-bg-success'
-                                                        : 'bg-bg-elevated/50 text-content-subtle hover:bg-bg-elevated/80'
+                                                        : 'bg-bg-elevated/50 text-content-subtle hover:bg-bg-muted'
                                                     }
                                                     ${readonly ? 'cursor-default' : 'cursor-pointer'}
                                                 `}
