@@ -194,23 +194,52 @@ export const NAV_ITEM_DEFAULT =
     'text-content-muted hover:text-content-emphasis hover:before:opacity-100';
 
 /**
- * Active state — conviction. (R12-PR5 evolution.)
+ * Active state — conviction. (R12-PR6 lock.)
  *
- *   - Band: opacity 100 (the brand-gradient capsule from
- *     `NAV_ITEM_BAND_BASE`). Replaces the pre-R12-PR5 solid 2px
- *     `border-l-[var(--brand-default)]` — same visual function,
- *     unified mechanism with hover.
- *   - Background: `bg-brand-subtle` (the canonical brand-tinted
- *     surface, ~9-18% brand tone over the page bg depending on
- *     theme). This is what distinguishes ACTIVE from HOVER —
- *     hover shows just the band; active commits with the wash.
- *   - Text: `text-content-emphasis` (one rung up from muted) +
- *     `font-medium` (one weight up from regular).
+ * The active row tells you which page you're on. It has to read
+ * as "settled" — not louder than the surrounding rows, not
+ * quieter. Conviction expressed through FOUR co-operating
+ * tokens, no single one shouting:
+ *
+ *   (1) `text-content-emphasis`
+ *       One rung brighter than the muted default text. Same
+ *       colour the label hits on hover, but held permanently.
+ *       The eye reads "this row's label is awake."
+ *
+ *   (2) `bg-[var(--brand-subtle)]`
+ *       A brand-tinted wash, ~9% (PwC orange) or ~18% (METRO
+ *       yellow) over the page bg. This is what distinguishes
+ *       ACTIVE from HOVER — hover shows just the band; active
+ *       commits with the wash. The wash is the "you are here"
+ *       claim.
+ *
+ *   (3) `before:opacity-100`
+ *       The brand-gradient capsule band from R12-PR5, held
+ *       permanently at full opacity. Same mechanism as hover
+ *       (see `NAV_ITEM_BAND_BASE`), but un-gated. The band is
+ *       the jewellery.
+ *
+ *   (4) `font-medium`
+ *       One weight up from regular (400 → 500). The smallest
+ *       possible step. Anything bolder (600+) reads as a
+ *       HEADING, not a row label. The weight bump is what lets
+ *       the eye pick the active row at a glance without
+ *       reading; it parses as "denser ink".
+ *
+ * Why none of these alone, or fewer of them?
+ *   - Just the band: looks identical to hover. No "settled".
+ *   - Just the bg: looks like the row's selected for a batch
+ *     action.
+ *   - Just the text colour: too subtle on light theme.
+ *   - Just font-weight: reads as a heading.
+ *
+ * The conviction comes from all four firing TOGETHER. Locked by
+ * `tests/guards/nav-item-active-state-discipline.test.ts`.
  *
  * Visual progression — default → hover → active:
  *   default  no band, muted text, no bg
  *   hover    band fades in, text brightens, NO bg
- *   active   band stays, text + weight stay, brand-subtle bg
+ *   active   band stays lit, text + weight stay, brand-subtle bg
  *            arrives (the "settled in" surface)
  */
 export const NAV_ITEM_ACTIVE =

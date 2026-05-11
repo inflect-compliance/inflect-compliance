@@ -1,0 +1,144 @@
+/**
+ * Roadmap-12 PR-6 — NavItem active-state discipline.
+ *
+ * The active row is the one telling you which page you're on. It
+ * has to read as "settled" — not louder than the surrounding rows,
+ * not quieter. Conviction expressed through four co-operating
+ * tokens, no single one shouting:
+ *
+ *   1. `text-content-emphasis` — one rung brighter than the muted
+ *      default text. Same colour the label hits on hover, but
+ *      held permanently. The eye reads "this row's label is
+ *      awake."
+ *
+ *   2. `bg-[var(--brand-subtle)]` — a brand-tinted wash, ~9% (PwC
+ *      orange) or ~18% (METRO yellow) over the page bg. This is
+ *      what distinguishes ACTIVE from HOVER — hover shows just
+ *      the band; active commits with the wash. The wash is the
+ *      "you are here" claim.
+ *
+ *   3. `before:opacity-100` — the brand-gradient capsule band
+ *      from R12-PR5, held permanently at full opacity. Same
+ *      mechanism as hover, but un-gated. The band is the
+ *      jewellery.
+ *
+ *   4. `font-medium` — one weight up from regular (400 → 500).
+ *      The smallest possible step. Anything bolder (600+) reads
+ *      as a heading, not a row label. The weight bump is what
+ *      lets the eye PICK the active row at a glance without
+ *      reading; it parses as "denser ink".
+ *
+ * Why none of these alone, or fewer of them?
+ *   - Just the band: looks identical to hover. No "settled"
+ *     state.
+ *   - Just the bg: looks like the row's been selected for a
+ *     batch action.
+ *   - Just the text colour change: too subtle on light theme.
+ *   - Just font-weight: reads as a header, not a row.
+ *
+ * The conviction comes from all four firing TOGETHER. This
+ * ratchet locks all four.
+ */
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+
+const ROOT = path.resolve(__dirname, '../..');
+const SRC = fs.readFileSync(
+    path.join(ROOT, 'src/components/layout/nav-item.tsx'),
+    'utf8',
+);
+
+describe('Roadmap-12 PR-6 — NavItem active-state discipline', () => {
+    it('exports `NAV_ITEM_ACTIVE` with all four conviction tokens', () => {
+        const match = SRC.match(
+            /export\s+const\s+NAV_ITEM_ACTIVE\s*=\s*['"]([^'"]+)['"]/,
+        );
+        expect(match).not.toBeNull();
+        const recipe = match![1];
+
+        // (1) Text: one rung up from muted.
+        expect(recipe).toMatch(/\btext-content-emphasis\b/);
+
+        // (2) Background: brand-subtle wash.
+        expect(recipe).toMatch(/\bbg-\[var\(--brand-subtle\)\]/);
+
+        // (3) Band: held visible (opacity 100, not hover-gated).
+        expect(recipe).toMatch(/(?<!hover:)\bbefore:opacity-100\b/);
+
+        // (4) Weight: one rung up from regular (the new addition
+        // R12-PR6 locks). 400 → 500. Anything bolder reads as a
+        // heading.
+        expect(recipe).toMatch(/\bfont-medium\b/);
+    });
+
+    it('active state does NOT bump the weight past medium', () => {
+        // `font-semibold` (600) or `font-bold` (700) would make the
+        // active row read as a heading, not a row label. The
+        // discipline is +1 step from regular — no more.
+        const match = SRC.match(
+            /export\s+const\s+NAV_ITEM_ACTIVE\s*=\s*['"]([^'"]+)['"]/,
+        );
+        expect(match).not.toBeNull();
+        const recipe = match![1];
+        expect(recipe).not.toMatch(/\bfont-(semibold|bold|black|extrabold)\b/);
+    });
+
+    it('active state does NOT use a transform / scale / translate', () => {
+        // Same evergreen contract as the default state — the
+        // active row must not animate-in via geometry. Motion
+        // language is band-opacity + text-colour. Geometry stays
+        // still.
+        const match = SRC.match(
+            /export\s+const\s+NAV_ITEM_ACTIVE\s*=\s*['"]([^'"]+)['"]/,
+        );
+        expect(match).not.toBeNull();
+        const recipe = match![1];
+        expect(recipe).not.toMatch(
+            /\b(?:hover|group-hover)?:?(?:scale|translate|-translate)\b/,
+        );
+    });
+
+    it('active state does NOT carry the retired R12-pre-PR-5 left-border slot', () => {
+        // Pre-R12-PR5, the active recipe was
+        //   `... border-l-[var(--brand-default)] ...`
+        // and `NAV_ITEM_BASE` carried the `border-l-2 border-l-
+        // transparent` slot. R12-PR5 retired the mechanism in
+        // favour of the gradient band. Catch a regression that
+        // brings back the old border-left + the new band, which
+        // would render TWO left edges.
+        const match = SRC.match(
+            /export\s+const\s+NAV_ITEM_ACTIVE\s*=\s*['"]([^'"]+)['"]/,
+        );
+        expect(match).not.toBeNull();
+        const recipe = match![1];
+        expect(recipe).not.toMatch(/border-l-\[var\(--brand-default\)\]/);
+        expect(recipe).not.toMatch(/border-l-2\b/);
+    });
+
+    it('active state does NOT reach for a hard brand fill', () => {
+        // `bg-brand-default` / `bg-brand-emphasis` would paint a
+        // solid orange/yellow block — the user can pick the active
+        // row from across the room, which is the opposite of
+        // "settled in". The discipline is brand-subtle (a wash),
+        // never the saturated brand tone.
+        const match = SRC.match(
+            /export\s+const\s+NAV_ITEM_ACTIVE\s*=\s*['"]([^'"]+)['"]/,
+        );
+        expect(match).not.toBeNull();
+        const recipe = match![1];
+        expect(recipe).not.toMatch(
+            /\bbg-\[var\(--brand-(default|emphasis)\)\]/,
+        );
+    });
+
+    it('the `<NavItem>` JSX consumes `NAV_ITEM_ACTIVE` via the active ternary', () => {
+        // The active branch of the ternary references the const.
+        // If a future regression splits the active recipe into
+        // multiple paths (e.g. an experiment shortcut that bypasses
+        // the const), the ratchet wouldn't see it. Lock the
+        // ternary shape.
+        expect(SRC).toMatch(
+            /active\s*\?\s*NAV_ITEM_ACTIVE\s*:\s*NAV_ITEM_DEFAULT/,
+        );
+    });
+});
