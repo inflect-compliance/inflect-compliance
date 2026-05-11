@@ -50,7 +50,7 @@ test.describe('Control Tests (Test-of-Control)', () => {
         await page.locator('#control-search').fill(`Test Ctrl ${uid}`);
         await page.locator('#control-search').press('Enter');
         await page.waitForLoadState('networkidle').catch(() => {}); /* replaced wait */
-        await page.dblclick(`text=Test Ctrl ${uid}`);  // R13-PR15: TableTitleCell click toggles selection; dblclick navigates
+        await page.click(`text=Test Ctrl ${uid}`);
         await page.waitForLoadState('networkidle').catch(() => {});
         await page.waitForSelector('#control-title', { timeout: 30000 });
 
@@ -81,7 +81,7 @@ test.describe('Control Tests (Test-of-Control)', () => {
         await page.locator('#control-search').fill(`Test Ctrl ${uid}`);
         await page.locator('#control-search').press('Enter');
         await page.waitForLoadState('networkidle').catch(() => {});
-        await page.dblclick(`text=Test Ctrl ${uid}`);  // R13-PR15: TableTitleCell click toggles selection; dblclick navigates
+        await page.click(`text=Test Ctrl ${uid}`);
         await page.waitForSelector('#control-title', { timeout: 10000 });
         await page.click('#tab-tests');
         await page.waitForLoadState('networkidle').catch(() => {});
@@ -131,7 +131,7 @@ test.describe('Control Tests (Test-of-Control)', () => {
         await page.locator('#control-search').fill(`Test Ctrl ${uid}`);
         await page.locator('#control-search').press('Enter');
         await page.waitForLoadState('networkidle').catch(() => {});
-        await page.dblclick(`text=Test Ctrl ${uid}`);  // R13-PR15: TableTitleCell click toggles selection; dblclick navigates
+        await page.click(`text=Test Ctrl ${uid}`);
         await page.waitForSelector('#control-title', { timeout: 10000 });
         await page.click('#tab-tests');
         await page.waitForLoadState('networkidle').catch(() => {});

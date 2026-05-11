@@ -16,7 +16,7 @@ test.describe('Control Edit Modal', () => {
         // Click first control link
         const firstLink = page.locator('#controls-table tbody tr a[id^="control-link-"]').first();
         await firstLink.waitFor({ state: 'visible', timeout: 15000 });
-        await firstLink.dblclick();  // R13-PR15: title link click toggles selection; dblclick navigates
+        await firstLink.click();
         
         // Wait for page transition and hydration — control detail page is large (995 LOC)
         // and requires JIT compilation on first access in dev mode
@@ -35,7 +35,7 @@ test.describe('Control Edit Modal', () => {
         // Click first control
         const firstLink = page.locator('#controls-table tbody tr a[id^="control-link-"]').first();
         await firstLink.waitFor({ state: 'visible', timeout: 15000 });
-        await firstLink.dblclick();  // R13-PR15: title link click toggles selection; dblclick navigates
+        await firstLink.click();
         
         // Wait for page transition and hydration
         await page.waitForLoadState('networkidle').catch(() => {});
@@ -85,7 +85,7 @@ test.describe('Control Edit Modal', () => {
 
         const firstLink = page.locator('#controls-table tbody tr a[id^="control-link-"]').first();
         await firstLink.waitFor({ state: 'visible', timeout: 15000 });
-        await firstLink.dblclick();  // R13-PR15: title link click toggles selection; dblclick navigates
+        await firstLink.click();
         
         await page.waitForLoadState('networkidle').catch(() => {});
         await page.waitForSelector('#control-title', { timeout: 30000 });
@@ -126,7 +126,7 @@ test.describe('Control Edit Modal', () => {
         // Try to find a control link — readers may not see a table at all depending on if controls exist
         const firstLink = page.locator('#controls-table tbody tr a[id^="control-link-"]').first();
         if (await firstLink.isVisible({ timeout: 3000 }).catch(() => false)) {
-            await firstLink.dblclick();  // R13-PR15: title link click toggles selection; dblclick navigates
+            await firstLink.click();
             await page.waitForSelector('#control-title', { timeout: 10000 });
             // Reader should NOT see edit button
             await expect(page.locator('[data-testid="control-edit-button"]')).not.toBeVisible({ timeout: 3000 });

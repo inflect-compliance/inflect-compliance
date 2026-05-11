@@ -36,7 +36,7 @@ test.describe('Vendor Management', () => {
     test('vendor detail tabs work', async ({ page }) => {
         tenantSlug = await loginAndGetTenant(page);
         await gotoAndVerify(page, `/t/${tenantSlug}/vendors`, '[id^="vendor-link-"]');
-        await page.locator('[id^="vendor-link-"]').first().dblclick();  // R13-PR15: title link click toggles selection; dblclick navigates
+        await page.locator('[id^="vendor-link-"]').first().click();
         await expect(page.locator('#vendor-detail-name')).toBeVisible({ timeout: 15000 });
 
         await page.click('#tab-documents');
@@ -51,7 +51,7 @@ test.describe('Vendor Management', () => {
         await gotoAndVerify(page, `/t/${slug}/vendors`, '[id^="vendor-link-"]');
         // Extract vendor URL from the first link
         const vendorUrl = await page.locator('[id^="vendor-link-"]').first().getAttribute('href');
-        await page.locator('[id^="vendor-link-"]').first().dblclick();  // R13-PR15: title link click toggles selection; dblclick navigates
+        await page.locator('[id^="vendor-link-"]').first().click();
         await page.waitForLoadState('networkidle').catch(() => {});
         await expect(page.locator('#vendor-detail-name')).toBeVisible({ timeout: 60000 });
 
