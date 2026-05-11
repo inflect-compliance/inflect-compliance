@@ -78,13 +78,20 @@ describe('Epic 49 — calendar feature wiring', () => {
     it('the sidebar Calendar nav item is registered with a live badge', () => {
         const src = read('src/components/layout/SidebarNav.tsx');
         expect(src).toMatch(/useCalendarBadge/);
-        // Roadmap-2 PR-14 — sidebar label renamed from a hardcoded
-        // 'Calendar' literal to the i18n-keyed `t('calendar')`. The
-        // English translation reads "Review" now (the page surfaces
-        // upcoming reviews / renewals, not a generic calendar). The
-        // structural anchor stays the route + the badge wiring.
-        expect(src).toMatch(/label:\s*t\(['"]calendar['"]\)/);
+        // R13-PR7 — sidebar nav labels were de-i18n-ed for the four-
+        // section restructure (Board / Workspace / Comply / Manage).
+        // The Calendar entry now lives in the Comply group with the
+        // hard-coded label "Schedule". The load-bearing structural
+        // anchors are unchanged: same `/calendar` href, same
+        // `useCalendarBadge` wiring, same badge prop on the nav item.
+        expect(src).toMatch(/label:\s*['"]Schedule['"]/);
         expect(src).toMatch(/tenantHref\(['"]\/calendar['"]\)/);
+        // The badge from `useCalendarBadge` must still be threaded
+        // onto the Schedule nav entry — that's the load-bearing
+        // visible signal for "items need attention this week".
+        expect(src).toMatch(
+            /tenantHref\(['"]\/calendar['"]\)[\s\S]{0,400}badge:\s*calendarBadge/,
+        );
     });
 
     it('the command palette has a nav:calendar entry', () => {
