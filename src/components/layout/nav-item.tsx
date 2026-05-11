@@ -272,6 +272,55 @@ export const NAV_ITEM_DEFAULT =
 export const NAV_ITEM_ACTIVE =
     'text-content-emphasis bg-[var(--brand-subtle)] before:opacity-100 font-medium';
 
+/**
+ * Badge recipe — aligned + breathing. (R12-PR8 lock.)
+ *
+ * Optional count chip (e.g. calendar's upcoming-event count). Five
+ * tokens, each carrying its own load:
+ *
+ *   (1) `ml-auto`
+ *       Pushes the badge to the row's right edge. The icon + label
+ *       sit on the left, the badge floats on the right. Margin-auto
+ *       (not flex-end) so the label can still occupy the natural
+ *       middle space and truncate gracefully when long.
+ *
+ *   (2) `tabular-nums`
+ *       Numerals render at fixed width. A count going 9 → 10 →
+ *       99 → 100 doesn't make the badge "pop wider" on every change.
+ *       The badge keeps a stable rectangle the eye trusts.
+ *
+ *   (3) `flex-shrink-0`
+ *       The badge MUST NOT be the thing that shrinks when a row's
+ *       label is long. The label has `truncate`; the badge is the
+ *       fixed counterweight. Without this, on a row like
+ *       "Vendor Risk Assessments (47)" with a narrow sidebar, flex
+ *       would steal width from the badge too.
+ *
+ *   (4) `animate-in fade-in`
+ *       Tailwindcss-animate's enter animation primitive — opacity
+ *       0 → 100 on initial mount. The conditional `{badge != null
+ *       && ...}` mounts/unmounts the badge naturally: when a count
+ *       first appears (null → 3), the badge fades in. When it
+ *       changes value (3 → 4), the element stays mounted and the
+ *       animation does NOT re-fire. The entrance is the breath;
+ *       updates are silent. Same motion language as the band:
+ *       opacity only, no transform / scale / translate.
+ *
+ *   (5) `duration-300`
+ *       The breath has a measured tempo. 300ms is one rung slower
+ *       than the band's 200ms — the badge arrives just after the
+ *       row finishes settling, which reads as deliberate
+ *       choreography rather than competing motion.
+ *
+ * The badge variant + size + tone are chosen by the JSX, not by
+ * this recipe: `variant="info"` (blue, neutral signal — never a
+ * brand tone that would compete with the active state's
+ * brand-subtle wash) and `size="sm"` (10px text — quiet, doesn't
+ * crowd the 14px label or the 18px icon).
+ */
+export const NAV_ITEM_BADGE =
+    'ml-auto tabular-nums flex-shrink-0 animate-in fade-in duration-300';
+
 export function NavItem({ href, icon: Icon, label, active, badge, onClick }: NavItemProps) {
     const slug = href.split('/').pop() ?? '';
 
@@ -285,7 +334,7 @@ export function NavItem({ href, icon: Icon, label, active, badge, onClick }: Nav
             <Icon className={`${NAV_ITEM_ICON_SIZE} flex-shrink-0`} aria-hidden="true" />
             <span className="truncate">{label}</span>
             {badge != null && (
-                <StatusBadge variant="info" size="sm" className="ml-auto tabular-nums">
+                <StatusBadge variant="info" size="sm" className={NAV_ITEM_BADGE}>
                     {badge}
                 </StatusBadge>
             )}
