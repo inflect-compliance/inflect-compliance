@@ -649,7 +649,13 @@ export default function CustomRolesPage() {
             </ListPageShell.Filters>
 
             <ListPageShell.Body>
-                <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')} id="roles-table-card">
+                {/* R13-PR5 — outer `cardVariants` wrapper dropped so
+                    the DataTable's own bordered card is the only one
+                    (matches Controls list visually). The wrapper div
+                    stays so the `roles-table-card` id is preserved
+                    for the E2E + analytics selectors that depend on
+                    it. */}
+                <div id="roles-table-card">
                     <DataTable
                         fillBody
                         data={visibleRoles}
