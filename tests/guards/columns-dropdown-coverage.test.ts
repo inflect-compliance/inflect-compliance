@@ -75,9 +75,9 @@ const EXEMPTIONS: Record<string, string> = {
     'risks/import/page.tsx':
         '(b) risk import wizard — staged workflow, each step has its own controls.',
 
-    // ─── (c) Toolbar pending — gear lands with the toolbar ─────────
-    'findings/FindingsClient.tsx':
-        '(c) toolbar pending — Findings is in the FilterToolbar coverage exemptions list; gear lands when the toolbar does.',
+    // ─── (c) Toolbar pending ────────────────────────────────────────
+    // (none today — Findings got the gear in R10-PR11 mounted
+    // standalone above the table, like Frameworks.)
 };
 
 function walk(dir: string, results: string[] = []): string[] {
