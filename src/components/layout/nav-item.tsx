@@ -162,9 +162,36 @@ export const NAV_ITEM_BASE = [
     NAV_ITEM_RADIUS,
     'text-sm transition-colors duration-150 ease-out',
     NAV_ITEM_BAND_BASE,
-    // Focus-visible — keyboard story. R12-PR7 will tighten the
-    // ring + offset.
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]',
+    // Focus-visible — keyboard story. (R12-PR7 lock.)
+    //
+    // Four tokens, no more, no less:
+    //
+    //   `focus-visible:outline-none`
+    //       Suppress the user-agent default outline (varies by
+    //       browser — Firefox dashes, Chrome solids, Safari skips).
+    //       The ring below replaces it with one we own.
+    //
+    //   `focus-visible:ring-2`
+    //       2px ring. 1px is invisible on common hi-DPI rendering;
+    //       3px reads as "alarm". 2 is the keyboard-canonical
+    //       thickness shared by every focus-visible surface in
+    //       the codebase.
+    //
+    //   `focus-visible:ring-[var(--ring)]`
+    //       The canonical focus tone — brand yellow at ~55% alpha
+    //       (METRO theme) or brand orange at ~40% (PwC theme). The
+    //       same token every other focusable primitive uses. NEVER
+    //       a hard brand fill — focus signals "the keyboard knows
+    //       you're here", not "the system has changed".
+    //
+    //   `focus-visible:ring-offset-2 focus-visible:ring-offset-bg-default`
+    //       2px gap between the row and the ring, filled with the
+    //       sidebar's `bg-bg-default` surface. The ring then
+    //       floats one breath off the row, instead of touching
+    //       its rounded corners. That breath is what makes the
+    //       focus state look DELIBERATE — not an accident of the
+    //       browser default.
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-bg-default',
 ].join(' ');
 
 /**
