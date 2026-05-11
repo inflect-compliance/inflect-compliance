@@ -78,7 +78,12 @@ export function useNavSections(): NavSectionDef[] {
             ],
         },
         {
-            title: 'Workspace',
+            // R13-PR11 — renamed from "Workspace" to "Govern" to
+            // better describe the three core entities (assets,
+            // risks, controls) as the surfaces compliance teams
+            // govern day-to-day, distinct from the daily-cadence
+            // work that sits under "Comply".
+            title: 'Govern',
             items: [
                 { href: tenantHref('/assets'), label: 'Asset', icon: Building2 },
                 { href: tenantHref('/risks'), label: 'Risk', icon: AlertTriangle },

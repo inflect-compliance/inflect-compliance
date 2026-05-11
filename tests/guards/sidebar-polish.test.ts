@@ -20,7 +20,7 @@
  *      is hidden below the md breakpoint).
  *
  * What this ratchet does NOT police
- *   The exact eyebrow strings ("Workspace", "Portfolio", "Manage")
+ *   The exact eyebrow strings ("Govern", "Portfolio", "Manage")
  *   are copy-tunable. The ratchet asserts the SLOT exists, not
  *   the words inside it.
  */
@@ -36,24 +36,26 @@ describe('Sidebar polish discipline (Roadmap-2 PR-3)', () => {
         // eyebrow at all. After PR-3 the GROUPED nav must carry
         // eyebrow titles so it reads as grouped, not flat.
         //
-        // R13-PR7 — the first section is now a SOLO Board home
-        // link (no eyebrow by design — mirrors the home-anchor
-        // pattern in Linear / Stripe / Vercel sidebars). The
-        // load-bearing assertion is that the WORKSPACE group
-        // (the first grouped section) still carries a title.
-        // Any future restructure that drops every section title
-        // and reverts to a flat list still fails this ratchet.
+        // R13-PR7 — the first section is a SOLO Board home link
+        // (no eyebrow by design — mirrors the home-anchor pattern
+        // in Linear / Stripe / Vercel sidebars). The load-bearing
+        // assertion is that the FIRST GROUPED group still carries
+        // a title.
+        //
+        // R13-PR11 — the first grouped section was renamed from
+        // "Workspace" to "Govern". Assert the new label.
         const src = read('src/components/layout/SidebarNav.tsx');
         const fnMatch = src.match(
             /export function useNavSections[\s\S]+?return\s*\[([\s\S]+?)\];/,
         );
         expect(fnMatch).not.toBeNull();
         const sections = fnMatch![1]!;
-        // Every grouped section MUST carry a `title:`. Workspace is
-        // the canonical primary group — assert it explicitly.
-        expect(sections).toMatch(/title:\s*['"]Workspace['"]/);
-        // And at least 3 titled sections in total (Workspace +
-        // Comply + Manage, after R13-PR7).
+        // Govern is the canonical primary group — assert it
+        // explicitly so a future restructure that drops the title
+        // still trips the ratchet.
+        expect(sections).toMatch(/title:\s*['"]Govern['"]/);
+        // And at least 3 titled sections in total (Govern +
+        // Comply + Manage, after R13-PR7 / R13-PR11).
         const titleCount = (sections.match(/\btitle:\s*['"]/g) ?? []).length;
         expect(titleCount).toBeGreaterThanOrEqual(3);
     });
