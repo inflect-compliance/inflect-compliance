@@ -1,6 +1,6 @@
 {
   "name": "inflect-compliance",
-  "version": "1.185.0",
+  "version": "1.188.0",
   "private": true,
   "scripts": {
     "prepare": "husky",
