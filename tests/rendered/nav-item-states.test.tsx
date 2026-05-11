@@ -1,0 +1,232 @@
+/**
+ * Roadmap-12 PR-10 — rendered tests for `<NavItem>`.
+ *
+ * The bundle ratchet at `tests/guards/nav-item-bundle-discipline.test.ts`
+ * verifies the named-const recipes exist at the source level. THIS
+ * test is the runtime consumer: it mounts `<NavItem>` in each
+ * production state and asserts the consts flow into the rendered
+ * DOM end-to-end.
+ *
+ * Three states covered:
+ *
+ *   1. **Default** (active=false, no badge). The link should carry
+ *      the BASE composition + DEFAULT recipe. Icon renders at 18×18
+ *      with the canonical class. No badge in the tree.
+ *
+ *   2. **Active** (active=true, no badge). Link carries BASE +
+ *      ACTIVE recipe (four conviction tokens: emphasis text +
+ *      brand-subtle bg + before:opacity-100 + font-medium).
+ *
+ *   3. **With badge** (badge=5). The StatusBadge renders with the
+ *      five-token NAV_ITEM_BADGE recipe applied.
+ *
+ * No axe-core test — `<NavItem>` is rendered inside a `<nav>` /
+ * sidebar at the AppShell level, which is the right axe boundary
+ * for the role landmark. Asserting axe on the bare link would fail
+ * "all-elements-must-be-inside-landmark" without giving us useful
+ * signal.
+ */
+
+import { render, screen } from '@testing-library/react';
+import { Settings } from 'lucide-react';
+import * as React from 'react';
+
+import {
+    NavItem,
+    NAV_ITEM_BASE,
+    NAV_ITEM_DEFAULT,
+    NAV_ITEM_ACTIVE,
+    NAV_ITEM_BADGE,
+    NAV_ITEM_ICON_CLASS,
+} from '@/components/layout/nav-item';
+
+describe('<NavItem>', () => {
+    describe('default state (active=false)', () => {
+        it('renders the link with BASE + DEFAULT class compositions', () => {
+            render(
+                <NavItem
+                    href="/t/foo/controls"
+                    icon={Settings}
+                    label="Controls"
+                    active={false}
+                />,
+            );
+            const link = screen.getByRole('link', { name: 'Controls' });
+            // BASE tokens are present (sample three load-bearing pieces).
+            expect(link.className).toContain('min-h-[44px]');
+            expect(link.className).toContain('rounded-lg');
+            expect(link.className).toContain('focus-visible:ring-2');
+            // DEFAULT recipe is present.
+            expect(link.className).toContain('text-content-muted');
+            expect(link.className).toContain('hover:text-content-emphasis');
+            expect(link.className).toContain('hover:before:opacity-100');
+            // ACTIVE tokens are absent.
+            expect(link.className).not.toContain('bg-[var(--brand-subtle)]');
+            expect(link.className).not.toContain('font-medium');
+        });
+
+        it('renders the icon with the canonical 18×18 + flex-shrink-0', () => {
+            const { container } = render(
+                <NavItem
+                    href="/t/foo/controls"
+                    icon={Settings}
+                    label="Controls"
+                    active={false}
+                />,
+            );
+            const link = screen.getByRole('link', { name: 'Controls' });
+            const icon = link.querySelector('svg');
+            expect(icon).not.toBeNull();
+            // The icon's class string EQUALS NAV_ITEM_ICON_CLASS — no
+            // hand-rolled override.
+            // Lucide prepends its own `lucide lucide-<name>` prefix to
+            // the SVG element. The recipe is appended after that, so
+            // the className CONTAINS the full NAV_ITEM_ICON_CLASS
+            // string but doesn't equal it.
+            expect(icon!.getAttribute('class')).toContain(NAV_ITEM_ICON_CLASS);
+            // Icon is decorative — label is the accessible name.
+            expect(icon).toHaveAttribute('aria-hidden', 'true');
+        });
+
+        it('does not render a badge when none is provided', () => {
+            const { container } = render(
+                <NavItem
+                    href="/t/foo/controls"
+                    icon={Settings}
+                    label="Controls"
+                    active={false}
+                />,
+            );
+            // No tabular-nums element (the badge carries it).
+            expect(container.querySelector('.tabular-nums')).toBeNull();
+        });
+    });
+
+    describe('active state (active=true)', () => {
+        it('renders the link with BASE + ACTIVE class compositions', () => {
+            render(
+                <NavItem
+                    href="/t/foo/controls"
+                    icon={Settings}
+                    label="Controls"
+                    active={true}
+                />,
+            );
+            const link = screen.getByRole('link', { name: 'Controls' });
+            // ACTIVE recipe — four conviction tokens.
+            expect(link.className).toContain('text-content-emphasis');
+            expect(link.className).toContain('bg-[var(--brand-subtle)]');
+            expect(link.className).toContain('before:opacity-100');
+            expect(link.className).toContain('font-medium');
+            // BASE is still present.
+            expect(link.className).toContain('min-h-[44px]');
+            // DEFAULT-specific hover tokens are absent (we're active).
+            expect(link.className).not.toContain('text-content-muted');
+            expect(link.className).not.toContain('hover:text-content-emphasis');
+        });
+
+        it('uses the same canonical icon class as the default state', () => {
+            render(
+                <NavItem
+                    href="/t/foo/controls"
+                    icon={Settings}
+                    label="Controls"
+                    active={true}
+                />,
+            );
+            const link = screen.getByRole('link', { name: 'Controls' });
+            const icon = link.querySelector('svg');
+            // Lucide prepends its own `lucide lucide-<name>` prefix to
+            // the SVG element. The recipe is appended after that, so
+            // the className CONTAINS the full NAV_ITEM_ICON_CLASS
+            // string but doesn't equal it.
+            expect(icon!.getAttribute('class')).toContain(NAV_ITEM_ICON_CLASS);
+        });
+    });
+
+    describe('badge state (badge provided)', () => {
+        it('renders a badge carrying NAV_ITEM_BADGE class string', () => {
+            const { container } = render(
+                <NavItem
+                    href="/t/foo/calendar"
+                    icon={Settings}
+                    label="Calendar"
+                    active={false}
+                    badge={5}
+                />,
+            );
+            // The badge's outermost element carries every NAV_ITEM_BADGE
+            // token. Five tokens to lock.
+            const badge = container.querySelector('.tabular-nums');
+            expect(badge).not.toBeNull();
+            const cls = badge!.className;
+            expect(cls).toContain('ml-auto');
+            expect(cls).toContain('tabular-nums');
+            expect(cls).toContain('flex-shrink-0');
+            expect(cls).toContain('animate-in');
+            expect(cls).toContain('fade-in');
+            expect(cls).toMatch(/\bduration-\d+\b/);
+            // The badge content is the count.
+            expect(badge!.textContent).toBe('5');
+        });
+
+        it('renders the badge even when active=true (badge is orthogonal to state)', () => {
+            const { container } = render(
+                <NavItem
+                    href="/t/foo/calendar"
+                    icon={Settings}
+                    label="Calendar"
+                    active={true}
+                    badge={12}
+                />,
+            );
+            const badge = container.querySelector('.tabular-nums');
+            expect(badge).not.toBeNull();
+            expect(badge!.textContent).toBe('12');
+        });
+
+        it('renders zero as a badge (badge != null check, not truthy check)', () => {
+            // A badge with value `0` is legitimate ("0 open issues").
+            // The conditional render uses `badge != null` so this
+            // should appear. Lock the semantic.
+            const { container } = render(
+                <NavItem
+                    href="/t/foo/issues"
+                    icon={Settings}
+                    label="Issues"
+                    active={false}
+                    badge={0}
+                />,
+            );
+            const badge = container.querySelector('.tabular-nums');
+            expect(badge).not.toBeNull();
+            expect(badge!.textContent).toBe('0');
+        });
+    });
+
+    describe('the exported consts are the source of truth', () => {
+        // Sanity: confirm the imports resolved to non-empty strings.
+        // If a future export rename slips through, this test will
+        // catch it without needing to wait on the bundle ratchet.
+        it('NAV_ITEM_BASE is a non-empty string', () => {
+            expect(typeof NAV_ITEM_BASE).toBe('string');
+            expect(NAV_ITEM_BASE.length).toBeGreaterThan(0);
+        });
+        it('NAV_ITEM_DEFAULT is a non-empty string', () => {
+            expect(typeof NAV_ITEM_DEFAULT).toBe('string');
+            expect(NAV_ITEM_DEFAULT.length).toBeGreaterThan(0);
+        });
+        it('NAV_ITEM_ACTIVE is a non-empty string', () => {
+            expect(typeof NAV_ITEM_ACTIVE).toBe('string');
+            expect(NAV_ITEM_ACTIVE.length).toBeGreaterThan(0);
+        });
+        it('NAV_ITEM_BADGE is a non-empty string', () => {
+            expect(typeof NAV_ITEM_BADGE).toBe('string');
+            expect(NAV_ITEM_BADGE.length).toBeGreaterThan(0);
+        });
+        it('NAV_ITEM_ICON_CLASS is a non-empty string', () => {
+            expect(typeof NAV_ITEM_ICON_CLASS).toBe('string');
+            expect(NAV_ITEM_ICON_CLASS.length).toBeGreaterThan(0);
+        });
+    });
+});
