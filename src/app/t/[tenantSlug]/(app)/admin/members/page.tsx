@@ -737,8 +737,12 @@ export default function MembersAdminPage() {
                 />
             </div>
 
-            {/* Members DataTable (Epic 48 migration) */}
-            <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')} id="members-table-card">
+            {/* Members DataTable (Epic 48 migration).
+                R13-PR5 — the outer `cardVariants({ density: 'none' })`
+                wrapper was dropped so the DataTable primitive's own
+                `bg-bg-default rounded-lg border-border-subtle` card
+                is the only one (matches Controls list visually). */}
+            <div id="members-table-card">
                 {filteredMembers.length === 0 && search ? (
                     <EmptyState
                         icon={Search}
@@ -766,7 +770,7 @@ export default function MembersAdminPage() {
             {invites.length > 0 && (
                 <div>
                     <Heading level={2} className="mb-3">Pending Invitations</Heading>
-                    <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')} id="invites-table-card">
+                    <div id="invites-table-card">
                         <DataTable
                             data={invites}
                             columns={inviteColumns}

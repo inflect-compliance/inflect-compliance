@@ -601,11 +601,13 @@ export default function ApiKeysPage() {
                 </div>
             )}
 
-            {/* Active Keys */}
-            <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')} id="active-keys-card">
-                <div className="px-4 py-3 border-b border-border-default/50">
-                    <Heading level={3}>Active Keys ({activeKeys.length})</Heading>
-                </div>
+            {/* Active Keys. R13-PR5 — the outer
+                `cardVariants({ density: 'none' })` wrapper was dropped
+                so the DataTable primitive's own bordered card is the
+                only one (matches Controls list visually). The section
+                heading hoists out above the table. */}
+            <div id="active-keys-card">
+                <Heading level={3} className="mb-3">Active Keys ({activeKeys.length})</Heading>
                 <DataTable
                     data={activeKeys}
                     columns={activeKeyColumns}
@@ -618,10 +620,8 @@ export default function ApiKeysPage() {
 
             {/* Inactive/Revoked Keys */}
             {inactiveKeys.length > 0 && (
-                <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden opacity-60')} id="inactive-keys-card">
-                    <div className="px-4 py-3 border-b border-border-default/50">
-                        <Heading level={3}>Revoked / Expired ({inactiveKeys.length})</Heading>
-                    </div>
+                <div className="opacity-60" id="inactive-keys-card">
+                    <Heading level={3} className="mb-3">Revoked / Expired ({inactiveKeys.length})</Heading>
                     <DataTable
                         data={inactiveKeys}
                         columns={inactiveKeyColumns}
