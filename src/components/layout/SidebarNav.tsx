@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useTenantContext, useTenantHref, usePermissions } from '@/lib/tenant-context-provider';
-import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { Tooltip } from '@/components/ui/tooltip';
 import { useKeyboardShortcut } from '@/lib/hooks/use-keyboard-shortcut';
 import { StartTourButton } from '@/components/ui/OnboardingTour';
@@ -230,6 +229,17 @@ export function SidebarContent({ user, onLogout, onNavClick }: SidebarContentPro
                 ))}
             </nav>
 
+            {/* Driver.js product tour — manual restart entry.
+                Renders only when the OnboardingTourProvider is
+                mounted (i.e. inside the authenticated tenant
+                shell). The auto-trigger handles first-login;
+                this button is for the "I want to see it again"
+                case. Sits above the search bar so the role row
+                in the user block below is the literal last line. */}
+            <div className="mx-2">
+                <StartTourButton />
+            </div>
+
             {/* Roadmap-2 PR-3 — inline command-palette opener.
                 Sits below the scrolling nav and above the user
                 block. The chrome's `<SearchAnchor>` is the
@@ -269,13 +279,14 @@ export function SidebarContent({ user, onLogout, onNavClick }: SidebarContentPro
                 </span>
             </button>
 
-            {/* User. The right column stretches to match the three
-                identity lines on the left, so the three icons (Admin
-                gear, Theme toggle, Sign out) distribute via
-                justify-between — the bottom-most icon (Sign out)
-                aligns horizontally with the role line. */}
+            {/* User. Admin + Sign-out sit on a single horizontal
+                row, vertically centred against the three-line
+                identity (name / tenant / role). The role row is
+                the literal last line of the sidebar — the tour
+                opener was moved above the search bar so nothing
+                renders below the identity. */}
             <div className="p-3 border-t border-border-subtle">
-                <div className="mb-1 flex items-stretch justify-between gap-tight">
+                <div className="flex items-center justify-between gap-tight">
                     <div className="min-w-0">
                         <p className="text-xs font-medium text-content-default truncate">{user.name}</p>
                         <p className="text-xs text-content-muted truncate">{tenant.tenantName}</p>
@@ -286,23 +297,20 @@ export function SidebarContent({ user, onLogout, onNavClick }: SidebarContentPro
                             accent. */}
                         <p className="text-xs text-content-muted">{tenant.role}</p>
                     </div>
-                    <div className="flex flex-col items-end justify-between">
-                        <div className="flex items-center gap-tight">
-                            {perms.admin.view && (
-                                <Tooltip content="Admin">
-                                    <Link
-                                        href={tenantHref('/admin')}
-                                        aria-label="Admin"
-                                        id="admin-icon-link-desktop"
-                                        data-testid="nav-admin-icon"
-                                        className="icon-btn icon-btn-sm"
-                                    >
-                                        <Settings className="size-4" aria-hidden="true" />
-                                    </Link>
-                                </Tooltip>
-                            )}
-                            <ThemeToggle id="theme-toggle-desktop" />
-                        </div>
+                    <div className="flex items-center gap-tight">
+                        {perms.admin.view && (
+                            <Tooltip content="Admin">
+                                <Link
+                                    href={tenantHref('/admin')}
+                                    aria-label="Admin"
+                                    id="admin-icon-link-desktop"
+                                    data-testid="nav-admin-icon"
+                                    className="icon-btn icon-btn-sm"
+                                >
+                                    <Settings className="size-4" aria-hidden="true" />
+                                </Link>
+                            </Tooltip>
+                        )}
                         <Tooltip content={tc('signOut')}>
                             <button
                                 type="button"
@@ -316,13 +324,6 @@ export function SidebarContent({ user, onLogout, onNavClick }: SidebarContentPro
                         </Tooltip>
                     </div>
                 </div>
-                {/* Driver.js product tour — manual restart entry.
-                    Renders only when the OnboardingTourProvider is
-                    mounted (i.e. inside the authenticated tenant
-                    shell). The auto-trigger handles first-login;
-                    this button is for the "I want to see it again"
-                    case. */}
-                <StartTourButton />
             </div>
         </div>
     );

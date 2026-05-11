@@ -139,18 +139,13 @@ export const DEFAULT_TOUR_STEPS: ReadonlyArray<OnboardingStep> = [
             'Press ⌘K (or Ctrl+K) anywhere to search controls, risks, policies, evidence, and frameworks — or jump to any page.',
     },
 
-    // Step 8 — Theme toggle. Anchor is the desktop ThemeToggle
-    // in the sidebar footer.
-    {
-        id: 'sidebar.theme-toggle',
-        selector: '#theme-toggle-desktop',
-        title: 'Light or dark',
-        description:
-            'Swap palettes from the sidebar footer — the choice is remembered per-browser.',
-        side: 'right',
-    },
+    // (The previous sidebar.theme-toggle step was retired when the
+    // theme toggle was dropped from the sidebar chrome — theme is
+    // still toggleable from the command palette via the
+    // `action:toggle-theme` command, which the `tip.command-palette`
+    // step above already advertises.)
 
-    // Step 9 — final tour-complete card. Tells the user how to
+    // Step 8 — final tour-complete card. Tells the user how to
     // restart, which is the single most common follow-up
     // question.
     {

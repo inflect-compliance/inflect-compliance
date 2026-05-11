@@ -15,7 +15,6 @@ import {
     type LucideIcon,
 } from 'lucide-react';
 import { useOrgContext, useOrgHref, useOrgPermissions } from '@/lib/org-context-provider';
-import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { OrgSwitcher } from '@/components/org-switcher';
 
@@ -220,18 +219,17 @@ export function OrgSidebarContent({ user, onLogout, onNavClick }: OrgSidebarCont
                 ))}
             </nav>
 
-            {/* User */}
+            {/* User. The theme toggle was removed in step with
+                SidebarNav; theme is still toggleable from the
+                command palette. */}
             <div className="p-3 border-t border-border-subtle">
-                <div className="mb-2 flex items-start justify-between gap-tight">
-                    <div className="min-w-0">
-                        <p className="text-xs font-medium text-content-default truncate">{user.name}</p>
-                        <p className="text-xs text-content-muted truncate">{org.orgName}</p>
-                        {/* GAP-CI-77: see SidebarNav for the same fix
-                            rationale — brand orange on cream is below AA for
-                            small text. */}
-                        <p className="text-xs text-content-muted">{org.role}</p>
-                    </div>
-                    <ThemeToggle id="org-theme-toggle-desktop" />
+                <div className="mb-2 min-w-0">
+                    <p className="text-xs font-medium text-content-default truncate">{user.name}</p>
+                    <p className="text-xs text-content-muted truncate">{org.orgName}</p>
+                    {/* GAP-CI-77: see SidebarNav for the same fix
+                        rationale — brand orange on cream is below AA for
+                        small text. */}
+                    <p className="text-xs text-content-muted">{org.role}</p>
                 </div>
                 <Button
                     variant="ghost"

@@ -5,10 +5,15 @@
  * pass. This test pins the round-trip:
  *
  *   1. First visit paints the dark theme (our SSR default).
- *   2. Clicking the sidebar theme toggle flips `html[data-theme]` to
- *      "light" and persists the choice to localStorage.
+ *   2. Invoking "Toggle theme" from the command palette flips
+ *      `html[data-theme]` to "light" and persists the choice to
+ *      localStorage.
  *   3. Reloading the page restores the persisted theme instead of
  *      falling back to `prefers-color-scheme`.
+ *
+ * The sidebar theme-toggle icon was retired in R13 — toggling now
+ * lives in the command palette (`action:toggle-theme`), reachable
+ * via the inline Search button in the sidebar footer or ⌘K.
  *
  * Visual regression (screenshot per page) is handled by the richer
  * Playwright runs; here we just verify the wiring.
@@ -67,18 +72,23 @@ test.describe('Epic 51 — theme toggle', () => {
         );
         expect(initialTheme).toBe('dark');
 
-        // Toggle on the existing theme-toggle button (installed in the
-        // sidebar by Epic 51). The app renders the sidebar twice — once
-        // inside the desktop <aside> and a clone inside a mobile
-        // nav-drawer dialog — so we scope to the unique #id rather than
-        // the data-testid.
-        // Two elements share #theme-toggle-desktop: the desktop <aside>
-        // sidebar and a clone rendered inside the mobile nav-drawer
-        // <dialog>. Scope to the desktop sidebar via its accessible
-        // landmark.
-        const toggle = page.getByRole('complementary').locator('#theme-toggle-desktop');
-        await toggle.waitFor({ state: 'visible', timeout: 30000 });
-        await toggle.click();
+        // Open the command palette (the sidebar footer's inline
+        // Search button is the desktop opener; the same affordance
+        // is hooked to ⌘K). Then run the "Toggle theme" action.
+        const flipTheme = async () => {
+            const opener = page
+                .getByRole('complementary')
+                .locator('[data-testid="sidebar-search-anchor"]');
+            await opener.waitFor({ state: 'visible', timeout: 30_000 });
+            await opener.click();
+            const action = page.locator(
+                '[data-testid="command-palette-action-action:toggle-theme"]',
+            );
+            await action.waitFor({ state: 'visible', timeout: 10_000 });
+            await action.click();
+        };
+
+        await flipTheme();
 
         await expect
             .poll(() =>
@@ -103,9 +113,7 @@ test.describe('Epic 51 — theme toggle', () => {
 
         // Toggle back to dark — leaves the environment in the state
         // other tests expect.
-        const toggleAgain = page.getByRole('complementary').locator('#theme-toggle-desktop');
-        await toggleAgain.waitFor({ state: 'visible', timeout: 10000 });
-        await toggleAgain.click();
+        await flipTheme();
         await expect
             .poll(() =>
                 page.evaluate(() => document.documentElement.dataset.theme),

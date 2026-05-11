@@ -166,7 +166,6 @@ describe('DEFAULT_TOUR_STEPS — shape invariants', () => {
         const sidebarSteps = DEFAULT_TOUR_STEPS.filter((s) => s.id.startsWith('sidebar.'));
         expect(sidebarSteps.length).toBeGreaterThan(0);
         for (const s of sidebarSteps) {
-            if (s.id === 'sidebar.theme-toggle') continue; // anchored on #theme-toggle-desktop
             expect(s.selector).toMatch(/data-testid="nav-/);
         }
     });
