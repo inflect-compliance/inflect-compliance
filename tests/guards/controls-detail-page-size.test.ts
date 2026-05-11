@@ -41,7 +41,14 @@ const PAGE = 'src/app/t/[tenantSlug]/(app)/controls/[controlId]/page.tsx';
 // text-content-subtle text-sm">No X yet</div>` to a 4-line
 // `<InlineEmptyState title=... description=...>` block. Visual
 // uniformity gain is real; line cost is the trade.
-const MAX_LINES = 1450;
+//
+// R11-PR6 raised by 60 (1450 → 1510) to accommodate the
+// raw-<table> → <DataTable> migration of the tasks sub-table.
+// Inline ColumnDef<ControlTaskDTO>[] block is ~70 lines but
+// replaces ~28 lines of raw <tr>/<td> markup, net +42 + import +
+// useMemo wrapping. Visual uniformity (tasks table now matches
+// every other table in the product) is the trade.
+const MAX_LINES = 1510;
 
 describe('Controls detail page size ratchet (Elevation PR-2)', () => {
     it('controls/[controlId]/page.tsx stays at or below the size floor', () => {

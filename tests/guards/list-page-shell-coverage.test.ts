@@ -103,6 +103,12 @@ const EXEMPTIONS: Record<string, string> = {
     'vendors/[vendorId]/page.tsx':
         'detail page — DataTable is the inner documents sub-table (R11-PR7)',
 
+    // R11-PR6 — control detail page now mounts DataTable for the
+    // tasks sub-table. Detail page (EntityDetailLayout), not a list
+    // page.
+    'controls/[controlId]/page.tsx':
+        'detail page — DataTable is the inner tasks sub-table (R11-PR6)',
+
     // Browse-and-install template picker — multi-section browser,
     // not a list page in the perf-complaint sense.
     'controls/templates/page.tsx':

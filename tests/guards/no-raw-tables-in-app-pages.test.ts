@@ -64,11 +64,13 @@ const EXEMPTIONS: Record<string, string> = {
         '(a) cross-tab matrix — Resource × Action editor',
 
     // ─── (b) Detail-page sub-tables ──────────────────────────────────
-    // Control detail page has interleaved inline-edit affordances
-    // and a JS whole-row click handler that are tightly coupled to
-    // the bespoke <table> structure. R10 follow-up may revisit.
+    // Control detail page still has 2 raw <table>s (evidence,
+    // mappings) after R11-PR6 migrated the tasks sub-table to
+    // DataTable. The remaining two are tightly coupled to per-row
+    // inline-edit / delete actions specific to those tabs; future
+    // R11 follow-up may convert them.
     'controls/[controlId]/page.tsx':
-        '(b) detail-page sub-table with bespoke inline-edit affordances',
+        '(b) detail-page sub-tables (evidence + mappings) — tasks migrated R11-PR6, others pending',
 
     // Vendor detail page — documents migrated to DataTable in
     // R11-PR7. Assessments + risk sub-tables remain as exemptions.

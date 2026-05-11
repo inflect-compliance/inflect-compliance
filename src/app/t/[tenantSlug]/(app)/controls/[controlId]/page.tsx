@@ -7,7 +7,7 @@
 import { formatDate, formatDateTime } from '@/lib/format-date';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { InlineEmptyState } from '@/components/ui/inline-empty-state';
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useSWRConfig } from 'swr';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -23,6 +23,7 @@ const PencilIcon = ({ size = 14 }: { size?: number }) => (
 );
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
+import { DataTable, createColumns } from '@/components/ui/table';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useTenantMutation } from '@/lib/hooks/use-tenant-mutation';
 import { CACHE_KEYS } from '@/lib/swr-keys';
@@ -539,6 +540,87 @@ export default function ControlDetailPage() {
         });
         await refetch();
     };
+
+    // R11-PR6 — control tasks moved off raw <table> to DataTable so
+    // the chrome matches every other table in the product.
+    const controlTaskColumns = useMemo(
+        () =>
+            createColumns<ControlTaskDTO>([
+                {
+                    id: 'title',
+                    header: 'Title',
+                    accessorKey: 'title',
+                    cell: ({ getValue }) => (
+                        <span className="text-sm text-content-emphasis">
+                            {getValue() as string}
+                        </span>
+                    ),
+                },
+                {
+                    id: 'status',
+                    header: 'Status',
+                    accessorKey: 'status',
+                    cell: ({ getValue }) => {
+                        const status = getValue() as string;
+                        return (
+                            <StatusBadge
+                                variant={TASK_STATUS_BADGE[status] || 'neutral'}
+                            >
+                                {status}
+                            </StatusBadge>
+                        );
+                    },
+                },
+                {
+                    id: 'assignee',
+                    header: 'Assignee',
+                    cell: ({ row }) => (
+                        <span className="text-xs text-content-muted">
+                            {row.original.assignee?.name || '—'}
+                        </span>
+                    ),
+                },
+                {
+                    id: 'dueAt',
+                    header: 'Due',
+                    accessorKey: 'dueAt',
+                    cell: ({ getValue }) => {
+                        const value = getValue() as string | null;
+                        return (
+                            <span className="text-xs text-content-muted">
+                                {value ? formatDate(value) : '—'}
+                            </span>
+                        );
+                    },
+                },
+                ...(permissions.canWrite
+                    ? [
+                          {
+                              id: 'actions',
+                              header: 'Actions',
+                              cell: ({ row }) =>
+                                  row.original.status !== 'DONE' ? (
+                                      <Button
+                                          variant="secondary"
+                                          size="sm"
+                                          onClick={() =>
+                                              updateTaskStatus(
+                                                  row.original.id,
+                                                  'DONE',
+                                              )
+                                          }
+                                          id={`mark-done-${row.original.id}`}
+                                      >
+                                          Done
+                                      </Button>
+                                  ) : null,
+                          } as Parameters<typeof createColumns<ControlTaskDTO>>[0][number],
+                      ]
+                    : []),
+            ]),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [permissions.canWrite],
+    );
 
     const linkEvidence = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -1128,39 +1210,19 @@ export default function ControlDetailPage() {
                             </Button>
                         </form>
                     )}
-                    <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
-                        {(control.controlTasks?.length ?? 0) === 0 ? (
+                    <DataTable
+                        data={control.controlTasks ?? []}
+                        columns={controlTaskColumns}
+                        getRowId={(t) => t.id}
+                        emptyState={
                             <InlineEmptyState
                                 title="No tasks yet"
                                 description="Tasks linked to this control show up here once any are created."
                             />
-                        ) : (
-                            <table className="data-table" id="tasks-table">
-                                <thead>
-                                    <tr><th>Title</th><th>Status</th><th>Assignee</th><th>Due</th>{permissions.canWrite && <th>Actions</th>}</tr>
-                                </thead>
-                                <tbody>
-                                    {control.controlTasks?.map((t: ControlTaskDTO) => (
-                                        <tr key={t.id}>
-                                            <td className="text-sm text-content-emphasis">{t.title}</td>
-                                            <td><StatusBadge variant={TASK_STATUS_BADGE[t.status] || 'neutral'}>{t.status}</StatusBadge></td>
-                                            <td className="text-xs text-content-muted">{t.assignee?.name || '—'}</td>
-                                            <td className="text-xs text-content-muted">{t.dueAt ? formatDate(t.dueAt) : '—'}</td>
-                                            {permissions.canWrite && (
-                                                <td>
-                                                    {t.status !== 'DONE' && (
-                                                        <Button variant="secondary" size="sm" onClick={() => updateTaskStatus(t.id, 'DONE')} id={`mark-done-${t.id}`}>
-                                                            Done
-                                                        </Button>
-                                                    )}
-                                                </td>
-                                            )}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        )}
-                    </div>
+                        }
+                        resourceName={(p) => (p ? 'tasks' : 'task')}
+                        data-testid="control-tasks-table"
+                    />
                     {/* Linked Work Items (via TaskLink) */}
                     <div className={cn(cardVariants({ density: 'compact' }), 'mt-4')} id="linked-work-items-section">
                         <CardHeader title="Linked Work Items (Tasks)" className="mb-3" />

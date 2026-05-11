@@ -76,7 +76,7 @@ test.describe('Controls Center', () => {
         ]);
 
         // Verify task appears (refetch + re-render can be slow under load)
-        await expect(page.locator('#tasks-table')).toContainText(`E2E Task ${uniqueId}`, { timeout: 15000 });
+        await expect(page.locator('[data-testid="control-tasks-table"]')).toContainText(`E2E Task ${uniqueId}`, { timeout: 15000 });
 
         // Mark done - wait for the PATCH API call to complete before asserting
         const doneBtn = page.locator('button:has-text("Done")').first();
@@ -85,7 +85,7 @@ test.describe('Controls Center', () => {
             doneBtn.click(),
         ]);
         // Wait for refetch + re-render to show the updated status badge
-        await expect(page.locator('#tasks-table')).toContainText('DONE', { timeout: 10000 });
+        await expect(page.locator('[data-testid="control-tasks-table"]')).toContainText('DONE', { timeout: 10000 });
     });
 
     test('attach evidence → see it listed', async ({ page }) => {
