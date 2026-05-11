@@ -66,11 +66,16 @@ describe("PR-7 interaction state discipline", () => {
 
     it("selected rows render a brand-default left edge via inset box-shadow", () => {
       // The accent uses Tailwind's arbitrary box-shadow to paint a
-      // 2-px inset stroke on the FIRST non-utility cell. We assert
-      // the shape (selected attr selector + first-of-type modifier +
-      // brand-default token).
+      // 2-px inset stroke on the FIRST non-utility cell. R13-PR15
+      // replaced the CSS `:first-of-type:` selector with an
+      // `isFirstContent` boolean computed at render time — the
+      // pseudo silently broke once the select column became
+      // default-on (R12-PR1) because it then matched the select
+      // cell. The recipe is now plain
+      // `group-data-[selected=true]/row:shadow-…`, gated in JS to
+      // apply only to the first non-utility cell.
       expect(tableSrc).toMatch(
-        /group-data-\[selected=true\]\/row:first-of-type:shadow-\[inset_2px_0_0_var\(--brand-default\)\]/,
+        /group-data-\[selected=true\]\/row:shadow-\[inset_2px_0_0_var\(--brand-default\)\]/,
       );
     });
   });
