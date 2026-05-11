@@ -14,6 +14,7 @@ import {
     Bug,
     Building2,
     CheckCircle2,
+    CircleDashed,
     ClipboardList,
     Clock,
     Download,
@@ -55,6 +56,7 @@ export type AppIconName =
     | 'bell'
     | 'bug'
     | 'checkCircle'
+    | 'circleDashed'
     | 'clock'
     | 'comments'
     | 'controls'
@@ -102,6 +104,7 @@ export const ICON_MAP: Record<AppIconName, LucideIcon> = {
     bell: Bell,
     bug: Bug,
     checkCircle: CheckCircle2,
+    circleDashed: CircleDashed,
     clock: Clock,
     comments: MessageSquare,
     controls: ShieldCheck,
