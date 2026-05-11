@@ -94,6 +94,13 @@ const LEGACY_LUCIDE_USERS = new Set<string>([
     'src/components/layout/AppShell.tsx',
     'src/components/layout/OrgSidebarNav.tsx',
     'src/components/layout/SidebarNav.tsx',
+    // R12-PR1 — `nav-item.tsx` carries the `LucideIcon` type
+    // import for the `icon` prop. The sidebar's icon contract
+    // is `LucideIcon` (callers pass `LayoutDashboard` /
+    // `Building2` / etc directly). Migrating the sidebar's icon
+    // family to Nucleo is its own bounded effort — when that
+    // lands, this entry removes itself in the same diff.
+    'src/components/layout/nav-item.tsx',
     'src/components/onboarding/OnboardingBanner.tsx',
     'src/components/onboarding/OnboardingWizard.tsx',
     'src/components/org-switcher.tsx',
