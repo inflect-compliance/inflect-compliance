@@ -79,8 +79,13 @@ describe("v2-PR-12 DataTable row hover affordance", () => {
         // owns the shadow itself, but it still owns the
         // cursor-pointer + colour-transition affordance that
         // anchors the motion language.
+        //
+        // R13-PR14 widened the gate from `onRowClick &&` to
+        // `(onRowClick || selectionEnabled) &&` because
+        // selection-enabled rows are interactive (single click
+        // toggles selection). Match either form.
         const rowBlock = src.match(
-            /onRowClick\s*&&\s*\n?\s*"[^"]*cursor-pointer\s+select-none[^"]*"/,
+            /(?:onRowClick\s*&&|\(\s*onRowClick\s*\|\|\s*selectionEnabled\s*\)\s*&&)\s*\n?\s*"[^"]*cursor-pointer\s+select-none[^"]*"/,
         );
         expect(rowBlock).not.toBeNull();
         const rowClass = rowBlock![0];
@@ -89,14 +94,14 @@ describe("v2-PR-12 DataTable row hover affordance", () => {
         expect(rowClass).toMatch(/ease-out/);
     });
 
-    it("hover affordance is gated on `onRowClick` (no affordance on read-only rows)", () => {
-        // Read-only rows must not signal "click me". The
-        // cursor-pointer affordance applies only when onRowClick
-        // is supplied — the cell-level shadow inherits the gate
-        // via `group-hover/row` (the row only carries cursor +
-        // colour transition when onRowClick is set).
+    it("hover affordance is gated on `onRowClick` or `selectionEnabled` (no affordance on truly read-only rows)", () => {
+        // Read-only rows (no onRowClick AND selection disabled)
+        // must not signal "click me". After R13-PR14 the gate
+        // accepts either onRowClick OR selectionEnabled — both
+        // map to "row is interactive". The cell-level shadow
+        // inherits the gate via `group-hover/row`.
         expect(src).toMatch(
-            /onRowClick\s*&&\s*\n?\s*"cursor-pointer\s+select-none/,
+            /\(\s*onRowClick\s*\|\|\s*selectionEnabled\s*\)\s*&&\s*\n?\s*"cursor-pointer\s+select-none/,
         );
     });
 });
