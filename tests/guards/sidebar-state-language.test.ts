@@ -65,15 +65,21 @@ describe('Sidebar state-language ratchet (Elevation PR-3)', () => {
         expect(region).toMatch(/focus-visible:ring-2/);
     });
 
-    it('SidebarNav.tsx uses the canonical hover/active state shape', () => {
-        const abs = path.resolve(ROOT, SIDEBAR);
-        const content = fs.readFileSync(abs, 'utf8');
+    it('the NavItem primitive uses the canonical hover/active state shape', () => {
+        // R12-PR1 extracted the state recipe from `SidebarNav.tsx`
+        // into `nav-item.tsx` (the primitive). Assertions follow.
+        // Later Roadmap-12 PRs will tighten these tokens — when
+        // they do, this ratchet's expected patterns update in step.
+        const navItem = fs.readFileSync(
+            path.resolve(ROOT, 'src/components/layout/nav-item.tsx'),
+            'utf8',
+        );
         // Hover on nav items: bg-bg-muted/50 (the canonical PR-8
         // hover-state token, not the legacy bg-bg-muted).
-        expect(content).toMatch(/hover:bg-bg-muted\/50/);
+        expect(navItem).toMatch(/hover:bg-bg-muted\/50/);
         // Active: 2px brand left-border accent.
-        expect(content).toMatch(/border-l-\[var\(--brand-default\)\]/);
+        expect(navItem).toMatch(/border-l-\[var\(--brand-default\)\]/);
         // Motion: transition-colors duration-150 (motion-language).
-        expect(content).toMatch(/transition-colors\s+duration-150/);
+        expect(navItem).toMatch(/transition-colors\s+duration-150/);
     });
 });

@@ -28,7 +28,7 @@ import {
     type LucideIcon,
 } from 'lucide-react';
 import { useCalendarBadge } from './use-calendar-badge';
-import { StatusBadge } from '@/components/ui/status-badge';
+import { NavItem } from './nav-item';
 import { Eyebrow } from '@/components/ui/typography';
 
 // ─── Types ───
@@ -129,60 +129,6 @@ export function useNavSections(): NavSectionDef[] {
             }),
         },
     ];
-}
-
-// ─── NavItem ───
-
-interface NavItemProps {
-    href: string;
-    icon: LucideIcon;
-    label: string;
-    active: boolean;
-    badge?: string | number;
-    onClick?: () => void;
-}
-
-// Elevation PR-3 — sidebar nav item state language.
-//
-// All four states expressed inline via tokens (no .nav-link CSS
-// class). The state tokens mirror the canonical state language
-// from Polish PR-8:
-//
-//   default       text-content-muted, no background
-//   hover         text-content-emphasis + bg-bg-muted/50
-//                 (colour-only transition, duration-150 ease-out)
-//   active        text-content-emphasis + bg-brand-subtle +
-//                 2px brand left-border accent
-//   focus-visible 2px ring at --ring (the canonical yellow)
-//
-// The transition is `transition-colors` not `transition-all`
-// (motion-language ratchet — duration must enumerate the property).
-
-const NAV_ITEM_BASE =
-    'flex items-center gap-compact px-3 py-2.5 min-h-[44px] rounded-lg text-sm transition-colors duration-150 ease-out border-l-2 border-l-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]';
-const NAV_ITEM_DEFAULT = 'text-content-muted hover:text-content-emphasis hover:bg-bg-muted/50';
-const NAV_ITEM_ACTIVE =
-    'text-content-emphasis bg-[var(--brand-subtle)] border-l-[var(--brand-default)] font-medium';
-
-function NavItem({ href, icon: Icon, label, active, badge, onClick }: NavItemProps) {
-    const slug = href.split('/').pop() ?? '';
-
-    return (
-        <Link
-            href={href}
-            onClick={onClick}
-            className={`${NAV_ITEM_BASE} ${active ? NAV_ITEM_ACTIVE : NAV_ITEM_DEFAULT}`}
-            data-testid={`nav-${slug}`}
-        >
-            <Icon className="w-[18px] h-[18px] flex-shrink-0" aria-hidden="true" />
-            <span className="truncate">{label}</span>
-            {badge != null && (
-                <StatusBadge variant="info" size="sm" className="ml-auto tabular-nums">
-                    {badge}
-                </StatusBadge>
-            )}
-        </Link>
-    );
 }
 
 // ─── NavSection ───
