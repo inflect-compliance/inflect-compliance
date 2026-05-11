@@ -44,7 +44,7 @@ export function MembersTable({ members }: MembersTableProps) {
                 header: 'Email',
                 accessorKey: 'email',
                 cell: ({ getValue }) => (
-                    <span className="text-xs text-content-muted">
+                    <span className="text-content-muted">
                         {getValue() as string}
                     </span>
                 ),
@@ -67,7 +67,7 @@ export function MembersTable({ members }: MembersTableProps) {
                 header: 'Joined',
                 accessorKey: 'createdAtIso',
                 cell: ({ getValue }) => (
-                    <span className="text-xs text-content-subtle whitespace-nowrap">
+                    <span className="text-content-subtle whitespace-nowrap">
                         {formatDate(getValue() as string)}
                     </span>
                 ),

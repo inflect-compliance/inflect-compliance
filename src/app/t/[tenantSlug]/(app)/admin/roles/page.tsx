@@ -478,7 +478,7 @@ export default function CustomRolesPage() {
                 header: 'Description',
                 accessorKey: 'description',
                 cell: ({ row }) => (
-                    <span className="text-xs text-content-muted truncate block max-w-xs">
+                    <span className="text-content-muted truncate block max-w-xs">
                         {row.original.description || '—'}
                     </span>
                 ),
@@ -488,7 +488,7 @@ export default function CustomRolesPage() {
                 header: 'Members',
                 accessorFn: (r) => r._count.memberships,
                 cell: ({ row }) => (
-                    <span className="flex items-center gap-1 text-xs text-content-default">
+                    <span className="flex items-center gap-1 text-content-default">
                         <Users className="w-3.5 h-3.5" />
                         {row.original._count.memberships}
                     </span>
@@ -499,7 +499,7 @@ export default function CustomRolesPage() {
                 header: 'Permissions',
                 accessorFn: (r) => countGranted(r.permissionsJson),
                 cell: ({ row }) => (
-                    <span className="text-xs text-content-muted font-mono">
+                    <span className="text-content-muted font-mono">
                         {countGranted(row.original.permissionsJson)}
                     </span>
                 ),

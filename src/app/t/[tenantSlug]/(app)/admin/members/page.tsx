@@ -360,7 +360,7 @@ export default function MembersAdminPage() {
                 header: 'Email',
                 accessorFn: (m) => m.user.email,
                 cell: ({ row }) => (
-                    <span className="text-xs text-content-muted">{row.original.user.email}</span>
+                    <span className="text-content-muted">{row.original.user.email}</span>
                 ),
             },
             {
@@ -498,7 +498,7 @@ export default function MembersAdminPage() {
                 header: 'Joined',
                 accessorKey: 'createdAt',
                 cell: ({ row }) => (
-                    <span className="text-xs text-content-subtle">{formatDate(row.original.createdAt)}</span>
+                    <span className="text-content-subtle">{formatDate(row.original.createdAt)}</span>
                 ),
             },
             {
@@ -589,7 +589,7 @@ export default function MembersAdminPage() {
                 header: 'Invited By',
                 accessorFn: (i) => i.invitedBy?.name ?? '—',
                 cell: ({ row }) => (
-                    <span className="text-xs text-content-muted">{row.original.invitedBy?.name || '—'}</span>
+                    <span className="text-content-muted">{row.original.invitedBy?.name || '—'}</span>
                 ),
             },
             {
@@ -597,7 +597,7 @@ export default function MembersAdminPage() {
                 header: 'Expires',
                 accessorKey: 'expiresAt',
                 cell: ({ row }) => (
-                    <span className="text-xs text-content-subtle">{formatDate(row.original.expiresAt)}</span>
+                    <span className="text-content-subtle">{formatDate(row.original.expiresAt)}</span>
                 ),
             },
         ]),

@@ -48,25 +48,28 @@ export function ReportsClient({ data, soaReport, controls, tenantSlug, canEdit, 
         const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
     };
 
+    // R13-PR8 — cell `text-xs` overrides removed so the risk
+    // register renders at the DataTable primitive's default
+    // `text-sm leading-6`, matching Controls.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const riskColumns = useMemo(() => createColumns<any>([
         {
             accessorKey: 'title',
             header: t.risk,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            cell: ({ getValue }: any) => <span className="font-medium text-sm text-content-emphasis">{getValue()}</span>,
+            cell: ({ getValue }: any) => <span className="font-medium text-content-emphasis">{getValue()}</span>,
         },
         {
             accessorKey: 'asset',
             header: t.asset,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            cell: ({ getValue }: any) => <span className="text-xs">{getValue()}</span>,
+            cell: ({ getValue }: any) => <span>{getValue()}</span>,
         },
         {
             accessorKey: 'threat',
             header: t.threat,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            cell: ({ getValue }: any) => <span className="text-xs text-content-muted">{getValue()}</span>,
+            cell: ({ getValue }: any) => <span className="text-content-muted">{getValue()}</span>,
         },
         {
             id: 'lxi',
@@ -74,7 +77,7 @@ export function ReportsClient({ data, soaReport, controls, tenantSlug, canEdit, 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             accessorFn: (r: any) => `${r.likelihood}×${r.impact}`,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            cell: ({ getValue }: any) => <span className="text-xs">{getValue()}</span>,
+            cell: ({ getValue }: any) => <span>{getValue()}</span>,
         },
         {
             accessorKey: 'score',
@@ -86,13 +89,13 @@ export function ReportsClient({ data, soaReport, controls, tenantSlug, canEdit, 
             accessorKey: 'treatment',
             header: t.treatment,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            cell: ({ getValue }: any) => <span className="text-xs">{getValue()}</span>,
+            cell: ({ getValue }: any) => <span>{getValue()}</span>,
         },
         {
             accessorKey: 'owner',
             header: t.owner,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            cell: ({ getValue }: any) => <span className="text-xs">{getValue()}</span>,
+            cell: ({ getValue }: any) => <span>{getValue()}</span>,
         },
         {
             id: 'controls',
@@ -100,7 +103,7 @@ export function ReportsClient({ data, soaReport, controls, tenantSlug, canEdit, 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             accessorFn: (r: any) => r.controls || '—',
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            cell: ({ getValue }: any) => <span className="text-xs text-content-muted">{getValue()}</span>,
+            cell: ({ getValue }: any) => <span className="text-content-muted">{getValue()}</span>,
         },
     ]), [t]);
 

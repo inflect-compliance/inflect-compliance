@@ -248,17 +248,17 @@ export default function AdminIntegrationsPage() {
                                     id: 'status', header: 'Status', accessorKey: 'isEnabled',
                                     cell: ({ row }: any) => <StatusBadge variant={row.original.isEnabled ? 'success' : 'error'}>{row.original.isEnabled ? 'Active' : 'Disabled'}</StatusBadge>,
                                 },
-                                { id: 'secrets', header: 'Secrets', cell: () => <span className="text-content-subtle font-mono text-xs">••••••••</span> },
+                                { id: 'secrets', header: 'Secrets', cell: () => <span className="text-content-subtle font-mono">••••••••</span> },
                                 {
                                     id: 'lastTest', header: 'Last Test', accessorKey: 'lastTestedAt',
                                     cell: ({ row }: any) => row.original.lastTestedAt ? (
-                                        <span className="flex items-center gap-1 text-xs text-content-muted">
+                                        <span className="flex items-center gap-1 text-content-muted">
                                             {row.original.lastTestStatus === 'ok' ? <CheckCircle className="w-3.5 h-3.5 text-content-success" /> : <XCircle className="w-3.5 h-3.5 text-content-error" />}
                                             {formatDate(row.original.lastTestedAt)}
                                         </span>
-                                    ) : <span className="text-content-subtle text-xs">—</span>,
+                                    ) : <span className="text-content-subtle">—</span>,
                                 },
-                                { id: 'executions', header: 'Executions', accessorFn: (c: ConnectionDTO) => c._count?.executions ?? 0, cell: ({ getValue }: any) => <span className="text-xs">{getValue()}</span> },
+                                { id: 'executions', header: 'Executions', accessorFn: (c: ConnectionDTO) => c._count?.executions ?? 0, cell: ({ getValue }: any) => <span>{getValue()}</span> },
                                 {
                                     id: 'actions', header: 'Actions',
                                     cell: ({ row }: any) => (

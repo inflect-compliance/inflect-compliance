@@ -349,7 +349,7 @@ export default function ApiKeysPage() {
                     accessorKey: 'keyPrefix',
                     header: 'Key',
                     cell: ({ row }) => (
-                        <code className="text-xs text-content-muted font-mono">{row.original.keyPrefix}...</code>
+                        <code className="text-content-muted font-mono">{row.original.keyPrefix}...</code>
                     ),
                 },
                 {
@@ -374,26 +374,26 @@ export default function ApiKeysPage() {
                     header: 'Expires',
                     cell: ({ row }) =>
                         row.original.expiresAt ? (
-                            <span className="flex items-center gap-1 text-xs text-content-muted">
+                            <span className="flex items-center gap-1 text-content-muted">
                                 <Clock className="w-3.5 h-3.5" />
                                 {formatDateTime(row.original.expiresAt)}
                             </span>
                         ) : (
-                            <span className="text-xs text-content-subtle">Never</span>
+                            <span className="text-content-subtle">Never</span>
                         ),
                 },
                 {
                     accessorKey: 'lastUsedAt',
                     header: 'Last Used',
                     cell: ({ row }) => (
-                        <span className="text-xs text-content-muted">{formatDateTime(row.original.lastUsedAt)}</span>
+                        <span className="text-content-muted">{formatDateTime(row.original.lastUsedAt)}</span>
                     ),
                 },
                 {
                     accessorKey: 'createdAt',
                     header: 'Created',
                     cell: ({ row }) => (
-                        <span className="text-xs text-content-subtle">
+                        <span className="text-content-subtle">
                             {formatDateTime(row.original.createdAt)}
                             <br />
                             <span className="text-content-subtle">
@@ -443,7 +443,7 @@ export default function ApiKeysPage() {
                     accessorKey: 'keyPrefix',
                     header: 'Key',
                     cell: ({ row }) => (
-                        <code className="text-xs text-content-subtle font-mono">{row.original.keyPrefix}...</code>
+                        <code className="text-content-subtle font-mono">{row.original.keyPrefix}...</code>
                     ),
                 },
                 {
@@ -460,7 +460,7 @@ export default function ApiKeysPage() {
                     accessorKey: 'createdAt',
                     header: 'Created',
                     cell: ({ row }) => (
-                        <span className="text-xs text-content-subtle">{formatDateTime(row.original.createdAt)}</span>
+                        <span className="text-content-subtle">{formatDateTime(row.original.createdAt)}</span>
                     ),
                 },
             ]),

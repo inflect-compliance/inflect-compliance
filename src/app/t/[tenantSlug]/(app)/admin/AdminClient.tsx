@@ -42,6 +42,10 @@ export function AdminClient({ auditLog, tenantSlug, translations: t }: AdminClie
         'supplierSecurity', 'backup', 'changeManagement', 'cryptography', 'logging',
     ] as const;
 
+    // R13-PR8 — cell `text-xs` overrides removed so admin tables
+    // render at the DataTable primitive's default `text-sm leading-6`,
+    // matching Controls / Risks / etc. The legacy text-xs read as
+    // visibly smaller rows than the rest of the product.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const logColumns = useMemo(() => createColumns<any>([
         {
@@ -50,7 +54,7 @@ export function AdminClient({ auditLog, tenantSlug, translations: t }: AdminClie
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             accessorFn: (e: any) => e.createdAt,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            cell: ({ getValue }: any) => <span className="text-xs whitespace-nowrap">{formatDateTime(getValue())}</span>,
+            cell: ({ getValue }: any) => <span className="whitespace-nowrap">{formatDateTime(getValue())}</span>,
         },
         {
             id: 'user',
@@ -58,7 +62,7 @@ export function AdminClient({ auditLog, tenantSlug, translations: t }: AdminClie
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             accessorFn: (e: any) => e.user?.name || '—',
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            cell: ({ getValue }: any) => <span className="text-xs">{getValue()}</span>,
+            cell: ({ getValue }: any) => <span>{getValue()}</span>,
         },
         {
             accessorKey: 'action',
@@ -70,13 +74,13 @@ export function AdminClient({ auditLog, tenantSlug, translations: t }: AdminClie
             accessorKey: 'entity',
             header: t.entity,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            cell: ({ getValue }: any) => <span className="text-xs">{getValue()}</span>,
+            cell: ({ getValue }: any) => <span>{getValue()}</span>,
         },
         {
             accessorKey: 'details',
             header: t.details,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            cell: ({ getValue }: any) => <span className="text-xs text-content-muted max-w-xs truncate">{getValue()}</span>,
+            cell: ({ getValue }: any) => <span className="text-content-muted max-w-xs truncate">{getValue()}</span>,
         },
     ]), [t]);
 

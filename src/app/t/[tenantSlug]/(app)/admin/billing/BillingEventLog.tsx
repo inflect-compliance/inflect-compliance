@@ -51,7 +51,7 @@ export function BillingEventLog({ events }: { events: BillingEvent[] }) {
             header: 'Time',
             accessorKey: 'createdAt',
             cell: ({ getValue }) => (
-                <span className="text-xs text-content-muted whitespace-nowrap">
+                <span className="text-content-muted whitespace-nowrap">
                     {formatDateTime(getValue() as string)}
                 </span>
             ),
@@ -61,7 +61,7 @@ export function BillingEventLog({ events }: { events: BillingEvent[] }) {
             header: 'Stripe ID',
             accessorKey: 'stripeEventId',
             cell: ({ getValue }) => (
-                <span className="text-xs text-content-subtle font-mono">
+                <span className="text-content-subtle font-mono">
                     {(getValue() as string).slice(0, 20)}…
                 </span>
             ),
