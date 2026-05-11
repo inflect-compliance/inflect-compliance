@@ -7,6 +7,13 @@ export const buttonVariants = cva(
     "border rounded-lg",
     "disabled:opacity-50 disabled:pointer-events-none",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+    // R11-PR4 — microinteraction sweep. Every button gets a subtle
+    // press-down scale on `:active` so clicks feel responsive. The
+    // 3% shrink is intentionally small — large enough to register
+    // tactile feedback, small enough to never read as a glitch.
+    // `motion-reduce` removes the scale entirely for users who opt
+    // out of motion.
+    "active:scale-[0.97] motion-reduce:active:scale-100",
   ],
   {
     variants: {
