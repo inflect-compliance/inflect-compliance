@@ -126,6 +126,14 @@ const bodyCellClassName = (
         !["select", "menu"].includes(columnId) &&
             (hasSelectBefore ? "pl-1 pr-4 py-2.5" : "px-4 py-2.5"),
         clickable && "group-hover/row:bg-bg-subtle transition-colors duration-75",
+        // R13-PR13 — brand-coloured 2-px left-edge accent on hover,
+        // rendered by the first non-utility cell so it paints on
+        // the cell's own paint context (not on the parent row
+        // where cell backgrounds would obscure it). Mirrors the
+        // table.tsx recipe.
+        !["select", "menu"].includes(columnId) &&
+            clickable &&
+            "group-hover/row:first-of-type:shadow-[inset_2px_0_0_var(--brand-default)]",
         "group-data-[selected=true]/row:bg-[var(--brand-subtle)]",
     );
 
@@ -176,11 +184,14 @@ function VirtualRow<T>({
             data-virtual-row-index={index}
             className={cn(
                 "group/row grid",
-                // R13-PR2 — unify hover affordance with the non-
-                // virtualized branches: 2px brand-coloured left edge
-                // on hover via inset box-shadow.
+                // R13-PR13 — the 2-px brand-coloured left edge moved
+                // to the first non-utility cell in `bodyCellClassName`
+                // so all three row paths (resizable, non-resizable,
+                // virtualized) carry the accent identically and paint
+                // on the cell's own paint context. Row keeps cursor +
+                // colour transition only.
                 onRowClick &&
-                    "cursor-pointer select-none transition-colors duration-150 ease-out hover:shadow-[inset_2px_0_0_0_var(--brand-default)]",
+                    "cursor-pointer select-none transition-colors duration-150 ease-out",
                 "data-[selected=true]:bg-[var(--brand-subtle)]",
             )}
             style={{

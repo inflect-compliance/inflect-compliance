@@ -72,18 +72,41 @@ describe('DataTable — row-click semantics (R13-PR2)', () => {
 
     it('preserves the brand-coloured left-edge hover accent on every row path', () => {
         // R13-PR2 unified the brand-edge accent across all three
-        // branches (resizable, non-resizable, virtualized). The
-        // inset box-shadow trick keeps content from shifting on
-        // hover.
-        const tableAccents = TABLE_TSX.match(
-            /hover:shadow-\[inset_2px_0_0_0?_var\(--brand-default\)\]/g,
-        );
-        const virtualAccents = VIRTUAL_TSX.match(
-            /hover:shadow-\[inset_2px_0_0_0?_var\(--brand-default\)\]/g,
-        );
-        expect(tableAccents).not.toBeNull();
-        expect(tableAccents!.length).toBeGreaterThanOrEqual(2);
-        expect(virtualAccents).not.toBeNull();
-        expect(virtualAccents!.length).toBeGreaterThanOrEqual(1);
+        // branches (resizable, non-resizable, virtualized).
+        //
+        // R13-PR13 moved the accent from the row's `hover:shadow-…`
+        // to the FIRST cell's `group-hover/row:first-of-type:shadow-…`
+        // because cell backgrounds (`bg-bg-muted` on hover) were
+        // painting on top of the row-level shadow in the CSS table
+        // model, making the accent flicker and disappear. Cell-
+        // level shadow paints on the cell's own context — visible
+        // for the entire hover lifetime.
+        //
+        // Assertion: both files carry the canonical recipe
+        // `group-hover/row:first-of-type:shadow-[inset_2px_0_0_var(--brand-default)]`
+        // exactly once (the `tableCellClassName` / `bodyCellClassName`
+        // hook that emits it for every cell).
+        const cellAccentRe =
+            /group-hover\/row:first-of-type:shadow-\[inset_2px_0_0_var\(--brand-default\)\]/g;
+        const tableMatches = TABLE_TSX.match(cellAccentRe);
+        const virtualMatches = VIRTUAL_TSX.match(cellAccentRe);
+        expect(tableMatches).not.toBeNull();
+        expect(tableMatches!.length).toBeGreaterThanOrEqual(1);
+        expect(virtualMatches).not.toBeNull();
+        expect(virtualMatches!.length).toBeGreaterThanOrEqual(1);
+
+        // The retired row-level `hover:shadow-…` must NOT come back
+        // — re-introducing it triggers the flicker again. Strip
+        // block + line comments first so the inline doc-comments
+        // that mention the old pattern (for context) don't trip
+        // the regression check.
+        const stripComments = (src: string) =>
+            src
+                .replace(/\/\*[\s\S]*?\*\//g, '')
+                .replace(/^[ \t]*\/\/.*$/gm, '');
+        const oldRowRe =
+            /\bhover:shadow-\[inset_2px_0_0_0?_var\(--brand-default\)\]/g;
+        expect(stripComments(TABLE_TSX).match(oldRowRe)).toBeNull();
+        expect(stripComments(VIRTUAL_TSX).match(oldRowRe)).toBeNull();
     });
 });

@@ -62,6 +62,21 @@ const tableCellClassName = (
     // theme). Pairs with `cursor-pointer` on the row itself to make
     // clickability unambiguous.
     clickable && "group-hover/row:bg-bg-muted transition-colors duration-75",
+    // R13-PR13 — brand-coloured 2-px left-edge accent on hover.
+    // PREVIOUSLY this lived on the `<tr>` itself as
+    // `hover:shadow-[inset_2px_0_0_0_var(--brand-default)]`. In CSS
+    // table painting, each cell's background (`bg-bg-muted` above)
+    // paints ON TOP of any box-shadow declared on the parent `<tr>`,
+    // so the row-level shadow flickered while moving the mouse
+    // between rows (no cell painted yet) and disappeared once the
+    // cursor settled on a single row (cell background covered the
+    // shadow). Moving the inset shadow to the FIRST non-utility cell
+    // — on the cell's own paint context — keeps the accent visible
+    // for the entire hover lifetime. Mirrors the selected-row
+    // recipe below.
+    !["select", "menu"].includes(columnId) &&
+      clickable &&
+      "group-hover/row:first-of-type:shadow-[inset_2px_0_0_var(--brand-default)]",
     // PR-7 selected-row signal — left-edge brand accent via inset
     // box-shadow on the leftmost cell. Renders only on the first
     // non-utility cell so the accent reads as a single 2-px stroke
@@ -376,13 +391,14 @@ const ResizableTableRow = memo(
           "group/row",
           // v2-PR-12 — hover affordance for clickable rows. The
           // `group/row` class above lets the chevron-cell rendering
-          // toggle on group hover. The 1px brand-coloured left
-          // border is rendered via the box-shadow inset trick so it
-          // doesn't shift the row content sideways on hover. Sits on
-          // the v2-PR-4 motion language (transition-colors / no
-          // transform).
+          // toggle on group hover. The brand-coloured 2-px left
+          // edge is rendered by the FIRST non-utility cell in
+          // `tableCellClassName` (R13-PR13) so it survives the
+          // cell's own bg-bg-muted hover paint — see the comment
+          // there. Row-level treatment here keeps just the
+          // cursor + colour-transition affordance.
           onRowClick &&
-            "cursor-pointer select-none transition-colors duration-150 ease-out hover:shadow-[inset_2px_0_0_0_var(--brand-default)]",
+            "cursor-pointer select-none transition-colors duration-150 ease-out",
           // hacky fix: if there are more than 8 rows, remove the bottom border from the last row
           table.getRowModel().rows.length > 8 &&
             row.index === table.getRowModel().rows.length - 1 &&
@@ -870,15 +886,14 @@ export function Table<T>({
                         // edge of the sticky header instead of
                         // stopping half-row up or down.
                         "snap-start",
-                        // R13-PR2 — unify hover affordance with the
-                        // resizable branch above: brand-coloured
-                        // 2px left edge on hover, rendered via inset
-                        // box-shadow so the row doesn't shift on
-                        // hover. Pairs with the per-cell
-                        // `group-hover/row:bg-bg-muted` background
-                        // from `tableCellClassName`.
+                        // R13-PR13 — the brand-coloured 2-px left
+                        // edge moved from row-level to the FIRST
+                        // non-utility cell in `tableCellClassName`
+                        // so it survives the cell's bg-bg-muted
+                        // hover paint. Row keeps cursor + colour
+                        // transition only.
                         onRowClick &&
-                          "cursor-pointer select-none transition-colors duration-150 ease-out hover:shadow-[inset_2px_0_0_0_var(--brand-default)]",
+                          "cursor-pointer select-none transition-colors duration-150 ease-out",
                         table.getRowModel().rows.length > 8 &&
                           row.index === table.getRowModel().rows.length - 1 &&
                           "[&_td]:border-b-0",
