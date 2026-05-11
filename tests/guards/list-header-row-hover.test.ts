@@ -60,20 +60,27 @@ describe("v2-PR-12 DataTable row hover affordance", () => {
     );
 
     it("renders a brand-coloured left-border on hover for clickable rows", () => {
-        // Inset box-shadow is the canonical "left-border on a <tr>"
-        // workaround. The brand-default token is the colour.
+        // R13-PR13 — the inset box-shadow recipe moved from the
+        // row (`<tr>`) to the first non-utility cell. CSS table
+        // painting paints cell backgrounds (`bg-bg-muted` on
+        // hover) on top of any row-level shadow, so the
+        // row-level approach flickered. The cell-level shadow
+        // paints on the cell's own context and stays visible.
+        // The brand-default token is the colour.
         expect(src).toMatch(
-            /hover:shadow-\[inset_2px_0_0_0_var\(--brand-default\)\]/,
+            /group-hover\/row:first-of-type:shadow-\[inset_2px_0_0_var\(--brand-default\)\]/,
         );
     });
 
     it("uses the v2-PR-4 motion language (transition-colors duration-150)", () => {
         // The hover affordance sits on the same motion as every
         // other clickable surface — bg/border colour transitions
-        // only, no transform. Find the line in the row className
-        // string that wires the hover affordance.
+        // only, no transform. After R13-PR13 the row no longer
+        // owns the shadow itself, but it still owns the
+        // cursor-pointer + colour-transition affordance that
+        // anchors the motion language.
         const rowBlock = src.match(
-            /onRowClick\s*&&\s*"[^"]*hover:shadow-\[inset_2px_0_0_0_var\(--brand-default\)\][^"]*"/,
+            /onRowClick\s*&&\s*\n?\s*"[^"]*cursor-pointer\s+select-none[^"]*"/,
         );
         expect(rowBlock).not.toBeNull();
         const rowClass = rowBlock![0];
@@ -83,10 +90,13 @@ describe("v2-PR-12 DataTable row hover affordance", () => {
     });
 
     it("hover affordance is gated on `onRowClick` (no affordance on read-only rows)", () => {
-        // Read-only rows must not signal "click me". The inset
-        // border ONLY applies when onRowClick is supplied.
+        // Read-only rows must not signal "click me". The
+        // cursor-pointer affordance applies only when onRowClick
+        // is supplied — the cell-level shadow inherits the gate
+        // via `group-hover/row` (the row only carries cursor +
+        // colour transition when onRowClick is set).
         expect(src).toMatch(
-            /onRowClick\s*&&\s*"[^"]*hover:shadow-\[inset_2px_0_0_0_var\(--brand-default\)\]/,
+            /onRowClick\s*&&\s*\n?\s*"cursor-pointer\s+select-none/,
         );
     });
 });
