@@ -69,11 +69,10 @@ const TAB_PAGES: TabPageEntry[] = [
         migrated: false,
         note: "Admin notifications page — tabs for channels / templates / rules.",
     },
-    {
-        file: "src/app/t/[tenantSlug]/(app)/admin/AdminClient.tsx",
-        migrated: false,
-        note: "Admin landing page — tabs for audit log / policy templates.",
-    },
+    // R13-PR10 — `admin/AdminClient.tsx` was deleted. The audit log
+    // moved to its own `/admin/audit-log` page and the policy
+    // templates tab was dropped. The admin landing is now a pure
+    // pill-nav surface that no longer owns any tab UI.
     {
         file: "src/app/t/[tenantSlug]/(app)/reports/ReportsClient.tsx",
         migrated: false,

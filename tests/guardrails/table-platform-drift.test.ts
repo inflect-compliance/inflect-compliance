@@ -44,7 +44,10 @@ const MIGRATED_PAGES = [
     'assets/AssetsClient.tsx',
     'findings/FindingsClient.tsx',
     'reports/ReportsClient.tsx',
-    'admin/AdminClient.tsx',
+    // R13-PR10 — `admin/AdminClient.tsx` was deleted (audit log
+    // moved to `/admin/audit-log` with a dedicated client island).
+    // The new sub-component takes its place in the registry.
+    'admin/audit-log/AuditLogClient.tsx',
 ];
 
 function readClientFile(rel: string): string {

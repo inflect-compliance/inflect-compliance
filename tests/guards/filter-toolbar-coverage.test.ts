@@ -69,8 +69,12 @@ const EXEMPTIONS: Record<string, string> = {
     // controls (toggle / revoke / archive) baked into the page chrome.
     // FilterToolbar is overkill — the entity volume sits in the
     // dozens, not the thousands.
-    "src/app/t/[tenantSlug]/(app)/admin/AdminClient.tsx":
-        "Admin landing page audit-log table — chronological history bound to one tenant, not a faceted-filter surface.",
+    // R13-PR10 — audit log moved out of the admin landing into
+    // its own `/admin/audit-log` page; AdminClient.tsx was
+    // deleted. The exemption follows the audit log to the new
+    // sub-component.
+    "src/app/t/[tenantSlug]/(app)/admin/audit-log/AuditLogClient.tsx":
+        "Chronological audit log bound to one tenant — not a faceted-filter surface.",
     "src/app/t/[tenantSlug]/(app)/admin/api-keys/page.tsx":
         "API keys admin — small fixed list (typical: <20) with inline create + revoke controls.",
     "src/app/t/[tenantSlug]/(app)/admin/billing/BillingEventLog.tsx":

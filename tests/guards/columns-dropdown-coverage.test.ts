@@ -40,8 +40,12 @@ const SCAN_DIR = 'src/app/t/[tenantSlug]/(app)';
  */
 const EXEMPTIONS: Record<string, string> = {
     // ─── (a) Sub-components — parent owns the toolbar ──────────────
-    'admin/AdminClient.tsx':
-        '(a) sub-component — admin landing audit-log table, parent owns layout chrome.',
+    // R13-PR10 — `admin/AdminClient.tsx` was deleted; audit log
+    // moved to `admin/audit-log/AuditLogClient.tsx`. The new sub-
+    // component is still a chronological log (no per-column
+    // hide/show needed), so the exemption follows the move.
+    'admin/audit-log/AuditLogClient.tsx':
+        '(a) sub-component — chronological audit log; parent page owns chrome.',
     'admin/billing/BillingEventLog.tsx':
         '(a) sub-component — billing-page event log; parent decides chrome.',
     'admin/rbac/MembersTable.tsx':

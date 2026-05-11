@@ -76,10 +76,15 @@ const ROOT = path.resolve(__dirname, '../..');
  * outer cards carried `border-border-default/50` strip-dividers
  * inside their card-header — those went away with the wrappers.
  *
+ * R13-PR10 (2026-05-11) lowered the budget from 119 → 118 by
+ * deleting `admin/AdminClient.tsx` (audit log moved to its own
+ * page) — its policy-templates branch carried a
+ * `border border-border-default` divider on the template tiles.
+ *
  * Future PRs continue to ratchet down toward the rough 4:1
  * subtle-to-default target ratio.
  */
-const BORDER_DEFAULT_BUDGET = 119;
+const BORDER_DEFAULT_BUDGET = 118;
 
 function countMatches(re: RegExp): number {
     let total = 0;

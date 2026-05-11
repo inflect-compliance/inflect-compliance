@@ -189,10 +189,18 @@ describe('New page token discipline', () => {
         //     unmigrated tally only because they aren't yet in
         //     `MIGRATED_PAGES` (promotion is a separate landing).
         //     Bounded follow-up promotes them.
+        //   - 99 (+1): R13-PR10 — audit log split out of the admin
+        //     landing into its own page (admin/audit-log/page.tsx +
+        //     AuditLogClient.tsx). The new page uses
+        //     PageHeader / ListPageShell / DataTable directly so it
+        //     doesn't trip the raw-color/btn/badge checks; it's in
+        //     the unmigrated tally only because the surface is new
+        //     and not yet listed in MIGRATED_PAGES. Bounded follow-up
+        //     promotes it.
         // Each increment names the epic + page + reason; promotion
         // to MIGRATED_PAGES is the path forward, never silent
         // floor-bumping.
-        expect(unmigrated.length).toBeLessThanOrEqual(98);
+        expect(unmigrated.length).toBeLessThanOrEqual(99);
     });
 
     it('migrated page count is at least 4', () => {

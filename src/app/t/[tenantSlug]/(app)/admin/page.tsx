@@ -1,19 +1,20 @@
 import { getTranslations } from 'next-intl/server';
-import { getTenantCtx } from '@/app-layer/context';
-import { listAuditLogs } from '@/app-layer/usecases/auditLog';
-import { Shield, CreditCard, KeyRound, ShieldCheck, ShieldPlus, Users, CloudCog, Plug, Palette, Grid3x3, Bell } from 'lucide-react';
+import { Shield, CreditCard, KeyRound, ShieldCheck, ShieldPlus, Users, CloudCog, Plug, Palette, Grid3x3, Bell, ScrollText } from 'lucide-react';
 import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button-variants';
-import { AdminClient } from './AdminClient';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { PageHeader } from '@/components/layout/PageHeader';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Admin — Server Component wrapper.
- * Fetches audit log server-side, renders navigation links server-side,
- * delegates only tab switching to client island.
+ * Admin landing — pure pill-nav surface.
+ *
+ * R13-PR10 retired the embedded audit log tab and the policy
+ * templates tab. Audit log now lives at its own page
+ * (`/admin/audit-log`) reachable via the pill next to
+ * Notifications. Policy templates were unused chrome and were
+ * dropped entirely.
  */
 export default async function AdminPage({
     params,
@@ -22,32 +23,9 @@ export default async function AdminPage({
 }) {
     const { tenantSlug } = await params;
 
-    // Translations and tenant context are independent — fetch in parallel
-    const [t, tc, ctx] = await Promise.all([
-        getTranslations('admin'),
-        getTranslations('common'),
-        getTenantCtx({ tenantSlug }),
-    ]);
-
-    let auditLog: unknown[] = [];
-    try {
-        auditLog = await listAuditLogs(ctx);
-    } catch {
-        // User may not have AUDITOR/ADMIN role — gracefully degrade
-        auditLog = [];
-    }
+    const t = await getTranslations('admin');
 
     const tenantHref = (path: string) => `/t/${tenantSlug}${path}`;
-
-    const templateKeys = [
-        'infoSecurity', 'accessControl', 'incidentResponse', 'acceptableUse',
-        'supplierSecurity', 'backup', 'changeManagement', 'cryptography', 'logging',
-    ] as const;
-
-    const templateLabels: Record<string, string> = {};
-    for (const key of templateKeys) {
-        templateLabels[key] = t(`templates.${key}`);
-    }
 
     return (
         <div className="space-y-section animate-fadeIn">
@@ -69,12 +47,7 @@ export default async function AdminPage({
                 }
             />
 
-            {/* Navigation links — server-rendered, no JS needed */}
-            <div className="flex gap-tight flex-wrap">
-                {/* Tab buttons are rendered inside the client island below */}
-            </div>
-
-            {/* Navigation pills — pure server-rendered links */}
+            {/* Navigation pills — pure server-rendered links. */}
             <div className="flex gap-tight flex-wrap">
                 <Link
                     href={tenantHref('/admin/members')}
@@ -164,27 +137,15 @@ export default async function AdminPage({
                     <Bell className="w-3.5 h-3.5" />
                     Notifications
                 </Link>
+                <Link
+                    href={tenantHref('/admin/audit-log')}
+                    className={buttonVariants({ variant: 'secondary' })}
+                    id="audit-log-pill-btn"
+                >
+                    <ScrollText className="w-3.5 h-3.5" />
+                    {t('auditLog')}
+                </Link>
             </div>
-
-            {/* Interactive tabs — client island */}
-            <AdminClient
-                auditLog={JSON.parse(JSON.stringify(auditLog))}
-                tenantSlug={tenantSlug}
-                translations={{
-                    title: t('title'),
-                    auditLog: t('auditLog'),
-                    policyTemplates: t('policyTemplates'),
-                    time: t('time'),
-                    user: t('user'),
-                    action: t('action'),
-                    entity: t('entity'),
-                    details: t('details'),
-                    noEntries: t('noEntries'),
-                    templateDescription: t('templateDescription'),
-                    clickToUse: t('clickToUse'),
-                    templateLabels,
-                }}
-            />
         </div>
     );
 }

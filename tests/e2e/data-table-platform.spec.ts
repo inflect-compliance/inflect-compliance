@@ -164,10 +164,14 @@ test.describe('DataTable Platform — Cross-page regression', () => {
     });
 
     // ── Admin Audit Log ──
+    // R13-PR10 — audit log was extracted to its own page
+    // (`/admin/audit-log`) reachable via the "Audit log" pill on
+    // the admin landing. The data-testid + DataTable contract is
+    // preserved; only the URL changed.
 
     test('Admin audit log renders DataTable', async ({ page }) => {
         tenantSlug = await loginAndGetTenant(page);
-        await assertTableRendered(page, '/admin', {
+        await assertTableRendered(page, '/admin/audit-log', {
             testId: 'audit-log-table',
             minHeaders: 3,
         });
