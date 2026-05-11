@@ -177,21 +177,20 @@ function PoliciesPageInner({
         {
             accessorKey: 'title',
             header: 'Title',
+            // R12-PR2 — drop the block-level <p> description that
+            // pushed rows to 60+px. Title cell stays single-line so
+            // every row across the product reads at the same
+            // ~44px height (the DataTable primitive's `py-2.5
+            // leading-6` baseline). Description is still visible on
+            // the policy detail page.
             cell: ({ row }: any) => (
-                <div className="min-w-0">
-                    <Link
-                        href={tenantHref(`/policies/${row.original.id}`)}
-                        className="font-medium text-content-emphasis hover:text-[var(--brand-default)] transition"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {row.original.title}
-                    </Link>
-                    {row.original.description && (
-                        <p className="mt-0.5 max-w-xs truncate text-xs text-content-subtle">
-                            {row.original.description}
-                        </p>
-                    )}
-                </div>
+                <Link
+                    href={tenantHref(`/policies/${row.original.id}`)}
+                    className="font-medium text-content-emphasis hover:text-[var(--brand-default)] transition"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    {row.original.title}
+                </Link>
             ),
         },
         {
