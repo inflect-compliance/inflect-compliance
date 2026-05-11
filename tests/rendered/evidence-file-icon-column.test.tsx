@@ -98,13 +98,23 @@ describe('evidence list — file-type icon column', () => {
             );
         });
 
-        it('mounts <FileTypeIcon> in the title cell with file metadata', () => {
-            // The title cell receives fileName + the row's domainKind so
-            // mixed-row evidence (FILE / LINK / TEXT) gets the right
-            // icon family without special-casing in the page.
-            expect(src).toMatch(/<FileTypeIcon/);
-            expect(src).toContain('domainKind={ev.type ?? null}');
-            expect(src).toContain('fileName={ev.fileName ?? null}');
+        it('routes title text through the canonical TableTitleCell primitive (R13-PR1)', () => {
+            // Pre-R13 the title cell mounted <FileTypeIcon> + a
+            // 2-line title/filename block, which broke row-height
+            // uniformity across the product. R13-PR1 moved file-
+            // type signalling to the dedicated Type column (still
+            // resolved via resolveFileTypeIcon, see assertion below)
+            // and replaced the title cell with <TableTitleCell>.
+            expect(src).toMatch(/<TableTitleCell\b/);
+        });
+
+        it('Type column still resolves a file-type icon via resolveFileTypeIcon', () => {
+            // The icon survived the R13-PR1 migration — it just
+            // moved out of the title cell into the dedicated Type
+            // column. resolveFileTypeIcon + the per-kind <match.Icon>
+            // mount is the canonical surface.
+            expect(src).toContain('resolveFileTypeIcon(');
+            expect(src).toMatch(/<match\.Icon/);
         });
 
         it('replaces the FILE-only badge in the type column with a resolved icon + label', () => {

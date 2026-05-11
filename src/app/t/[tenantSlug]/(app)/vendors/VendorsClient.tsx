@@ -11,6 +11,7 @@ import type { CappedList } from '@/lib/list-backfill-cap';
 import { TruncationBanner } from '@/components/ui/TruncationBanner';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { EmptyState } from '@/components/ui/empty-state';
+import { TableTitleCell } from '@/components/ui/table-title-cell';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@dub/utils';
 import { DataTable, createColumns, useColumnsDropdown } from '@/components/ui/table';
@@ -143,13 +144,17 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
         {
             accessorKey: 'name',
             header: 'Name',
+            // R13-PR1 — Sub-processor badge moved out of the title
+            // cell to its own column (visible via the gear). Title
+            // cell stays single-element so every row in the product
+            // reads at the same height.
             cell: ({ row }: any) => (
-                <div className="font-medium">
-                    <Link href={tenantHref(`/vendors/${row.original.id}`)} className={textLinkVariants({ tone: 'link' })} id={`vendor-link-${row.original.id}`} onClick={(e) => e.stopPropagation()}>
-                        {row.original.name}
-                    </Link>
-                    {row.original.isSubprocessor && <span className="ml-2 text-xs bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded">Sub-processor</span>}
-                </div>
+                <TableTitleCell
+                    href={tenantHref(`/vendors/${row.original.id}`)}
+                    id={`vendor-link-${row.original.id}`}
+                >
+                    {row.original.name}
+                </TableTitleCell>
             ),
         },
         {

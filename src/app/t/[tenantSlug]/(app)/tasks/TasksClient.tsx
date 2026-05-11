@@ -27,6 +27,7 @@ import { FilterToolbar } from '@/components/filters/FilterToolbar';
 import { ListPageShell } from '@/components/layout/ListPageShell';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
+import { TableTitleCell } from '@/components/ui/table-title-cell';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { toApiSearchParams } from '@/lib/filters/url-sync';
 import { buildTaskFilters, TASK_FILTER_KEYS } from './filter-defs';
@@ -345,29 +346,20 @@ function TasksPageInner({
         cols.push(
             {
                 id: 'title',
-                header: 'Key / Title',
+                header: 'Title',
                 accessorFn: (t) => t.title,
-                cell: ({ row }) => {
-                    const task = row.original;
-                    const slaLabel = hydratedNow ? getSlaLabel(task.severity, task.createdAt, task.status, hydratedNow) : '';
-                    return (
-                        <div>
-                            <Link href={tenantHref(`/tasks/${task.id}`)} className="font-medium text-content-emphasis hover:text-[var(--brand-default)] transition" onClick={(e) => e.stopPropagation()}>
-                                {task.key && <span className="text-xs font-mono text-content-muted mr-2">{task.key}</span>}
-                                {task.title}
-                            </Link>
-                            {isOverdue(task) && <StatusBadge variant="error" className="ml-2">Overdue</StatusBadge>}
-                            {slaLabel && (
-                                <Tooltip
-                                    title="SLA Breached"
-                                    content={slaLabel}
-                                >
-                                    <StatusBadge variant="error" className="ml-1 cursor-help">SLA</StatusBadge>
-                                </Tooltip>
-                            )}
-                        </div>
-                    );
-                },
+                // R13-PR1 — title cell uses the canonical
+                // <TableTitleCell> primitive. The key prefix, Overdue
+                // badge, and SLA tooltip that used to live inline here
+                // pushed row height past every other page's baseline.
+                // Status-tone signals are already in the dedicated
+                // Status + Severity columns; key prefix can land in a
+                // separate column in a follow-up.
+                cell: ({ row }) => (
+                    <TableTitleCell href={tenantHref(`/tasks/${row.original.id}`)}>
+                        {row.original.title}
+                    </TableTitleCell>
+                ),
             },
             {
                 accessorKey: 'type',

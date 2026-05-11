@@ -19,6 +19,7 @@ import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { NumberStepper } from '@/components/ui/number-stepper';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
+import { TableTitleCell } from '@/components/ui/table-title-cell';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
@@ -160,7 +161,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
         {
             accessorKey: 'name',
             header: t.name,
-            cell: ({ getValue }: any) => <span className="font-medium text-content-emphasis">{getValue()}</span>,
+            cell: ({ getValue }: any) => <TableTitleCell>{getValue()}</TableTitleCell>,
         },
         {
             accessorKey: 'type',

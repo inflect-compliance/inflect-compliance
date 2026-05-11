@@ -20,6 +20,7 @@ import { TruncationBanner } from '@/components/ui/TruncationBanner';
 // E2E suite becomes deterministic.
 import { NewRiskModal } from './NewRiskModal';
 import { Button } from '@/components/ui/button';
+import { TableTitleCell } from '@/components/ui/table-title-cell';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
@@ -319,7 +320,7 @@ function RisksPageInner({
             accessorKey: 'title',
             header: t.riskTitle,
             cell: ({ getValue }) => (
-                <span className="font-medium text-content-emphasis text-sm">{getValue<string>()}</span>
+                <TableTitleCell>{getValue<string>()}</TableTitleCell>
             ),
         },
         {

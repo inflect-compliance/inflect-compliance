@@ -21,6 +21,7 @@ import {
 import { EntityListPage } from '@/components/layout/EntityListPage';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { EmptyState } from '@/components/ui/empty-state';
+import { TableTitleCell } from '@/components/ui/table-title-cell';
 import { toApiSearchParams } from '@/lib/filters/url-sync';
 import {
     buildPolicyFilters,
@@ -184,13 +185,11 @@ function PoliciesPageInner({
             // leading-6` baseline). Description is still visible on
             // the policy detail page.
             cell: ({ row }: any) => (
-                <Link
+                <TableTitleCell
                     href={tenantHref(`/policies/${row.original.id}`)}
-                    className="font-medium text-content-emphasis hover:text-[var(--brand-default)] transition"
-                    onClick={(e) => e.stopPropagation()}
                 >
                     {row.original.title}
-                </Link>
+                </TableTitleCell>
             ),
         },
         {

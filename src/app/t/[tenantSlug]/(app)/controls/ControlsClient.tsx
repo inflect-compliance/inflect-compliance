@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/table';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
+import { TableTitleCell } from '@/components/ui/table-title-cell';
 import { Modal } from '@/components/ui/modal';
 import { Tooltip } from '@/components/ui/tooltip';
 import {
@@ -460,19 +461,12 @@ function ControlsPageInner({
             accessorKey: 'name',
             header: 'Title',
             cell: ({ row }) => (
-                <div>
-                    <Link
-                        href={tenantHref(`/controls/${row.original.id}`)}
-                        className="font-medium text-content-emphasis hover:text-[var(--brand-default)] transition"
-                        id={`control-link-${row.original.id}`}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {row.original.name}
-                    </Link>
-                    {row.original.description && (
-                        <p className="text-xs text-content-muted mt-0.5 truncate max-w-xs">{row.original.description}</p>
-                    )}
-                </div>
+                <TableTitleCell
+                    href={tenantHref(`/controls/${row.original.id}`)}
+                    id={`control-link-${row.original.id}`}
+                >
+                    {row.original.name}
+                </TableTitleCell>
             ),
         },
         {

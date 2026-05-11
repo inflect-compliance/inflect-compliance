@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
+import { TableTitleCell } from '@/components/ui/table-title-cell';
 import { DataTable, createColumns, useColumnsDropdown } from '@/components/ui/table';
 import { ListPageShell } from '@/components/layout/ListPageShell';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
@@ -179,7 +180,7 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
             accessorKey: 'title',
             header: t.findingTitle,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            cell: ({ getValue }: any) => <span className="font-medium text-content-emphasis text-sm">{getValue()}</span>,
+            cell: ({ getValue }: any) => <TableTitleCell>{getValue()}</TableTitleCell>,
         },
         {
             accessorKey: 'severity',

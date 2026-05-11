@@ -19,6 +19,7 @@ import { NewEvidenceTextModal } from './NewEvidenceTextModal';
 import { EvidenceBulkImportModal } from './EvidenceBulkImportModal';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
+import { TableTitleCell } from '@/components/ui/table-title-cell';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { DatePicker } from '@/components/ui/date-picker/date-picker';
@@ -384,27 +385,15 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
         {
             accessorKey: 'title',
             header: t.evidenceTitle,
+            // R13-PR1 — title cell uses the canonical <TableTitleCell>
+            // primitive. The file-type icon + filename subtitle that
+            // used to live here pushed the row height past every other
+            // page's baseline. File type information is still in the
+            // dedicated Type column.
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            cell: ({ row }: { row: any }) => {
-                const ev = row.original;
-                return (
-                    <div className="flex items-center gap-tight min-w-0">
-                        <FileTypeIcon
-                            fileName={ev.fileName ?? null}
-                            mime={ev.fileRecord?.mimeType ?? null}
-                            domainKind={ev.type ?? null}
-                            size={16}
-                            data-testid={`evidence-row-icon-${ev.id}`}
-                        />
-                        <div className="min-w-0">
-                            <div className="font-medium text-content-emphasis text-sm truncate">{ev.title}</div>
-                            {ev.fileName && ev.fileName !== ev.title && (
-                                <div className="text-xs text-content-subtle truncate">{ev.fileName}</div>
-                            )}
-                        </div>
-                    </div>
-                );
-            },
+            cell: ({ row }: { row: any }) => (
+                <TableTitleCell>{row.original.title}</TableTitleCell>
+            ),
         },
         {
             accessorKey: 'type',
