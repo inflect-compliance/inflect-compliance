@@ -26,10 +26,34 @@ interface SkeletonProps {
     className?: string;
 }
 
+/**
+ * R11-PR2 — Skeleton with gradient-sweep shimmer.
+ *
+ * Renders the static colour bar PLUS a `::after` gradient overlay
+ * that sweeps left-to-right (animation: `shimmer-sweep`). Beats the
+ * prior `animate-pulse` opacity flicker — premium products' canonical
+ * loading affordance.
+ *
+ * The sweep masks inside whatever rounded shape the consumer passes
+ * (line, pill, avatar). `overflow-hidden` keeps the sweep inside the
+ * border-radius; `relative` is required for the absolutely-positioned
+ * `::after` overlay.
+ *
+ * `motion-reduce:after:hidden motion-reduce:animate-pulse` honours
+ * `prefers-reduced-motion` — fall back to the old opacity pulse for
+ * accessibility instead of a static block.
+ */
 export function Skeleton({ className = '' }: SkeletonProps) {
     return (
         <div
-            className={`animate-pulse rounded bg-bg-subtle ${className}`}
+            className={cn(
+                'relative overflow-hidden rounded bg-bg-subtle',
+                'after:absolute after:inset-0 after:translate-x-[-100%]',
+                'after:bg-gradient-to-r after:from-transparent after:via-white/[0.06] after:to-transparent',
+                'after:animate-shimmer-sweep',
+                'motion-reduce:after:hidden motion-reduce:animate-pulse',
+                className,
+            )}
             aria-hidden="true"
         />
     );

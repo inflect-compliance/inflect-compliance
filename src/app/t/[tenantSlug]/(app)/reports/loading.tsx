@@ -12,7 +12,7 @@ import { cn } from '@dub/utils';
  */
 export default function ReportsLoading() {
     return (
-        <div className="animate-pulse space-y-section" aria-busy="true" aria-label="Loading reports">
+        <div className="space-y-section animate-fadeIn" aria-busy="true" aria-label="Loading reports">
             {/* Header */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-compact">
                 <SkeletonHeading className="w-48" />

@@ -174,6 +174,17 @@ module.exports = {
                     '0%, 100%': { opacity: '0.25' },
                     '50%': { opacity: '1' },
                 },
+                // R11-PR2 — gradient-sweep shimmer for skeleton loaders.
+                // Replaces the static `animate-pulse` opacity flicker
+                // with a true left-to-right gradient sweep, the canonical
+                // skeleton loading affordance across premium products.
+                // The translateX is on a `::after` overlay in CSS so the
+                // sweep masks within whatever rounded shape the parent
+                // skeleton block uses (line, pill, avatar, etc.).
+                'shimmer-sweep': {
+                    '0%': { transform: 'translateX(-100%)' },
+                    '100%': { transform: 'translateX(100%)' },
+                },
             },
             animation: {
                 'slide-up-fade': 'slide-up-fade 0.2s ease-out',
@@ -182,6 +193,7 @@ module.exports = {
                 'fade-in': 'fade-in 0.15s ease-out',
                 'table-pinned-shadow': 'table-pinned-shadow cubic-bezier(0, 0, 1, 0)',
                 'shimmer-pulse': 'shimmer-pulse 1.6s ease-in-out infinite',
+                'shimmer-sweep': 'shimmer-sweep 1.6s ease-in-out infinite',
             },
         },
     },

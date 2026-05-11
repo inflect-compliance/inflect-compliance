@@ -1,32 +1,44 @@
+import { Skeleton } from '@/components/ui/skeleton';
+
 /**
  * Clauses loading skeleton — shown via Next.js Suspense while
- * the server component fetches clause data. Token-backed so the
- * skeleton surfaces re-theme automatically under light mode.
+ * the server component fetches clause data. Uses the shared
+ * `<Skeleton>` primitive so the shimmer-sweep (R11-PR2) applies
+ * uniformly with every other loading surface.
  */
 export default function ClausesLoading() {
     return (
-        <div className="animate-pulse space-y-section p-6">
+        <div
+            role="status"
+            aria-live="polite"
+            aria-busy="true"
+            aria-label="Loading clauses"
+            className="space-y-section p-6 animate-fadeIn"
+        >
             {/* Page title */}
-            <div className="h-8 bg-bg-muted rounded w-1/4" />
+            <Skeleton className="h-8 w-1/4" />
 
             {/* Split pane: list + detail */}
             <div className="flex gap-default">
                 {/* Clause list */}
                 <div className="w-1/3 space-y-tight">
                     {[...Array(8)].map((_, i) => (
-                        <div key={i} className="rounded border border-border-default p-3 space-y-tight">
-                            <div className="h-4 bg-bg-muted rounded w-3/4" />
-                            <div className="h-3 bg-bg-muted rounded w-1/2" />
+                        <div
+                            key={i}
+                            className="rounded border border-border-default p-3 space-y-tight"
+                        >
+                            <Skeleton className="h-4 w-3/4" />
+                            <Skeleton className="h-3 w-1/2" />
                         </div>
                     ))}
                 </div>
 
                 {/* Detail panel */}
                 <div className="w-2/3 rounded-lg border border-border-default p-5 space-y-default">
-                    <div className="h-6 bg-bg-muted rounded w-1/2" />
-                    <div className="h-4 bg-bg-muted rounded w-full" />
-                    <div className="h-4 bg-bg-muted rounded w-3/4" />
-                    <div className="h-10 bg-bg-muted rounded w-40" />
+                    <Skeleton className="h-6 w-1/2" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-10 w-40" />
                 </div>
             </div>
         </div>
