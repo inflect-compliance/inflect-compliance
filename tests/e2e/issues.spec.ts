@@ -56,7 +56,7 @@ test.describe('Issue Management', () => {
         tenantSlug = await loginAndGetTenant(page);
         await gotoAndVerify(page, `/t/${tenantSlug}/tasks`, 'h1');
 
-        await page.click(`text=E2E Issue ${uniqueId}`);
+        await page.dblclick(`text=E2E Issue ${uniqueId}`);  // R13-PR15: TableTitleCell click toggles selection; dblclick navigates
         await page.waitForSelector('#task-title', { timeout: 10000 });
 
         // Wait for permissions to hydrate and status select to appear
@@ -78,7 +78,7 @@ test.describe('Issue Management', () => {
         tenantSlug = await loginAndGetTenant(page);
         await gotoAndVerify(page, `/t/${tenantSlug}/tasks`, 'h1');
 
-        await page.click(`text=E2E Issue ${uniqueId}`);
+        await page.dblclick(`text=E2E Issue ${uniqueId}`);  // R13-PR15: TableTitleCell click toggles selection; dblclick navigates
         await page.waitForSelector('#task-title', { timeout: 10000 });
 
         // Verify assign controls are visible for admin. Epic 55:
@@ -121,7 +121,7 @@ test.describe('Issue Management', () => {
         tenantSlug = await loginAndGetTenant(page);
         await gotoAndVerify(page, `/t/${tenantSlug}/tasks`, 'h1');
 
-        await page.click(`text=E2E Issue ${uniqueId}`);
+        await page.dblclick(`text=E2E Issue ${uniqueId}`);  // R13-PR15: TableTitleCell click toggles selection; dblclick navigates
         await page.waitForSelector('#task-title', { timeout: 10000 });
 
         // Go to links tab
@@ -146,7 +146,7 @@ test.describe('Issue Management', () => {
         tenantSlug = await loginAndGetTenant(page);
         await gotoAndVerify(page, `/t/${tenantSlug}/tasks`, 'h1');
 
-        await page.click(`text=E2E Issue ${uniqueId}`);
+        await page.dblclick(`text=E2E Issue ${uniqueId}`);  // R13-PR15: TableTitleCell click toggles selection; dblclick navigates
         await page.waitForLoadState('networkidle').catch(() => {});
         await page.waitForSelector('#task-title', { timeout: 30000 });
 

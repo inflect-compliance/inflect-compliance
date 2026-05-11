@@ -165,7 +165,7 @@ test.describe('Epic 56 — tooltip + copy primitives', () => {
             .locator('[data-testid="tasks-table"] tbody tr a[href*="/tasks/"]')
             .first();
         await expect(firstTask).toBeVisible({ timeout: 30_000 });
-        await firstTask.click();
+        await firstTask.dblclick();  // R13-PR15: title link click toggles selection; dblclick navigates
         await page.waitForURL(/tasks\/[a-z0-9]+$/i, {
             waitUntil: 'domcontentloaded',
             timeout: 30_000,

@@ -65,7 +65,7 @@ test.describe('Controls Enhanced', () => {
         // Click any control
         const firstControl = page.locator('#controls-table tbody tr a').first();
         if (await firstControl.isVisible()) {
-            await firstControl.click();
+            await firstControl.dblclick();  // R13-PR15: title link click toggles selection; dblclick navigates
             await page.waitForSelector('#control-title', { timeout: 10000 });
 
             // Click activity tab and wait for data to load
@@ -93,7 +93,7 @@ test.describe('Controls Enhanced', () => {
 
         const firstControl = page.locator('#controls-table tbody tr a').first();
         if (await firstControl.isVisible()) {
-            await firstControl.click();
+            await firstControl.dblclick();  // R13-PR15: title link click toggles selection; dblclick navigates
             await page.waitForLoadState('networkidle').catch(() => {});
             await page.waitForSelector('#control-title', { timeout: 30000 });
 
