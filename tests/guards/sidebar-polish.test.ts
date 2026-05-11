@@ -32,25 +32,30 @@ const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf-8');
 
 describe('Sidebar polish discipline (Roadmap-2 PR-3)', () => {
     it('tenant sidebar primary nav group carries an eyebrow title', () => {
-        // The first NavSection used to be `{ items: [...] }` with
-        // no `title` — the eyebrow was implicit (none rendered).
-        // After PR-3 it MUST carry a `title` so the nav reads as
-        // grouped, not as a flat list.
+        // The legacy primary group used to render without an
+        // eyebrow at all. After PR-3 the GROUPED nav must carry
+        // eyebrow titles so it reads as grouped, not flat.
+        //
+        // R13-PR7 — the first section is now a SOLO Board home
+        // link (no eyebrow by design — mirrors the home-anchor
+        // pattern in Linear / Stripe / Vercel sidebars). The
+        // load-bearing assertion is that the WORKSPACE group
+        // (the first grouped section) still carries a title.
+        // Any future restructure that drops every section title
+        // and reverts to a flat list still fails this ratchet.
         const src = read('src/components/layout/SidebarNav.tsx');
-        // Slice from `useNavSections()` body to the closing `]` —
-        // first section is the one we care about.
         const fnMatch = src.match(
             /export function useNavSections[\s\S]+?return\s*\[([\s\S]+?)\];/,
         );
         expect(fnMatch).not.toBeNull();
         const sections = fnMatch![1]!;
-        // First object literal in the array MUST contain a
-        // `title:` key. We approximate by checking the first 800
-        // characters of the section body — covers the first
-        // section's full literal in practice without requiring a
-        // full TS parser.
-        const head = sections.slice(0, 800);
-        expect(head).toMatch(/title:\s*['"][A-Z]/);
+        // Every grouped section MUST carry a `title:`. Workspace is
+        // the canonical primary group — assert it explicitly.
+        expect(sections).toMatch(/title:\s*['"]Workspace['"]/);
+        // And at least 3 titled sections in total (Workspace +
+        // Comply + Manage, after R13-PR7).
+        const titleCount = (sections.match(/\btitle:\s*['"]/g) ?? []).length;
+        expect(titleCount).toBeGreaterThanOrEqual(3);
     });
 
     it('org sidebar primary nav group carries an eyebrow title', () => {

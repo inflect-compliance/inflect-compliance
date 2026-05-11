@@ -45,7 +45,7 @@
         "passwordPlaceholder": "••••••••"
     },
     "nav": {
-        "dashboard": "Табло",
+        "dashboard": "Бoрд",
         "clauses": "Клаузи (4–10)",
         "assets": "Актив",
         "risks": "Риск",
@@ -56,7 +56,8 @@
         "findings": "Констатации",
         "issues": "Проблеми",
         "tasks": "План",
-        "calendar": "Преглед",
+        "calendar": "График",
+        "tests": "Преглед",
         "mapping": "Рамки",
         "reports": "Отчет",
         "notifications": "Известие",

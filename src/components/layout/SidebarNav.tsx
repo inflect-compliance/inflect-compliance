@@ -51,50 +51,62 @@ interface NavSectionDef {
 // ─── Navigation configuration ───
 
 export function useNavSections(): NavSectionDef[] {
-    const t = useTranslations('nav');
     const tenantHref = useTenantHref();
     const perms = usePermissions();
     const tenant = useTenantContext();
     // Live badge — fetched lazily; undefined when count is 0 or load fails.
     const calendarBadge = useCalendarBadge(tenant.tenantSlug);
 
+    // R13-PR7 — tenant sidebar restructure.
+    //
+    //   Board (standalone, no eyebrow)   home/dashboard
+    //   Workspace                        core entities: Asset / Risk / Control
+    //   Comply                           daily-cadence work: Plan / Schedule / Review / Docs
+    //   Manage                           governance + reporting
+    //
+    // Renames carry forward to labels only — hrefs (and therefore
+    // `data-testid="nav-<slug>"`) stay stable so existing E2E,
+    // onboarding-tour, and analytics selectors keep working.
     return [
         {
-            // Roadmap-2 PR-3 — quiet eyebrow gives the primary nav
-            // group a label, mirroring "Management" below. Without
-            // this, the user reads the sidebar as an unstructured
-            // list and the visual hierarchy of "core entities vs
-            // management" is invisible.
-            title: 'Workspace',
+            // Board is the home link. No eyebrow — it reads as a
+            // single anchor above the grouped nav, mirroring the
+            // "home" item pattern in Linear / Stripe / Vercel
+            // sidebars.
             items: [
-                { href: tenantHref('/dashboard'), label: t('dashboard'), icon: LayoutDashboard },
-                { href: tenantHref('/assets'), label: t('assets'), icon: Building2 },
-                { href: tenantHref('/risks'), label: t('risks'), icon: AlertTriangle },
-                { href: tenantHref('/controls'), label: t('controls'), icon: ShieldCheck },
-                { href: tenantHref('/evidence'), label: t('evidence'), icon: Paperclip },
-                { href: tenantHref('/tasks'), label: t('tasks'), icon: ClipboardList },
-                { href: tenantHref('/tests'), label: 'Test', icon: FlaskConical },
-                {
-                    href: tenantHref('/calendar'),
-                    label: t('calendar'),
-                    icon: CalendarIcon,
-                    badge: calendarBadge,
-                },
-                { href: tenantHref('/audits'), label: t('audits'), icon: ClipboardCheck },
+                { href: tenantHref('/dashboard'), label: 'Board', icon: LayoutDashboard },
             ],
         },
         {
-            title: 'Management',
+            title: 'Workspace',
             items: [
-                // Roadmap-2 PR-14 — Policies promoted to Management
-                // (alongside Vendor, Framework, Reports, Admin)
-                // since the typical interaction pattern (author /
-                // approve / acknowledge) is a management activity,
-                // not the day-to-day workspace flow.
-                { href: tenantHref('/policies'), label: t('policies'), icon: FileText },
-                { href: tenantHref('/vendors'), label: 'Vendor', icon: Truck },
+                { href: tenantHref('/assets'), label: 'Asset', icon: Building2 },
+                { href: tenantHref('/risks'), label: 'Risk', icon: AlertTriangle },
+                { href: tenantHref('/controls'), label: 'Control', icon: ShieldCheck },
+            ],
+        },
+        {
+            title: 'Comply',
+            items: [
+                { href: tenantHref('/tasks'), label: 'Plan', icon: ClipboardList },
+                {
+                    href: tenantHref('/calendar'),
+                    label: 'Schedule',
+                    icon: CalendarIcon,
+                    badge: calendarBadge,
+                },
+                { href: tenantHref('/tests'), label: 'Review', icon: FlaskConical },
+                { href: tenantHref('/evidence'), label: 'Docs', icon: Paperclip },
+            ],
+        },
+        {
+            title: 'Manage',
+            items: [
+                { href: tenantHref('/audits'), label: 'Audit', icon: ClipboardCheck },
                 { href: tenantHref('/frameworks'), label: 'Framework', icon: Map },
-                { href: tenantHref('/reports'), label: t('reports'), icon: BarChart3, visible: perms.reports.view },
+                { href: tenantHref('/policies'), label: 'Policy', icon: FileText },
+                { href: tenantHref('/vendors'), label: 'Vendor', icon: Truck },
+                { href: tenantHref('/reports'), label: 'Report', icon: BarChart3, visible: perms.reports.view },
             ].filter(item => {
                 // DEFENSE-IN-DEPTH (Layer 2 of 2):
                 // Layer 1: Server layout uses noStore() to ensure fresh permissions per request.

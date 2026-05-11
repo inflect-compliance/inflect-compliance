@@ -45,7 +45,7 @@
         "passwordPlaceholder": "••••••••"
     },
     "nav": {
-        "dashboard": "Dashboard",
+        "dashboard": "Board",
         "clauses": "Clauses (4–10)",
         "assets": "Asset",
         "risks": "Risk",
@@ -56,7 +56,8 @@
         "findings": "Findings",
         "issues": "Issues",
         "tasks": "Plan",
-        "calendar": "Review",
+        "calendar": "Schedule",
+        "tests": "Review",
         "mapping": "Framework Map",
         "reports": "Report",
         "notifications": "Notify",
