@@ -97,8 +97,12 @@ export function useTable<T extends any>(
     columnResizeMode = "onChange",
   } = props;
 
-  const selectionEnabled =
-    !!props.onRowSelectionChange || !!props.selectionControls;
+  // R12-PR1 — select column is default-on. Pages opt out via
+  // `selectionEnabled={false}`. The previous gating (require either
+  // `onRowSelectionChange` or `selectionControls`) made the select
+  // column appear on exactly one page (Controls) and absent
+  // everywhere else — the structural inconsistency the round closes.
+  const selectionEnabled = props.selectionEnabled ?? true;
 
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
     props.columnVisibility ?? {},
@@ -508,12 +512,13 @@ export function Table<T>({
   onRowAuxClick,
   onRowSelectionChange,
   selectionControls,
+  selectionEnabled: selectionEnabledProp,
   rowProps,
   rowCount,
   children,
   enableColumnResizing = false,
 }: TableProps<T>) {
-  const selectionEnabled = !!onRowSelectionChange || !!selectionControls;
+  const selectionEnabled = selectionEnabledProp ?? true;
   const visibleColumns = table.getVisibleLeafColumns();
   const columnsAfterSelect = new Set<string>();
   for (let i = 1; i < visibleColumns.length; i++) {

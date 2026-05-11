@@ -110,6 +110,14 @@ export interface DataTableProps<T> {
   selectionControls?: (table: TableType<T>) => ReactNode;
 
   /**
+   * R12-PR1 — opt out of the default-on select column. Pass `false`
+   * for read-only tables that don't surface selection (sub-component
+   * sub-tables that the parent doesn't bulk-select, dashboard
+   * digests, etc.). Default is `true`.
+   */
+  selectionEnabled?: boolean;
+
+  /**
    * Declarative batch actions — a simpler alternative to `selectionControls`.
    * When provided, automatically enables selection and renders a batch action bar.
    *
@@ -255,6 +263,7 @@ export function DataTable<T>({
   onRowSelectionChange,
   selectedRows,
   selectionControls,
+  selectionEnabled,
   batchActions,
   columnVisibility,
   onColumnVisibilityChange,
@@ -324,6 +333,7 @@ export function DataTable<T>({
         onRowSelectionChange: effectiveOnRowSelectionChange,
         selectedRows: effectiveSelectedRows,
         selectionControls: effectiveSelectionControls,
+        selectionEnabled,
         columnVisibility,
         onColumnVisibilityChange,
         pagination,
@@ -348,6 +358,7 @@ export function DataTable<T>({
         onRowSelectionChange: effectiveOnRowSelectionChange,
         selectedRows: effectiveSelectedRows,
         selectionControls: effectiveSelectionControls,
+        selectionEnabled,
         columnVisibility,
         onColumnVisibilityChange,
         containerClassName: filledContainerClassName,

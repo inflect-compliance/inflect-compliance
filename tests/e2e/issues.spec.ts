@@ -179,11 +179,15 @@ test.describe('Issue Management', () => {
         // Check that bulk toolbar is NOT visible initially
         await expect(page.locator('#bulk-toolbar')).not.toBeVisible({ timeout: 3000 });
 
-        // Select all tasks
-        const checkboxes = page.locator('.task-checkbox');
+        // R12-PR1 — DataTable's built-in selection replaces the
+        // custom `.task-checkbox` square checkboxes. The Radix Checkbox
+        // inside has `pointer-events-none`; the click target is the
+        // wrapping `<div title="Select">` (canonical pattern used by
+        // selection-toolbar e2e tests, see tooltip-and-copy.spec.ts).
+        const checkboxes = page.locator('tbody tr').locator('[title="Select"]');
         const count = await checkboxes.count();
         if (count > 0) {
-            await checkboxes.first().check();
+            await checkboxes.first().click();
             // Now toolbar should appear
             await expect(page.locator('#bulk-toolbar')).toBeVisible({ timeout: 5000 });
             await expect(page.locator('#bulk-action-select')).toBeVisible();

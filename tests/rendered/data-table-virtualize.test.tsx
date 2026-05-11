@@ -84,6 +84,11 @@ function renderTable(
             columns={thingColumns}
             getRowId={(r) => r.id}
             virtualHeight={600}
+            // R12-PR1 — DataTable's select column is now default-on.
+            // The virtualization tests here measure column geometry
+            // against `thingColumns.length`, so we opt this fixture
+            // out of the select column to keep the count predictable.
+            selectionEnabled={false}
             // Force virtualize=true on every virtualization-targeted
             // test in this file. The default threshold (1000) is too
             // high for most fixtures here; tests that explicitly

@@ -334,39 +334,13 @@ function TasksPageInner({
     });
 
     // ── Column definitions ──
+    // R12-PR1 — the custom square-checkbox `id: 'select'` column was
+    // replaced by DataTable's built-in circular select column.
+    // DataTable's selection is wired to the same local `selected` Set
+    // via `onRowSelectionChange` so the bulk-action toolbar still
+    // reads from `selected.size` / `selected.has(...)`.
     const taskColumns = useMemo(() => {
         const cols: ReturnType<typeof createColumns<TaskListItem>> = [];
-
-        if (appPermissions.tasks.edit) {
-            cols.push({
-                id: 'select',
-                header: () => (
-                    <input
-                        type="checkbox"
-                        checked={selected.size === tasks.length && tasks.length > 0}
-                        onChange={toggleSelectAll}
-                        id="select-all-checkbox"
-                        // GAP-CI-77: aria-label so the checkbox satisfies
-                        // the axe-core `label` rule (no surrounding
-                        // <label> element wraps it; the column header is
-                        // visual only).
-                        aria-label="Select all tasks"
-                    />
-                ),
-                cell: ({ row }) => (
-                    <input
-                        type="checkbox"
-                        checked={selected.has(row.original.id)}
-                        onChange={() => toggleSelect(row.original.id)}
-                        onClick={e => e.stopPropagation()}
-                        className="task-checkbox"
-                        aria-label={`Select task ${row.original.title}`}
-                    />
-                ),
-                enableHiding: false,
-                size: 32,
-            });
-        }
 
         cols.push(
             {
@@ -559,6 +533,13 @@ function TasksPageInner({
                     getRowId={(t) => t.id}
                     columnVisibility={columnVisibility}
                     onColumnVisibilityChange={setColumnVisibility}
+                    selectionEnabled={appPermissions.tasks.edit}
+                    selectedRows={Object.fromEntries(
+                        Array.from(selected).map((id) => [id, true]),
+                    )}
+                    onRowSelectionChange={(rows) =>
+                        setSelected(new Set(rows.map((r) => r.original.id)))
+                    }
                     onRowClick={(row) => router.push(tenantHref(`/tasks/${row.original.id}`))}
                     emptyState={
                         hasActive ? (

@@ -52,11 +52,23 @@ type BaseTableProps<T> = {
   columnVisibility?: VisibilityState;
   onColumnVisibilityChange?: (visibility: VisibilityState) => void;
 
-  // Row selection
+  // Row selection — R12-PR1 made the select column DEFAULT-ON. Pages
+  // opt out by passing `selectionEnabled={false}` (rare: card-list
+  // dashboards, single-row admin panels). Bulk actions still wire
+  // through `selectionControls`; without them, the checkboxes just
+  // toggle row state. Premium products (Linear, Stripe, Vercel)
+  // always render the select column on row-record tables so the
+  // selection affordance is at least visible.
   getRowId?: (row: T) => string;
   onRowSelectionChange?: (rows: Row<T>[]) => void;
   selectedRows?: RowSelectionState;
   selectionControls?: (table: TableType<T>) => ReactNode;
+  /**
+   * Opt out of the default-on select column. Pass `false` for tables
+   * that are deliberately read-only at the row level (sub-component
+   * sub-tables that the parent doesn't bulk-select, etc.).
+   */
+  selectionEnabled?: boolean;
 
   // Misc. row props
   onRowClick?: (row: Row<T>, e: MouseEvent) => void;
