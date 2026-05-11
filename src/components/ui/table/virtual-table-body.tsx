@@ -176,7 +176,11 @@ function VirtualRow<T>({
             data-virtual-row-index={index}
             className={cn(
                 "group/row grid",
-                onRowClick && "cursor-pointer select-none",
+                // R13-PR2 — unify hover affordance with the non-
+                // virtualized branches: 2px brand-coloured left edge
+                // on hover via inset box-shadow.
+                onRowClick &&
+                    "cursor-pointer select-none transition-colors duration-150 ease-out hover:shadow-[inset_2px_0_0_0_var(--brand-default)]",
                 "data-[selected=true]:bg-[var(--brand-subtle)]",
             )}
             style={{
@@ -184,7 +188,7 @@ function VirtualRow<T>({
                 display: "grid",
                 gridTemplateColumns: gridTemplate,
             }}
-            onClick={
+            onDoubleClick={
                 onRowClick
                     ? (e) => {
                           if (isClickOnInteractiveChild(e)) return;

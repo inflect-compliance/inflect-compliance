@@ -177,37 +177,38 @@ test.describe('DataTable Platform — Cross-page regression', () => {
 test.describe('DataTable Platform — Row click navigation', () => {
     let tenantSlug: string;
 
-    test('Controls row click navigates to detail', async ({ page }) => {
+    test('Controls row double-click navigates to detail', async ({ page }) => {
         tenantSlug = await loginAndGetTenant(page);
         await page.goto(`/t/${tenantSlug}/controls`);
         await page.waitForLoadState('networkidle').catch(() => {});
         await page.waitForSelector('h1', { timeout: 15000 });
 
-        // Seed provisions 4 tenant controls; assert visibility. Selection
-        // is enabled on the controls page so the first cell is a "Select"
-        // button — clicking the row itself may land on the checkbox and
-        // the DataTable ignores clicks on interactive children. Target
-        // the second visible cell (e.g. the code cell) which is not
-        // interactive.
+        // R13-PR2 — row opens on double-click, not single-click.
+        // Seed provisions 4 tenant controls; assert visibility.
+        // Target the second visible cell (the code cell), which is
+        // not interactive — DataTable ignores double-clicks landing
+        // on interactive children like the select checkbox or title
+        // link.
         const rows = page.locator('tbody tr');
         await expect(rows.first()).toBeVisible({ timeout: 15_000 });
 
-        await rows.first().locator('td').nth(1).click();
+        await rows.first().locator('td').nth(1).dblclick();
         await page.waitForURL(/\/controls\/[a-zA-Z0-9-]+$/, { timeout: 10_000 });
         await expect(page.locator('#control-title')).toBeVisible({ timeout: 10_000 });
     });
 
-    test('Policies row click navigates to detail', async ({ page }) => {
+    test('Policies row double-click navigates to detail', async ({ page }) => {
         tenantSlug = await loginAndGetTenant(page);
         await page.goto(`/t/${tenantSlug}/policies`);
         await page.waitForLoadState('networkidle').catch(() => {});
         await page.waitForSelector('h1', { timeout: 15000 });
 
+        // R13-PR2 — row opens on double-click, not single-click.
         // Seed provisions 3 published policies.
         const rows = page.locator('[data-testid="policies-table"] tbody tr');
         await expect(rows.first()).toBeVisible({ timeout: 15_000 });
 
-        await rows.first().click();
+        await rows.first().dblclick();
         await page.waitForURL(/\/policies\/[a-zA-Z0-9-]+$/, { timeout: 10_000 });
     });
 });

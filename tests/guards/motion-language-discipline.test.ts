@@ -69,6 +69,13 @@ const EXEMPT_FILES = new Set<string>([
     // a border, not lift. Reading order: row hover > tone shift +
     // brand-coloured left edge > navigate.
     "src/components/ui/table/table.tsx",
+    // R13-PR2 — same inset-shadow left-edge affordance, applied
+    // to the virtualized row path so all three DataTable branches
+    // (resizable, non-resizable, virtualized) signal clickable
+    // rows identically. The virtualized row is a `<div role="row">`
+    // not a `<tr>`, but the inset-shadow trick is still the
+    // canonical "this is a 1-edge tone change, not a lift" pattern.
+    "src/components/ui/table/virtual-table-body.tsx",
 ]);
 
 const BANNED_PATTERNS = [
@@ -163,6 +170,10 @@ describe("v2-PR-4 motion language ratchet", () => {
             //   - file-upload.tsx (drop-zone scale + active tap)
             //   - table/table.tsx (clickable-row left-border via
             //     inset box-shadow — <tr> can't render direct borders)
+            //   - table/virtual-table-body.tsx (R13-PR2 — same
+            //     left-edge affordance on the virtualized row path
+            //     so all three DataTable branches signal clickable
+            //     rows identically)
             // Bumping past 5 means the team is reintroducing
             // decorative lift on pages — push back on the new
             // exemption.

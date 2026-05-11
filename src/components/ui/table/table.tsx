@@ -389,10 +389,9 @@ const ResizableTableRow = memo(
             "[&_td]:border-b-0",
           className,
         )}
-        onClick={
+        onDoubleClick={
           onRowClick
             ? (e) => {
-                // Ignore if click is on an interactive child
                 if (isClickOnInteractiveChild(e)) return;
                 onRowClick(row, e);
               }
@@ -401,7 +400,6 @@ const ResizableTableRow = memo(
         onAuxClick={
           onRowAuxClick
             ? (e) => {
-                // Ignore if click is on an interactive child
                 if (isClickOnInteractiveChild(e)) return;
                 onRowAuxClick(row, e);
               }
@@ -872,13 +870,21 @@ export function Table<T>({
                         // edge of the sticky header instead of
                         // stopping half-row up or down.
                         "snap-start",
-                        onRowClick && "cursor-pointer select-none",
+                        // R13-PR2 — unify hover affordance with the
+                        // resizable branch above: brand-coloured
+                        // 2px left edge on hover, rendered via inset
+                        // box-shadow so the row doesn't shift on
+                        // hover. Pairs with the per-cell
+                        // `group-hover/row:bg-bg-muted` background
+                        // from `tableCellClassName`.
+                        onRowClick &&
+                          "cursor-pointer select-none transition-colors duration-150 ease-out hover:shadow-[inset_2px_0_0_0_var(--brand-default)]",
                         table.getRowModel().rows.length > 8 &&
                           row.index === table.getRowModel().rows.length - 1 &&
                           "[&_td]:border-b-0",
                         className,
                       )}
-                      onClick={
+                      onDoubleClick={
                         onRowClick
                           ? (e) => {
                               if (isClickOnInteractiveChild(e)) return;

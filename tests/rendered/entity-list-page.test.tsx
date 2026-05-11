@@ -207,7 +207,7 @@ describe('EntityListPage — table', () => {
         expect(screen.getByTestId('sample-table')).toBeInTheDocument();
     });
 
-    it('forwards onRowClick to the underlying DataTable', () => {
+    it('forwards onRowClick to the underlying DataTable (fires on double-click)', () => {
         const onRowClick = jest.fn();
         render(
             <FilterShell>
@@ -222,8 +222,8 @@ describe('EntityListPage — table', () => {
                 />
             </FilterShell>,
         );
-        // Click the first row's name cell.
-        fireEvent.click(screen.getByTestId('row-name-a'));
+        // R13-PR2 — onRowClick fires on double-click, not single-click.
+        fireEvent.doubleClick(screen.getByTestId('row-name-a'));
         expect(onRowClick).toHaveBeenCalled();
         const [row] = onRowClick.mock.calls[0];
         expect(row.original.id).toBe('a');
