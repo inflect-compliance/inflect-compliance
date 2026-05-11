@@ -18,6 +18,7 @@ import { buildAssetFilters, ASSET_FILTER_KEYS } from './filter-defs';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { NumberStepper } from '@/components/ui/number-stepper';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
@@ -81,7 +82,8 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
     const router = useRouter();
     const queryClient = useQueryClient();
 
-    const { state, search, hasActive } = useFilters();
+    const filterCtx = useFilters();
+    const { state, search, hasActive } = filterCtx;
     const fetchParams = useMemo(
         () => toApiSearchParams(state, { search }),
         [state, search],
@@ -286,7 +288,35 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                     columnVisibility={columnVisibility}
                     onColumnVisibilityChange={setColumnVisibility}
                     onRowClick={(row) => router.push(tenantHref(`/assets/${row.original.id}`))}
-                    emptyState={hasActive ? 'No assets match your filters' : t.noAssets}
+                    emptyState={
+                        hasActive ? (
+                            <EmptyState
+                                size="sm"
+                                variant="no-results"
+                                title="No assets match your filters"
+                                description="Try widening your search or clearing one of the active filters."
+                                secondaryAction={{
+                                    label: 'Clear filters',
+                                    onClick: () => filterCtx.clearAll(),
+                                }}
+                            />
+                        ) : (
+                            <EmptyState
+                                size="sm"
+                                variant="no-records"
+                                title={t.noAssets}
+                                description="Register the systems, applications, and data stores in scope before mapping risks and controls."
+                                primaryAction={
+                                    permissions.canWrite
+                                        ? {
+                                              label: 'Add asset',
+                                              onClick: () => setShowForm(true),
+                                          }
+                                        : undefined
+                                }
+                            />
+                        )
+                    }
                     resourceName={(p) => p ? 'assets' : 'asset'}
                     data-testid="assets-table"
                     className="hover:bg-bg-muted"

@@ -18,6 +18,7 @@ import { UploadEvidenceModal } from './UploadEvidenceModal';
 import { NewEvidenceTextModal } from './NewEvidenceTextModal';
 import { EvidenceBulkImportModal } from './EvidenceBulkImportModal';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { DatePicker } from '@/components/ui/date-picker/date-picker';
@@ -736,11 +737,31 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                         rows={displayEvidence}
                         loading={evidenceQuery.isLoading && !evidenceQuery.data}
                         emptyState={
-                            retentionFilter === 'archived'
-                                ? 'No archived evidence'
-                                : retentionFilter === 'expiring'
-                                    ? 'No evidence expiring soon'
-                                    : t.noEvidence
+                            anyFilterActive ? (
+                                <EmptyState
+                                    size="sm"
+                                    variant="no-results"
+                                    title={
+                                        retentionFilter === 'archived'
+                                            ? 'No archived evidence'
+                                            : retentionFilter === 'expiring'
+                                                ? 'No evidence expiring soon'
+                                                : 'No evidence matches your filters'
+                                    }
+                                    description="Try widening your search or clearing one of the active filters."
+                                    secondaryAction={{
+                                        label: 'Clear filters',
+                                        onClick: () => filterCtx.clearAll(),
+                                    }}
+                                />
+                            ) : (
+                                <EmptyState
+                                    size="sm"
+                                    variant="no-records"
+                                    title={t.noEvidence}
+                                    description="Upload screenshots, exports, and attestations that prove your controls work in practice."
+                                />
+                            )
                         }
                         fileUrl={(ev: any) =>
                             ev.fileRecordId
@@ -761,11 +782,31 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                         columns={evidenceColumns}
                         getRowId={(ev: any) => ev.id}
                         emptyState={
-                            retentionFilter === 'archived'
-                                ? 'No archived evidence'
-                                : retentionFilter === 'expiring'
-                                    ? 'No evidence expiring soon'
-                                    : t.noEvidence
+                            anyFilterActive ? (
+                                <EmptyState
+                                    size="sm"
+                                    variant="no-results"
+                                    title={
+                                        retentionFilter === 'archived'
+                                            ? 'No archived evidence'
+                                            : retentionFilter === 'expiring'
+                                                ? 'No evidence expiring soon'
+                                                : 'No evidence matches your filters'
+                                    }
+                                    description="Try widening your search or clearing one of the active filters."
+                                    secondaryAction={{
+                                        label: 'Clear filters',
+                                        onClick: () => filterCtx.clearAll(),
+                                    }}
+                                />
+                            ) : (
+                                <EmptyState
+                                    size="sm"
+                                    variant="no-records"
+                                    title={t.noEvidence}
+                                    description="Upload screenshots, exports, and attestations that prove your controls work in practice."
+                                />
+                            )
                         }
                         resourceName={(p) => p ? 'evidence items' : 'evidence item'}
                         columnVisibility={columnVisibility}

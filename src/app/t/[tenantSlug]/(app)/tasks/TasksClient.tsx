@@ -26,6 +26,7 @@ import {
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
 import { ListPageShell } from '@/components/layout/ListPageShell';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { toApiSearchParams } from '@/lib/filters/url-sync';
 import { buildTaskFilters, TASK_FILTER_KEYS } from './filter-defs';
@@ -137,7 +138,8 @@ function TasksPageInner({
     // badges) reads this so SSR and first-client render match exactly.
     const hydratedNow = useHydratedNow();
 
-    const { state, search, hasActive } = useFilters();
+    const filterCtx = useFilters();
+    const { state, search, hasActive } = filterCtx;
 
     // Bulk selection
     const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -558,7 +560,27 @@ function TasksPageInner({
                     columnVisibility={columnVisibility}
                     onColumnVisibilityChange={setColumnVisibility}
                     onRowClick={(row) => router.push(tenantHref(`/tasks/${row.original.id}`))}
-                    emptyState="No tasks found. Create a task to get started."
+                    emptyState={
+                        hasActive ? (
+                            <EmptyState
+                                size="sm"
+                                variant="no-results"
+                                title="No tasks match your filters"
+                                description="Try widening your search or clearing one of the active filters."
+                                secondaryAction={{
+                                    label: 'Clear filters',
+                                    onClick: () => filterCtx.clearAll(),
+                                }}
+                            />
+                        ) : (
+                            <EmptyState
+                                size="sm"
+                                variant="no-records"
+                                title="No tasks yet"
+                                description="Tasks track remediation work — anything that turns a finding or open risk into a closed loop."
+                            />
+                        )
+                    }
                     resourceName={(p) => p ? 'tasks' : 'task'}
                     data-testid="tasks-table"
                     className="hover:bg-bg-muted"

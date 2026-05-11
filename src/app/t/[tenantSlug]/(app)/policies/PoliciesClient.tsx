@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/filter';
 import { EntityListPage } from '@/components/layout/EntityListPage';
 import { buttonVariants } from '@/components/ui/button-variants';
+import { EmptyState } from '@/components/ui/empty-state';
 import { toApiSearchParams } from '@/lib/filters/url-sync';
 import {
     buildPolicyFilters,
@@ -91,7 +92,8 @@ function PoliciesPageInner({
     // flip between server- and client-side `new Date()` values.
     const hydratedNow = useHydratedNow();
 
-    const { state, search, hasActive } = useFilters();
+    const filterCtx = useFilters();
+    const { state, search, hasActive } = filterCtx;
     const fetchParams = useMemo(
         () => toApiSearchParams(state, { search }),
         [state, search],
@@ -372,9 +374,25 @@ function PoliciesPageInner({
                 getRowId: (p: any) => p.id,
                 onRowClick: (row) =>
                     router.push(tenantHref(`/policies/${row.original.id}`)),
-                emptyState: hasActive
-                    ? 'No policies match your filters'
-                    : 'No policies found. Create your first policy to get started.',
+                emptyState: hasActive ? (
+                    <EmptyState
+                        size="sm"
+                        variant="no-results"
+                        title="No policies match your filters"
+                        description="Try widening your search or clearing one of the active filters."
+                        secondaryAction={{
+                            label: 'Clear filters',
+                            onClick: () => filterCtx.clearAll(),
+                        }}
+                    />
+                ) : (
+                    <EmptyState
+                        size="sm"
+                        variant="no-records"
+                        title="No policies yet"
+                        description="Author the documents that govern how your organisation operates — security, privacy, acceptable use, incident response."
+                    />
+                ),
                 resourceName: (p) => (p ? 'policies' : 'policy'),
                 columnVisibility,
                 onColumnVisibilityChange: setColumnVisibility,

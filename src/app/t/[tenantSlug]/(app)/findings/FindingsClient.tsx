@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { DataTable, createColumns, useColumnsDropdown } from '@/components/ui/table';
 import { ListPageShell } from '@/components/layout/ListPageShell';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
@@ -342,7 +343,14 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
                     getRowId={(f: any) => f.id}
                     columnVisibility={columnVisibility}
                     onColumnVisibilityChange={setColumnVisibility}
-                    emptyState={t.noFindings}
+                    emptyState={
+                        <EmptyState
+                            size="sm"
+                            variant="no-records"
+                            title={t.noFindings}
+                            description="Findings capture nonconformities, observations, and opportunities — what an audit surfaced and what needs follow-up."
+                        />
+                    }
                     resourceName={(p) => p ? 'findings' : 'finding'}
                     data-testid="findings-table"
                 />

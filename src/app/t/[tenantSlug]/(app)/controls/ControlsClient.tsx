@@ -26,6 +26,7 @@ import {
     useColumnsDropdown,
 } from '@/components/ui/table';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Modal } from '@/components/ui/modal';
 import { Tooltip } from '@/components/ui/tooltip';
 import {
@@ -765,9 +766,33 @@ function ControlsPageInner({
                 // depend on the standard <table> layout.
                 virtualize: false,
                 onRowClick: (row) => router.push(tenantHref(`/controls/${row.original.id}`)),
-                emptyState: hasActive
-                    ? 'No controls match your filters. Try adjusting your search or filters.'
-                    : 'No controls found. Install from templates or create a new control.',
+                emptyState: hasActive ? (
+                    <EmptyState
+                        size="sm"
+                        variant="no-results"
+                        title="No controls match your filters"
+                        description="Try widening your search or clearing one of the active filters."
+                        secondaryAction={{
+                            label: 'Clear filters',
+                            onClick: () => clearAll(),
+                        }}
+                    />
+                ) : (
+                    <EmptyState
+                        size="sm"
+                        variant="no-records"
+                        title="No controls yet"
+                        description="Start with a pre-built framework or define your own control."
+                        primaryAction={{
+                            label: 'Install templates',
+                            href: tenantHref('/controls/templates'),
+                        }}
+                        secondaryAction={{
+                            label: 'Create control',
+                            onClick: () => setIsCreateOpen(true),
+                        }}
+                    />
+                ),
                 resourceName: (p) => (p ? 'controls' : 'control'),
                 columnVisibility,
                 onColumnVisibilityChange: setColumnVisibility,

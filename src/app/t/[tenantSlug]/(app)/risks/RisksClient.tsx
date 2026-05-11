@@ -21,6 +21,7 @@ import { TruncationBanner } from '@/components/ui/TruncationBanner';
 import { NewRiskModal } from './NewRiskModal';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
     DataTable,
     createColumns,
@@ -547,9 +548,29 @@ function RisksPageInner({
                         getRowId={(r) => r.id}
                         onRowClick={(row) => router.push(tenantHref(`/risks/${row.original.id}`))}
                         emptyState={
-                            hasActive
-                                ? 'No risks match your filters'
-                                : t.noRisks
+                            hasActive ? (
+                                <EmptyState
+                                    size="sm"
+                                    variant="no-results"
+                                    title="No risks match your filters"
+                                    description="Try widening your search or clearing one of the active filters."
+                                    secondaryAction={{
+                                        label: 'Clear filters',
+                                        onClick: () => filterCtx.clearAll(),
+                                    }}
+                                />
+                            ) : (
+                                <EmptyState
+                                    size="sm"
+                                    variant="no-records"
+                                    title={t.noRisks}
+                                    description="Identify a threat, score its likelihood × impact, and link the controls that mitigate it."
+                                    primaryAction={{
+                                        label: 'Create risk',
+                                        onClick: () => setIsCreateOpen(true),
+                                    }}
+                                />
+                            )
                         }
                         resourceName={(p) => p ? 'risks' : 'risk'}
                         columnVisibility={columnVisibility}

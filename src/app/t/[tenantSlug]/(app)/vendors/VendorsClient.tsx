@@ -71,7 +71,8 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
     // Null until hydrated — keeps Overdue/Due badges stable across SSR.
     const hydratedNow = useHydratedNow();
 
-    const { state, search, hasActive } = useFilters();
+    const filterCtx = useFilters();
+    const { state, search, hasActive } = filterCtx;
 
     const fetchParams = useMemo(
         () => toApiSearchParams(state, { search }),
@@ -257,11 +258,26 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                         onColumnVisibilityChange={setColumnVisibility}
                         onRowClick={(row) => router.push(tenantHref(`/vendors/${row.original.id}`))}
                         emptyState={
-                            <EmptyState
-                                icon={Package}
-                                title={hasActive ? 'No vendors match your filters' : 'No vendors found'}
-                                description={hasActive ? undefined : 'Add your first vendor to get started.'}
-                            />
+                            hasActive ? (
+                                <EmptyState
+                                    size="sm"
+                                    variant="no-results"
+                                    title="No vendors match your filters"
+                                    description="Try widening your search or clearing one of the active filters."
+                                    secondaryAction={{
+                                        label: 'Clear filters',
+                                        onClick: () => filterCtx.clearAll(),
+                                    }}
+                                />
+                            ) : (
+                                <EmptyState
+                                    size="sm"
+                                    icon={Package}
+                                    variant="no-records"
+                                    title="No vendors yet"
+                                    description="Register sub-processors and suppliers to track DPAs, contracts, and risk reviews in one place."
+                                />
+                            )
                         }
                         resourceName={(p) => p ? 'vendors' : 'vendor'}
                         data-testid="vendors-table"
