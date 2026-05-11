@@ -52,6 +52,8 @@ const EXEMPTIONS: Record<string, string> = {
         '(a) sub-component — vendor-detail documents sub-table (R11-PR7); EntityDetailLayout owns chrome.',
     'controls/[controlId]/page.tsx':
         '(a) sub-component — control-detail tasks sub-table (R11-PR6); EntityDetailLayout owns chrome.',
+    'tasks/[taskId]/page.tsx':
+        '(a) sub-component — task-detail links sub-table (R11-PR8); EntityDetailLayout owns chrome.',
 
     // ─── (b) Multi-table / multi-section pages ─────────────────────
     'admin/api-keys/page.tsx':

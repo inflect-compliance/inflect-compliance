@@ -83,6 +83,8 @@ const EXEMPTIONS: Record<string, string> = {
         "Detail-page documents sub-table (R11-PR7) — fixed scope (documents attached to this one vendor); not a faceted-filter surface.",
     "src/app/t/[tenantSlug]/(app)/controls/[controlId]/page.tsx":
         "Detail-page tasks sub-table (R11-PR6) — fixed scope (tasks for this one control) with inline per-row actions; not a faceted-filter surface.",
+    "src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx":
+        "Detail-page links sub-table (R11-PR8) — fixed scope (cross-links from this one task); not a faceted-filter surface.",
     "src/app/t/[tenantSlug]/(app)/admin/integrations/page.tsx":
         "Integrations admin — small fixed catalogue with inline toggle controls.",
     "src/app/t/[tenantSlug]/(app)/admin/members/page.tsx":

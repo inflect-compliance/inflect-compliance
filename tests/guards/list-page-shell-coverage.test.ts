@@ -109,6 +109,11 @@ const EXEMPTIONS: Record<string, string> = {
     'controls/[controlId]/page.tsx':
         'detail page — DataTable is the inner tasks sub-table (R11-PR6)',
 
+    // R11-PR8 — task detail page mounts DataTable for the links
+    // sub-table. Detail page (EntityDetailLayout).
+    'tasks/[taskId]/page.tsx':
+        'detail page — DataTable is the inner links sub-table (R11-PR8)',
+
     // Browse-and-install template picker — multi-section browser,
     // not a list page in the perf-complaint sense.
     'controls/templates/page.tsx':

@@ -138,8 +138,8 @@ test.describe('Issue Management', () => {
         await page.waitForLoadState('networkidle').catch(() => {});
 
         // Verify link appears
-        await expect(page.locator('#links-list')).toContainText('CONTROL', { timeout: 5000 });
-        await expect(page.locator('#links-list')).toContainText('test-control-id');
+        await expect(page.locator('[data-testid="task-links-table"]')).toContainText('CONTROL', { timeout: 5000 });
+        await expect(page.locator('[data-testid="task-links-table"]')).toContainText('test-control-id');
     });
 
     test('add comment to issue', async ({ page }) => {

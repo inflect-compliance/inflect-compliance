@@ -6,12 +6,13 @@
 
 import { formatDate, formatDateTime } from '@/lib/format-date';
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { AppIcon } from '@/components/icons/AppIcon';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
+import { DataTable, createColumns } from '@/components/ui/table';
 import { useToastWithUndo } from '@/components/ui/hooks';
 import { SkeletonLine, SkeletonCard } from '@/components/ui/skeleton';
 import { InlineEmptyState } from '@/components/ui/inline-empty-state';
@@ -507,43 +508,12 @@ export default function TaskDetailPage() {
                             </Button>
                         </form>
                     )}
-                    <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
-                        {linksLoading ? (
-                            <div className="p-4 space-y-tight">
-                                {Array.from({ length: 3 }).map((_, i) => (
-                                    <SkeletonLine key={i} className="w-full" />
-                                ))}
-                            </div>
-                        ) : links.length === 0 ? (
-                            <InlineEmptyState
-                                title="No links yet"
-                                description="Cross-link this task to related tasks, controls, evidence, or risks via + Link."
-                            />
-                        ) : (
-                            <table className="data-table" id="links-list">
-                                <thead>
-                                    <tr><th>Type</th><th>Entity ID</th><th>Relation</th><th>Created</th>{permissions.canWrite && <th>Actions</th>}</tr>
-                                </thead>
-                                <tbody>
-                                    {links.map((l: any) => (
-                                        <tr key={l.id}>
-                                            <td><StatusBadge variant="info">{l.entityType}</StatusBadge></td>
-                                            <td className="text-sm text-content-default font-mono">{l.entityId}</td>
-                                            <td className="text-xs text-content-muted">{l.relation?.replace(/_/g, ' ') || '—'}</td>
-                                            <td className="text-xs text-content-muted">{formatDate(l.createdAt)}</td>
-                                            {permissions.canWrite && (
-                                                <td>
-                                                    <button className="text-content-error text-xs hover:text-content-error" onClick={() => removeLink(l.id)}>
-                                                        × Remove
-                                                    </button>
-                                                </td>
-                                            )}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        )}
-                    </div>
+                    <TaskLinksTable
+                        links={links}
+                        loading={linksLoading}
+                        canWrite={!!permissions.canWrite}
+                        onRemove={removeLink}
+                    />
                 </div>
             )}
 
@@ -638,5 +608,102 @@ export default function TaskDetailPage() {
                 </div>
             )}
         </EntityDetailLayout>
+    );
+}
+
+// R11-PR8 — task links sub-table routed through DataTable. Inline
+// columns derive from the same fields the prior raw <table> rendered;
+// canWrite gates the Remove action column. `loading` proxies to
+// DataTable's built-in skeleton (which inherits R11-PR2's shimmer).
+interface TaskLinkRow {
+    id: string;
+    entityType: string;
+    entityId: string;
+    relation?: string | null;
+    createdAt: string;
+}
+
+function TaskLinksTable({
+    links,
+    loading,
+    canWrite,
+    onRemove,
+}: {
+    links: TaskLinkRow[];
+    loading: boolean;
+    canWrite: boolean;
+    onRemove: (id: string) => void;
+}) {
+    const columns = useMemo(
+        () =>
+            createColumns<TaskLinkRow>([
+                {
+                    id: 'entityType',
+                    header: 'Type',
+                    cell: ({ row }) => (
+                        <StatusBadge variant="info">{row.original.entityType}</StatusBadge>
+                    ),
+                },
+                {
+                    id: 'entityId',
+                    header: 'Entity ID',
+                    cell: ({ row }) => (
+                        <span className="text-sm text-content-default font-mono">
+                            {row.original.entityId}
+                        </span>
+                    ),
+                },
+                {
+                    id: 'relation',
+                    header: 'Relation',
+                    cell: ({ row }) => (
+                        <span className="text-xs text-content-muted">
+                            {row.original.relation?.replace(/_/g, ' ') || '—'}
+                        </span>
+                    ),
+                },
+                {
+                    id: 'createdAt',
+                    header: 'Created',
+                    cell: ({ row }) => (
+                        <span className="text-xs text-content-muted">
+                            {formatDate(row.original.createdAt)}
+                        </span>
+                    ),
+                },
+                ...(canWrite
+                    ? [
+                          {
+                              id: 'actions',
+                              header: 'Actions',
+                              cell: ({ row }) => (
+                                  <button
+                                      className="text-content-error text-xs hover:text-content-error"
+                                      onClick={() => onRemove(row.original.id)}
+                                  >
+                                      × Remove
+                                  </button>
+                              ),
+                          } as Parameters<typeof createColumns<TaskLinkRow>>[0][number],
+                      ]
+                    : []),
+            ]),
+        [canWrite, onRemove],
+    );
+    return (
+        <DataTable
+            data={links}
+            columns={columns}
+            getRowId={(l) => l.id}
+            loading={loading}
+            emptyState={
+                <InlineEmptyState
+                    title="No links yet"
+                    description="Cross-link this task to related tasks, controls, evidence, or risks via + Link."
+                />
+            }
+            resourceName={(p) => (p ? 'links' : 'link')}
+            data-testid="task-links-table"
+        />
     );
 }

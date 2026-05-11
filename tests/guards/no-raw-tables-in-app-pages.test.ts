@@ -77,12 +77,6 @@ const EXEMPTIONS: Record<string, string> = {
     'vendors/[vendorId]/page.tsx':
         '(b) detail-page sub-tables (assessments / risks) — documents migrated R11-PR7',
 
-    // Task detail page sub-tables — comments, attachments, linked
-    // tasks. Each is small, contextual, and pre-dates the DataTable
-    // adoption sweep.
-    'tasks/[taskId]/page.tsx':
-        '(b) detail-page sub-tables (comments / attachments / links)',
-
     // ─── (c) Print / PDF-export layouts ──────────────────────────────
     // SoA (Statement of Applicability) report — interactive UI
     // version. Bespoke layout matched to the auditor's mental model;
