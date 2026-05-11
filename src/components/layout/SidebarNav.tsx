@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import { useCalendarBadge } from './use-calendar-badge';
 import { NavItem } from './nav-item';
-import { Eyebrow } from '@/components/ui/typography';
+import { NavSection } from './nav-section';
 
 // ─── Types ───
 
@@ -131,26 +131,6 @@ export function useNavSections(): NavSectionDef[] {
     ];
 }
 
-// ─── NavSection ───
-
-interface NavSectionProps {
-    title?: string;
-    children: React.ReactNode;
-}
-
-function NavSection({ title, children }: NavSectionProps) {
-    return (
-        <div>
-            {title && (
-                <Eyebrow className="px-3 pt-4 pb-1">
-                    {title}
-                </Eyebrow>
-            )}
-            <div className="space-y-0.5">{children}</div>
-        </div>
-    );
-}
-
 // ─── Sidebar content (shared between desktop sidebar and mobile drawer) ───
 
 interface SidebarContentProps {
@@ -183,7 +163,16 @@ export function SidebarContent({ user, onLogout, onNavClick }: SidebarContentPro
             {/* Nav */}
             <nav className="flex-1 p-2 overflow-y-auto" aria-label="Main navigation">
                 {sections.map((section, idx) => (
-                    <NavSection key={idx} title={section.title}>
+                    <NavSection
+                        key={idx}
+                        title={section.title}
+                        // R12-PR3 — suppress the top hairline on
+                        // the first titled section (the very top
+                        // of the sidebar). The solo Board section
+                        // sits at idx 0 with no title; the first
+                        // titled section is "Govern" at idx 1.
+                        isFirst={idx === 0 || sections.findIndex((s) => s.title) === idx}
+                    >
                         {section.items.map((item) => (
                             <NavItem
                                 key={item.href}
