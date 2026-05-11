@@ -56,16 +56,18 @@ describe('DataTable — row-click semantics (R13-PR2)', () => {
     });
 
     it('preserves the hover-clickable affordance on every row path', () => {
-        // `cursor-pointer select-none` must remain — three branches
-        // (resizable, non-resizable, virtualized) must all signal
-        // clickability.
+        // `cursor-pointer select-none` must remain on each row path
+        // (resizable, non-resizable, virtualized) so users get a
+        // hover signal that the row is interactive. R13-PR14
+        // widened the gate from `onRowClick &&` to
+        // `(onRowClick || selectionEnabled) &&` because a
+        // selection-enabled row is now interactive even without an
+        // explicit `onRowClick` — single click toggles selection.
+        const gateRe =
+            /\(\s*onRowClick\s*\|\|\s*selectionEnabled\s*\)\s*&&\s*\n?\s*"cursor-pointer\s+select-none/g;
         const cursorMatches = [
-            ...TABLE_TSX.matchAll(
-                /onRowClick\s*&&\s*\n?\s*"cursor-pointer\s+select-none/g,
-            ),
-            ...VIRTUAL_TSX.matchAll(
-                /onRowClick\s*&&\s*\n?\s*"cursor-pointer\s+select-none/g,
-            ),
+            ...TABLE_TSX.matchAll(gateRe),
+            ...VIRTUAL_TSX.matchAll(gateRe),
         ];
         expect(cursorMatches.length).toBeGreaterThanOrEqual(3);
     });

@@ -366,6 +366,7 @@ type ResizableTableRowProps<T> = {
   row: Row<T>;
   rowProps?: HTMLAttributes<HTMLTableRowElement>;
   table: TableType<T>;
+  selectionEnabled: boolean;
 } & Pick<
   TableProps<T>,
   "cellRight" | "tdClassName" | "onRowClick" | "onRowAuxClick"
@@ -381,6 +382,7 @@ const ResizableTableRow = memo(
     cellRight,
     tdClassName,
     table,
+    selectionEnabled,
   }: ResizableTableRowProps<T>) {
     const { className, ...rest } = rowProps || {};
 
@@ -397,7 +399,11 @@ const ResizableTableRow = memo(
           // cell's own bg-bg-muted hover paint — see the comment
           // there. Row-level treatment here keeps just the
           // cursor + colour-transition affordance.
-          onRowClick &&
+          //
+          // R13-PR14 — selection-enabled rows also get the
+          // cursor-pointer affordance even without onRowClick (the
+          // click toggles selection now, see onClick below).
+          (onRowClick || selectionEnabled) &&
             "cursor-pointer select-none transition-colors duration-150 ease-out",
           // hacky fix: if there are more than 8 rows, remove the bottom border from the last row
           table.getRowModel().rows.length > 8 &&
@@ -405,6 +411,22 @@ const ResizableTableRow = memo(
             "[&_td]:border-b-0",
           className,
         )}
+        // R13-PR14 — single click on the row toggles selection
+        // (filled radio fills/empties in the leftmost cell). The
+        // existing select-column `onSelectRow` handler calls
+        // `e.stopPropagation()` so a click on the checkbox itself
+        // does not double-fire here. A real double-click fires
+        // onClick twice (toggle + toggle back to start) and then
+        // onDoubleClick once (navigate) — selection ends where it
+        // started while navigation still happens.
+        onClick={
+          selectionEnabled
+            ? (e) => {
+                if (isClickOnInteractiveChild(e)) return;
+                row.toggleSelected();
+              }
+            : undefined
+        }
         onDoubleClick={
           onRowClick
             ? (e) => {
@@ -873,6 +895,7 @@ export function Table<T>({
                       cellRight={cellRight}
                       tdClassName={tdClassName}
                       table={table}
+                      selectionEnabled={selectionEnabled}
                     />
                   ) : (
                     <tr
@@ -892,13 +915,28 @@ export function Table<T>({
                         // so it survives the cell's bg-bg-muted
                         // hover paint. Row keeps cursor + colour
                         // transition only.
-                        onRowClick &&
+                        //
+                        // R13-PR14 — selection-enabled rows also
+                        // get cursor-pointer because click toggles
+                        // selection (see onClick below).
+                        (onRowClick || selectionEnabled) &&
                           "cursor-pointer select-none transition-colors duration-150 ease-out",
                         table.getRowModel().rows.length > 8 &&
                           row.index === table.getRowModel().rows.length - 1 &&
                           "[&_td]:border-b-0",
                         className,
                       )}
+                      // R13-PR14 — single click toggles selection.
+                      // See ResizableTableRow above for the full
+                      // single-vs-double-click semantics comment.
+                      onClick={
+                        selectionEnabled
+                          ? (e) => {
+                              if (isClickOnInteractiveChild(e)) return;
+                              row.toggleSelected();
+                            }
+                          : undefined
+                      }
                       onDoubleClick={
                         onRowClick
                           ? (e) => {

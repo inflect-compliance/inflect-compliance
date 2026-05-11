@@ -409,6 +409,7 @@ export function DataTable<T>({
           rowHeight={virtualRowHeight}
           height={virtualHeight}
           onRowClick={onRowClick}
+          selectionEnabled={selectionEnabled}
           sortableColumns={sortableColumns}
           sortBy={sortBy}
           sortOrder={sortOrder}

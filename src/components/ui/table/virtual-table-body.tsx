@@ -79,6 +79,12 @@ export interface VirtualTableProps<T> {
     onRowClick?: (row: Row<T>, e: React.MouseEvent) => void;
     /** Middle-click / aux-click handler. */
     onRowAuxClick?: (row: Row<T>, e: React.MouseEvent) => void;
+    /**
+     * Whether the select column is mounted (R12-PR1 default-on). When
+     * true, single click on the row body toggles selection; mirrors
+     * the standard `<Table>` semantics added in R13-PR14.
+     */
+    selectionEnabled?: boolean;
     /** Sortable column ids (mirrors `<Table>`). */
     sortableColumns?: string[];
     /** Currently-sorted column id. */
@@ -161,6 +167,7 @@ interface RowItemData<T> {
     gridTemplate: string;
     onRowClick?: (row: Row<T>, e: React.MouseEvent) => void;
     onRowAuxClick?: (row: Row<T>, e: React.MouseEvent) => void;
+    selectionEnabled: boolean;
     columnsAfterSelect: ReadonlySet<string>;
 }
 
@@ -173,7 +180,7 @@ function VirtualRow<T>({
     style: React.CSSProperties;
     data: RowItemData<T>;
 }) {
-    const { rows, gridTemplate, onRowClick, onRowAuxClick, columnsAfterSelect } = data;
+    const { rows, gridTemplate, onRowClick, onRowAuxClick, selectionEnabled, columnsAfterSelect } = data;
     const row = rows[index];
     if (!row) return null;
 
@@ -190,7 +197,11 @@ function VirtualRow<T>({
                 // virtualized) carry the accent identically and paint
                 // on the cell's own paint context. Row keeps cursor +
                 // colour transition only.
-                onRowClick &&
+                //
+                // R13-PR14 — selection-enabled rows also get cursor-
+                // pointer because click toggles selection (onClick
+                // below). Mirrors the standard `<Table>` behaviour.
+                (onRowClick || selectionEnabled) &&
                     "cursor-pointer select-none transition-colors duration-150 ease-out",
                 "data-[selected=true]:bg-[var(--brand-subtle)]",
             )}
@@ -199,6 +210,17 @@ function VirtualRow<T>({
                 display: "grid",
                 gridTemplateColumns: gridTemplate,
             }}
+            // R13-PR14 — single click toggles selection. See
+            // `ResizableTableRow` in `table.tsx` for the full
+            // single-vs-double-click semantics rationale.
+            onClick={
+                selectionEnabled
+                    ? (e) => {
+                          if (isClickOnInteractiveChild(e)) return;
+                          row.toggleSelected();
+                      }
+                    : undefined
+            }
             onDoubleClick={
                 onRowClick
                     ? (e) => {
@@ -265,6 +287,7 @@ export function VirtualTable<T>({
     overscanCount = 5,
     onRowClick,
     onRowAuxClick,
+    selectionEnabled = true,
     sortableColumns = [],
     sortBy,
     sortOrder,
@@ -305,9 +328,10 @@ export function VirtualTable<T>({
             gridTemplate,
             onRowClick,
             onRowAuxClick,
+            selectionEnabled,
             columnsAfterSelect,
         }),
-        [rows, gridTemplate, onRowClick, onRowAuxClick, columnsAfterSelect],
+        [rows, gridTemplate, onRowClick, onRowAuxClick, selectionEnabled, columnsAfterSelect],
     );
 
     // OuterElement must keep a stable reference across renders;
