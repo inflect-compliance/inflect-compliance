@@ -84,12 +84,15 @@ describe('DataTable — row-click semantics (R13-PR2)', () => {
         // level shadow paints on the cell's own context — visible
         // for the entire hover lifetime.
         //
-        // Assertion: both files carry the canonical recipe
-        // `group-hover/row:first-of-type:shadow-[inset_2px_0_0_var(--brand-default)]`
-        // exactly once (the `tableCellClassName` / `bodyCellClassName`
-        // hook that emits it for every cell).
+        // R13-PR15 replaced `:first-of-type` (CSS pseudo) with an
+        // `isFirstContent` boolean passed at render time. The CSS
+        // selector targeted the first `<td>` in each row, which
+        // became the select column once R12-PR1 made selection
+        // default-on — so the shadow rule never fired anywhere.
+        // The recipe is now plain `group-hover/row:shadow-…`,
+        // gated in JS to apply only to the first non-utility cell.
         const cellAccentRe =
-            /group-hover\/row:first-of-type:shadow-\[inset_2px_0_0_var\(--brand-default\)\]/g;
+            /group-hover\/row:shadow-\[inset_2px_0_0_var\(--brand-default\)\]/g;
         const tableMatches = TABLE_TSX.match(cellAccentRe);
         const virtualMatches = VIRTUAL_TSX.match(cellAccentRe);
         expect(tableMatches).not.toBeNull();
@@ -110,5 +113,15 @@ describe('DataTable — row-click semantics (R13-PR2)', () => {
             /\bhover:shadow-\[inset_2px_0_0_0?_var\(--brand-default\)\]/g;
         expect(stripComments(TABLE_TSX).match(oldRowRe)).toBeNull();
         expect(stripComments(VIRTUAL_TSX).match(oldRowRe)).toBeNull();
+
+        // R13-PR15 — `:first-of-type` is gone (silently broke when
+        // select column became default-on). Re-introducing it
+        // would silently break the accent again.
+        expect(stripComments(TABLE_TSX)).not.toMatch(
+            /group-hover\/row:first-of-type:shadow-/,
+        );
+        expect(stripComments(VIRTUAL_TSX)).not.toMatch(
+            /group-hover\/row:first-of-type:shadow-/,
+        );
     });
 });

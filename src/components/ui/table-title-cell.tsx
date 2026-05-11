@@ -72,9 +72,37 @@ export function TableTitleCell({
                 href={href}
                 id={id}
                 className={cn(TITLE_CELL_BASE, TITLE_CELL_LINK_HOVER, className)}
-                onClick={(e: MouseEvent<HTMLAnchorElement>) =>
-                    e.stopPropagation()
-                }
+                // R13-PR15 — title-link click semantics changed to
+                // match the rest of the row:
+                //   - PLAIN left-click: preventDefault on the link so
+                //     it doesn't navigate. Lets the row's `onClick`
+                //     fire (selection toggle).
+                //   - Modifier-click (cmd / ctrl / shift / alt) or
+                //     middle-click: keep the link's default
+                //     behaviour (open in new tab / new window). The
+                //     `href` is preserved on the element so the
+                //     browser still drives those gestures.
+                //   - DOUBLE-CLICK on the row body: the row's
+                //     `onDoubleClick` (existing) handles
+                //     navigation via `onRowClick`.
+                // R13-PR1's `e.stopPropagation()` was kept here
+                // historically to prevent the row's old single-
+                // click navigation from racing the link's
+                // navigation. After R13-PR14 the row's onClick is
+                // for selection — propagation MUST reach the row
+                // so the click can toggle. So stopPropagation is
+                // gone.
+                onClick={(e: MouseEvent<HTMLAnchorElement>) => {
+                    if (
+                        e.button === 0 &&
+                        !e.metaKey &&
+                        !e.ctrlKey &&
+                        !e.shiftKey &&
+                        !e.altKey
+                    ) {
+                        e.preventDefault();
+                    }
+                }}
             >
                 {children}
             </Link>

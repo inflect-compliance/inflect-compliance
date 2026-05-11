@@ -124,6 +124,7 @@ const bodyCellClassName = (
     columnId: string,
     clickable: boolean,
     hasSelectBefore: boolean,
+    isFirstContent: boolean,
 ) =>
     cn(
         "border-l border-b border-border-subtle text-sm leading-6 whitespace-nowrap text-content-default",
@@ -132,14 +133,15 @@ const bodyCellClassName = (
         !["select", "menu"].includes(columnId) &&
             (hasSelectBefore ? "pl-1 pr-4 py-2.5" : "px-4 py-2.5"),
         clickable && "group-hover/row:bg-bg-subtle transition-colors duration-75",
-        // R13-PR13 — brand-coloured 2-px left-edge accent on hover,
-        // rendered by the first non-utility cell so it paints on
-        // the cell's own paint context (not on the parent row
-        // where cell backgrounds would obscure it). Mirrors the
-        // table.tsx recipe.
-        !["select", "menu"].includes(columnId) &&
+        // R13-PR15 — brand-coloured 2-px left-edge accent on hover,
+        // gated on `isFirstContent` (computed at render time as the
+        // first non-utility column id) instead of `:first-of-type`.
+        // Mirrors the table.tsx recipe — `:first-of-type` silently
+        // broke once R12-PR1 made the select column default-on and
+        // it became the first `<td>`/`<div role="cell">`.
+        isFirstContent &&
             clickable &&
-            "group-hover/row:first-of-type:shadow-[inset_2px_0_0_var(--brand-default)]",
+            "group-hover/row:shadow-[inset_2px_0_0_var(--brand-default)]",
         "group-data-[selected=true]/row:bg-[var(--brand-subtle)]",
     );
 
@@ -169,6 +171,8 @@ interface RowItemData<T> {
     onRowAuxClick?: (row: Row<T>, e: React.MouseEvent) => void;
     selectionEnabled: boolean;
     columnsAfterSelect: ReadonlySet<string>;
+    /** Column id that carries the brand-edge accent (first non-utility column). */
+    firstContentColumnId: string | undefined;
 }
 
 function VirtualRow<T>({
@@ -180,7 +184,7 @@ function VirtualRow<T>({
     style: React.CSSProperties;
     data: RowItemData<T>;
 }) {
-    const { rows, gridTemplate, onRowClick, onRowAuxClick, selectionEnabled, columnsAfterSelect } = data;
+    const { rows, gridTemplate, onRowClick, onRowAuxClick, selectionEnabled, columnsAfterSelect, firstContentColumnId } = data;
     const row = rows[index];
     if (!row) return null;
 
@@ -242,6 +246,7 @@ function VirtualRow<T>({
                 const isUtility = ["select", "menu"].includes(cell.column.id);
                 const isSelect = cell.column.id === "select";
                 const hasSelectBefore = columnsAfterSelect.has(cell.column.id);
+                const isFirstContent = cell.column.id === firstContentColumnId;
                 return (
                     <div
                         key={cell.id}
@@ -250,6 +255,7 @@ function VirtualRow<T>({
                             cell.column.id,
                             !!onRowClick,
                             hasSelectBefore,
+                            isFirstContent,
                         )}
                     >
                         {isSelect ? (
@@ -312,6 +318,16 @@ export function VirtualTable<T>({
         return set;
     }, [visibleColumns]);
 
+    // R13-PR15 — id of the first non-utility column. Carries the
+    // brand-edge hover/selected accent.
+    const firstContentColumnId = React.useMemo(
+        () =>
+            visibleColumns.find(
+                (c) => !["select", "menu"].includes(c.id),
+            )?.id,
+        [visibleColumns],
+    );
+
     // visibleColumns identity changes when columns add/remove or
     // visibility flips — those are the inputs the template depends on.
     // `table` is stable across renders. Extract the column-id key into
@@ -330,8 +346,9 @@ export function VirtualTable<T>({
             onRowAuxClick,
             selectionEnabled,
             columnsAfterSelect,
+            firstContentColumnId,
         }),
-        [rows, gridTemplate, onRowClick, onRowAuxClick, selectionEnabled, columnsAfterSelect],
+        [rows, gridTemplate, onRowClick, onRowAuxClick, selectionEnabled, columnsAfterSelect, firstContentColumnId],
     );
 
     // OuterElement must keep a stable reference across renders;

@@ -49,6 +49,7 @@ const tableCellClassName = (
   columnId: string,
   clickable?: boolean,
   hasSelectBefore?: boolean,
+  isFirstContent?: boolean,
 ) =>
   cn([
     "py-2.5 text-left text-sm leading-6 whitespace-nowrap border-border-subtle relative",
@@ -62,28 +63,32 @@ const tableCellClassName = (
     // theme). Pairs with `cursor-pointer` on the row itself to make
     // clickability unambiguous.
     clickable && "group-hover/row:bg-bg-muted transition-colors duration-75",
-    // R13-PR13 — brand-coloured 2-px left-edge accent on hover.
-    // PREVIOUSLY this lived on the `<tr>` itself as
-    // `hover:shadow-[inset_2px_0_0_0_var(--brand-default)]`. In CSS
-    // table painting, each cell's background (`bg-bg-muted` above)
-    // paints ON TOP of any box-shadow declared on the parent `<tr>`,
-    // so the row-level shadow flickered while moving the mouse
-    // between rows (no cell painted yet) and disappeared once the
-    // cursor settled on a single row (cell background covered the
-    // shadow). Moving the inset shadow to the FIRST non-utility cell
-    // — on the cell's own paint context — keeps the accent visible
-    // for the entire hover lifetime. Mirrors the selected-row
-    // recipe below.
-    !["select", "menu"].includes(columnId) &&
+    // R13-PR15 — brand-coloured 2-px left-edge accent on hover.
+    //
+    // History:
+    //   - Originally lived on the `<tr>` as `hover:shadow-...`.
+    //     CSS table painting paints cell backgrounds on top of
+    //     row-level shadows → flicker (R13-PR13 diagnosis).
+    //   - R13-PR13 moved it to cells via `first-of-type:`. That
+    //     selector matches the first `<td>` in each row — which
+    //     became the SELECT column once R12-PR1 made selection
+    //     default-on. The rule excludes the select column, so it
+    //     never fired anywhere → no hover edge at all.
+    //   - R13-PR15 gates the shadow on an explicit
+    //     `isFirstContent` boolean computed at render time (the
+    //     first non-utility column id). Works regardless of
+    //     whether the select column is mounted.
+    isFirstContent &&
       clickable &&
-      "group-hover/row:first-of-type:shadow-[inset_2px_0_0_var(--brand-default)]",
+      "group-hover/row:shadow-[inset_2px_0_0_var(--brand-default)]",
     // PR-7 selected-row signal — left-edge brand accent via inset
-    // box-shadow on the leftmost cell. Renders only on the first
-    // non-utility cell so the accent reads as a single 2-px stroke
-    // along the row, not a per-cell border.
+    // box-shadow on the leftmost non-utility cell. Same
+    // `isFirstContent` plumbing — was `first-of-type:` before,
+    // would have silently broken once the select column was
+    // mounted.
     "group-data-[selected=true]/row:bg-[var(--brand-subtle)]",
-    !["select", "menu"].includes(columnId) &&
-      "group-data-[selected=true]/row:first-of-type:shadow-[inset_2px_0_0_var(--brand-default)]",
+    isFirstContent &&
+      "group-data-[selected=true]/row:shadow-[inset_2px_0_0_var(--brand-default)]",
   ]);
 
 const resizingClassName = cn([
@@ -450,6 +455,14 @@ const ResizableTableRow = memo(
           const isUtilityColumn = ["select", "menu"].includes(cell.column.id);
           const isSelectColumn = cell.column.id === "select";
           const isColumnAfterSelect = cells[index - 1]?.column.id === "select";
+          // R13-PR15 — the first NON-utility cell carries the brand-
+          // edge accent. CSS `:first-of-type` was the previous lever
+          // but it pointed at the select column once that became
+          // default-on; this boolean is unambiguous.
+          const firstContentId = cells.find(
+            (c) => !["select", "menu"].includes(c.column.id),
+          )?.column.id;
+          const isFirstContent = cell.column.id === firstContentId;
           const disableTruncate = !!(cell.column.columnDef.meta as any)
             ?.disableTruncate;
 
@@ -461,6 +474,7 @@ const ResizableTableRow = memo(
                   cell.column.id,
                   !!onRowClick,
                   isColumnAfterSelect,
+                  isFirstContent,
                 ),
                 "text-content-default group",
                 getCommonPinningClassNames(
@@ -562,6 +576,13 @@ export function Table<T>({
       columnsAfterSelect.add(visibleColumns[i].id);
     }
   }
+  // R13-PR15 — id of the first NON-utility (non-select / non-menu)
+  // column. Carries the brand-edge hover/selected accent on its
+  // cells (CSS `:first-of-type` was the previous lever but it
+  // pointed at the select column once that became default-on).
+  const firstContentColumnId = visibleColumns.find(
+    (c) => !["select", "menu"].includes(c.id),
+  )?.id;
   const scrollWrapperRef = useRef<HTMLDivElement>(null);
 
   // Whole-row clip — clamp the scroll wrapper to a multiple of the
@@ -976,6 +997,7 @@ export function Table<T>({
                                 cell.column.id,
                                 !!onRowClick,
                                 isColumnAfterSelect,
+                                cell.column.id === firstContentColumnId,
                               ),
                               "text-content-default group",
                               getCommonPinningClassNames(

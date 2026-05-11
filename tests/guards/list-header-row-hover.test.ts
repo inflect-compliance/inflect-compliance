@@ -66,9 +66,15 @@ describe("v2-PR-12 DataTable row hover affordance", () => {
         // hover) on top of any row-level shadow, so the
         // row-level approach flickered. The cell-level shadow
         // paints on the cell's own context and stays visible.
+        //
+        // R13-PR15 — `:first-of-type` was replaced by an explicit
+        // `isFirstContent` boolean (computed at render time as
+        // the first non-utility column id). `:first-of-type`
+        // pointed at the select column once R12-PR1 made it
+        // default-on, so the shadow rule never fired anywhere.
         // The brand-default token is the colour.
         expect(src).toMatch(
-            /group-hover\/row:first-of-type:shadow-\[inset_2px_0_0_var\(--brand-default\)\]/,
+            /group-hover\/row:shadow-\[inset_2px_0_0_var\(--brand-default\)\]/,
         );
     });
 

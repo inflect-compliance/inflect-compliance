@@ -38,8 +38,18 @@ export function deepEqual(obj1: unknown, obj2: unknown): boolean {
 
 /**
  * Returns true if the click target is an interactive child element
- * (button, link, input, etc.) — used to ignore row-click handlers
- * when the user clicks on an action button within a row.
+ * (button, input, textarea, or an open overlay/popper) — used to
+ * ignore row-click handlers when the user clicks on an action
+ * control within a row.
+ *
+ * R13-PR15 — `<a>` was REMOVED from the banned tags so clicks on
+ * the title-cell link (and any other inline `<a>` in a row) bubble
+ * to the row's onClick. The title link drives navigation via
+ * modifier-clicks (cmd/ctrl for new tab) and double-click on the
+ * row body; plain left-clicks on it `preventDefault` so the row
+ * can handle the click for selection. See
+ * `src/components/ui/table-title-cell.tsx` for the link's onClick
+ * contract.
  */
 export function isClickOnInteractiveChild(e: MouseEvent) {
   for (
@@ -48,7 +58,7 @@ export function isClickOnInteractiveChild(e: MouseEvent) {
     target = target.parentElement as HTMLElement, i++
   ) {
     if (
-      ["button", "a", "input", "textarea"].includes(
+      ["button", "input", "textarea"].includes(
         target.tagName.toLowerCase(),
       ) ||
       target.getAttribute("role") === "dialog" ||
