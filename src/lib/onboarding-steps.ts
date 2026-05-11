@@ -118,17 +118,12 @@ export const DEFAULT_TOUR_STEPS: ReadonlyArray<OnboardingStep> = [
         side: 'right',
     },
 
-    // Step 6 — Frameworks.
-    {
-        id: 'sidebar.frameworks',
-        selector: '[data-testid="nav-frameworks"]',
-        title: 'Frameworks',
-        description:
-            'ISO, NIS 2, SOC 2 catalogues with a tree-view explorer per framework. Install templates with one click.',
-        side: 'right',
-    },
+    // (The previous sidebar.frameworks step was retired when the
+    // Framework nav entry was dropped from the sidebar — the page
+    // is reachable via the Frameworks pill on the Audits page
+    // header and via the command palette.)
 
-    // Step 7 — Command palette tip. No DOM anchor (the palette is
+    // Step 6 — Command palette tip. No DOM anchor (the palette is
     // a portal that only mounts on Cmd+K). Centred card with the
     // shortcut spelled out.
     {

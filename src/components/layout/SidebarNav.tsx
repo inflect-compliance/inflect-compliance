@@ -21,7 +21,6 @@ import {
     ClipboardCheck,
     FlaskConical,
     Truck,
-    Map,
     BarChart3,
     Settings,
     LogOut,
@@ -107,8 +106,11 @@ export function useNavSections(): NavSectionDef[] {
         {
             title: 'Manage',
             items: [
+                // R13-PR12 — Frameworks dropped from the sidebar.
+                // The page stays reachable via the Frameworks pill on
+                // the Audits page header (R13-PR9) and via the command
+                // palette (⌘K → "Frameworks").
                 { href: tenantHref('/audits'), label: 'Audit', icon: ClipboardCheck },
-                { href: tenantHref('/frameworks'), label: 'Framework', icon: Map },
                 { href: tenantHref('/policies'), label: 'Policy', icon: FileText },
                 { href: tenantHref('/vendors'), label: 'Vendor', icon: Truck },
                 { href: tenantHref('/reports'), label: 'Report', icon: BarChart3, visible: perms.reports.view },
