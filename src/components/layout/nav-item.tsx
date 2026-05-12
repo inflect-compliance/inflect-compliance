@@ -181,6 +181,46 @@ export interface NavItemProps {
  * The ACTIVE state holds it at opacity 100 + adds a brand-subtle
  * background for conviction (see NAV_ITEM_ACTIVE).
  */
+/**
+ * **The gloss highlight** — R13-PR6.
+ *
+ * A 1-px tall horizontal line on the `<NavItem>` row's top edge,
+ * rendered via the `::after` pseudo-element. Mirrors the way light
+ * catches the top edge of a physical raised button. Pinned 8px from
+ * each side (`left-2 right-2`) so it doesn't run all the way to the
+ * row's corners — keeps the gloss looking like a deliberate
+ * highlight rather than a hairline divider.
+ *
+ * Resolved per theme via `--nav-gloss-highlight`:
+ *   METRO  rgba(255, 255, 255, 0.08)  — subtle white catch on navy
+ *   PwC    rgba(255, 255, 255, 0.70)  — near-white sliver on cream
+ *
+ * Opacity 0 by default; fades to 100 on hover + active (200ms
+ * ease-out — same tempo as the band). Pointer-events disabled so
+ * the gloss never intercepts clicks. Geometry is unchanged across
+ * states; only opacity moves — preserves R12's motion-language
+ * contract (the gloss is opacity + colour, no transform).
+ *
+ * The gloss is the second `::after`-style decoration the row owns
+ * (the band is `::before`). Together they wrap the row in two
+ * "lit" edges — the left band signals state, the top gloss signals
+ * "raised, ready". Why not a fuller bevel (bottom shadow too)?
+ * Because that's PR-7's job — keeping these stacked PRs single-
+ * concern.
+ */
+const NAV_ITEM_GLOSS_BASE = [
+    // Pinned 8px from each side, hairline tall.
+    'after:absolute after:left-2 after:right-2 after:top-0 after:h-px',
+    // Theme-aware highlight tone.
+    'after:bg-[var(--nav-gloss-highlight)]',
+    // Soft ends so the highlight doesn't terminate as a square stamp.
+    'after:rounded-full',
+    // Decoration only — never captures clicks.
+    'after:pointer-events-none',
+    // Opacity-only motion, same tempo as the band.
+    'after:opacity-0 after:transition-opacity after:duration-200 after:ease-out',
+].join(' ');
+
 const NAV_ITEM_BAND_BASE = [
     'before:absolute before:left-0 before:top-1.5 before:bottom-1.5',
     'before:w-[3px] before:rounded-r-full',
@@ -222,6 +262,7 @@ export const NAV_ITEM_BASE = [
     NAV_ITEM_RADIUS,
     'text-sm transition-colors duration-150 ease-out',
     NAV_ITEM_BAND_BASE,
+    NAV_ITEM_GLOSS_BASE,
     // Focus-visible — keyboard story. (R12-PR7 lock.)
     //
     // Four tokens, no more, no less:
@@ -278,7 +319,7 @@ export const NAV_ITEM_BASE = [
  * colour only — locked by the motion-language ratchet.
  */
 export const NAV_ITEM_DEFAULT =
-    'text-content-muted hover:text-content-emphasis hover:before:opacity-100 hover:before:animate-nav-band-shimmer';
+    'text-content-muted hover:text-content-emphasis hover:before:opacity-100 hover:before:animate-nav-band-shimmer hover:after:opacity-100';
 
 /**
  * Active state — conviction. (R12-PR6 lock, R13-PR4 evolution.)
@@ -337,7 +378,7 @@ export const NAV_ITEM_DEFAULT =
  * five secondary-brand override classes + the navy-glow plumbing.
  */
 export const NAV_ITEM_ACTIVE =
-    'text-[var(--brand-default)] bg-[var(--brand-subtle)] before:opacity-100 before:animate-nav-band-shimmer before:from-[var(--brand-secondary-default)]! before:via-[var(--brand-secondary-muted)]! before:to-[var(--brand-secondary-emphasis)]! before:shadow-[var(--nav-band-glow-active)]! font-medium';
+    'text-[var(--brand-default)] bg-[var(--brand-subtle)] before:opacity-100 before:animate-nav-band-shimmer before:from-[var(--brand-secondary-default)]! before:via-[var(--brand-secondary-muted)]! before:to-[var(--brand-secondary-emphasis)]! before:shadow-[var(--nav-band-glow-active)]! after:opacity-100 font-medium';
 
 /**
  * Badge recipe — aligned + breathing. (R12-PR8 lock.)

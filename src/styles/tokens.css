@@ -168,6 +168,17 @@
    * read as accidental colour bleed.
    */
   --nav-band-glow-active: 0 0 6px rgba(59, 130, 246, 0.35);
+
+  /* ── Sidebar gloss highlight (R13-PR6) ─────────────────────────── */
+  /*
+   * A 1-px wide top-edge `::after` line on `<NavItem>` rows reveals
+   * on hover + active. Simulates light catching the top edge of a
+   * raised button — the "glossy" cue the user asked for. On the
+   * deep-navy METRO surface a faint white at 8% is enough to read;
+   * the row appears to lift slightly toward the cursor without any
+   * actual geometry change.
+   */
+  --nav-gloss-highlight: rgba(255, 255, 255, 0.08);
 }
 
 
@@ -311,6 +322,19 @@
    * across themes.
    */
   --nav-band-glow-active: 0 0 6px rgba(30, 58, 138, 0.35);
+
+  /* ── Sidebar gloss highlight (R13-PR6) ─────────────────────────── */
+  /*
+   * On the cream PwC surface a white-on-cream highlight is much
+   * less effective at simulating "light catching the edge" — cream
+   * already reads as nearly-white. The PwC gloss inverts the
+   * direction: instead of "lighter at top", we use a faint white
+   * at 70% which lands as a near-white sliver on cream — still
+   * subtle, but readable as a defined top edge. The geometry of
+   * the gloss (1px line, top edge) is identical across themes; only
+   * the alpha tunes for surface luminance.
+   */
+  --nav-gloss-highlight: rgba(255, 255, 255, 0.70);
 }
 
 /* ─────────────────────────────────────────────────────────────────
