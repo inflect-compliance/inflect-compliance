@@ -321,6 +321,26 @@ module.exports = {
                         'outline-color': 'var(--brand-emphasis)',
                     },
                 },
+                // R15-PR7 — one-shot horizontal sweep of brand-tinted
+                // light across the row body. The hover paints a
+                // narrow diagonal gradient at `background-size:
+                // 300% 100%`; this keyframe pans the
+                // `background-position` from -100% (gradient's
+                // bright centre is off-left) to 100% (off-right)
+                // over 1.2 seconds. The row visibly catches light
+                // ONCE as the pointer arrives, then settles.
+                //
+                // Why one-shot, not infinite? Looping the sweep
+                // would make every hovered row continuously
+                // shimmer like a loading skeleton — visually
+                // exhausting. Once-per-engage is the sweet spot:
+                // a moment of polish, then the row trusts its
+                // other state signals (band, gloss, outline,
+                // bevel) to carry the rest of the hover.
+                'nav-row-liquid-sweep': {
+                    '0%': { 'background-position': '-100% 0%' },
+                    '100%': { 'background-position': '100% 0%' },
+                },
             },
             animation: {
                 'slide-up-fade': 'slide-up-fade 0.2s ease-out',
@@ -425,6 +445,29 @@ module.exports = {
                 // alive for as long as the row is hovered.
                 'nav-row-iridescent':
                     'nav-row-iridescent 3s ease-in-out infinite',
+                // R15-PR7 — 1.2s ease-out one-shot. Bright centre
+                // arrives at the row's right edge by ~700ms and
+                // exits off the right by 1.2s. ease-out keeps the
+                // sweep feeling like it ACCELERATES into the row
+                // and SETTLES out the far side — gravity-aware
+                // motion. No `infinite` — the sweep fires once
+                // when hover engages.
+                'nav-row-liquid-sweep':
+                    'nav-row-liquid-sweep 1.2s ease-out',
+                // R15-PR7 — combined row-level hover animation
+                // utility. Composes:
+                //
+                //   nav-row-iridescent     3s ease-in-out infinite
+                //   nav-row-liquid-sweep   1.2s ease-out (one-shot)
+                //
+                // Single class on the host row applies both. Each
+                // track animates a different CSS property
+                // (outline-color vs background-position) so they
+                // compose cleanly without cascade fights. The
+                // sweep finishes at 1.2s and lets the iridescence
+                // keep cycling forever.
+                'nav-row-hover-alive':
+                    'nav-row-iridescent 3s ease-in-out infinite, nav-row-liquid-sweep 1.2s ease-out',
                 // R15-PR4 — combined "alive" animation for the
                 // ACTIVE row. Adds the starburst bloom as the first
                 // track ahead of the three R15-PR1..3 tracks. All

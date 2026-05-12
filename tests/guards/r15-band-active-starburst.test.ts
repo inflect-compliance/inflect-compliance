@@ -68,15 +68,19 @@ function getStarburstKeyframeSlice(): string {
     const declStart = TAILWIND_CONFIG.indexOf("'nav-band-starburst': {");
     if (declStart < 0) return '';
     const tail = TAILWIND_CONFIG.slice(declStart);
-    // The starburst keyframe is followed by the closing `},` of
-    // the `keyframes:` object, then the `animation:` key. The
-    // next top-level entry inside `keyframes:` (if any) starts
-    // with `'nav-` at indent level. Since starburst is currently
-    // the LAST keyframe entry, bound at the next sibling-level
-    // identifier — `animation:`.
-    const animKeyIdx = tail.indexOf('animation:');
-    if (animKeyIdx < 0) return tail;
-    return tail.slice(0, animKeyIdx);
+    // Bound at the next `'nav-` sibling key. Subsequent
+    // keyframes (e.g. R15-PR6 iridescence, R15-PR7 sweep) and
+    // their comments mention CSS properties the negative
+    // assertions ban — slicing all the way to `animation:`
+    // bleeds those mentions in.
+    const ownKeyEnd = "'nav-band-starburst': {".length;
+    const afterOwn = tail.slice(ownKeyEnd);
+    const nextNavOffset = afterOwn.indexOf("'nav-");
+    if (nextNavOffset < 0) {
+        const animKeyIdx = tail.indexOf('animation:');
+        return animKeyIdx < 0 ? tail : tail.slice(0, animKeyIdx);
+    }
+    return tail.slice(0, ownKeyEnd + nextNavOffset);
 }
 
 describe('Roadmap-15 PR-4 — active starburst bloom', () => {

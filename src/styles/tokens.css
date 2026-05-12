@@ -194,6 +194,19 @@
    * lighter would disappear entirely.
    */
   --nav-bevel-shadow: inset 0 -1px 1px 0 rgba(0, 0, 0, 0.25);
+
+  /* R15-PR7 — `liquid sweep` brand-tint colour for the NavItem
+   * row's hover background. The hover paints a narrow diagonal
+   * gradient (`transparent → tint → transparent`) that sweeps
+   * across the row body once when hover engages. The tint at 14%
+   * alpha is muted enough to read as "a wash of light", not "a
+   * solid colour block". METRO uses the brand yellow at low
+   * opacity; PwC uses the brand orange at a marginally higher
+   * opacity to compensate for the cream surface's lower
+   * contrast. Same alpha would make the orange disappear
+   * against cream.
+   */
+  --nav-row-liquid-tint: rgba(255, 205, 17, 0.14);
 }
 
 
@@ -361,6 +374,15 @@
    * look smudged.
    */
   --nav-bevel-shadow: inset 0 -1px 1px 0 rgba(60, 50, 40, 0.08);
+
+  /* R15-PR7 — light-theme liquid sweep tint. PwC orange at 16%
+   * opacity. Slightly higher alpha than METRO (0.14) because the
+   * cream surface (`--bg-default: #FAF7F2`) has lower contrast
+   * with brand orange than the navy METRO surface has with brand
+   * yellow — equalising the perceived wash strength across
+   * themes.
+   */
+  --nav-row-liquid-tint: rgba(208, 74, 2, 0.16);
 }
 
 /* ─────────────────────────────────────────────────────────────────

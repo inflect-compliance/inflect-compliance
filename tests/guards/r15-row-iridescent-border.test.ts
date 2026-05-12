@@ -79,31 +79,53 @@ describe('Roadmap-15 PR-6 — iridescent gradient border on hover', () => {
             );
         });
 
+        /**
+         * Slice the `nav-row-iridescent` keyframe out of the
+         * tailwind.config.js source. Bounded by the next `'nav-`
+         * sibling key — keeps the assertion's negative checks
+         * from bleeding into a later keyframe.
+         */
+        function iridescentKeyframeSlice(): string {
+            const declStart = TAILWIND_CONFIG.indexOf(
+                "'nav-row-iridescent': {",
+            );
+            if (declStart < 0) return '';
+            const tail = TAILWIND_CONFIG.slice(declStart);
+            const ownKeyEnd = "'nav-row-iridescent': {".length;
+            const afterOwn = tail.slice(ownKeyEnd);
+            const nextNavOffset = afterOwn.indexOf("'nav-");
+            if (nextNavOffset < 0) {
+                const animKeyIdx = tail.indexOf('animation:');
+                return animKeyIdx < 0 ? tail.slice(0, 800) : tail.slice(0, animKeyIdx);
+            }
+            return tail.slice(0, ownKeyEnd + nextNavOffset);
+        }
+
         it('animates `outline-color` (separate property from box-shadow)', () => {
             // Outline is the seventh motion channel. The R15 motion
             // language now spans seven orthogonal CSS properties:
             //   opacity, transform, background-position, filter,
             //   clip-path, box-shadow, outline-color
-            const declStart = TAILWIND_CONFIG.indexOf(
-                "'nav-row-iridescent': {",
+            //
+            // Match every stop's property name inside the keyframe
+            // block — each must be `outline-color`, no other.
+            // Slicing-then-grepping is fragile because subsequent
+            // keyframes' COMMENTS mention the banned properties;
+            // assertion-per-stop is the robust shape.
+            const slice = iridescentKeyframeSlice();
+            expect(slice.length).toBeGreaterThan(0);
+            const propertyMatches =
+                slice.match(/'(\w[\w-]*)':\s*'[^']+'/g) ?? [];
+            // Filter out the outer `'nav-row-iridescent':` key
+            // match itself — only stop-level property bindings
+            // matter here.
+            const stopProperties = propertyMatches.filter(
+                (m) => !m.startsWith("'nav-"),
             );
-            expect(declStart).toBeGreaterThan(-1);
-            // Bound the keyframe by walking forward to the next
-            // sibling-level identifier. The next top-level key
-            // after the keyframes block is `animation:`.
-            const tail = TAILWIND_CONFIG.slice(declStart);
-            const animKeyIdx = tail.indexOf('animation:');
-            const slice =
-                animKeyIdx < 0
-                    ? tail.slice(0, 800)
-                    : tail.slice(0, animKeyIdx);
-            expect(slice).toMatch(/'outline-color':/);
-            expect(slice).not.toContain('transform');
-            expect(slice).not.toContain('box-shadow');
-            expect(slice).not.toContain('background-position');
-            expect(slice).not.toContain('filter:');
-            expect(slice).not.toContain('clip-path');
-            expect(slice).not.toContain('opacity');
+            expect(stopProperties.length).toBeGreaterThanOrEqual(3);
+            for (const stop of stopProperties) {
+                expect(stop).toMatch(/^'outline-color':/);
+            }
         });
 
         it('cycles through THREE brand palette stops', () => {
@@ -112,13 +134,7 @@ describe('Roadmap-15 PR-6 — iridescent gradient border on hover', () => {
             // reads two-stop oscillation as deliberate / mechanical.
             // Three stops with the loop returning to the start
             // colour is the canonical iridescent shape.
-            const declStart = TAILWIND_CONFIG.indexOf(
-                "'nav-row-iridescent': {",
-            );
-            const tail = TAILWIND_CONFIG.slice(declStart);
-            const animKeyIdx = tail.indexOf('animation:');
-            const slice =
-                animKeyIdx < 0 ? tail.slice(0, 800) : tail.slice(0, animKeyIdx);
+            const slice = iridescentKeyframeSlice();
             // 0%/100% — primary brand.
             expect(slice).toMatch(
                 /'0%,\s*100%':\s*\{\s*'outline-color':\s*'var\(--brand-default\)'/,
@@ -136,11 +152,7 @@ describe('Roadmap-15 PR-6 — iridescent gradient border on hover', () => {
         it('returns to the start colour at 100% (palindrome shape)', () => {
             // 0% / 100% sharing the same colour is what makes the
             // infinite loop seamless — no hard jump at the seam.
-            const declStart = TAILWIND_CONFIG.indexOf(
-                "'nav-row-iridescent': {",
-            );
-            const tail = TAILWIND_CONFIG.slice(declStart);
-            const slice = tail.slice(0, 800);
+            const slice = iridescentKeyframeSlice();
             expect(slice).toMatch(
                 /'0%,\s*100%':\s*\{\s*'outline-color':\s*'var\(--brand-default\)'/,
             );
@@ -204,9 +216,18 @@ describe('Roadmap-15 PR-6 — iridescent gradient border on hover', () => {
             // colour-cycle on hover only. Without this, the
             // outline would be a single static colour — visually
             // dead.
-            expect(defaultRecipe).toMatch(
-                /\bhover:animate-nav-row-iridescent\b/,
-            );
+            //
+            // R15-PR7 introduced the composed `nav-row-hover-
+            // alive` utility that chains the iridescent cycle and
+            // the one-shot liquid sweep into a single animation
+            // class. Both forms preserve the iridescent contract —
+            // the composed entry embeds `nav-row-iridescent 3s
+            // ease-in-out infinite` as its first track.
+            const iridescentForm =
+                /\bhover:animate-nav-row-iridescent\b/.test(defaultRecipe);
+            const composedForm =
+                /\bhover:animate-nav-row-hover-alive\b/.test(defaultRecipe);
+            expect(iridescentForm || composedForm).toBe(true);
         });
     });
 
