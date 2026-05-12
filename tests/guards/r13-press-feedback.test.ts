@@ -139,14 +139,16 @@ describe('Roadmap-13 PR-8 — press feedback (the one allowed transform)', () =>
             );
         });
 
-        it('the exempt-list size limit is bumped to 6', () => {
-            // 5 was the cap before R13. 6 is the new cap after the
-            // nav-item broadening. A future PR that adds a 7th
-            // exempt has to argue against this ratchet — the rule
-            // is "decorative lift is suspicious; new exemptions
-            // need explicit broadening rationale next to the file".
+        it('the exempt-list size limit is in place (current ceiling: 10)', () => {
+            // 5 was the cap before R13. R13-PR8 bumped it to 6 to
+            // admit nav-item.tsx. R14 broadened it to 11 to admit
+            // the top-bar slot family (nav-bar.tsx + 4 slot files);
+            // the searchbar-kill sweep retired SearchAnchor and the
+            // cap dropped back to 10. Lock the CURRENT cap — the
+            // motion-language ratchet itself owns this number, and
+            // any future broadening must argue there.
             expect(MOTION_GUARD_SRC).toMatch(
-                /EXEMPT_FILES\.size\)\.toBeLessThanOrEqual\(6\)/,
+                /EXEMPT_FILES\.size\)\.toBeLessThanOrEqual\(10\)/,
             );
         });
 

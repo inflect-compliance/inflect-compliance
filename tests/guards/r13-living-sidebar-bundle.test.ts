@@ -96,16 +96,24 @@ describe('Roadmap-13 PR-12 — Living Sidebar capstone bundle', () => {
     });
 
     describe('PR-2 — 3-stop gradient + soft glow', () => {
-        it('band gradient: from-default → via-muted → to-emphasis', () => {
-            expect(bandBaseRegion).toMatch(
-                /before:from-\[var\(--brand-default\)\]/,
-            );
-            expect(bandBaseRegion).toMatch(
-                /before:via-\[var\(--brand-muted\)\]/,
-            );
-            expect(bandBaseRegion).toMatch(
-                /before:to-\[var\(--brand-emphasis\)\]/,
-            );
+        it('band gradient: default → muted → emphasis (utility OR R15-PR1 arbitrary form)', () => {
+            // R15-PR1 switched the gradient from Tailwind utility
+            // classes (`before:from-...`, `before:via-...`,
+            // `before:to-...`) to a single comprehensive
+            // `before:bg-[...]` arbitrary value so the stardust
+            // particle layers could be stacked on top. Both forms
+            // preserve the three brand stops in order — accept
+            // either here.
+            const utilityForm =
+                /before:from-\[var\(--brand-default\)\]/.test(bandBaseRegion) &&
+                /before:via-\[var\(--brand-muted\)\]/.test(bandBaseRegion) &&
+                /before:to-\[var\(--brand-emphasis\)\]/.test(bandBaseRegion);
+            const arbitraryForm =
+                /linear-gradient\(to_bottom,/.test(bandBaseRegion) &&
+                /var\(--brand-default\)/.test(bandBaseRegion) &&
+                /var\(--brand-muted\)/.test(bandBaseRegion) &&
+                /var\(--brand-emphasis\)/.test(bandBaseRegion);
+            expect(utilityForm || arbitraryForm).toBe(true);
         });
         it('band glow wired via --nav-band-glow', () => {
             expect(bandBaseRegion).toMatch(
@@ -123,16 +131,30 @@ describe('Roadmap-13 PR-12 — Living Sidebar capstone bundle', () => {
                 /'nav-band-shimmer':\s*'nav-band-shimmer\s+4s\s+ease-in-out\s+infinite'/,
             );
         });
-        it('background-size 100% 200% in band base; shimmer gated hover + active', () => {
+        it('background-size 100% 200% in band base; shimmer gated hover + active (single-track OR R15-PR2 alive-composed)', () => {
+            // R15-PR2 broadened the band's animation utility from
+            // `nav-band-shimmer` (single-track) to `nav-band-alive`
+            // (composed: shimmer + halo-breath). The `nav-band-alive`
+            // entry in tailwind.config.js embeds `nav-band-shimmer
+            // 4s ease-in-out infinite` as its first track, so the
+            // R13-PR3 visual contract holds either way. Accept both
+            // utility names here.
             expect(bandBaseRegion).toMatch(
                 /before:\[background-size:100%_200%\]/,
             );
-            expect(defaultRecipe).toMatch(
-                /hover:before:animate-nav-band-shimmer/,
+            const defaultShimmer =
+                /hover:before:animate-nav-band-shimmer\b/.test(defaultRecipe);
+            const defaultAlive = /hover:before:animate-nav-band-alive\b/.test(
+                defaultRecipe,
             );
-            expect(activeRecipe).toMatch(
-                /(?<!hover:)before:animate-nav-band-shimmer/,
-            );
+            expect(defaultShimmer || defaultAlive).toBe(true);
+            const activeShimmer =
+                /(?<!hover:)before:animate-nav-band-shimmer\b/.test(
+                    activeRecipe,
+                );
+            const activeAlive =
+                /(?<!hover:)before:animate-nav-band-alive\b/.test(activeRecipe);
+            expect(activeShimmer || activeAlive).toBe(true);
         });
     });
 
@@ -224,8 +246,13 @@ describe('Roadmap-13 PR-12 — Living Sidebar capstone bundle', () => {
             expect(MOTION_GUARD_SRC).toMatch(
                 /['"]src\/components\/layout\/nav-item\.tsx['"]/,
             );
+            // The cap moved from 6 (R13 ceiling) to 11 (R14 broadened
+            // for the top-bar slot family) and back to 10 (searchbar-
+            // kill sweep retired SearchAnchor + its entry). Lock the
+            // current cap as a single digit; future broadenings need
+            // to be argued at the motion-language ratchet itself.
             expect(MOTION_GUARD_SRC).toMatch(
-                /EXEMPT_FILES\.size\)\.toBeLessThanOrEqual\(6\)/,
+                /EXEMPT_FILES\.size\)\.toBeLessThanOrEqual\(10\)/,
             );
         });
     });

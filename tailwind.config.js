@@ -214,6 +214,19 @@ module.exports = {
                     '0%, 100%': { 'background-position': '0% 50%' },
                     '50%': { 'background-position': '100% 50%' },
                 },
+                // R15-PR2 — asymmetric halo breath on the NavItem
+                // band's ::before. Animates `filter: brightness()`
+                // so the band's whole rendered surface (gradient +
+                // stardust particles + glow) softly pulses brighter
+                // and back over 6 seconds. Crucially OFFSET from
+                // the 4-second shimmer — 4s and 6s never sync
+                // (LCM 12s), so the two rhythms continuously drift
+                // out of phase. Visual asynchrony reads as "alive"
+                // where synchronised rhythms read as "mechanical".
+                'nav-band-halo-breath': {
+                    '0%, 100%': { filter: 'brightness(1)' },
+                    '50%': { filter: 'brightness(1.25)' },
+                },
             },
             animation: {
                 'slide-up-fade': 'slide-up-fade 0.2s ease-out',
@@ -241,6 +254,27 @@ module.exports = {
                 //     tempos let the eye treat each as a separate
                 //     piece of choreography.
                 'nav-brand-pulse': 'nav-brand-pulse 6s ease-in-out infinite',
+                // 6s — same tempo as the brand-mark pulse, but on
+                // the NavItem band. The shimmer-shift (4s) and the
+                // halo-breath (6s) are deliberately mismatched so
+                // they never re-sync; the band feels continuously
+                // alive instead of mechanically looping.
+                'nav-band-halo-breath':
+                    'nav-band-halo-breath 6s ease-in-out infinite',
+                // R15-PR2 — combined "alive" animation that chains
+                // the R13-PR3 shimmer pan (4s) and the R15-PR2 halo
+                // breath (6s) on the same ::before pseudo-element.
+                // CSS's `animation` property accepts a comma-
+                // separated list — each entry gets its own timeline.
+                // 4s and 6s have an LCM of 12s but their phase
+                // never coincides except at multiples of 12s, so
+                // the band reads as continuously evolving for
+                // every glance shorter than 12 seconds (i.e.
+                // always, in practice). A consumer applies a
+                // single `animate-nav-band-alive` utility and gets
+                // both animations composed.
+                'nav-band-alive':
+                    'nav-band-shimmer 4s ease-in-out infinite, nav-band-halo-breath 6s ease-in-out infinite',
             },
         },
     },

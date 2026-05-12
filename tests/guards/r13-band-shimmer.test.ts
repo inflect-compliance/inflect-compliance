@@ -142,18 +142,36 @@ describe('Roadmap-13 PR-3 — band shimmer animation', () => {
             // 20+ invisible rows. `hover:before:animate-...` only
             // fires while the row is pointed at, which is also the
             // only moment the band is opacity-1 in the default state.
+            //
+            // R15-PR2 broadened the animation utility from
+            // `nav-band-shimmer` (single-track) to `nav-band-alive`
+            // (composed: shimmer + halo-breath). Both forms are
+            // accepted here — the load-bearing piece is that the
+            // 4-second shimmer pan reaches the rendered surface;
+            // the `nav-band-alive` keyframe definition (asserted
+            // separately by the R15-PR2 ratchet) embeds
+            // `nav-band-shimmer 4s ease-in-out infinite` as its
+            // first track, so the visual contract is preserved.
             const defaultRecipe =
                 NAV_ITEM_SRC.match(
                     /export\s+const\s+NAV_ITEM_DEFAULT\s*=\s*['"]([^'"]+)['"]/,
                 )?.[1] ?? '';
-            expect(defaultRecipe).toMatch(
-                /hover:before:animate-nav-band-shimmer/,
+            const shimmerForm = /hover:before:animate-nav-band-shimmer\b/.test(
+                defaultRecipe,
             );
-            // Critical: the un-prefixed animate-nav-band-shimmer
-            // must NOT appear in the default recipe — that would
-            // run the animation even when the band is opacity-0.
+            const aliveForm = /hover:before:animate-nav-band-alive\b/.test(
+                defaultRecipe,
+            );
+            expect(shimmerForm || aliveForm).toBe(true);
+            // Critical: the un-prefixed animate utility (either
+            // form) must NOT appear in the default recipe — that
+            // would run the animation even when the band is
+            // opacity-0.
             expect(defaultRecipe).not.toMatch(
-                /(?<!hover:before:)animate-nav-band-shimmer/,
+                /(?<!hover:before:)animate-nav-band-shimmer\b/,
+            );
+            expect(defaultRecipe).not.toMatch(
+                /(?<!hover:before:)animate-nav-band-alive\b/,
             );
         });
 
@@ -162,17 +180,30 @@ describe('Roadmap-13 PR-3 — band shimmer animation', () => {
             // shimmer runs permanently too — that's part of what
             // makes the current page feel "alive" vs the static
             // hovered rows.
+            //
+            // R15-PR2 broadened to `nav-band-alive` (shimmer +
+            // halo-breath composed). Both forms accepted; the
+            // `nav-band-alive` definition embeds `nav-band-shimmer
+            // 4s ease-in-out infinite` so the underlying contract
+            // holds either way.
             const activeRecipe =
                 NAV_ITEM_SRC.match(
                     /export\s+const\s+NAV_ITEM_ACTIVE\s*=\s*['"]([^'"]+)['"]/,
                 )?.[1] ?? '';
-            expect(activeRecipe).toMatch(
-                /before:animate-nav-band-shimmer/,
+            const shimmerForm = /before:animate-nav-band-shimmer\b/.test(
+                activeRecipe,
             );
+            const aliveForm = /before:animate-nav-band-alive\b/.test(
+                activeRecipe,
+            );
+            expect(shimmerForm || aliveForm).toBe(true);
             // No hover prefix in active — the active recipe is
             // un-gated.
             expect(activeRecipe).not.toMatch(
-                /hover:before:animate-nav-band-shimmer/,
+                /hover:before:animate-nav-band-shimmer\b/,
+            );
+            expect(activeRecipe).not.toMatch(
+                /hover:before:animate-nav-band-alive\b/,
             );
         });
     });

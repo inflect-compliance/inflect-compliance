@@ -361,7 +361,7 @@ export const NAV_ITEM_BASE = [
  * colour only — locked by the motion-language ratchet.
  */
 export const NAV_ITEM_DEFAULT =
-    'text-content-muted hover:text-content-emphasis hover:before:opacity-100 hover:before:animate-nav-band-shimmer hover:before:top-1 hover:before:bottom-1 hover:before:w-[4px] hover:after:opacity-100 hover:shadow-[var(--nav-bevel-shadow)]';
+    'text-content-muted hover:text-content-emphasis hover:before:opacity-100 hover:before:animate-nav-band-alive hover:before:top-1 hover:before:bottom-1 hover:before:w-[4px] hover:after:opacity-100 hover:shadow-[var(--nav-bevel-shadow)]';
 
 /**
  * Active state — conviction. (R12-PR6 lock, R13-PR4 evolution.)
@@ -398,8 +398,14 @@ export const NAV_ITEM_DEFAULT =
  *       the warm/cool contrast moved to band-cool + label-warm
  *       (label is `text-[var(--brand-default)]`).
  *
- *   (3) `before:opacity-100 before:animate-nav-band-shimmer`
- *       Band held visible permanently + slow-pulsing.
+ *   (3) `before:opacity-100 before:animate-nav-band-alive`
+ *       Band held visible permanently + composed alive-motion
+ *       (R15-PR2): `nav-band-alive` chains the 4-second shimmer
+ *       pan and the 6-second halo-breath brightness pulse onto
+ *       the same `::before`. The 4s/6s mismatch (LCM 12s) means
+ *       the two timelines never re-sync for any glance shorter
+ *       than 12 seconds — the band reads as continuously
+ *       evolving rather than mechanically looping.
  *
  *   (4) Secondary-brand band overrides (R13-PR4)
  *       Each stop on the band's 3-stop gradient is overridden with
@@ -427,7 +433,7 @@ export const NAV_ITEM_DEFAULT =
  * five secondary-brand override classes + the navy-glow plumbing.
  */
 export const NAV_ITEM_ACTIVE =
-    'text-[var(--brand-default)] bg-[radial-gradient(circle_at_left,_var(--brand-secondary-subtle),_transparent_75%)] before:opacity-100 before:animate-nav-band-shimmer before:top-1! before:bottom-1! before:w-[4px]! before:from-[var(--brand-secondary-default)]! before:via-[var(--brand-secondary-muted)]! before:to-[var(--brand-secondary-emphasis)]! before:shadow-[var(--nav-band-glow-active)]! after:opacity-100 shadow-[var(--nav-bevel-shadow)] font-medium';
+    'text-[var(--brand-default)] bg-[radial-gradient(circle_at_left,_var(--brand-secondary-subtle),_transparent_75%)] before:opacity-100 before:animate-nav-band-alive before:top-1! before:bottom-1! before:w-[4px]! before:from-[var(--brand-secondary-default)]! before:via-[var(--brand-secondary-muted)]! before:to-[var(--brand-secondary-emphasis)]! before:shadow-[var(--nav-band-glow-active)]! after:opacity-100 shadow-[var(--nav-bevel-shadow)] font-medium';
 
 /**
  * Badge recipe — aligned + breathing. (R12-PR8 lock.)
