@@ -72,12 +72,20 @@ describe('Roadmap-14 PR-2 — NavBar geometry discipline', () => {
             );
         });
 
-        it('exports NAV_BAR_SURFACE with border + glass-blur recipe', () => {
-            // Glass surface — bg-bg-page/80 backdrop-blur-sm gives
-            // the frosted look. The /80 alpha + sm-blur is the
-            // recipe that doesn't stutter under scrolling content.
+        it('exports NAV_BAR_SURFACE with the glass-blur recipe', () => {
+            // Glass surface — bg-bg-page/80 backdrop-blur-sm is the
+            // load-bearing piece (frosted look that doesn't stutter
+            // under scrolling content). R14-PR2 originally bundled
+            // `border-b border-border-subtle` here; R14-PR10 retired
+            // the flat border in favour of a `::before` fading
+            // gradient hairline (NAV_BAR_BOTTOM_HAIRLINE) — see the
+            // doc-comment on the const for the evolution rationale.
+            //
+            // The glass-blur recipe is the load-bearing part this
+            // assertion locks; the border evolution lives elsewhere
+            // in the R14-PR10 ratchet.
             expect(NAV_BAR_SRC).toMatch(
-                /export\s+const\s+NAV_BAR_SURFACE\s*=\s*[\s\S]*?border-b[\s\S]*?border-border-subtle[\s\S]*?bg-bg-page\/80[\s\S]*?backdrop-blur-sm/,
+                /export\s+const\s+NAV_BAR_SURFACE\s*=\s*[\s\S]*?bg-bg-page\/80[\s\S]*?backdrop-blur-sm/,
             );
         });
     });

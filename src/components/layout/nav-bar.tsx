@@ -125,23 +125,61 @@ export const NAV_BAR_GAP = 'gap-default';
 export const NAV_BAR_POSITION = 'sticky top-0 z-30';
 
 /**
- * **Bottom border + glass blur surface.** The bar reads as
- * "elevated" — slightly translucent over the page bg, with a
- * 1px bottom rule that defines the seam where chrome ends and
- * page content begins.
+ * **Living-chrome surface — glass + radial brand wash.** R14-PR10
+ * evolves the R14-PR2 base.
  *
- * `bg-bg-page/80 backdrop-blur-sm` gives the frosted-glass effect
- * the macOS / Notion / Linear nav chromes all converge on. The
- * `/80` alpha + `blur-sm` is the recipe that doesn't choke on
- * scrolling content underneath (heavier blur stutters on lower-end
- * GPUs).
+ * Three layered pieces (the bar reads as one cohesive surface):
  *
- * `border-b border-border-subtle` is the seam. R14-PR10 will
- * replace the flat border with a fading horizontal gradient
- * (matching `nav-section.tsx`'s R13-PR10 evolution).
+ *   (1) `bg-bg-page/80` — the frosted-glass tint over the page bg.
+ *       `/80` alpha + `backdrop-blur-sm` is the recipe the macOS /
+ *       Notion / Linear nav chromes all converge on; doesn't choke
+ *       on scrolling content underneath.
+ *
+ *   (2) `[background-image:radial-gradient(circle at right,
+ *       --brand-subtle, transparent 60%)]` — a brand-tinted radial
+ *       wash anchored at the right edge (where the user menu
+ *       lives). Mirrors R13-PR11's active-row treatment but at the
+ *       global chrome level. The right-anchored wash gives the bar
+ *       a quiet brand presence without overwhelming the centre
+ *       (where the search anchor lives) or the breadcrumbs (left
+ *       slot).
+ *
+ *   (3) The bottom-edge fading-gradient hairline + top-edge gloss
+ *       are NOT in this recipe — they live in NAV_BAR_SHELL via
+ *       `::before` / `::after` pseudo-elements (R13-PR10 +
+ *       R13-PR6 parity, transplanted to the chrome).
+ *
+ * `border-b border-border-subtle` (R14-PR2 inline form) is RETIRED
+ * — the structural ratchet at
+ * `tests/guards/r14-nav-bar-geometry-discipline.test.ts` accepts
+ * either form (the R14-PR10 evolution is documented inline).
  */
 export const NAV_BAR_SURFACE =
-    'border-b border-border-subtle bg-bg-page/80 backdrop-blur-sm';
+    'bg-bg-page/80 backdrop-blur-sm [background-image:radial-gradient(circle_at_right,_var(--brand-subtle),_transparent_60%)]';
+
+/**
+ * **Bottom-edge fading hairline (R13-PR10 parity).**
+ *
+ * Replaces the R14-PR2-era `border-b border-border-subtle` with a
+ * `::before` pseudo-element painting a horizontal gradient that
+ * fades from transparent at each edge to `--border-subtle` at
+ * centre and back to transparent. The seam reads as breath, not
+ * architecture — same evolution `<NavSection>` made in R13-PR10.
+ */
+export const NAV_BAR_BOTTOM_HAIRLINE =
+    'before:absolute before:bottom-0 before:left-0 before:right-0 before:h-px before:bg-[linear-gradient(90deg,_transparent,_var(--border-subtle),_transparent)] before:pointer-events-none';
+
+/**
+ * **Top-edge gloss highlight (R13-PR6 parity).**
+ *
+ * A 1px highlight at the top edge of the chrome, inset 16px each
+ * side so it doesn't run all the way to the corners — same recipe
+ * as `<NavItem>`'s gloss treatment from R13-PR6, scaled up to the
+ * chrome's geometry. Theme-aware via `--nav-gloss-highlight`
+ * (white @ 8% METRO, white @ 70% PwC).
+ */
+export const NAV_BAR_TOP_GLOSS =
+    'after:absolute after:top-0 after:left-4 after:right-4 after:h-px after:bg-[var(--nav-gloss-highlight)] after:rounded-full after:pointer-events-none';
 
 /**
  * Shell recipe — composes the five geometry tokens above into the
@@ -159,9 +197,15 @@ export const NAV_BAR_SHELL = [
     'hidden md:flex',
     NAV_BAR_POSITION,
     NAV_BAR_HEIGHT,
-    'items-center justify-between',
+    // `relative` anchors the `::before` (bottom hairline) and
+    // `::after` (top gloss) pseudo-elements. Without it the
+    // pseudo's absolute positioning escapes to the next
+    // positioned ancestor.
+    'relative items-center justify-between',
     NAV_BAR_GAP,
     NAV_BAR_SURFACE,
+    NAV_BAR_BOTTOM_HAIRLINE,
+    NAV_BAR_TOP_GLOSS,
     NAV_BAR_PADDING,
 ].join(' ');
 
