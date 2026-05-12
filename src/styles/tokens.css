@@ -81,6 +81,7 @@
    */
   --brand-secondary-default:  #3B82F6;                /* electric blue — secondary brand, complementary to yellow */
   --brand-secondary-emphasis: #2563EB;                /* deeper blue — primary band stop, active surfaces */
+  --brand-secondary-muted:    #60A5FA;                /* lighter blue — band highlight midstop, hover accent (R13-PR4) */
   --brand-secondary-subtle:   rgba(59, 130, 246, 0.18); /* blue @ 18% — secondary tint backgrounds */
 
   /* ── Status: Success ───────────────────────────────────────────── */
@@ -156,6 +157,17 @@
    * smoky, narrower disappears at non-Retina rendering.
    */
   --nav-band-glow: 0 0 6px rgba(255, 205, 17, 0.35);
+
+  /* ── Sidebar band glow — ACTIVE variant (R13-PR4) ──────────────── */
+  /*
+   * When a NavItem is the current page, the band's gradient swaps
+   * from primary brand (yellow) to secondary brand (electric blue).
+   * The glow follows — same 6px blur radius, same 35% alpha, but
+   * tuned to the blue family so the aura around the band matches
+   * its stops. A mismatched glow (yellow around a blue band) would
+   * read as accidental colour bleed.
+   */
+  --nav-band-glow-active: 0 0 6px rgba(59, 130, 246, 0.35);
 }
 
 
@@ -223,6 +235,7 @@
    */
   --brand-secondary-default:  #1E3A8A;                /* deep navy — secondary brand, complementary to orange */
   --brand-secondary-emphasis: #172554;                /* deeper navy — primary band stop, active surfaces */
+  --brand-secondary-muted:    #3B82F6;                /* lighter blue — band highlight midstop, hover accent (R13-PR4) */
   --brand-secondary-subtle:   rgba(30, 58, 138, 0.09); /* navy @ 9% — secondary tint backgrounds */
 
   /* ── Status: Success ───────────────────────────────────────────── */
@@ -288,6 +301,16 @@
    * vision without compromising legibility of the band itself.
    */
   --nav-band-glow: 0 0 6px rgba(208, 74, 2, 0.35);
+
+  /* ── Sidebar band glow — ACTIVE variant (R13-PR4) ──────────────── */
+  /*
+   * PwC active rows paint the band with deep navy. The active glow
+   * is the navy hue at the same 35% alpha — keeps the aura coherent
+   * with the band's stops. Geometry matches the METRO glow (6px
+   * blur) so the visual weight of the active state feels balanced
+   * across themes.
+   */
+  --nav-band-glow-active: 0 0 6px rgba(30, 58, 138, 0.35);
 }
 
 /* ─────────────────────────────────────────────────────────────────

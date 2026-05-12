@@ -281,56 +281,58 @@ export const NAV_ITEM_DEFAULT =
     'text-content-muted hover:text-content-emphasis hover:before:opacity-100 hover:before:animate-nav-band-shimmer';
 
 /**
- * Active state — conviction. (R12-PR6 lock.)
+ * Active state — conviction. (R12-PR6 lock, R13-PR4 evolution.)
  *
  * The active row tells you which page you're on. It has to read
  * as "settled" — not louder than the surrounding rows, not
- * quieter. Conviction expressed through FOUR co-operating
- * tokens, no single one shouting:
+ * quieter. R12-PR6 expressed conviction through four cooperating
+ * tokens (text-content-emphasis + brand-subtle bg + opacity-100
+ * band + font-medium). R13-PR4 adds a FIFTH dimension: the band's
+ * gradient swaps to the SECONDARY brand (cool blue/navy), making
+ * the active row visually distinct from any hovered row without
+ * shouting.
+ *
+ * Five cooperating tokens, no single one shouting:
  *
  *   (1) `text-content-emphasis`
  *       One rung brighter than the muted default text. Same
  *       colour the label hits on hover, but held permanently.
- *       The eye reads "this row's label is awake."
+ *       (R13-PR5 will further evolve this to brand-coloured letters.)
  *
  *   (2) `bg-[var(--brand-subtle)]`
- *       A brand-tinted wash, ~9% (PwC orange) or ~18% (METRO
- *       yellow) over the page bg. This is what distinguishes
- *       ACTIVE from HOVER — hover shows just the band; active
- *       commits with the wash. The wash is the "you are here"
- *       claim.
+ *       A primary-brand-tinted wash, ~9% (PwC) or ~18% (METRO).
+ *       Cool band + warm wash = the temperature contrast the eye
+ *       reads as "lit on a surface".
  *
- *   (3) `before:opacity-100`
- *       The brand-gradient capsule band from R12-PR5, held
- *       permanently at full opacity. Same mechanism as hover
- *       (see `NAV_ITEM_BAND_BASE`), but un-gated. The band is
- *       the jewellery.
+ *   (3) `before:opacity-100 before:animate-nav-band-shimmer`
+ *       Band held visible permanently + slow-pulsing.
  *
- *   (4) `font-medium`
- *       One weight up from regular (400 → 500). The smallest
- *       possible step. Anything bolder (600+) reads as a
- *       HEADING, not a row label. The weight bump is what lets
- *       the eye pick the active row at a glance without
- *       reading; it parses as "denser ink".
+ *   (4) Secondary-brand band overrides (R13-PR4)
+ *       Each stop on the band's 3-stop gradient is overridden with
+ *       the `!` important modifier to the brand-secondary
+ *       counterpart. The `!` is required: BASE declares the
+ *       primary-brand stops; ACTIVE needs to override them with
+ *       unambiguous precedence regardless of Tailwind's JIT compile
+ *       order. The glow swaps too — `--nav-band-glow-active`
+ *       resolves to a navy-coloured 6px blur, so the aura around
+ *       the band stays coherent with the band's stops.
  *
- * Why none of these alone, or fewer of them?
- *   - Just the band: looks identical to hover. No "settled".
- *   - Just the bg: looks like the row's selected for a batch
- *     action.
- *   - Just the text colour: too subtle on light theme.
- *   - Just font-weight: reads as a heading.
- *
- * The conviction comes from all four firing TOGETHER. Locked by
- * `tests/guards/nav-item-active-state-discipline.test.ts`.
+ *   (5) `font-medium`
+ *       One weight up from regular (400 → 500). Anything bolder
+ *       reads as a heading.
  *
  * Visual progression — default → hover → active:
  *   default  no band, muted text, no bg
- *   hover    band fades in, text brightens, NO bg
- *   active   band stays lit, text + weight stay, brand-subtle bg
- *            arrives (the "settled in" surface)
+ *   hover    primary-brand band fades in (warm yellow/orange)
+ *   active   primary-brand wash + SECONDARY-brand band (cool)
+ *            + emphasis text + font-medium + shimmer pulse
+ *
+ * R13-PR4 ratchet at
+ * `tests/guards/r13-active-band-secondary.test.ts` locks the
+ * five secondary-brand override classes + the navy-glow plumbing.
  */
 export const NAV_ITEM_ACTIVE =
-    'text-content-emphasis bg-[var(--brand-subtle)] before:opacity-100 before:animate-nav-band-shimmer font-medium';
+    'text-content-emphasis bg-[var(--brand-subtle)] before:opacity-100 before:animate-nav-band-shimmer before:from-[var(--brand-secondary-default)]! before:via-[var(--brand-secondary-muted)]! before:to-[var(--brand-secondary-emphasis)]! before:shadow-[var(--nav-band-glow-active)]! font-medium';
 
 /**
  * Badge recipe — aligned + breathing. (R12-PR8 lock.)
