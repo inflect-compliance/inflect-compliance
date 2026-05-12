@@ -42,17 +42,22 @@ describe('Top-chrome discipline (Roadmap-2 PR-2)', () => {
         expect(src).toMatch(/<TopChrome\b/);
     });
 
-    it('TopChrome renders breadcrumbs + identity pill', () => {
+    it('TopChrome renders breadcrumbs + identity affordance', () => {
         const src = read('src/components/layout/TopChrome.tsx');
         // Each region is owned by a named component or a direct
         // `<Breadcrumbs>` mount. The ratchet binds to the names
         // not the layout, so a future visual refactor can move
         // them around without breaking the contract.
         expect(src).toMatch(/<Breadcrumbs\b/);
-        // Either pill must be possible — TopChrome picks one based
-        // on variant. The ratchet asserts both names appear in
-        // the import list so a future PR can't silently drop one.
-        expect(src).toMatch(/TenantIdentityPill/);
+        // R14-PR4 evolved the tenant variant from the passive
+        // `TenantIdentityPill` (R2) to the popover-driven
+        // `TenantSwitcher`. Org variant continues to mount the
+        // passive pill until a future PR extends. Either name
+        // satisfies the tenant side of the contract; OrgIdentityPill
+        // is still required for the org side.
+        const hasTenantAffordance =
+            /TenantIdentityPill/.test(src) || /TenantSwitcher/.test(src);
+        expect(hasTenantAffordance).toBe(true);
         expect(src).toMatch(/OrgIdentityPill/);
     });
 

@@ -20,10 +20,13 @@
  *     R14-PR7 adds the notifications bell.
  *
  * The chrome is mounted once by `<AppShell>` and routes through
- * the variant-specific identity context — `<TenantIdentityPill>`
- * reads `useTenantContext`; `<OrgIdentityPill>` reads
- * `useOrgContext`. AppShell picks based on its `variant` prop, so
- * each pill calls its hook unconditionally and never throws.
+ * the variant-specific identity context. R14-PR4 evolved the
+ * tenant variant from the passive R2 identity pill to a
+ * `<TenantSwitcher>` popover; the org variant continues to mount
+ * the passive `<OrgIdentityPill>` until a future PR extends. Each
+ * affordance calls its own context hook (`useTenantContext` /
+ * `useOrgContext`) unconditionally and never throws — AppShell's
+ * `variant` prop picks the right one for the route.
  *
  * Mobile (<md): the chrome is hidden — the pre-existing mobile top
  * bar inside `<AppShell>` continues to handle nav-toggle + theme.
@@ -33,7 +36,8 @@
 import { useParams } from 'next/navigation';
 import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 import { useCurrentBreadcrumbs } from './breadcrumbs-store';
-import { TenantIdentityPill, OrgIdentityPill } from './IdentityPill';
+import { OrgIdentityPill } from './IdentityPill';
+import { TenantSwitcher } from './tenant-switcher';
 import type { AppShellVariant } from './AppShell';
 import { NavBar, NavBarBrand } from './nav-bar';
 
@@ -54,8 +58,12 @@ interface TopChromeProps {
 export function TopChrome({ variant }: TopChromeProps) {
     const breadcrumbs = useCurrentBreadcrumbs();
     const params = useParams();
+    // R14-PR4 — tenant variant now mounts the workspace switcher
+    // (popover-driven). Org variant continues to mount the passive
+    // identity pill until a future PR extends the switcher pattern
+    // to organizations.
     const Identity =
-        variant === 'org' ? OrgIdentityPill : TenantIdentityPill;
+        variant === 'org' ? OrgIdentityPill : TenantSwitcher;
 
     // The brand mark's destination is the current variant's root.
     // Tenant pages: dashboard is the canonical landing surface.
