@@ -227,6 +227,29 @@ module.exports = {
                     '0%, 100%': { filter: 'brightness(1)' },
                     '50%': { filter: 'brightness(1.25)' },
                 },
+                // R15-PR3 — top-to-bottom reveal sweep on the NavItem
+                // band's ::before. Animates `clip-path: inset(...)`
+                // from `inset(100% 0 0 0)` (fully clipped from below
+                // the top edge) to `inset(0)` (fully revealed). One-
+                // shot animation — fires once when the band's
+                // animation runtime engages (i.e. on hover-enter for
+                // default rows, on activation for the active row).
+                // After it completes the band's clip-path stays at
+                // `inset(0)` (no `animation-fill-mode: forwards`
+                // needed — the keyframe's 100% state is its final
+                // visible state). The eye reads the reveal as the
+                // band "drawing itself in" from the top down, like
+                // a stardust trace materializing into a line.
+                //
+                // Mechanism note: clip-path's `inset()` shape animates
+                // smoothly between matching-signature values. Other
+                // shape functions (polygon, circle) won't interpolate
+                // with inset — keeping both stops as `inset(...)` is
+                // load-bearing.
+                'nav-band-reveal-sweep': {
+                    '0%': { 'clip-path': 'inset(100% 0 0 0)' },
+                    '100%': { 'clip-path': 'inset(0 0 0 0)' },
+                },
             },
             animation: {
                 'slide-up-fade': 'slide-up-fade 0.2s ease-out',
@@ -261,20 +284,43 @@ module.exports = {
                 // alive instead of mechanically looping.
                 'nav-band-halo-breath':
                     'nav-band-halo-breath 6s ease-in-out infinite',
-                // R15-PR2 — combined "alive" animation that chains
-                // the R13-PR3 shimmer pan (4s) and the R15-PR2 halo
-                // breath (6s) on the same ::before pseudo-element.
+                // R15-PR3 — one-shot reveal sweep, fires when the
+                // band first engages (hover-enter or activation).
+                // 450ms is the slow side of "felt-but-not-noticed"
+                // — long enough for the eye to register the top-
+                // to-bottom motion as deliberate, short enough that
+                // a quick mouse-over still completes before the
+                // pointer moves away. ease-out lands the bottom
+                // edge softly rather than racing into the bottom
+                // corner. No `infinite` — the reveal plays once
+                // per engagement and lets the perpetual shimmer +
+                // halo-breath take over.
+                'nav-band-reveal-sweep':
+                    'nav-band-reveal-sweep 450ms ease-out',
+                // R15-PR2 + R15-PR3 — combined "alive" animation
+                // that composes THREE timelines on the same
+                // ::before pseudo-element:
+                //
+                //   nav-band-reveal-sweep  450ms ease-out (one-shot)
+                //   nav-band-shimmer       4s ease-in-out infinite
+                //   nav-band-halo-breath   6s ease-in-out infinite
+                //
                 // CSS's `animation` property accepts a comma-
                 // separated list — each entry gets its own timeline.
-                // 4s and 6s have an LCM of 12s but their phase
-                // never coincides except at multiples of 12s, so
-                // the band reads as continuously evolving for
-                // every glance shorter than 12 seconds (i.e.
-                // always, in practice). A consumer applies a
+                // The reveal is FIRST in the list because the eye
+                // reads animation order as visual order: the band
+                // materializes (reveal), then begins to shimmer
+                // (drift), then begins to breathe (halo pulse).
+                //
+                // The two infinite tracks have an LCM of 12s but
+                // their phase never coincides except at multiples
+                // of 12s, so the band reads as continuously
+                // evolving for every glance shorter than 12 seconds
+                // (i.e. always, in practice). A consumer applies a
                 // single `animate-nav-band-alive` utility and gets
-                // both animations composed.
+                // all three animations composed.
                 'nav-band-alive':
-                    'nav-band-shimmer 4s ease-in-out infinite, nav-band-halo-breath 6s ease-in-out infinite',
+                    'nav-band-reveal-sweep 450ms ease-out, nav-band-shimmer 4s ease-in-out infinite, nav-band-halo-breath 6s ease-in-out infinite',
             },
         },
     },
