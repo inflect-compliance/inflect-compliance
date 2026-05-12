@@ -41,6 +41,7 @@ import { TenantSwitcher } from './tenant-switcher';
 import { UserMenu } from './user-menu';
 import { SearchAnchor } from './search-anchor';
 import { NotificationsBell } from './notifications-bell';
+import { EnvironmentBadge } from './environment-badge';
 import type { AppShellVariant } from './AppShell';
 import { NavBar, NavBarBrand } from './nav-bar';
 
@@ -87,6 +88,7 @@ export function TopChrome({ variant }: TopChromeProps) {
             left={
                 <>
                     <NavBarBrand href={brandHref} />
+                    <EnvironmentBadge />
                     {breadcrumbs.length > 0 ? (
                         <Breadcrumbs
                             items={breadcrumbs}
