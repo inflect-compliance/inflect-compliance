@@ -84,13 +84,18 @@ describe('Roadmap-12 PR-5 — NavItem brand-gradient band discipline', () => {
         );
     });
 
-    it('defaults to opacity 0 and transitions opacity only', () => {
+    it('defaults to opacity 0 and transitions opacity (+ R13-PR9 geometry props)', () => {
         // The band is invisible until hover/active triggers it.
-        // Transition is opacity (not transform), 200ms ease-out
-        // — one rung slower than the 150ms text-colour transition
-        // so the band wakes JUST after the label brightens.
+        // Transition was opacity-only (R12-PR5); R13-PR9 broadened
+        // the property list to also animate top/bottom/width when
+        // the band reaches toward the cursor on hover. Both forms
+        // are accepted here — `before:transition-opacity` (R12) or
+        // `before:transition-[opacity,top,bottom,width]` (R13+).
+        // 200ms ease-out is preserved verbatim.
         expect(SRC).toMatch(/before:opacity-0\b/);
-        expect(SRC).toMatch(/before:transition-opacity/);
+        expect(SRC).toMatch(
+            /before:transition-(opacity\b|\[opacity[^\]]*\])/,
+        );
         expect(SRC).toMatch(/before:duration-200/);
         expect(SRC).toMatch(/before:ease-out/);
     });
