@@ -218,6 +218,11 @@ describe('Roadmap-15 PR-4 — active starburst bloom', () => {
             // 6s (halo-breath). Each track carries its own
             // duration explicitly so all four motions resolve
             // correctly.
+            //
+            // R15-PR5 introduced optional per-track delay slots on
+            // the perpetual tracks (shimmer + halo-breath). Allow
+            // any non-comma content between the timing function
+            // and `infinite`.
             const aliveMatch = TAILWIND_CONFIG.match(
                 /'nav-band-active-alive':\s*'([^']+)'/,
             );
@@ -227,11 +232,14 @@ describe('Roadmap-15 PR-4 — active starburst bloom', () => {
             expect(value).toMatch(
                 /nav-band-reveal-sweep\s+450ms\s+ease-out/,
             );
+            // Non-greedy match to `infinite` followed by either a
+            // comma (next track) or end-of-string — the var(...)
+            // delay slot contains its own commas.
             expect(value).toMatch(
-                /nav-band-shimmer\s+4s\s+ease-in-out\s+infinite/,
+                /nav-band-shimmer\s+4s\s+ease-in-out[\s\S]*?infinite(?=,|$)/,
             );
             expect(value).toMatch(
-                /nav-band-halo-breath\s+6s\s+ease-in-out\s+infinite/,
+                /nav-band-halo-breath\s+6s\s+ease-in-out[\s\S]*?infinite(?=,|$)/,
             );
         });
 

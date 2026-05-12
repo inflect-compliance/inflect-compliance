@@ -167,14 +167,27 @@ describe('Roadmap-15 PR-2 — band halo breath', () => {
             // halo-breath` (no durations) would use the inherited
             // animation-duration for both. Explicit per-track
             // durations are the load-bearing piece.
+            //
+            // R15-PR5 introduced optional per-track `animation-delay`
+            // values that consume CSS custom properties (e.g.
+            // `var(--nav-shimmer-delay, 0ms)`) between the timing
+            // function and the iteration keyword. Allow any
+            // non-comma content there — both with and without the
+            // delay slot satisfy the per-track duration contract.
             const aliveMatch = TAILWIND_CONFIG.match(
                 /'nav-band-alive':\s*'([^']+)'/,
             );
             expect(aliveMatch).not.toBeNull();
             const value = aliveMatch![1];
-            expect(value).toMatch(/nav-band-shimmer\s+4s\s+ease-in-out\s+infinite/);
+            // Non-greedy match to `infinite` followed by either a
+            // comma (next track) or end-of-string. The var(...)
+            // delay slot contains its own commas, so `[^,]` won't
+            // work as a bound.
             expect(value).toMatch(
-                /nav-band-halo-breath\s+6s\s+ease-in-out\s+infinite/,
+                /nav-band-shimmer\s+4s\s+ease-in-out[\s\S]*?infinite(?=,|$)/,
+            );
+            expect(value).toMatch(
+                /nav-band-halo-breath\s+6s\s+ease-in-out[\s\S]*?infinite(?=,|$)/,
             );
         });
     });

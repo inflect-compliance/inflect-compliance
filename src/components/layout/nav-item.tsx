@@ -32,6 +32,7 @@
  */
 
 import Link from 'next/link';
+import type { CSSProperties } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 
@@ -484,8 +485,63 @@ export const NAV_ITEM_ACTIVE =
 export const NAV_ITEM_BADGE =
     'ml-auto tabular-nums flex-shrink-0 animate-in fade-in duration-300';
 
+/**
+ * R15-PR5 — asymmetric per-row drift.
+ *
+ * Without staggering, every row's shimmer + halo-breath start at
+ * the same phase. The sidebar's bands then march in lockstep —
+ * easy for the eye to read as "a periodic system", which makes
+ * the carefully-tuned R15 motion feel mechanical despite the
+ * mismatched 4s/6s tempos.
+ *
+ * The fix is per-row `animation-delay` on the two PERPETUAL
+ * tracks (shimmer + halo-breath). The two ONE-SHOT tracks
+ * (reveal-sweep + starburst) keep zero delay because they're
+ * celebration moments that need to fire instantly when the row
+ * engages — staggering them would smear the "you just clicked"
+ * signal across half a second.
+ *
+ * Delays are derived from a deterministic hash of the row's
+ * slug. Same slug → same delay across renders, so the visual
+ * "pattern" of phase offsets stays stable while the user
+ * navigates. A different hash bucket for each of the two perpetual
+ * tracks means the per-row phase pair is genuinely independent —
+ * no two rows have the same (shimmer-phase, breath-phase) coord.
+ *
+ * The shimmer hash returns 0..999 ms (just under one full
+ * shimmer cycle of 4s ÷ 4 = a quarter cycle), and the breath
+ * hash returns 0..1499 ms (a quarter of the 6s halo-breath
+ * cycle). Quarter-cycle staggers are the visual sweet spot —
+ * rows are clearly out of phase without any pair looking like
+ * exact mirrors.
+ */
+function hashSlugToDriftDelays(slug: string): {
+    shimmerDelayMs: number;
+    breathDelayMs: number;
+} {
+    let h = 0;
+    for (let i = 0; i < slug.length; i++) {
+        h = (h * 31 + slug.charCodeAt(i)) | 0;
+    }
+    const abs = Math.abs(h);
+    return {
+        shimmerDelayMs: abs % 1000,
+        breathDelayMs: (abs >> 4) % 1500,
+    };
+}
+
 export function NavItem({ href, icon: Icon, label, active, badge, onClick }: NavItemProps) {
     const slug = href.split('/').pop() ?? '';
+    const { shimmerDelayMs, breathDelayMs } = hashSlugToDriftDelays(slug);
+    const driftStyle = {
+        // CSS custom properties consumed by the per-track
+        // animation-delay slots inside `nav-band-alive` and
+        // `nav-band-active-alive`. Both names land on the
+        // `<Link>` host element; CSS custom properties inherit
+        // into the `::before` pseudo where the animation runs.
+        '--nav-shimmer-delay': `${shimmerDelayMs}ms`,
+        '--nav-breath-delay': `${breathDelayMs}ms`,
+    } as CSSProperties;
 
     return (
         <Link
@@ -493,6 +549,7 @@ export function NavItem({ href, icon: Icon, label, active, badge, onClick }: Nav
             onClick={onClick}
             className={`${NAV_ITEM_BASE} ${active ? NAV_ITEM_ACTIVE : NAV_ITEM_DEFAULT}`}
             data-testid={`nav-${slug}`}
+            style={driftStyle}
         >
             <Icon className={NAV_ITEM_ICON_CLASS} aria-hidden="true" />
             <span className="truncate">{label}</span>

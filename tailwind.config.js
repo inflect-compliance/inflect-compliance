@@ -358,8 +358,27 @@ module.exports = {
                 // (i.e. always, in practice). A consumer applies a
                 // single `animate-nav-band-alive` utility and gets
                 // all three animations composed.
+                // R15-PR5 — each perpetual track (shimmer + halo-
+                // breath) carries a per-row `animation-delay`
+                // pulled from a CSS custom property on the host
+                // <Link> element. Without staggering, every row's
+                // bands march in lockstep — easy for the eye to
+                // read as "a periodic system". With per-row drift
+                // the sidebar ripples rather than marches.
+                //
+                // CSS shorthand order: <name> <duration> <timing>
+                // <delay> <iteration>. The `var(--nav-*-delay, 0ms)`
+                // form preserves the default-0-delay behaviour for
+                // any consumer that doesn't set the custom property
+                // (e.g. legacy NavItem callers, the org sidebar's
+                // OrgNavItem, the mobile drawer trigger animation).
+                //
+                // The one-shot tracks (reveal-sweep, starburst)
+                // intentionally keep zero delay — they're
+                // celebration moments that need to fire instantly
+                // when the row engages.
                 'nav-band-alive':
-                    'nav-band-reveal-sweep 450ms ease-out, nav-band-shimmer 4s ease-in-out infinite, nav-band-halo-breath 6s ease-in-out infinite',
+                    'nav-band-reveal-sweep 450ms ease-out, nav-band-shimmer 4s ease-in-out var(--nav-shimmer-delay, 0ms) infinite, nav-band-halo-breath 6s ease-in-out var(--nav-breath-delay, 0ms) infinite',
                 // R15-PR4 — 700ms ease-out one-shot. The bloom peaks
                 // at ~30% (210ms in) and settles back to baseline by
                 // 700ms. The slow-out curve makes the peak feel
@@ -390,7 +409,7 @@ module.exports = {
                 // "this is now where you are" signal of becoming
                 // active.
                 'nav-band-active-alive':
-                    'nav-band-starburst 700ms ease-out, nav-band-reveal-sweep 450ms ease-out, nav-band-shimmer 4s ease-in-out infinite, nav-band-halo-breath 6s ease-in-out infinite',
+                    'nav-band-starburst 700ms ease-out, nav-band-reveal-sweep 450ms ease-out, nav-band-shimmer 4s ease-in-out var(--nav-shimmer-delay, 0ms) infinite, nav-band-halo-breath 6s ease-in-out var(--nav-breath-delay, 0ms) infinite',
             },
         },
     },
