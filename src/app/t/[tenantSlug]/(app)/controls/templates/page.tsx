@@ -29,7 +29,10 @@ export default function ControlTemplatesPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [templates, setTemplates] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState('');
+    // R14-PR7 — search state retired. Users find templates via the
+    // global command palette (⌘K) or by scanning the list. The
+    // category dimension lives in `categories` below if a future PR
+    // adopts FilterToolbar.
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [installing, setInstalling] = useState(false);
     const [error, setError] = useState('');
@@ -87,13 +90,7 @@ export default function ControlTemplatesPage() {
         }
     };
 
-    const filtered = templates.filter(t =>
-        !searchQuery ||
-        t.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.frameworkTag?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filtered = templates;
 
     const categories = [...new Set(templates.map(t => t.category).filter(Boolean))];
 
@@ -117,20 +114,12 @@ export default function ControlTemplatesPage() {
                 <InlineNotice variant="success" icon={null} id="install-success">{success}</InlineNotice>
             )}
 
-            {/* Filters + Install bar */}
-            <div className={cardVariants({ density: 'compact' })}>
-                <div className="flex flex-wrap gap-compact items-center justify-between">
-                    <div className="flex gap-compact items-center flex-1">
-                        <input
-                            type="text"
-                            className="input flex-1 min-w-[200px]"
-                            placeholder="Search templates..."
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                            id="template-search"
-                        />
-                    </div>
-                    {permissions.canWrite && (
+            {/* Install bar — R14-PR7 dropped the standalone search
+                input above this row. Find templates via ⌘K palette
+                or scan the list. */}
+            {permissions.canWrite && (
+                <div className={cardVariants({ density: 'compact' })}>
+                    <div className="flex items-center justify-end">
                         <Button
                             variant="primary"
                             onClick={handleInstall}
@@ -139,9 +128,9 @@ export default function ControlTemplatesPage() {
                         >
                             {installing ? 'Installing...' : `Install Selected (${selectedIds.size})`}
                         </Button>
-                    )}
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Template list */}
             <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>

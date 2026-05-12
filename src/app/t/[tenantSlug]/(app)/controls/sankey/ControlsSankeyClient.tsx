@@ -16,13 +16,10 @@
  */
 
 import Link from 'next/link';
-import { useState } from 'react';
-import { ArrowLeft, Search } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { SankeyChart } from '@/components/ui/SankeyChart';
 import type { TraceabilityGraph } from '@/lib/traceability-graph/types';
 import { Heading } from '@/components/ui/typography';
-import { cardVariants } from '@/components/ui/card';
-import { cn } from '@dub/utils';
 
 export interface ControlsSankeyClientProps {
     initialGraph: TraceabilityGraph;
@@ -33,7 +30,14 @@ export function ControlsSankeyClient({
     initialGraph,
     tenantSlug,
 }: ControlsSankeyClientProps) {
-    const [searchQuery, setSearchQuery] = useState('');
+    // R14-PR7 — standalone search input retired (the user's
+    // directive: per-page searchbars die; users search via the
+    // global command palette or page filters). For sankey
+    // specifically, the input fed `searchQuery` to <SankeyChart>
+    // which used it to dim non-matching nodes. The chart now
+    // renders the full graph. If chart-level filtering becomes
+    // load-bearing again, re-introduce via a dedicated chart-
+    // control primitive — never via a bare `<input type="search">`.
 
     return (
         <div className="space-y-default" id="controls-sankey-page">
@@ -57,28 +61,7 @@ export function ControlsSankeyClient({
                 </div>
             </div>
 
-            {/* Search filter — narrows the underlying graph before
-                the Sankey projects it. Useful when a tenant has
-                hundreds of assets/risks/controls. */}
-            <div className={cardVariants({ density: 'compact' })} id="controls-sankey-filters">
-                <div className="relative">
-                    <Search
-                        className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-content-subtle"
-                        aria-hidden="true"
-                    />
-                    <input
-                        type="search"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Filter by node label, code, or status..."
-                        className="input w-full pl-8"
-                        id="controls-sankey-search"
-                        aria-label="Filter Sankey flows"
-                    />
-                </div>
-            </div>
-
-            <SankeyChart graph={initialGraph} searchQuery={searchQuery} />
+            <SankeyChart graph={initialGraph} searchQuery="" />
         </div>
     );
 }
