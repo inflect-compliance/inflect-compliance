@@ -289,6 +289,38 @@ module.exports = {
                             '0 0 6px var(--brand-secondary-default)',
                     },
                 },
+                // R15-PR6 — iridescent gradient border on the
+                // NavItem's outline. Animates `outline-color`
+                // through a three-stop palette that traces the
+                // brand palette laterally:
+                //
+                //   --brand-default            (primary brand)
+                //   --brand-secondary-default  (navy)
+                //   --brand-emphasis           (primary brand, deeper)
+                //
+                // The eye reads the colour-shifting border as
+                // polished chrome catching the light at different
+                // angles — iridescent. Three stops (not two) give
+                // a true polychromatic shift rather than a simple
+                // A → B → A pendulum.
+                //
+                // Mechanism note: this animates `outline-color`
+                // not `box-shadow`. Outline is a separate property
+                // from box-shadow, so the iridescence layer
+                // composes cleanly with the R13-PR7 bevel shadow
+                // (`--nav-bevel-shadow`) without either fighting
+                // the other.
+                'nav-row-iridescent': {
+                    '0%, 100%': {
+                        'outline-color': 'var(--brand-default)',
+                    },
+                    '33%': {
+                        'outline-color': 'var(--brand-secondary-default)',
+                    },
+                    '66%': {
+                        'outline-color': 'var(--brand-emphasis)',
+                    },
+                },
             },
             animation: {
                 'slide-up-fade': 'slide-up-fade 0.2s ease-out',
@@ -386,6 +418,13 @@ module.exports = {
                 // breath, not a snap.
                 'nav-band-starburst':
                     'nav-band-starburst 700ms ease-out',
+                // R15-PR6 — 3-second cycle. ease-in-out keeps the
+                // colour transitions smooth; the eye reads a slow
+                // breathing iridescence rather than a discrete
+                // colour switch. `infinite` keeps the iridescence
+                // alive for as long as the row is hovered.
+                'nav-row-iridescent':
+                    'nav-row-iridescent 3s ease-in-out infinite',
                 // R15-PR4 — combined "alive" animation for the
                 // ACTIVE row. Adds the starburst bloom as the first
                 // track ahead of the three R15-PR1..3 tracks. All
