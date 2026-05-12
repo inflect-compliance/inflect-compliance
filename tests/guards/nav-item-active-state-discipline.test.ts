@@ -1,15 +1,18 @@
 /**
  * Roadmap-12 PR-6 — NavItem active-state discipline.
+ * (R13-PR5 evolution: text-content-emphasis → text-[--brand-default].)
  *
  * The active row is the one telling you which page you're on. It
  * has to read as "settled" — not louder than the surrounding rows,
  * not quieter. Conviction expressed through four co-operating
  * tokens, no single one shouting:
  *
- *   1. `text-content-emphasis` — one rung brighter than the muted
- *      default text. Same colour the label hits on hover, but
- *      held permanently. The eye reads "this row's label is
- *      awake."
+ *   1. `text-[var(--brand-default)]` — yellow letters on METRO,
+ *      orange letters on PwC. R12-PR6 originally locked
+ *      `text-content-emphasis` here (one rung brighter than muted,
+ *      held permanently). R13-PR5 evolves to brand-coloured letters
+ *      so the active page is visually unmissable from across the
+ *      desk. Both colours clear WCAG AA on the brand-subtle wash.
  *
  *   2. `bg-[var(--brand-subtle)]` — a brand-tinted wash, ~9% (PwC
  *      orange) or ~18% (METRO yellow) over the page bg. This is
@@ -56,8 +59,10 @@ describe('Roadmap-12 PR-6 — NavItem active-state discipline', () => {
         expect(match).not.toBeNull();
         const recipe = match![1];
 
-        // (1) Text: one rung up from muted.
-        expect(recipe).toMatch(/\btext-content-emphasis\b/);
+        // (1) Text: brand-coloured letters (R13-PR5 evolution from
+        //     the R12-PR6 lock on text-content-emphasis). Yellow on
+        //     METRO, orange on PwC, both via `var(--brand-default)`.
+        expect(recipe).toMatch(/\btext-\[var\(--brand-default\)\]/);
 
         // (2) Background: brand-subtle wash.
         expect(recipe).toMatch(/\bbg-\[var\(--brand-subtle\)\]/);

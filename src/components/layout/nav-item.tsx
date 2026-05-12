@@ -294,10 +294,14 @@ export const NAV_ITEM_DEFAULT =
  *
  * Five cooperating tokens, no single one shouting:
  *
- *   (1) `text-content-emphasis`
- *       One rung brighter than the muted default text. Same
- *       colour the label hits on hover, but held permanently.
- *       (R13-PR5 will further evolve this to brand-coloured letters.)
+ *   (1) `text-[var(--brand-default)]` (R13-PR5)
+ *       Brand-coloured letters: yellow on METRO, orange on PwC.
+ *       Held permanently on the active row. The active page is now
+ *       visually unmissable from across the desk — the band tells
+ *       you WHERE, the brand-coloured label tells you WHAT.
+ *       Both themes clear WCAG AA: METRO yellow `#FFCD11` on a
+ *       deep-navy + 18%-yellow wash reads at >10:1; PwC orange
+ *       `#D04A02` on cream + 9%-orange wash at ~5.5:1.
  *
  *   (2) `bg-[var(--brand-subtle)]`
  *       A primary-brand-tinted wash, ~9% (PwC) or ~18% (METRO).
@@ -324,15 +328,16 @@ export const NAV_ITEM_DEFAULT =
  * Visual progression — default → hover → active:
  *   default  no band, muted text, no bg
  *   hover    primary-brand band fades in (warm yellow/orange)
+ *            text brightens to content-emphasis
  *   active   primary-brand wash + SECONDARY-brand band (cool)
- *            + emphasis text + font-medium + shimmer pulse
+ *            + BRAND-COLOURED text + font-medium + shimmer pulse
  *
  * R13-PR4 ratchet at
  * `tests/guards/r13-active-band-secondary.test.ts` locks the
  * five secondary-brand override classes + the navy-glow plumbing.
  */
 export const NAV_ITEM_ACTIVE =
-    'text-content-emphasis bg-[var(--brand-subtle)] before:opacity-100 before:animate-nav-band-shimmer before:from-[var(--brand-secondary-default)]! before:via-[var(--brand-secondary-muted)]! before:to-[var(--brand-secondary-emphasis)]! before:shadow-[var(--nav-band-glow-active)]! font-medium';
+    'text-[var(--brand-default)] bg-[var(--brand-subtle)] before:opacity-100 before:animate-nav-band-shimmer before:from-[var(--brand-secondary-default)]! before:via-[var(--brand-secondary-muted)]! before:to-[var(--brand-secondary-emphasis)]! before:shadow-[var(--nav-band-glow-active)]! font-medium';
 
 /**
  * Badge recipe — aligned + breathing. (R12-PR8 lock.)
