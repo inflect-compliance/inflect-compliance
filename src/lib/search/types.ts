@@ -42,7 +42,9 @@ export type SearchHitType =
     | 'policy'
     | 'evidence'
     | 'framework'
-    | 'asset';
+    | 'asset'
+    | 'task'
+    | 'test';
 
 // ─── Hit shape ─────────────────────────────────────────────────────────
 
@@ -78,7 +80,9 @@ export interface SearchHit {
         | 'file-text'
         | 'paperclip'
         | 'layers'
-        | 'package';
+        | 'package'
+        | 'check-square'
+        | 'flask';
     /** Plural display name for grouping headers ("Controls", "Risks"...). */
     category: string;
 }
@@ -100,6 +104,8 @@ export const SEARCH_TYPE_DEFAULTS: Record<
     evidence: { iconKey: 'paperclip', category: 'Evidence' },
     framework: { iconKey: 'layers', category: 'Frameworks' },
     asset: { iconKey: 'package', category: 'Assets' },
+    task: { iconKey: 'check-square', category: 'Tasks' },
+    test: { iconKey: 'flask', category: 'Tests' },
 };
 
 // ─── Top-level payload ─────────────────────────────────────────────────
@@ -134,8 +140,16 @@ export const DEFAULT_PER_TYPE_LIMIT = 5;
  * Minimum query length the API accepts. Below this, we return an
  * empty result set without hitting the DB. Mirrors the
  * client-side gate so behaviour is consistent.
+ *
+ * Set to 1 so single-character queries (`1`, `2`, etc.) can match
+ * entity codes / IDs / numeric identifiers — a user searching for
+ * "risk 1" should be able to find it. Pre-2026-05-12 this was set
+ * to 2 to defend the DB from over-broad queries, but with every
+ * entity query already bounded by `perTypeLimit * 3` (currently 15
+ * rows) and ILIKE-indexed columns, the DB cost of a 1-char query
+ * is unchanged in practice.
  */
-export const MIN_QUERY_LENGTH = 2;
+export const MIN_QUERY_LENGTH = 1;
 
 /**
  * Maximum query length we'll accept. Defends against pathological

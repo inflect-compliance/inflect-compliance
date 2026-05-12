@@ -35,9 +35,11 @@ import type { SearchHit, SearchHitType } from './types';
  * type bias.
  */
 const TYPE_BASELINE: Record<SearchHitType, number> = {
-    control: 5,
-    risk: 4,
-    policy: 3,
+    control: 7,
+    risk: 6,
+    task: 5,
+    policy: 4,
+    test: 3,
     asset: 2,
     framework: 1,
     evidence: 0,
@@ -113,6 +115,8 @@ export function capPerType(
         framework: 0,
         evidence: 0,
         asset: 0,
+        task: 0,
+        test: 0,
     };
     const kept: SearchHit[] = [];
     let truncated = false;

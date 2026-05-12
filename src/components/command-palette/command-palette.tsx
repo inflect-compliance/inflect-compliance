@@ -36,8 +36,10 @@ import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { cn } from '@dub/utils';
 import { Command } from 'cmdk';
 import {
+    CheckSquare,
     FileText,
     Files,
+    FlaskConical,
     Layers,
     Package,
     Paperclip,
@@ -151,7 +153,9 @@ const ENTITY_META: Record<
 > = {
     control: { heading: 'Controls', icon: ShieldCheck },
     risk: { heading: 'Risks', icon: Triangle },
+    task: { heading: 'Tasks', icon: CheckSquare },
     policy: { heading: 'Policies', icon: FileText },
+    test: { heading: 'Tests', icon: FlaskConical },
     evidence: { heading: 'Evidence', icon: Paperclip },
     framework: { heading: 'Frameworks', icon: Layers },
     asset: { heading: 'Assets', icon: Package },
@@ -160,7 +164,9 @@ const ENTITY_META: Record<
 const ENTITY_ORDER: EntityKind[] = [
     'control',
     'risk',
+    'task',
     'policy',
+    'test',
     'evidence',
     'framework',
     'asset',

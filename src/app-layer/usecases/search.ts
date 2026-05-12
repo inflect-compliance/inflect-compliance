@@ -76,7 +76,7 @@ export async function getUnifiedSearch(
     const allHits: SearchHit[] = [];
 
     await runInTenantContext(ctx, async (db) => {
-        const [controls, risks, policies, evidence, assets] = await Promise.all([
+        const [controls, risks, policies, evidence, assets, tasks, tests] = await Promise.all([
             db.control.findMany({
                 where: {
                     tenantId,
@@ -144,6 +144,51 @@ export async function getUnifiedSearch(
                 },
                 take: dbLimit,
             }),
+            // Task search — title + description + `key` (the
+            // optional public-facing task identifier like "TASK-42").
+            // Description is often the most informative field; we
+            // search it but cap result to keep ranking honest.
+            db.task.findMany({
+                where: {
+                    tenantId,
+                    OR: [
+                        { title: { contains, mode: 'insensitive' } },
+                        { description: { contains, mode: 'insensitive' } },
+                        { key: { contains, mode: 'insensitive' } },
+                    ],
+                },
+                select: {
+                    id: true,
+                    title: true,
+                    status: true,
+                    severity: true,
+                    key: true,
+                },
+                take: dbLimit,
+            }),
+            // Test search — ControlTestPlan, not ControlTestRun.
+            // Plans have a `name` field (runs don't); users looking
+            // for "a test" typically mean "the plan that tests
+            // control X". Each plan is tied to a control via
+            // `controlId` (we fetch the control's code for the href
+            // and subtitle).
+            db.controlTestPlan.findMany({
+                where: {
+                    tenantId,
+                    OR: [
+                        { name: { contains, mode: 'insensitive' } },
+                        { description: { contains, mode: 'insensitive' } },
+                    ],
+                },
+                select: {
+                    id: true,
+                    name: true,
+                    status: true,
+                    controlId: true,
+                    control: { select: { code: true, name: true } },
+                },
+                take: dbLimit,
+            }),
         ]);
 
         for (const c of controls as Row<{
@@ -174,6 +219,22 @@ export async function getUnifiedSearch(
             externalRef: string | null;
         }>[]) {
             allHits.push(buildAssetHit(a, trimmed, tenantSlug));
+        }
+        for (const t of tasks as Row<{
+            title: string;
+            status: string;
+            severity: string;
+            key: string | null;
+        }>[]) {
+            allHits.push(buildTaskHit(t, trimmed, tenantSlug));
+        }
+        for (const t of tests as Row<{
+            name: string;
+            status: string;
+            controlId: string;
+            control: { code: string | null; name: string };
+        }>[]) {
+            allHits.push(buildTestHit(t, trimmed, tenantSlug));
         }
     });
 
@@ -225,6 +286,8 @@ function emptyResponse(query: string, limit: number): SearchResponse {
                 evidence: 0,
                 framework: 0,
                 asset: 0,
+                task: 0,
+                test: 0,
             },
             truncated: false,
             perTypeLimit: limit,
@@ -348,6 +411,74 @@ function buildAssetHit(
     };
 }
 
+function buildTaskHit(
+    row: {
+        id: string;
+        title: string;
+        status: string;
+        severity: string;
+        key: string | null;
+    },
+    query: string,
+    slug: string,
+): SearchHit {
+    const meta = SEARCH_TYPE_DEFAULTS.task;
+    // Title leads with the public-facing task key when present
+    // (`TASK-42` or whatever pattern the tenant uses). Falls back
+    // to plain title otherwise.
+    const title = row.key ? `${row.key} — ${row.title}` : row.title;
+    return {
+        type: 'task',
+        id: row.id,
+        title,
+        subtitle: row.severity,
+        badge: row.status,
+        href: `/t/${slug}/tasks/${row.id}`,
+        score: computeRankScore(query, {
+            type: 'task',
+            title: row.title,
+            code: row.key,
+        }),
+        ...meta,
+    };
+}
+
+function buildTestHit(
+    row: {
+        id: string;
+        name: string;
+        status: string;
+        controlId: string;
+        control: { code: string | null; name: string };
+    },
+    query: string,
+    slug: string,
+): SearchHit {
+    const meta = SEARCH_TYPE_DEFAULTS.test;
+    // Subtitle: the control this test plan covers (code first if
+    // present so the eye can match "test for AC-2" intuitively).
+    const controlLabel = row.control.code
+        ? `${row.control.code} · ${row.control.name}`
+        : row.control.name;
+    return {
+        type: 'test',
+        id: row.id,
+        title: row.name,
+        subtitle: controlLabel,
+        badge: row.status,
+        // Test plans live inside the control detail page — no
+        // standalone test-plan detail route. Hit lands on the
+        // control's `tests` tab.
+        href: `/t/${slug}/controls/${row.controlId}/tests`,
+        score: computeRankScore(query, {
+            type: 'test',
+            title: row.name,
+            subtitle: row.control.name,
+        }),
+        ...meta,
+    };
+}
+
 function buildFrameworkHit(
     row: { id: string; key: string; name: string; version: string | null },
     query: string,
@@ -385,4 +516,6 @@ export const __SEARCHABLE_TYPES__: ReadonlyArray<SearchHitType> = [
     'evidence',
     'framework',
     'asset',
+    'task',
+    'test',
 ];
