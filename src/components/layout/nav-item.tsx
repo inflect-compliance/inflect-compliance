@@ -244,7 +244,14 @@ const NAV_ITEM_BAND_BASE = [
     // recipe. Static across states — the glow is part of the band's
     // form, not gated on hover/active.
     'before:shadow-[var(--nav-band-glow)]',
-    'before:opacity-0 before:transition-opacity before:duration-200 before:ease-out',
+    // R13-PR9 — the transition property list expands beyond R12's
+    // opacity-only to include `top`, `bottom`, `width`. When the
+    // band reaches toward the cursor on hover (top-1.5 → top-1,
+    // bottom-1.5 → bottom-1, w-3px → w-4px), the geometry change
+    // animates with the same 200ms ease-out as the opacity reveal.
+    // Single shared duration keeps the band feeling like one piece
+    // of choreography rather than two timed animations.
+    'before:opacity-0 before:transition-[opacity,top,bottom,width] before:duration-200 before:ease-out',
 ].join(' ');
 
 /**
@@ -338,7 +345,7 @@ export const NAV_ITEM_BASE = [
  * colour only — locked by the motion-language ratchet.
  */
 export const NAV_ITEM_DEFAULT =
-    'text-content-muted hover:text-content-emphasis hover:before:opacity-100 hover:before:animate-nav-band-shimmer hover:after:opacity-100 hover:shadow-[var(--nav-bevel-shadow)]';
+    'text-content-muted hover:text-content-emphasis hover:before:opacity-100 hover:before:animate-nav-band-shimmer hover:before:top-1 hover:before:bottom-1 hover:before:w-[4px] hover:after:opacity-100 hover:shadow-[var(--nav-bevel-shadow)]';
 
 /**
  * Active state — conviction. (R12-PR6 lock, R13-PR4 evolution.)
@@ -397,7 +404,7 @@ export const NAV_ITEM_DEFAULT =
  * five secondary-brand override classes + the navy-glow plumbing.
  */
 export const NAV_ITEM_ACTIVE =
-    'text-[var(--brand-default)] bg-[var(--brand-subtle)] before:opacity-100 before:animate-nav-band-shimmer before:from-[var(--brand-secondary-default)]! before:via-[var(--brand-secondary-muted)]! before:to-[var(--brand-secondary-emphasis)]! before:shadow-[var(--nav-band-glow-active)]! after:opacity-100 shadow-[var(--nav-bevel-shadow)] font-medium';
+    'text-[var(--brand-default)] bg-[var(--brand-subtle)] before:opacity-100 before:animate-nav-band-shimmer before:top-1! before:bottom-1! before:w-[4px]! before:from-[var(--brand-secondary-default)]! before:via-[var(--brand-secondary-muted)]! before:to-[var(--brand-secondary-emphasis)]! before:shadow-[var(--nav-band-glow-active)]! after:opacity-100 shadow-[var(--nav-bevel-shadow)] font-medium';
 
 /**
  * Badge recipe — aligned + breathing. (R12-PR8 lock.)
