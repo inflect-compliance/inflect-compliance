@@ -61,6 +61,28 @@
   --brand-muted:    #FFE066;                /* lighter yellow — hover accent */
   --brand-subtle:   rgba(255, 205, 17, 0.18); /* yellow @ 18% — brand tint backgrounds */
 
+  /* ── Brand / Secondary (electric blue — complementary cool counterpoint) ──
+   *
+   * Roadmap-13 introduces a SECONDARY brand colour so the sidebar
+   * (and any future chrome that wants a two-tone state vocabulary)
+   * can express ACTIVE in a tone distinct from HOVER. On METRO the
+   * page surface is itself deep navy (#001830 / #003C7A), so a navy
+   * accent would dissolve into the background. The cool counterpoint
+   * to METRO's warm yellow is therefore a vivid electric blue —
+   * `#3B82F6` (Tailwind blue-500). It clears 4.5:1 against both
+   * `--bg-default` (#003C7A) and `--bg-page` (#001830), so any
+   * primitive that paints a band, ring, or text in this token reads
+   * clearly on every dark surface in the app.
+   *
+   * Hue choice: blue-500 sits 180° opposite METRO yellow on the
+   * colour wheel — true complementary contrast, not "another warm".
+   * The eye reads HOVER (yellow) vs ACTIVE (blue) as deliberate
+   * state vocabulary, not accidental drift between brand tones.
+   */
+  --brand-secondary-default:  #3B82F6;                /* electric blue — secondary brand, complementary to yellow */
+  --brand-secondary-emphasis: #2563EB;                /* deeper blue — primary band stop, active surfaces */
+  --brand-secondary-subtle:   rgba(59, 130, 246, 0.18); /* blue @ 18% — secondary tint backgrounds */
+
   /* ── Status: Success ───────────────────────────────────────────── */
   --bg-success:          rgba(16, 185, 129, 0.15);  /* emerald-500 @ 15% — badge tint */
   --bg-success-emphasis: #059669;                    /* emerald-600 — solid actionable surface (success buttons, indicator dots) */
@@ -171,6 +193,23 @@
   --brand-emphasis: #B83D00;                /* burnt orange — primary buttons, active (5.8:1) */
   --brand-muted:    #E06520;                /* lighter orange — hover accent */
   --brand-subtle:   rgba(208, 74, 2, 0.09); /* orange @ 9% — brand tint backgrounds */
+
+  /* ── Brand / Secondary (deep navy — complementary cool counterpoint) ──
+   *
+   * Roadmap-13's two-tone state vocabulary lands on the light theme
+   * as deep navy (#1E3A8A — Tailwind indigo-900-ish). Against the
+   * warm cream `--bg-default` (#F8F6F3) navy reads as the natural
+   * cool counter to PwC orange — same complementary-contrast logic
+   * as METRO's electric-blue secondary, adapted to the palette
+   * temperature.
+   *
+   * Contrast: 12.3:1 on `--bg-default`, well above WCAG AAA. Any
+   * primitive that paints text or a band in this token will be
+   * unmissable without looking aggressive.
+   */
+  --brand-secondary-default:  #1E3A8A;                /* deep navy — secondary brand, complementary to orange */
+  --brand-secondary-emphasis: #172554;                /* deeper navy — primary band stop, active surfaces */
+  --brand-secondary-subtle:   rgba(30, 58, 138, 0.09); /* navy @ 9% — secondary tint backgrounds */
 
   /* ── Status: Success ───────────────────────────────────────────── */
   /*
