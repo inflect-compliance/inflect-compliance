@@ -102,10 +102,18 @@ export interface EntityListPageHeader {
 export interface EntityListPageFilters {
     /** Filter definitions (typically resolved via `useFilters` + buildXFilters). */
     defs: FilterType[];
-    /** Stable id for the search input (e.g. `control-search`). */
-    searchId: string;
-    /** Search placeholder copy. */
-    searchPlaceholder: string;
+    /**
+     * Stable id for the search input. Required ONLY when
+     * `searchPlaceholder` is also provided.
+     */
+    searchId?: string;
+    /**
+     * Search placeholder copy. **Omit to hide the search input.**
+     * The global ⌘K palette is the canonical cross-page search;
+     * per-page text-search is legacy. Locked by
+     * `tests/guards/r14-no-page-searchbars.test.ts`.
+     */
+    searchPlaceholder?: string;
     /** Optional override for the FilterSelect trigger label. */
     triggerLabel?: ReactNode;
     /**

@@ -361,8 +361,6 @@ function PoliciesPageInner({
             }}
             filters={{
                 defs: liveFilters,
-                searchId: 'policy-search',
-                searchPlaceholder: 'Search policies…',
                 toolbarActions: columnsDropdown,
             }}
             table={{

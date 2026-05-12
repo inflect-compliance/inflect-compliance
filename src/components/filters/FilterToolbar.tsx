@@ -41,13 +41,22 @@ export interface FilterToolbarProps {
      */
     filters: FilterType[];
     /**
-     * DOM id of the search input. Every page uses a stable id (e.g.
-     * `control-search`) so E2E tests and power users' browser shortcuts can
-     * locate it. The id IS the page-specific part of this toolbar.
+     * DOM id of the search input. Required ONLY when the toolbar
+     * renders a search input (see `searchPlaceholder`). Ignored
+     * otherwise.
      */
-    searchId: string;
-    /** Placeholder text (usually "Search {entityPlural}…"). */
-    searchPlaceholder: string;
+    searchId?: string;
+    /**
+     * Placeholder text (usually "Search {entityPlural}…").
+     *
+     * **Omit to hide the search input entirely.** The toolbar's
+     * other slots (filters, primary action, etc.) still render.
+     * Pages should default to omitting it — the global ⌘K palette
+     * is the canonical cross-page search; per-page text-search is
+     * legacy. Locked by
+     * `tests/guards/r14-no-page-searchbars.test.ts`.
+     */
+    searchPlaceholder?: string;
     /** Optional label for the FilterSelect trigger button. Defaults to "Filter". */
     triggerLabel?: ReactNode;
     /**
@@ -137,21 +146,23 @@ export function FilterToolbar({
     return (
         <div className={`flex flex-wrap items-start gap-compact${className ? ` ${className}` : ''}`}>
             <div className="flex flex-wrap items-center gap-tight">
-                <input
-                    id={searchId}
-                    type="search"
-                    className="input w-full sm:w-64 text-sm"
-                    placeholder={searchPlaceholder}
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                            e.preventDefault();
-                            setSearch(draft);
-                        }
-                    }}
-                    onBlur={() => { if (draft !== search) setSearch(draft); }}
-                />
+                {searchPlaceholder && (
+                    <input
+                        id={searchId}
+                        type="search"
+                        className="input w-full sm:w-64 text-sm"
+                        placeholder={searchPlaceholder}
+                        value={draft}
+                        onChange={(e) => setDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                setSearch(draft);
+                            }
+                        }}
+                        onBlur={() => { if (draft !== search) setSearch(draft); }}
+                    />
+                )}
                 <FilterUI.Select
                     filters={filters}
                     activeFilters={activeFilters}

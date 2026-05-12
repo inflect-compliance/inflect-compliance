@@ -744,8 +744,6 @@ function ControlsPageInner({
             }}
             filters={{
                 defs: liveFilterDefs,
-                searchId: 'control-search',
-                searchPlaceholder: 'Search controls…',
                 toolbarActions: columnsDropdown,
             }}
             table={{

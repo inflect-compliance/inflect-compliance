@@ -219,8 +219,6 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
             <ListPageShell.Filters>
                 <FilterToolbar
                     filters={liveFilters}
-                    searchId="asset-search"
-                    searchPlaceholder="Search assets…"
                     actions={columnsDropdown}
                 />
             </ListPageShell.Filters>

@@ -60,15 +60,38 @@ const ROOT = path.resolve(__dirname, '../..');
 
 const SCAN_ROOTS = ['src/app/t', 'src/app/org'];
 
-// Patterns that flag a hand-rolled page-level search input.
+// Patterns that flag a HAND-ROLLED raw search input. Two shapes:
+//   1. `<input type="search" ... />`
+//   2. `<input placeholder="Search ..." />`
+// Scanned across every file under SCAN_ROOTS.
 const BANNED_PATTERNS: RegExp[] = [
-    // `<input type="search" ... />`
     /<input\b[^>]*\btype=["']search["']/,
-    // `<input placeholder="Search ..." />` (any "Search" prefix on
-    // an input placeholder is the canonical signal of a page-level
-    // search bar — the FilterToolbar's `searchPlaceholder` prop
-    // is on the toolbar component, not on a bare <input>).
     /<input\b[^>]*\bplaceholder=["']Search\b/,
+];
+
+// FILE-ANCHORED ban on `searchPlaceholder=` / `searchPlaceholder:`
+// for the 7 list-page Client files. These are the files that used
+// to wire FilterToolbar's text-search input; the user directive
+// "remove search bars from all pages" retires that affordance —
+// ⌘K palette is the canonical cross-entity search now.
+//
+// Why file-anchored (not directory-scanned)?
+//   The `searchPlaceholder` prop name is shared between
+//   `<FilterToolbar>` (the kill target — page-level search row)
+//   and `<Combobox>` (legitimate picker affordance inside modals
+//   + form fields). A directory scan would flag every Combobox
+//   usage. The seven Client files don't legitimately use Combobox
+//   with searchPlaceholder at the page level; if a future PR adds
+//   a picker to one of them, the right answer is to refactor that
+//   into a sub-component file, not to relax this ratchet.
+const FILTER_TOOLBAR_SEARCH_FREE_FILES = [
+    'src/app/t/[tenantSlug]/(app)/assets/AssetsClient.tsx',
+    'src/app/t/[tenantSlug]/(app)/risks/RisksClient.tsx',
+    'src/app/t/[tenantSlug]/(app)/controls/ControlsClient.tsx',
+    'src/app/t/[tenantSlug]/(app)/tasks/TasksClient.tsx',
+    'src/app/t/[tenantSlug]/(app)/evidence/EvidenceClient.tsx',
+    'src/app/t/[tenantSlug]/(app)/policies/PoliciesClient.tsx',
+    'src/app/t/[tenantSlug]/(app)/vendors/VendorsClient.tsx',
 ];
 
 interface Offender {
@@ -113,6 +136,45 @@ function scanFile(absPath: string): Offender[] {
 }
 
 describe('Roadmap-14 PR-7 — no standalone search inputs on pages', () => {
+    it('no `searchPlaceholder=` / `searchPlaceholder:` in any of the 7 list-page Client files', () => {
+        // File-anchored ban — see FILTER_TOOLBAR_SEARCH_FREE_FILES
+        // doc-comment for the per-file reasoning. The pattern
+        // matches both JSX-attribute form (`<FilterToolbar
+        // searchPlaceholder="..." />`) and object-literal form
+        // (`filters={{ searchPlaceholder: '...' }}` inside
+        // `<EntityListPage>`).
+        const rx = /\bsearchPlaceholder\s*[=:]/;
+        const offenders: { file: string; line: number; text: string }[] = [];
+        for (const rel of FILTER_TOOLBAR_SEARCH_FREE_FILES) {
+            const abs = path.join(ROOT, rel);
+            expect(fs.existsSync(abs)).toBe(true);
+            const content = fs.readFileSync(abs, 'utf8');
+            // Strip comments so a doc-comment mentioning the prop
+            // name doesn't fire.
+            const stripped = content
+                .replace(/\/\*[\s\S]*?\*\//g, '')
+                .replace(/\/\/[^\n]*/g, '');
+            stripped.split('\n').forEach((line, i) => {
+                if (rx.test(line)) {
+                    offenders.push({
+                        file: rel,
+                        line: i + 1,
+                        text: line.trim().slice(0, 160),
+                    });
+                }
+            });
+        }
+        if (offenders.length > 0) {
+            const sample = offenders
+                .map((o) => `  ${o.file}:${o.line}\n    ${o.text}`)
+                .join('\n');
+            throw new Error(
+                `Found ${offenders.length} \`searchPlaceholder\` use(s) in the 7 list-page Client files. The user directive 'remove search bars from all pages' retired the FilterToolbar text-search input on these pages — the global ⌘K palette (sidebar Search pill / Ctrl+K) is the canonical cross-entity search. If a NEW need for in-page search arises, consider whether a dedicated `<Combobox>` picker fits better than reviving the toolbar input.\n\nOffenders:\n${sample}`,
+            );
+        }
+        expect(offenders).toEqual([]);
+    });
+
     it('no `<input type="search">` or `placeholder="Search …"` in app/t or app/org', () => {
         const offenders: Offender[] = [];
         for (const root of SCAN_ROOTS) {

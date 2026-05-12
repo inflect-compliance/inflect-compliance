@@ -447,8 +447,6 @@ function TasksPageInner({
             <ListPageShell.Filters>
                 <FilterToolbar
                     filters={liveFilters}
-                    searchId="task-search"
-                    searchPlaceholder="Search tasks…"
                     actions={columnsDropdown}
                 />
             </ListPageShell.Filters>

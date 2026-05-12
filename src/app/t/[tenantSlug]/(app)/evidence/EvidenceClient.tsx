@@ -825,8 +825,6 @@ function EvidenceFilterToolbar({
     return (
         <FilterToolbar
             filters={filters}
-            searchId="evidence-search"
-            searchPlaceholder="Search evidence…"
             actions={columnsDropdown}
         />
     );
