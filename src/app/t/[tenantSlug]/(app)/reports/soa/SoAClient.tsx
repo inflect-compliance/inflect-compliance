@@ -93,7 +93,10 @@ export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientPr
     // Modal state
     const [mapModal, setMapModal] = useState<{ requirementId: string; requirementCode: string } | null>(null);
     const [justModal, setJustModal] = useState<{ controlId: string; controlCode: string; requirementCode: string } | null>(null);
-    const [mapControlSearch, setMapControlSearch] = useState('');
+    // Searchbar-kill sweep — the modal's `<input>` was retired
+    // alongside every other in-app search bar. The modal now lists
+    // controls unfiltered; users find a specific control via the
+    // ⌘K palette (which navigates) or scroll the list.
     const [justText, setJustText] = useState('');
     const [saving, setSaving] = useState(false);
 
@@ -130,7 +133,6 @@ export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientPr
             });
             if (!res.ok) throw new Error('Failed to map');
             setMapModal(null);
-            setMapControlSearch('');
             router.refresh();
         } finally {
             setSaving(false);
@@ -158,15 +160,8 @@ export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientPr
         }
     };
 
-    // Filtered controls for map modal
-    const mapFilteredControls = useMemo(() => {
-        if (!mapControlSearch) return controls;
-        const q = mapControlSearch.toLowerCase();
-        return controls.filter(c =>
-            (c.code || '').toLowerCase().includes(q) ||
-            c.name.toLowerCase().includes(q)
-        );
-    }, [controls, mapControlSearch]);
+    // Modal control list — searchbar retired; full list shown.
+    const mapFilteredControls = controls;
 
     const { summary } = report;
 
@@ -312,14 +307,6 @@ export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientPr
                     description="Select a tenant control to map to this Annex A requirement."
                 />
                 <Modal.Body>
-                    <input
-                        type="text"
-                        className="input mb-3 w-full"
-                        placeholder="Search controls…"
-                        value={mapControlSearch}
-                        onChange={(e) => setMapControlSearch(e.target.value)}
-                        autoFocus
-                    />
                     <div className="max-h-60 space-y-1 overflow-y-auto">
                         {mapFilteredControls.map((c) => (
                             <button

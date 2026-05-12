@@ -54,10 +54,6 @@ const BELL_SRC = fs.readFileSync(
     path.join(ROOT, 'src/components/layout/notifications-bell.tsx'),
     'utf8',
 );
-const SEARCH_SRC = fs.readFileSync(
-    path.join(ROOT, 'src/components/layout/search-anchor.tsx'),
-    'utf8',
-);
 const MOTION_GUARD_SRC = fs.readFileSync(
     path.join(ROOT, 'tests/guards/motion-language-discipline.test.ts'),
     'utf8',
@@ -101,7 +97,6 @@ describe('Roadmap-14 PR-11 — Slot press-feedback unification', () => {
             { name: 'tenant-switcher', src: SWITCHER_SRC },
             { name: 'user-menu', src: USER_MENU_SRC },
             { name: 'notifications-bell', src: BELL_SRC },
-            { name: 'search-anchor', src: SEARCH_SRC },
         ];
 
         for (const { name, src } of slotFiles) {
@@ -116,14 +111,14 @@ describe('Roadmap-14 PR-11 — Slot press-feedback unification', () => {
             });
         }
 
-        // Four sibling files explicitly import the const. The
+        // Three sibling files explicitly import the const. The
         // brand-mark recipe lives inside nav-bar.tsx so doesn't
-        // import it.
+        // import it. (The R14-PR6 search-anchor file was retired
+        // by the searchbar-kill sweep.)
         const siblings = [
             { name: 'tenant-switcher', src: SWITCHER_SRC },
             { name: 'user-menu', src: USER_MENU_SRC },
             { name: 'notifications-bell', src: BELL_SRC },
-            { name: 'search-anchor', src: SEARCH_SRC },
         ];
         for (const { name, src } of siblings) {
             it(`${name} imports NAV_BAR_SLOT_PRESS from \`./nav-bar\``, () => {
@@ -140,7 +135,6 @@ describe('Roadmap-14 PR-11 — Slot press-feedback unification', () => {
             'src/components/layout/tenant-switcher.tsx',
             'src/components/layout/user-menu.tsx',
             'src/components/layout/notifications-bell.tsx',
-            'src/components/layout/search-anchor.tsx',
         ];
         for (const rel of chromeSlotFiles) {
             it(`EXEMPT_FILES includes \`${rel}\``, () => {
@@ -149,13 +143,14 @@ describe('Roadmap-14 PR-11 — Slot press-feedback unification', () => {
             });
         }
 
-        it('the exempt-list cap is bumped to 11 (was 6 pre-R14-PR11)', () => {
+        it('the exempt-list cap is set to 10 (was 11 pre-searchbar-kill)', () => {
             // 6 was the R13-PR8 cap (NavItem + four R12 exemptions).
-            // R14-PR11 adds five chrome slot files → 11. A future
-            // PR that adds a 12th must argue against this ratchet
-            // explicitly.
+            // R14-PR11 added five chrome slot files → 11.
+            // The searchbar-kill sweep retired the SearchAnchor →
+            // cap drops to 10. A future PR that adds an 11th must
+            // argue against this ratchet explicitly.
             expect(MOTION_GUARD_SRC).toMatch(
-                /EXEMPT_FILES\.size\)\.toBeLessThanOrEqual\(11\)/,
+                /EXEMPT_FILES\.size\)\.toBeLessThanOrEqual\(10\)/,
             );
         });
 
@@ -175,7 +170,6 @@ describe('Roadmap-14 PR-11 — Slot press-feedback unification', () => {
             SWITCHER_SRC,
             USER_MENU_SRC,
             BELL_SRC,
-            SEARCH_SRC,
         ];
 
         for (let i = 0; i < slotFiles.length; i++) {

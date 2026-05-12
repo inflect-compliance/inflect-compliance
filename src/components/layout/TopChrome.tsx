@@ -11,8 +11,12 @@
  *     R14-PR3 adds the brand mark before breadcrumbs.
  *     R14-PR9 adds the env badge between brand + breadcrumbs.
  *
- *   • Centre slot — empty in PR-1.
- *     R14-PR6 fills with the ⌘K search anchor.
+ *   • Centre slot — empty.
+ *     R14-PR6 originally filled this with the `<SearchAnchor>`
+ *     pill; the searchbar-kill sweep retired it. The ⌘K palette
+ *     stays globally accessible via the keyboard shortcut that
+ *     `<CommandPaletteProvider>` registers — no visual surface
+ *     in the chrome.
  *
  *   • Right slot  — context identity pill (tenant or org name).
  *     R14-PR4 replaces this with the workspace switcher.
@@ -39,7 +43,6 @@ import { useCurrentBreadcrumbs } from './breadcrumbs-store';
 import { OrgIdentityPill } from './IdentityPill';
 import { TenantSwitcher } from './tenant-switcher';
 import { UserMenu } from './user-menu';
-import { SearchAnchor } from './search-anchor';
 import { NotificationsBell } from './notifications-bell';
 import { EnvironmentBadge } from './environment-badge';
 import type { AppShellVariant } from './AppShell';
@@ -149,7 +152,6 @@ export function TopChrome({ variant, user, onMobileMenuClick }: TopChromeProps) 
                     </span>
                 </>
             }
-            center={<SearchAnchor />}
             right={
                 <>
                     {renderIdentity()}

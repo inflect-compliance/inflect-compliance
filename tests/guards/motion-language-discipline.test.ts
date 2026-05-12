@@ -106,7 +106,6 @@ const EXEMPT_FILES = new Set<string>([
     "src/components/layout/tenant-switcher.tsx",
     "src/components/layout/user-menu.tsx",
     "src/components/layout/notifications-bell.tsx",
-    "src/components/layout/search-anchor.tsx",
 ]);
 
 const BANNED_PATTERNS = [
@@ -208,15 +207,18 @@ describe("v2-PR-4 motion language ratchet", () => {
             //   - layout/nav-item.tsx (Roadmap-13 — sidebar's
             //     tactile-button vocabulary: inset bevel shadow
             //     on hover + 1px press-down on active)
-            //   - layout/nav-bar.tsx + four sibling slot files
+            //   - layout/nav-bar.tsx + three sibling slot files
             //     (Roadmap-14 — top-bar chrome's tactile-press
             //     vocabulary: shared NAV_BAR_SLOT_PRESS recipe
-            //     across brand mark + switcher + search + bell +
-            //     user menu, all carrying active:translate-y-px)
-            // Bumping past 11 means the team is reintroducing
+            //     across brand mark + switcher + bell + user
+            //     menu, all carrying active:translate-y-px).
+            //     The searchbar-kill sweep retired the SearchAnchor
+            //     pill; its file was deleted along with the
+            //     exempt-list entry (cap dropped 11 → 10).
+            // Bumping past 10 means the team is reintroducing
             // decorative lift on pages — push back on the new
             // exemption.
-            expect(EXEMPT_FILES.size).toBeLessThanOrEqual(11);
+            expect(EXEMPT_FILES.size).toBeLessThanOrEqual(10);
         });
     });
 });

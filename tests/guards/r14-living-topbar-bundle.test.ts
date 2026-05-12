@@ -11,7 +11,9 @@
  *   PR-3  Animated brand wordmark (3-stop gradient + 6s pulse)
  *   PR-4  Workspace switcher (popover-driven tenant chooser)
  *   PR-5  User menu (avatar + dropdown, theme moves here)
- *   PR-6  Global ⌘K search anchor (responsive collapse)
+ *   PR-6  Global ⌘K search anchor (responsive collapse) — RETIRED
+ *         by the searchbar-kill sweep; ⌘K still works via keyboard,
+ *         visual pill removed
  *   PR-7  Kill per-page searchbars (cleanup outside the chrome)
  *   PR-8  Notifications bell (with unread badge)
  *   PR-9  Environment badge (DEV / STAGING / PROD)
@@ -38,7 +40,6 @@ const TOP_CHROME_SRC = read('src/components/layout/TopChrome.tsx');
 const APP_SHELL_SRC = read('src/components/layout/AppShell.tsx');
 const SWITCHER_SRC = read('src/components/layout/tenant-switcher.tsx');
 const USER_MENU_SRC = read('src/components/layout/user-menu.tsx');
-const SEARCH_SRC = read('src/components/layout/search-anchor.tsx');
 const BELL_SRC = read('src/components/layout/notifications-bell.tsx');
 const ENV_BADGE_SRC = read('src/components/layout/environment-badge.tsx');
 const TAILWIND_CONFIG = read('tailwind.config.js');
@@ -129,14 +130,31 @@ describe('Roadmap-14 PR-13 — Living Top-Bar capstone bundle', () => {
         });
     });
 
-    describe('PR-6 — Global ⌘K search anchor', () => {
-        it('SearchAnchor + responsive forms + platform-aware kbd', () => {
-            expect(SEARCH_SRC).toMatch(/export\s+function\s+SearchAnchor\b/);
-            expect(SEARCH_SRC).toMatch(/hidden\s+lg:inline-flex/);
-            expect(SEARCH_SRC).toMatch(/inline-flex\s+lg:hidden/);
-            expect(SEARCH_SRC).toMatch(
-                /isMac\s*\?\s*['"]⌘['"]\s*:\s*['"]Ctrl['"]/,
+    describe('PR-6 — Global ⌘K search anchor (RETIRED by searchbar-kill sweep)', () => {
+        it('the SearchAnchor file is gone + TopChrome no longer mounts it', () => {
+            // The visual pill is retired; ⌘K still works via the
+            // keyboard shortcut that <CommandPaletteProvider>
+            // registers globally. The chrome has no visual
+            // search surface.
+            expect(
+                fs.existsSync(
+                    path.join(ROOT, 'src/components/layout/search-anchor.tsx'),
+                ),
+            ).toBe(false);
+            // Strip comments before scanning so the doc-comment's
+            // explanatory mention of `<SearchAnchor>` doesn't trip
+            // the structural detector.
+            const stripped = TOP_CHROME_SRC
+                .replace(/\/\*[\s\S]*?\*\//g, '')
+                .replace(/\/\/[^\n]*/g, '');
+            expect(stripped).not.toMatch(/<SearchAnchor\b/);
+            expect(stripped).not.toMatch(
+                /from\s+['"]\.\/search-anchor['"]/,
             );
+            // The command-palette keyboard registration stays —
+            // verify the provider is still wired in app/providers.tsx.
+            const providersSrc = read('src/app/providers.tsx');
+            expect(providersSrc).toMatch(/CommandPaletteProvider/);
         });
     });
 
@@ -208,24 +226,26 @@ describe('Roadmap-14 PR-13 — Living Top-Bar capstone bundle', () => {
             );
             expect(NAV_BAR_SRC).toMatch(/active:translate-y-px/);
             // Each sibling slot file composes the const.
-            for (const src of [SWITCHER_SRC, USER_MENU_SRC, BELL_SRC, SEARCH_SRC]) {
+            // (The search-anchor file was retired by the
+            // searchbar-kill sweep; the three remaining siblings
+            // still compose the recipe.)
+            for (const src of [SWITCHER_SRC, USER_MENU_SRC, BELL_SRC]) {
                 expect(src).toContain('NAV_BAR_SLOT_PRESS');
             }
         });
 
-        it('motion-language exempt includes all 5 chrome slot files', () => {
+        it('motion-language exempt includes all 4 chrome slot files', () => {
             const chromeFiles = [
                 'src/components/layout/nav-bar.tsx',
                 'src/components/layout/tenant-switcher.tsx',
                 'src/components/layout/user-menu.tsx',
                 'src/components/layout/notifications-bell.tsx',
-                'src/components/layout/search-anchor.tsx',
             ];
             for (const rel of chromeFiles) {
                 expect(MOTION_GUARD_SRC).toContain(`"${rel}"`);
             }
             expect(MOTION_GUARD_SRC).toMatch(
-                /EXEMPT_FILES\.size\)\.toBeLessThanOrEqual\(11\)/,
+                /EXEMPT_FILES\.size\)\.toBeLessThanOrEqual\(10\)/,
             );
         });
     });
