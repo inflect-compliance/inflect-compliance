@@ -207,6 +207,20 @@
    * against cream.
    */
   --nav-row-liquid-tint: rgba(255, 205, 17, 0.14);
+
+  /* R15-PR9 — outer brand-coloured aura around the ACTIVE row.
+   * The active row's band already glows (R13-PR2 `--nav-band-
+   * glow`); this token extends a halo of the SECONDARY brand
+   * (navy on METRO) around the row's full perimeter at low
+   * alpha + soft blur. Semantically a brand-presence signal,
+   * NOT a depth shadow — it doesn't lift the row off the
+   * sidebar, it bathes the row in brand light.
+   *
+   * Alpha is low (18%) so the aura reads as ambient light
+   * rather than as an outline. Blur is 12px so the edges
+   * dissipate softly into the sidebar surface, no hard ring.
+   */
+  --nav-row-aura-color: rgba(59, 130, 246, 0.18);
 }
 
 
@@ -383,6 +397,15 @@
    * themes.
    */
   --nav-row-liquid-tint: rgba(208, 74, 2, 0.16);
+
+  /* R15-PR9 — light-theme active-row aura. Deep navy
+   * (rgba(30, 58, 138, …) = `--brand-secondary-default` on the
+   * light theme) at 18% alpha. Same alpha as METRO for theme
+   * parity — both themes produce the same perceived halo
+   * strength because the underlying brand-secondary RGB
+   * compensates for cream-surface absorption.
+   */
+  --nav-row-aura-color: rgba(30, 58, 138, 0.18);
 }
 
 /* ─────────────────────────────────────────────────────────────────

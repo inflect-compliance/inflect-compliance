@@ -229,13 +229,23 @@ describe('Roadmap-13 PR-12 — Living Sidebar capstone bundle', () => {
                 );
             }
         });
-        it('bevel applied on hover + un-gated on active', () => {
+        it('bevel applied on hover + un-gated on active (single or R15-PR9 stacked form)', () => {
             expect(defaultRecipe).toMatch(
                 /hover:shadow-\[var\(--nav-bevel-shadow\)\]/,
             );
-            expect(activeRecipe).toMatch(
-                /(?<!hover:)shadow-\[var\(--nav-bevel-shadow\)\]/,
-            );
+            // R15-PR9 stacks an outer brand-coloured aura
+            // alongside the bevel inside one multi-shadow value.
+            // The bevel-shadow var is still present, but no
+            // longer the sole shadow — accept both forms.
+            const singleForm =
+                /(?<!hover:)shadow-\[var\(--nav-bevel-shadow\)\]/.test(
+                    activeRecipe,
+                );
+            const stackedForm =
+                /(?<!hover:)shadow-\[[^\]]*var\(--nav-bevel-shadow\)[^\]]*\]/.test(
+                    activeRecipe,
+                );
+            expect(singleForm || stackedForm).toBe(true);
         });
     });
 

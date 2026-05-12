@@ -126,17 +126,44 @@ describe('Roadmap-13 PR-7 — inset bevel shadow on hover', () => {
     });
 
     describe('NAV_ITEM_ACTIVE holds the bevel unconditionally', () => {
-        it('active applies `shadow-[var(--nav-bevel-shadow)]` un-gated', () => {
+        it('active includes the bevel-shadow token (single or stacked form)', () => {
+            // R13-PR7 originally stamped `shadow-[var(--nav-bevel-
+            // shadow)]` directly on the active recipe. R15-PR9
+            // adds a SECOND outer shadow (brand-coloured aura) to
+            // the same `shadow-[...]` value, producing a stacked
+            // form like
+            //   shadow-[0_0_12px_2px_var(--nav-row-aura-color),
+            //           var(--nav-bevel-shadow)]
+            // The bevel-shadow token is still inside the value,
+            // just no longer the sole shadow. Accept both forms.
             const activeRecipe =
                 NAV_ITEM_SRC.match(
                     /export\s+const\s+NAV_ITEM_ACTIVE\s*=\s*['"]([^'"]+)['"]/,
                 )?.[1] ?? '';
-            expect(activeRecipe).toMatch(
-                /(?<!hover:)shadow-\[var\(--nav-bevel-shadow\)\]/,
-            );
+            // The bevel-shadow var MUST appear inside a `shadow-[...]`
+            // bracketed value on the active recipe, un-prefixed by
+            // `hover:`. The bracket content may contain other
+            // shadow layers separated by commas.
+            const singleForm =
+                /(?<!hover:)shadow-\[var\(--nav-bevel-shadow\)\]/.test(
+                    activeRecipe,
+                );
+            const stackedForm =
+                /(?<!hover:)shadow-\[[^\]]*var\(--nav-bevel-shadow\)[^\]]*\]/.test(
+                    activeRecipe,
+                );
+            expect(singleForm || stackedForm).toBe(true);
         });
 
-        it('active does NOT reach for an outer drop shadow', () => {
+        it('active does NOT reach for an outer DEPTH shadow', () => {
+            // The discipline is "no `shadow-md` / `shadow-lg` /
+            // etc. — those are uniform black depth shadows that
+            // would lift the row off the sidebar". R15-PR9 added
+            // a brand-coloured aura (`shadow-[0_0_12px_2px_var
+            // (--nav-row-aura-color),...]`) which is semantically
+            // different — it's a brand-presence signal, not a
+            // depth cue. The arbitrary-value `shadow-[...]` form
+            // is fine; only the named depth tokens are banned.
             const activeRecipe =
                 NAV_ITEM_SRC.match(
                     /export\s+const\s+NAV_ITEM_ACTIVE\s*=\s*['"]([^'"]+)['"]/,
