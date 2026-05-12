@@ -22,7 +22,6 @@ export default function TemplatesPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [templates, setTemplates] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [search, setSearch] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
     const [creating, setCreating] = useState('');
 
@@ -38,18 +37,16 @@ export default function TemplatesPage() {
         [templates]
     );
 
+    // R14-PR7 — the standalone search input was dropped. Users
+    // find templates by category combobox below or the global
+    // command palette (⌘K). If granular search becomes load-bearing
+    // here, adopt the FilterToolbar primitive — never reintroduce a
+    // hand-rolled `<input type="search">` per CLAUDE.md filter
+    // strategy.
     const filtered = useMemo(() => {
-        let result = templates;
-        if (search) {
-            const q = search.toLowerCase();
-            result = result.filter(t =>
-                t.title.toLowerCase().includes(q) ||
-                (t.tags || '').toLowerCase().includes(q)
-            );
-        }
-        if (categoryFilter) result = result.filter(t => t.category === categoryFilter);
-        return result;
-    }, [templates, search, categoryFilter]);
+        if (!categoryFilter) return templates;
+        return templates.filter(t => t.category === categoryFilter);
+    }, [templates, categoryFilter]);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleUseTemplate = async (tpl: any) => {
@@ -82,10 +79,6 @@ export default function TemplatesPage() {
 
             {/* Filters */}
             <div className={cn(cardVariants({ density: 'compact' }), 'flex flex-wrap gap-compact items-center')}>
-                <input
-                    type="text" className="input flex-1 min-w-[200px]" placeholder="Search templates..."
-                    value={search} onChange={e => setSearch(e.target.value)} id="template-search"
-                />
                 <Combobox
                     hideSearch
                     id="template-category-filter"

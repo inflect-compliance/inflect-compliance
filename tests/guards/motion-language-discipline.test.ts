@@ -93,6 +93,20 @@ const EXEMPT_FILES = new Set<string>([
     // that adds `hover:scale-105` to nav-item.tsx is still caught
     // by the local R13 ratchets — those don't get carved out.
     "src/components/layout/nav-item.tsx",
+    // Roadmap-14 — the top-bar chrome carries the same tactile
+    // press feedback as the sidebar's NavItem. Every clickable
+    // slot (brand mark, switcher trigger, search anchor, bell,
+    // user-menu avatar) composes `NAV_BAR_SLOT_PRESS` from
+    // `nav-bar.tsx` which carries `active:translate-y-px` +
+    // motion-reduce safety net. The R14 ratchets at
+    // `r14-nav-bar-*.test.ts` lock the hover-translate /
+    // hover-scale / hover-shadow bans inside these files even
+    // though the global exempt skips the structural scan.
+    "src/components/layout/nav-bar.tsx",
+    "src/components/layout/tenant-switcher.tsx",
+    "src/components/layout/user-menu.tsx",
+    "src/components/layout/notifications-bell.tsx",
+    "src/components/layout/search-anchor.tsx",
 ]);
 
 const BANNED_PATTERNS = [
@@ -194,10 +208,15 @@ describe("v2-PR-4 motion language ratchet", () => {
             //   - layout/nav-item.tsx (Roadmap-13 — sidebar's
             //     tactile-button vocabulary: inset bevel shadow
             //     on hover + 1px press-down on active)
-            // Bumping past 6 means the team is reintroducing
+            //   - layout/nav-bar.tsx + four sibling slot files
+            //     (Roadmap-14 — top-bar chrome's tactile-press
+            //     vocabulary: shared NAV_BAR_SLOT_PRESS recipe
+            //     across brand mark + switcher + search + bell +
+            //     user menu, all carrying active:translate-y-px)
+            // Bumping past 11 means the team is reintroducing
             // decorative lift on pages — push back on the new
             // exemption.
-            expect(EXEMPT_FILES.size).toBeLessThanOrEqual(6);
+            expect(EXEMPT_FILES.size).toBeLessThanOrEqual(11);
         });
     });
 });

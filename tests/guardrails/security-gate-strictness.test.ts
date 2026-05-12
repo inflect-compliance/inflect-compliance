@@ -1,19 +1,34 @@
 /**
  * GAP-05 — Structural ratchet for CI security gate strictness.
+ * (Tightened 2026-05-12: high+ → moderate+.)
  *
  * The audit's GAP-05 finding noted that npm audit and Trivy gates
  * had been lowered (high → critical, CRITICAL,HIGH → CRITICAL) as a
- * temporary workaround to unblock CI while the Next.js 14 line carried
- * unfixable HIGH advisories. The Next 14 → 15.5 migration cleared
- * those advisories; the migration commit also restores both gates to
- * their original strictness.
+ * temporary workaround to unblock CI while the Next.js 14 line
+ * carried unfixable HIGH advisories. The Next 14 → 15.5 migration
+ * cleared those advisories; the migration commit restored both gates
+ * to their original strictness.
  *
- * This guardrail asserts the gates STAY restored. A future PR that
- * drops the gate back to `--audit-level=critical` or `severity:
- * "CRITICAL"` is the exact regression class the audit closed —
- * silently accepting HIGH-severity vulnerabilities to unblock a
- * merge. A written rationale + an upgrade plan tied to a specific
- * advisory must accompany any future lowering, NOT a workaround.
+ * 2026-05-12 the npm-audit gate was raised one further notch from
+ * `--audit-level=high` to `--audit-level=moderate`. Moderate-severity
+ * CVEs in production deps (postcss XSS, hono middleware bypass,
+ * protobufjs decoding bugs) are the exact failure mode this gate
+ * exists to prevent.
+ *
+ * This guardrail asserts the gates STAY restored AND ratchets only
+ * in the strictness direction:
+ *
+ *   • npm audit production-deps gate is `moderate` OR `low` (or
+ *     `info` — anything tighter than `high`). The regression class
+ *     this catches: a future PR dropping back to `high`, `critical`,
+ *     or removing the gate entirely.
+ *
+ *   • Trivy gate declares CRITICAL,HIGH (or tighter). A future PR
+ *     that downgrades to `CRITICAL` alone reintroduces the
+ *     lowered-gate posture GAP-05 closed.
+ *
+ * A written rationale + an upgrade plan tied to a specific advisory
+ * must accompany any future lowering, NOT a workaround.
  */
 
 import * as fs from 'fs';
@@ -28,18 +43,25 @@ function readRepoFile(rel: string): string {
 describe('GAP-05 ratchet — CI security gate strictness', () => {
     const ci = readRepoFile('.github/workflows/ci.yml');
 
-    it('npm audit gate blocks on HIGH severity (production deps), not CRITICAL-only', () => {
-        // The line we expect — exact match including the --omit=dev
-        // flag (production deps). The pre-migration line was
-        // `--audit-level=critical`.
-        expect(ci).toMatch(/npm audit --omit=dev --audit-level=high/);
-        // Regression: the previous workaround was the production-deps
-        // gate at `--audit-level=critical`. A future PR that swaps it
-        // back without a rationale is the class of change this
-        // guardrail catches. Note: the all-deps informational scan
-        // (without --omit=dev) legitimately stays at critical to
-        // limit noise from dev-only packages — not an audit-blocker.
-        expect(ci).not.toMatch(/npm audit --omit=dev --audit-level=critical/);
+    it('npm audit gate blocks on MODERATE+ severity (production deps)', () => {
+        // The canonical line — 2026-05-12 tightened from high → moderate.
+        // The ratchet accepts any tighter level (`moderate`, `low`,
+        // `info`) so future strictness bumps don't need a ratchet
+        // diff to land. It REJECTS anything looser (`high`,
+        // `critical`) — those are the regression classes this guard
+        // exists to catch.
+        const gateMatch = ci.match(
+            /npm audit --omit=dev --audit-level=(moderate|low|info)/,
+        );
+        expect(gateMatch).not.toBeNull();
+        // Regression: pre-2026-05-12 the gate was `high`; pre-GAP-05
+        // it was `critical`. A future PR that drops back to either
+        // without a written rationale is the change this guard catches.
+        // Note: the all-deps informational scan (without `--omit=dev`)
+        // legitimately stays at `critical` to limit noise from
+        // dev-only packages — it is not an audit-blocker.
+        expect(ci).not.toMatch(/npm audit --omit=dev --audit-level=high\b/);
+        expect(ci).not.toMatch(/npm audit --omit=dev --audit-level=critical\b/);
     });
 
     it('Trivy scan gate blocks on CRITICAL,HIGH, not CRITICAL-only', () => {

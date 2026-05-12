@@ -40,7 +40,11 @@ export default async function AppLayout({
     // instead of useQuery for that reason.
     return (
         <AppShell
-            user={{ name: session.user.name }}
+            user={{
+                name: session.user.name,
+                email: session.user.email,
+                memberships: session.user.memberships,
+            }}
             appName={tc('appName')}
         >
             <ClientProviders userId={session.user.id ?? null}>

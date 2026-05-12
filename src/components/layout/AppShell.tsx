@@ -3,17 +3,37 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
-import { Menu } from 'lucide-react';
 import { SidebarContent, MobileDrawer } from '@/components/layout/SidebarNav';
 import { OrgSidebarContent } from '@/components/layout/OrgSidebarNav';
-import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { BreadcrumbsProvider } from './breadcrumbs-store';
 import { TopChrome } from './TopChrome';
 
 // ─── Types ───
 
+/**
+ * User shape threaded through the shell from the server-side
+ * layout (which resolves the session via `auth()`).
+ *
+ * The codebase deliberately does NOT mount a `<SessionProvider>`
+ * client-side (see the rationale in `src/app/providers.tsx`); any
+ * chrome that needs user data takes it via props. R14-PR4 +
+ * R14-PR5 originally violated this by calling `useSession()` —
+ * the hotfix on this branch threads the data here instead.
+ */
 interface AppShellUser {
     name?: string | null;
+    email?: string | null;
+    /**
+     * Active tenant memberships from the JWT. Same shape as
+     * `MembershipEntry` in `src/auth.ts` — `{ slug, role,
+     * tenantId }`. Optional because the org variant has no
+     * tenant context.
+     */
+    memberships?: Array<{
+        slug: string;
+        role: string;
+        tenantId: string;
+    }>;
 }
 
 export type AppShellVariant = 'tenant' | 'org';
@@ -21,7 +41,16 @@ export type AppShellVariant = 'tenant' | 'org';
 interface AppShellProps {
     /** Serializable user data resolved server-side */
     user: AppShellUser;
-    /** Pre-resolved app name (from server-side i18n) */
+    /**
+     * Pre-resolved app name (from server-side i18n).
+     *
+     * R14-PR12 retired the mobile-only top bar that rendered the
+     * wordmark; the prop is preserved for caller compatibility
+     * (the tenant + org layouts pass it from `tc('appName')`).
+     * The value is no longer rendered anywhere — kept as a
+     * deprecation slot until the callers can be updated in a
+     * follow-up cleanup PR.
+     */
     appName: string;
     /**
      * Roadmap-2 PR-1 — picks which sidebar nav this shell mounts.
@@ -56,7 +85,9 @@ interface AppShellProps {
  */
 export function AppShell({
     user,
-    appName,
+    // appName preserved on the interface for caller compat (R14-PR12);
+    // no longer rendered anywhere — see the AppShellProps doc comment.
+    appName: _appName,
     variant = 'tenant',
     children,
 }: AppShellProps) {
@@ -78,19 +109,15 @@ export function AppShell({
         }
     }, [pathname]);
 
-    // Variant-driven slot resolution. Two pieces:
-    //   1. The sidebar content component itself.
-    //   2. Mobile-toggle a11y label + test-id (kept variant-specific
-    //      because Playwright tests target the variant deliberately).
+    // Variant-driven slot resolution.
+    // R14-PR12 unified the chrome — the mobile-only top bar that
+    // AppShell used to render with its own hamburger + theme
+    // toggle is GONE. The single NavBar (mounted by TopChrome)
+    // now renders on all viewports; AppShell still owns the
+    // drawer state and passes the open-handler through.
     const Sidebar = variant === 'org' ? OrgSidebarContent : SidebarContent;
-    const mobileToggleLabel =
-        variant === 'org'
-            ? 'Open organization navigation menu'
-            : 'Open navigation menu';
-    const mobileToggleTestId =
-        variant === 'org' ? 'org-nav-toggle' : 'nav-toggle';
-    const themeToggleId =
-        variant === 'org' ? 'org-theme-toggle-mobile' : 'theme-toggle-mobile';
+
+    const openDrawer = useCallback(() => setDrawerOpen(true), []);
 
     // Layout chain (Phase 1 of list-page-shell):
     //   • Mobile (<md): natural document scroll. `min-h-screen` on
@@ -128,35 +155,20 @@ export function AppShell({
 
             {/* Main content */}
             <main className="flex-1 overflow-auto md:overflow-hidden md:flex md:flex-col min-w-0 md:min-h-0">
-                {/* Roadmap-2 PR-2 — sticky top chrome on desktop.
-                    Hidden on mobile (the existing mobile top bar
-                    below carries the equivalent affordances). The
-                    BreadcrumbsProvider wraps the chrome AND the
-                    page tree so pages can push breadcrumbs from
-                    any depth. */}
+                {/* Unified top chrome (R14-PR12) — single NavBar
+                    across mobile + desktop. The pre-R14 mobile-only
+                    top bar that lived inline here was deleted; the
+                    NavBar's hamburger slot (via NavBarMobileMenu)
+                    replaces it. Theme toggle moved to the user
+                    menu (R14-PR5). BreadcrumbsProvider wraps the
+                    chrome AND the page tree so pages can push
+                    breadcrumbs from any depth. */}
                 <BreadcrumbsProvider>
-                    <TopChrome variant={variant} />
-                {/* Mobile top bar — visible on <md only */}
-                <div className="md:hidden sticky top-0 z-30 flex items-center gap-compact px-4 py-2 bg-bg-page/80 backdrop-blur-sm border-b border-border-subtle">
-                    <button
-                        type="button"
-                        className="p-2 rounded-lg text-content-muted hover:text-content-emphasis hover:bg-bg-muted transition-colors"
-                        onClick={() => setDrawerOpen(true)}
-                        aria-label={mobileToggleLabel}
-                        data-testid={mobileToggleTestId}
-                    >
-                        <Menu className="w-5 h-5" />
-                    </button>
-                    <div className="flex items-center gap-tight">
-                        <div className="w-6 h-6 rounded-md bg-gradient-to-br from-[var(--brand-emphasis)] to-[var(--brand-default)] flex items-center justify-center">
-                            <span className="text-content-inverted text-[10px] font-bold">IC</span>
-                        </div>
-                        <span className="text-sm font-semibold text-content-emphasis">{appName}</span>
-                    </div>
-                    <div className="ml-auto">
-                        <ThemeToggle id={themeToggleId} />
-                    </div>
-                </div>
+                    <TopChrome
+                        variant={variant}
+                        user={user}
+                        onMobileMenuClick={openDrawer}
+                    />
 
                 {/* Inner content container.
                     Mobile: just padding + max-width + centering.

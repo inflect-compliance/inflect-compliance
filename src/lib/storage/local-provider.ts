@@ -44,7 +44,13 @@ export class LocalStorageProvider implements StorageProvider {
         const dir = path.dirname(finalPath);
         await fs.mkdir(dir, { recursive: true });
 
-        const tmpPath = finalPath + '.tmp.' + crypto.randomUUID().slice(0, 8);
+        // Full randomUUID — 128 bits of entropy. The earlier
+        // `.slice(0, 8)` form was 32 bits (4B options) which is
+        // already collision-safe in a per-tenant storage dir, but
+        // the full UUID costs nothing and silences the CodeQL
+        // `js/insecure-temporary-file` rule, which assumes the
+        // sliced form is predictable enough for a symlink attack.
+        const tmpPath = finalPath + '.tmp.' + crypto.randomUUID();
         const hash = crypto.createHash('sha256');
         const maxSize = opts?.maxSizeBytes ?? DEFAULT_MAX_SIZE;
         let sizeBytes = 0;
