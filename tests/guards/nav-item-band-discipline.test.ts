@@ -72,16 +72,30 @@ describe('Roadmap-12 PR-5 — NavItem brand-gradient band discipline', () => {
     });
 
     it('paints a vertical brand-gradient (default → emphasis)', () => {
-        // Two stops, same hue family, vertical (`to-b`). The
-        // gradient deepens top → bottom — reads as quiet fluid
-        // intensification.
-        expect(SRC).toMatch(/before:bg-gradient-to-b/);
-        expect(SRC).toMatch(
-            /before:from-\[var\(--brand-default\)\]/,
-        );
-        expect(SRC).toMatch(
-            /before:to-\[var\(--brand-emphasis\)\]/,
-        );
+        // R12-PR5 originally locked this as Tailwind utility classes
+        // (`before:bg-gradient-to-b`, `before:from-...`,
+        // `before:to-...`). R13-PR2 added the via-muted midstop in
+        // the same form. R15-PR1 (stardust trail) had to switch the
+        // form because Tailwind utility classes only emit ONE
+        // background-image, and the stardust effect stacks radial
+        // particles on TOP of the linear gradient — requiring a
+        // single comprehensive `before:bg-[...]` arbitrary value.
+        //
+        // Both forms are accepted here; the load-bearing piece is
+        // that the brand stops (`--brand-default`, `--brand-emphasis`)
+        // BOTH appear inside whichever bg-image form the recipe
+        // uses, in the canonical top-to-bottom order. The
+        // `linear-gradient(to bottom, ...)` arbitrary form
+        // preserves the visual contract verbatim.
+        const utilityForm =
+            /before:bg-gradient-to-b/.test(SRC) &&
+            /before:from-\[var\(--brand-default\)\]/.test(SRC) &&
+            /before:to-\[var\(--brand-emphasis\)\]/.test(SRC);
+        const arbitraryForm =
+            /before:bg-\[[\s\S]*?linear-gradient\(to_bottom/.test(SRC) &&
+            /before:bg-\[[\s\S]*?var\(--brand-default\)/.test(SRC) &&
+            /before:bg-\[[\s\S]*?var\(--brand-emphasis\)/.test(SRC);
+        expect(utilityForm || arbitraryForm).toBe(true);
     });
 
     it('defaults to opacity 0 and transitions opacity (+ R13-PR9 geometry props)', () => {

@@ -45,50 +45,74 @@ const TOKENS_SRC = fs.readFileSync(
 );
 
 describe('Roadmap-13 PR-2 — band gradient richness + glow', () => {
-    describe('3-stop gradient', () => {
-        it('keeps the R12-PR5 from-default + to-emphasis endpoints', () => {
-            // R12-PR5 still owns the gradient's endpoints. R13-PR2
-            // is purely additive — a midstop inserted between the
-            // two locked endpoints. If a future PR drops either
-            // endpoint, the R12-PR5 ratchet fires; this assertion
-            // doubles up the contract from the R13 side.
-            expect(NAV_ITEM_SRC).toMatch(
-                /before:from-\[var\(--brand-default\)\]/,
+    describe('3-stop gradient (or arbitrary-value form per R15-PR1)', () => {
+        // R12-PR5 + R13-PR2 originally locked the gradient as
+        // Tailwind utility classes (`before:bg-gradient-to-b`,
+        // `before:from-...`, `before:via-...`, `before:to-...`).
+        // R15-PR1 (stardust trail) replaced this with a single
+        // comprehensive `before:bg-[...]` arbitrary value because
+        // utility classes only emit ONE background-image and the
+        // stardust effect stacks three radial-particle layers on
+        // TOP of the linear gradient.
+        //
+        // The contract is still: brand-default, brand-muted,
+        // brand-emphasis appear inside the bg-image in that order
+        // (top-to-bottom). Both forms satisfy.
+
+        function hasUtilityForm(): boolean {
+            return (
+                /before:from-\[var\(--brand-default\)\]/.test(NAV_ITEM_SRC) &&
+                /before:via-\[var\(--brand-muted\)\]/.test(NAV_ITEM_SRC) &&
+                /before:to-\[var\(--brand-emphasis\)\]/.test(NAV_ITEM_SRC)
             );
-            expect(NAV_ITEM_SRC).toMatch(
-                /before:to-\[var\(--brand-emphasis\)\]/,
+        }
+
+        function hasArbitraryForm(): boolean {
+            const linearMatch = NAV_ITEM_SRC.match(
+                /linear-gradient\(to_bottom,[^)]+var\(--brand-default\)[^)]+var\(--brand-muted\)[^)]+var\(--brand-emphasis\)/,
             );
+            return linearMatch !== null;
+        }
+
+        it('contains all three brand stops (utility OR arbitrary form)', () => {
+            expect(hasUtilityForm() || hasArbitraryForm()).toBe(true);
         });
 
-        it('adds a `--brand-muted` midstop via `before:via-[...]`', () => {
-            // The highlight bar. `--brand-muted` is the lightest tier
-            // of the brand palette (METRO: lighter yellow #FFE066;
-            // PwC: lighter orange #E06520). Pulling it through the
-            // middle of the band produces the "polished metal" read.
-            expect(NAV_ITEM_SRC).toMatch(
-                /before:via-\[var\(--brand-muted\)\]/,
-            );
-        });
-
-        it('the three stops appear in `from → via → to` order', () => {
-            // Tailwind's gradient utilities are positional —
-            // from/via/to map to 0%/50%/100% by default. Order in
-            // the className string is order in the rendered
-            // gradient. A future PR that scrambles them would
-            // produce a different visual without warning; this
-            // assertion catches it.
-            const fromIdx = NAV_ITEM_SRC.search(
-                /before:from-\[var\(--brand-default\)\]/,
-            );
-            const viaIdx = NAV_ITEM_SRC.search(
-                /before:via-\[var\(--brand-muted\)\]/,
-            );
-            const toIdx = NAV_ITEM_SRC.search(
-                /before:to-\[var\(--brand-emphasis\)\]/,
-            );
-            expect(fromIdx).toBeGreaterThan(-1);
-            expect(viaIdx).toBeGreaterThan(fromIdx);
-            expect(toIdx).toBeGreaterThan(viaIdx);
+        it('the three stops appear in `default → muted → emphasis` order', () => {
+            // The order matters — gradient stops at fixed positions.
+            // Both forms enforce the order: utility via `from → via
+            // → to` class names, arbitrary via the position of
+            // var() references in the linear-gradient(...) string.
+            if (hasUtilityForm()) {
+                const fromIdx = NAV_ITEM_SRC.search(
+                    /before:from-\[var\(--brand-default\)\]/,
+                );
+                const viaIdx = NAV_ITEM_SRC.search(
+                    /before:via-\[var\(--brand-muted\)\]/,
+                );
+                const toIdx = NAV_ITEM_SRC.search(
+                    /before:to-\[var\(--brand-emphasis\)\]/,
+                );
+                expect(viaIdx).toBeGreaterThan(fromIdx);
+                expect(toIdx).toBeGreaterThan(viaIdx);
+            } else {
+                // Arbitrary form: anchor at `linear-gradient(to_bottom`
+                // and scan forward for the three var() references.
+                // (Regex `[^)]+\)` doesn't work — the gradient body
+                // contains nested var(...) calls, and the negation
+                // matches the first inner `)`.)
+                const anchorIdx = NAV_ITEM_SRC.indexOf(
+                    'linear-gradient(to_bottom',
+                );
+                expect(anchorIdx).toBeGreaterThan(-1);
+                const tail = NAV_ITEM_SRC.slice(anchorIdx);
+                const defIdx = tail.indexOf('var(--brand-default)');
+                const mutIdx = tail.indexOf('var(--brand-muted)');
+                const empIdx = tail.indexOf('var(--brand-emphasis)');
+                expect(defIdx).toBeGreaterThan(-1);
+                expect(mutIdx).toBeGreaterThan(defIdx);
+                expect(empIdx).toBeGreaterThan(mutIdx);
+            }
         });
     });
 

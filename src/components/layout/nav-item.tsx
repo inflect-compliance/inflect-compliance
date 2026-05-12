@@ -224,12 +224,28 @@ const NAV_ITEM_GLOSS_BASE = [
 const NAV_ITEM_BAND_BASE = [
     'before:absolute before:left-0 before:top-1.5 before:bottom-1.5',
     'before:w-[3px] before:rounded-r-full',
-    // 3-stop gradient: default → muted (highlight) → emphasis.
-    // Mid-stop creates a polished-metal feel; the R12 2-stop recipe
-    // is the lower bound this expands from, not a target to revert
-    // to. The R12-PR5 ratchet still passes because `from-default` +
-    // `to-emphasis` are both present — `via-muted` is additive.
-    'before:bg-gradient-to-b before:from-[var(--brand-default)] before:via-[var(--brand-muted)] before:to-[var(--brand-emphasis)]',
+    // R15-PR1 — stardust particle trail. The band's bg-image stacks
+    // THREE white radial-gradient "particles" on top of the
+    // R13-PR2 3-stop brand-gradient base. Each particle is a small
+    // (1.5px) circle of white at a fading alpha — the leading
+    // particle is bright, the trailing ones dim out like a comet
+    // tail. As the existing `nav-band-shimmer` animation pans the
+    // bg-position, the entire stack drifts along the band's length;
+    // the particles READ as a glittering trace following the brand
+    // gradient.
+    //
+    // Why white instead of brand-coloured?
+    //   Brand-coloured particles disappear against the brand
+    //   gradient. White at low alpha reads as "starlight" — visible
+    //   at peripheral vision without competing with the band's hue
+    //   palette. Same hue-strategy as the gloss highlight (R13-PR6).
+    //
+    // The R13-PR2 ratchet still passes because the linear-gradient
+    // portion preserves `var(--brand-default)`, `var(--brand-muted)`,
+    // `var(--brand-emphasis)` in `from → via → to` order — the
+    // radial-gradients are stacked ABOVE it in z-order without
+    // displacing any stop.
+    'before:bg-[radial-gradient(circle_1.5px_at_50%_80%,_rgba(255,255,255,0.9),_transparent_70%),radial-gradient(circle_1.5px_at_50%_55%,_rgba(255,255,255,0.5),_transparent_70%),radial-gradient(circle_1.5px_at_50%_30%,_rgba(255,255,255,0.2),_transparent_70%),linear-gradient(to_bottom,_var(--brand-default),_var(--brand-muted),_var(--brand-emphasis))]',
     // R13-PR3 — `background-size: 100% 200%` makes the gradient
     // twice the band's height, so the `nav-band-shimmer` keyframe
     // can pan it along its own length. Without this the gradient
