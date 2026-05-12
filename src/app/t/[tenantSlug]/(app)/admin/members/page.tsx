@@ -24,7 +24,7 @@ import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import {
     Users, UserPlus, ChevronDown, Shield, XCircle, CheckCircle,
-    Search, MoreVertical, UserMinus, Mail, Monitor,
+    MoreVertical, UserMinus, Mail, Monitor,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { StatusBadge, statusBadgeVariants } from '@/components/ui/status-badge';
@@ -112,7 +112,9 @@ export default function MembersAdminPage() {
     const [members, setMembers] = useState<Member[]>([]);
     const [invites, setInvites] = useState<Invite[]>([]);
     const [loading, setLoading] = useState(true);
-    const [search, setSearch] = useState('');
+    // R14-PR7 — standalone search input retired. Member lists are
+    // typically <50; users can scroll or navigate to a specific
+    // member via the global command palette (⌘K).
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
@@ -321,20 +323,8 @@ export default function MembersAdminPage() {
         }
     }, [apiUrl, fetchMembers, sessionsModalUser]);
 
-    // ─── Filter ───
-    const filteredMembers = useMemo(
-        () => members.filter((m) => {
-            if (!search) return true;
-            const q = search.toLowerCase();
-            return (
-                m.user.name?.toLowerCase().includes(q) ||
-                m.user.email.toLowerCase().includes(q) ||
-                m.role.toLowerCase().includes(q) ||
-                m.status.toLowerCase().includes(q)
-            );
-        }),
-        [members, search],
-    );
+    // ─── Filter (R14-PR7 — search retired; full list shown) ───
+    const filteredMembers = members;
 
     // ─── Members DataTable columns ───
     const memberColumns = useMemo(
@@ -725,17 +715,12 @@ export default function MembersAdminPage() {
                 </div>
             )}
 
-            {/* Search / filter */}
-            <div className="relative max-w-xs">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-content-subtle" />
-                <input
-                    id="member-search"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search members..."
-                    className="input w-full pl-9"
-                />
-            </div>
+            {/* R14-PR7 — standalone "Search members" input retired.
+                Find a specific member via the global command palette
+                (⌘K) or scroll the list. If granular filtering becomes
+                load-bearing here, adopt FilterToolbar — never
+                reintroduce a hand-rolled `<input>` per CLAUDE.md
+                filter strategy. */}
 
             {/* Members DataTable (Epic 48 migration).
                 R13-PR5 — the outer `cardVariants({ density: 'none' })`
@@ -743,13 +728,7 @@ export default function MembersAdminPage() {
                 `bg-bg-default rounded-lg border-border-subtle` card
                 is the only one (matches Controls list visually). */}
             <div id="members-table-card">
-                {filteredMembers.length === 0 && search ? (
-                    <EmptyState
-                        icon={Search}
-                        title="No members match your search"
-                        description="Try adjusting your search term."
-                    />
-                ) : filteredMembers.length === 0 ? (
+                {filteredMembers.length === 0 ? (
                     <EmptyState
                         icon={Users}
                         title="No members yet"

@@ -1,6 +1,6 @@
 {
   "name": "inflect-compliance",
-  "version": "1.239.1",
+  "version": "1.245.1",
   "private": true,
   "scripts": {
     "prepare": "husky",
@@ -154,7 +154,7 @@
     "@next/swc-darwin-arm64": "14.2.35",
     "@next/swc-darwin-x64": "14.2.35",
     "@next/swc-linux-arm64-gnu": "14.2.35",
-    "@next/swc-linux-arm64-musl": "14.2.35",
+    "@next/swc-linux-arm64-musl": "16.2.6",
     "@next/swc-linux-x64-gnu": "14.2.35",
     "@next/swc-linux-x64-musl": "14.2.35",
     "@next/swc-win32-arm64-msvc": "14.2.35",
@@ -216,6 +216,9 @@
     "*": "bash scripts/detect-secrets.sh"
   },
   "overrides": {
-    "picomatch": "^4.0.4"
+    "picomatch": "^4.0.4",
+    "protobufjs": "^8.2.0",
+    "@hono/node-server": "^1.19.13",
+    "postcss": "$postcss"
   }
 }

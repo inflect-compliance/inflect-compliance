@@ -45,10 +45,13 @@ docker-compose up -d
 GAP-05 (2026-04-25) migrated off the vulnerable `next@^14.2.0` line —
 the two HIGH advisories (Image Optimizer DoS, RSC request
 deserialization) were unfixable in 14.x. CI security gates restored
-to their pre-workaround strictness: npm audit blocks on HIGH+, Trivy
-blocks on `CRITICAL,HIGH`. The structural ratchet at
-`tests/guardrails/security-gate-strictness.test.ts` fails CI if either
-gate is silently re-lowered or `next` is downgraded back to 14.x.
+to their pre-workaround strictness, and on 2026-05-12 tightened one
+further notch: npm audit blocks on **MODERATE+** (production deps),
+Trivy blocks on `CRITICAL,HIGH` (container scan). The structural
+ratchet at `tests/guardrails/security-gate-strictness.test.ts` fails
+CI if either gate is silently re-lowered (`moderate` → `high` /
+`critical`, or `CRITICAL,HIGH` → `CRITICAL`) or `next` is downgraded
+back to 14.x.
 
 Async-request-API caveat: 249 wrapped route handlers still type
 `params` synchronously; the transparent-await shim in

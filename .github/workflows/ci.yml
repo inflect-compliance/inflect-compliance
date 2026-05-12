@@ -727,16 +727,23 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
-      # ── npm audit: BLOCKING on high+ severity (production deps) ──
-      # `--omit=dev` scans only the runtime dependency tree, so a HIGH
-      # finding here implies an exploitable surface in shipped code.
-      # Lowering this gate (e.g. back to `--audit-level=critical`) is
-      # a regression — `tests/guardrails/security-gate-strictness.test.ts`
-      # fails CI if the gate weakens. If a specific advisory genuinely
-      # cannot be fixed today, add a tracked exemption with a written
+      # ── npm audit: BLOCKING on moderate+ severity (production deps) ──
+      # `--omit=dev` scans only the runtime dependency tree, so a
+      # MODERATE-or-higher finding here implies an exploitable
+      # surface in shipped code. The bar was raised from HIGH+ to
+      # MODERATE+ deliberately — moderate-severity CVEs in production
+      # deps (postcss XSS, hono middleware bypass, otel/protobuf
+      # decoding bugs) are the exact failure mode this gate exists
+      # to prevent.
+      #
+      # Lowering this gate (back to `--audit-level=high` or
+      # `=critical`) is a regression —
+      # `tests/guardrails/security-gate-strictness.test.ts` fails CI
+      # if the gate weakens. If a specific advisory genuinely cannot
+      # be fixed today, add a tracked exemption with a written
       # rationale + upgrade plan rather than relaxing the global gate.
-      - name: "Gate: npm audit (high+ blocks merge)"
-        run: npm audit --omit=dev --audit-level=high
+      - name: "Gate: npm audit (moderate+ blocks merge)"
+        run: npm audit --omit=dev --audit-level=moderate
 
       # ── Full audit (informational — dev deps included) ──
       - name: "Info: npm audit (all deps)"

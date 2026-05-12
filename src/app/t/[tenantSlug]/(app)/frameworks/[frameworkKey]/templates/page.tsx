@@ -22,7 +22,12 @@ export default function TemplateLibraryPage() {
     const [templates, setTemplates] = useState<any[]>([]);
     const [framework, setFramework] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [search, setSearch] = useState(searchParams.get('search') || '');
+    // R14-PR7 — standalone search input retired. The server-side
+    // `?search=` query param remains supported by the API; users
+    // who need name-based filtering can deep-link with the param
+    // or use the global ⌘K palette to navigate directly. A future
+    // PR adopting FilterToolbar would re-introduce the UI affordance
+    // properly.
     const [category, setCategory] = useState('');
     const [section, setSection] = useState('');
     const [installing, setInstalling] = useState<string | null>(null);
@@ -32,14 +37,18 @@ export default function TemplateLibraryPage() {
 
     const fetchTemplates = useCallback(async () => {
         const params = new URLSearchParams({ action: 'templates' });
-        if (search) params.set('search', search);
+        // Server-side `?search=` is still supported by the API for
+        // deep-linked filtering; the UI input was retired in
+        // R14-PR7. The URL searchParam is honoured if present.
+        const urlSearch = searchParams.get('search');
+        if (urlSearch) params.set('search', urlSearch);
         if (category) params.set('category', category);
         if (section) params.set('section', section);
         try {
             const res = await fetch(apiUrl(`/frameworks/${frameworkKey}?${params}`));
             if (res.ok) setTemplates(await res.json());
         } catch { /* ignore */ }
-    }, [apiUrl, frameworkKey, search, category, section]);
+    }, [apiUrl, frameworkKey, searchParams, category, section]);
 
     useEffect(() => {
         (async () => {
@@ -52,11 +61,11 @@ export default function TemplateLibraryPage() {
         })();
     }, [apiUrl, frameworkKey, fetchTemplates]);
 
-    // Debounced search
+    // R14-PR7 — debounced search retired with the input. Filter
+    // state changes (category, section) re-fetch immediately.
     useEffect(() => {
-        const id = setTimeout(fetchTemplates, 300);
-        return () => clearTimeout(id);
-    }, [search, category, section, fetchTemplates]);
+        fetchTemplates();
+    }, [category, section, fetchTemplates]);
 
     const installTemplate = async (code: string) => {
         setInstalling(code);
@@ -148,16 +157,11 @@ export default function TemplateLibraryPage() {
                 )}
             </div>
 
-            {/* Filters */}
+            {/* Filters — R14-PR7 dropped the name-search input. The
+                server-side `?search=` query param still works via
+                deep links; the UI affordance returns when this page
+                adopts FilterToolbar. */}
             <div className="flex flex-wrap gap-compact items-center" id="template-filters">
-                <input
-                    type="text"
-                    placeholder="Search templates..."
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    className="input w-60"
-                    id="template-search"
-                />
                 <Combobox
                     id="filter-category"
                     options={categoryOptions}

@@ -42,29 +42,41 @@ describe('Top-chrome discipline (Roadmap-2 PR-2)', () => {
         expect(src).toMatch(/<TopChrome\b/);
     });
 
-    it('TopChrome renders breadcrumbs + identity pill', () => {
+    it('TopChrome renders breadcrumbs + identity affordance', () => {
         const src = read('src/components/layout/TopChrome.tsx');
         // Each region is owned by a named component or a direct
         // `<Breadcrumbs>` mount. The ratchet binds to the names
         // not the layout, so a future visual refactor can move
         // them around without breaking the contract.
         expect(src).toMatch(/<Breadcrumbs\b/);
-        // Either pill must be possible — TopChrome picks one based
-        // on variant. The ratchet asserts both names appear in
-        // the import list so a future PR can't silently drop one.
-        expect(src).toMatch(/TenantIdentityPill/);
+        // R14-PR4 evolved the tenant variant from the passive
+        // `TenantIdentityPill` (R2) to the popover-driven
+        // `TenantSwitcher`. Org variant continues to mount the
+        // passive pill until a future PR extends. Either name
+        // satisfies the tenant side of the contract; OrgIdentityPill
+        // is still required for the org side.
+        const hasTenantAffordance =
+            /TenantIdentityPill/.test(src) || /TenantSwitcher/.test(src);
+        expect(hasTenantAffordance).toBe(true);
         expect(src).toMatch(/OrgIdentityPill/);
     });
 
-    it('TopChrome no longer mounts the search anchor', () => {
-        // Roadmap-2 PR-11 retired the center search-anchor. The
-        // sidebar's inline command opener (PR-3) is the canonical
-        // search affordance now. Re-introducing the chrome anchor
-        // would re-create the visual noise that PR-11 deliberately
-        // removed.
+    it('TopChrome does not import the retired R2 SearchAnchor module', () => {
+        // R2-PR11 retired the original center search-anchor (a
+        // separate `<SearchAnchor>` component in
+        // `src/components/layout/SearchAnchor.tsx`). R14-PR6
+        // resurrects a search affordance as `<SearchAnchor>` from
+        // `./search-anchor` (lowercase-dash filename, different
+        // implementation — opens the global command palette).
+        //
+        // This assertion locks the FILE PATH of the retired
+        // module: a future import from `./SearchAnchor` (uppercase
+        // filename) would be the R2 regression we caught originally.
+        // The R14 path `./search-anchor` is allowed.
         const src = read('src/components/layout/TopChrome.tsx');
-        expect(src).not.toMatch(/<SearchAnchor\b/);
-        expect(src).not.toMatch(/from\s+['"]\.\/SearchAnchor['"]/);
+        expect(src).not.toMatch(
+            /from\s+['"]\.\/SearchAnchor['"]/,
+        );
     });
 
     it('breadcrumbs-store exports the provider + hook + reader', () => {
@@ -85,11 +97,18 @@ describe('Top-chrome discipline (Roadmap-2 PR-2)', () => {
         expect(src).toMatch(/useBreadcrumbs\s*\(/);
     });
 
-    it('TopChrome is hidden on mobile (avoids two-bar pile-up)', () => {
-        // The chrome is the desktop affordance; mobile already has
-        // the in-shell mobile top bar. Stacking both eats vertical
-        // space the mobile UX cannot spare.
-        const src = read('src/components/layout/TopChrome.tsx');
-        expect(src).toMatch(/hidden\s+md:flex/);
+    it('TopChrome no longer renders a parallel mobile-only top bar (R14-PR12)', () => {
+        // R14-PR12 unified the chrome — the pre-R14 `<AppShell>`
+        // rendered a SEPARATE mobile-only top bar with its own
+        // hamburger + wordmark + theme toggle. That bar is GONE;
+        // the NavBar (mounted by TopChrome) is the single chrome
+        // surface across mobile + desktop. AppShell should no
+        // longer contain a mobile-only `<header>` or sticky-top
+        // hamburger row.
+        const src = read('src/components/layout/AppShell.tsx');
+        // The retired mobile bar had `md:hidden sticky top-0`
+        // on a top-level div. A regression that re-introduces it
+        // would re-stack two bars on mobile.
+        expect(src).not.toMatch(/md:hidden\s+sticky\s+top-0/);
     });
 });

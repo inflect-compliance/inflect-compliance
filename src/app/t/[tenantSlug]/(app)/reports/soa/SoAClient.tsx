@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-    Search, X, FilterX, Link2, FileText, AlertTriangle,
+    FilterX, Link2, FileText, AlertTriangle,
     CheckCircle2, XCircle, HelpCircle, ChevronDown, Check,
     Plus, MessageSquare,
 } from 'lucide-react';
@@ -81,7 +81,12 @@ function GapBadges({ entry }: { entry: SoAEntryDTO }) {
 
 export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientProps) {
     const router = useRouter();
-    const [search, setSearch] = useState('');
+    // R14-PR7 — standalone main-page search retired. The "Show gaps
+    // only" toggle remains as the primary in-page filter; users
+    // looking for a specific requirement use the global command
+    // palette (⌘K) or the Annex A code list. The MODAL search (for
+    // picking a control to map) stays — it's a picker affordance,
+    // not a page-level search.
     const [gapsOnly, setGapsOnly] = useState(false);
     const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
@@ -99,15 +104,6 @@ export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientPr
     const filteredEntries = useMemo(() => {
         let entries = report.entries;
 
-        if (search) {
-            const q = search.toLowerCase();
-            entries = entries.filter(e =>
-                e.requirementCode.toLowerCase().includes(q) ||
-                e.requirementTitle.toLowerCase().includes(q) ||
-                (e.section || '').toLowerCase().includes(q)
-            );
-        }
-
         if (gapsOnly) {
             entries = entries.filter(e => {
                 if (e.applicable === null) return true; // unmapped
@@ -119,7 +115,7 @@ export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientPr
         }
 
         return entries;
-    }, [report.entries, search, gapsOnly]);
+    }, [report.entries, gapsOnly]);
 
     // ─── Actions ───
 
@@ -223,29 +219,10 @@ export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientPr
                 </div>
             )}
 
-            {/* Filters */}
+            {/* Filters — R14-PR7 dropped the main-page search input.
+                The "Show gaps only" toggle remains; cross-page
+                navigation goes through ⌘K. */}
             <div className="flex flex-wrap items-center gap-tight">
-                <div className="relative flex-1 min-w-[180px] max-w-sm">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-content-subtle" />
-                    <input
-                        type="text"
-                        className="w-full pl-8 pr-8 py-1.5 text-xs bg-bg-default/60 border border-border-emphasis/50 rounded-full text-content-emphasis placeholder-content-subtle focus:outline-none focus:border-[var(--brand-default)]/50 focus:ring-1 focus:ring-[var(--brand-default)]/20 transition-all"
-                        placeholder="Search by code or title…"
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        id="soa-search"
-                    />
-                    {search && (
-                        <button
-                            type="button"
-                            className="absolute right-2 top-1/2 -translate-y-1/2 text-content-subtle hover:text-content-default"
-                            onClick={() => setSearch('')}
-                        >
-                            <X className="w-3.5 h-3.5" />
-                        </button>
-                    )}
-                </div>
-
                 <Button
                     variant={gapsOnly ? 'destructive' : 'ghost'}
                     onClick={() => setGapsOnly(!gapsOnly)}
@@ -255,10 +232,10 @@ export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientPr
                     {gapsOnly ? 'Showing gaps only' : 'Show gaps only'}
                 </Button>
 
-                {(search || gapsOnly) && (
+                {gapsOnly && (
                     <Button
                         variant="ghost"
-                        onClick={() => { setSearch(''); setGapsOnly(false); }}
+                        onClick={() => setGapsOnly(false)}
                     >
                         <FilterX className="w-3.5 h-3.5" /> Clear
                     </Button>

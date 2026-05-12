@@ -76,7 +76,11 @@ export default async function OrgLayout({
         >
             <AppShell
                 variant="org"
-                user={{ name: session.user.name }}
+                user={{
+                    name: session.user.name,
+                    email: session.user.email,
+                    memberships: session.user.memberships,
+                }}
                 appName={tc('appName')}
             >
                 <ClientProviders>{children}</ClientProviders>

@@ -202,6 +202,18 @@ module.exports = {
                     '0%, 100%': { 'background-position': '0% 0%' },
                     '50%': { 'background-position': '0% 100%' },
                 },
+                // R14-PR3 — slow horizontal pan on the NavBar brand
+                // mark's gradient. The mark paints a 3-stop brand
+                // gradient at `background-size: 200% 100%`; this
+                // keyframe pans the gradient left → right → left
+                // over 6 seconds. The mark visibly "breathes" — a
+                // slow pulse one rung slower than the band's 4s
+                // tempo so the eye reads them as a hierarchy (band
+                // moves first, brand follows).
+                'nav-brand-pulse': {
+                    '0%, 100%': { 'background-position': '0% 50%' },
+                    '50%': { 'background-position': '100% 50%' },
+                },
             },
             animation: {
                 'slide-up-fade': 'slide-up-fade 0.2s ease-out',
@@ -218,6 +230,17 @@ module.exports = {
                 // breathing curve; `infinite` keeps it going as long
                 // as the band is visible.
                 'nav-band-shimmer': 'nav-band-shimmer 4s ease-in-out infinite',
+                // 6s tempo — deliberately slower than the band's 4s.
+                // Two reasons:
+                //   • Visual hierarchy. The band is the state signal;
+                //     the brand mark is the identity signal. The
+                //     state should "lead" the eye; the identity
+                //     pulses underneath.
+                //   • Cognitive load. Two animations at the same
+                //     tempo synchronise and become hypnotic. Different
+                //     tempos let the eye treat each as a separate
+                //     piece of choreography.
+                'nav-brand-pulse': 'nav-brand-pulse 6s ease-in-out infinite',
             },
         },
     },
