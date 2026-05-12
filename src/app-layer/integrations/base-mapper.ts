@@ -256,18 +256,33 @@ export function getNestedValue(
  * Creates intermediate objects as needed.
  *
  * @example setNestedValue({}, 'a.b', 1) → { a: { b: 1 } }
+ *
+ * Path keys equal to `__proto__`, `constructor`, or `prototype` are
+ * REJECTED at any depth — those names would let an attacker mutate
+ * `Object.prototype` or a class constructor via crafted mapping
+ * data. Today `path` comes from integration-mapping config (admin-
+ * defined, source-controlled), so the risk is theoretical — but
+ * the guard is cheap and forecloses the bug class.
  */
+const PROTOTYPE_POLLUTION_KEYS = new Set([
+    '__proto__',
+    'constructor',
+    'prototype',
+]);
+
 export function setNestedValue(
     obj: Record<string, unknown>,
     path: string,
     value: unknown,
 ): void {
     if (!path.includes('.')) {
+        if (PROTOTYPE_POLLUTION_KEYS.has(path)) return;
         obj[path] = value;
         return;
     }
 
     const parts = path.split('.');
+    if (parts.some((p) => PROTOTYPE_POLLUTION_KEYS.has(p))) return;
     let current = obj;
     for (let i = 0; i < parts.length - 1; i++) {
         const part = parts[i];
