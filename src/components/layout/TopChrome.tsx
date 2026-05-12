@@ -40,6 +40,7 @@ import { OrgIdentityPill } from './IdentityPill';
 import { TenantSwitcher } from './tenant-switcher';
 import { UserMenu } from './user-menu';
 import { SearchAnchor } from './search-anchor';
+import { NotificationsBell } from './notifications-bell';
 import type { AppShellVariant } from './AppShell';
 import { NavBar, NavBarBrand } from './nav-bar';
 
@@ -104,6 +105,7 @@ export function TopChrome({ variant }: TopChromeProps) {
             right={
                 <>
                     <Identity />
+                    <NotificationsBell />
                     <UserMenu />
                 </>
             }

@@ -197,13 +197,18 @@ describe('Roadmap-14 PR-5 — UserMenu discipline', () => {
 
         it('mounts UserMenu in the right slot AFTER the identity affordance', () => {
             // The slot order matters — switcher first (workspace
-            // context), user menu second (account scope). A
-            // regression that swaps them would put the account
-            // menu before the workspace, which feels wrong
-            // (workspace is the broader scope).
-            expect(TOP_CHROME_SRC).toMatch(
-                /<Identity\s*\/>\s*\n\s*<UserMenu\s*\/>/,
-            );
+            // context), user menu LAST (account scope). Between
+            // them, R14-PR8 inserts <NotificationsBell />. The
+            // exact regex accepts the bell + any future sibling
+            // (notifications, env badge follow-up, etc.) as long
+            // as Identity appears before UserMenu in the right-slot
+            // JSX. A regression that swaps Identity ↔ UserMenu
+            // entirely is still caught — the relative order is the
+            // load-bearing piece.
+            const identityIdx = TOP_CHROME_SRC.indexOf('<Identity ');
+            const userMenuIdx = TOP_CHROME_SRC.indexOf('<UserMenu ');
+            expect(identityIdx).toBeGreaterThan(-1);
+            expect(userMenuIdx).toBeGreaterThan(identityIdx);
         });
     });
 });
