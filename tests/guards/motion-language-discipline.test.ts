@@ -76,6 +76,23 @@ const EXEMPT_FILES = new Set<string>([
     // not a `<tr>`, but the inset-shadow trick is still the
     // canonical "this is a 1-edge tone change, not a lift" pattern.
     "src/components/ui/table/virtual-table-body.tsx",
+    // Roadmap-13 — the NavItem primitive consciously broadens the
+    // motion language for the sidebar's tactile-button vocabulary:
+    //   - `hover:shadow-[var(--nav-bevel-shadow)]` (R13-PR7) is an
+    //     INSET shadow that simulates concavity on hover — the
+    //     bottom-edge counterpart to the R13-PR6 top-edge gloss
+    //     highlight. Inset shadow, not lift; the row stays flush
+    //     with the sidebar.
+    //   - `active:translate-y-px` (R13-PR8) is the 1px press-down
+    //     feedback on click. The single tactile micro-motion the
+    //     R13 vocabulary explicitly allows; geometry stays still
+    //     in every other state.
+    // Both are locked by their own R13 ratchets (`r13-bevel-
+    // shadow.test.ts`, `r13-press-feedback.test.ts`). The exempt
+    // here documents the deliberate broadening so a future PR
+    // that adds `hover:scale-105` to nav-item.tsx is still caught
+    // by the local R13 ratchets — those don't get carved out.
+    "src/components/layout/nav-item.tsx",
 ]);
 
 const BANNED_PATTERNS = [
@@ -174,10 +191,13 @@ describe("v2-PR-4 motion language ratchet", () => {
             //     left-edge affordance on the virtualized row path
             //     so all three DataTable branches signal clickable
             //     rows identically)
-            // Bumping past 5 means the team is reintroducing
+            //   - layout/nav-item.tsx (Roadmap-13 — sidebar's
+            //     tactile-button vocabulary: inset bevel shadow
+            //     on hover + 1px press-down on active)
+            // Bumping past 6 means the team is reintroducing
             // decorative lift on pages — push back on the new
             // exemption.
-            expect(EXEMPT_FILES.size).toBeLessThanOrEqual(5);
+            expect(EXEMPT_FILES.size).toBeLessThanOrEqual(6);
         });
     });
 });

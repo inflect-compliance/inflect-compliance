@@ -261,6 +261,25 @@ export const NAV_ITEM_BASE = [
     NAV_ITEM_HEIGHT_MIN,
     NAV_ITEM_RADIUS,
     'text-sm transition-colors duration-150 ease-out',
+    // R13-PR8 — press feedback. Single tactile micro-motion the
+    // R13 vocabulary explicitly allows: on mousedown the row drops
+    // 1px (`active:translate-y-px`), the universal "you just
+    // clicked something physical" cue. Paired with a fast 75ms
+    // transition on transform so the down-press feels snappy and
+    // the spring-back on mouseup is barely-perceptible. Geometry
+    // returns to baseline the instant the click ends — no
+    // lingering displacement.
+    //
+    // This is the ONE transform the sidebar allows. Hover lift,
+    // scale-on-hover, translate on focus — all still banned. The
+    // mousedown press is the canonical "real button" feedback;
+    // anything else is decorative motion that the R12 motion-
+    // language ratchet correctly rejects.
+    //
+    // `motion-reduce:active:translate-y-0` is the safety net for
+    // users who've opted out of motion at the OS level — they get
+    // no displacement at all.
+    'transition-transform duration-75 ease-out active:translate-y-px motion-reduce:active:translate-y-0',
     NAV_ITEM_BAND_BASE,
     NAV_ITEM_GLOSS_BASE,
     // Focus-visible — keyboard story. (R12-PR7 lock.)
