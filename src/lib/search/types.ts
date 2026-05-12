@@ -41,7 +41,8 @@ export type SearchHitType =
     | 'risk'
     | 'policy'
     | 'evidence'
-    | 'framework';
+    | 'framework'
+    | 'asset';
 
 // ─── Hit shape ─────────────────────────────────────────────────────────
 
@@ -71,7 +72,13 @@ export interface SearchHit {
     /** Bounded relevance score. Implementation-specific magnitude; only ordering is part of the contract. */
     score: number;
     /** Stable icon key the renderer maps to a Lucide glyph (UI primitive defines the map). */
-    iconKey: 'shield-check' | 'alert-triangle' | 'file-text' | 'paperclip' | 'layers';
+    iconKey:
+        | 'shield-check'
+        | 'alert-triangle'
+        | 'file-text'
+        | 'paperclip'
+        | 'layers'
+        | 'package';
     /** Plural display name for grouping headers ("Controls", "Risks"...). */
     category: string;
 }
@@ -92,6 +99,7 @@ export const SEARCH_TYPE_DEFAULTS: Record<
     policy: { iconKey: 'file-text', category: 'Policies' },
     evidence: { iconKey: 'paperclip', category: 'Evidence' },
     framework: { iconKey: 'layers', category: 'Frameworks' },
+    asset: { iconKey: 'package', category: 'Assets' },
 };
 
 // ─── Top-level payload ─────────────────────────────────────────────────

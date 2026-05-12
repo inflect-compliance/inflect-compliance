@@ -93,6 +93,7 @@ function searchResponse(
                 policy: hits.filter((h) => h.type === 'policy').length,
                 evidence: hits.filter((h) => h.type === 'evidence').length,
                 framework: hits.filter((h) => h.type === 'framework').length,
+                asset: hits.filter((h) => h.type === 'asset').length,
             },
             truncated: false,
             perTypeLimit: 10,

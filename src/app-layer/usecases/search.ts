@@ -76,7 +76,7 @@ export async function getUnifiedSearch(
     const allHits: SearchHit[] = [];
 
     await runInTenantContext(ctx, async (db) => {
-        const [controls, risks, policies, evidence] = await Promise.all([
+        const [controls, risks, policies, evidence, assets] = await Promise.all([
             db.control.findMany({
                 where: {
                     tenantId,
@@ -121,6 +121,29 @@ export async function getUnifiedSearch(
                 select: { id: true, title: true, type: true },
                 take: dbLimit,
             }),
+            // Asset search — matches against `name` and the optional
+            // `externalRef` field. `externalRef` is the canonical
+            // place users put external system IDs / asset tags
+            // (`patent1`, `srv-prod-04`, etc.), so it's the field
+            // the "I'm looking for that specific asset" use case
+            // depends on.
+            db.asset.findMany({
+                where: {
+                    tenantId,
+                    OR: [
+                        { name: { contains, mode: 'insensitive' } },
+                        { externalRef: { contains, mode: 'insensitive' } },
+                    ],
+                },
+                select: {
+                    id: true,
+                    name: true,
+                    type: true,
+                    status: true,
+                    externalRef: true,
+                },
+                take: dbLimit,
+            }),
         ]);
 
         for (const c of controls as Row<{
@@ -143,6 +166,14 @@ export async function getUnifiedSearch(
         }
         for (const e of evidence as Row<{ title: string; type: string }>[]) {
             allHits.push(buildEvidenceHit(e, trimmed, tenantSlug));
+        }
+        for (const a of assets as Row<{
+            name: string;
+            type: string;
+            status: string;
+            externalRef: string | null;
+        }>[]) {
+            allHits.push(buildAssetHit(a, trimmed, tenantSlug));
         }
     });
 
@@ -187,7 +218,14 @@ function emptyResponse(query: string, limit: number): SearchResponse {
         hits: [],
         meta: {
             query,
-            perTypeCounts: { control: 0, risk: 0, policy: 0, evidence: 0, framework: 0 },
+            perTypeCounts: {
+                control: 0,
+                risk: 0,
+                policy: 0,
+                evidence: 0,
+                framework: 0,
+                asset: 0,
+            },
             truncated: false,
             perTypeLimit: limit,
         },
@@ -276,6 +314,40 @@ function buildEvidenceHit(
     };
 }
 
+function buildAssetHit(
+    row: {
+        id: string;
+        name: string;
+        type: string;
+        status: string;
+        externalRef: string | null;
+    },
+    query: string,
+    slug: string,
+): SearchHit {
+    const meta = SEARCH_TYPE_DEFAULTS.asset;
+    // Title leads with externalRef when present (that's typically
+    // what the user typed to find the asset — `patent1`,
+    // `srv-prod-04`); falls back to plain name otherwise.
+    const title = row.externalRef
+        ? `${row.externalRef} — ${row.name}`
+        : row.name;
+    return {
+        type: 'asset',
+        id: row.id,
+        title,
+        subtitle: row.type,
+        badge: row.status,
+        href: `/t/${slug}/assets/${row.id}`,
+        score: computeRankScore(query, {
+            type: 'asset',
+            title: row.name,
+            code: row.externalRef,
+        }),
+        ...meta,
+    };
+}
+
 function buildFrameworkHit(
     row: { id: string; key: string; name: string; version: string | null },
     query: string,
@@ -312,4 +384,5 @@ export const __SEARCHABLE_TYPES__: ReadonlyArray<SearchHitType> = [
     'policy',
     'evidence',
     'framework',
+    'asset',
 ];

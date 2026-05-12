@@ -39,6 +39,7 @@ import {
     FileText,
     Files,
     Layers,
+    Package,
     Paperclip,
     Search,
     ShieldCheck,
@@ -153,6 +154,7 @@ const ENTITY_META: Record<
     policy: { heading: 'Policies', icon: FileText },
     evidence: { heading: 'Evidence', icon: Paperclip },
     framework: { heading: 'Frameworks', icon: Layers },
+    asset: { heading: 'Assets', icon: Package },
 };
 
 const ENTITY_ORDER: EntityKind[] = [
@@ -161,6 +163,7 @@ const ENTITY_ORDER: EntityKind[] = [
     'policy',
     'evidence',
     'framework',
+    'asset',
 ];
 
 function groupByKind(

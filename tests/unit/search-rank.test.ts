@@ -168,6 +168,7 @@ describe('capPerType', () => {
             policy: 0,
             framework: 0,
             evidence: 0,
+            asset: 0,
         });
         expect(out.truncated).toBe(false);
     });
