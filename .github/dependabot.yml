@@ -17,8 +17,19 @@ updates:
     labels:
       - dependencies
       - automated
-    # Group updates to reduce PR noise
+    # Group updates to reduce PR noise.
+    #
+    # `applies-to` controls scope:
+    #   • omitted          → version-updates only (the default)
+    #   • security-updates → CVE-triggered security PRs only
+    # A group can target ONE of those; we deliberately keep
+    # version-update groups and security-update groups SEPARATE
+    # so the weekly version cadence and the on-demand security
+    # cadence don't interleave into one PR (mixing routine bumps
+    # with urgent CVE fixes makes the review window worse for
+    # both).
     groups:
+      # ── Version updates (weekly cadence) ──
       # Production deps — review carefully
       production:
         dependency-type: production
@@ -32,6 +43,25 @@ updates:
           - minor
           - patch
       # Major versions — always individual PRs (handled by default)
+
+      # ── Security updates (on-demand, CVE-triggered) ──
+      # Without these groups, Dependabot opens one PR per advisory.
+      # During a widespread advisory wave (semver, axios, xml2js,
+      # etc.) that can mint 15+ PRs in an afternoon. Grouped
+      # security updates collapse them into one PR per dependency-
+      # type, so reviewers see the whole batch in one diff and CI
+      # gates (typecheck + build + jest + Trivy + CodeQL + npm
+      # audit) cover the bundle as a unit.
+      production-security:
+        applies-to: security-updates
+        dependency-type: production
+        patterns:
+          - "*"
+      dev-security:
+        applies-to: security-updates
+        dependency-type: development
+        patterns:
+          - "*"
     # Ignore known-noisy packages
     ignore:
       - dependency-name: "@types/node"
