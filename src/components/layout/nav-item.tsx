@@ -132,14 +132,29 @@ export interface NavItemProps {
 }
 
 /**
- * **The brand-gradient band** — R12-PR5.
+ * **The brand-gradient band** — R12-PR5, evolved by R13-PR2.
  *
  * A 3-px wide capsule-shaped pseudo-element pinned to the left of
- * the row. Vertical gradient from `--brand-default` (top) to
- * `--brand-emphasis` (bottom) — both are the SAME hue family
- * (yellow→yellow or orange→orange depending on theme), so the
- * gradient reads as a quiet fluid deepening rather than a
- * rainbow stunt.
+ * the row. The R12 recipe was a 2-stop gradient (brand-default →
+ * brand-emphasis); R13-PR2 evolves this to a **3-stop gradient
+ * with a highlight midstop** — like brushed metal lit from above:
+ *
+ *     top    `--brand-default`  (canonical brand)
+ *     middle `--brand-muted`    (one rung lighter — the "highlight")
+ *     bottom `--brand-emphasis` (one rung deeper — the "shadow")
+ *
+ * The eye reads this as a polished metallic capsule with a
+ * deliberate highlight bar across its middle. The single-tone
+ * "fluid deepening" of R12 was honest but flat; R13-PR2 adds the
+ * shape of light hitting the band, which is what "alive" feels
+ * like to the eye.
+ *
+ * Pair with a soft outer glow (`--nav-band-glow` from tokens.css,
+ * resolved per theme — yellow @ 35% on METRO, orange @ 35% on
+ * PwC). The glow bleeds 6px of brand-coloured light into the row
+ * surface, softening the band's edge so it doesn't read as a
+ * stamped line. "No rough edges" turns into "the band has an
+ * aura".
  *
  * Why a pseudo-element, not a border-left?
  *   - `border-image: linear-gradient(...)` works but doesn't
@@ -154,14 +169,12 @@ export interface NavItemProps {
  *     CAPSULE feels like jewellery. The band reads as a piece of
  *     deliberate ornament, not row chrome.
  *
- * Why opacity 0 → 1 transition?
- *   - The motion-language ratchet bans transform / scale /
- *     translate. Opacity is the canonical "fade in/out" motion
- *     for tone-only design systems. 200ms ease-out is one rung
- *     slower than the row's colour transition (150ms) so the
- *     band feels like it lights up just AFTER the text wakes —
- *     a tiny choreography the eye doesn't consciously notice but
- *     reads as deliberate.
+ * Why opacity 0 → 1 transition (R12-PR5 invariant, preserved)?
+ *   - Opacity is the canonical "fade in/out" motion for tone-only
+ *     design systems. 200ms ease-out is one rung slower than the
+ *     row's colour transition (150ms) so the band feels like it
+ *     lights up just AFTER the text wakes — a tiny choreography
+ *     the eye doesn't consciously notice but reads as deliberate.
  *
  * The DEFAULT state holds the band at opacity 0 — invisible.
  * The HOVER state fades it to opacity 100 — visible.
@@ -171,7 +184,18 @@ export interface NavItemProps {
 const NAV_ITEM_BAND_BASE = [
     'before:absolute before:left-0 before:top-1.5 before:bottom-1.5',
     'before:w-[3px] before:rounded-r-full',
-    'before:bg-gradient-to-b before:from-[var(--brand-default)] before:to-[var(--brand-emphasis)]',
+    // 3-stop gradient: default → muted (highlight) → emphasis.
+    // Mid-stop creates a polished-metal feel; the R12 2-stop recipe
+    // is the lower bound this expands from, not a target to revert
+    // to. The R12-PR5 ratchet still passes because `from-default` +
+    // `to-emphasis` are both present — `via-muted` is additive.
+    'before:bg-gradient-to-b before:from-[var(--brand-default)] before:via-[var(--brand-muted)] before:to-[var(--brand-emphasis)]',
+    // Outer glow — `--nav-band-glow` resolves per theme to the
+    // brand hue at 35% over a 6px blur. Softens the band's edges
+    // into a halo, fixing the "stamped line" feel of the R12
+    // recipe. Static across states — the glow is part of the band's
+    // form, not gated on hover/active.
+    'before:shadow-[var(--nav-band-glow)]',
     'before:opacity-0 before:transition-opacity before:duration-200 before:ease-out',
 ].join(' ');
 

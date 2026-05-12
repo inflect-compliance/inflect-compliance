@@ -142,6 +142,20 @@
   --duration-fast:    100ms;
   --duration-default: 150ms;
   --duration-slow:    300ms;
+
+  /* ── Sidebar band glow (R13-PR2) ───────────────────────────────── */
+  /*
+   * The 3-stop brand-gradient band on the `<NavItem>` casts a soft
+   * radial glow into the row surface. Hardcoded per theme because
+   * box-shadow's colour stop can't be derived from `--brand-default`
+   * via Tailwind's arbitrary-value syntax without `color-mix()`,
+   * which would inflate the class string for one token.
+   *
+   * METRO: METRO yellow @ 35% — visible against the deep navy bg
+   * without screaming. 6px blur is the sweet spot — wider feels
+   * smoky, narrower disappears at non-Retina rendering.
+   */
+  --nav-band-glow: 0 0 6px rgba(255, 205, 17, 0.35);
 }
 
 
@@ -264,6 +278,16 @@
   --shadow-sm:  0 1px 2px rgba(60, 50, 40, 0.06);
   --shadow:     0 4px 12px rgba(60, 50, 40, 0.08);
   --shadow-lg:  0 8px 24px rgba(60, 50, 40, 0.12);
+
+  /* ── Sidebar band glow (R13-PR2) ───────────────────────────────── */
+  /*
+   * PwC: orange @ 35% on the cream `--bg-default` (#F8F6F3). Same
+   * 6px blur radius as METRO — the geometry of the glow is theme-
+   * independent; only the colour swaps. A flatter alpha would
+   * disappear on cream; 0.35 lets the glow read at peripheral
+   * vision without compromising legibility of the band itself.
+   */
+  --nav-band-glow: 0 0 6px rgba(208, 74, 2, 0.35);
 }
 
 /* ─────────────────────────────────────────────────────────────────
