@@ -39,6 +39,7 @@ import { useCurrentBreadcrumbs } from './breadcrumbs-store';
 import { OrgIdentityPill } from './IdentityPill';
 import { TenantSwitcher } from './tenant-switcher';
 import { UserMenu } from './user-menu';
+import { SearchAnchor } from './search-anchor';
 import type { AppShellVariant } from './AppShell';
 import { NavBar, NavBarBrand } from './nav-bar';
 
@@ -99,6 +100,7 @@ export function TopChrome({ variant }: TopChromeProps) {
                     )}
                 </>
             }
+            center={<SearchAnchor />}
             right={
                 <>
                     <Identity />

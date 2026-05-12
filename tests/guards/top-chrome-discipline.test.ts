@@ -61,15 +61,22 @@ describe('Top-chrome discipline (Roadmap-2 PR-2)', () => {
         expect(src).toMatch(/OrgIdentityPill/);
     });
 
-    it('TopChrome no longer mounts the search anchor', () => {
-        // Roadmap-2 PR-11 retired the center search-anchor. The
-        // sidebar's inline command opener (PR-3) is the canonical
-        // search affordance now. Re-introducing the chrome anchor
-        // would re-create the visual noise that PR-11 deliberately
-        // removed.
+    it('TopChrome does not import the retired R2 SearchAnchor module', () => {
+        // R2-PR11 retired the original center search-anchor (a
+        // separate `<SearchAnchor>` component in
+        // `src/components/layout/SearchAnchor.tsx`). R14-PR6
+        // resurrects a search affordance as `<SearchAnchor>` from
+        // `./search-anchor` (lowercase-dash filename, different
+        // implementation — opens the global command palette).
+        //
+        // This assertion locks the FILE PATH of the retired
+        // module: a future import from `./SearchAnchor` (uppercase
+        // filename) would be the R2 regression we caught originally.
+        // The R14 path `./search-anchor` is allowed.
         const src = read('src/components/layout/TopChrome.tsx');
-        expect(src).not.toMatch(/<SearchAnchor\b/);
-        expect(src).not.toMatch(/from\s+['"]\.\/SearchAnchor['"]/);
+        expect(src).not.toMatch(
+            /from\s+['"]\.\/SearchAnchor['"]/,
+        );
     });
 
     it('breadcrumbs-store exports the provider + hook + reader', () => {
