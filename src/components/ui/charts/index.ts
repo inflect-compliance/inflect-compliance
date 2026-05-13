@@ -106,6 +106,13 @@ export {
     CHART_FLOW_PERIOD_MS,
 } from './chart-motion';
 
+// ─── Roadmap-16 — LineChart primitive ───────────────────────────────
+//
+// Smooth single-series line + area-under-line gradient + on-mount
+// path draw. Phase 3 of R16.
+
+export { LineChart } from './line-chart';
+
 // ─── Shared scale / layout helpers (Epic 59) ─────────────────────────
 //
 // Pure helpers charts (and non-chart consumers that need to speak the
