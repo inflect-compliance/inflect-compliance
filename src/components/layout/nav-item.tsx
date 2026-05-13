@@ -388,16 +388,25 @@ export const NAV_ITEM_DEFAULT =
     'text-content-muted hover:text-content-emphasis hover:before:opacity-100 hover:before:animate-nav-band-alive hover:before:top-1 hover:before:bottom-1 hover:before:w-[4px] hover:after:opacity-100 hover:shadow-[var(--nav-bevel-shadow)] hover:bg-[linear-gradient(135deg,_transparent_30%,_var(--nav-row-liquid-tint)_50%,_transparent_70%)] hover:[background-size:300%_100%] hover:animate-nav-row-liquid-sweep';
 
 /**
- * Active state — conviction. (R12-PR6 lock, R13-PR4 evolution.)
+ * Active state — conviction. (R12-PR6 lock, R13-PR4 evolution,
+ * 2026-05-13 band-tone-swap evolution.)
  *
  * The active row tells you which page you're on. It has to read
  * as "settled" — not louder than the surrounding rows, not
  * quieter. R12-PR6 expressed conviction through four cooperating
  * tokens (text-content-emphasis + brand-subtle bg + opacity-100
- * band + font-medium). R13-PR4 adds a FIFTH dimension: the band's
- * gradient swaps to the SECONDARY brand (cool blue/navy), making
- * the active row visually distinct from any hovered row without
- * shouting.
+ * band + font-medium). R13-PR4 added a FIFTH dimension: the
+ * band's gradient swapped to the secondary brand (cool blue/navy).
+ *
+ * 2026-05-13 — the user asked to invert the band's two-tone
+ * vocabulary: the active band should now resolve to the PAGE
+ * BACKGROUND tone (navy on dark, warm grey on light), so the
+ * active row reads as a CUT-OUT of the sidebar surface revealing
+ * the page beneath. The hover band keeps its primary-brand
+ * tone (yellow on dark, orange on light). Net two tones:
+ *
+ *   default hover  brand-default ramp (yellow / orange)
+ *   active         --bg-page (navy / warm grey)
  *
  * Five cooperating tokens, no single one shouting:
  *
@@ -431,15 +440,17 @@ export const NAV_ITEM_DEFAULT =
  *       than 12 seconds — the band reads as continuously
  *       evolving rather than mechanically looping.
  *
- *   (4) Secondary-brand band overrides (R13-PR4)
+ *   (4) Page-bg band overrides (R13-PR4 → 2026-05-13 swap)
  *       Each stop on the band's 3-stop gradient is overridden with
- *       the `!` important modifier to the brand-secondary
- *       counterpart. The `!` is required: BASE declares the
- *       primary-brand stops; ACTIVE needs to override them with
- *       unambiguous precedence regardless of Tailwind's JIT compile
- *       order. The glow swaps too — `--nav-band-glow-active`
- *       resolves to a navy-coloured 6px blur, so the aura around
- *       the band stays coherent with the band's stops.
+ *       the `!` important modifier to `--bg-page`. The `!` is
+ *       required: BASE declares the primary-brand stops; ACTIVE
+ *       needs to override them with unambiguous precedence
+ *       regardless of Tailwind's JIT compile order. All three
+ *       stops resolve to the SAME page-bg colour so the band
+ *       reads as a solid cut-out of the page surface rather
+ *       than a colour signal. The glow is preserved as
+ *       `--nav-band-glow-active` (navy blur) — it still anchors
+ *       the band's edge softly into the sidebar surface.
  *
  *   (5) `font-medium`
  *       One weight up from regular (400 → 500). Anything bolder
@@ -457,7 +468,7 @@ export const NAV_ITEM_DEFAULT =
  * five secondary-brand override classes + the navy-glow plumbing.
  */
 export const NAV_ITEM_ACTIVE =
-    'text-[var(--brand-default)] bg-[radial-gradient(circle_at_left,_var(--brand-secondary-subtle),_transparent_75%)] before:opacity-100 before:animate-nav-band-active-alive before:top-1! before:bottom-1! before:w-[4px]! before:from-[var(--brand-secondary-default)]! before:via-[var(--brand-secondary-muted)]! before:to-[var(--brand-secondary-emphasis)]! before:shadow-[var(--nav-band-glow-active)]! after:opacity-100 shadow-[0_0_12px_2px_var(--nav-row-aura-color),var(--nav-bevel-shadow)] font-medium';
+    'text-[var(--brand-default)] bg-[radial-gradient(circle_at_left,_var(--brand-secondary-subtle),_transparent_75%)] before:opacity-100 before:animate-nav-band-active-alive before:top-1! before:bottom-1! before:w-[4px]! before:from-[var(--bg-page)]! before:via-[var(--bg-page)]! before:to-[var(--bg-page)]! before:shadow-[var(--nav-band-glow-active)]! after:opacity-100 shadow-[0_0_12px_2px_var(--nav-row-aura-color),var(--nav-bevel-shadow)] font-medium';
 
 /**
  * Badge recipe — aligned + breathing. (R12-PR8 lock.)

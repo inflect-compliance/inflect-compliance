@@ -144,24 +144,50 @@ describe('Roadmap-13 PR-4 — active band swaps to secondary brand', () => {
             return m![1];
         }
 
-        it('overrides `before:from` with secondary-default + `!` important', () => {
+        it('overrides `before:from` with the page-bg token + `!` important', () => {
             // The `!` is what guarantees the override regardless of
             // Tailwind's emitted-CSS ordering. Without it, BASE's
             // `from-[--brand-default]` might win randomly.
+            //
+            // 2026-05-13 — band tone swap. The active band now
+            // resolves to `--bg-page` (navy on dark, warm grey on
+            // light) so the band reads as a CUT-OUT of the
+            // sidebar surface revealing the page beneath, rather
+            // than the brand-secondary signal it was at R13-PR4.
+            // All three stops collapse to the same page-bg token
+            // so the band is a solid tone, not a gradient.
             expect(activeRecipe()).toMatch(
-                /before:from-\[var\(--brand-secondary-default\)\]!/,
+                /before:from-\[var\(--bg-page\)\]!/,
             );
         });
 
-        it('overrides `before:via` with secondary-muted + `!` important', () => {
+        it('overrides `before:via` with the page-bg token + `!` important', () => {
             expect(activeRecipe()).toMatch(
-                /before:via-\[var\(--brand-secondary-muted\)\]!/,
+                /before:via-\[var\(--bg-page\)\]!/,
             );
         });
 
-        it('overrides `before:to` with secondary-emphasis + `!` important', () => {
+        it('overrides `before:to` with the page-bg token + `!` important', () => {
             expect(activeRecipe()).toMatch(
-                /before:to-\[var\(--brand-secondary-emphasis\)\]!/,
+                /before:to-\[var\(--bg-page\)\]!/,
+            );
+        });
+
+        it('does NOT carry the legacy brand-secondary band overrides', () => {
+            // After the 2026-05-13 tone swap, the secondary-brand
+            // overrides on the band are GONE. They remain valid
+            // for the wash + glow + starburst + aura (those still
+            // need a navy/orange-secondary identity), but the
+            // band's own stops are page-bg.
+            const recipe = activeRecipe();
+            expect(recipe).not.toMatch(
+                /before:from-\[var\(--brand-secondary-default\)\]/,
+            );
+            expect(recipe).not.toMatch(
+                /before:via-\[var\(--brand-secondary-muted\)\]/,
+            );
+            expect(recipe).not.toMatch(
+                /before:to-\[var\(--brand-secondary-emphasis\)\]/,
             );
         });
 

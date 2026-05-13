@@ -126,11 +126,15 @@ describe('Roadmap-13 PR-11 — radial brand wash on the active row', () => {
         });
 
         it('still carries the band overrides + glow', () => {
-            // R13-PR4's band-to-navy is preserved verbatim — the
-            // radial wash + the navy band are coordinated.
+            // R13-PR4's band override mechanism is preserved (the
+            // `!` important on the `before:from-...` stops). The
+            // actual tone was swapped 2026-05-13 from brand-
+            // secondary to `--bg-page` — band reads as a cut-out
+            // of the page surface. Glow still anchors via
+            // `--nav-band-glow-active` (navy on both themes).
             const recipe = activeRecipe();
             expect(recipe).toMatch(
-                /before:from-\[var\(--brand-secondary-default\)\]!/,
+                /before:from-\[var\(--bg-page\)\]!/,
             );
             expect(recipe).toMatch(
                 /before:shadow-\[var\(--nav-band-glow-active\)\]!/,

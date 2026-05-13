@@ -164,22 +164,34 @@ describe('Roadmap-13 PR-12 — Living Sidebar capstone bundle', () => {
         });
     });
 
-    describe('PR-4 — active band swaps to secondary brand', () => {
-        it('four secondary-brand band overrides on active', () => {
+    describe('PR-4 — active band tone (2026-05-13: swapped to page-bg cut-out)', () => {
+        it('three page-bg band overrides on active + active-glow shadow override', () => {
+            // The band's stops were originally brand-secondary
+            // (R13-PR4). On 2026-05-13 they swapped to `--bg-page`
+            // so the active band reads as a cut-out of the page
+            // surface. The glow `!` override still resolves
+            // through `--nav-band-glow-active` (navy on both
+            // themes) — that anchors the band's edge into the
+            // sidebar surface.
             expect(activeRecipe).toMatch(
-                /before:from-\[var\(--brand-secondary-default\)\]!/,
+                /before:from-\[var\(--bg-page\)\]!/,
             );
             expect(activeRecipe).toMatch(
-                /before:via-\[var\(--brand-secondary-muted\)\]!/,
+                /before:via-\[var\(--bg-page\)\]!/,
             );
             expect(activeRecipe).toMatch(
-                /before:to-\[var\(--brand-secondary-emphasis\)\]!/,
+                /before:to-\[var\(--bg-page\)\]!/,
             );
             expect(activeRecipe).toMatch(
                 /before:shadow-\[var\(--nav-band-glow-active\)\]!/,
             );
         });
-        it('--brand-secondary-muted + --nav-band-glow-active tokens declared', () => {
+        it('--brand-secondary-muted + --nav-band-glow-active tokens still declared (used by wash + starburst + aura)', () => {
+            // The band itself no longer uses the secondary-brand
+            // ramp, but the active row's radial wash, the
+            // starburst bloom, and the outer aura all still
+            // reference brand-secondary tokens. The token
+            // declarations themselves remain load-bearing.
             for (const block of [DARK_BLOCK, LIGHT_BLOCK]) {
                 expect(block).toMatch(/--brand-secondary-muted:/);
                 expect(block).toMatch(/--nav-band-glow-active:/);
