@@ -43,10 +43,11 @@
  *
  * Wraps in `<ChartFrame>` for state-driven branch rendering.
  */
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import { Group } from '@visx/group';
 import { Line } from '@visx/shape';
 import { Text } from '@visx/text';
+import { motion } from 'motion/react';
 
 import { ChartFrame } from './chart-frame';
 import {
@@ -54,6 +55,7 @@ import {
     chartGradientId,
     type ChartSeriesIndex,
 } from './chart-gradient';
+import { useChartHoverPop } from './chart-motion';
 import type { ChartState } from './types';
 
 /**
@@ -163,6 +165,13 @@ function RadarChartInner({
     const chartId = `radar-${reactId.replace(/:/g, '')}`;
     const fillGradId = chartGradientId(chartId, seriesIndex, 'radial');
 
+    // R16-PR10 — vertex + axis hover state. Keyed by axis key so
+    // hovering either the vertex circle OR its axis line / label
+    // engages the same row of affordances (highlighted axis,
+    // popped vertex).
+    const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+    const pop = useChartHoverPop({ hoveredKey });
+
     if (data.length === 0) return null;
 
     const cx = width / 2;
@@ -252,17 +261,31 @@ function RadarChartInner({
                     />
                 ))}
 
-                {/* Radial axis lines from centre to outer ring. */}
-                {points.map((p) => (
-                    <Line
-                        key={`axis-${p.key}`}
-                        from={{ x: cx, y: cy }}
-                        to={{ x: p.edgeX, y: p.edgeY }}
-                        stroke="var(--border-subtle)"
-                        strokeWidth={1}
-                        opacity={0.6}
-                    />
-                ))}
+                {/* Radial axis lines from centre to outer ring.
+                    R16-PR10 — hovered axis brightens to the series
+                    end-stop tone + bumps opacity so it stands out
+                    from the muted resting ring. */}
+                {points.map((p) => {
+                    const isHovered = pop.isPopped(p.key);
+                    return (
+                        <Line
+                            key={`axis-${p.key}`}
+                            from={{ x: cx, y: cy }}
+                            to={{ x: p.edgeX, y: p.edgeY }}
+                            stroke={
+                                isHovered
+                                    ? `var(--chart-series-${seriesIndex}-end)`
+                                    : 'var(--border-subtle)'
+                            }
+                            strokeWidth={isHovered ? 1.5 : 1}
+                            opacity={isHovered ? 1 : 0.6}
+                            style={{
+                                transition:
+                                    'stroke 200ms ease-out, opacity 200ms ease-out, stroke-width 200ms ease-out',
+                            }}
+                        />
+                    );
+                })}
 
                 {/* Data polygon. Gradient fill + crisp end-stop
                     stroke so the outline reads against the
@@ -276,35 +299,83 @@ function RadarChartInner({
                     strokeLinejoin="round"
                 />
 
-                {/* Vertex circles at each (axis, value) point. */}
-                {points.map((p) => (
-                    <circle
-                        key={`vertex-${p.key}`}
-                        cx={p.valueX}
-                        cy={p.valueY}
-                        r={VERTEX_RADIUS}
-                        fill={`var(--chart-series-${seriesIndex}-start)`}
-                        stroke="var(--bg-default)"
-                        strokeWidth={1.5}
-                    />
-                ))}
+                {/* Vertex circles at each (axis, value) point.
+                    R16-PR10 — pop on hover via useChartHoverPop's
+                    point scale (1.05× — subtle). Event handlers
+                    wire pointer + focus so vertex hover engages
+                    the same affordances as axis-line / label
+                    hover (one shared hoveredKey). */}
+                {points.map((p) => {
+                    const scale = pop.getPointScale(p.key);
+                    return (
+                        <motion.circle
+                            key={`vertex-${p.key}`}
+                            cx={p.valueX}
+                            cy={p.valueY}
+                            r={VERTEX_RADIUS}
+                            fill={`var(--chart-series-${seriesIndex}-start)`}
+                            stroke="var(--bg-default)"
+                            strokeWidth={1.5}
+                            animate={{ scale }}
+                            transition={{
+                                duration: 0.2,
+                                ease: 'easeOut',
+                            }}
+                            style={{
+                                transformOrigin: `${p.valueX}px ${p.valueY}px`,
+                                cursor: 'pointer',
+                            }}
+                            onMouseEnter={() => setHoveredKey(p.key)}
+                            onMouseLeave={() => setHoveredKey(null)}
+                            onFocus={() => setHoveredKey(p.key)}
+                            onBlur={() => setHoveredKey(null)}
+                            tabIndex={0}
+                            role="img"
+                            aria-label={`${p.label}: ${p.value}`}
+                        />
+                    );
+                })}
 
                 {/* Axis labels — visx Text handles auto-anchor +
-                    line-wrapping if a label needs it. */}
-                {points.map((p) => (
-                    <Text
-                        key={`label-${p.key}`}
-                        x={p.labelX}
-                        y={p.labelY}
-                        textAnchor="middle"
-                        verticalAnchor="middle"
-                        fontSize={11}
-                        fontFamily="Inter, system-ui, sans-serif"
-                        fill="var(--content-muted)"
-                    >
-                        {p.label}
-                    </Text>
-                ))}
+                    line-wrapping if a label needs it.
+                    R16-PR10 — hovered label brightens from muted
+                    to emphasis tone. Whole label is also clickable
+                    via the wrapping <g> so the hover row stays
+                    consistent across vertex / axis / label. */}
+                {points.map((p) => {
+                    const isHovered = pop.isPopped(p.key);
+                    return (
+                        <g
+                            key={`label-${p.key}`}
+                            onMouseEnter={() => setHoveredKey(p.key)}
+                            onMouseLeave={() => setHoveredKey(null)}
+                            onFocus={() => setHoveredKey(p.key)}
+                            onBlur={() => setHoveredKey(null)}
+                            tabIndex={0}
+                            style={{ cursor: 'pointer', outline: 'none' }}
+                        >
+                            <Text
+                                x={p.labelX}
+                                y={p.labelY}
+                                textAnchor="middle"
+                                verticalAnchor="middle"
+                                fontSize={11}
+                                fontFamily="Inter, system-ui, sans-serif"
+                                fill={
+                                    isHovered
+                                        ? 'var(--content-emphasis)'
+                                        : 'var(--content-muted)'
+                                }
+                                style={{
+                                    transition: 'fill 200ms ease-out',
+                                    fontWeight: isHovered ? 600 : 400,
+                                }}
+                            >
+                                {p.label}
+                            </Text>
+                        </g>
+                    );
+                })}
             </Group>
         </svg>
     );

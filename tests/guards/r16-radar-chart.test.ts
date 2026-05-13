@@ -179,7 +179,13 @@ describe('Roadmap-16 PR-9 — RadarChart primitive', () => {
         });
 
         it('renders axis labels via <Text> from @visx/text', () => {
-            expect(RADAR_SRC).toMatch(/<Text\b[\s\S]*?key=\{`label-/);
+            // R16-PR10 wraps each <Text> in a <g> for the hover
+            // affordances; the `key=` moved to the <g>. We just
+            // assert that a <Text> element exists in the file —
+            // the per-axis iteration is structurally locked by
+            // the `points.map((p) =>` pattern.
+            expect(RADAR_SRC).toMatch(/<Text\b/);
+            expect(RADAR_SRC).toMatch(/key=\{`label-\$\{p\.key\}`\}/);
         });
 
         it('labels positioned past the outer ring (offset +14)', () => {
