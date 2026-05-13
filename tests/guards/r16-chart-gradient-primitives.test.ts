@@ -50,9 +50,13 @@ describe('Roadmap-16 PR-2 — ChartGradient primitive library', () => {
             );
         });
 
-        it('exports <ChartFlowGradient>', () => {
+        it('exports <ChartFlowGradient> as a forwardRef component', () => {
+            // forwardRef so R16-PR4 `useChartFlow` can attach a
+            // ref to the underlying <linearGradient>. The hook
+            // imperatively writes gradientTransform on every
+            // animation frame.
             expect(PRIMITIVE_SRC).toMatch(
-                /export\s+function\s+ChartFlowGradient\s*\(/,
+                /export\s+const\s+ChartFlowGradient\s*=\s*forwardRef</,
             );
         });
 
@@ -124,8 +128,11 @@ describe('Roadmap-16 PR-2 — ChartGradient primitive library', () => {
 
     describe('<ChartFlowGradient> — the 3-stop cyclic pattern (R16-PR4 substrate)', () => {
         function getFlowBody(): string {
+            // ChartFlowGradient is `forwardRef(function ChartFlowGradient(...) {...})`.
+            // Match the inner `function ChartFlowGradient` body so
+            // the assertions don't pick up the outer const/export.
             const flowMatch = PRIMITIVE_SRC.match(
-                /function\s+ChartFlowGradient[\s\S]*?return\s*\(\s*([\s\S]*?)\s*\)\s*;[\s\S]*?\n\}/,
+                /function\s+ChartFlowGradient\s*\([\s\S]*?return\s*\(\s*([\s\S]*?)\s*\)\s*;[\s\S]*?\n\}/,
             );
             expect(flowMatch).not.toBeNull();
             return flowMatch![1];

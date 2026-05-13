@@ -43,13 +43,18 @@
  * ```
  */
 
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import Pie from '@visx/shape/lib/shapes/Pie';
 import {
+    ChartFlowGradient,
     ChartRadialGradient,
     chartGradientId,
     type ChartSeriesIndex,
 } from '@/components/ui/charts/chart-gradient';
+import {
+    useChartFlow,
+    useChartHoverPop,
+} from '@/components/ui/charts/chart-motion';
 import { ShimmerDots } from '@/components/ui/shimmer-dots';
 
 // ─── Props ──────────────────────────────────────────────────────────
@@ -120,6 +125,38 @@ export default function DonutChart({
     const reactId = useId();
     // useId returns `:r0:` style values — sanitise for SVG id use.
     const chartId = `donut-${reactId.replace(/:/g, '')}`;
+
+    // R16-PR6 — hover state. Keyed by segment label so each segment
+    // can opt in / out independently. `null` when nothing is
+    // hovered. Consumers wire `onMouseEnter` / `onMouseLeave` on
+    // each segment path; the resulting hoveredKey feeds the
+    // motion hooks below.
+    const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+
+    // R16-PR6 — hover-pop transforms. The hovered segment
+    // translates radially outward by `--chart-hover-pop-distance`
+    // (4 px) in the direction of its mid-angle. Mid-angle math
+    // happens inline below — visx provides `arc.startAngle` and
+    // `arc.endAngle`, so `(start + end) / 2` is the mid.
+    const pop = useChartHoverPop({ hoveredKey });
+
+    // R16-PR6 — gradient flow. When a segment is hovered AND
+    // has a seriesIndex, swap its fill from the resting radial
+    // gradient to a flow gradient whose `gradientTransform`
+    // translate animates over time (the "flowing river of
+    // gradient colour" effect). The ref attaches to the flow
+    // gradient `<linearGradient>` in the defs block below.
+    //
+    // Distance: the donut's diameter — the gradient at
+    // userSpaceOnUse spans roughly that, so panning by diameter
+    // returns the cyclic 3-stop pattern to its starting position.
+    const hoveredSegment = segments.find((s) => s.label === hoveredKey);
+    const flowSeries = hoveredSegment?.seriesIndex;
+    const flowRef = useChartFlow({
+        active: flowSeries !== undefined,
+        distance: size,
+        direction: 'horizontal',
+    });
 
     // Loading takes precedence — shimmer in a same-size box keeps
     // layout stable while the data resolves.
@@ -230,6 +267,23 @@ export default function DonutChart({
                             r="65%"
                         />
                     ))}
+                    {/* R16-PR6 — flow gradient for the hovered
+                        segment. Only rendered when a segment with a
+                        seriesIndex is currently hovered. The ref
+                        attaches to the underlying <linearGradient>
+                        so `useChartFlow` can imperatively animate
+                        its `gradientTransform` attribute (the
+                        "river of gradient colour" effect).
+                        Conditional rendering keeps the defs block
+                        small when no segment is hovered. */}
+                    {flowSeries !== undefined && (
+                        <ChartFlowGradient
+                            id={chartGradientId(chartId, flowSeries, 'flow')}
+                            series={flowSeries}
+                            direction="horizontal"
+                            ref={flowRef}
+                        />
+                    )}
                 </defs>
 
                 {/* Background ring — quiet bg-muted underneath the
@@ -269,26 +323,77 @@ export default function DonutChart({
                     {(pie) =>
                         pie.arcs.map((arc) => {
                             const seg = arc.data;
+                            const isHovered = seg.label === hoveredKey;
+                            // R16-PR6 — when this segment is the
+                            // hovered one AND it has a seriesIndex,
+                            // swap its fill from the resting radial
+                            // gradient to the flow gradient (which
+                            // useChartFlow animates via
+                            // gradientTransform). Resting segments
+                            // and segments without seriesIndex keep
+                            // their previous fill behaviour.
                             const fill =
-                                seg.seriesIndex !== undefined
-                                    ? `url(#${chartGradientId(
-                                          chartId,
-                                          seg.seriesIndex,
-                                          'radial',
-                                      )})`
-                                    : seg.color;
+                                seg.seriesIndex === undefined
+                                    ? seg.color
+                                    : isHovered
+                                      ? `url(#${chartGradientId(
+                                            chartId,
+                                            seg.seriesIndex,
+                                            'flow',
+                                        )})`
+                                      : `url(#${chartGradientId(
+                                            chartId,
+                                            seg.seriesIndex,
+                                            'radial',
+                                        )})`;
                             const path = pie.path(arc);
                             if (path === null) return null;
                             const segPercent = seg.value / total;
+                            // R16-PR6 — radial hover-pop. The mid-
+                            // angle of the arc (in radians) drives
+                            // the radial direction. visx uses the
+                            // SVG convention where angles run from
+                            // 12 o'clock clockwise. The pop hook
+                            // expects "0 at 3 o'clock, positive
+                            // clockwise" — subtract π/2 to convert.
+                            const midAngle =
+                                (arc.startAngle + arc.endAngle) / 2 -
+                                Math.PI / 2;
+                            const popTransform = pop.getDonutTransform(
+                                seg.label,
+                                midAngle,
+                            );
                             return (
-                                <path
+                                <g
                                     key={`${seg.label}-${arc.index}`}
-                                    d={path}
-                                    fill={fill}
-                                    className="transition-all duration-500 ease-out"
+                                    transform={popTransform}
+                                    onMouseEnter={() =>
+                                        setHoveredKey(seg.label)
+                                    }
+                                    onMouseLeave={() => setHoveredKey(null)}
+                                    onFocus={() => setHoveredKey(seg.label)}
+                                    onBlur={() => setHoveredKey(null)}
+                                    tabIndex={0}
+                                    style={{
+                                        // R12 motion language —
+                                        // transform via transition,
+                                        // 200ms ease-out (matches
+                                        // --chart-hover-duration).
+                                        transition:
+                                            'transform 200ms ease-out',
+                                        outline: 'none',
+                                        cursor: 'pointer',
+                                    }}
+                                    aria-label={`${seg.label}: ${seg.value}`}
                                 >
-                                    <title>{`${seg.label}: ${seg.value} (${(segPercent * 100).toFixed(1)}%)`}</title>
-                                </path>
+                                    <path
+                                        d={path}
+                                        fill={fill}
+                                        className="transition-all duration-500 ease-out"
+                                    >
+                                        <title>{`${seg.label}: ${seg.value} (${(segPercent * 100).toFixed(1)}%)`}</title>
+                                    </path>
+                                </g>
                             );
                         })
                     }

@@ -45,7 +45,7 @@
  *   4. For hover-flow, use `<ChartFlowGradient>` and animate the
  *      `gradientTransform` translate via R16-PR4's hook.
  */
-import type { ReactElement } from 'react';
+import { forwardRef, type ReactElement } from 'react';
 
 /**
  * R16-PR1 series palette. Locked at 6 — adding a 7th requires a
@@ -196,15 +196,21 @@ interface ChartFlowGradientProps {
  * and end of the pattern are the same colour, so the loop closes
  * cleanly.
  *
+ * Wrapped in `forwardRef` so consumers can attach a ref produced
+ * by `useChartFlow(...)` — the hook imperatively writes to the
+ * `gradientTransform` attribute on every animation frame.
+ *
  * The 200% size is locked here so PR-4's pan-by-translate maths
  * has a predictable distance. A future "smoother flow" PR might
  * extend to 300% with 5 stops; that would need its own ratchet.
  */
-export function ChartFlowGradient({
-    id,
-    series,
-    direction = 'horizontal',
-}: ChartFlowGradientProps): ReactElement {
+export const ChartFlowGradient = forwardRef<
+    SVGLinearGradientElement,
+    ChartFlowGradientProps
+>(function ChartFlowGradient(
+    { id, series, direction = 'horizontal' },
+    ref,
+): ReactElement {
     const { x1, y1, x2, y2 } = directionToVector(direction);
     const { start, end } = seriesStops(series);
     // `gradientUnits="userSpaceOnUse"` makes the gradient resolve in
@@ -215,6 +221,7 @@ export function ChartFlowGradient({
     // PR-4 animates away from.
     return (
         <linearGradient
+            ref={ref}
             id={id}
             x1={x1}
             y1={y1}
@@ -229,7 +236,7 @@ export function ChartFlowGradient({
             <stop offset="100%" stopColor={start} />
         </linearGradient>
     );
-}
+});
 
 /**
  * Build the canonical SVG def id for a chart's series gradient.
