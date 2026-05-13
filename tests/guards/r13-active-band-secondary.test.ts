@@ -144,32 +144,42 @@ describe('Roadmap-13 PR-4 — active band swaps to secondary brand', () => {
             return m![1];
         }
 
-        it('overrides `before:from` with the page-bg token + `!` important', () => {
-            // The `!` is what guarantees the override regardless of
-            // Tailwind's emitted-CSS ordering. Without it, BASE's
-            // `from-[--brand-default]` might win randomly.
+        it('overrides the FULL `before:bg-[...]` arbitrary value with the page-bg gradient + `!` important', () => {
+            // 2026-05-13 v2 — Tailwind's `before:from/via/to-`
+            // utilities only set `--tw-gradient-from/via/to` CSS
+            // variables; they DON'T override a literal
+            // `before:bg-[...]` arbitrary value declared on the
+            // BASE recipe. The first attempt at the active-band-
+            // tone swap (v1) used those utility overrides and
+            // silently failed — the brand-default ramp from BASE
+            // always won. The fix is to override the entire
+            // `before:bg-[...]` arbitrary value with a parallel
+            // arbitrary value carrying the page-bg tones.
             //
-            // 2026-05-13 — band tone swap. The active band now
-            // resolves to `--bg-page` (navy on dark, warm grey on
-            // light) so the band reads as a CUT-OUT of the
-            // sidebar surface revealing the page beneath, rather
-            // than the brand-secondary signal it was at R13-PR4.
-            // All three stops collapse to the same page-bg token
-            // so the band is a solid tone, not a gradient.
-            expect(activeRecipe()).toMatch(
-                /before:from-\[var\(--bg-page\)\]!/,
+            // The `!` important wins over the BASE recipe's
+            // bg-image because both forms compile to a
+            // `before::background-image:` declaration and `!`
+            // raises specificity unambiguously.
+            //
+            // The linear-gradient inside the override uses three
+            // `var(--bg-page)` stops (collapsed to a solid). The
+            // stardust radial-particle layers are preserved
+            // verbatim so the band still sparkles.
+            const recipe = activeRecipe();
+            expect(recipe).toMatch(
+                /before:bg-\[[\s\S]*?linear-gradient\(to_bottom,[\s\S]*?var\(--bg-page\)[\s\S]*?var\(--bg-page\)[\s\S]*?var\(--bg-page\)[\s\S]*?\)\]!/,
             );
         });
 
-        it('overrides `before:via` with the page-bg token + `!` important', () => {
-            expect(activeRecipe()).toMatch(
-                /before:via-\[var\(--bg-page\)\]!/,
-            );
-        });
-
-        it('overrides `before:to` with the page-bg token + `!` important', () => {
-            expect(activeRecipe()).toMatch(
-                /before:to-\[var\(--bg-page\)\]!/,
+        it('preserves the stardust particle layers inside the override', () => {
+            // The override must keep the three white radial-
+            // particle layers from the BASE recipe (R15-PR1
+            // stardust trail). Without them the active band
+            // loses the "alive" glitter motion that the band-
+            // alive composition's shimmer pan animates.
+            const recipe = activeRecipe();
+            expect(recipe).toMatch(
+                /before:bg-\[radial-gradient\(circle_1\.5px[\s\S]*?radial-gradient\(circle_1\.5px[\s\S]*?radial-gradient\(circle_1\.5px/,
             );
         });
 
@@ -188,6 +198,23 @@ describe('Roadmap-13 PR-4 — active band swaps to secondary brand', () => {
             );
             expect(recipe).not.toMatch(
                 /before:to-\[var\(--brand-secondary-emphasis\)\]/,
+            );
+        });
+
+        it('does NOT carry the v1-attempt page-bg utility overrides (those silently no-op)', () => {
+            // The v1 attempt used `before:from/via/to-[var(--bg-
+            // page)]!`. Those classes are dead code now — they
+            // emit `--tw-gradient-*` overrides that nothing
+            // consumes. Removing them keeps the recipe clean.
+            const recipe = activeRecipe();
+            expect(recipe).not.toMatch(
+                /before:from-\[var\(--bg-page\)\]!/,
+            );
+            expect(recipe).not.toMatch(
+                /before:via-\[var\(--bg-page\)\]!/,
+            );
+            expect(recipe).not.toMatch(
+                /before:to-\[var\(--bg-page\)\]!/,
             );
         });
 

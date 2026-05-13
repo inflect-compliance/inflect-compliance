@@ -153,17 +153,19 @@ describe('<NavItem>', () => {
             // Weight bump (R12-PR6 preserved).
             expect(link.className).toContain('font-medium');
             // Band overrides — R13-PR4 originally locked navy
-            // (brand-secondary) stops; 2026-05-13 the tone was
-            // swapped to `--bg-page` so the active band reads as
-            // a cut-out of the page surface. Either form
-            // satisfies the "band overrides exist" contract.
-            const bandStopBgPage = link.className.includes(
-                'before:from-[var(--bg-page)]!',
-            );
+            // (brand-secondary) stops via utility classes;
+            // 2026-05-13 v1 swapped to `--bg-page` utility
+            // overrides; same-day v2 moved to a full
+            // `before:bg-[...]!` arbitrary-value override because
+            // the utility `from/via/to` overrides don't compose
+            // against the BASE recipe's arbitrary `before:bg-[...]`
+            // value. The rendered class string just needs the
+            // page-bg token present in the band's bg-image stack.
+            const bandHasBgPage = link.className.includes('var(--bg-page)');
             const bandStopSecondary = link.className.includes(
                 'before:from-[var(--brand-secondary-default)]!',
             );
-            expect(bandStopBgPage || bandStopSecondary).toBe(true);
+            expect(bandHasBgPage || bandStopSecondary).toBe(true);
             expect(link.className).toContain(
                 'before:shadow-[var(--nav-band-glow-active)]!',
             );

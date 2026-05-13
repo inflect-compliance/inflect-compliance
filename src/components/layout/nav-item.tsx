@@ -440,17 +440,31 @@ export const NAV_ITEM_DEFAULT =
  *       than 12 seconds — the band reads as continuously
  *       evolving rather than mechanically looping.
  *
- *   (4) Page-bg band overrides (R13-PR4 → 2026-05-13 swap)
- *       Each stop on the band's 3-stop gradient is overridden with
- *       the `!` important modifier to `--bg-page`. The `!` is
- *       required: BASE declares the primary-brand stops; ACTIVE
- *       needs to override them with unambiguous precedence
- *       regardless of Tailwind's JIT compile order. All three
- *       stops resolve to the SAME page-bg colour so the band
- *       reads as a solid cut-out of the page surface rather
- *       than a colour signal. The glow is preserved as
- *       `--nav-band-glow-active` (navy blur) — it still anchors
- *       the band's edge softly into the sidebar surface.
+ *   (4) Page-bg band override (R13-PR4 → 2026-05-13 v2)
+ *       The BASE recipe paints the band via a single
+ *       comprehensive `before:bg-[radial-gradient(...) ×3,
+ *       linear-gradient(to_bottom, brand-default, brand-muted,
+ *       brand-emphasis)]` arbitrary value. Tailwind's utility
+ *       `before:from-X!` / `before:via-X!` / `before:to-X!`
+ *       overrides only set the `--tw-gradient-from/via/to` CSS
+ *       variables; they DON'T override the literal arbitrary
+ *       `background-image` value above. The R13-PR4 brand-
+ *       secondary swap silently failed for that reason — the
+ *       brand-default ramp from BASE always won.
+ *
+ *       The fix (2026-05-13 v2) is to override the ENTIRE
+ *       `before:bg-[...]` arbitrary value with a parallel
+ *       arbitrary value carrying the page-bg tones. Three
+ *       identical `var(--bg-page)` stops collapse the linear
+ *       gradient to a solid; the stardust particle layers are
+ *       preserved verbatim. The `!` important still wins over
+ *       the BASE recipe's bg-image because both forms compile
+ *       to `[&]:before:background-image: ...` and `!` raises
+ *       the active variant's specificity.
+ *
+ *       The glow is preserved as `--nav-band-glow-active`
+ *       (navy blur) — it still anchors the band's edge softly
+ *       into the sidebar surface.
  *
  *   (5) `font-medium`
  *       One weight up from regular (400 → 500). Anything bolder
@@ -468,7 +482,7 @@ export const NAV_ITEM_DEFAULT =
  * five secondary-brand override classes + the navy-glow plumbing.
  */
 export const NAV_ITEM_ACTIVE =
-    'text-[var(--brand-default)] bg-[radial-gradient(circle_at_left,_var(--brand-secondary-subtle),_transparent_75%)] before:opacity-100 before:animate-nav-band-active-alive before:top-1! before:bottom-1! before:w-[4px]! before:from-[var(--bg-page)]! before:via-[var(--bg-page)]! before:to-[var(--bg-page)]! before:shadow-[var(--nav-band-glow-active)]! after:opacity-100 shadow-[0_0_12px_2px_var(--nav-row-aura-color),var(--nav-bevel-shadow)] font-medium';
+    'text-[var(--brand-default)] bg-[radial-gradient(circle_at_left,_var(--brand-secondary-subtle),_transparent_75%)] before:opacity-100 before:animate-nav-band-active-alive before:top-1! before:bottom-1! before:w-[4px]! before:bg-[radial-gradient(circle_1.5px_at_50%_80%,_rgba(255,255,255,0.9),_transparent_70%),radial-gradient(circle_1.5px_at_50%_55%,_rgba(255,255,255,0.5),_transparent_70%),radial-gradient(circle_1.5px_at_50%_30%,_rgba(255,255,255,0.2),_transparent_70%),linear-gradient(to_bottom,_var(--bg-page),_var(--bg-page),_var(--bg-page))]! before:shadow-[var(--nav-band-glow-active)]! after:opacity-100 shadow-[0_0_12px_2px_var(--nav-row-aura-color),var(--nav-bevel-shadow)] font-medium';
 
 /**
  * Badge recipe — aligned + breathing. (R12-PR8 lock.)

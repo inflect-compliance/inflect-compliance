@@ -164,23 +164,24 @@ describe('Roadmap-13 PR-12 — Living Sidebar capstone bundle', () => {
         });
     });
 
-    describe('PR-4 — active band tone (2026-05-13: swapped to page-bg cut-out)', () => {
-        it('three page-bg band overrides on active + active-glow shadow override', () => {
+    describe('PR-4 — active band tone (2026-05-13 v2: page-bg via full bg-image override)', () => {
+        it('overrides the full before:bg-[...] arbitrary value with page-bg + active-glow shadow override', () => {
             // The band's stops were originally brand-secondary
             // (R13-PR4). On 2026-05-13 they swapped to `--bg-page`
             // so the active band reads as a cut-out of the page
-            // surface. The glow `!` override still resolves
-            // through `--nav-band-glow-active` (navy on both
-            // themes) — that anchors the band's edge into the
-            // sidebar surface.
+            // surface. The v1 attempt used Tailwind utility
+            // `before:from/via/to-[var(--bg-page)]!` overrides
+            // but those don't compose against an arbitrary
+            // `before:bg-[...]` BASE value. v2 overrides the
+            // entire bg-image arbitrary value with a parallel
+            // arbitrary value carrying three `var(--bg-page)`
+            // linear-gradient stops (collapsed to solid), stardust
+            // radial layers preserved. The glow `!` override
+            // still resolves through `--nav-band-glow-active`
+            // (navy on both themes) — that anchors the band's
+            // edge into the sidebar surface.
             expect(activeRecipe).toMatch(
-                /before:from-\[var\(--bg-page\)\]!/,
-            );
-            expect(activeRecipe).toMatch(
-                /before:via-\[var\(--bg-page\)\]!/,
-            );
-            expect(activeRecipe).toMatch(
-                /before:to-\[var\(--bg-page\)\]!/,
+                /before:bg-\[[\s\S]*?linear-gradient\(to_bottom,[\s\S]*?var\(--bg-page\)[\s\S]*?var\(--bg-page\)[\s\S]*?var\(--bg-page\)[\s\S]*?\)\]!/,
             );
             expect(activeRecipe).toMatch(
                 /before:shadow-\[var\(--nav-band-glow-active\)\]!/,
