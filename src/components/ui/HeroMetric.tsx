@@ -39,6 +39,8 @@ import { ArrowDown, ArrowUp, Minus } from "lucide-react";
 import { AnimatedNumber, type AnimatedNumberFormat } from "./animated-number";
 import { Button } from "./button";
 import { cardVariants } from "./card";
+import { MiniAreaChart, type MiniAreaChartVariant } from "./mini-area-chart";
+import type { SparklineData } from "@/components/ui/charts";
 
 // ─── Types ────────────────────────────────────────────────────────
 
@@ -93,6 +95,18 @@ export interface HeroMetricProps {
      */
     deltaLabel?: React.ReactNode;
     /**
+     * Optional trend sparkline — the last N data points (typically
+     * the 7-day series the delta is computed against). Rendered
+     * above the delta chip as a small token-coloured area chart.
+     * Variant is derived from the delta semantic so the trajectory
+     * tone matches the delta tone (good=success green, bad=error
+     * red, neutral=muted).
+     *
+     * When omitted, only the chip renders (back-compat with PR-1
+     * call sites).
+     */
+    sparkline?: SparklineData;
+    /**
      * Optional primary action button rendered on the far right of
      * the masthead.
      */
@@ -122,6 +136,15 @@ const SEMANTIC_TEXT: Record<"good" | "bad" | "neutral", string> = {
     neutral: "text-content-muted",
 };
 
+const SEMANTIC_SPARKLINE_VARIANT: Record<
+    "good" | "bad" | "neutral",
+    MiniAreaChartVariant
+> = {
+    good: "success",
+    bad: "error",
+    neutral: "neutral",
+};
+
 function deltaArrow(delta: number): React.ElementType {
     if (delta > 0) return ArrowUp;
     if (delta < 0) return ArrowDown;
@@ -136,6 +159,7 @@ export function HeroMetric({
     delta,
     deltaPolarity = "up-good",
     deltaLabel,
+    sparkline,
     action,
     className,
     "data-testid": dataTestId,
@@ -224,6 +248,32 @@ export function HeroMetric({
                 )}
             </div>
             <div className="flex flex-col gap-tight items-end shrink-0">
+                {sparkline && sparkline.length > 1 && deltaInfo && (
+                    // R17-PR3 — trajectory leading INTO the current
+                    // value. Variant tone matches the delta semantic
+                    // (good → success/green, bad → error/red, neutral
+                    // → muted), so the up-arrow + spark stroke read
+                    // as one unit. 120×32 is the smallest size that
+                    // still resolves a recognisable curve; smaller
+                    // collapses into a generic squiggle. ParentSize
+                    // inside MiniAreaChart still flexes if the wrapper
+                    // is narrower.
+                    <div
+                        className="h-8 w-[120px]"
+                        data-hero-metric-sparkline
+                        data-hero-metric-sparkline-variant={
+                            SEMANTIC_SPARKLINE_VARIANT[deltaInfo.semantic]
+                        }
+                    >
+                        <MiniAreaChart
+                            data={sparkline}
+                            variant={
+                                SEMANTIC_SPARKLINE_VARIANT[deltaInfo.semantic]
+                            }
+                            aria-label={`Trend sparkline — last ${sparkline.length} data points`}
+                        />
+                    </div>
+                )}
                 {deltaInfo && (
                     <span
                         className={cn(
