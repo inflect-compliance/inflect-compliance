@@ -10,6 +10,7 @@
 import { cn, deepEqual, isClickOnInteractiveChild } from "./table-utils";
 import {
   Column,
+  ColumnDef,
   flexRender,
   getCoreRowModel,
   Row,
@@ -37,12 +38,21 @@ import { Button } from "../button";
 import { Checkbox } from "../checkbox";
 import { ErrorState } from "../error-state";
 import { LoadingSpinner, SortOrder } from "../icons";
+import { ChevronRight } from "../icons/nucleo/chevron-right";
 import { Tooltip } from "../tooltip";
 import { SelectionToolbar } from "./selection-toolbar";
 import { TableProps, UseTableProps } from "./types";
 
 const SELECT_COLUMN_WIDTH = 48;
 const MENU_COLUMN_WIDTH = 40;
+// v2-PR-12 follow-through (2026-05-13) — the trailing chevron-right
+// affordance for clickable rows. Renders only when the consumer
+// passes `onRowClick`; the column is invisible by default and the
+// chevron fades in on `group-hover/row`. 32 px keeps the column
+// narrow enough that it reads as decoration, not a data cell. The
+// header cell stays empty — adding "→" or similar would make the
+// column read as semantic which it is not.
+const CHEVRON_COLUMN_WIDTH = 32;
 const FIXED_UTILITY_COLUMN_IDS = new Set(["select", "menu"]);
 
 const tableCellClassName = (
@@ -320,8 +330,40 @@ export function useTable<T extends any>(
           ]
         : []),
       ...normalizedColumns,
+      // v2-PR-12 follow-through (2026-05-13) — render the trailing
+      // chevron affordance ONLY when the consumer wired
+      // `onRowClick`. Symmetric with the leading selection column:
+      // selection on left, navigate-affordance on right. The cell
+      // contents are decoration only — `aria-hidden`, no role.
+      // The chevron itself starts at opacity-0 and fades to
+      // opacity-60 on the row's `group-hover/row` (defined in the
+      // `<tr>` className). Transitions through `transition-opacity`
+      // — no compositor work, no layout shift. Disabled with
+      // pointer-events-none so the chevron can't intercept the
+      // row-click handler.
+      ...(props.onRowClick
+        ? [
+            {
+              id: "__row-chevron",
+              enableHiding: false,
+              enableSorting: false,
+              minSize: CHEVRON_COLUMN_WIDTH,
+              size: CHEVRON_COLUMN_WIDTH,
+              maxSize: CHEVRON_COLUMN_WIDTH,
+              header: () => null,
+              cell: () => (
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none flex size-full items-center justify-center text-content-muted opacity-0 transition-opacity duration-150 ease-out group-hover/row:opacity-60"
+                >
+                  <ChevronRight width={16} height={16} />
+                </div>
+              ),
+            } satisfies ColumnDef<T>,
+          ]
+        : []),
     ],
-    [selectionEnabled, normalizedColumns],
+    [selectionEnabled, normalizedColumns, props.onRowClick],
   );
 
   // TanStack Table's options object isn't designed for the React
