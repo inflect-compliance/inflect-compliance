@@ -33,8 +33,7 @@
         "./src/lib/dub-utils/*"
       ]
     },
-    "baseUrl": ".",
-    "ignoreDeprecations": "6.0"
+    "baseUrl": "."
   },
   "include": [
     "next-env.d.ts",
