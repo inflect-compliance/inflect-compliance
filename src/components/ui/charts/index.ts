@@ -79,6 +79,14 @@ export type {
     ChartGradientDirection,
 } from './chart-gradient';
 
+// ─── Roadmap-16 — ChartFrame wrapper ────────────────────────────────
+//
+// Responsive container + state-driven branch rendering. Every R16
+// chart consumer mounts inside `<ChartFrame>` so loading / empty /
+// error states share the same vocabulary across charts.
+
+export { ChartFrame } from './chart-frame';
+
 // ─── Shared scale / layout helpers (Epic 59) ─────────────────────────
 //
 // Pure helpers charts (and non-chart consumers that need to speak the
