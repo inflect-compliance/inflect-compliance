@@ -289,38 +289,6 @@ module.exports = {
                             '0 0 6px var(--brand-secondary-default)',
                     },
                 },
-                // R15-PR6 — iridescent gradient border on the
-                // NavItem's outline. Animates `outline-color`
-                // through a three-stop palette that traces the
-                // brand palette laterally:
-                //
-                //   --brand-default            (primary brand)
-                //   --brand-secondary-default  (navy)
-                //   --brand-emphasis           (primary brand, deeper)
-                //
-                // The eye reads the colour-shifting border as
-                // polished chrome catching the light at different
-                // angles — iridescent. Three stops (not two) give
-                // a true polychromatic shift rather than a simple
-                // A → B → A pendulum.
-                //
-                // Mechanism note: this animates `outline-color`
-                // not `box-shadow`. Outline is a separate property
-                // from box-shadow, so the iridescence layer
-                // composes cleanly with the R13-PR7 bevel shadow
-                // (`--nav-bevel-shadow`) without either fighting
-                // the other.
-                'nav-row-iridescent': {
-                    '0%, 100%': {
-                        'outline-color': 'var(--brand-default)',
-                    },
-                    '33%': {
-                        'outline-color': 'var(--brand-secondary-default)',
-                    },
-                    '66%': {
-                        'outline-color': 'var(--brand-emphasis)',
-                    },
-                },
                 // R15-PR7 — one-shot horizontal sweep of brand-tinted
                 // light across the row body. The hover paints a
                 // narrow diagonal gradient at `background-size:
@@ -438,13 +406,6 @@ module.exports = {
                 // breath, not a snap.
                 'nav-band-starburst':
                     'nav-band-starburst 700ms ease-out',
-                // R15-PR6 — 3-second cycle. ease-in-out keeps the
-                // colour transitions smooth; the eye reads a slow
-                // breathing iridescence rather than a discrete
-                // colour switch. `infinite` keeps the iridescence
-                // alive for as long as the row is hovered.
-                'nav-row-iridescent':
-                    'nav-row-iridescent 3s ease-in-out infinite',
                 // R15-PR7 — 1.2s ease-out one-shot. Bright centre
                 // arrives at the row's right edge by ~700ms and
                 // exits off the right by 1.2s. ease-out keeps the
@@ -454,20 +415,6 @@ module.exports = {
                 // when hover engages.
                 'nav-row-liquid-sweep':
                     'nav-row-liquid-sweep 1.2s ease-out',
-                // R15-PR7 — combined row-level hover animation
-                // utility. Composes:
-                //
-                //   nav-row-iridescent     3s ease-in-out infinite
-                //   nav-row-liquid-sweep   1.2s ease-out (one-shot)
-                //
-                // Single class on the host row applies both. Each
-                // track animates a different CSS property
-                // (outline-color vs background-position) so they
-                // compose cleanly without cascade fights. The
-                // sweep finishes at 1.2s and lets the iridescence
-                // keep cycling forever.
-                'nav-row-hover-alive':
-                    'nav-row-iridescent 3s ease-in-out infinite, nav-row-liquid-sweep 1.2s ease-out',
                 // R15-PR4 — combined "alive" animation for the
                 // ACTIVE row. Adds the starburst bloom as the first
                 // track ahead of the three R15-PR1..3 tracks. All

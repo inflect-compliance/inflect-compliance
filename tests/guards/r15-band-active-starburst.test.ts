@@ -99,18 +99,24 @@ describe('Roadmap-15 PR-4 — active starburst bloom', () => {
             //   filter             (R15-PR2 halo-breath)
             //   clip-path          (R15-PR3 reveal-sweep)
             //   box-shadow         (R15-PR4 starburst) ← new
-            // Each channel sits orthogonal to the others — the
-            // six animations compose cleanly on a single element.
+            //
+            // Match each stop's property name inside the keyframe
+            // and confirm every binding is `box-shadow`. The
+            // slice-then-grep pattern is fragile here because the
+            // next keyframe's doc-comment mentions some of the
+            // banned property names — per-stop assertion is the
+            // robust shape.
             const slice = getStarburstKeyframeSlice();
             expect(slice.length).toBeGreaterThan(0);
-            expect(slice).toMatch(/'box-shadow':/);
-            expect(slice).not.toContain('transform');
-            expect(slice).not.toContain('translate');
-            expect(slice).not.toContain('scale');
-            expect(slice).not.toContain('background-position');
-            expect(slice).not.toContain('opacity');
-            expect(slice).not.toContain('filter:');
-            expect(slice).not.toContain('clip-path');
+            const propertyMatches =
+                slice.match(/'(\w[\w-]*)':\s*'[^']+'/g) ?? [];
+            const stopProperties = propertyMatches.filter(
+                (m) => !m.startsWith("'nav-"),
+            );
+            expect(stopProperties.length).toBeGreaterThanOrEqual(3);
+            for (const stop of stopProperties) {
+                expect(stop).toMatch(/^'box-shadow':/);
+            }
         });
 
         it('starts at the resting glow (baseline)', () => {

@@ -37,16 +37,12 @@
  *     lower contrast with brand orange than navy METRO has with
  *     brand yellow — alpha equalisation across themes.
  *
- *   - The animation utility consumed at the hover site is the
- *     composed `nav-row-hover-alive` (R15-PR7 introduction):
- *
- *       nav-row-iridescent     3s ease-in-out infinite,
- *       nav-row-liquid-sweep   1.2s ease-out
- *
- *     Both tracks animate different CSS properties
- *     (outline-color vs background-position) so they compose
- *     cleanly. The sweep finishes at 1.2s and lets the iridescent
- *     border keep cycling forever.
+ *   - The animation utility consumed at the hover site is
+ *     `nav-row-liquid-sweep` directly. The R15-PR6 iridescent
+ *     border (and the composed `nav-row-hover-alive` chaining
+ *     wrapper) was removed by user request — the row's hover
+ *     vocabulary is now band + bevel + sweep, no perpetual
+ *     outline cycle.
  *
  * What this ratchet does NOT police:
  *
@@ -173,52 +169,22 @@ describe('Roadmap-15 PR-7 — liquid bg sweep on hover', () => {
         });
     });
 
-    describe('nav-row-hover-alive composition', () => {
-        it('declares the composed `nav-row-hover-alive` animation entry', () => {
-            // The composed utility is the new consumer-facing
-            // surface for row-level hover motion. It chains the
-            // iridescent cycle (forever) with the liquid sweep
-            // (once) so a single class on the row applies both.
-            expect(TAILWIND_CONFIG).toMatch(
-                /'nav-row-hover-alive':\s*'[^']+'/,
-            );
+    describe('iridescent border + composed utility were removed', () => {
+        it('no `nav-row-iridescent` keyframe or animation entry remains', () => {
+            // The iridescent outline cycle was removed by user
+            // request. Both the keyframe declaration and the
+            // animation entry must be gone — leaving either as
+            // dead code would silently re-enable the cycle if a
+            // future PR re-introduces the consumer class.
+            expect(TAILWIND_CONFIG).not.toContain('nav-row-iridescent');
         });
 
-        it('composed entry includes both `nav-row-iridescent` and `nav-row-liquid-sweep`', () => {
-            const composedMatch = TAILWIND_CONFIG.match(
-                /'nav-row-hover-alive':\s*'([^']+)'/,
-            );
-            expect(composedMatch).not.toBeNull();
-            const value = composedMatch![1];
-            expect(value).toContain('nav-row-iridescent');
-            expect(value).toContain('nav-row-liquid-sweep');
-        });
-
-        it('iridescent is the FIRST track; liquid sweep is the SECOND', () => {
-            // The iridescent cycle is the perpetual ambient layer;
-            // the sweep is the one-shot accent. Order matches
-            // visual hierarchy.
-            const composedMatch = TAILWIND_CONFIG.match(
-                /'nav-row-hover-alive':\s*'([^']+)'/,
-            );
-            const value = composedMatch![1];
-            const iridescentIdx = value.indexOf('nav-row-iridescent');
-            const sweepIdx = value.indexOf('nav-row-liquid-sweep');
-            expect(iridescentIdx).toBeGreaterThan(-1);
-            expect(sweepIdx).toBeGreaterThan(iridescentIdx);
-        });
-
-        it('preserves per-track durations — 3s iridescent + 1.2s sweep', () => {
-            const composedMatch = TAILWIND_CONFIG.match(
-                /'nav-row-hover-alive':\s*'([^']+)'/,
-            );
-            const value = composedMatch![1];
-            expect(value).toMatch(
-                /nav-row-iridescent\s+3s\s+ease-in-out\s+infinite/,
-            );
-            expect(value).toMatch(
-                /nav-row-liquid-sweep\s+1\.2s\s+ease-out/,
-            );
+        it('no composed `nav-row-hover-alive` entry remains', () => {
+            // The composed wrapper existed only to chain the
+            // iridescent + sweep tracks. With the iridescent
+            // track gone, the sweep is consumed directly via
+            // `animate-nav-row-liquid-sweep`.
+            expect(TAILWIND_CONFIG).not.toContain('nav-row-hover-alive');
         });
     });
 
@@ -247,13 +213,22 @@ describe('Roadmap-15 PR-7 — liquid bg sweep on hover', () => {
             );
         });
 
-        it('hover wires the composed `nav-row-hover-alive` animation', () => {
-            // The composed utility drives both the iridescent
-            // border (R15-PR6) and the liquid sweep (R15-PR7) from
-            // a single class. Verify the row uses it.
+        it('hover wires the `nav-row-liquid-sweep` animation directly', () => {
+            // The composed `nav-row-hover-alive` wrapper was
+            // removed alongside the iridescent border. The hover
+            // animation now consumes the sweep keyframe directly.
             expect(defaultRecipe).toMatch(
-                /\bhover:animate-nav-row-hover-alive\b/,
+                /\bhover:animate-nav-row-liquid-sweep\b/,
             );
+        });
+
+        it('hover does NOT carry outline-based affordances (iridescent removed)', () => {
+            // The iridescent outline cycle was retired. No
+            // `hover:outline*` classes should remain on the
+            // default recipe — they'd paint a static outline
+            // without the animation now.
+            expect(defaultRecipe).not.toMatch(/\bhover:outline\b/);
+            expect(defaultRecipe).not.toMatch(/\bhover:outline-/);
         });
     });
 
@@ -269,7 +244,6 @@ describe('Roadmap-15 PR-7 — liquid bg sweep on hover', () => {
             // would compete for the row's interior surface.
             // Sweep is reserved for the hover/discovery moment.
             expect(activeRecipe).not.toMatch(/nav-row-liquid-sweep/);
-            expect(activeRecipe).not.toMatch(/nav-row-hover-alive/);
         });
     });
 });
