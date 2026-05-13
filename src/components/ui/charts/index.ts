@@ -113,6 +113,13 @@ export {
 
 export { LineChart } from './line-chart';
 
+// ─── Roadmap-16 — RadarChart primitive ──────────────────────────────
+//
+// Multi-axis radar chart with gradient polygon fill. Phase 4 of R16.
+
+export { RadarChart } from './radar-chart';
+export type { RadarAxisDatum } from './radar-chart';
+
 // ─── Shared scale / layout helpers (Epic 59) ─────────────────────────
 //
 // Pure helpers charts (and non-chart consumers that need to speak the
