@@ -214,6 +214,19 @@ export function RiskMatrixCell({
                 'focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-default)] focus-visible:ring-offset-1',
                 interactive ? 'cursor-pointer hover:brightness-110' : 'cursor-default',
                 selected ? 'ring-2 ring-[var(--brand-default)] ring-offset-1' : '',
+                // R18 visible-uplift — gloss sheen on the filled
+                // heatmap cells. R18's gloss primitive is SVG-only;
+                // RiskMatrixCell is an HTML div, so it gets the same
+                // white→transparent ramp as the ProgressCard track,
+                // here as a `::before` (paints over the `band.color`
+                // fill, UNDER the count span — the count's own
+                // `absolute inset-0` span renders after the pseudo).
+                // `rounded-sm` to track the cell, `pointer-events-
+                // none` so it never eats a click. Filled cells only —
+                // empty cells stay the flat `bg-bg-subtle` fallback.
+                !isEmpty
+                    ? "before:content-[''] before:absolute before:inset-0 before:rounded-sm before:pointer-events-none before:bg-[linear-gradient(180deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0.04)_50%,transparent_100%)]"
+                    : '',
                 className,
             ]
                 .filter(Boolean)
