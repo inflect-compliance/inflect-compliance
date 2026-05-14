@@ -43,26 +43,36 @@ const SRC = fs.readFileSync(
     'utf8',
 );
 
+// chart-gloss.tsx also houses `<ChartSheenSweep>` (R18-PR10).
+// Scope the per-PR-1 assertions to the `ChartGloss` function body
+// so the sheen-sweep code (which has its own white stops) doesn't
+// pollute the counts. `ChartGloss` ends where the `chartGlossId`
+// helper begins.
+const GLOSS_FN = SRC.slice(
+    SRC.indexOf('export function ChartGloss('),
+    SRC.indexOf('export function chartGlossId('),
+);
+
 describe('R18-PR1 — ChartGloss specular-highlight primitive', () => {
     it('renders a <linearGradient> def (not a wrapper element)', () => {
-        expect(SRC).toMatch(/<linearGradient\s+id=\{id\}/);
-        expect(SRC).toMatch(/<\/linearGradient>/);
+        expect(GLOSS_FN).toMatch(/<linearGradient\s+id=\{id\}/);
+        expect(GLOSS_FN).toMatch(/<\/linearGradient>/);
     });
 
     it('every stop is white — a highlight is the light source colour, not the surface', () => {
-        const stops = SRC.match(/stopColor="#ffffff"/g);
+        const stops = GLOSS_FN.match(/stopColor="#ffffff"/g);
         expect(stops).not.toBeNull();
         // Three stops: 0% / 45% / 100%, all white.
         expect(stops!.length).toBe(3);
         // No tinted / token-coloured stops.
-        expect(SRC).not.toMatch(/stopColor=\{/);
-        expect(SRC).not.toMatch(/stopColor="var\(/);
+        expect(GLOSS_FN).not.toMatch(/stopColor=\{/);
+        expect(GLOSS_FN).not.toMatch(/stopColor="var\(/);
     });
 
     it('the ramp ends fully transparent (overlay contract)', () => {
         // 100% stop MUST be stopOpacity={0} — the colour layer
         // below shows through everywhere except the sheen.
-        expect(SRC).toMatch(
+        expect(GLOSS_FN).toMatch(
             /offset="100%"\s+stopColor="#ffffff"\s+stopOpacity=\{0\}/,
         );
     });
@@ -77,7 +87,7 @@ describe('R18-PR1 — ChartGloss specular-highlight primitive', () => {
         // The mid-stop at 45% with peak × 0.15 is what makes the
         // gloss read as a HIGHLIGHT (narrow, fast falloff) rather
         // than the whole shape getting lighter.
-        expect(SRC).toMatch(
+        expect(GLOSS_FN).toMatch(
             /offset="45%"[\s\S]*?stopOpacity=\{peak\s*\*\s*0\.15\}/,
         );
     });

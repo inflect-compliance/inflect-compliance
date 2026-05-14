@@ -54,10 +54,13 @@ import {
 import {
     ChartGloss,
     chartGlossId,
+    ChartSheenSweep,
+    chartSheenId,
 } from '@/components/ui/charts/chart-gloss';
 import {
     useChartFlow,
     useChartHoverPop,
+    useChartSheen,
     useChartSpring,
 } from '@/components/ui/charts/chart-motion';
 import { ShimmerDots } from '@/components/ui/shimmer-dots';
@@ -171,6 +174,18 @@ export default function DonutChart({
     // chart; the spring only engages after the mount effect.
     // prefers-reduced-motion → returns 1 immediately (no entrance).
     const entranceProgress = useChartSpring();
+
+    // R18-PR10 — periodic sheen sweep. A narrow white band pans
+    // slowly across the donut on a ~5s loop — ambient polish, the
+    // way light drifts across a turned object. The ref attaches
+    // to the <ChartSheenSweep> def; the hook imperatively pans
+    // its gradientTransform. Distance = the donut diameter so the
+    // band fully enters AND exits each pass.
+    // prefers-reduced-motion → the loop never starts.
+    const sheenRef = useChartSheen({
+        distance: size,
+        direction: 'horizontal',
+    });
 
     // Loading takes precedence — shimmer in a same-size box keeps
     // layout stable while the data resolves.
@@ -335,6 +350,16 @@ export default function DonutChart({
                         direction="vertical"
                         intensity="default"
                     />
+                    {/* R18-PR10 — periodic sheen sweep def. The
+                        ref attaches here so `useChartSheen` can
+                        pan the gradientTransform. A narrow white
+                        band travels horizontally across the donut
+                        on a ~5s loop. */}
+                    <ChartSheenSweep
+                        ref={sheenRef}
+                        id={chartSheenId(chartId)}
+                        direction="horizontal"
+                    />
                 </defs>
 
                 {/* Background ring — quiet bg-muted underneath the
@@ -493,6 +518,23 @@ export default function DonutChart({
                                     <path
                                         d={path}
                                         fill={`url(#${chartGlossId(chartId)})`}
+                                        pointerEvents="none"
+                                        aria-hidden="true"
+                                    />
+                                    {/* R18-PR10 — sheen-sweep
+                                        layer. SAME `d` again,
+                                        painted on top of the gloss,
+                                        filled with the travelling
+                                        sheen def. As useChartSheen
+                                        pans the gradient, a narrow
+                                        white band drifts across
+                                        this segment. Stacked third:
+                                        colour → static gloss →
+                                        moving sheen. Inert like the
+                                        gloss layer. */}
+                                    <path
+                                        d={path}
+                                        fill={`url(#${chartSheenId(chartId)})`}
                                         pointerEvents="none"
                                         aria-hidden="true"
                                     />

@@ -93,6 +93,15 @@ export type {
     ChartGlossIntensity,
 } from './chart-gloss';
 
+// ─── Roadmap-18 PR-10 — ChartSheenSweep periodic light pan ──────────
+//
+// The MOVING counterpart of ChartGloss: a narrow white band that
+// pans across the surface on a slow loop. Pair `<ChartSheenSweep>`
+// with the `useChartSheen` motion hook (see chart-motion exports).
+
+export { ChartSheenSweep, chartSheenId } from './chart-gloss';
+export type { ChartSheenDirection } from './chart-gloss';
+
 // ─── Roadmap-16 — ChartFrame wrapper ────────────────────────────────
 //
 // Responsive container + state-driven branch rendering. Every R16
@@ -122,6 +131,9 @@ export {
     useChartSpring,
     CHART_SPRING_DURATION_MS,
     CHART_SPRING_OVERSHOOT,
+    // R18-PR10 — periodic sheen-sweep loop
+    useChartSheen,
+    CHART_SHEEN_PERIOD_MS,
 } from './chart-motion';
 
 // ─── Roadmap-16 — LineChart primitive ───────────────────────────────

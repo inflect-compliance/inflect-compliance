@@ -415,3 +415,91 @@ export function useChartSpring({
 
     return progress;
 }
+
+// ─── Roadmap-18 PR-10 — useChartSheen ────────────────────────────────
+
+/**
+ * R18-PR10 — the periodic sheen-sweep loop.
+ *
+ * Period (ms) of one full sweep pass. ~5s is deliberately slow —
+ * the sheen is AMBIENT polish, not an attention-grab. Closer to
+ * "light drifting across a polished object" than to a loading
+ * shimmer. Slower than the R16 `CHART_FLOW_PERIOD_MS` (1.4s)
+ * hover-flow because that one is an active hover response; this
+ * one is a resting-state breath.
+ */
+export const CHART_SHEEN_PERIOD_MS = 5000;
+
+interface UseChartSheenArgs {
+    /**
+     * Pan distance in user-space px — typically the chart's
+     * width (horizontal sweep) or height (vertical). The sheen
+     * band travels this far each period before wrapping.
+     */
+    distance: number;
+    /** Sweep axis. Defaults to `'horizontal'`. */
+    direction?: 'horizontal' | 'vertical';
+}
+
+/**
+ * Pans a `<ChartSheenSweep>` gradient across a chart surface on a
+ * slow continuous loop. Returns a ref the consumer attaches to
+ * the `<ChartSheenSweep>` — the hook imperatively writes the
+ * `gradientTransform` attribute every animation frame.
+ *
+ * Mirrors `useChartFlow`'s shape exactly (ref out, RAF loop,
+ * attribute write) — the difference is purely intent: flow is
+ * hover-gated + fast, sheen is always-on + slow.
+ *
+ * `prefers-reduced-motion: reduce` → the loop never starts; the
+ * gradient stays at the identity transform (the sheen band sits
+ * off to one edge, effectively invisible). No resting sheen, no
+ * motion — same WCAG posture as every other chart-motion hook.
+ */
+export function useChartSheen({
+    distance,
+    direction = 'horizontal',
+}: UseChartSheenArgs) {
+    const ref = useRef<SVGLinearGradientElement | null>(null);
+    const reduced = useReducedMotion();
+
+    useEffect(() => {
+        const node = ref.current;
+        if (!node) return undefined;
+
+        if (reduced) {
+            // Park the band off-edge — no resting sheen, no motion.
+            node.setAttribute('gradientTransform', 'translate(0,0)');
+            return undefined;
+        }
+
+        let startTime: number | null = null;
+        let raf = 0;
+        const tick = (t: number) => {
+            if (startTime === null) startTime = t;
+            const elapsed = t - startTime;
+            // phase wraps 0..1 every CHART_SHEEN_PERIOD_MS. The
+            // band starts off the leading edge (-distance) and
+            // travels to off the trailing edge (+distance) so it
+            // fully enters AND fully exits each pass — no abrupt
+            // appear / disappear.
+            const phase =
+                (elapsed % CHART_SHEEN_PERIOD_MS) / CHART_SHEEN_PERIOD_MS;
+            const offset = -distance + phase * (distance * 2);
+            const transform =
+                direction === 'horizontal'
+                    ? `translate(${offset.toFixed(2)},0)`
+                    : `translate(0,${offset.toFixed(2)})`;
+            node.setAttribute('gradientTransform', transform);
+            raf = requestAnimationFrame(tick);
+        };
+
+        raf = requestAnimationFrame(tick);
+        return () => {
+            cancelAnimationFrame(raf);
+            node.setAttribute('gradientTransform', 'translate(0,0)');
+        };
+    }, [distance, direction, reduced]);
+
+    return ref;
+}

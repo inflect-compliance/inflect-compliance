@@ -96,8 +96,20 @@ describe('R18-PR2 — useChartSpring bubbly-settle spring', () => {
             /export\s+function\s+useChartSpring\([\s\S]*?\):\s*number\s*\{/,
         );
         // Its body must not contain a useRef or setAttribute.
+        // Bound the slice to JUST the useChartSpring function —
+        // R18-PR10 appended `useChartSheen` to this file AFTER
+        // useChartSpring, and that hook DOES use a ref +
+        // setAttribute (it's the moving-sheen counterpart). The
+        // slice ends where the PR-10 section comment begins.
+        const springStart = SRC.indexOf(
+            'export function useChartSpring',
+        );
+        const pr10Start = SRC.indexOf(
+            'Roadmap-18 PR-10 — useChartSheen',
+        );
         const springBody = SRC.slice(
-            SRC.indexOf('export function useChartSpring'),
+            springStart,
+            pr10Start > springStart ? pr10Start : undefined,
         );
         expect(springBody).not.toMatch(/useRef\(/);
         expect(springBody).not.toMatch(/setAttribute\(/);

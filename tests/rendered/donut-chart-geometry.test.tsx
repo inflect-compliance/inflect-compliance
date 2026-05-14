@@ -58,27 +58,30 @@ describe('DonutChart geometry — arcs land inside the viewBox', () => {
         // centring group — otherwise the transform doesn't move
         // them.
         //
-        // R18-PR4 — each segment now renders TWO <path>s: the
-        // colour layer (series gradient / hex) + the gloss
-        // overlay (`fill="url(#...-gloss)"`). Count the COLOUR
-        // paths only — the gloss overlays share their `d` and
-        // are aria-hidden light, not geometry.
+        // Each segment renders THREE <path>s, stacked:
+        //   • colour layer  — series gradient / hex
+        //   • gloss overlay — R18-PR4, `fill="url(#...-gloss)"`
+        //   • sheen overlay — R18-PR10, `fill="url(#...-sheen)"`
+        // Count the COLOUR paths only — the two overlay layers
+        // share the colour layer's `d` and are aria-hidden light,
+        // not geometry.
+        const isOverlay = (p: Element) => {
+            const fill = p.getAttribute('fill') ?? '';
+            return fill.includes('-gloss') || fill.includes('-sheen');
+        };
         const allPaths = Array.from(
             centringGroup!.querySelectorAll('path'),
         );
-        const colourPaths = allPaths.filter(
-            (p) => !(p.getAttribute('fill') ?? '').includes('-gloss'),
-        );
-        const glossPaths = allPaths.filter((p) =>
-            (p.getAttribute('fill') ?? '').includes('-gloss'),
-        );
+        const colourPaths = allPaths.filter((p) => !isOverlay(p));
+        const overlayPaths = allPaths.filter(isOverlay);
         // 3 non-zero segments (Low=0 is filtered out by the
-        // zero-value guard) → 3 colour paths + 3 gloss overlays.
+        // zero-value guard) → 3 colour paths + 6 overlay paths
+        // (3 gloss + 3 sheen).
         expect(colourPaths.length).toBe(3);
-        expect(glossPaths.length).toBe(3);
+        expect(overlayPaths.length).toBe(6);
     });
 
-    it('renders one colour arc + one gloss overlay per non-zero segment', () => {
+    it('renders one colour arc + gloss + sheen overlays per non-zero segment', () => {
         const { container } = render(
             <DonutChart
                 id="test-donut-2"
@@ -91,15 +94,17 @@ describe('DonutChart geometry — arcs land inside the viewBox', () => {
             />,
         );
         // 2 non-zero (A, C); B is filtered. Each gets a colour
-        // path + a gloss overlay → 4 total, 2 of each.
+        // path + gloss overlay + sheen overlay → 6 total, 2 colour.
         const allPaths = Array.from(
             container.querySelectorAll('svg path'),
         );
-        const colourPaths = allPaths.filter(
-            (p) => !(p.getAttribute('fill') ?? '').includes('-gloss'),
-        );
+        const colourPaths = allPaths.filter((p) => {
+            const fill = p.getAttribute('fill') ?? '';
+            return !fill.includes('-gloss') && !fill.includes('-sheen');
+        });
         expect(colourPaths.length).toBe(2);
-        expect(allPaths.length).toBe(4);
+        // 2 segments × 3 layers (colour + gloss + sheen) = 6.
+        expect(allPaths.length).toBe(6);
     });
 
     it('arc path coordinates are origin-centred (the visx d3-shape contract)', () => {

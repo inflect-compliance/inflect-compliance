@@ -41,16 +41,24 @@ const SRC = fs.readFileSync(
 
 describe('R18-PR4 — Donut gloss sheen', () => {
     it('imports ChartGloss + chartGlossId from the chart-gloss primitive', () => {
+        // R18-PR10 widened this import to also pull in
+        // ChartSheenSweep + chartSheenId — assert the two
+        // gloss names are present in a chart-gloss import,
+        // not the exact whole-import shape.
         expect(SRC).toMatch(
-            /import\s*\{\s*ChartGloss,\s*chartGlossId,?\s*\}\s*from\s*['"]@\/components\/ui\/charts\/chart-gloss['"]/,
+            /import\s*\{[^}]*\bChartGloss\b[^}]*\}\s*from\s*['"]@\/components\/ui\/charts\/chart-gloss['"]/,
+        );
+        expect(SRC).toMatch(
+            /import\s*\{[^}]*\bchartGlossId\b[^}]*\}\s*from\s*['"]@\/components\/ui\/charts\/chart-gloss['"]/,
         );
     });
 
     it('renders ONE shared <ChartGloss> def (per-donut, not per-series)', () => {
-        // Exactly one <ChartGloss> in the file. The colour
-        // gradients are per-series (a .map); the gloss is one
-        // shared def.
-        const matches = SRC.match(/<ChartGloss\b/g);
+        // Exactly one <ChartGloss> JSX element in the file. The
+        // colour gradients are per-series (a .map); the gloss is
+        // one shared def. Match the element-with-`id`-prop form
+        // so a docstring mention doesn't count.
+        const matches = SRC.match(/<ChartGloss\s+id=/g);
         expect(matches).not.toBeNull();
         expect(matches!.length).toBe(1);
         // Not inside a .map() — it's a single def with the
