@@ -25,7 +25,8 @@ test.describe('Policy Center', () => {
         tenantSlug = await loginAndGetTenant(page);
         await gotoAndVerify(page, `/t/${tenantSlug}/policies/templates`, 'h1');
         await expect(page.locator('h1')).toContainText('Policy Templates');
-        await expect(page.locator('#template-search')).toBeVisible();
+        // R14 (#443) removed the FilterToolbar text-search input from the
+        // templates page too — no `#template-search` element to assert.
     });
 
     test('create a blank policy and see detail', async ({ page }) => {
