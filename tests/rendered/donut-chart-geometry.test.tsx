@@ -40,11 +40,17 @@ describe('DonutChart geometry — arcs land inside the viewBox', () => {
 
         // Find a <g> whose transform centres the pie. Without it,
         // visx's children render-prop form leaves arcs at origin.
+        //
+        // R18-PR5 composed `scale(<entranceProgress>)` onto the
+        // centring transform for the bubble-entrance. Match the
+        // `translate(center,center)` PREFIX rather than the exact
+        // string — the trailing ` scale(...)` is allowed (and on
+        // the server / under reduced-motion it's `scale(1)`).
         const groups = Array.from(svg!.querySelectorAll('g'));
-        const centringGroup = groups.find(
-            (g) =>
-                g.getAttribute('transform') ===
+        const centringGroup = groups.find((g) =>
+            (g.getAttribute('transform') ?? '').startsWith(
                 `translate(${center},${center})`,
+            ),
         );
         expect(centringGroup).toBeDefined();
 

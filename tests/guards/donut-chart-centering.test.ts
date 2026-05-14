@@ -57,8 +57,16 @@ describe('DonutChart centering — visx Pie children render-prop trap', () => {
     it('wraps <Pie> in a translate(center,center) <g>', () => {
         // The centring transform. Without it, every arc renders
         // around SVG (0,0) and only a corner sliver is visible.
+        //
+        // R18-PR5 composed `scale(${entranceProgress})` ONTO this
+        // transform for the bubble-entrance. The assertion checks
+        // the `translate(${center},${center})` half is still
+        // present at the start of the `<g transform>` — that's
+        // the load-bearing centring piece. The exact full string
+        // (with or without the trailing scale) is locked by
+        // `r18-donut-bubble-entrance.test.ts`.
         expect(SRC).toMatch(
-            /<g\s+transform=\{`translate\(\$\{center\},\$\{center\}\)`\}>/,
+            /<g\s*\n?\s*transform=\{`translate\(\$\{center\},\$\{center\}\)/,
         );
     });
 

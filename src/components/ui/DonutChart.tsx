@@ -58,6 +58,7 @@ import {
 import {
     useChartFlow,
     useChartHoverPop,
+    useChartSpring,
 } from '@/components/ui/charts/chart-motion';
 import { ShimmerDots } from '@/components/ui/shimmer-dots';
 
@@ -161,6 +162,15 @@ export default function DonutChart({
         distance: size,
         direction: 'horizontal',
     });
+
+    // R18-PR5 — bubble-entrance. On mount the whole pie group
+    // scales from 0 through an overshoot peak (~1.05) and settles
+    // to 1 — the donut "bubbles in" rather than just appearing.
+    // `useChartSpring` is SSR-safe: it returns 1 on the server +
+    // first client render, so the markup matches the settled
+    // chart; the spring only engages after the mount effect.
+    // prefers-reduced-motion → returns 1 immediately (no entrance).
+    const entranceProgress = useChartSpring();
 
     // Loading takes precedence — shimmer in a same-size box keeps
     // layout stable while the data resolves.
@@ -360,8 +370,21 @@ export default function DonutChart({
                     moves the whole pie into the middle of the
                     viewBox. Do NOT pass top/left to <Pie> — they
                     are silently ignored in the children form and
-                    only mislead the next reader. */}
-                <g transform={`translate(${center},${center})`}>
+                    only mislead the next reader.
+
+                    R18-PR5 — bubble-entrance: the same group also
+                    carries `scale(entranceProgress)`. On mount
+                    `entranceProgress` springs 0 → ~1.05 → 1, so
+                    the whole pie bubbles up from the centre. The
+                    transform order is load-bearing: `translate`
+                    THEN `scale`, so the scale pivots around the
+                    donut centre (the translated origin), not the
+                    SVG corner. SSR + reduced-motion → progress is
+                    1, transform is `translate(c,c) scale(1)` =
+                    identity-scaled, no entrance. */}
+                <g
+                    transform={`translate(${center},${center}) scale(${entranceProgress})`}
+                >
                 <Pie
                     data={pieSegments}
                     pieValue={(d: DonutSegment) => d.value}
