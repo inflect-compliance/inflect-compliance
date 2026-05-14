@@ -128,11 +128,15 @@ describe('R18-PR10 — periodic sheen sweep', () => {
             );
         });
 
-        it('each segment paints a third <path> filled with the sheen def', () => {
-            // colour → gloss → sheen. The sheen path uses the
-            // same `d` and is inert (aria-hidden + pointerEvents).
+        it('each segment paints a third layer filled with the sheen def', () => {
+            // colour → gloss → sheen. R18-PR11 converted the donut
+            // segment layers from `<path d={path}>` to
+            // `<motion.path animate={{ d }}>` for the data-change
+            // morph — so the sheen layer is now a `<motion.path>`.
+            // What's locked is the sheen FILL on an inert
+            // (pointerEvents=none + aria-hidden) segment layer.
             expect(DONUT_SRC).toMatch(
-                /<path\s+d=\{path\}\s+fill=\{`url\(#\$\{chartSheenId\(chartId\)\}\)`\}[\s\S]*?pointerEvents="none"[\s\S]*?aria-hidden="true"/,
+                /fill=\{`url\(#\$\{chartSheenId\(chartId\)\}\)`\}[\s\S]*?pointerEvents="none"[\s\S]*?aria-hidden="true"/,
             );
         });
     });

@@ -61,8 +61,20 @@ describe('Chart animation polish lock (R11-PR11)', () => {
             path.resolve(ROOT, 'src/components/ui/DonutChart.tsx'),
             'utf-8',
         );
-        // The exact class string on the segment circles. Locks the
-        // polish so a future "tidy-up" can't strip the easing.
-        expect(src).toMatch(/transition-all\s+duration-500\s+ease-out/);
+        // R18-PR11 — the donut segment no longer uses a CSS
+        // `transition-all` class. It morphs its `d` via a
+        // framer-motion `<motion.path>` (CSS can't reliably
+        // transition the `d` attribute). The R11-PR11 intent —
+        // "ease-out is the right tone for chart transitions, not
+        // linear / ease-in-out" — still holds: the morph
+        // `transition` MUST carry `ease: 'easeOut'`. This locks
+        // that the framer-motion path retained the easing the
+        // old CSS class encoded.
+        expect(src).toMatch(/ease:\s*'easeOut'/);
+        // And the dead CSS class is gone — no `transition-all`
+        // className survives in the donut.
+        expect(src).not.toMatch(
+            /className="[^"]*transition-all/,
+        );
     });
 });

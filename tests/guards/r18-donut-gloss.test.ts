@@ -74,11 +74,15 @@ describe('R18-PR4 — Donut gloss sheen', () => {
         );
     });
 
-    it('each segment paints a gloss overlay <path> with the SAME d, filled with the gloss', () => {
-        // The two-layer paint: a second <path d={path}> filled
-        // with url(#<glossId>) right after the colour path.
+    it('each segment paints a gloss overlay layer filled with the gloss def', () => {
+        // The two-layer paint: a second segment layer filled with
+        // url(#<glossId>). R18-PR11 converted the donut layers
+        // from `<path d={path}>` to `<motion.path animate={{ d }}>`
+        // for the data-change morph — so the gloss overlay is now
+        // a `<motion.path>`. What's locked is the gloss FILL on a
+        // segment layer, not the element name.
         expect(SRC).toMatch(
-            /<path\s+d=\{path\}\s+fill=\{`url\(#\$\{chartGlossId\(chartId\)\}\)`\}/,
+            /fill=\{`url\(#\$\{chartGlossId\(chartId\)\}\)`\}/,
         );
     });
 
