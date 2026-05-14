@@ -85,6 +85,7 @@ import { CACHE_KEYS } from '@/lib/swr-keys';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { HeroMetric } from '@/components/ui/HeroMetric';
 import { NextBestActionCard } from '@/components/ui/NextBestActionCard';
+import { DashboardChartProvider } from './DashboardChartContext';
 
 import type { ExecutiveDashboardPayload } from '@/app-layer/repositories/DashboardRepository';
 import type { TrendPayload } from '@/app-layer/usecases/compliance-trends';
@@ -212,6 +213,13 @@ export default function DashboardClient({
     })();
 
     return (
+        // R17-PR6 — dashboard chart-filter coordination. The provider
+        // holds the currently-selected KPI (or null). PR-7 wires the
+        // KpiCards as click consumers; PR-8+ wire the chart sections
+        // to subscribe + filter their data. Today this provider is a
+        // pass-through — the dashboard renders identically to pre-R17
+        // until the consumers light up.
+        <DashboardChartProvider>
         <DashboardLayout
             header={{
                 title: t('title'),
@@ -406,6 +414,7 @@ export default function DashboardClient({
                 )}
             </div>
         </DashboardLayout>
+        </DashboardChartProvider>
     );
 }
 
