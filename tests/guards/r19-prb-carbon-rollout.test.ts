@@ -59,7 +59,13 @@ describe('R19-PR-B — liquid-carbon rollout', () => {
         expect(recipe).toMatch(/border-\[var\(--btn-carbon-border\)\]/);
         expect(recipe).toMatch(/shadow-\[var\(--btn-carbon-bevel\)\]/);
         expect(recipe).toMatch(/before:content-\[''\]/);
-        expect(recipe).toMatch(/before:bg-\[image:var\(--btn-carbon-overlay\)\]/);
+        // R19-PR-C stacked `--btn-carbon-grain` as the top layer of
+        // the same `::before` background, so the overlay token is
+        // no longer the sole image — match it anywhere in the
+        // `before:bg-[image:…]` arbitrary value.
+        expect(recipe).toMatch(
+            /before:bg-\[image:[^\]]*var\(--btn-carbon-overlay\)/,
+        );
         // The recipe is module-level — declared BEFORE the cva()
         // call, not inside a variant.
         expect(VARIANTS).toMatch(

@@ -175,6 +175,19 @@
   --btn-carbon-bevel: inset 0 1px 1px rgba(255, 255, 255, 0.10), inset 0 -2px 3px rgba(255, 255, 255, 0.03), 0 1px 2px rgba(0, 0, 0, 0.38);
   --btn-carbon-border: rgba(0, 0, 0, 0.30);
 
+  /* --btn-carbon-grain (Roadmap-19 PR-C) — the micro-grain that
+   * gives the liquid-carbon surface TACTILITY. A grayscale
+   * fractal-noise tile painted as the TOP layer of every carbon
+   * ::before (above the light pool, still under the label). At
+   * 5% opacity it never reads as "texture you can see" — it
+   * reads as a surface that isn't a flat printed rectangle, the
+   * difference between a slab of graphite and a slab of plastic.
+   * Theme-agnostic — grayscale noise at 5% works identically on
+   * the dark + light variant fills, so it lives once in :root
+   * (no per-theme override). `stitchTiles='stitch'` keeps the
+   * 90px tile seamless when it repeats across a wide button. */
+  --btn-carbon-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.05'/%3E%3C/svg%3E");
+
   /* ── Transitions ───────────────────────────────────────────────── */
   --duration-fast:    100ms;
   --duration-default: 150ms;

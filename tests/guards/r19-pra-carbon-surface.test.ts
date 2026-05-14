@@ -149,8 +149,13 @@ describe('R19-PR-A — liquid-carbon button surface', () => {
                 VARIANTS.match(
                     /const\s+carbonSurface\s*=\s*\[([\s\S]*?)\];/,
                 )?.[1] ?? '';
+            // R19-PR-C stacked `--btn-carbon-grain` as the top
+            // layer of the same `::before` background. The overlay
+            // token is still there — just no longer the sole image
+            // — so match it anywhere inside the `before:bg-[image:…]`
+            // arbitrary value.
             expect(recipe).toMatch(
-                /before:bg-\[image:var\(--btn-carbon-overlay\)\]/,
+                /before:bg-\[image:[^\]]*var\(--btn-carbon-overlay\)/,
             );
         });
 
