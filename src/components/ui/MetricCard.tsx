@@ -101,9 +101,26 @@ export function MetricCard({
         <div
             id={id}
             data-metric-card
+            data-metric-card-corner-glow
             className={cn(
                 cardVariants({ density: 'compact' }),
+                "relative isolate overflow-hidden",
                 "hover:border-border-emphasis transition-colors duration-150 ease-out",
+                // R17-PR4 — corner brand glow. Tiny radial wash
+                // anchored at the upper-left where the icon + eyebrow
+                // sit. Smaller and quieter than the HeroMetric
+                // 640×400 ambient glow — these cards live in a stack
+                // of 3–6 siblings, so the warmth has to be present
+                // without competing for attention. 200px radius +
+                // brand-subtle alpha + 55% fade = "highlight on a
+                // glass surface", not "glow under a verdict".
+                //
+                // No breath animation here. Three+ cards breathing
+                // in lockstep would be hypnotic; staggering creates
+                // visual noise. The hero's masthead is the ONE
+                // breathing surface; the cards stay static.
+                "before:content-[''] before:absolute before:inset-0 before:-z-10 before:pointer-events-none",
+                "before:bg-[radial-gradient(circle_200px_at_10%_0%,var(--brand-subtle)_0%,transparent_55%)]",
                 className,
             )}
         >
