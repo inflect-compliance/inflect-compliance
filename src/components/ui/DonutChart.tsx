@@ -323,7 +323,26 @@ export default function DonutChart({
 
                 {/* Data segments — visx Pie produces real <path>
                     arc geometry with optional cornerRadius and
-                    padAngle. */}
+                    padAngle.
+
+                    CENTRING — load-bearing `<g transform>`:
+                    visx's `<Pie>` only applies its `top`/`left`
+                    props in the DEFAULT render path. When a
+                    `children` render-prop is supplied (as here),
+                    visx returns `<>{children({arcs,path,pie})}</>`
+                    and DROPS top/left entirely (see
+                    node_modules/@visx/shape/lib/shapes/Pie.js:49).
+                    d3-shape's arc generator emits coordinates
+                    centred on the ORIGIN, so without an explicit
+                    centring transform every arc renders around
+                    SVG (0,0) — the top-left corner — and only the
+                    sliver that pokes into the viewBox is visible.
+                    The `translate(center,center)` group is what
+                    moves the whole pie into the middle of the
+                    viewBox. Do NOT pass top/left to <Pie> — they
+                    are silently ignored in the children form and
+                    only mislead the next reader. */}
+                <g transform={`translate(${center},${center})`}>
                 <Pie
                     data={pieSegments}
                     pieValue={(d: DonutSegment) => d.value}
@@ -338,9 +357,6 @@ export default function DonutChart({
                     // colour bleed at boundaries while staying
                     // far short of "stamped wedges".
                     padAngle={0.012}
-                    // Centre the pie in the SVG viewBox.
-                    top={center}
-                    left={center}
                 >
                     {(pie) =>
                         pie.arcs.map((arc) => {
@@ -420,6 +436,7 @@ export default function DonutChart({
                         })
                     }
                 </Pie>
+                </g>
 
                 {/* Center label */}
                 {centerLabel && (
