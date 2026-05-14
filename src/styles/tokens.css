@@ -139,6 +139,42 @@
   --shadow:     0 4px 12px rgba(0, 0, 0, 0.40);
   --shadow-lg:  0 8px 24px rgba(0, 0, 0, 0.50);
 
+  /* ── Liquid-carbon button surface (Roadmap-19) ─────────────────────
+   * Buttons read as LIQUID CARBON — a deep, dark, voluminous
+   * surface, wet-looking but never a hard mirror shine. Think a
+   * pool of dark liquid graphite lit softly from above, not a
+   * matte slab and not glossy plastic. Three tokens, layered:
+   *
+   *   --btn-carbon-overlay — a SEMI-TRANSPARENT depth field
+   *     painted OVER the variant's base colour. NOT a flat
+   *     top-down ramp — a soft elliptical light POOL near the
+   *     top-centre (the meniscus catch-light), fading fast to a
+   *     near-nothing mid, then deepening to a dark pool at the
+   *     bottom. The radial pool is what reads as "liquid": light
+   *     gathers on a curved wet surface rather than washing the
+   *     whole face. The catch-light peaks at only 11% — present
+   *     enough to read as wet, restrained enough to never be
+   *     "shiny." Transparent so it composes over ANY variant.
+   *
+   *   --btn-carbon-bevel — the box-shadow that gives the surface
+   *     VOLUME. An inset SOFT top highlight (a 1px-spread inset,
+   *     not a hairline — liquid edges are soft) + a faint inset
+   *     bottom glow (the liquid's base catches bounce light) +
+   *     a tight outer drop so the pool sits on the page. Low-
+   *     contrast — volume is FELT, not announced.
+   *
+   *   --btn-carbon-border — the meniscus edge. A hair darker
+   *     than the surface so the silhouette is crisp, with a
+   *     whisper of luminosity so it reads as a liquid edge, not
+   *     a drawn outline. The "subtle border" from the brief.
+   *
+   * DARK theme values below; the LIGHT theme block carries its
+   * own (a liquid pool in light mode needs a deeper bottom pool
+   * + a crisper catch-light to read at all). */
+  --btn-carbon-overlay: radial-gradient(ellipse 130% 80% at 50% -10%, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.02) 32%, rgba(0, 0, 0, 0.10) 62%, rgba(0, 0, 0, 0.20) 100%);
+  --btn-carbon-bevel: inset 0 1px 1px rgba(255, 255, 255, 0.10), inset 0 -2px 3px rgba(255, 255, 255, 0.03), 0 1px 2px rgba(0, 0, 0, 0.38);
+  --btn-carbon-border: rgba(0, 0, 0, 0.30);
+
   /* ── Transitions ───────────────────────────────────────────────── */
   --duration-fast:    100ms;
   --duration-default: 150ms;
@@ -444,6 +480,19 @@
   --shadow-sm:  0 1px 2px rgba(60, 50, 40, 0.06);
   --shadow:     0 4px 12px rgba(60, 50, 40, 0.08);
   --shadow-lg:  0 8px 24px rgba(60, 50, 40, 0.12);
+
+  /* ── Liquid-carbon button surface — LIGHT theme ────────────────────
+   * See the dark-theme block for the rationale. The light theme
+   * needs a DEEPER bottom pool — on a light-ish variant surface a
+   * 20%-black floor barely registers, so it goes to 26%. The
+   * meniscus catch-light is warm-white and slightly crisper (13%)
+   * so the "wet" read survives on a brighter face. The bevel
+   * top-highlight lifts to 50% white — a liquid surface in light
+   * mode catches a sharper top-edge gleam. The border is warm-
+   * tinted to match the PwC palette rather than pure black. */
+  --btn-carbon-overlay: radial-gradient(ellipse 130% 80% at 50% -10%, rgba(255, 252, 248, 0.13) 0%, rgba(255, 252, 248, 0.03) 32%, rgba(40, 30, 20, 0.14) 62%, rgba(40, 30, 20, 0.26) 100%);
+  --btn-carbon-bevel: inset 0 1px 1px rgba(255, 255, 255, 0.50), inset 0 -2px 3px rgba(255, 255, 255, 0.10), 0 1px 2px rgba(60, 50, 40, 0.20);
+  --btn-carbon-border: rgba(60, 50, 40, 0.24);
 
   /* ── Sidebar band glow (R13-PR2) ───────────────────────────────── */
   /*
