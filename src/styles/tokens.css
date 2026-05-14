@@ -302,6 +302,25 @@
   --chart-hover-duration: 200ms;
   --chart-flow-duration: 1.4s;
   --chart-mount-duration: 600ms;
+
+  /* ── Roadmap-18 — Charts II: Fluid & Glossy ──────────────────────
+   * `chart-soft-shadow` is the drop shadow chart SURFACES cast to
+   * lift off the card behind them — the donut ring, a bar cluster,
+   * an area fill read as a physical object floating a hair above
+   * the card. Deliberately SOFT + LOW: a large blur (12px) at low
+   * alpha. A hard shadow would read as "a UI chrome element"; the
+   * soft one reads as "a glossy object catching ambient light."
+   * DARK theme: the shadow is near-black at 38% — dark surfaces
+   * need a darker shadow to register at all.
+   *
+   * `chart-bubble-duration` paces the CSS `chart-bubble-in`
+   * keyframe (the pure-CSS sibling of the JS `useChartSpring`
+   * hook — for chart surfaces that animate via a className rather
+   * than a per-shape progress value). 520ms matches
+   * CHART_SPRING_DURATION_MS so the CSS path and the JS path read
+   * as the same motion. */
+  --chart-soft-shadow: 0 6px 12px rgba(0, 0, 0, 0.38);
+  --chart-bubble-duration: 520ms;
 }
 
 
@@ -544,6 +563,14 @@
   --chart-hover-duration: 200ms;
   --chart-flow-duration: 1.4s;
   --chart-mount-duration: 600ms;
+
+  /* Roadmap-18 — see the dark-theme block for the rationale.
+   * LIGHT theme: the shadow is softer + lighter (15% vs 38%) —
+   * on a near-white card a 38%-black shadow would read as a
+   * hard smudge; 15% gives the same "floating glossy object"
+   * lift without the heaviness. */
+  --chart-soft-shadow: 0 6px 12px rgba(15, 23, 42, 0.15);
+  --chart-bubble-duration: 520ms;
 }
 
 /* ─────────────────────────────────────────────────────────────────

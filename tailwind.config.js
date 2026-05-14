@@ -88,6 +88,12 @@ module.exports = {
                 sm: 'var(--shadow-sm)',
                 DEFAULT: 'var(--shadow)',
                 lg: 'var(--shadow-lg)',
+                // R18-PR3 — soft drop shadow for chart surfaces.
+                // `shadow-chart-soft` lifts the donut ring / bar
+                // cluster / area fill a hair off the card so it
+                // reads as a glossy physical object. Token-backed
+                // (theme-aware: heavier in dark, lighter in light).
+                'chart-soft': 'var(--chart-soft-shadow)',
             },
 
             // ── Semantic spacing scale (v2-PR-2) ──
@@ -344,6 +350,26 @@ module.exports = {
                     '0%': { opacity: '0', transform: 'translateY(8px)' },
                     '100%': { opacity: '1', transform: 'translateY(0)' },
                 },
+                // R18-PR3 — bubbly chart-surface entrance. The
+                // pure-CSS sibling of the JS `useChartSpring` hook
+                // (R18-PR2) — for chart surfaces that animate via
+                // a className rather than a per-shape progress
+                // value (e.g. the <ChartFrame> wrapper, a whole
+                // donut <svg>). The keyframe mirrors easeOutBack:
+                // scale starts SMALL (0.8), overshoots PAST 1
+                // (1.05 at the 70% mark — the "bubble" peak),
+                // then settles to exactly 1. Opacity ramps 0→1
+                // over the first 40% so the surface fades in
+                // WHILE it bubbles, not after. The 70%-mark
+                // overshoot keyframe is what distinguishes this
+                // from a plain `scale-in` — without it the
+                // surface just grows, it doesn't bubble.
+                'chart-bubble-in': {
+                    '0%': { opacity: '0', transform: 'scale(0.8)' },
+                    '40%': { opacity: '1' },
+                    '70%': { transform: 'scale(1.05)' },
+                    '100%': { opacity: '1', transform: 'scale(1)' },
+                },
             },
             animation: {
                 'slide-up-fade': 'slide-up-fade 0.2s ease-out',
@@ -467,6 +493,20 @@ module.exports = {
                 // "landing" rather than "stopping."
                 'dashboard-rise-in':
                     'dashboard-rise-in 600ms ease-out',
+                // R18-PR3 — bubbly chart-surface entrance. 520ms
+                // matches `--chart-bubble-duration` + the JS
+                // `CHART_SPRING_DURATION_MS` so the CSS path and
+                // the JS-hook path read as the SAME motion. The
+                // timing function is `ease-out` only — the
+                // OVERSHOOT lives in the keyframe (the 70%-mark
+                // scale(1.05)), not the curve. Putting the bounce
+                // in the keyframe rather than a back-curve timing
+                // function keeps it identical to the easeOutBack
+                // shape useChartSpring computes. One-shot — fires
+                // once on mount, the surface then trusts its
+                // gloss + soft-shadow to carry the rest.
+                'chart-bubble-in':
+                    'chart-bubble-in 520ms ease-out',
                 // R15-PR4 — combined "alive" animation for the
                 // ACTIVE row. Adds the starburst bloom as the first
                 // track ahead of the three R15-PR1..3 tracks. All
