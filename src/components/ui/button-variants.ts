@@ -74,6 +74,55 @@ const carbonOnHover = [
   "motion-reduce:before:transition-none",
 ];
 
+/**
+ * R19-PR-D — the carbon interaction-state recipe (the R19 capstone).
+ *
+ * PR-A/B/C built the carbon SURFACE — at rest and on hover. PR-D
+ * makes the three INTERACTION states read as the same liquid-carbon
+ * MATERIAL rather than generic CSS state changes, by driving them
+ * all through ONE channel: the `::before` depth-overlay's opacity.
+ *
+ *   • pressed (`active:`) — the light pool DIMS
+ *     (`active:before:opacity-70`). Pressing liquid carbon
+ *     depresses the surface; less light gathers. Composes with
+ *     the cva base's `active:scale-[0.97]` — shrink + dim reads
+ *     as a real physical depression. Tailwind emits `active:`
+ *     AFTER `hover:`, so on a hovered-then-pressed transparent
+ *     variant the press-dim correctly wins over the hover-lift.
+ *
+ *   • focus (`focus-visible:`) — the carbon is REVEALED
+ *     (`focus-visible:before:opacity-100`). `carbonOnHover` only
+ *     lifts the `::before` on `hover:`; this gives keyboard users
+ *     the same depth a mouse gets. A no-op for the solid recipes
+ *     (their `::before` already rests at full opacity). The a11y
+ *     focus ring in the cva base is deliberately untouched and
+ *     stays the primary focus signal — carbon is depth, not a
+ *     replacement for the ring.
+ *
+ *   • disabled — the carbon goes INERT (`disabled:before:opacity-0`).
+ *     Not "dimmed liquid": the depth-overlay (pool + grain) drops
+ *     out entirely so a disabled button reads as flat, dead
+ *     material. The base `disabled:opacity-50` still mutes the
+ *     fill + label.
+ *
+ * `before:transition-opacity` makes all three changes ride the
+ * same smooth fade as the hover reveal — and gives the solid
+ * recipe (`carbonSurface`, which had no `::before` transition of
+ * its own) one too. `motion-reduce` drops the transition: the end
+ * states still hold, they just arrive instantly.
+ *
+ * Spread into the cva BASE — every variant gets the same
+ * interaction-state material, regardless of which surface recipe
+ * (`carbonSurface` / `carbonOnHover`) it carries.
+ */
+const carbonStates = [
+  "before:transition-opacity before:duration-150",
+  "motion-reduce:before:transition-none",
+  "active:before:opacity-70",
+  "focus-visible:before:opacity-100",
+  "disabled:before:opacity-0",
+];
+
 export const buttonVariants = cva(
   [
     "inline-flex items-center justify-center gap-tight whitespace-nowrap",
@@ -99,6 +148,12 @@ export const buttonVariants = cva(
     // free. Every variant now uses it — `carbonSurface` (solid
     // fills) or `carbonOnHover` (transparent fills).
     "relative",
+    // R19-PR-D — carbon interaction states. The pressed / focus /
+    // disabled states all ride the `::before` depth-overlay's
+    // opacity, so they read as the liquid-carbon material
+    // responding rather than as generic CSS state changes. In the
+    // BASE so every variant gets the identical state material.
+    ...carbonStates,
   ],
   {
     variants: {

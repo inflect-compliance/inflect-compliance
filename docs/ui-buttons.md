@@ -96,6 +96,62 @@ import { cn } from '@dub/utils';
 | Server component with navigation | `buttonVariants()` (no hooks needed) |
 | Button with loading/disabled state | `<Button>` component |
 
+### Liquid-carbon surface (Roadmap-19)
+
+Buttons are not flat painted rectangles — every variant reads as a
+deep, voluminous pool of **liquid carbon**: wet-looking, dark,
+restrained (never a hard mirror shine). The system lives entirely in
+`src/components/ui/button-variants.ts` + four `--btn-carbon-*` tokens
+in `tokens.css`, and is built from three composable recipes.
+
+**Tokens** (`tokens.css`, both themes):
+
+| Token | Role |
+|---|---|
+| `--btn-carbon-overlay` | the soft elliptical light **pool** — a `radial-gradient`, theme-tuned, that reads as light gathering on a wet curved surface |
+| `--btn-carbon-bevel` | the inset-led box-shadow that gives the surface **volume** (a soft top-edge highlight + faint bottom bounce + tight outer drop) |
+| `--btn-carbon-border` | the **meniscus edge** — a hair darker than the surface so the silhouette stays crisp |
+| `--btn-carbon-grain` | a grayscale fractal-noise data-URI — the micro-**grain** that gives the surface tactility (felt, not seen) |
+
+**Recipes** (module-level `const` arrays, spread into the cva config):
+
+| Recipe | What it does | Used by |
+|---|---|---|
+| `carbonSurface` | the full carbon field at rest — border + bevel + a `::before` depth-overlay stacking grain over the light pool | the solid-fill variants: `primary`, `secondary`, `destructive` |
+| `carbonOnHover` | the same carbon field parked at `opacity-0` and faded in on hover — a transparent button has no rest-state surface to pool light on | the transparent variants: `ghost`, `destructive-outline` (the border is untouched — `ghost` stays borderless, `destructive-outline` keeps its red danger edge) |
+| `carbonStates` | the three interaction states, all driven through one channel — the `::before` overlay's opacity — spread into the cva **base** so every variant inherits it | every variant |
+
+**The interaction-state channel** (`carbonStates`): pressed / focus /
+disabled all read as the liquid-carbon *material* responding, not as
+generic CSS state changes:
+
+- **pressed** (`active:before:opacity-70`) — the light pool dims; the
+  surface depresses. Composes with the base `active:scale-[0.97]`
+  press geometry.
+- **focus** (`focus-visible:before:opacity-100`) — the carbon is
+  revealed for keyboard users (parity with the hover lift). The a11y
+  focus ring is untouched and stays the primary focus signal — carbon
+  is depth, never a replacement for the ring.
+- **disabled** (`disabled:before:opacity-0`) — the carbon goes inert:
+  the depth-overlay drops out so a disabled button reads as flat,
+  dead material.
+
+All three ride `before:transition-opacity` (dropped under
+`motion-reduce`). The bevel never rides `hover:shadow-*` — a
+hover-driven box-shadow reads as a decorative depth-lift and is
+banned by the motion-language ratchet; the carbon field's shadow is
+gated on the `::before` instead.
+
+**Invariants** are locked by four ratchets — extend the matching one
+when you touch the carbon system:
+
+| Ratchet | Locks |
+|---|---|
+| `tests/guards/r19-pra-carbon-surface.test.ts` | tokens + the `carbonSurface` recipe shape |
+| `tests/guards/r19-prb-carbon-rollout.test.ts` | `carbonSurface` rollout to the solid variants |
+| `tests/guards/r19-prc-carbon-hover-grain.test.ts` | the grain layer + `carbonOnHover` for the transparent variants |
+| `tests/guards/r19-prd-carbon-states.test.ts` | `carbonStates` interaction channel + the R19 capstone (whole-system coherence) |
+
 ## StatusBadge Component
 
 `src/components/ui/status-badge.tsx` — semantic status indicator.
