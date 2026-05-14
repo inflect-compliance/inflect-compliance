@@ -40,6 +40,7 @@ import { cn } from "@dub/utils";
 import { Card } from "./card";
 import { Heading } from "./typography";
 import { Button } from "./button";
+import { BadgeCheck } from "./icons/nucleo/badge-check";
 import {
     resolveNextBestAction,
     type NextBestAction,
@@ -133,6 +134,25 @@ export function NextBestActionCard({
             data-next-best-action-urgency-glow
         >
             <Heading level={3} className="mb-1">
+                {/*
+                    R17-PR11 — small celebration affordance on the
+                    "all clear" state. The readiness-check action.id
+                    fires only when overdue evidence + overdue tasks
+                    + high risks are all zero AND coverage ≥ 80%.
+                    Showing a green check next to the heading at that
+                    moment is the dashboard's "you did it" feedback —
+                    Stripe-style positive reinforcement without
+                    being saccharine. Other action.ids (urgency or
+                    attention tiers) intentionally skip this — the
+                    check would conflict with the urgency glow.
+                */}
+                {action.id === "readiness-check" && (
+                    <BadgeCheck
+                        className="inline-block w-5 h-5 text-content-success mr-2 align-text-bottom"
+                        aria-hidden="true"
+                        data-next-best-action-clear-check
+                    />
+                )}
                 {action.label}
             </Heading>
             <p
