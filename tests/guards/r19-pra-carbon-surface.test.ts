@@ -120,25 +120,43 @@ describe('R19-PR-A — liquid-carbon button surface', () => {
         });
     });
 
-    describe('primary variant', () => {
-        it('carries the token-backed carbon border + bevel (no hex literals)', () => {
-            expect(VARIANTS).toMatch(
-                /primary:\s*\[[\s\S]*?border-\[var\(--btn-carbon-border\)\]/,
-            );
-            expect(VARIANTS).toMatch(
-                /primary:\s*\[[\s\S]*?shadow-\[var\(--btn-carbon-bevel\)\]/,
-            );
+    describe('carbon surface recipe', () => {
+        // R19-PR-B extracted the carbon classes PR-A wired inline
+        // on `primary` into a shared `carbonSurface` const. These
+        // assertions follow the recipe to its new home — and
+        // assert `primary` still consumes it.
+        it('the shared `carbonSurface` recipe carries the token-backed border + bevel (no hex literals)', () => {
+            const recipe =
+                VARIANTS.match(
+                    /const\s+carbonSurface\s*=\s*\[([\s\S]*?)\];/,
+                )?.[1] ?? '';
+            expect(recipe).toMatch(/border-\[var\(--btn-carbon-border\)\]/);
+            expect(recipe).toMatch(/shadow-\[var\(--btn-carbon-bevel\)\]/);
         });
 
-        it('paints a ::before depth-overlay that tracks the button shape and never intercepts clicks', () => {
-            expect(VARIANTS).toMatch(
+        it('the recipe paints a ::before depth-overlay that tracks the button shape and never intercepts clicks', () => {
+            const recipe =
+                VARIANTS.match(
+                    /const\s+carbonSurface\s*=\s*\[([\s\S]*?)\];/,
+                )?.[1] ?? '';
+            expect(recipe).toMatch(
                 /before:content-\[''\][\s\S]*?before:absolute[\s\S]*?before:inset-0[\s\S]*?before:rounded-\[inherit\][\s\S]*?before:pointer-events-none/,
             );
         });
 
-        it('fills the ::before with the carbon overlay token', () => {
-            expect(VARIANTS).toMatch(
+        it('the recipe fills the ::before with the carbon overlay token', () => {
+            const recipe =
+                VARIANTS.match(
+                    /const\s+carbonSurface\s*=\s*\[([\s\S]*?)\];/,
+                )?.[1] ?? '';
+            expect(recipe).toMatch(
                 /before:bg-\[image:var\(--btn-carbon-overlay\)\]/,
+            );
+        });
+
+        it('the `primary` variant consumes the shared recipe', () => {
+            expect(VARIANTS).toMatch(
+                /primary:\s*\[[\s\S]*?\.\.\.carbonSurface/,
             );
         });
     });

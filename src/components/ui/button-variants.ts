@@ -1,5 +1,41 @@
 import { cva } from "class-variance-authority";
 
+/**
+ * R19-PR-B — the shared liquid-carbon surface recipe.
+ *
+ * Extracted from R19-PR-A's inline `primary` block so every
+ * carbon-treated variant references one recipe instead of
+ * duplicating the four classes. The recipe is variant-COLOUR-
+ * agnostic — every piece composes over whatever `bg-` the
+ * variant paints:
+ *
+ *   • `--btn-carbon-border` — the meniscus edge, a token tone a
+ *     hair darker than the surface so the silhouette is crisp
+ *     without a "drawn outline";
+ *   • `--btn-carbon-bevel` — the box-shadow that gives the
+ *     surface VOLUME: a SOFT inset top-edge highlight (this is
+ *     the "edge-light" — the bevel catches a hair of light) +
+ *     a faint inset bottom bounce-glow + a tight outer drop;
+ *   • a `::before` depth-overlay carrying `--btn-carbon-overlay`
+ *     — the soft elliptical light POOL that reads as liquid.
+ *     `inset-0` + `rounded-[inherit]` tracks the button shape,
+ *     `pointer-events-none` keeps it click-transparent. Paint
+ *     order puts it above the variant fill, below the label.
+ *
+ * Spread into a variant's class array AFTER the variant's own
+ * `bg-` / `hover:` classes. Transparent-background variants
+ * (`ghost`, `destructive-outline`) deliberately DON'T take this
+ * recipe yet — a depth-overlay over `bg-transparent` has no
+ * surface to pool light on. R19-PR-C handles those with a
+ * carbon-on-hover treatment.
+ */
+const carbonSurface = [
+  "border-[var(--btn-carbon-border)]",
+  "shadow-[var(--btn-carbon-bevel)]",
+  "before:content-[''] before:absolute before:inset-0 before:rounded-[inherit] before:pointer-events-none",
+  "before:bg-[image:var(--btn-carbon-overlay)]",
+];
+
 export const buttonVariants = cva(
   [
     "inline-flex items-center justify-center gap-tight whitespace-nowrap",
@@ -17,58 +53,37 @@ export const buttonVariants = cva(
     // R19-PR-A — liquid-carbon surface scaffolding. `relative`
     // lets each variant hang a `::before` depth-overlay off the
     // button without a positioning surprise. Variant-agnostic +
-    // a no-op for variants that don't (yet) paint a `before:bg-`
-    // — the overlay classes themselves live per-variant (PR-A
-    // wires `primary`; PR-B rolls the rest). Kept in the cva
-    // BASE so a future variant inherits the positioning context
-    // for free.
+    // a no-op for variants that don't paint a `before:bg-`
+    // (`ghost`, `destructive-outline`). Kept in the cva BASE so a
+    // future variant inherits the positioning context for free.
     "relative",
   ],
   {
     variants: {
       variant: {
+        // R19-PR-A wired `primary`; R19-PR-B extracted the recipe
+        // into `carbonSurface` and rolled it to `secondary` +
+        // `destructive`. All three now read as deep, voluminous
+        // pools of liquid carbon — only the variant's `bg-` hue
+        // differs underneath the shared depth field.
         primary: [
           "bg-[var(--brand-emphasis)] text-white",
           "hover:bg-[var(--brand-default)]",
-          // R19-PR-A — liquid-carbon surface treatment. The
-          // button stops reading as a flat painted rectangle and
-          // becomes a deep, voluminous pool of liquid carbon:
-          //   • `--btn-carbon-border` — the meniscus edge: a
-          //     hair darker than the surface so the silhouette
-          //     is crisp, never a "drawn outline";
-          //   • `--btn-carbon-bevel` box-shadow — a SOFT inset
-          //     top highlight + a faint inset bottom bounce-glow
-          //     + a tight outer drop. This is what gives the
-          //     surface VOLUME, the read of depth under a wet
-          //     skin;
-          //   • a `::before` depth-overlay carrying the
-          //     `--btn-carbon-overlay` field — a soft elliptical
-          //     light POOL near the top-centre fading to a dark
-          //     pool at the base. The radial pool (not a flat
-          //     ramp) is what reads as LIQUID: light gathers on
-          //     a curved wet surface. The pseudo is `inset-0` +
-          //     `rounded-[inherit]` so it tracks the button's
-          //     shape, `pointer-events-none` so it never
-          //     intercepts a click, and — paint-order-wise — it
-          //     sits ABOVE the brand fill but BELOW the label
-          //     (a `::before` paints after the background and
-          //     before in-flow children, no z-index needed).
-          "border-[var(--btn-carbon-border)]",
-          "shadow-[var(--btn-carbon-bevel)]",
-          "before:content-[''] before:absolute before:inset-0 before:rounded-[inherit] before:pointer-events-none",
-          "before:bg-[image:var(--btn-carbon-overlay)]",
+          ...carbonSurface,
         ],
         secondary: [
-          "bg-bg-default border-border-subtle text-content-emphasis",
-          "hover:bg-bg-muted hover:border-border-default",
+          "bg-bg-default text-content-emphasis",
+          "hover:bg-bg-muted",
+          ...carbonSurface,
         ],
         ghost: [
           "bg-transparent border-transparent text-content-default",
           "hover:bg-bg-muted hover:text-content-emphasis",
         ],
         destructive: [
-          "bg-bg-error-emphasis border-bg-error-emphasis text-white",
+          "bg-bg-error-emphasis text-white",
           "hover:brightness-110",
+          ...carbonSurface,
         ],
         "destructive-outline": [
           "bg-transparent border-border-error text-content-error",
