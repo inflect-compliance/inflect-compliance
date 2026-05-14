@@ -330,6 +330,20 @@ module.exports = {
                     '0%, 100%': { opacity: '0.65' },
                     '50%': { opacity: '1' },
                 },
+                // R17-PR12 — first-paint choreography for the
+                // dashboard body. Combines an 8px translateY-from-
+                // below with a 0→1 opacity ramp. Replaces the
+                // previous bare 150ms `fade-in` on the
+                // <DashboardLayout> wrapper — the longer 600ms
+                // duration + small vertical motion reads as "the
+                // dashboard COMPOSES ITSELF" rather than "the page
+                // popped in." 8px is the smallest distance the eye
+                // still registers as motion at this duration; larger
+                // would feel jumpy on a content-heavy page.
+                'dashboard-rise-in': {
+                    '0%': { opacity: '0', transform: 'translateY(8px)' },
+                    '100%': { opacity: '1', transform: 'translateY(0)' },
+                },
             },
             animation: {
                 'slide-up-fade': 'slide-up-fade 0.2s ease-out',
@@ -445,6 +459,14 @@ module.exports = {
                 // in tokens.css flattens this to 1ms automatically.
                 'hero-glow-breath':
                     'hero-glow-breath 6s ease-in-out infinite',
+                // R17-PR12 — 600ms ease-out one-shot. Slow enough
+                // that the eye registers the dashboard COMPOSING
+                // itself; fast enough that an impatient user
+                // doesn't wait. ease-out keeps the motion
+                // decelerating into its final position — feels
+                // "landing" rather than "stopping."
+                'dashboard-rise-in':
+                    'dashboard-rise-in 600ms ease-out',
                 // R15-PR4 — combined "alive" animation for the
                 // ACTIVE row. Adds the starburst bloom as the first
                 // track ahead of the three R15-PR1..3 tracks. All

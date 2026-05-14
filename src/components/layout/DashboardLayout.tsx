@@ -5,8 +5,8 @@
  *
  * Sits next to `<EntityListPage>` (lists) and `<EntityDetailLayout>`
  * (detail) as the third public layout primitive. Replaces the
- * hand-rolled `<div className="space-y-section animate-fadeIn">` +
- * inline header block that every dashboard page used to spell out.
+ * hand-rolled `<div className="space-y-section ...">` + inline
+ * header block that every dashboard page used to spell out.
  *
  * Why the third shell:
  *   Dashboards are NOT lists (no DataTable / FilterToolbar) and NOT
@@ -19,10 +19,11 @@
  *   the FilterToolbar slot for nothing; through `EntityDetailLayout`
  *   would carry the tab bar.
  *
+
  * What the shell carries:
- *   - Outer wrapper with `space-y-section animate-fadeIn` (the
- *     standard dashboard rhythm — vertical sections + fade-in on
- *     first paint).
+ *   - Outer wrapper with `space-y-section animate-dashboard-rise-in`
+ *     (the standard dashboard rhythm — vertical sections + 600ms
+ *     ease-out rise-in on first paint).
  *   - Header rendered via `<PageHeader>` (same primitive
  *     `EntityListPage` and `EntityDetailLayout` use), so every page
  *     header in the app reads the same.
@@ -67,7 +68,16 @@ export function DashboardLayout({
 }: DashboardLayoutProps) {
     return (
         <div
-            className={cn("space-y-section animate-fadeIn", className)}
+            // R17-PR12 — swapped `animate-fadeIn` (150ms bare fade)
+            // for `animate-dashboard-rise-in` (600ms ease-out + 8px
+            // translateY-from-below). The longer duration + small
+            // vertical motion reads as "the dashboard composes
+            // itself" rather than "the page popped in." Affects
+            // all 7 DashboardLayout consumers (executive dashboard,
+            // tests / risks / controls / tasks / vendors dashboards,
+            // CoverageClient) — one consistent first-paint feel
+            // across every dashboard surface.
+            className={cn("space-y-section animate-dashboard-rise-in", className)}
             data-dashboard-layout
             data-testid={dataTestId}
         >
