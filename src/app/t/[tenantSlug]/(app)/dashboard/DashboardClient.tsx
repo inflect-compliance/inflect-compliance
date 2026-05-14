@@ -464,6 +464,14 @@ function InteractiveKpiGrid({
 }
 
 // ─── Risk Distribution ───────────────────────────────────────────────
+//
+// R17-PR8 — the Risk Distribution card now subscribes to the
+// dashboard chart-filter context. When the "Risks" KPI tile is
+// selected, the card gains a brand-default ring + brighter glow
+// (matches the selected tile's affordance). When ANY OTHER KPI is
+// selected, the card dims (opacity-60) — visually signalling
+// "the focus is elsewhere right now". When no KPI is selected,
+// the card renders unchanged (the baseline byte-for-byte).
 
 function RiskDistributionSection({
     exec,
@@ -471,10 +479,30 @@ function RiskDistributionSection({
     exec: ExecutiveDashboardPayload;
 }) {
     const { riskBySeverity, riskByStatus } = exec;
+    const { selectedKpi } = useDashboardChartFilter();
+    const isFocused = selectedKpi === 'risks';
+    const isDimmed = selectedKpi !== null && !isFocused;
     return (
-        <Card id="risk-distribution">
+        <Card
+            id="risk-distribution"
+            data-chart-focus={isFocused ? 'true' : undefined}
+            data-chart-dimmed={isDimmed ? 'true' : undefined}
+            className={cn(
+                "transition-opacity duration-200 ease-out",
+                isFocused && "ring-2 ring-brand-default ring-offset-2 ring-offset-bg-page",
+                isDimmed && "opacity-60",
+            )}
+        >
             <Heading level={3} className="mb-3">
                 Risk Distribution
+                {isFocused && (
+                    <span
+                        className="ml-2 inline-flex items-center rounded-full bg-brand-subtle px-2 py-0.5 text-xs font-medium text-brand-emphasis"
+                        data-chart-focus-badge
+                    >
+                        Focused
+                    </span>
+                )}
             </Heading>
             <div className="grid grid-cols-2 gap-default items-center">
                 <DonutChart
