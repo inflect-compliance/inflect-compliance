@@ -85,7 +85,11 @@ import { CACHE_KEYS } from '@/lib/swr-keys';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { HeroMetric } from '@/components/ui/HeroMetric';
 import { NextBestActionCard } from '@/components/ui/NextBestActionCard';
-import { DashboardChartProvider } from './DashboardChartContext';
+import {
+    DashboardChartProvider,
+    useDashboardChartFilter,
+    type DashboardKpiKey,
+} from './DashboardChartContext';
 
 import type { ExecutiveDashboardPayload } from '@/app-layer/repositories/DashboardRepository';
 import type { TrendPayload } from '@/app-layer/usecases/compliance-trends';
@@ -246,68 +250,12 @@ export default function DashboardClient({
                 data-testid="dashboard-hero"
             />
 
-            {/* ─── KPI Grid (6 cards) ─── */}
-            <div
-                className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-default"
-                id="kpi-grid"
-            >
-                <KpiCard
-                    id="kpi-coverage"
-                    label={t('controls')}
-                    value={exec.controlCoverage.coveragePercent}
-                    format="percent"
-                    icon={ShieldCheck}
-                    gradient="from-emerald-500 to-teal-500"
-                    subtitle={`${exec.controlCoverage.implemented} of ${exec.controlCoverage.applicable} implemented`}
-                    trend={trendBundle?.coverage}
-                    trendVariant="success"
-                />
-                <KpiCard
-                    id="kpi-risks"
-                    label={t('risks')}
-                    value={exec.stats.risks}
-                    icon={AlertTriangle}
-                    gradient="from-amber-500 to-orange-500"
-                    subtitle={t('highCritical', { count: exec.stats.highRisks })}
-                    trend={trendBundle?.risks}
-                    trendVariant="warning"
-                />
-                <KpiCard
-                    id="kpi-evidence"
-                    label={t('evidence')}
-                    value={exec.stats.evidence}
-                    icon={Paperclip}
-                    gradient="from-purple-500 to-pink-500"
-                    subtitle={`${exec.evidenceExpiry.overdue} overdue`}
-                    trend={trendBundle?.evidence}
-                    trendVariant="error"
-                />
-                <KpiCard
-                    id="kpi-tasks"
-                    label={t('openTasks')}
-                    value={exec.stats.openTasks}
-                    icon={CheckCircle2}
-                    gradient="from-indigo-500 to-blue-500"
-                    subtitle={`${exec.taskSummary.overdue} overdue`}
-                />
-                <KpiCard
-                    id="kpi-policies"
-                    label="Policies"
-                    value={exec.policySummary.total}
-                    icon={FileText}
-                    gradient="from-sky-500 to-cyan-500"
-                    subtitle={`${exec.policySummary.published} published`}
-                />
-                <KpiCard
-                    id="kpi-findings"
-                    label={t('openFindings')}
-                    value={exec.stats.openFindings}
-                    icon={Bug}
-                    gradient="from-red-500 to-rose-500"
-                    trend={trendBundle?.findings}
-                    trendVariant="error"
-                />
-            </div>
+            {/* ─── KPI Grid (6 cards) — R17-PR7: each tile is now a
+                 keyboard-accessible button wired into the dashboard
+                 chart-filter context. Clicking a tile toggles the
+                 dashboard's selectedKpi; PR-8+ will subscribe the
+                 charts to that focus and re-render their data. ─── */}
+            <InteractiveKpiGrid exec={exec} trendBundle={trendBundle} t={t} />
 
             {/* ─── Control Coverage + Risk Distribution ─── */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-default">
@@ -415,6 +363,103 @@ export default function DashboardClient({
             </div>
         </DashboardLayout>
         </DashboardChartProvider>
+    );
+}
+
+// ─── Interactive KPI Grid (R17-PR7) ──────────────────────────────────
+//
+// Sits inside <DashboardChartProvider> so it can subscribe to the
+// chart-filter context. Each tile is a clickable button that
+// toggles the dashboard's selectedKpi. PR-8+ will subscribe the
+// charts to the same focus to filter their data.
+
+function InteractiveKpiGrid({
+    exec,
+    trendBundle,
+    t,
+}: {
+    exec: ExecutiveDashboardPayload;
+    trendBundle: KpiTrendBundle | undefined;
+    t: (key: string, opts?: any) => string;
+}) {
+    const { selectedKpi, toggleSelectedKpi } = useDashboardChartFilter();
+    const isSelected = (kpi: DashboardKpiKey) => selectedKpi === kpi;
+    const click = (kpi: DashboardKpiKey) => () => toggleSelectedKpi(kpi);
+
+    return (
+        <div
+            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-default"
+            id="kpi-grid"
+        >
+            <KpiCard
+                id="kpi-coverage"
+                label={t('controls')}
+                value={exec.controlCoverage.coveragePercent}
+                format="percent"
+                icon={ShieldCheck}
+                gradient="from-emerald-500 to-teal-500"
+                subtitle={`${exec.controlCoverage.implemented} of ${exec.controlCoverage.applicable} implemented`}
+                trend={trendBundle?.coverage}
+                trendVariant="success"
+                onClick={click('coverage')}
+                selected={isSelected('coverage')}
+            />
+            <KpiCard
+                id="kpi-risks"
+                label={t('risks')}
+                value={exec.stats.risks}
+                icon={AlertTriangle}
+                gradient="from-amber-500 to-orange-500"
+                subtitle={t('highCritical', { count: exec.stats.highRisks })}
+                trend={trendBundle?.risks}
+                trendVariant="warning"
+                onClick={click('risks')}
+                selected={isSelected('risks')}
+            />
+            <KpiCard
+                id="kpi-evidence"
+                label={t('evidence')}
+                value={exec.stats.evidence}
+                icon={Paperclip}
+                gradient="from-purple-500 to-pink-500"
+                subtitle={`${exec.evidenceExpiry.overdue} overdue`}
+                trend={trendBundle?.evidence}
+                trendVariant="error"
+                onClick={click('evidence')}
+                selected={isSelected('evidence')}
+            />
+            <KpiCard
+                id="kpi-tasks"
+                label={t('openTasks')}
+                value={exec.stats.openTasks}
+                icon={CheckCircle2}
+                gradient="from-indigo-500 to-blue-500"
+                subtitle={`${exec.taskSummary.overdue} overdue`}
+                onClick={click('tasks')}
+                selected={isSelected('tasks')}
+            />
+            <KpiCard
+                id="kpi-policies"
+                label="Policies"
+                value={exec.policySummary.total}
+                icon={FileText}
+                gradient="from-sky-500 to-cyan-500"
+                subtitle={`${exec.policySummary.published} published`}
+                onClick={click('policies')}
+                selected={isSelected('policies')}
+            />
+            <KpiCard
+                id="kpi-findings"
+                label={t('openFindings')}
+                value={exec.stats.openFindings}
+                icon={Bug}
+                gradient="from-red-500 to-rose-500"
+                trend={trendBundle?.findings}
+                trendVariant="error"
+                onClick={click('findings')}
+                selected={isSelected('findings')}
+            />
+        </div>
     );
 }
 

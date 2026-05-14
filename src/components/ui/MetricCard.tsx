@@ -84,6 +84,29 @@ export interface MetricCardProps {
     className?: string;
     /** Forwarded to the outer card frame for E2E selectors. */
     id?: string;
+    /**
+     * R17-PR7 — optional click handler. When provided, the card
+     * becomes a keyboard-accessible button (role="button",
+     * tabIndex=0, Enter/Space activates) and the hover surface
+     * gains a brand-tinted emphasis. Used by the dashboard to
+     * wire KPI tiles into the chart-filter context.
+     */
+    onClick?: () => void;
+    /**
+     * R17-PR7 — visually-selected state. When true, the card
+     * carries a brand-default ring + brighter glow. Drives the
+     * "this is the focused KPI" affordance when the chart-filter
+     * context's selectedKpi matches this card.
+     */
+    selected?: boolean;
+    /**
+     * Accessible name forwarded as `aria-label` when `onClick` is
+     * provided. Defaults to the eyebrow string when it's a string;
+     * callers MUST pass this when the eyebrow is non-text content
+     * (icon, badge, etc.) so screen readers can announce the
+     * clickable surface.
+     */
+    'aria-label'?: string;
 }
 
 export function MetricCard({
@@ -96,16 +119,47 @@ export function MetricCard({
     trailing,
     className,
     id,
+    onClick,
+    selected = false,
+    'aria-label': ariaLabel,
 }: MetricCardProps) {
+    const clickable = typeof onClick === 'function';
+    const handleKeyDown = clickable
+        ? (e: React.KeyboardEvent<HTMLDivElement>) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onClick?.();
+              }
+          }
+        : undefined;
+    const resolvedAriaLabel =
+        ariaLabel ?? (typeof eyebrow === 'string' ? eyebrow : undefined);
+
     return (
         <div
             id={id}
             data-metric-card
             data-metric-card-corner-glow
+            data-metric-card-selected={selected ? 'true' : undefined}
+            role={clickable ? 'button' : undefined}
+            tabIndex={clickable ? 0 : undefined}
+            aria-pressed={clickable ? selected : undefined}
+            aria-label={clickable ? resolvedAriaLabel : undefined}
+            onClick={onClick}
+            onKeyDown={handleKeyDown}
             className={cn(
                 cardVariants({ density: 'compact' }),
                 "relative isolate overflow-hidden",
-                "hover:border-border-emphasis transition-colors duration-150 ease-out",
+                clickable
+                    ? "cursor-pointer hover:border-border-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-default focus-visible:ring-offset-2 focus-visible:ring-offset-bg-page transition-colors duration-150 ease-out"
+                    : "hover:border-border-emphasis transition-colors duration-150 ease-out",
+                // R17-PR7 — selected state recipe. Brand-default ring
+                // + brand-emphasis border + brightened glow. Anchored
+                // to the card's existing corner-glow gradient (PR-4)
+                // so the warmth amps up rather than competing with a
+                // new visual signal.
+                selected &&
+                    "ring-2 ring-brand-default border-border-emphasis before:bg-[radial-gradient(circle_240px_at_10%_0%,var(--brand-muted)_0%,transparent_60%)]",
                 // R17-PR4 — corner brand glow. Tiny radial wash
                 // anchored at the upper-left where the icon + eyebrow
                 // sit. Smaller and quieter than the HeroMetric

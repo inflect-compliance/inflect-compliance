@@ -105,6 +105,17 @@ export interface KpiCardProps {
      * which renders the static `—` "no data" placeholder.
      */
     loading?: boolean;
+    /**
+     * R17-PR7 — optional click handler. Forwarded to MetricCard;
+     * makes the whole tile a keyboard-accessible button.
+     */
+    onClick?: () => void;
+    /**
+     * R17-PR7 — visually-selected state. Drives the brand-default
+     * ring + amped glow when this tile is the dashboard's focused
+     * KPI.
+     */
+    selected?: boolean;
 }
 
 // ─── Format mapping ─────────────────────────────────────────────────
@@ -298,6 +309,8 @@ export default function KpiCard({
     trendVariant = 'brand',
     trendAriaLabel,
     loading = false,
+    onClick,
+    selected = false,
 }: KpiCardProps) {
     const isEmpty = value === null || value === undefined;
     const animatedFormat = kpiFormatToAnimated(format);
@@ -381,6 +394,8 @@ export default function KpiCard({
             subtitle={subtitle}
             trailing={trailingSlot}
             className={className}
+            onClick={onClick}
+            selected={selected}
         >
             {valueSlot}
         </MetricCard>
