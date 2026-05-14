@@ -11,6 +11,7 @@ import { motion } from "motion/react";
 import { useId, useMemo } from "react";
 
 import type { SparklineData, TimeSeriesPoint } from "@/components/ui/charts";
+import { ChartGloss, chartGlossId } from "@/components/ui/charts/chart-gloss";
 
 /**
  * Epic 59 — compact sparkline for KPI cards and summary tiles.
@@ -194,6 +195,18 @@ function MiniAreaChartInner({
                     y1={0}
                     y2={1}
                 />
+                {/* R18-PR6 — liquid-fill gloss. A `subtle` vertical
+                    sheen painted as an OVERLAY on the area fill so
+                    the filled region reads as a glossy liquid
+                    surface catching light from above. `subtle`
+                    (0.18 peak) because sparklines are tiny + dense
+                    — a `default` sheen would wash out the variant
+                    colour at this size. */}
+                <ChartGloss
+                    id={chartGlossId(id)}
+                    direction="vertical"
+                    intensity="subtle"
+                />
             </defs>
             <Group left={padding.left} top={padding.top}>
                 <AreaClosed
@@ -203,11 +216,33 @@ function MiniAreaChartInner({
                     yScale={yScale}
                     curve={curve ? curveNatural : undefined}>
                     {({ path }) => (
-                        <motion.path
-                            initial={{ d: path(zeroedData) || "", opacity: 0 }}
-                            animate={{ d: path(data as TimeSeriesPoint[]) || "", opacity: 1 }}
-                            fill={`url(#${id}-fill-gradient)`}
-                        />
+                        <>
+                            {/* Colour layer — the variant-tinted
+                                area fill. Morphs `d` from a flat
+                                zeroed baseline up to the data
+                                shape: the "liquid filling up". */}
+                            <motion.path
+                                initial={{ d: path(zeroedData) || "", opacity: 0 }}
+                                animate={{ d: path(data as TimeSeriesPoint[]) || "", opacity: 1 }}
+                                fill={`url(#${id}-fill-gradient)`}
+                            />
+                            {/* R18-PR6 — gloss layer. SAME `d`
+                                animation, painted on top, filled
+                                with the subtle vertical gloss —
+                                the liquid surface catches light.
+                                Tracks the colour layer's `d` morph
+                                so the sheen "fills up" with the
+                                liquid. aria-hidden + no opacity
+                                init flicker: it rides the colour
+                                layer's reveal. */}
+                            <motion.path
+                                initial={{ d: path(zeroedData) || "" }}
+                                animate={{ d: path(data as TimeSeriesPoint[]) || "" }}
+                                fill={`url(#${chartGlossId(id)})`}
+                                aria-hidden="true"
+                                style={{ pointerEvents: "none" }}
+                            />
+                        </>
                     )}
                 </AreaClosed>
                 <Area
