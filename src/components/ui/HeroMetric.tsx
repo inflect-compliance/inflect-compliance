@@ -197,16 +197,22 @@ export function HeroMetric({
                 // R17-PR1 — ambient brand glow behind the 72px value.
                 // Soft radial wash anchored under the value (left bias,
                 // vertical centre), brand-subtle alpha that fades to
-                // transparent. R17-PR2 animates the glow's opacity
-                // through a 6-second breath on top of the same gradient.
+                // transparent.
                 "before:content-[''] before:absolute before:inset-0 before:-z-10 before:pointer-events-none",
                 "before:bg-[radial-gradient(ellipse_640px_400px_at_18%_60%,var(--brand-subtle)_0%,transparent_72%)]",
-                // R17-PR2 — 6s opacity breath on the glow. The mast-
-                // head reads as gently alive — same identity-tier
-                // rhythm as the R14 brand pulse and the R15 nav-band
-                // halo-breath. prefers-reduced-motion auto-flattens
-                // via tokens.css.
-                "before:animate-hero-glow-breath",
+                // R17-PR2 originally drove the glow through a 6s
+                // opacity breath palindrome (0.65 → 1 → 0.65). The
+                // hero-static-glow PR (2026-05-15) froze the glow at
+                // the breath floor (0.65). User feedback: the breath
+                // animation drew the eye to the masthead repeatedly
+                // and competed with the actual content; the LOWEST-
+                // brightness frame is the calmest read and keeps the
+                // identity-tier brand wash without the recurring
+                // pulse. Other 6s identity rhythms (R14 brand mark
+                // pulse, R15 nav-band halo-breath) stay as-is —
+                // those decorate chrome, not the masthead's content
+                // anchor.
+                "before:opacity-[0.65]",
                 className,
             )}
             data-hero-metric

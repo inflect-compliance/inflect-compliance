@@ -91,11 +91,16 @@ describe('R17 capstone — Dashboard Reimagined rollout', () => {
             );
         });
 
-        it('PR-2: 6s glow breath is registered + applied', () => {
-            expect(TW_CONFIG).toMatch(
-                /'hero-glow-breath':\s*'hero-glow-breath\s+6s\s+ease-in-out\s+infinite'/,
-            );
-            expect(HERO_METRIC).toMatch(/before:animate-hero-glow-breath/);
+        // R17-PR-2 originally wired a 6s opacity breath. The
+        // hero-static-glow PR (2026-05-15) froze the glow at the
+        // breath floor (0.65) — see the dedicated
+        // r17-hero-breath-animation.test.ts for the static contract.
+        // This capstone assertion follows the change: static
+        // opacity, no animation utility, no keyframe.
+        it('PR-2: glow paints STATICALLY at the breath floor (post hero-static-glow)', () => {
+            expect(HERO_METRIC).toMatch(/before:opacity-\[0\.65\]/);
+            expect(HERO_METRIC).not.toMatch(/before:animate-hero-glow-breath/);
+            expect(TW_CONFIG).not.toMatch(/'hero-glow-breath':\s*\{/);
         });
 
         it('PR-3: sparkline prop + semantic→variant map are present', () => {

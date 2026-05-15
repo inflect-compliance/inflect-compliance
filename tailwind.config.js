@@ -315,27 +315,20 @@ module.exports = {
                     '0%': { 'background-position': '-100% 0%' },
                     '100%': { 'background-position': '100% 0%' },
                 },
-                // R17-PR2 — slow ambient breath on the HeroMetric
-                // glow's `::before` pseudo-element. Opacity drifts
-                // from 0.65 to 1 and back over 6 seconds. The eye
-                // reads the masthead as gently alive — the glow is
-                // "breathing", not flickering. 6s tempo matches the
-                // R14-PR3 brand-mark pulse and the R15-PR2 nav-band
-                // halo-breath; same identity-tier rhythm, deliberately
-                // slower than the 4s state-tier shimmer.
-                //
-                // Why opacity, not filter or transform? The glow is
-                // a radial wash painted by `bg-[radial-gradient(...)]`
-                // on `::before`. Opacity scales the entire painted
-                // surface uniformly — the gradient stays in the same
-                // place, just dims and brightens. Transform would
-                // physically move the glow (distracting). Filter
-                // brightness would shift the colour temperature.
-                // Opacity is the calm option.
-                'hero-glow-breath': {
-                    '0%, 100%': { opacity: '0.65' },
-                    '50%': { opacity: '1' },
-                },
+                // R17-PR2 / removed by hero-static-glow (2026-05-15).
+                // Originally drove a 6s opacity palindrome (0.65 →
+                // 1 → 0.65) on the HeroMetric glow's `::before`.
+                // User feedback: the breath drew the eye to the
+                // masthead repeatedly and competed with content. The
+                // hero now paints the glow STATICALLY at the breath
+                // floor (0.65) via `before:opacity-[0.65]` in
+                // HeroMetric.tsx. Keyframe + animation utility
+                // removed from this config to avoid stale dead-code.
+                // If a future "alive masthead" PR wants the breath
+                // back, restore both the `hero-glow-breath` keyframe
+                // here AND the `before:animate-hero-glow-breath`
+                // class in HeroMetric.tsx; the
+                // hero-static-glow ratchet locks the static contract.
                 // R17-PR12 — first-paint choreography for the
                 // dashboard body. Combines an 8px translateY-from-
                 // below with a 0→1 opacity ramp. Replaces the
@@ -476,15 +469,8 @@ module.exports = {
                 // when hover engages.
                 'nav-row-liquid-sweep':
                     'nav-row-liquid-sweep 1.2s ease-out',
-                // R17-PR2 — 6s breath. Slow enough to fall below
-                // the threshold of conscious attention, fast enough
-                // that the eye registers the warmth shifting if you
-                // look. ease-in-out gives the breath its natural
-                // curve (slower at peaks, faster through the middle).
-                // The global `prefers-reduced-motion: reduce` rule
-                // in tokens.css flattens this to 1ms automatically.
-                'hero-glow-breath':
-                    'hero-glow-breath 6s ease-in-out infinite',
+                // R17-PR2 / removed by hero-static-glow (2026-05-15).
+                // See the keyframes block above for the rationale.
                 // R17-PR12 — 600ms ease-out one-shot. Slow enough
                 // that the eye registers the dashboard COMPOSING
                 // itself; fast enough that an impatient user
