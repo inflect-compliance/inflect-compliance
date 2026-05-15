@@ -209,13 +209,13 @@ export function HeroMetric({
                 // — the original 0.65↔1.0 range was perceptually too
                 // narrow to give a meaningfully dim option. This PR
                 // drops the static opacity BELOW the original
-                // animation range to 0.30 — a quietly-visible
+                // animation range to 0.15 — a quietly-visible
                 // whisper of brand wash that you see if you look but
                 // doesn't otherwise compete for attention. Other 6s
                 // identity rhythms (R14 brand mark pulse, R15 nav-
                 // band halo-breath) stay as-is — those decorate
                 // chrome, not the masthead's content anchor.
-                "before:opacity-[0.30]",
+                "before:opacity-[0.15]",
                 className,
             )}
             data-hero-metric

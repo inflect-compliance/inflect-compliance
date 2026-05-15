@@ -109,13 +109,13 @@ describe('R17-PR3 — HeroMetric trend sparkline', () => {
         // animated breath was frozen at the floor by the
         // hero-static-glow PR (2026-05-15) — static opacity is
         // now the PR-2 contract. The hero-dimmer-glow follow-up
-        // (same day) dropped that further to 0.30 (the original
+        // (same day) dropped that further to 0.15 (the original
         // floor still read as bright).
         expect(HERO_SRC).toMatch(/data-hero-ambient-glow/);
         expect(HERO_SRC).toMatch(/"relative\s+isolate\s+overflow-hidden"/);
         expect(HERO_SRC).toMatch(
             /before:bg-\[radial-gradient\(ellipse_640px_400px_at_18%_60%,\s*var\(--brand-subtle\)_0%,\s*transparent_72%\)\]/,
         );
-        expect(HERO_SRC).toMatch(/"before:opacity-\[0\.30\]"/);
+        expect(HERO_SRC).toMatch(/"before:opacity-\[0\.15\]"/);
     });
 });
