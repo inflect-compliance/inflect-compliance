@@ -253,7 +253,15 @@
    * three states. Consumed by PR-B via `control-variants.ts`. */
   --ctrl-edge-rest:  rgba(255, 255, 255, 0.14);
   --ctrl-edge-hover: rgba(255, 255, 255, 0.28);
-  --ctrl-edge-focus: 0 0 0 3px rgba(255, 205, 17, 0.20);
+  /* R20-PR-D — enriched focus halo. The 3px brand ring (originally
+   * just the focus indicator) now also carries a 2-stop ambient
+   * drop so a focused control reads "warm AND raised" the way a
+   * focused button does. Same shape as the button's
+   * `--btn-ambient-focus`, minus the 4px outer brand ring (which
+   * --ctrl-edge-focus already provides at 3px). Gives form controls
+   * the same tactile-lift presence on focus that the button family
+   * wears. */
+  --ctrl-edge-focus: 0 0 0 3px rgba(255, 205, 17, 0.20), 0 1px 2px rgba(0, 0, 0, 0.24), 0 2px 6px rgba(0, 0, 0, 0.16);
 
   /* ── Transitions ───────────────────────────────────────────────── */
   --duration-fast:    100ms;
@@ -605,7 +613,12 @@
    * than dark because cream surfaces swallow contrast. */
   --ctrl-edge-rest:  rgba(60, 50, 40, 0.22);
   --ctrl-edge-hover: rgba(60, 50, 40, 0.38);
-  --ctrl-edge-focus: 0 0 0 3px rgba(208, 74, 2, 0.20);
+  /* R20-PR-D — enriched focus halo (light theme). Warm-tinted
+   * ambient drop matches the rest of the light-theme shadow scale
+   * (alphas dropped to the warm-graphite range so the lift reads
+   * subtle on cream surfaces). See the dark-theme block above for
+   * the rationale. */
+  --ctrl-edge-focus: 0 0 0 3px rgba(208, 74, 2, 0.20), 0 1px 2px rgba(60, 50, 40, 0.10), 0 2px 6px rgba(60, 50, 40, 0.06);
 
   /* ── Sidebar band glow (R13-PR2) ───────────────────────────────── */
   /*

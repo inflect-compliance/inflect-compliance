@@ -33,6 +33,19 @@ import { cva } from "class-variance-authority";
 const carbonSurface = [
   "border-[var(--btn-carbon-border)]",
   "shadow-[var(--btn-carbon-bevel)]",
+  // R20-PR-D — state-conditional ambient elevation. The REST shadow
+  // stays bevel-only (the R19 contract — solid carbon at rest); on
+  // press the ambient COLLAPSES into one tight stop so the surface
+  // reads as depressed; on focus the ambient EXPANDS with a brand-
+  // tinted ring so the surface reads as deliberately raised. Each
+  // override is a comma-composed `bevel,ambient-*` so the inset
+  // highlights survive (bevel insets are the volume FROM the
+  // inside; ambient is the volume FROM the outside — both are
+  // wanted in every state). Hover stays unannotated because PR-B's
+  // aura wash on `::after` is the hover indicator; pinning a
+  // second shadow there would over-compete with the aura.
+  "active:shadow-[var(--btn-carbon-bevel),var(--btn-ambient-press)]",
+  "focus-visible:shadow-[var(--btn-carbon-bevel),var(--btn-ambient-focus)]",
   "before:content-[''] before:absolute before:inset-0 before:rounded-[inherit] before:pointer-events-none",
   "before:bg-[image:var(--btn-carbon-grain),var(--btn-carbon-overlay)]",
 ];
@@ -175,6 +188,22 @@ const iridescentEdge = [
   "after:[mask:linear-gradient(white,white)_content-box,linear-gradient(white,white)]",
   "after:[-webkit-mask-composite:xor]",
   "after:[mask-composite:exclude]",
+  // R20-PR-D — disabled dust-out. The iridescent meniscus is a
+  // material finish, not a state signal — but on a disabled
+  // button the WHOLE surface should read inert. R19 already
+  // drops `::before` to opacity-0 on disabled; R20-D drops the
+  // `::after` iridescence to 30% so the meniscus is muted rather
+  // than gone (a sudden disappearance would make disabled
+  // primary read as a structurally different button — like the
+  // edge was painted on, not finished into the surface). 30% is
+  // visible-but-clearly-muted; the base `disabled:opacity-50`
+  // mutes the fill in parallel. NO opacity transition here
+  // because the `::after` already carries the aura's
+  // `transition-shadow` (PR-B), and CSS allows only one
+  // `transition-property` per element-rule; adding
+  // `transition-opacity` would override the shadow transition.
+  // Disabled is a steady state, so a snap is acceptable.
+  "disabled:after:opacity-30",
 ];
 
 /**
@@ -271,6 +300,15 @@ export const buttonVariants = cva(
     // `motion-reduce` removes the scale entirely for users who opt
     // out of motion.
     "active:scale-[0.97] motion-reduce:active:scale-100",
+    // R20-PR-D — sub-pixel tactile press. Composes WITH the R11-PR4
+    // scale. The 1px Y-translate gives the press a physical
+    // direction (the shrink alone reads as "smaller", not as
+    // "pushed into the page") — the surface depresses + descends a
+    // hair. Active-driven (not hover-driven, so the motion-language
+    // ratchet's `\bhover:translate-` ban doesn't apply — active
+    // translates are click feedback, the canonical motion the rule
+    // explicitly preserves). Dropped under `motion-reduce`.
+    "active:translate-y-px motion-reduce:active:translate-y-0",
     // R19-PR-A — liquid-carbon surface scaffolding. `relative`
     // lets each variant hang a `::before` depth-overlay off the
     // button without a positioning surprise. Kept in the cva BASE

@@ -152,6 +152,64 @@ when you touch the carbon system:
 | `tests/guards/r19-prc-carbon-hover-grain.test.ts` | the grain layer + `carbonOnHover` for the transparent variants |
 | `tests/guards/r19-prd-carbon-states.test.ts` | `carbonStates` interaction channel + the R19 capstone (whole-system coherence) |
 
+### Liquid Elegance (Roadmap-20)
+
+R19 made buttons look like liquid carbon. R20 is the polish round
+on top — four characteristics that take the carbon language from
+"distinct" to "felt." Form controls (`<Input>`, combobox trigger,
+date-picker trigger) get parity treatment so a focused input reads
+like a cousin of a focused button.
+
+**The four R20 characteristics:**
+
+| | What lands | Where it lives |
+|---|---|---|
+| Iridescent edge | A 1px brand→secondary gradient stroke on `primary`'s `::after`, painted via the canonical mask-composite recipe. Always visible — iridescence is a material property, not a state. | `iridescentEdge` recipe in `button-variants.ts` |
+| Aura wash | A brand-tinted (primary) / cool-neutral (secondary) halo on hover, painted via `::after`'s box-shadow. Routed through `hover:after:shadow-*` so the motion-language ratchet's `\bhover:shadow-` regex stays satisfied by design. | `auraPrimary` + `auraNeutral` recipes |
+| Carbon glass | Ghost variant's hover fill drops to 75% + `backdrop-blur-sm` softens what shows through. Frosted-glass on hover. | `ghostGlass` recipe |
+| Airy density | md/lg gain horizontal padding + (lg) gap; per-size letter-spacing replaces R19's flat `tracking-[-0.01em]` baseline (xs/sm open up positive, md/lg tighten — classical small→large typography rule). | `size: { … }` block in the cva config |
+| Tactile press | `active:translate-y-px` composes with R11-PR4's `active:scale-[0.97]`: press = shrink + descend, reads as physical depression. Press-state ambient shadow collapses to one tight stop; focus-state ambient expands with a brand ring. | cva base + state-conditional overrides in `carbonSurface` |
+| Form-control parity | `<Input>`, the date-picker trigger, and (transitively, via `<Button variant="secondary">`) the combobox trigger all wear `--ctrl-edge-{rest,hover,focus}`. The focus halo is a 3-stop shadow: brand ring + ambient drop, so focused controls read "warm AND raised" the way focused buttons do. | `control-variants.ts` + tokens.css `--ctrl-edge-*` |
+
+**Tokens** added in PR-A (`tokens.css`, both themes):
+
+| Token | Role |
+|---|---|
+| `--btn-ambient-{rest,hover,press,focus}` | 4-stop elevation scale: rest = two-stop drop, hover = same shape lifted, press = one tight stop, focus = brand-tinted ring stacked outside the rest drop |
+| `--btn-iridescent-gradient` | 135° linear sweep brand → secondary, low-alpha — consumed via `border-image`-equivalent mask-composite recipe on `::after` |
+| `--btn-aura-{primary,neutral}` | Pre-composed 3-stop box-shadow halos — painted via `hover:after:shadow-[...]` |
+| `--ctrl-edge-{rest,hover,focus}` | Form-control parity edge tokens — controls don't carbon-fill, they carbon-edge |
+
+**Why two pseudo-elements** (`::before` and `::after`):
+
+R19's `::before` carries the depth overlay (grain + light pool +
+bevel insets). R20's `::after` carries the outermost finish — the
+iridescent edge (background + mask-composite) and the aura
+(box-shadow). Two pseudos, two layers, no property conflict (edge
+rides background + mask; aura rides box-shadow). CSS layers
+`::after` above `::before` by default.
+
+**Why aura uses `hover:after:shadow-*` not `hover:shadow-*`:**
+
+The v2-PR-4 motion-language ratchet bans `hover:shadow-*` because
+generic "drop shadow on hover" reads cheap on layout surfaces. The
+R20 aura is NOT generic — it's a specific carbon-language halo
+with restrained alpha + a specific 3-stop shape. Riding it through
+`::after`'s box-shadow keeps the element's own shadow alone (so
+R19's `--btn-carbon-bevel` survives) and skirts the regex BY
+DESIGN (`\bhover:shadow-` requires `hover:` directly followed by
+`shadow-`; `hover:after:shadow-` has `after:` between, so doesn't
+match).
+
+**R20 invariants** are locked by four ratchets:
+
+| Ratchet | Locks |
+|---|---|
+| `tests/guards/r20-pra-foundation.test.ts` | Every token in both themes, the gradient shape, the aura stop count, `controlEdge` wiring, button↔control size lockstep, R19 carbon recipes still present |
+| `tests/guards/r20-prb-liquid-edges.test.ts` | `iridescentEdge` / `auraPrimary` / `auraNeutral` / `ghostGlass` recipe shapes, per-variant wiring, the no-`hover:shadow-*`-on-element guarantee, Input + date-picker trigger control-edge wiring |
+| `tests/guards/r20-prc-airy-density.test.ts` | Per-size padding scale, per-size tracking values, gap rhythm, disabled-fallback mirror in `button.tsx`, Label parity |
+| `tests/guards/r20-prd-tactile-and-capstone.test.ts` | Tactile press translate, state-conditional ambient shadows, disabled iridescent dust-out, enriched `--ctrl-edge-focus`, the R20 capstone (all four PRs land coherent) |
+
 ## StatusBadge Component
 
 `src/components/ui/status-badge.tsx` — semantic status indicator.
