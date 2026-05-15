@@ -143,6 +143,33 @@ export {
 
 export { LineChart } from './line-chart';
 
+// ─── Roadmap-21 — Sculpted Charts foundation ────────────────────────
+//
+// PR-A: shared `useHeatScale` hook + `<ChartLegend>` primitive.
+// `useHeatScale` maps a value to a CSS `color-mix(in oklab, ...)`
+// interpolated between two chart-series tokens — theme-agnostic,
+// continuous, perceptually uniform. `<ChartLegend>` carries two
+// variants: discrete series-swatch list (for line/radar/sankey)
+// and continuous gradient strip (for heatmaps). The heatmap legend
+// shares its `gradientId` with the cell fills so the legend ramp
+// and the cells are visually continuous.
+
+export {
+    useHeatScale,
+    buildHeatColorMix,
+    buildStepValues,
+    clampIntensity,
+} from './use-heat-scale';
+export type { HeatScale, HeatScaleOptions } from './use-heat-scale';
+
+export { ChartLegend, seriesDotBackground } from './chart-legend';
+export type {
+    ChartLegendProps,
+    ChartLegendSeriesEntry,
+    ChartLegendSeriesProps,
+    ChartLegendGradientProps,
+} from './chart-legend';
+
 // ─── Roadmap-16 — RadarChart primitive ──────────────────────────────
 //
 // Multi-axis radar chart with gradient polygon fill. Phase 4 of R16.
