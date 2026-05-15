@@ -10,12 +10,12 @@
  * removed; the glow paints STATICALLY. Initial frozen value was
  * the breath floor (0.65); a follow-up correction (hero-dimmer-
  * glow, same day) dropped this BELOW the original animation range
- * to 0.30 because the 0.65↔1.0 palindrome was perceptually too
+ * to 0.15 because the 0.65↔1.0 palindrome was perceptually too
  * narrow for the floor to read as meaningfully dim.
  *
  * What this ratchet now locks:
  *
- *   1. HeroMetric paints the glow STATICALLY at `opacity-[0.30]`
+ *   1. HeroMetric paints the glow STATICALLY at `opacity-[0.15]`
  *      on the `::before` pseudo. NOT animated.
  *
  *   2. The breath animation utility + keyframe are GONE from the
@@ -46,12 +46,12 @@ const TW_CONFIG = fs.readFileSync(
 );
 
 describe('R17-PR2 — HeroMetric ambient glow (static after hero-static-glow)', () => {
-    it('HeroMetric paints the glow STATICALLY at opacity-[0.30] on the ::before pseudo', () => {
+    it('HeroMetric paints the glow STATICALLY at opacity-[0.15] on the ::before pseudo', () => {
         // The current dim value (hero-dimmer-glow, 2026-05-15). Any
         // change here needs a deliberate roadmap — bumping the
         // opacity back up restores the "too bright" read the user
         // explicitly corrected.
-        expect(HERO_SRC).toMatch(/"before:opacity-\[0\.30\]"/);
+        expect(HERO_SRC).toMatch(/"before:opacity-\[0\.15\]"/);
     });
 
     it('HeroMetric does NOT carry the animation class', () => {
