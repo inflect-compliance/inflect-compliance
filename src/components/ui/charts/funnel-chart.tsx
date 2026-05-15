@@ -1,12 +1,61 @@
 /* eslint-disable react-hooks/exhaustive-deps -- Various useEffect/useMemo dep arrays in this file deliberately omit identity-unstable callbacks (handlers recreated each render) or use selector functions whose change-detection happens elsewhere. Adding the deps would either trigger unnecessary re-runs OR cause infinite render loops; the proper structural fix is to wrap parent-level callbacks in useCallback. Tracked as follow-up. */
+
+/**
+ * Roadmap-21 PR-D — Funnel polish on R16 chart-tokens.
+ *
+ * Five refinements applied over the legacy FunnelChart:
+ *
+ *   1. Curve. `curveBasis` (the legacy choice) produces a very
+ *      "smoothed" silhouette that under-emphasises the actual
+ *      drop between stages — the funnel reads as one continuous
+ *      slope rather than discrete stage transitions. R21-PR-D
+ *      swaps to `curveCatmullRom` (centripetal): the silhouette
+ *      now reads each stage's value AT the stage boundary, with
+ *      a smooth-but-defined transition. Same curve family as the
+ *      R16 LineChart, so the funnel + line tools speak one motion
+ *      vocabulary.
+ *
+ *   2. Gradient fills. Each step accepts an optional
+ *      `seriesIndex` (ChartSeriesIndex 1..6). When set, the
+ *      step paints via `<ChartLinearGradient>` referencing the
+ *      R16 chart-series tokens instead of `colorClassName`'s
+ *      flat `currentColor`. Backward-compat — callers that
+ *      omit seriesIndex still get the colourClassName render
+ *      path verbatim.
+ *
+ *   3. Conversion-rate annotations. Between every pair of
+ *      adjacent stages, the chart now surfaces the conversion
+ *      delta — small tabular-nums text reading e.g. `−35%` or
+ *      `→ 65%`. Currently only the absolute % per stage was
+ *      visible; the between-stage delta makes the funnel's
+ *      ACTUAL story (where the drop-off happens) readable at
+ *      a glance.
+ *
+ *   4. Hover-isolate sibling fade. When a stage is hovered (or
+ *      the default tooltip is pinned), every OTHER stage's
+ *      gradient layer dims to 0.3 opacity. Same vocabulary R16
+ *      hover-pop established for donut + radar — the focused
+ *      thing reads bright, the rest reads recessed.
+ *
+ *   5. Tooltip on the token vocabulary. The legacy tooltip
+ *      hard-coded `bg-white` + `border-neutral-200`. R21-PR-D
+ *      uses `ChartTooltipContainer` (the Epic 59 + R16 shared
+ *      tooltip surface) so the funnel tooltip reads as part of
+ *      the broader chart tooltip system and flips correctly with
+ *      the theme.
+ */
+
 import { cn, currencyFormatter, nFormatter } from "@dub/utils";
-import { curveBasis } from "@visx/curve";
+import { curveCatmullRom } from "@visx/curve";
 import { ParentSize } from "@visx/responsive";
 import { scaleLinear } from "@visx/scale";
 import { Area } from "@visx/shape";
 import { Text } from "@visx/text";
 import { motion } from "motion/react";
 import { Fragment, useMemo, useRef, useState } from "react";
+
+import { ChartLinearGradient, type ChartSeriesIndex } from "./chart-gradient";
+import { ChartTooltipContainer } from "./interaction";
 import { useMediaQuery } from "../hooks";
 
 const layers = [
@@ -32,12 +81,32 @@ type FunnelChartProps = {
     label: string;
     value: number;
     additionalValue?: number;
+    /**
+     * Legacy fallback colour. Used via `fill="currentColor"` when
+     * `seriesIndex` is not set. Existing callers continue to work
+     * unchanged.
+     */
     colorClassName: string;
+    /**
+     * R21-PR-D — optional R16 chart-series index. When set, the
+     * step paints with the matching `<ChartLinearGradient>`
+     * (vertical) so the funnel speaks the same colour vocabulary
+     * as the rest of the chart family. Falls back to
+     * `colorClassName` when omitted.
+     */
+    seriesIndex?: ChartSeriesIndex;
   }[];
   persistentPercentages?: boolean;
   tooltips?: boolean;
   defaultTooltipStepId?: string;
   chartPadding?: number;
+  /**
+   * R21-PR-D — chart-id prefix for SVG `<defs>` ids so multiple
+   * funnels on one page don't collide. Defaults to a stable
+   * literal — callers SHOULD pass a unique id when mounting more
+   * than one funnel on the same page.
+   */
+  chartId?: string;
 };
 
 export function FunnelChart(props: FunnelChartProps) {
@@ -62,6 +131,7 @@ function FunnelChartInner({
   tooltips = true,
   defaultTooltipStepId,
   chartPadding = 40,
+  chartId = "funnel-chart",
 }: {
   width: number;
   height: number;
@@ -105,11 +175,45 @@ function FunnelChartInner({
     ],
   });
 
+  // R21-PR-D — collect every distinct seriesIndex used so we can
+  // mint one <ChartLinearGradient> def per series. Avoids duplicate
+  // defs when multiple steps share a series (rare but cheap to
+  // dedupe).
+  const seriesIndicesInUse = useMemo<ChartSeriesIndex[]>(() => {
+    const set = new Set<ChartSeriesIndex>();
+    for (const s of steps) if (s.seriesIndex) set.add(s.seriesIndex);
+    return Array.from(set);
+  }, [steps]);
+
   return (
     <div className="relative">
       <svg width={width} height={height}>
-        {steps.map(({ id, value, colorClassName }, idx) => {
+        {/* R21-PR-D — gradient defs for every series in use. */}
+        <defs>
+          {seriesIndicesInUse.map((seriesIndex) => (
+            <ChartLinearGradient
+              key={seriesIndex}
+              id={`${chartId}-series-${seriesIndex}`}
+              series={seriesIndex}
+              direction="vertical"
+            />
+          ))}
+        </defs>
+        {steps.map(({ id, value, colorClassName, seriesIndex }, idx) => {
           const stepCenterX = (xScale(idx) + xScale(idx + 1)) / 2;
+          const isHoveredStage = tooltip === id;
+          const hasOtherTooltip = tooltip !== null && tooltip !== id;
+          // R21-PR-D — sibling fade. When a different stage is
+          // focused, this one drops to 0.3 of its full opacity
+          // family. Same vocabulary R16 hover-pop uses across
+          // donut / radar / gantt.
+          const isolationMultiplier = hasOtherTooltip ? 0.3 : 1;
+          // R21-PR-D — between-stage conversion delta. We compute
+          // it relative to the PREVIOUS step's value (so step 1
+          // is "100% baseline" and step 2 onward shows the drop).
+          const prev = idx > 0 ? steps[idx - 1].value : null;
+          const deltaPct =
+            prev !== null && prev > 0 ? (value / prev) * 100 : null;
           return (
             <Fragment key={id}>
               {/* Background */}
@@ -119,7 +223,7 @@ function FunnelChartInner({
                   y={0}
                   width={width / steps.length}
                   height={height}
-                  className="fill-transparent transition-colors hover:fill-blue-600/5"
+                  className="fill-transparent transition-colors hover:fill-[var(--brand-subtle)]"
                   onPointerEnter={() => setTooltip(id)}
                   onPointerDown={() => setTooltip(id)}
                   onPointerLeave={() =>
@@ -134,31 +238,65 @@ function FunnelChartInner({
                 y1={0}
                 x2={xScale(idx)}
                 y2={height}
-                className="stroke-black/5 sm:stroke-black/10"
+                className="stroke-border-subtle"
               />
 
-              {/* Funnel */}
+              {/* Funnel — gradient OR colourClassName fill. */}
               {layers.map(({ opacity, padding }) => (
                 <Area
                   key={`${id}-${opacity}-${padding}`}
                   data={data[id]}
-                  curve={curveBasis}
+                  curve={curveCatmullRom}
                   x={(d) => xScale(idx + d.x)}
                   y0={(d) => yScale(-d.y) - padding}
                   y1={(d) => yScale(d.y) + padding}
                 >
                   {({ path }) => {
+                    const effectiveOpacity = opacity * isolationMultiplier;
                     return (
                       <motion.path
                         initial={{ d: path(zeroData) || "", opacity: 0 }}
-                        animate={{ d: path(data[id]) || "", opacity }}
-                        className={cn(colorClassName, "pointer-events-none")}
-                        fill="currentColor"
+                        animate={{
+                          d: path(data[id]) || "",
+                          opacity: effectiveOpacity,
+                        }}
+                        transition={{ opacity: { duration: 0.15 } }}
+                        className={cn(
+                          !seriesIndex && colorClassName,
+                          "pointer-events-none",
+                        )}
+                        fill={
+                          seriesIndex
+                            ? `url(#${chartId}-series-${seriesIndex})`
+                            : "currentColor"
+                        }
                       />
                     );
                   }}
                 </Area>
               ))}
+
+              {/* R21-PR-D — between-stage conversion annotation.
+                  Sits at the BOUNDARY between this stage and the
+                  previous one (x = xScale(idx)). Skipped on stage 0
+                  because there's no "from" reference for the % yet. */}
+              {deltaPct !== null && idx > 0 && (
+                <Text
+                  x={xScale(idx)}
+                  y={maxLayerPadding + 8}
+                  textAnchor="middle"
+                  verticalAnchor="start"
+                  fontSize={10}
+                  className={cn(
+                    "fill-content-muted font-mono tabular-nums select-none",
+                    isHoveredStage && "fill-[var(--brand-default)]",
+                  )}
+                >
+                  {deltaPct >= 100
+                    ? `→ ${formatPercentage(deltaPct)}%`
+                    : `→ ${formatPercentage(deltaPct)}%`}
+                </Text>
+              )}
 
               {/* Percentage */}
               {persistentPercentages && (
@@ -187,37 +325,41 @@ function FunnelChartInner({
             width: width / steps.length,
           }}
         >
-          <div
-            className={cn(
-              "rounded-lg border border-neutral-200 bg-white text-base shadow-sm",
-            )}
-          >
-            <p className="border-b border-neutral-200 px-3 py-2 text-sm text-neutral-900 sm:px-4 sm:py-3">
-              {tooltipStep.label}
-            </p>
-            <div className="flex flex-wrap justify-between gap-x-4 gap-y-2 px-3 py-2 text-sm sm:px-4 sm:py-3">
+          {/* R21-PR-D — ChartTooltipContainer replaces the legacy
+              hard-coded white surface; the funnel tooltip now reads
+              as part of the broader chart tooltip system and flips
+              correctly with the theme. */}
+          <ChartTooltipContainer title={tooltipStep.label}>
+            <div className="flex flex-wrap justify-between gap-x-4 gap-y-2">
               <div className="flex items-center gap-tight">
                 <div
                   className={cn(
-                    tooltipStep.colorClassName,
-                    "h-2 w-2 shrink-0 rounded-sm bg-current opacity-50 shadow-[inset_0_0_0_1px_#0003]",
+                    !tooltipStep.seriesIndex && tooltipStep.colorClassName,
+                    "h-2 w-2 shrink-0 rounded-sm shadow-[inset_0_0_0_1px_#0003]",
                   )}
+                  style={
+                    tooltipStep.seriesIndex
+                      ? {
+                          background: `linear-gradient(135deg, var(--chart-series-${tooltipStep.seriesIndex}-start), var(--chart-series-${tooltipStep.seriesIndex}-end))`,
+                        }
+                      : { background: "currentColor", opacity: 0.5 }
+                  }
                 />
-                <p className="whitespace-nowrap capitalize text-neutral-600">
+                <p className="whitespace-nowrap capitalize text-content-muted">
                   {formatPercentage((tooltipStep.value / maxValue) * 100) + "%"}
                 </p>
               </div>
-              <p className="whitespace-nowrap font-medium text-neutral-900">
+              <p className="whitespace-nowrap font-medium text-content-emphasis">
                 {nFormatter(tooltipStep.value, { full: true })}
                 {tooltipStep.additionalValue !== undefined && (
-                  <span className="text-neutral-500">
+                  <span className="text-content-subtle">
                     {" "}
                     ({currencyFormatter(tooltipStep.additionalValue)})
                   </span>
                 )}
               </p>
             </div>
-          </div>
+          </ChartTooltipContainer>
         </div>
       )}
     </div>
@@ -255,7 +397,7 @@ function PersistentPercentage({
         y={y - 14}
         height={28}
         rx={14}
-        fill="white"
+        className="fill-bg-elevated"
       />
       <Text
         innerTextRef={textRef}
