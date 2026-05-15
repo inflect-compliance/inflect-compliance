@@ -311,8 +311,47 @@ module.exports = {
                 // a moment of polish, then the row trusts its
                 // other state signals (band, gloss, outline,
                 // bevel) to carry the rest of the hover.
+                //
+                // nav-row-sweep-delay-3s (2026-05-15) — the user
+                // observed that the sweep visibly produces TWO
+                // bright peaks during one engage: the gradient
+                // has a `transparent/tint/transparent` stop
+                // pattern at `background-size: 300%` with the
+                // default `background-repeat: repeat`, so the
+                // bright peak passes through the visible 100%-
+                // wide row TWICE as the position animates from
+                // -100% to +100% (once from tile 0's centre at
+                // 0% progress, once from tile 1's centre at 75%
+                // progress). Original 1.2s ease-out landed the
+                // second peak ~0.5s after hover, which felt like
+                // an unintended echo.
+                //
+                // New keyframes: animation runs 3.5s linear with
+                // intermediate stops that hold the sweep in the
+                // transparent zone between peaks. Peak 1 fires
+                // immediately on hover; peak 2 lands at t=3s
+                // (the user-requested delay). Linear timing is
+                // load-bearing — ease-out front-loads progress
+                // and would pull peak 2 earlier; linear pins the
+                // peak to the exact wall-clock moment.
                 'nav-row-liquid-sweep': {
                     '0%': { 'background-position': '-100% 0%' },
+                    // Peak 1 has exited (~0.4s into the 3.5s
+                    // animation — the entry feel matches the
+                    // original 1.2s sweep's first phase).
+                    '11%': { 'background-position': '-50% 0%' },
+                    // Hold in the transparent zone for ~2.2s —
+                    // the row "settles" between the two diagonal
+                    // flashes. Same bg-position as 11%, so the
+                    // tween from 11% to 74% is a freeze.
+                    '74%': { 'background-position': '-50% 0%' },
+                    // Peak 2 passes — t=3s (86% of 3.5s). The
+                    // jump from -50% to 50% is the 100%-bg-width
+                    // shift that brings tile 1's bright centre
+                    // through the visible row.
+                    '86%': { 'background-position': '50% 0%' },
+                    // Peak 2 exits over the remaining 0.5s —
+                    // matches the original sweep's exit pace.
                     '100%': { 'background-position': '100% 0%' },
                 },
                 // R17-PR2 / removed by hero-static-glow (2026-05-15).
@@ -467,8 +506,14 @@ module.exports = {
                 // and SETTLES out the far side — gravity-aware
                 // motion. No `infinite` — the sweep fires once
                 // when hover engages.
+                // nav-row-sweep-delay-3s (2026-05-15) — duration
+                // extended from 1.2s → 3.5s and easing changed
+                // from `ease-out` → `linear` so the keyframe
+                // percentages map directly to wall-clock time:
+                // peak 1 at t=0, peak 2 at t=3s (86% of 3.5s).
+                // ease-out would compress the peak 2 timing.
                 'nav-row-liquid-sweep':
-                    'nav-row-liquid-sweep 1.2s ease-out',
+                    'nav-row-liquid-sweep 3.5s linear',
                 // R17-PR2 / removed by hero-static-glow (2026-05-15).
                 // See the keyframes block above for the rationale.
                 // R17-PR12 — 600ms ease-out one-shot. Slow enough
