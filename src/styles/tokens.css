@@ -188,6 +188,73 @@
    * 90px tile seamless when it repeats across a wide button. */
   --btn-carbon-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.05'/%3E%3C/svg%3E");
 
+  /* ── R20 ambient elevation (4-stop, DARK theme) ─────────────────────
+   * R19 gave buttons a CARBON SURFACE — bevel, pool, grain — but the
+   * outer drop never changed. R20 splits the drop into a four-stop
+   * scale so a button has DISTINCT depth at rest, on hover, while
+   * pressed, and while focused. Layered ON TOP of the bevel's inset
+   * highlights (those are the volume FROM the inside) — ambient is
+   * the volume FROM the outside.
+   *
+   *   rest   — a quiet two-stop drop. Close & tight + a wider soft
+   *            halo. Says "this is on the page", not "this is
+   *            floating".
+   *   hover  — the same two-stop shape, lifted. The tight drop pulls
+   *            down 1px; the soft halo widens. Elegance is restraint:
+   *            we don't add NEW shadow stops on hover, we LIFT the
+   *            ones already there.
+   *   press  — collapses to one tight stop. The surface has been
+   *            pushed INTO the page; less light leaks out behind.
+   *   focus  — adds a 4px brand-tinted ring stop OUTSIDE the rest
+   *            drop. The two are stacked (focus ON TOP of rest), so
+   *            a focused button reads as "selected AND elevated".
+   *
+   * Why per-theme: shadow alphas need a different floor on light
+   * mode (a 24%-black drop on a near-white surface barely registers,
+   * whereas the same alpha on a near-black surface is too heavy).
+   * The LIGHT block carries the warm-tinted parallel. */
+  --btn-ambient-rest:  0 1px 2px rgba(0, 0, 0, 0.24), 0 2px 6px rgba(0, 0, 0, 0.16);
+  --btn-ambient-hover: 0 2px 4px rgba(0, 0, 0, 0.28), 0 6px 16px rgba(0, 0, 0, 0.22);
+  --btn-ambient-press: 0 1px 1px rgba(0, 0, 0, 0.32);
+  --btn-ambient-focus: 0 0 0 4px rgba(255, 205, 17, 0.22), 0 1px 2px rgba(0, 0, 0, 0.24), 0 2px 6px rgba(0, 0, 0, 0.16);
+
+  /* ── R20 iridescent edge (DARK theme) ───────────────────────────────
+   * A linear gradient sweeping from a whisper of brand yellow in
+   * the top-left to a whisper of secondary blue in the bottom-right.
+   * Painted on the PRIMARY variant's `::after` pseudo as a
+   * `border-image` source (PR-B). The alphas are intentionally low —
+   * the edge reads as iridescent on close inspection, NEVER as a
+   * gradient outline. Static (no animation) — the iridescence is a
+   * material property, not a motion gimmick. */
+  --btn-iridescent-gradient: linear-gradient(135deg, rgba(255, 205, 17, 0.55) 0%, rgba(255, 205, 17, 0.18) 35%, rgba(59, 130, 246, 0.18) 65%, rgba(59, 130, 246, 0.55) 100%);
+
+  /* ── R20 aura wash (DARK theme) ─────────────────────────────────────
+   * The soft brand-tinted halo a primary button casts on hover, as a
+   * pre-composed multi-stop box-shadow string. THREE stops: a 1px
+   * inner ring (currently fully transparent — reserved for PR-B's
+   * iridescent edge ratchet to claim if needed), a tight inner glow
+   * (4px / 18px), and a soft outer bloom (12px / 36px). Brand-tinted
+   * for primary; cool-neutral for secondary. The OUTER bloom is what
+   * reads as "this button is warmly lit"; the inner glow gives the
+   * edge a haptic-feeling tightness.
+   *
+   * Consumed via `::after` (PR-B) so the hover lift composes with
+   * the existing carbon surface without colliding with R19's
+   * `::before` depth-overlay. */
+  --btn-aura-primary: 0 0 0 1px rgba(255, 205, 17, 0.00), 0 4px 18px rgba(255, 205, 17, 0.32), 0 12px 36px rgba(255, 205, 17, 0.14);
+  --btn-aura-neutral: 0 0 0 1px rgba(255, 255, 255, 0.00), 0 4px 18px rgba(255, 255, 255, 0.10), 0 12px 36px rgba(255, 255, 255, 0.06);
+
+  /* ── R20 form-control parity edge (DARK theme) ──────────────────────
+   * Form controls (Input, Combobox trigger, DatePicker trigger,
+   * Select) don't carbon-FILL — they're hollow surfaces. R20 brings
+   * them edge-level parity with the button carbon language: a quiet
+   * border at rest, an emphasised border on hover, an iridescent
+   * border + brand-tinted glow on focus. Three tokens drive the
+   * three states. Consumed by PR-B via `control-variants.ts`. */
+  --ctrl-edge-rest:  rgba(255, 255, 255, 0.14);
+  --ctrl-edge-hover: rgba(255, 255, 255, 0.28);
+  --ctrl-edge-focus: 0 0 0 3px rgba(255, 205, 17, 0.20);
+
   /* ── Transitions ───────────────────────────────────────────────── */
   --duration-fast:    100ms;
   --duration-default: 150ms;
@@ -506,6 +573,39 @@
   --btn-carbon-overlay: radial-gradient(ellipse 130% 80% at 50% -10%, rgba(255, 252, 248, 0.13) 0%, rgba(255, 252, 248, 0.03) 32%, rgba(40, 30, 20, 0.14) 62%, rgba(40, 30, 20, 0.26) 100%);
   --btn-carbon-bevel: inset 0 1px 1px rgba(255, 255, 255, 0.50), inset 0 -2px 3px rgba(255, 255, 255, 0.10), 0 1px 2px rgba(60, 50, 40, 0.20);
   --btn-carbon-border: rgba(60, 50, 40, 0.24);
+
+  /* ── R20 ambient elevation (4-stop, LIGHT theme) ────────────────────
+   * Warm-tinted parallel of the dark-theme block. Light-mode shadow
+   * needs to LEAN cooler-warm (a true black drop reads dirty on a
+   * cream surface) — alphas come down, the colour shifts to a soft
+   * warm graphite (60/50/40). Focus ring switches to brand orange. */
+  --btn-ambient-rest:  0 1px 2px rgba(60, 50, 40, 0.10), 0 2px 6px rgba(60, 50, 40, 0.06);
+  --btn-ambient-hover: 0 2px 4px rgba(60, 50, 40, 0.14), 0 6px 16px rgba(60, 50, 40, 0.10);
+  --btn-ambient-press: 0 1px 1px rgba(60, 50, 40, 0.14);
+  --btn-ambient-focus: 0 0 0 4px rgba(208, 74, 2, 0.18), 0 1px 2px rgba(60, 50, 40, 0.10), 0 2px 6px rgba(60, 50, 40, 0.06);
+
+  /* ── R20 iridescent edge (LIGHT theme) ──────────────────────────────
+   * Brand orange ↔ secondary navy. Slightly higher alphas than dark
+   * — on light surfaces, a 55%-alpha gradient stop reads softer
+   * than the same on dark, so the iridescent edge holds its
+   * presence without becoming a hard outline. */
+  --btn-iridescent-gradient: linear-gradient(135deg, rgba(208, 74, 2, 0.60) 0%, rgba(208, 74, 2, 0.18) 35%, rgba(30, 58, 138, 0.18) 65%, rgba(30, 58, 138, 0.60) 100%);
+
+  /* ── R20 aura wash (LIGHT theme) ───────────────────────────────────
+   * Brand orange for primary; warm-neutral for secondary. Outer
+   * bloom is tighter than dark (lift on a light surface needs less
+   * spread to read), inner glow holds the same haptic edge. */
+  --btn-aura-primary: 0 0 0 1px rgba(208, 74, 2, 0.00), 0 4px 14px rgba(208, 74, 2, 0.28), 0 10px 28px rgba(208, 74, 2, 0.12);
+  --btn-aura-neutral: 0 0 0 1px rgba(60, 50, 40, 0.00), 0 4px 14px rgba(60, 50, 40, 0.10), 0 10px 28px rgba(60, 50, 40, 0.06);
+
+  /* ── R20 form-control parity edge (LIGHT theme) ─────────────────────
+   * Warmer borders. Rest: 22% warm-grey (a softer outline than the
+   * cool one used in dark, suits cream surfaces). Hover: 38%. Focus
+   * ring: brand orange. The hover/focus alphas are slightly higher
+   * than dark because cream surfaces swallow contrast. */
+  --ctrl-edge-rest:  rgba(60, 50, 40, 0.22);
+  --ctrl-edge-hover: rgba(60, 50, 40, 0.38);
+  --ctrl-edge-focus: 0 0 0 3px rgba(208, 74, 2, 0.20);
 
   /* ── Sidebar band glow (R13-PR2) ───────────────────────────────── */
   /*
