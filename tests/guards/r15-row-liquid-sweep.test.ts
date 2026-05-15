@@ -150,13 +150,15 @@ describe('Roadmap-15 PR-7 — liquid bg sweep on hover', () => {
     });
 
     describe('animation entry', () => {
-        it('wires `animation.nav-row-liquid-sweep` with 1.2s ease-out (one-shot)', () => {
-            // 1.2s is the slow side of "felt-but-not-noticed".
-            // ease-out makes the sweep feel like it accelerates
-            // into the row and settles out the far side —
-            // gravity-aware. No `infinite` — once-per-engage.
+        // nav-row-sweep-delay-3s (2026-05-15) — duration extended
+        // from 1.2s → 3.5s and easing changed from `ease-out` →
+        // `linear` so the keyframe percentages map directly to
+        // wall-clock time. Peak 1 fires at t=0, peak 2 lands at
+        // t=3s (86% of 3.5s); ease-out would compress that
+        // timing.
+        it('wires `animation.nav-row-liquid-sweep` with 3.5s linear (one-shot)', () => {
             expect(TAILWIND_CONFIG).toMatch(
-                /'nav-row-liquid-sweep':\s*'nav-row-liquid-sweep\s+1\.2s\s+ease-out'/,
+                /'nav-row-liquid-sweep':\s*'nav-row-liquid-sweep\s+3\.5s\s+linear'/,
             );
         });
 
@@ -166,6 +168,37 @@ describe('Roadmap-15 PR-7 — liquid bg sweep on hover', () => {
             );
             expect(entryMatch).not.toBeNull();
             expect(entryMatch![0]).not.toContain('infinite');
+        });
+
+        it('keyframes carry the two-peak structure with the transparent hold', () => {
+            // The 11% / 74% / 86% intermediate stops are
+            // load-bearing — they hold the bg in the transparent
+            // zone between peaks, then sweep peak 2 through at
+            // t=3s (86% of 3.5s). Removing any of them collapses
+            // the animation back to a single sweep.
+            const declStart = TAILWIND_CONFIG.indexOf(
+                "'nav-row-liquid-sweep': {",
+            );
+            expect(declStart).toBeGreaterThan(-1);
+            const tail = TAILWIND_CONFIG.slice(declStart);
+            const animKeyIdx = tail.indexOf('animation:');
+            const slice =
+                animKeyIdx < 0
+                    ? tail.slice(0, 1500)
+                    : tail.slice(0, animKeyIdx);
+            // 11% — peak 1 has exited.
+            expect(slice).toMatch(
+                /'11%':\s*\{\s*'background-position':\s*'-50%\s+0%'/,
+            );
+            // 74% — held at the same -50% position (transparent zone).
+            expect(slice).toMatch(
+                /'74%':\s*\{\s*'background-position':\s*'-50%\s+0%'/,
+            );
+            // 86% — peak 2 visible (bg at 50% shows tile 1's centre).
+            // 86% × 3.5s ≈ 3.0s, the user-requested delay.
+            expect(slice).toMatch(
+                /'86%':\s*\{\s*'background-position':\s*'50%\s+0%'/,
+            );
         });
     });
 
