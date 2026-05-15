@@ -55,10 +55,12 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
               // R20-PR-E — graded font-weight ladder also mirrors
               // the cva size scale.
               // R20-PR-F density correction: md px-4→px-3, lg px-6→px-4.
-              size === "xs" && "h-7 px-2.5 text-[11px] font-medium",
-              size === "sm" && "h-8 px-3 text-xs font-medium",
-              size === "lg" && "h-10 px-4 font-bold",
-              !size && "h-9 px-3 font-semibold",
+              // button-density-tighter (2026-05-15) second pass:
+              // xs → px-2, sm/md → px-2.5, lg → px-3.
+              size === "xs" && "h-7 px-2 text-[11px] font-medium",
+              size === "sm" && "h-8 px-2.5 text-xs font-medium",
+              size === "lg" && "h-10 px-3 font-bold",
+              !size && "h-9 px-2.5 font-semibold",
               className,
             )}
           >
@@ -114,10 +116,13 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
                 // (px-4→px-3 and px-6→px-4; lg gap-2.5→gap-tight)
                 // because the PR-C airy padding read as "idle space"
                 // on dense toolbars. Locked by R20-PR-F ratchet.
-                size === "xs" && "h-7 px-2.5 text-[11px] gap-1 rounded-md font-medium",
-                size === "sm" && "h-8 px-3 text-xs gap-1.5 font-medium",
-                size === "lg" && "h-10 px-4 gap-tight font-bold",
-                !size && "h-9 px-3 gap-tight font-semibold",
+                //
+                // button-density-tighter (2026-05-15) — second
+                // tightening pass; mirrors the cva size scale.
+                size === "xs" && "h-7 px-2 text-[11px] gap-1 rounded-md font-medium",
+                size === "sm" && "h-8 px-2.5 text-xs gap-1.5 font-medium",
+                size === "lg" && "h-10 px-3 gap-tight font-bold",
+                !size && "h-9 px-2.5 gap-tight font-semibold",
               )
             : buttonVariants({ variant, size }),
           className,

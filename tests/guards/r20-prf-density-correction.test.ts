@@ -52,38 +52,47 @@ function sizeClasses(size: 'xs' | 'sm' | 'md' | 'lg'): string {
 describe('R20-PR-F — button density correction', () => {
     describe('the corrected md/lg padding scale', () => {
         it('md horizontal padding is `px-3` (down from PR-C `px-4`)', () => {
-            expect(sizeClasses('md')).toMatch(/\bpx-3\b/);
+            // button-density-tighter (2026-05-15) tightened
+            // again: md px-3 → px-2.5, lg px-4 → px-3, sm px-3 →
+            // px-2.5, xs px-2.5 → px-2. All assertions below
+            // updated to the current scale; the wider PR-F values
+            // are asserted ABSENT on the dimensions they changed.
+            expect(sizeClasses('md')).toMatch(/\bpx-2\.5\b/);
         });
 
-        it('lg horizontal padding is `px-4` (down from PR-C `px-6`)', () => {
-            expect(sizeClasses('lg')).toMatch(/\bpx-4\b/);
+        it('lg horizontal padding is `px-3` (down from PR-F `px-4`)', () => {
+            expect(sizeClasses('lg')).toMatch(/\bpx-3\b/);
         });
 
         it('lg uses `gap-tight` (R20-PR-F collapsed from PR-C gap-2.5)', () => {
             expect(sizeClasses('lg')).toMatch(/\bgap-tight\b/);
         });
 
-        it('the wider PR-C values are NOT present at md/lg', () => {
+        it('the wider values are NOT present at md/lg', () => {
             // A future revert toward "airy density" would put px-4
-            // back on md or px-6 on lg. This asserts the correction
-            // is locked.
+            // back on md (or px-3) or px-6/px-4 on lg. This asserts
+            // the corrections are locked.
             expect(sizeClasses('md')).not.toMatch(/\bpx-4\b/);
+            expect(sizeClasses('md')).not.toMatch(/\bpx-3\b/);
             expect(sizeClasses('lg')).not.toMatch(/\bpx-6\b/);
+            expect(sizeClasses('lg')).not.toMatch(/\bpx-4\b/);
             expect(sizeClasses('lg')).not.toMatch(/\bgap-2\.5\b/);
         });
     });
 
-    describe('xs/sm are untouched by PR-F', () => {
-        it('xs stays at `h-7 px-2.5 gap-1`', () => {
+    describe('xs/sm tightened too in button-density-tighter pass', () => {
+        it('xs at `h-7 px-2 gap-1` (px-2.5 → px-2)', () => {
             const c = sizeClasses('xs');
             expect(c).toMatch(/\bh-7\b/);
-            expect(c).toMatch(/\bpx-2\.5\b/);
+            expect(c).toMatch(/\bpx-2\b/);
+            expect(c).not.toMatch(/\bpx-2\.5\b/);
             expect(c).toMatch(/\bgap-1\b/);
         });
-        it('sm stays at `h-8 px-3 gap-1.5`', () => {
+        it('sm at `h-8 px-2.5 gap-1.5` (px-3 → px-2.5)', () => {
             const c = sizeClasses('sm');
             expect(c).toMatch(/\bh-8\b/);
-            expect(c).toMatch(/\bpx-3\b/);
+            expect(c).toMatch(/\bpx-2\.5\b/);
+            expect(c).not.toMatch(/\bpx-3\b/);
             expect(c).toMatch(/\bgap-1\.5\b/);
         });
     });
@@ -107,17 +116,18 @@ describe('R20-PR-F — button density correction', () => {
     });
 
     describe('disabled-fallback mirror in button.tsx tracks the correction', () => {
-        it('disabled-fallback md (no size) uses `px-3`', () => {
-            expect(BUTTON_TSX).toMatch(/!size && "h-9 px-3 gap-tight font-semibold/);
+        // button-density-tighter values: md px-2.5, lg px-3.
+        it('disabled-fallback md (no size) uses `px-2.5`', () => {
+            expect(BUTTON_TSX).toMatch(/!size && "h-9 px-2\.5 gap-tight font-semibold/);
         });
-        it('disabled-fallback lg uses `px-4` + `gap-tight`', () => {
-            expect(BUTTON_TSX).toMatch(/size === "lg" && "h-10 px-4 gap-tight font-bold/);
+        it('disabled-fallback lg uses `px-3` + `gap-tight`', () => {
+            expect(BUTTON_TSX).toMatch(/size === "lg" && "h-10 px-3 gap-tight font-bold/);
         });
-        it('disabledTooltip md (no size) uses `px-3`', () => {
-            expect(BUTTON_TSX).toMatch(/!size && "h-9 px-3 font-semibold/);
+        it('disabledTooltip md (no size) uses `px-2.5`', () => {
+            expect(BUTTON_TSX).toMatch(/!size && "h-9 px-2\.5 font-semibold/);
         });
-        it('disabledTooltip lg uses `px-4`', () => {
-            expect(BUTTON_TSX).toMatch(/size === "lg" && "h-10 px-4 font-bold/);
+        it('disabledTooltip lg uses `px-3`', () => {
+            expect(BUTTON_TSX).toMatch(/size === "lg" && "h-10 px-3 font-bold/);
         });
     });
 });

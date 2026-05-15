@@ -416,10 +416,23 @@ export const buttonVariants = cva(
         // Tracking + weight ladder (PR-C / PR-E) are untouched —
         // they live on a different axis (typographic weight, not
         // spatial chrome).
-        xs: "h-7 px-2.5 text-[11px] gap-1 rounded-md tracking-[0.005em] font-medium",
-        sm: "h-8 px-3 text-xs gap-1.5 tracking-[0.01em] font-medium",
-        md: "h-9 px-3 text-sm gap-tight tracking-[-0.005em] font-semibold",
-        lg: "h-10 px-4 text-sm gap-tight tracking-[-0.01em] font-bold",
+        //
+        // button-density-tighter (2026-05-15) — second tightening
+        // pass. Even at PR-F levels (md px-3, lg px-4) the user
+        // reported the buttons still carried too much idle space
+        // around the label. This pass drops each size another step:
+        //   xs px-2.5 → px-2   (10 → 8 px each side)
+        //   sm px-3   → px-2.5 (12 → 10)
+        //   md px-3   → px-2.5 (12 → 10)
+        //   lg px-4   → px-3   (16 → 12)
+        // md and sm intentionally share px-2.5 — they're already
+        // close in tone (both quiet, dense-UI sizes) and the 1px
+        // height difference (h-8 vs h-9) is the carrying visual
+        // distinction. Heights stay (R20-PR-A input-parity lock).
+        xs: "h-7 px-2 text-[11px] gap-1 rounded-md tracking-[0.005em] font-medium",
+        sm: "h-8 px-2.5 text-xs gap-1.5 tracking-[0.01em] font-medium",
+        md: "h-9 px-2.5 text-sm gap-tight tracking-[-0.005em] font-semibold",
+        lg: "h-10 px-3 text-sm gap-tight tracking-[-0.01em] font-bold",
       },
     },
     defaultVariants: {
