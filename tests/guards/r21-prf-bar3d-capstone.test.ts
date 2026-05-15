@@ -57,7 +57,17 @@ const DOCS = fs.readFileSync(
 );
 
 describe('R21-PR-F — BarField3D + Roadmap-21 capstone', () => {
-    describe('BarField3D — first 3D chart on the R21-PR-E foundation', () => {
+    describe('BarField3D — first 3D chart on the R21-PR-E foundation (STUB)', () => {
+        // PR-F originally shipped a live r3f scene (mesh + box-
+        // geometry + plane floor + token-driven materials). The
+        // r3f/React 19 compatibility deadlock (see chart-3d.tsx
+        // head matter) forced PR-F to land as a STUB too. The API
+        // shape stays the same; the inner render branch is
+        // currently the FallbackComponent (via <Chart3D>). When
+        // r3f's React 19 story stabilises, a follow-up swaps the
+        // inner branch with the real 3D scene — no call-site
+        // change.
+
         it('is a client component', () => {
             expect(BAR3D.split('\n')[0]).toMatch(/^'use client'/);
         });
@@ -65,7 +75,7 @@ describe('R21-PR-F — BarField3D + Roadmap-21 capstone', () => {
         it('composes onto <Chart3D> from PR-E', () => {
             expect(BAR3D).toMatch(/from\s+['"]\.\/chart-3d['"]/);
             expect(BAR3D).toMatch(/<Chart3D/);
-            expect(BAR3D).toMatch(/Chart3D,\s*tokenColor/);
+            expect(BAR3D).toMatch(/Chart3D/);
         });
 
         it('exports BarField3D + BarField3DDatum + BarField3DProps', () => {
@@ -78,44 +88,35 @@ describe('R21-PR-F — BarField3D + Roadmap-21 capstone', () => {
             );
         });
 
-        it('computes xCategories + zCategories from the data', () => {
-            expect(BAR3D).toMatch(/xCategories/);
-            expect(BAR3D).toMatch(/zCategories/);
-            expect(BAR3D).toMatch(/xSet\.add\(d\.x\)/);
-            expect(BAR3D).toMatch(/zSet\.add\(d\.z\)/);
+        it('preserves the API shape — x/z categorical + y value', () => {
+            // The data type is locked at the API level so the
+            // future renderer doesn't churn call sites.
+            expect(BAR3D).toMatch(/x:\s*string;/);
+            expect(BAR3D).toMatch(/z:\s*string;/);
+            expect(BAR3D).toMatch(/y:\s*number;/);
         });
 
-        it('bars colour-map via tokenColor(seriesIndex, start|end)', () => {
-            // tokenColor bridges CSS-var chart-series tokens to
-            // Three.js's hex-string requirement. Bars use 'start'
-            // at the base + 'end' at the tip for value-density
-            // legibility.
-            expect(BAR3D).toMatch(
-                /tokenColor\(seriesIndex,\s*['"]start['"]\)/,
-            );
-            expect(BAR3D).toMatch(
-                /tokenColor\(seriesIndex,\s*['"]end['"]\)/,
-            );
-        });
-
-        it('skips bars with value ≤ 0 — missing data is a GAP, not a zero bar', () => {
-            expect(BAR3D).toMatch(/if\s*\(value\s*<=\s*0\)\s*return\s*null/);
-        });
-
-        it('renders a neutral floor plane', () => {
-            // The floor gives OrbitControls a geometric anchor —
-            // rotating around bare bars feels unmoored.
-            expect(BAR3D).toMatch(/<planeGeometry/);
-            expect(BAR3D).toMatch(/rotation=\{\[-Math\.PI\s*\/\s*2,/);
+        it('preserves the seriesIndex + maxHeight props for the future renderer', () => {
+            // Currently unused in the stub branch but locked at
+            // the API level — when the renderer lands, no
+            // call-site change.
+            expect(BAR3D).toMatch(/seriesIndex\?:\s*ChartSeriesIndex/);
+            expect(BAR3D).toMatch(/maxHeight\?:/);
         });
 
         it('forwards ariaLabel + FallbackComponent to <Chart3D>', () => {
             // Chart3D requires ariaLabel; BarField3D MUST propagate
-            // it. FallbackComponent is optional but recommended;
-            // forwarding the prop keeps the option open at the call
-            // site.
+            // it. In the stub state, FallbackComponent IS the
+            // visible chart — supply it.
             expect(BAR3D).toMatch(/ariaLabel=\{ariaLabel\}/);
             expect(BAR3D).toMatch(/FallbackComponent=\{FallbackComponent\}/);
+        });
+
+        it('documents the stub state at the file head', () => {
+            // A future engineer reading this file needs to know
+            // WHY there's no r3f scene rendered today.
+            expect(BAR3D).toMatch(/STUB/);
+            expect(BAR3D).toMatch(/SCAFFOLD/);
         });
 
         it('is re-exported from the charts barrel', () => {
