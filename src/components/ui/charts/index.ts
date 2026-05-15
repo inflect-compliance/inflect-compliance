@@ -183,6 +183,10 @@ export { Chart3D, tokenColor } from './chart-3d';
 export type { Chart3DProps } from './chart-3d';
 export { dynamicChart3D } from './chart-3d-dynamic';
 
+// PR-F — first 3D chart: BarField3D (cross-tab time × category bars).
+export { BarField3D } from './bar-field-3d';
+export type { BarField3DDatum, BarField3DProps } from './bar-field-3d';
+
 // ─── Roadmap-16 — RadarChart primitive ──────────────────────────────
 //
 // Multi-axis radar chart with gradient polygon fill. Phase 4 of R16.

@@ -190,3 +190,68 @@ const state = chartReady<GanttRow[]>([
 ]);
 <GanttChart state={state} todayLine ariaLabel="Audit cycles timeline" />
 ```
+
+## Roadmap-21 — Sculpted Charts (3D)
+
+R21 extends the chart family in three directions:
+
+- **Sankey rebuild** — Sankey speaks the same `--chart-series-*`
+  vocabulary as the rest of the family via `<ChartLinearGradient>`.
+  Click-isolate + inline weight annotations.
+- **Heatmap rebuild** — `RiskHeatmap` + `CalendarHeatmap` move onto
+  a new `useHeatScale` hook + `<ChartLegend variant="gradient">`
+  primitive. Continuous OKLAB interpolation replaces bucket-step
+  palettes; legend paints from the same tokens the cells consume.
+- **Funnel polish** — `FunnelChart` swaps `curveBasis` →
+  `curveCatmullRom`, accepts optional `seriesIndex` for gradient
+  fills (backward-compat with `colorClassName`), adds between-stage
+  conversion-rate annotations + hover-isolate sibling fade + the
+  shared `ChartTooltipContainer` tooltip surface.
+
+### 3D charts (`<Chart3D>` + `<BarField3D>`)
+
+R21-PR-E added `@react-three/fiber` + `drei` + `three` (~180KB gz,
+code-split). The bundle only loads on routes that mount a 3D chart
+— `dynamicChart3D()` wraps `<Chart3D>` in `next/dynamic({ ssr:
+false })` so server-rendered HTML carries a clean placeholder until
+client hydrate.
+
+`<Chart3D>` carries the conventions every 3D chart in IC shares:
+
+- Required `ariaLabel` (WebGL canvas is opaque to screen readers).
+- Lights + camera defaults (ambient + key directional, isometric-
+  ish camera at `[6, 4, 6]`).
+- Constrained OrbitControls — no pan, polar-angle clamp prevents
+  top-down or below-floor rotation.
+- Idle auto-rotate at 0.5°/s that STOPS the moment the cursor
+  enters the canvas.
+- `prefers-reduced-motion` → `FallbackComponent` (2D static
+  representation of the same data). Charts SHOULD supply this for
+  accessibility + low-end-device support.
+- `tokenColor(seriesIndex, 'start'|'end')` resolves a chart-series
+  CSS var to the hex string Three.js materials need.
+
+```tsx
+import { dynamicChart3D, BarField3D } from '@/components/ui/charts';
+
+// Page-level (SSR-safe import):
+const Chart3D = dynamicChart3D();
+
+<BarField3D
+  ariaLabel="Risk count by severity × quarter"
+  data={[
+    { x: 'Q1', z: 'Low', y: 12 },
+    { x: 'Q1', z: 'High', y: 4 },
+    { x: 'Q2', z: 'Low', y: 18 },
+    // …
+  ]}
+  seriesIndex={4}
+  FallbackComponent={() => <RiskHeatmap cells={…} />}
+/>
+```
+
+The first 3D chart is **`<BarField3D>`** — a cross-tab of two
+discrete dimensions (time × category) as a grid of bars with
+value-encoded heights. Bars carry the chart-series gradient (base
+= `start`, tip = `end`); the 2D fallback is naturally a heatmap
+since the data shape is identical.
