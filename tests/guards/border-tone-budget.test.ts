@@ -81,10 +81,18 @@ const ROOT = path.resolve(__dirname, '../..');
  * page) — its policy-templates branch carried a
  * `border border-border-default` divider on the template tiles.
  *
+ * R20-PR-B (2026-05-15) lowered the budget from 118 → 117 by
+ * migrating the date-picker trigger's rest border from
+ * `border-border-default` to the new R20 control-parity token
+ * `--ctrl-edge-rest`. The trigger now shares its border vocabulary
+ * with the migrated <Input> (and, transitively, the combobox
+ * trigger which composes a <Button>), so three form controls read
+ * with one focus + rest vocabulary.
+ *
  * Future PRs continue to ratchet down toward the rough 4:1
  * subtle-to-default target ratio.
  */
-const BORDER_DEFAULT_BUDGET = 118;
+const BORDER_DEFAULT_BUDGET = 117;
 
 function countMatches(re: RegExp): number {
     let total = 0;
