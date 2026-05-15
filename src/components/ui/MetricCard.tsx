@@ -173,7 +173,19 @@ export function MetricCard({
                 // in lockstep would be hypnotic; staggering creates
                 // visual noise. The hero's masthead is the ONE
                 // breathing surface; the cards stay static.
-                "before:content-[''] before:absolute before:inset-0 before:-z-10 before:pointer-events-none",
+                //
+                // kpi-glow-dim-08 (2026-05-15) — pseudo opacity
+                // multiplier set to 0.8. The R17-PR4 design used
+                // the gradient's natural source alpha (`--brand-
+                // subtle` = 18% METRO / 9% PwC) at full pseudo
+                // opacity. After the hero-glow tightening sweep
+                // (#529/#530/#531) the KPI cards started reading
+                // as the brightest surface on the dashboard; 0.8
+                // takes ~20% off without touching the selected/
+                // unselected RATIO (both states multiply by 0.8,
+                // so the selected glow stays exactly 2.22× the
+                // default glow). Reversible by deleting one class.
+                "before:content-[''] before:absolute before:inset-0 before:-z-10 before:pointer-events-none before:opacity-[0.8]",
                 "before:bg-[radial-gradient(circle_200px_at_10%_0%,var(--brand-subtle)_0%,transparent_55%)]",
                 className,
             )}
