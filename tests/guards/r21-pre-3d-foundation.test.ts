@@ -1,29 +1,47 @@
 /**
- * R21-PR-E — 3D foundation ratchet.
+ * R21-PR-E — 3D foundation ratchet (STUB SCAFFOLD).
  *
- * Roadmap-21 PR-F lands the first real 3D chart. PR-E ships the
- * foundation every 3D chart in IC will consume:
+ * ### Status
  *
- *   1. `@react-three/fiber` + `@react-three/drei` + `three` (and
- *      `@types/three`) are declared as deps. Bundle cost
- *      (~180KB gz) only lands on routes that mount a 3D chart
- *      via the dynamic-import wrapper.
+ * PR-E originally shipped a live @react-three/fiber integration.
+ * A compatibility deadlock between r3f's two release lines and
+ * React 19 forced PR-E to land as a STUB SCAFFOLD instead:
  *
- *   2. `<Chart3D>` SSR-safe primitive carrying the conventions
- *      every 3D chart shares: lights + camera defaults,
- *      constrained OrbitControls (no pan, polar-angle clamp,
- *      slow idle auto-rotate that stops on user interaction),
- *      prefers-reduced-motion fallback to a 2D static view.
+ *   - r3f v9 (React 19-compatible) augments global JSX in a way
+ *     that breaks vanilla HTML JSX inference across 200+ files
+ *     under our tsconfig.
+ *   - r3f v8 (no JSX pollution) was built for React 18 and
+ *     crashes at module load under React 19 (uses removed
+ *     `ReactCurrentOwner` internal API).
  *
- *   3. `dynamicChart3D()` factory returns a `next/dynamic`-wrapped
- *      `<Chart3D>` with `ssr: false`. Routes that don't mount a
- *      3D chart never load the Three.js chunk.
+ * Real 3D rendering moves to a follow-up roadmap when r3f's
+ * React 19 story stabilises. PR-E ships the API shape +
+ * documentation so PR-F's `<BarField3D>` (and future 3D charts)
+ * can target the eventual renderer without API churn.
  *
- *   4. `tokenColor()` bridges CSS-var chart-series tokens to the
- *      hex colour strings Three.js materials need at runtime.
+ * ### What this ratchet now locks
  *
- *   5. Barrel re-exports everything so consumers import from the
- *      single `@/components/ui/charts` entry.
+ *   1. The stub `<Chart3D>` exists, is a client component, renders
+ *      the FallbackComponent when supplied, otherwise a placeholder
+ *      div. NO @react-three/fiber import (the deadlock).
+ *
+ *   2. `Chart3DProps` API contract is stable — every prop the
+ *      eventual renderer will consume is documented here.
+ *
+ *   3. `tokenColor()` works today — resolves chart-series CSS
+ *      vars to hex strings. Load-bearing for any future 3D
+ *      renderer.
+ *
+ *   4. `dynamicChart3D()` SSR-safe wrapper returns the stub
+ *      today; consumers use it now so the future swap is
+ *      transparent.
+ *
+ *   5. The barrel re-exports the API surface so consumers import
+ *      from a single entry.
+ *
+ *   6. Documentation: the stub's head matter explains the
+ *      compatibility deadlock so a future engineer understands
+ *      why r3f isn't a dependency yet.
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -45,96 +63,80 @@ const BARREL = fs.readFileSync(
     'utf8',
 );
 
-describe('R21-PR-E — 3D foundation', () => {
-    describe('npm dependencies declared', () => {
-        for (const dep of [
-            '@react-three/fiber',
-            '@react-three/drei',
-            'three',
-        ]) {
-            it(`${dep} is in dependencies`, () => {
-                expect(PKG.dependencies?.[dep]).toBeTruthy();
-            });
-        }
-
-        it('@types/three is in devDependencies', () => {
-            expect(PKG.devDependencies?.['@types/three']).toBeTruthy();
+describe('R21-PR-E — 3D foundation (stub scaffold)', () => {
+    describe('NO @react-three/fiber dependency yet', () => {
+        // The compatibility deadlock blocks landing r3f in this
+        // codebase under React 19. PR-E is a SCAFFOLD — when r3f's
+        // React 19 story stabilises, a follow-up adds the dep
+        // back and swaps Chart3D's inner branch.
+        it('@react-three/fiber is NOT in dependencies', () => {
+            expect(PKG.dependencies?.['@react-three/fiber']).toBeUndefined();
+        });
+        it('@react-three/drei is NOT in dependencies', () => {
+            expect(PKG.dependencies?.['@react-three/drei']).toBeUndefined();
+        });
+        it('three is NOT in dependencies', () => {
+            expect(PKG.dependencies?.['three']).toBeUndefined();
         });
     });
 
-    describe('<Chart3D> primitive', () => {
+    describe('Chart3D stub primitive', () => {
         it('is a client component', () => {
             expect(CHART_3D.split('\n')[0]).toMatch(/^'use client'/);
         });
 
-        it('imports Canvas from @react-three/fiber + OrbitControls from drei', () => {
-            expect(CHART_3D).toMatch(
-                /from\s+['"]@react-three\/fiber['"]/,
-            );
-            expect(CHART_3D).toMatch(/Canvas/);
-            expect(CHART_3D).toMatch(
-                /from\s+['"]@react-three\/drei['"]/,
-            );
-            expect(CHART_3D).toMatch(/OrbitControls/);
+        it('does NOT import from @react-three/fiber (deadlock-blocked)', () => {
+            // The deadlock explanation in the file head matter
+            // matters — a future r3f import here without
+            // reverting the deadlock would crash module load
+            // under React 19.
+            expect(CHART_3D).not.toMatch(/from\s+['"]@react-three\/fiber['"]/);
         });
 
-        it('requires an ariaLabel — WebGL canvas is opaque to screen readers', () => {
-            // Required (not optional) — the chart MUST have an
-            // accessible description. Locked as a non-optional
-            // field on the props interface.
+        it('exposes Chart3DProps with the eventual renderer\'s contract', () => {
+            // The API shape is the load-bearing part — when the
+            // real renderer lands, it satisfies THIS interface.
+            expect(CHART_3D).toMatch(/export\s+interface\s+Chart3DProps/);
             expect(CHART_3D).toMatch(/ariaLabel:\s*string;/);
+            expect(CHART_3D).toMatch(/FallbackComponent\?:/);
+            expect(CHART_3D).toMatch(/cameraPosition\?:/);
+            expect(CHART_3D).toMatch(/idleRotateSpeed\?:/);
+            expect(CHART_3D).toMatch(/minPolarAngle\?:/);
+            expect(CHART_3D).toMatch(/maxPolarAngle\?:/);
         });
 
-        it('renders the lights + camera defaults so a first chart "just works"', () => {
-            expect(CHART_3D).toMatch(/<ambientLight/);
-            expect(CHART_3D).toMatch(/<directionalLight/);
-            expect(CHART_3D).toMatch(/camera=\{\{\s*position:\s*cameraPosition/);
-        });
-
-        it('OrbitControls enforces the constrained-orbit discipline', () => {
-            // enablePan=false: user can't drag the scene off-frame.
-            // Polar-angle clamp: user can't rotate below the floor
-            // or look straight down (which defeats the 3D purpose).
-            expect(CHART_3D).toMatch(/enablePan=\{false\}/);
-            expect(CHART_3D).toMatch(/minPolarAngle=\{minPolarAngle\}/);
-            expect(CHART_3D).toMatch(/maxPolarAngle=\{maxPolarAngle\}/);
-        });
-
-        it('auto-rotates at idle, stops on user pointer entry', () => {
-            // autoRotate = !reducedMotion && !userInteracting &&
-            // idleRotateSpeed > 0. The chart is "alive" while idle,
-            // freezes when the user starts touching it.
-            expect(CHART_3D).toMatch(/autoRotate=\{autoRotate\}/);
-            expect(CHART_3D).toMatch(/autoRotateSpeed=\{idleRotateSpeed\}/);
-            expect(CHART_3D).toMatch(/setUserInteracting\(true\)/);
-            expect(CHART_3D).toMatch(/setUserInteracting\(false\)/);
-        });
-
-        it('prefers-reduced-motion + FallbackComponent short-circuits the 3D scene', () => {
-            // If the user opted out AND a 2D fallback is supplied,
-            // we render the fallback instead — better accessibility
-            // than a static 3D view that's still opaque to screen
-            // readers.
-            expect(CHART_3D).toMatch(
-                /prefersReducedMotion\s*&&\s*FallbackComponent/,
-            );
-            expect(CHART_3D).toMatch(/data-chart-3d-fallback/);
-        });
-
-        it('emits data-chart-3d + data-chart-3d-rotating for E2E hooks', () => {
+        it('renders FallbackComponent when supplied, placeholder otherwise', () => {
+            // Stub branch: FallbackComponent → render it.
+            // No fallback → data-attributed placeholder div.
+            expect(CHART_3D).toMatch(/if\s*\(FallbackComponent\)/);
+            expect(CHART_3D).toMatch(/<FallbackComponent\s*\/>/);
+            expect(CHART_3D).toMatch(/data-chart-3d-fallback="true"/);
             expect(CHART_3D).toMatch(/data-chart-3d="true"/);
-            expect(CHART_3D).toMatch(/data-chart-3d-rotating/);
+        });
+
+        it('emits data-chart-3d-status="stub" so consumers can detect the scaffold state', () => {
+            // A consumer (or rendered test) can read this attr to
+            // know whether the real renderer or the stub is
+            // mounted. When the real renderer lands, this attr
+            // either changes value or goes away.
+            expect(CHART_3D).toMatch(/data-chart-3d-status="stub"/);
         });
 
         it('exposes tokenColor() helper for chart-series → hex bridging', () => {
+            // This piece WORKS today — pure CSS-var resolution, no
+            // 3D dependency. Future renderer uses it; current 2D
+            // consumers that need a resolved series colour can too.
             expect(CHART_3D).toMatch(/export\s+function\s+tokenColor/);
-            // Reads the `--chart-series-${N}-${stop}` token via
-            // getComputedStyle so dark/light theme flips propagate.
             expect(CHART_3D).toMatch(/--chart-series-/);
             expect(CHART_3D).toMatch(/getComputedStyle/);
-            // SSR guard — getComputedStyle isn't available on the
-            // server.
             expect(CHART_3D).toMatch(/typeof window === 'undefined'/);
+        });
+
+        it('exposes useReducedMotion() inline hook', () => {
+            // Inline scope; promote to a shared hook when a
+            // second consumer lands.
+            expect(CHART_3D).toMatch(/function\s+useReducedMotion/);
+            expect(CHART_3D).toMatch(/prefers-reduced-motion/);
         });
     });
 
@@ -144,15 +146,10 @@ describe('R21-PR-E — 3D foundation', () => {
                 /from\s+['"]next\/dynamic['"]/,
             );
         });
-
-        it('disables SSR — Three.js touches DOM at module load', () => {
+        it('disables SSR — the eventual renderer will need this', () => {
             expect(CHART_3D_DYNAMIC).toMatch(/ssr:\s*false/);
         });
-
         it('lazy-imports the Chart3D component', () => {
-            // Dynamic import inside the dynamic() call ensures the
-            // chunk is split — Three.js code only loads when the
-            // returned component actually mounts.
             expect(CHART_3D_DYNAMIC).toMatch(
                 /import\(['"]\.\/chart-3d['"]\)\.then\(\(m\)\s*=>\s*m\.Chart3D\)/,
             );
@@ -168,6 +165,17 @@ describe('R21-PR-E — 3D foundation', () => {
             expect(BARREL).toMatch(
                 /export\s+\{\s*dynamicChart3D\s*\}/,
             );
+        });
+    });
+
+    describe('documentation — the deadlock is documented at the file head', () => {
+        // A future engineer reading chart-3d.tsx needs to know
+        // WHY r3f isn't a dependency, or they'll re-add it and
+        // re-trigger the deadlock.
+        it('mentions the React 19 + r3f compatibility deadlock', () => {
+            expect(CHART_3D).toMatch(/react-three\/fiber/);
+            expect(CHART_3D).toMatch(/React 19/);
+            expect(CHART_3D).toMatch(/STUB/i);
         });
     });
 });

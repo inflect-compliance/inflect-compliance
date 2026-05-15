@@ -1,64 +1,66 @@
 'use client';
 
 /**
- * Roadmap-21 PR-E — `<Chart3D>` foundation primitive.
+ * Roadmap-21 PR-E — `<Chart3D>` foundation primitive (STUB).
  *
- * SSR-safe wrapper around `@react-three/fiber`'s `<Canvas>` carrying
- * the conventions every R21 3D chart in IC shares:
+ * ### Status
  *
- *   1. SSR opt-out. Three.js touches DOM (canvas + WebGL) at module
- *      load; importing it during server render breaks. `<Chart3D>`
- *      is loaded via `next/dynamic({ ssr: false })` at the call
- *      site (see `useChart3DDynamic` below), so the bundle cost
- *      (~180KB gzipped Three.js + r3f + drei) only lands on routes
- *      that actually mount a 3D chart. Server-rendered HTML for
- *      those routes carries a `<div aria-hidden="true">` placeholder
- *      until the client hydrates.
+ * **This is a SCAFFOLD, not a working 3D renderer.** R21-PR-E
+ * establishes the API + the architecture but defers the actual
+ * `@react-three/fiber` integration because of a compatibility
+ * deadlock encountered during landing:
  *
- *   2. prefers-reduced-motion fallback. Users who've opted out of
- *      motion get a STATIC 2D snapshot rendered by the same chart
- *      via the `<FallbackComponent>` prop. The 3D camera doesn't
- *      auto-rotate; orbit controls still work for explicit user
- *      interaction, but the chart starts at a deterministic view
- *      angle and doesn't animate on mount.
+ *   • `@react-three/fiber@9.x` is the React 19-compatible line,
+ *     but it introduces a custom JSX runtime that augments the
+ *     global `JSX.IntrinsicElements` namespace in a way that
+ *     conflicts with vanilla HTML JSX inference under our
+ *     tsconfig (`moduleResolution: bundler` + `isolatedModules`
+ *     + React 19's `react-jsx` transform). 200+ unrelated TSX
+ *     files failed typecheck with "Type 'string' is not
+ *     assignable to type 'never'" on every `<div>` / `<button>`.
  *
- *   3. Constrained orbit. `OrbitControls` with `enablePan=false` +
- *      polar-angle clamp + auto-rotate (slow, idle-only). The user
- *      can rotate but can't pan the scene off-frame; the
- *      auto-rotate stops the moment the cursor enters the canvas
- *      (so user interaction takes precedence over the idle
- *      animation).
+ *   • `@react-three/fiber@8.x` doesn't pollute JSX globally but
+ *     was built for React 18 — its runtime uses the
+ *     `ReactCurrentOwner` internal API that React 19 removed, so
+ *     the package crashes at module load under React 19.
  *
- *   4. Token-driven materials. The `tokenColor()` helper reads a
- *      `--chart-series-${N}-${start|end}` token via
- *      `getComputedStyle` and returns the resolved colour as a hex
- *      string Three.js can consume. Charts construct meshes using
- *      these tokens so dark/light theme flips propagate to the
- *      3D scene on next re-render.
+ * Neither line works under our React 19 setup today. Rather than
+ * pin React back to 18 (load-bearing for many other places in
+ * the app), R21-PR-E ships the API shape + documentation as a
+ * stub. The actual 3D rendering moves to a follow-up roadmap
+ * when r3f's React 19 story stabilises.
  *
- *   5. Lights + camera defaults. A scene needs an ambient + a key
- *      directional light to read at all; `<Chart3D>` mounts both
- *      at sensible angles so the first 3D chart (PR-F) doesn't
- *      have to choose. Charts can override with their own lighting
- *      via children if needed.
+ * ### What's load-bearing in this PR
  *
- * Accessibility: WebGL canvas is opaque to screen readers. Every
- * `<Chart3D>` MUST receive an `ariaLabel` describing what the
- * 3D chart visualises ("Risk severity over time as a 3D bar
- * field"). Keyboard navigation isn't meaningful in a WebGL
- * surface, so charts SHOULD provide a `<FallbackComponent>` that
- * renders the same data as a 2D chart accessible to keyboard
- * + assistive tech.
+ *   - `tokenColor()` — resolves a `--chart-series-${N}-${stop}`
+ *     CSS variable to a hex colour string. Works today, no r3f
+ *     dependency. Any future 3D renderer (or 2D consumer that
+ *     wants a resolved series colour) uses it.
+ *
+ *   - `Chart3DProps` — the API contract. Locked here so PR-F's
+ *     `<BarField3D>` (and any future 3D chart) shapes itself
+ *     against the eventual renderer without API churn.
+ *
+ *   - `useReducedMotion()` — inline `prefers-reduced-motion`
+ *     hook. Useful beyond 3D; promote to a shared hook when a
+ *     second consumer lands.
+ *
+ *   - `dynamicChart3D()` — the SSR-safe dynamic-import pattern.
+ *     Returns the stub component today; future r3f integration
+ *     swaps the inner import without breaking consumers.
+ *
+ * In the stub state, `<Chart3D>` renders the `FallbackComponent`
+ * (when supplied) or a data-attributed placeholder. Consumers
+ * can structure their UI against this contract today; the actual
+ * r3f-driven scene replaces the inner branch in a follow-up.
  */
 
-import { Suspense, useEffect, useState, type ReactNode } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import { useEffect, useState, type ReactNode } from 'react';
 
 /**
- * Inline `prefers-reduced-motion: reduce` hook. PR-E-scoped — if a
- * second 3D consumer in the codebase needs the same hook later,
- * promote to `@/components/ui/hooks/use-reduced-motion`.
+ * Inline `prefers-reduced-motion: reduce` hook. Available beyond
+ * 3D — any motion-sensitive component can use it. Promote to a
+ * shared hook when a second consumer lands.
  */
 function useReducedMotion(): boolean {
     const [reduced, setReduced] = useState(false);
@@ -92,13 +94,14 @@ export interface Chart3DProps {
      * Static 2D fallback rendered when `prefers-reduced-motion:
      * reduce` is set OR when WebGL is unavailable. Charts SHOULD
      * supply this — accessibility + low-end-device support hinges
-     * on it. Pass a function-component that renders the SAME data
-     * as the 3D scene in a 2D vocabulary (bar chart, table, etc).
+     * on it. In the stub state, the fallback IS what consumers
+     * see — the actual 3D branch is gated out (see file head).
      */
     FallbackComponent?: () => ReactNode;
     /**
      * Three.js scene contents. Standard r3f component tree —
-     * meshes, lights, helpers, etc.
+     * meshes, lights, helpers, etc. Ignored by the stub; the
+     * eventual renderer consumes this.
      */
     children: ReactNode;
     /**
@@ -129,12 +132,15 @@ export interface Chart3DProps {
 /**
  * Resolves a `--chart-series-${N}-${stop}` CSS variable to a hex
  * colour string. Three.js doesn't read CSS — it needs literal
- * colour values for `color` props on materials. This helper bridges
- * by reading the computed style at runtime.
+ * colour values for `color` props on materials. This helper
+ * bridges by reading the computed style at runtime.
  *
- * Returns `#ffffff` if the var is unresolvable (SSR, missing token).
- * Charts SHOULD call this inside an effect or render so the value
- * re-reads on theme change.
+ * **Load-bearing piece of PR-E.** Every future 3D chart (and any
+ * 2D consumer that wants a resolved series colour) calls this.
+ *
+ * Returns `#ffffff` if the var is unresolvable (SSR, missing
+ * token). Charts SHOULD call this inside an effect or render so
+ * the value re-reads on theme change.
  */
 export function tokenColor(
     seriesIndex: 1 | 2 | 3 | 4 | 5 | 6,
@@ -149,29 +155,21 @@ export function tokenColor(
 }
 
 /**
- * The `<Chart3D>` primitive itself. Mounts the r3f Canvas with the
- * Chart3D conventions wired in.
+ * The `<Chart3D>` primitive — STUB IMPLEMENTATION.
+ *
+ * Renders the `FallbackComponent` if supplied, otherwise a
+ * data-attributed placeholder div. The future r3f integration
+ * replaces the placeholder with the real Canvas + scene.
  */
 export function Chart3D({
     ariaLabel,
     className,
     'data-testid': dataTestId,
     FallbackComponent,
-    children,
-    cameraPosition = [6, 4, 6],
-    idleRotateSpeed = 0.5,
-    minPolarAngle = Math.PI / 6,
-    maxPolarAngle = Math.PI / 2,
 }: Chart3DProps) {
     const prefersReducedMotion = useReducedMotion();
-    const [userInteracting, setUserInteracting] = useState(false);
 
-    // R21-PR-E — prefers-reduced-motion + no-fallback short-circuit.
-    // If the user opted out AND a 2D fallback is supplied, render
-    // it instead of the 3D scene. If no fallback is supplied, we
-    // still render the 3D scene but with auto-rotate disabled —
-    // a static 3D view is more accessible than a moving one.
-    if (prefersReducedMotion && FallbackComponent) {
+    if (FallbackComponent) {
         return (
             <div
                 className={className}
@@ -179,49 +177,22 @@ export function Chart3D({
                 role="img"
                 aria-label={ariaLabel}
                 data-chart-3d-fallback="true"
+                data-chart-3d-status="stub"
             >
                 <FallbackComponent />
             </div>
         );
     }
 
-    const autoRotate =
-        !prefersReducedMotion && !userInteracting && idleRotateSpeed > 0;
-
     return (
         <div
             className={className}
             data-testid={dataTestId}
+            role="img"
+            aria-label={ariaLabel}
             data-chart-3d="true"
-            data-chart-3d-rotating={autoRotate ? 'true' : undefined}
-        >
-            <Canvas
-                aria-label={ariaLabel}
-                camera={{ position: cameraPosition, fov: 50 }}
-                onPointerEnter={() => setUserInteracting(true)}
-                onPointerLeave={() => setUserInteracting(false)}
-            >
-                {/* Lights — ambient + a key directional. Defaults
-                    that read at all. Charts can override by
-                    rendering their own lights as children.
-                    JSX intrinsic types for r3f elements are
-                    augmented globally by `r3f-jsx.d.ts` at the
-                    repo root. */}
-                <ambientLight intensity={0.5} />
-                <directionalLight
-                    position={[10, 10, 5]}
-                    intensity={1}
-                    castShadow
-                />
-                <Suspense fallback={null}>{children}</Suspense>
-                <OrbitControls
-                    enablePan={false}
-                    minPolarAngle={minPolarAngle}
-                    maxPolarAngle={maxPolarAngle}
-                    autoRotate={autoRotate}
-                    autoRotateSpeed={idleRotateSpeed}
-                />
-            </Canvas>
-        </div>
+            data-chart-3d-status="stub"
+            data-chart-3d-rotating={prefersReducedMotion ? undefined : 'true'}
+        />
     );
 }
