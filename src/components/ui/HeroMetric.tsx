@@ -203,16 +203,19 @@ export function HeroMetric({
                 // R17-PR2 originally drove the glow through a 6s
                 // opacity breath palindrome (0.65 → 1 → 0.65). The
                 // hero-static-glow PR (2026-05-15) froze the glow at
-                // the breath floor (0.65). User feedback: the breath
-                // animation drew the eye to the masthead repeatedly
-                // and competed with the actual content; the LOWEST-
-                // brightness frame is the calmest read and keeps the
-                // identity-tier brand wash without the recurring
-                // pulse. Other 6s identity rhythms (R14 brand mark
-                // pulse, R15 nav-band halo-breath) stay as-is —
-                // those decorate chrome, not the masthead's content
-                // anchor.
-                "before:opacity-[0.65]",
+                // the breath floor (0.65) to remove the recurring
+                // pulse. User feedback after that landed: even at the
+                // animation floor the glow still read as "max bright"
+                // — the original 0.65↔1.0 range was perceptually too
+                // narrow to give a meaningfully dim option. This PR
+                // drops the static opacity BELOW the original
+                // animation range to 0.30 — a quietly-visible
+                // whisper of brand wash that you see if you look but
+                // doesn't otherwise compete for attention. Other 6s
+                // identity rhythms (R14 brand mark pulse, R15 nav-
+                // band halo-breath) stay as-is — those decorate
+                // chrome, not the masthead's content anchor.
+                "before:opacity-[0.30]",
                 className,
             )}
             data-hero-metric

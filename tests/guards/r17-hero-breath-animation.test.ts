@@ -6,16 +6,16 @@
  * same identity-tier rhythm as the R14 brand-mark pulse and the
  * R15 nav-band halo-breath.
  *
- * CURRENT CONTRACT (hero-static-glow, 2026-05-15). The breath
- * animation was removed; the glow now paints STATICALLY at the
- * breath floor (opacity 0.65). User feedback: the breath drew the
- * eye to the masthead repeatedly and competed with the actual
- * content. The floor frame is the calmest read and keeps the
- * identity-tier brand wash without the recurring pulse.
+ * STATIC CONTRACT (hero-static-glow, 2026-05-15). The breath was
+ * removed; the glow paints STATICALLY. Initial frozen value was
+ * the breath floor (0.65); a follow-up correction (hero-dimmer-
+ * glow, same day) dropped this BELOW the original animation range
+ * to 0.30 because the 0.65↔1.0 palindrome was perceptually too
+ * narrow for the floor to read as meaningfully dim.
  *
  * What this ratchet now locks:
  *
- *   1. HeroMetric paints the glow STATICALLY at `opacity-[0.65]`
+ *   1. HeroMetric paints the glow STATICALLY at `opacity-[0.30]`
  *      on the `::before` pseudo. NOT animated.
  *
  *   2. The breath animation utility + keyframe are GONE from the
@@ -46,11 +46,12 @@ const TW_CONFIG = fs.readFileSync(
 );
 
 describe('R17-PR2 — HeroMetric ambient glow (static after hero-static-glow)', () => {
-    it('HeroMetric paints the glow STATICALLY at opacity-[0.65] on the ::before pseudo', () => {
-        // The breath floor frozen as a static opacity. Any change
-        // to this value (or removal of `before:opacity-*`) needs
-        // a deliberate roadmap.
-        expect(HERO_SRC).toMatch(/"before:opacity-\[0\.65\]"/);
+    it('HeroMetric paints the glow STATICALLY at opacity-[0.30] on the ::before pseudo', () => {
+        // The current dim value (hero-dimmer-glow, 2026-05-15). Any
+        // change here needs a deliberate roadmap — bumping the
+        // opacity back up restores the "too bright" read the user
+        // explicitly corrected.
+        expect(HERO_SRC).toMatch(/"before:opacity-\[0\.30\]"/);
     });
 
     it('HeroMetric does NOT carry the animation class', () => {
