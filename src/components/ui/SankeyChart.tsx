@@ -55,7 +55,7 @@
  *     grounds (see the Epic 47.3 doc-block).
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { cn } from '@dub/utils';
 import Link from 'next/link';
 import { cardVariants } from '@/components/ui/card';
@@ -64,6 +64,7 @@ import {
     ChartLinearGradient,
     type ChartSeriesIndex,
 } from '@/components/ui/charts';
+import { useKeyboardShortcut } from '@/lib/hooks/use-keyboard-shortcut';
 import {
     type LaidOutLink,
     type LaidOutNode,
@@ -147,15 +148,22 @@ export function SankeyChart({
     const [pinnedId, setPinnedId] = useState<string | null>(null);
     const activeId = hoveredId ?? pinnedId;
 
-    // ESC unpins for keyboard users.
-    useEffect(() => {
-        if (!pinnedId) return;
-        const onKey = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') setPinnedId(null);
-        };
-        window.addEventListener('keydown', onKey);
-        return () => window.removeEventListener('keydown', onKey);
-    }, [pinnedId]);
+    // ESC unpins for keyboard users. Routed through
+    // `useKeyboardShortcut` (the canonical shared registry) instead
+    // of a raw `window.addEventListener` — the project's
+    // `keyboard-shortcut-conventions.test.ts` guardrail bans the
+    // raw form so all shortcuts share the same focus/scope/inputs
+    // safety net.
+    useKeyboardShortcut(
+        'Escape',
+        () => {
+            if (pinnedId) setPinnedId(null);
+        },
+        {
+            description: 'Unpin Sankey node',
+            enabled: pinnedId !== null,
+        },
+    );
 
     const onNodeClick = useCallback(
         (nodeId: string) => {

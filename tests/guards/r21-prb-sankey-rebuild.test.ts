@@ -142,8 +142,12 @@ describe('R21-PR-B — Sankey rebuild on chart-series tokens', () => {
             expect(SANKEY).toMatch(/setPinnedId\(\(prev\)\s*=>\s*\(prev === nodeId \? null : nodeId\)\)/);
         });
 
-        it('ESC key unpins (keyboard accessibility)', () => {
-            expect(SANKEY).toMatch(/e\.key === 'Escape'/);
+        it('ESC key unpins via the shared useKeyboardShortcut registry', () => {
+            // Wired through the canonical shortcut hook (the
+            // project's keyboard-shortcut-conventions guardrail
+            // bans raw window.addEventListener bindings).
+            expect(SANKEY).toMatch(/useKeyboardShortcut/);
+            expect(SANKEY).toMatch(/['"]Escape['"]/);
             expect(SANKEY).toMatch(/setPinnedId\(null\)/);
         });
 
