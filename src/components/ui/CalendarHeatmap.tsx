@@ -1,23 +1,39 @@
 "use client";
 
 /**
- * Epic 49 — <CalendarHeatmap>.
+ * Epic 49 + Roadmap-21 PR-C — `<CalendarHeatmap>`.
  *
  * GitHub-style activity heatmap (week columns × day rows). Each cell
- * represents one calendar day; intensity buckets color the cell based
- * on event-count for that day.
+ * represents one calendar day. R21-PR-C rebuilds the colouring on
+ * the R21-PR-A `useHeatScale` foundation: a CONTINUOUS OKLAB ramp
+ * driven by chart-series 1 (brand warm yellow/orange), replacing
+ * the previous 5-bucket `getIntensityTone` step function. Cells
+ * now interpolate smoothly across the activity range rather than
+ * snapping to bucket thresholds.
+ *
+ * The Epic 49 bottom-strip legend (5 swatches between "Less" and
+ * "More") is replaced by `<ChartLegend variant="gradient">` from
+ * R21-PR-A — the legend gradient paints from the same tokens the
+ * cells consume, so legend ↔ cells are visually continuous.
+ *
+ * One affordance refinement on top:
+ *
+ *   - Month separators — a soft vertical line between the last
+ *     week of one month and the first of the next. Subtle (token-
+ *     backed border-subtle alpha), but gives the eye a temporal
+ *     anchor without a heavy axis.
  *
  * Sized to a 12-month look-back by default; the `from`/`to` props
- * adjust the rendered range. Bare HTML tables — no chart library
- * dependency. Token-styled, accessible (`aria-label` per cell + a
- * legend), and click-through (`onSelectDate` fires for any clicked
- * cell, populated or empty).
+ * adjust the rendered range. Bare HTML — no chart library
+ * dependency. Token-styled, accessible (`aria-label` per cell), and
+ * click-through (`onSelectDate` fires for any clicked cell,
+ * populated or empty).
  */
 
 import * as React from 'react';
 import { cn } from '@dub/utils';
 import type { CalendarEvent } from '@/app-layer/schemas/calendar.schemas';
-import { getIntensityTone } from '@/lib/design/status-tone';
+import { ChartLegend, useHeatScale } from '@/components/ui/charts';
 
 // ─── Public props ─────────────────────────────────────────────────────
 
@@ -60,27 +76,6 @@ function eachDay(from: Date, to: Date): Date[] {
     }
     return days;
 }
-
-/**
- * Bucket density into 5 levels — empty + 4 intensity steps. Five
- * levels matches the GitHub heatmap convention and keeps the legend
- * simple. The thresholds are relative to the *max* count in range so
- * sparse data still shows visible signal.
- */
-function bucketIntensity(count: number, max: number): 0 | 1 | 2 | 3 | 4 {
-    if (count <= 0) return 0;
-    if (max <= 1) return 1;
-    const ratio = count / max;
-    if (ratio <= 0.25) return 1;
-    if (ratio <= 0.5) return 2;
-    if (ratio <= 0.75) return 3;
-    return 4;
-}
-
-// Polish PR-7 — intensity bg delegated to `getIntensityTone` from
-// `@/lib/design/status-tone`. The shared helper ensures any future
-// activity-density chart gets the same brand-alpha staircase for
-// free.
 
 // ─── Component ───────────────────────────────────────────────────────
 
@@ -125,6 +120,17 @@ export function CalendarHeatmap({
         return m;
     }, [counts]);
 
+    // R21-PR-C — continuous OKLAB heat scale, series 1 (brand warm
+    // yellow/orange — the canonical activity hue). The floor 0.15
+    // keeps "no activity" cells faintly visible rather than vanishing
+    // into the bg — same intent as the Epic 49 bucket-0 tone, just
+    // continuous now.
+    const heat = useHeatScale({
+        domain: [0, Math.max(max, 1)],
+        series: 1,
+        idPrefix: 'calendar-heat',
+    });
+
     // Group days into 7-row × N-column grid. We pad the start so the
     // first column begins on a Sunday (UTC day index 0).
     const padStart = days.length > 0 ? days[0].getUTCDay() : 0;
@@ -137,6 +143,19 @@ export function CalendarHeatmap({
     for (let i = 0; i < padded.length; i += 7) {
         weeks.push(padded.slice(i, i + 7));
     }
+
+    // R21-PR-C — derive month-boundary flag per week. A week column
+    // gets `data-month-start` when its first non-null day's month
+    // differs from the previous week's first non-null day's month.
+    // CSS paints a 1px left border on that column → subtle month
+    // separator without a heavy axis.
+    const weekMonthStart: boolean[] = weeks.map((week, i) => {
+        if (i === 0) return false;
+        const firstThisWeek = week.find((d): d is Date => d !== null);
+        const firstPrevWeek = weeks[i - 1].find((d): d is Date => d !== null);
+        if (!firstThisWeek || !firstPrevWeek) return false;
+        return firstThisWeek.getUTCMonth() !== firstPrevWeek.getUTCMonth();
+    });
 
     const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -167,7 +186,18 @@ export function CalendarHeatmap({
                     {weeks.map((week, weekIdx) => (
                         <div
                             key={weekIdx}
-                            className="flex flex-col gap-[2px]"
+                            data-month-start={
+                                weekMonthStart[weekIdx] ? 'true' : undefined
+                            }
+                            className={cn(
+                                'flex flex-col gap-[2px]',
+                                // R21-PR-C — month separator. Subtle 1px
+                                // tone-shift on the left edge of any week
+                                // that starts a new month. Token-backed so
+                                // it adapts to dark/light theme.
+                                weekMonthStart[weekIdx] &&
+                                    'pl-[2px] border-l border-border-subtle/60',
+                            )}
                         >
                             {week.map((day, dayIdx) => {
                                 if (!day) {
@@ -181,7 +211,7 @@ export function CalendarHeatmap({
                                 }
                                 const ymd = toYMD(day);
                                 const count = counts.get(ymd) ?? 0;
-                                const intensity = bucketIntensity(count, max);
+                                const intensity = heat.intensityFor(count);
                                 const label =
                                     count === 0
                                         ? `${ymd}: no events`
@@ -195,13 +225,16 @@ export function CalendarHeatmap({
                                         aria-label={label}
                                         data-ymd={ymd}
                                         data-count={count}
-                                        data-intensity={intensity}
+                                        data-intensity={intensity.toFixed(2)}
                                         className={cn(
-                                            'h-[10px] w-[10px] rounded-[2px] transition-colors',
-                                            getIntensityTone(intensity),
+                                            'h-[10px] w-[10px] rounded-[2px]',
+                                            'transition-[background-color,outline-color] duration-150',
                                             'hover:ring-1 hover:ring-content-emphasis/40',
                                             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]',
                                         )}
+                                        style={{
+                                            background: heat.colorFor(count),
+                                        }}
                                     />
                                 );
                             })}
@@ -210,20 +243,15 @@ export function CalendarHeatmap({
                 </div>
             </div>
 
-            {/* Legend */}
-            <figcaption className="flex items-center gap-1 text-[10px] text-content-muted">
-                <span>Less</span>
-                {([0, 1, 2, 3, 4] as const).map((i) => (
-                    <span
-                        key={i}
-                        className={cn(
-                            'h-[10px] w-[10px] rounded-[2px]',
-                            getIntensityTone(i),
-                        )}
-                        aria-hidden="true"
-                    />
-                ))}
-                <span>More</span>
+            {/* R21-PR-C: shared gradient legend, painted from the same
+                tokens the cells consume — visually continuous. */}
+            <figcaption className="flex justify-end">
+                <ChartLegend
+                    variant="gradient"
+                    heatScale={heat}
+                    label="Activity"
+                    unit=""
+                />
             </figcaption>
         </figure>
     );

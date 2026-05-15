@@ -1,15 +1,39 @@
+'use client';
+
 /**
- * RiskHeatmap — Likelihood × Impact matrix visualization.
+ * Roadmap-21 PR-C — RiskHeatmap rebuild on R21-PR-A's useHeatScale +
+ * ChartLegend foundation.
  *
- * Renders a 5×5 grid where each cell shows the count of risks at
- * that (likelihood, impact) intersection. Color intensity encodes
- * the inherent risk level (likelihood × impact score).
+ * The original 5×5 likelihood × impact matrix used a bespoke
+ * four-bucket palette (emerald → amber → orange → red) keyed off
+ * a discrete `getCellColor()` lookup. Worked, but spoke a different
+ * colour vocabulary from every other chart on the dashboard and
+ * couldn't be themed through tokens.
  *
- * Color scheme:
- *   1-4:  green  (low)
- *   5-9:  amber  (medium)
- *   10-14: orange (high)
- *   15-25: red    (critical)
+ * PR-C rewires the cell colouring through `useHeatScale` (R21-PR-A)
+ * mapped to chart-series 4 (pink → magenta — the closest available
+ * "severity" ramp in the R16 palette). The interpolation is
+ * continuous in OKLAB so the gradation reads cleanly even at the
+ * boundary between adjacent severity scores. The bottom-strip
+ * 4-swatch legend is replaced by `<ChartLegend variant="gradient">`
+ * — the legend gradient paints from the SAME tokens the cells
+ * consume, so legend ↔ cells are visually continuous.
+ *
+ * Three interaction refinements on top:
+ *
+ *   1. Hover crosshair — hovering a cell highlights the WHOLE row
+ *      AND column the cell belongs to (the canonical "what cell
+ *      am I looking at?" affordance for matrix heatmaps).
+ *
+ *   2. Click-to-drill — `onSelectCell` callback fires the
+ *      (likelihood, impact, count) triple so the consumer can
+ *      open a drill-down sheet. Cells with count=0 are not
+ *      clickable.
+ *
+ *   3. Empty-cell muted affordance — count=0 cells paint at the
+ *      heat-scale's floor opacity (15%) rather than `bg-bg-subtle`
+ *      so the empty cells STILL participate in the gradient
+ *      vocabulary, just at the bottom of the ramp.
  *
  * @example
  * ```tsx
@@ -19,13 +43,15 @@
  *         { likelihood: 5, impact: 5, count: 1 },
  *     ]}
  *     scale={5}
+ *     onSelectCell={(cell) => router.push(`/risks?L=${cell.likelihood}&I=${cell.impact}`)}
  * />
  * ```
  */
-import { Fragment } from 'react';
+import { Fragment, useState } from 'react';
 import { cardVariants } from '@/components/ui/card-variants';
 import { cn } from '@dub/utils';
 
+import { ChartLegend, useHeatScale } from '@/components/ui/charts';
 import { ShimmerDots } from '@/components/ui/shimmer-dots';
 import { Heading } from '@/components/ui/typography';
 
@@ -52,24 +78,12 @@ export interface RiskHeatmapProps {
      * Distinct from `cells=[]` which renders the "no risks" state.
      */
     loading?: boolean;
-}
-
-// ─── Color Logic ────────────────────────────────────────────────────
-
-function getCellColor(likelihood: number, impact: number, count: number): string {
-    if (count === 0) return 'bg-bg-subtle';
-    const score = likelihood * impact;
-    if (score >= 15) return 'bg-red-500/80 text-white';
-    if (score >= 10) return 'bg-orange-500/70 text-white';
-    if (score >= 5)  return 'bg-amber-500/60 text-content-emphasis';
-    return 'bg-emerald-500/50 text-content-emphasis';
-}
-
-function getScoreLabel(score: number): string {
-    if (score >= 15) return 'Critical';
-    if (score >= 10) return 'High';
-    if (score >= 5)  return 'Medium';
-    return 'Low';
+    /**
+     * R21-PR-C — click-to-drill. Fires the cell triple
+     * (likelihood, impact, count) when a populated cell is clicked.
+     * Cells with count=0 are not clickable.
+     */
+    onSelectCell?: (cell: HeatmapCell) => void;
 }
 
 // ─── Component ──────────────────────────────────────────────────────
@@ -80,7 +94,26 @@ export default function RiskHeatmap({
     className = '',
     id,
     loading = false,
+    onSelectCell,
 }: RiskHeatmapProps) {
+    // R21-PR-C — continuous OKLAB heat scale over the
+    // likelihood×impact SCORE domain (1..scale²). Series 4 (pink)
+    // is the closest available "severity" ramp in the R16 palette.
+    const scoreMax = scale * scale;
+    const heat = useHeatScale({
+        domain: [1, scoreMax],
+        series: 4,
+        idPrefix: id ? `${id}-risk` : 'risk-heat',
+    });
+
+    // Hover crosshair state. Track row + column independently so a
+    // future PR can support keyboard navigation (arrow keys updating
+    // crosshair without mouse) without restructuring.
+    const [hovered, setHovered] = useState<{
+        likelihood: number;
+        impact: number;
+    } | null>(null);
+
     // Loading state — preserve matrix footprint with a same-size
     // shimmer grid so the dashboard doesn't reflow when data arrives.
     if (loading) {
@@ -154,7 +187,12 @@ export default function RiskHeatmap({
                             <Fragment key={`row-${likelihood}`}>
                                 {/* Row label */}
                                 <div
-                                    className="flex items-center justify-center text-[10px] text-content-subtle tabular-nums"
+                                    className={cn(
+                                        'flex items-center justify-center text-[10px] tabular-nums transition-colors duration-150',
+                                        hovered?.likelihood === likelihood
+                                            ? 'text-content-emphasis font-semibold'
+                                            : 'text-content-subtle',
+                                    )}
                                 >
                                     {likelihood}
                                 </div>
@@ -162,21 +200,64 @@ export default function RiskHeatmap({
                                 {cols.map((impact) => {
                                     const count = lookup.get(`${likelihood}-${impact}`) ?? 0;
                                     const score = likelihood * impact;
+                                    const isCrosshair =
+                                        hovered !== null &&
+                                        (hovered.likelihood === likelihood ||
+                                            hovered.impact === impact);
+                                    const isHovered =
+                                        hovered?.likelihood === likelihood &&
+                                        hovered?.impact === impact;
+                                    const clickable = count > 0 && Boolean(onSelectCell);
                                     return (
-                                        <div
+                                        <button
+                                            type="button"
                                             key={`${likelihood}-${impact}`}
-                                            className={`
-                                                flex items-center justify-center
-                                                rounded-sm min-h-[28px]
-                                                text-xs font-semibold tabular-nums
-                                                transition-colors duration-150 ease-out
-                                                ${getCellColor(likelihood, impact, count)}
-                                                ${count > 0 ? 'cursor-default' : ''}
-                                            `.trim()}
-                                            title={`L${likelihood} × I${impact} = ${score} (${getScoreLabel(score)}) — ${count} risk${count !== 1 ? 's' : ''}`}
+                                            data-likelihood={likelihood}
+                                            data-impact={impact}
+                                            data-count={count}
+                                            data-score={score}
+                                            data-cell-crosshair={isCrosshair ? 'true' : undefined}
+                                            data-cell-hover={isHovered ? 'true' : undefined}
+                                            disabled={!clickable}
+                                            onMouseEnter={() =>
+                                                setHovered({ likelihood, impact })
+                                            }
+                                            onMouseLeave={() => setHovered(null)}
+                                            onFocus={() =>
+                                                setHovered({ likelihood, impact })
+                                            }
+                                            onBlur={() => setHovered(null)}
+                                            onClick={() => {
+                                                if (clickable)
+                                                    onSelectCell?.({
+                                                        likelihood,
+                                                        impact,
+                                                        count,
+                                                    });
+                                            }}
+                                            className={cn(
+                                                'flex items-center justify-center rounded-sm min-h-[28px]',
+                                                'text-xs font-semibold tabular-nums text-white',
+                                                'transition-[background-color,outline-color,opacity] duration-150 ease-out',
+                                                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]',
+                                                clickable && 'cursor-pointer',
+                                                !clickable && 'cursor-default',
+                                                isCrosshair && !isHovered && 'ring-1 ring-content-emphasis/30',
+                                                isHovered && 'ring-2 ring-content-emphasis/60',
+                                            )}
+                                            style={{
+                                                background: heat.colorFor(score),
+                                                // Empty cells paint at the
+                                                // heat-scale's floor — they
+                                                // stay PART of the gradient
+                                                // vocabulary, just at the
+                                                // bottom of the ramp.
+                                                opacity: count === 0 ? 0.4 : 1,
+                                            }}
+                                            title={`L${likelihood} × I${impact} = ${score} — ${count} risk${count !== 1 ? 's' : ''}`}
                                         >
                                             {count > 0 ? count : ''}
-                                        </div>
+                                        </button>
                                     );
                                 })}
                             </Fragment>
@@ -187,7 +268,12 @@ export default function RiskHeatmap({
                         {cols.map((impact) => (
                             <div
                                 key={`col-${impact}`}
-                                className="flex items-center justify-center text-[10px] text-content-subtle tabular-nums"
+                                className={cn(
+                                    'flex items-center justify-center text-[10px] tabular-nums transition-colors duration-150',
+                                    hovered?.impact === impact
+                                        ? 'text-content-emphasis font-semibold'
+                                        : 'text-content-subtle',
+                                )}
                             >
                                 {impact}
                             </div>
@@ -203,19 +289,14 @@ export default function RiskHeatmap({
                 </div>
             </div>
 
-            {/* Legend */}
-            <div className="flex justify-center gap-compact mt-3">
-                {[
-                    { label: 'Low', color: 'bg-emerald-500/50' },
-                    { label: 'Medium', color: 'bg-amber-500/60' },
-                    { label: 'High', color: 'bg-orange-500/70' },
-                    { label: 'Critical', color: 'bg-red-500/80' },
-                ].map((item) => (
-                    <div key={item.label} className="flex items-center gap-1 text-[10px] text-content-muted">
-                        <span className={`w-2.5 h-2.5 rounded-sm ${item.color}`} />
-                        <span>{item.label}</span>
-                    </div>
-                ))}
+            {/* R21-PR-C: shared gradient legend, painted from the same
+                tokens the cells consume — visually continuous. */}
+            <div className="flex justify-center mt-3">
+                <ChartLegend
+                    variant="gradient"
+                    heatScale={heat}
+                    label="Risk score"
+                />
             </div>
         </div>
     );
