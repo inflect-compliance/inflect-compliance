@@ -49,6 +49,7 @@ import type { RiskMatrixConfigShape } from '@/lib/risk-matrix/types';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
+import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
 interface RiskListItem {
@@ -271,6 +272,31 @@ function RisksPageInner({
     const now = useHydratedNow();
     // guardrail-ignore: KPI count across the loaded page, not a refilter.
     const overdueRisks = now ? risks.filter(r => r.nextReviewAt && new Date(r.nextReviewAt) < now) : [];
+
+    // R23-PR-B — Typed KPI definitions consumed by useKpiFilter. The
+    // hook derives the active card from current filter state, so the
+    // "Open" KPI lights up automatically whenever status=OPEN is
+    // applied (KPI click OR a status pill set via the dropdown). The
+    // "Total" KPI is active when no filters are set — it's the
+    // implicit default state.
+    type RiskKpiId = 'total' | 'open';
+    const kpiDefs: ReadonlyArray<KpiFilterDef<RiskKpiId>> = useMemo(
+        () => [
+            {
+                id: 'total',
+                apply: (ctx) => ctx.clearAll(),
+                isActive: (state) => Object.keys(state).length === 0,
+            },
+            {
+                id: 'open',
+                apply: (ctx) => ctx.set('status', 'OPEN'),
+                isActive: (state) =>
+                    (state.status ?? []).includes('OPEN'),
+            },
+        ],
+        [],
+    );
+    const { activeKpiId, toggle: toggleKpi } = useKpiFilter(kpiDefs);
 
     // Epic 44.3 — collapse the loaded page into the sparse `(L, I)`
     // shape the new `<RiskMatrix>` engine consumes. Each cell carries
@@ -506,7 +532,8 @@ function RisksPageInner({
                     <KpiFilterCard
                         label={t.totalRisks}
                         value={total}
-                        onClick={() => filterCtx.clearAll()}
+                        onClick={() => toggleKpi('total')}
+                        selected={activeKpiId === 'total'}
                     />
                     <KpiFilterCard
                         label={t.avgScore}
@@ -517,7 +544,8 @@ function RisksPageInner({
                         label={t.openRisks}
                         value={openCount}
                         tone="success"
-                        onClick={() => filterCtx.set('status', 'OPEN')}
+                        onClick={() => toggleKpi('open')}
+                        selected={activeKpiId === 'open'}
                     />
                     <KpiFilterCard
                         label={t.overdueReviews}
