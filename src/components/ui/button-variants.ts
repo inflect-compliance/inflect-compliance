@@ -295,7 +295,17 @@ export const buttonVariants = cva(
     // mirrors the tracking ladder: dense UI sizes stay restrained,
     // featured sizes climb in confidence. See the size block below.
     "text-sm transition-all duration-150",
-    "border rounded-lg",
+    // R22-PR-A — radius calibration. R19 shipped `rounded-lg`
+    // (12px); the user reported the silhouette read "slightly too
+    // soft / inflated" for the liquid-carbon material.
+    // `rounded-[10px]` is a 2px tighter shape — still gentler than
+    // a hard 8px (Tailwind's `rounded-md`), but visibly more
+    // carved. xs keeps its size-variant `rounded-md` override (8px)
+    // because at h-7 a 10px radius makes the button read pill-ish.
+    // Mirrored in control-variants.ts so form controls (Input,
+    // date-picker trigger, combobox trigger) share the same
+    // corner shape as buttons in filter-toolbar rows.
+    "border rounded-[10px]",
     "disabled:opacity-50 disabled:pointer-events-none",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
     // R11-PR4 — microinteraction sweep. Every button gets a subtle

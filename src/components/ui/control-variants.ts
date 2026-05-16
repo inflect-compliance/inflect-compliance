@@ -101,7 +101,10 @@ export const controlSize = {
  */
 export const controlVariants = cva(
     [
-        "w-full rounded-lg text-sm",
+        // R22-PR-A — radius mirror of button-variants.ts.
+        // Form controls + buttons share corner shape so a
+        // filter-toolbar row reads as one chassis.
+        "w-full rounded-[10px] text-sm",
         "bg-bg-default text-content-emphasis placeholder-content-subtle",
         "focus:outline-none",
         "disabled:cursor-not-allowed disabled:bg-bg-muted disabled:text-content-muted disabled:hover:border-[var(--ctrl-edge-rest)]",

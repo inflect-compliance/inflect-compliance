@@ -45,7 +45,8 @@ import { forwardRef, type ComponentProps } from 'react';
 // roadmap if we go to "iridescent OPEN trigger" territory).
 const triggerStyles = cva(
     [
-        'group peer flex h-10 appearance-none items-center gap-x-2 truncate rounded-lg px-3 text-sm outline-none',
+        // R22-PR-A — radius mirror of button-variants.ts (12→10px).
+        'group peer flex h-10 appearance-none items-center gap-x-2 truncate rounded-[10px] px-3 text-sm outline-none',
         'transition-[color,border-color,box-shadow] duration-150 ease-out motion-reduce:transition-none',
         'border border-[var(--ctrl-edge-rest)] bg-bg-default text-content-emphasis',
         'hover:border-[var(--ctrl-edge-hover)]',
