@@ -311,7 +311,18 @@ export const buttonVariants = cva(
     // date-picker trigger, combobox trigger) share the same
     // corner shape as buttons in filter-toolbar rows.
     "border rounded-[10px]",
-    "disabled:opacity-50 disabled:pointer-events-none",
+    // R22-PR-D — graded disabled mute. R19 shipped a blanket
+    // `disabled:opacity-50`; on the carbon palette that read
+    // as "half-visible coloured button" — the brand identity
+    // bled through even when the user couldn't act on it.
+    // Adding `disabled:saturate-50` desaturates the colour
+    // channel by 50% on top of the opacity mute, so a disabled
+    // primary reads as muted-graphite rather than washed-orange.
+    // The R19 `::before` carbon depth-overlay still drops to
+    // opacity-0 on disabled (R19-PR-D), so the carbon material
+    // also goes inert in parallel. Three channels muted in
+    // concert: fill brightness, colour saturation, depth.
+    "disabled:opacity-50 disabled:saturate-50 disabled:pointer-events-none",
     // R22-PR-B — focus ring upgraded from Tailwind
     // `ring-2 ring-offset-2 ring-ring` (which reads as the
     // browser-default focus shape) to the brand-tinted box-shadow
