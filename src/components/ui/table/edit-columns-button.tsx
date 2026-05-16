@@ -147,10 +147,11 @@ export function EditColumnsButton<T>({
       align="end"
     >
       <Tooltip content={title}>
+        {/* R24-PR-E — icon-button shape locked (8px slim radius). */}
         <Button
           type="button"
           className={cn(
-            "size-8 shrink-0 whitespace-nowrap rounded-lg p-0",
+            "size-8 shrink-0 whitespace-nowrap rounded-[8px] p-0",
             someHidden && "ring-[var(--brand-default)]/30 ring-1",
             className,
           )}

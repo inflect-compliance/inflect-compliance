@@ -177,10 +177,19 @@ export function ColumnsDropdown({
             }
         >
             <Tooltip content="Edit columns">
+                {/* R24-PR-E — icon-button shape locked. Square 36×36
+                    (`size-9 p-0`) + the slim 8px radius the rest of
+                    the chrome family wears (R24-PR-C). The historic
+                    `rounded-lg` here was a 12px outlier — the gear
+                    sat next to the filter dropdown (which inherited
+                    the cva 8px) and the size disagreement read as
+                    "two different button systems" in toolbars. The
+                    `aria-pressed` cue + brand-tinted ring on the
+                    "some hidden" state stays. */}
                 <Button
                     type="button"
                     className={cn(
-                        "size-9 shrink-0 whitespace-nowrap rounded-lg p-0",
+                        "size-9 shrink-0 whitespace-nowrap rounded-[8px] p-0",
                         someHidden && "ring-1 ring-[var(--brand-default)]/30",
                         className,
                     )}
