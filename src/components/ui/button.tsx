@@ -49,7 +49,8 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           <div
             className={cn(
               "flex items-center justify-center gap-x-2 cursor-not-allowed",
-              "rounded-lg border border-border-subtle bg-bg-subtle text-sm text-content-subtle",
+              // R22-PR-A — radius mirror (12→10px).
+              "rounded-[10px] border border-border-subtle bg-bg-subtle text-sm text-content-subtle",
               // R20-PR-C — horizontal padding mirrors the airy
               // density scale (xs/sm don't size up; md/lg do).
               // R20-PR-E — graded font-weight ladder also mirrors
@@ -99,7 +100,8 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           props.disabled || loading
             ? cn(
                 "flex items-center justify-center gap-tight whitespace-nowrap",
-                "rounded-lg border border-border-subtle bg-bg-subtle text-content-subtle",
+                // R22-PR-A — radius mirror (12→10px).
+                "rounded-[10px] border border-border-subtle bg-bg-subtle text-content-subtle",
                 "cursor-not-allowed outline-none text-sm",
                 // R20-PR-C — mirror the airy density scale from
                 // button-variants.ts. These classes drive the disabled
