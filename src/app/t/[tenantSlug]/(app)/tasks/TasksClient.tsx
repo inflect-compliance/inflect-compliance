@@ -31,6 +31,8 @@ import { TableTitleCell } from '@/components/ui/table-title-cell';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { toApiSearchParams } from '@/lib/filters/url-sync';
 import { buildTaskFilters, TASK_FILTER_KEYS } from './filter-defs';
+import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
+import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { Tooltip } from '@/components/ui/tooltip';
 import { DatePicker } from '@/components/ui/date-picker/date-picker';
@@ -202,6 +204,60 @@ function TasksPageInner({
     );
 
     const isOverdue = (task: TaskListItem) => !!(hydratedNow && task.dueAt && new Date(task.dueAt) < hydratedNow && !(TERMINAL_WORK_ITEM_STATUSES as readonly string[]).includes(task.status));
+
+    // ─── R23-PR-E — KPI definitions for the Tasks page ───
+    // Aligned to `status` + `due` filter keys (both filterable
+    // server-side). "Due this week" uses the `due=next7d` pseudo-
+    // enum the API already accepts.
+    type TaskKpiId = 'total' | 'open' | 'overdue' | 'dueWeek';
+    // guardrail-ignore: KPI counts across the loaded page, not a refilter.
+    const totalTasks = tasks.length;
+    // guardrail-ignore: KPI count, not a refilter.
+    const openTasks = tasks.filter((t: TaskListItem) => t.status === 'OPEN').length;
+    // guardrail-ignore: KPI count, not a refilter.
+    const overdueTasks = tasks.filter(isOverdue).length;
+    // guardrail-ignore: KPI count, not a refilter.
+    const weekFromNow = hydratedNow
+        ? new Date(hydratedNow.getTime() + 7 * 24 * 60 * 60 * 1000)
+        : null;
+    const dueWeekTasks = tasks.filter(
+        (t: TaskListItem) =>
+            !!hydratedNow &&
+            !!weekFromNow &&
+            !!t.dueAt &&
+            new Date(t.dueAt) >= hydratedNow &&
+            new Date(t.dueAt) <= weekFromNow,
+    ).length;
+    const taskKpiDefs: ReadonlyArray<KpiFilterDef<TaskKpiId>> = useMemo(
+        () => [
+            {
+                id: 'total',
+                apply: (ctx) => ctx.clearAll(),
+                isActive: (s) => Object.keys(s).length === 0,
+            },
+            {
+                id: 'open',
+                apply: (ctx) => ctx.set('status', 'OPEN'),
+                isActive: (s) => (s.status ?? []).includes('OPEN'),
+                clear: (ctx) => ctx.removeAll('status'),
+            },
+            {
+                id: 'overdue',
+                apply: (ctx) => ctx.set('due', 'overdue'),
+                isActive: (s) => (s.due ?? []).includes('overdue'),
+                clear: (ctx) => ctx.removeAll('due'),
+            },
+            {
+                id: 'dueWeek',
+                apply: (ctx) => ctx.set('due', 'next7d'),
+                isActive: (s) => (s.due ?? []).includes('next7d'),
+                clear: (ctx) => ctx.removeAll('due'),
+            },
+        ],
+        [],
+    );
+    const { activeKpiId: activeTaskKpi, toggle: toggleTaskKpi } =
+        useKpiFilter(taskKpiDefs);
 
     const toggleSelect = (id: string) => {
         setSelected(prev => {
@@ -444,7 +500,37 @@ function TasksPageInner({
                 </div>
             </ListPageShell.Header>
 
-            <ListPageShell.Filters>
+            <ListPageShell.Filters className="space-y-section">
+                {/* R23-PR-E — KPI strip. */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
+                    <KpiFilterCard
+                        label="Total tasks"
+                        value={totalTasks}
+                        onClick={() => toggleTaskKpi('total')}
+                        selected={activeTaskKpi === 'total'}
+                    />
+                    <KpiFilterCard
+                        label="Open"
+                        value={openTasks}
+                        tone="attention"
+                        onClick={() => toggleTaskKpi('open')}
+                        selected={activeTaskKpi === 'open'}
+                    />
+                    <KpiFilterCard
+                        label="Overdue"
+                        value={overdueTasks}
+                        tone={overdueTasks > 0 ? 'critical' : 'default'}
+                        onClick={() => toggleTaskKpi('overdue')}
+                        selected={activeTaskKpi === 'overdue'}
+                    />
+                    <KpiFilterCard
+                        label="Due this week"
+                        value={dueWeekTasks}
+                        tone="attention"
+                        onClick={() => toggleTaskKpi('dueWeek')}
+                        selected={activeTaskKpi === 'dueWeek'}
+                    />
+                </div>
                 <FilterToolbar
                     filters={liveFilters}
                     actions={columnsDropdown}

@@ -42,6 +42,8 @@ import {
 } from '@/components/ui/filter';
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
 import { ListPageShell } from '@/components/layout/ListPageShell';
+import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
+import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
 import {
     FileTypeIcon,
     resolveFileTypeIcon,
@@ -307,6 +309,52 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     // Null on SSR + first client render so the "Expiring" count matches
     // exactly across hydration (avoids React #418/#422).
     const hydratedNow = useHydratedNow();
+
+    // ─── R23-PR-E — KPI definitions for the Evidence page ───
+    // Status-based buckets aligned to the existing `status` filter
+    // (DRAFT/SUBMITTED/APPROVED/REJECTED). The retention tabs
+    // (Active/Expiring/Archived) are a separate dimension owned by
+    // the tab-bar above the filter toolbar — KPIs cover status only
+    // so the two affordances stay independent.
+    type EvidenceKpiId = 'total' | 'draft' | 'submitted' | 'approved';
+    // guardrail-ignore: KPI counts across the loaded page, not a refilter.
+    const totalEvidence = evidence.length;
+    // guardrail-ignore: KPI count, not a refilter.
+    const draftEvidence = evidence.filter((ev: any) => ev.status === 'DRAFT').length;
+    // guardrail-ignore: KPI count, not a refilter.
+    const submittedEvidence = evidence.filter((ev: any) => ev.status === 'SUBMITTED').length;
+    // guardrail-ignore: KPI count, not a refilter.
+    const approvedEvidence = evidence.filter((ev: any) => ev.status === 'APPROVED').length;
+    const evidenceKpiDefs: ReadonlyArray<KpiFilterDef<EvidenceKpiId>> = useMemo(
+        () => [
+            {
+                id: 'total',
+                apply: (ctx) => ctx.clearAll(),
+                isActive: (s) => Object.keys(s).length === 0,
+            },
+            {
+                id: 'draft',
+                apply: (ctx) => ctx.set('status', 'DRAFT'),
+                isActive: (s) => (s.status ?? []).includes('DRAFT'),
+                clear: (ctx) => ctx.removeAll('status'),
+            },
+            {
+                id: 'submitted',
+                apply: (ctx) => ctx.set('status', 'SUBMITTED'),
+                isActive: (s) => (s.status ?? []).includes('SUBMITTED'),
+                clear: (ctx) => ctx.removeAll('status'),
+            },
+            {
+                id: 'approved',
+                apply: (ctx) => ctx.set('status', 'APPROVED'),
+                isActive: (s) => (s.status ?? []).includes('APPROVED'),
+                clear: (ctx) => ctx.removeAll('status'),
+            },
+        ],
+        [],
+    );
+    const { activeKpiId: activeEvidenceKpi, toggle: toggleEvidenceKpi } =
+        useKpiFilter(evidenceKpiDefs);
 
     const activeEvidence = evidence.filter(ev => !ev.isArchived && !ev.expiredAt && !ev.deletedAt);
     const expiringEvidence = hydratedNow ? evidence.filter(ev => {
@@ -654,7 +702,41 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                 </>
             )}
 
-            <ListPageShell.Filters className="space-y-compact">
+            <ListPageShell.Filters className="space-y-section">
+                {/* R23-PR-E — KPI strip ABOVE the retention tabs +
+                    filter toolbar block. Status-based KPIs sit on a
+                    different axis from the retention tabs so the two
+                    affordances compose naturally. */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
+                    <KpiFilterCard
+                        label="Total evidence"
+                        value={totalEvidence}
+                        onClick={() => toggleEvidenceKpi('total')}
+                        selected={activeEvidenceKpi === 'total'}
+                    />
+                    <KpiFilterCard
+                        label="Draft"
+                        value={draftEvidence}
+                        tone="attention"
+                        onClick={() => toggleEvidenceKpi('draft')}
+                        selected={activeEvidenceKpi === 'draft'}
+                    />
+                    <KpiFilterCard
+                        label="Submitted"
+                        value={submittedEvidence}
+                        tone="default"
+                        onClick={() => toggleEvidenceKpi('submitted')}
+                        selected={activeEvidenceKpi === 'submitted'}
+                    />
+                    <KpiFilterCard
+                        label="Approved"
+                        value={approvedEvidence}
+                        tone="success"
+                        onClick={() => toggleEvidenceKpi('approved')}
+                        selected={activeEvidenceKpi === 'approved'}
+                    />
+                </div>
+
                 {/* Retention filter tabs + Control filter */}
                 <div className="flex items-center justify-between flex-wrap gap-compact">
                     <div className="flex items-center gap-1" id="retention-tabs">
