@@ -85,8 +85,16 @@ describe('Button primitive', () => {
         expect(src).toMatch(/text \?\? children/);
     });
 
-    it('has focus-visible ring using token', () => {
-        expect(variantsSrc).toContain('focus-visible:ring-ring');
+    it('has focus-visible indicator using a token', () => {
+        // R22-PR-B upgraded the focus indicator from Tailwind
+        // `focus-visible:ring-ring` (default-feel) to the brand-
+        // tinted box-shadow halo via `focus-visible:shadow-[var(
+        // --ctrl-edge-focus)]`. Both forms are token-backed; the
+        // assertion accepts either so this guardrail doesn't
+        // need re-touching every time the focus geometry evolves.
+        expect(variantsSrc).toMatch(
+            /focus-visible:(ring-ring|shadow-\[var\(--ctrl-edge-focus\)\])/,
+        );
     });
 
     it('does not use raw light-mode colors in CVA variants', () => {

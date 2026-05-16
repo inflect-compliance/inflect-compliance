@@ -122,16 +122,20 @@ describe('R19-PR-D — carbon interaction states', () => {
         expect(recipe).toMatch(/motion-reduce:before:transition-none/);
     });
 
-    it('PR-D is additive — the press GEOMETRY and the a11y RING survive in the base', () => {
+    it('PR-D is additive — the press GEOMETRY and a focus-visible indicator survive in the base', () => {
         const base = cvaBase();
         // R11-PR4 press-down geometry — carbonStates adds the
         // MATERIAL response (the pool dims), it does not replace
         // the scale.
         expect(base).toMatch(/active:scale-\[0\.97\]/);
         expect(base).toMatch(/motion-reduce:active:scale-100/);
-        // The a11y focus ring — carbon is depth, never a
-        // replacement for the visible focus indicator.
-        expect(base).toMatch(/focus-visible:ring-2/);
+        // The focus indicator — R22-PR-B upgraded from Tailwind
+        // `ring-2 ring-offset-2 ring-ring` (default-feel) to the
+        // brand-tinted box-shadow halo via
+        // `focus-visible:shadow-[var(--ctrl-edge-focus)]`. Carbon
+        // is still depth — the halo IS the visible focus signal.
+        expect(base).toMatch(/focus-visible:outline-none/);
+        expect(base).toMatch(/focus-visible:shadow-\[var\(--ctrl-edge-focus\)\]/);
     });
 });
 

@@ -173,7 +173,12 @@
    * + a crisper catch-light to read at all). */
   --btn-carbon-overlay: radial-gradient(ellipse 130% 80% at 50% -10%, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.02) 32%, rgba(0, 0, 0, 0.10) 62%, rgba(0, 0, 0, 0.20) 100%);
   --btn-carbon-bevel: inset 0 1px 1px rgba(255, 255, 255, 0.10), inset 0 -2px 3px rgba(255, 255, 255, 0.03), 0 1px 2px rgba(0, 0, 0, 0.38);
-  --btn-carbon-border: rgba(0, 0, 0, 0.30);
+  /* R22-PR-B — softened from α 0.30 → 0.18. R19's 30%-black
+   * meniscus edge read as "loud" against the carbon surface in
+   * R22 review — the silhouette competed with the iridescent
+   * edge instead of supporting it. 18% is the quiet anchor the
+   * iridescent + aura layers want underneath. */
+  --btn-carbon-border: rgba(0, 0, 0, 0.18);
 
   /* --btn-carbon-grain (Roadmap-19 PR-C) — the micro-grain that
    * gives the liquid-carbon surface TACTILITY. A grayscale
@@ -216,7 +221,11 @@
   --btn-ambient-rest:  0 1px 2px rgba(0, 0, 0, 0.24), 0 2px 6px rgba(0, 0, 0, 0.16);
   --btn-ambient-hover: 0 2px 4px rgba(0, 0, 0, 0.28), 0 6px 16px rgba(0, 0, 0, 0.22);
   --btn-ambient-press: 0 1px 1px rgba(0, 0, 0, 0.32);
-  --btn-ambient-focus: 0 0 0 4px rgba(255, 205, 17, 0.22), 0 1px 2px rgba(0, 0, 0, 0.24), 0 2px 6px rgba(0, 0, 0, 0.16);
+  /* R22-PR-B — focus ring tightened from 4px → 3px. The 4px
+   * ring read as "default Tailwind focus" — generic. 3px matches
+   * the form-control `--ctrl-edge-focus` shape, so a focused
+   * button and a focused input now wear the EXACT same halo. */
+  --btn-ambient-focus: 0 0 0 3px rgba(255, 205, 17, 0.22), 0 1px 2px rgba(0, 0, 0, 0.24), 0 2px 6px rgba(0, 0, 0, 0.16);
 
   /* ── R20 iridescent edge (DARK theme) ───────────────────────────────
    * A linear gradient sweeping from a whisper of brand yellow in
@@ -580,7 +589,8 @@
    * tinted to match the PwC palette rather than pure black. */
   --btn-carbon-overlay: radial-gradient(ellipse 130% 80% at 50% -10%, rgba(255, 252, 248, 0.13) 0%, rgba(255, 252, 248, 0.03) 32%, rgba(40, 30, 20, 0.14) 62%, rgba(40, 30, 20, 0.26) 100%);
   --btn-carbon-bevel: inset 0 1px 1px rgba(255, 255, 255, 0.50), inset 0 -2px 3px rgba(255, 255, 255, 0.10), 0 1px 2px rgba(60, 50, 40, 0.20);
-  --btn-carbon-border: rgba(60, 50, 40, 0.24);
+  /* R22-PR-B — softened α 0.24 → 0.16, warm-graphite preserved. */
+  --btn-carbon-border: rgba(60, 50, 40, 0.16);
 
   /* ── R20 ambient elevation (4-stop, LIGHT theme) ────────────────────
    * Warm-tinted parallel of the dark-theme block. Light-mode shadow
@@ -590,7 +600,8 @@
   --btn-ambient-rest:  0 1px 2px rgba(60, 50, 40, 0.10), 0 2px 6px rgba(60, 50, 40, 0.06);
   --btn-ambient-hover: 0 2px 4px rgba(60, 50, 40, 0.14), 0 6px 16px rgba(60, 50, 40, 0.10);
   --btn-ambient-press: 0 1px 1px rgba(60, 50, 40, 0.14);
-  --btn-ambient-focus: 0 0 0 4px rgba(208, 74, 2, 0.18), 0 1px 2px rgba(60, 50, 40, 0.10), 0 2px 6px rgba(60, 50, 40, 0.06);
+  /* R22-PR-B — focus ring tightened 4px → 3px (light-theme parallel). */
+  --btn-ambient-focus: 0 0 0 3px rgba(208, 74, 2, 0.18), 0 1px 2px rgba(60, 50, 40, 0.10), 0 2px 6px rgba(60, 50, 40, 0.06);
 
   /* ── R20 iridescent edge (LIGHT theme) ──────────────────────────────
    * Brand orange ↔ secondary navy. Slightly higher alphas than dark

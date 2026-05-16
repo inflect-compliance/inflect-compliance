@@ -312,7 +312,20 @@ export const buttonVariants = cva(
     // corner shape as buttons in filter-toolbar rows.
     "border rounded-[10px]",
     "disabled:opacity-50 disabled:pointer-events-none",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+    // R22-PR-B — focus ring upgraded from Tailwind
+    // `ring-2 ring-offset-2 ring-ring` (which reads as the
+    // browser-default focus shape) to the brand-tinted box-shadow
+    // halo R20-PR-D already established on `carbonSurface` via
+    // `focus-visible:shadow-[bevel,ambient-focus]`. The cva base
+    // drops the ring entirely; the shadow halo on `carbonSurface`
+    // is the keyboard focus indicator for the solid variants.
+    // Transparent variants (`ghost`, `destructive-outline`) get
+    // the halo too via the `focus-visible:shadow-[var(--ctrl-
+    // edge-focus)]` line below — same vocabulary as the form
+    // controls. `outline-none` stays so the browser default
+    // doesn't double up.
+    "focus-visible:outline-none",
+    "focus-visible:shadow-[var(--ctrl-edge-focus)]",
     // R11-PR4 — microinteraction sweep. Every button gets a subtle
     // press-down scale on `:active` so clicks feel responsive. The
     // 3% shrink is intentionally small — large enough to register

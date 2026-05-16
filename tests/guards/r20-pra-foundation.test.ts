@@ -114,12 +114,16 @@ describe("R20-PR-A — Liquid Elegance foundation", () => {
         });
 
         it("focus stacks the brand-tinted ring ON TOP of the rest drop", () => {
-            // Focus must carry a 4px brand ring stop (`0 0 0 4px`)
-            // PLUS the rest drop's two stops, totalling 3 stops.
+            // Focus must carry a brand ring stop PLUS the rest
+            // drop's two stops, totalling 3 stops. R22-PR-B
+            // tightened the ring from 4px → 3px to match the
+            // form-control `--ctrl-edge-focus` shape — focused
+            // button + focused input now wear the same halo
+            // geometry.
             for (const block of [DARK, LIGHT]) {
                 const m = block.match(/--btn-ambient-focus:\s*([^;]+);/);
                 expect(m).toBeTruthy();
-                expect(m![1]).toMatch(/0 0 0 4px/);
+                expect(m![1]).toMatch(/0 0 0 3px/);
                 expect((m![1].match(/rgba\(/g) ?? []).length).toBe(3);
             }
         });
