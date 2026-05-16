@@ -152,6 +152,57 @@ when you touch the carbon system:
 | `tests/guards/r19-prc-carbon-hover-grain.test.ts` | the grain layer + `carbonOnHover` for the transparent variants |
 | `tests/guards/r19-prd-carbon-states.test.ts` | `carbonStates` interaction channel + the R19 capstone (whole-system coherence) |
 
+### CTA Order — modal/dialog footers (Roadmap-22 PR-E)
+
+Every modal or dialog footer with a paired CANCEL + CONFIRM
+follows the Mac/iOS convention: **secondary first in DOM order,
+primary second**. With the footer's default `justify-end`
+container, the visual result is `[Cancel] [Confirm]` right-
+aligned — primary on the RIGHT, where the eye finishes a left-
+to-right read.
+
+`Modal.Confirm` ships this default. New modal call sites SHOULD
+use `Modal.Confirm` (or the `ConfirmDialog` re-export) rather
+than hand-rolling a footer. If you DO hand-roll a footer:
+
+```tsx
+<Modal.Actions>
+  {/* Cancel FIRST */}
+  <Button variant="secondary" onClick={onCancel}>Cancel</Button>
+  {/* Confirm SECOND (primary OR destructive, depending on tone) */}
+  <Button variant="primary" onClick={onConfirm}>Save</Button>
+</Modal.Actions>
+```
+
+What this rule INVERTS: the Windows convention (primary LEFT) and
+the "alphabetised by danger" pattern (destructive on the left,
+neutral right). Both read as "OK Cancel" to a screen reader; the
+visual placement is the affordance, and Mac/iOS users (the bulk
+of the design vocabulary IC inherits from) expect primary-right.
+
+The rule is locked by `tests/guards/r22-pre-variant-and-cta-order.test.ts`:
+the `Modal.Confirm` source must render the Cancel button BEFORE
+the Confirm button in JSX.
+
+### Variant inventory (Roadmap-22 PR-E)
+
+Five variants today:
+
+| Variant | When to use |
+|---|---|
+| `primary` | The page's primary action. One per surface. |
+| `secondary` | The page's secondary action(s). Multiple allowed. |
+| `ghost` | Low-chrome action (toolbar, inline edit). |
+| `destructive` | Destructive action with full confidence (Delete, Archive). |
+| `destructive-outline` | Destructive action with LOWER confidence — the consequence is reversible OR the action is "remove this association", not "destroy this entity". Examples: Revoke API key, Disconnect integration, Remove MFA. |
+
+The `destructive-outline` variant exists in 7 places. PR-E
+reviewed but kept it — the visual distinction between
+`destructive` (full red fill) and `destructive-outline` (red text
++ red border) IS the affordance difference between
+"delete-and-it's-gone" vs "remove-this-link". A future PR may
+fold them if the distinction stops earning its keep.
+
 ### Liquid Elegance (Roadmap-20)
 
 R19 made buttons look like liquid carbon. R20 is the polish round
