@@ -416,3 +416,50 @@ The five R22 ratchets at
 the PR-F capstone ratchet at `r22-prf-capstone.test.ts` asserts
 file-existence on all five so a future PR can't silently strip
 one. Each PR's own assertions remain the substantive guard.
+
+## Liquid Glass (Roadmap-24)
+
+R24 swaps the button MATERIAL — from R19–R22's solid/machined
+carbon to liquid glass — while reusing the existing composition
+seams (R19's `::before` depth + R20's `::after` finish). What
+changes is the recipe content inside; the API surface stays put.
+
+External reference: [callstack/liquid-glass](https://github.com/callstack/liquid-glass).
+Portable techniques (alpha-tinted backdrop + `backdrop-filter`,
+1px gradient edge-sheen, layered inner-glow + outer-rim) were
+adapted; the React Native / iOS-native runtime wrapper was
+deliberately rejected — wrong stack.
+
+| PR | Lock |
+|---|---|
+| **A** Glass token foundation | 5 `--btn-glass-*` tokens per theme (`-tint`, `-blur`, `-edge`, `-inner`, `-shadow`). Light + dark parity from day one. Namespace sealed — no `--ctrl-glass-`, no `--btn-frost-`, no `--btn-glass2-`. |
+| **B** Primitive redesign | `glassSurface` / `glassOnHover` replace `carbonSurface` / `carbonOnHover` in every variant. R19-PR-D `carbonStates` (material-agnostic state opacity) + R20-PR-B iridescent/aura layers survive the swap. Zero `--btn-carbon-*` references left in cva variants. |
+| **C** Slim radius | `rounded-[10px]` (R22-PR-A) → `rounded-[8px]` across button + control family. Completes the glass story — translucent surfaces want slimmer corners; big-radius reads plastic. Heights stay h-9 (form-control parity locked by R20-PR-A). |
+| **D** State + a11y | `prefers-reduced-transparency: reduce` fallback strips `backdrop-blur` + forces `::before` to opacity-100 (WCAG 1.4.11; matches native control behaviour when users enable "Reduce Transparency"). R22-PR-D's two-channel disabled mute (opacity-50 + saturate-50) preserved. R20-PR-D ambient-elevation contract (active = collapsed; focus = brand-tinted halo) preserved. |
+| **E** Icon-button rollout | Gear button (two implementations) moved from legacy `rounded-lg` (12px) to the slim `rounded-[8px]`. The toolbar now reads as one chassis instead of two systems. |
+| **F** Hardening + capstone | Meta-ratchet locks all 6 R24 ratchets; defense-in-depth re-asserts the reduced-transparency fallback + slim radius + glass token namespace seal. |
+
+The six R24 ratchets at `tests/guards/r24-pr{a..f}-*.test.ts`
+form a contract surface; the PR-F capstone asserts file-existence
+on all six so a future PR can't silently strip one. Each PR's own
+assertions remain the substantive guard.
+
+### When NOT to use glass material
+
+- Page-level hero / dashboard surfaces — R17 already owns that
+  language (ambient brand glow + 600ms rise-in). Don't paint glass
+  on top of an already-rich surface.
+- Sidebar / topbar chrome — R13/R14/R15 own those aesthetics.
+- Form inputs (Input, Combobox trigger, DatePicker trigger) — they
+  share the slim 8px radius + the focus halo, but the surface fill
+  is opaque (transparency on a form field obscures content).
+
+### Accessibility contract
+
+- WCAG 1.4.11 (reduced transparency): the cva base ships the
+  `prefers-reduced-transparency: reduce` media query fallback.
+- WCAG 2.1.1 (keyboard accessible): focus-visible halo is distinct
+  from hover; both are visible without colour-only cues.
+- WCAG 2.5.5 (target size): default md height is h-9 (36px), above
+  the AAA 44×44 recommendation when combined with padding (md ≥
+  px-2.5 brings the click target above the bar in all sizes ≥ sm).
