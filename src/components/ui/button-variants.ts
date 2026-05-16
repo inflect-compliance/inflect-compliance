@@ -360,14 +360,14 @@ export const buttonVariants = cva(
     // R22-PR-A — radius calibration. R19 shipped `rounded-lg`
     // (12px); the user reported the silhouette read "slightly too
     // soft / inflated" for the liquid-carbon material.
-    // `rounded-[10px]` is a 2px tighter shape — still gentler than
+    // `rounded-[8px]` is a 2px tighter shape — still gentler than
     // a hard 8px (Tailwind's `rounded-md`), but visibly more
     // carved. xs keeps its size-variant `rounded-md` override (8px)
     // because at h-7 a 10px radius makes the button read pill-ish.
     // Mirrored in control-variants.ts so form controls (Input,
     // date-picker trigger, combobox trigger) share the same
     // corner shape as buttons in filter-toolbar rows.
-    "border rounded-[10px]",
+    "border rounded-[8px]",
     // R22-PR-D — graded disabled mute. R19 shipped a blanket
     // `disabled:opacity-50`; on the carbon palette that read
     // as "half-visible coloured button" — the brand identity

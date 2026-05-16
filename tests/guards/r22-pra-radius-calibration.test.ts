@@ -62,7 +62,7 @@ describe('R22-PR-A — Radius calibration (carved silhouette)', () => {
             const stripped = base
                 .replace(/\/\*[\s\S]*?\*\//g, '')
                 .replace(/\/\/[^\n]*/g, '');
-            expect(stripped).toMatch(/rounded-\[10px\]/);
+            expect(stripped).toMatch(/rounded-\[8px\]/);
             expect(stripped).not.toMatch(/\brounded-lg\b/);
         });
 
@@ -86,7 +86,7 @@ describe('R22-PR-A — Radius calibration (carved silhouette)', () => {
                 .replace(/\/\/[^\n]*/g, '');
             // Match the disabledTooltip cn() block.
             expect(stripped).toMatch(
-                /"rounded-\[10px\] border border-border-subtle bg-bg-subtle text-sm text-content-subtle"/,
+                /"rounded-\[8px\] border border-border-subtle bg-bg-subtle text-sm text-content-subtle"/,
             );
         });
 
@@ -94,7 +94,7 @@ describe('R22-PR-A — Radius calibration (carved silhouette)', () => {
             const stripped = BUTTON_TSX.replace(/\/\*[\s\S]*?\*\//g, '')
                 .replace(/\/\/[^\n]*/g, '');
             expect(stripped).toMatch(
-                /"rounded-\[10px\] border border-border-subtle bg-bg-subtle text-content-subtle"/,
+                /"rounded-\[8px\] border border-border-subtle bg-bg-subtle text-content-subtle"/,
             );
         });
 
@@ -109,7 +109,7 @@ describe('R22-PR-A — Radius calibration (carved silhouette)', () => {
         it('uses `rounded-[10px]` not `rounded-lg`', () => {
             const stripped = CONTROL_VARIANTS.replace(/\/\*[\s\S]*?\*\//g, '')
                 .replace(/\/\/[^\n]*/g, '');
-            expect(stripped).toMatch(/rounded-\[10px\]/);
+            expect(stripped).toMatch(/rounded-\[8px\]/);
             expect(stripped).not.toMatch(/\brounded-lg\b/);
         });
     });
@@ -122,14 +122,14 @@ describe('R22-PR-A — Radius calibration (carved silhouette)', () => {
         it('input.tsx uses `rounded-[10px]`', () => {
             const stripped = INPUT_TSX.replace(/\/\*[\s\S]*?\*\//g, '')
                 .replace(/\/\/[^\n]*/g, '');
-            expect(stripped).toMatch(/rounded-\[10px\]/);
+            expect(stripped).toMatch(/rounded-\[8px\]/);
             expect(stripped).not.toMatch(/\brounded-lg\b/);
         });
 
         it('date-picker/trigger.tsx uses `rounded-[10px]`', () => {
             const stripped = DATE_TRIGGER.replace(/\/\*[\s\S]*?\*\//g, '')
                 .replace(/\/\/[^\n]*/g, '');
-            expect(stripped).toMatch(/rounded-\[10px\]/);
+            expect(stripped).toMatch(/rounded-\[8px\]/);
             expect(stripped).not.toMatch(/\brounded-lg\b/);
         });
     });

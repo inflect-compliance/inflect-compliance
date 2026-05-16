@@ -104,7 +104,7 @@ export const controlVariants = cva(
         // R22-PR-A — radius mirror of button-variants.ts.
         // Form controls + buttons share corner shape so a
         // filter-toolbar row reads as one chassis.
-        "w-full rounded-[10px] text-sm",
+        "w-full rounded-[8px] text-sm",
         "bg-bg-default text-content-emphasis placeholder-content-subtle",
         "focus:outline-none",
         "disabled:cursor-not-allowed disabled:bg-bg-muted disabled:text-content-muted disabled:hover:border-[var(--ctrl-edge-rest)]",

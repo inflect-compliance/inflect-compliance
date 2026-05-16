@@ -48,7 +48,7 @@ import { Eye, EyeSlash } from "./icons";
 export const inputVariants = cva(
     [
         // R22-PR-A — radius mirror of button-variants.ts (12→10px).
-        "w-full rounded-[10px] text-sm",
+        "w-full rounded-[8px] text-sm",
         "bg-bg-default text-content-emphasis placeholder-content-subtle",
         "focus:outline-none focus-visible:outline-none",
         "border border-[var(--ctrl-edge-rest)]",
