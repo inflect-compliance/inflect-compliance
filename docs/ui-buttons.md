@@ -394,3 +394,25 @@ from any client component inside the providers tree.
 - The CVA primitives (`buttonVariants`, `statusBadgeVariants`) already
   consumed the semantic tokens before Epic 51 remediation; the bridge just
   brings the *CSS class* layer into the same palette.
+
+### Carved Carbon (Roadmap-22)
+
+R19 gave buttons the liquid-carbon LANGUAGE; R20 made them ELEGANT.
+R22 is the precision-refinement layer — five micro-detail moves
+that take the silhouette from "premium" to "carved/precision-
+machined". The R22 prompts converged on "carved, not inflated" as
+the target aesthetic.
+
+| PR | Lock |
+|---|---|
+| **A** Radius | `rounded-lg` (12px) → `rounded-[10px]` across button + control family. xs keeps `rounded-md` (pill avoidance at h-7). |
+| **B** Border + Focus | `--btn-carbon-border` softened (dark α 0.30→0.18; light α 0.24→0.16). Tailwind `ring-2 ring-offset-2` dropped from cva base; focus rides the brand-tinted box-shadow halo via `focus-visible:shadow-[var(--ctrl-edge-focus)]`. Focused button + focused Input wear the same halo. `--btn-ambient-focus` ring tightened 4px → 3px. |
+| **C** Icon discipline | Per-size icon scale via `[&_svg]:size-N` — xs/sm 14px · md 16px · lg 18px. Plus defensive `[&_svg]:shrink-0`. |
+| **D** Disabled + Loading | Graded disabled mute via `disabled:saturate-50` on top of `disabled:opacity-50` (colour channel drops too). LoadingSpinner switched from hardcoded grey to `currentColor` (variant-aware). |
+| **E** Variant + CTA order | Mac/iOS CTA order locked in `Modal.Confirm` (Cancel-then-Confirm DOM → `[Cancel] [Confirm]` right-aligned). Variant inventory documented; 5-variant count locked. |
+
+The five R22 ratchets at
+`tests/guards/r22-pr{a..e}-*.test.ts` form a contract surface;
+the PR-F capstone ratchet at `r22-prf-capstone.test.ts` asserts
+file-existence on all five so a future PR can't silently strip
+one. Each PR's own assertions remain the substantive guard.
