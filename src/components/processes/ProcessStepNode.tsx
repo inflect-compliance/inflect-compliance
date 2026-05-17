@@ -53,7 +53,7 @@ function ProcessStepNodeImpl({
                 // Card chassis — compact density, calm tone. IC card
                 // tokens resolve correctly in light + dark themes.
                 "min-w-[160px] max-w-[260px] rounded-[8px] border bg-bg-default/80 backdrop-blur-sm",
-                "px-3 py-2 shadow-sm transition-colors",
+                "px-3 py-2 transition-colors",
                 // Selected state — brand ring + slight surface lift.
                 // Matches R23 KpiFilterCard so canvas + list pages
                 // share one selection language.
