@@ -441,7 +441,14 @@ export const buttonVariants = cva(
         // transparent variants. Every button now reads as liquid
         // carbon — solid fills always, transparent fills on hover.
         primary: [
-          "bg-[var(--brand-emphasis)] text-white",
+          // R24-hotfix — `bg-[var(--brand-emphasis)]` (opaque brand
+          // yellow) was painting OVER the page tone, so the glass
+          // backdrop-blur had no transparent base to act on and the
+          // surface read as opaque, not glass. Replaced with the
+          // translucent per-variant fill `--btn-glass-fill-primary`
+          // (brand at 0.55 alpha): brand identity survives, and the
+          // backdrop-blur now actually softens what's behind.
+          "bg-[var(--btn-glass-fill-primary)] text-white",
           "hover:bg-[var(--brand-default)]",
           ...glassSurface,
           // R20-PR-B — iridescent meniscus always visible (material
@@ -450,7 +457,9 @@ export const buttonVariants = cva(
           ...auraPrimary,
         ],
         secondary: [
-          "bg-bg-default text-content-emphasis",
+          // R24-hotfix — opaque `bg-bg-default` replaced by
+          // translucent navy fill. Same rationale as primary.
+          "bg-[var(--btn-glass-fill-secondary)] text-content-emphasis",
           "hover:bg-bg-muted",
           ...glassSurface,
           // R20-PR-B — neutral aura on hover. No iridescent edge —
@@ -469,7 +478,9 @@ export const buttonVariants = cva(
           ...ghostGlass,
         ],
         destructive: [
-          "bg-bg-error-emphasis text-white",
+          // R24-hotfix — opaque `bg-bg-error-emphasis` replaced by
+          // translucent red fill. Same rationale as primary.
+          "bg-[var(--btn-glass-fill-destructive)] text-white",
           "hover:brightness-110",
           ...glassSurface,
         ],

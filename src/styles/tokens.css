@@ -333,6 +333,23 @@
   --btn-glass-blur: 12px;
   --btn-glass-edge: linear-gradient(135deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.16) 45%, rgba(0, 0, 0, 0.18) 100%);
   --btn-glass-inner: inset 0 1px 0 rgba(255, 255, 255, 0.28), inset 0 -1px 0 rgba(0, 0, 0, 0.24);
+
+  /* R24-hotfix — per-variant translucent fills (DARK theme).
+   * The R24-PR-B variant arrays painted OPAQUE brand colours on
+   * top of the glass tint, so the backdrop-blur had no transparent
+   * base to act on — visually the surface read as opaque navy /
+   * opaque brand-yellow, NOT as glass. The fix: drop the opaque
+   * variant `bg-*` classes from the cva and use per-variant TRANS-
+   * LUCENT fills here so brand identity survives BUT the surface
+   * stays translucent enough for backdrop-blur to register.
+   *
+   * Alpha 0.55 chosen to balance brand visibility (a primary button
+   * still reads as brand-coloured) with translucency (the page tone
+   * still leaks through the backdrop-blur). Lower alphas read as
+   * "ghost variant"; higher alphas dissolve back into opacity. */
+  --btn-glass-fill-primary: rgba(255, 205, 17, 0.55);
+  --btn-glass-fill-secondary: rgba(0, 60, 122, 0.55);
+  --btn-glass-fill-destructive: rgba(220, 38, 38, 0.55);
   --btn-glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.28), 0 6px 14px rgba(0, 0, 0, 0.18);
 
   /* ── Transitions ───────────────────────────────────────────────── */
@@ -715,6 +732,15 @@
   --btn-glass-edge: linear-gradient(135deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.26) 45%, rgba(60, 50, 40, 0.18) 100%);
   --btn-glass-inner: inset 0 1px 0 rgba(255, 255, 255, 0.80), inset 0 -1px 0 rgba(60, 50, 40, 0.14);
   --btn-glass-shadow: 0 1px 3px rgba(60, 50, 40, 0.14), 0 6px 14px rgba(60, 50, 40, 0.10);
+
+  /* R24-hotfix — per-variant translucent fills (LIGHT theme).
+   * Higher base alpha (0.65) than dark theme — light surfaces need
+   * more colour density than dark to read as the same brand
+   * identity. Brand orange + warm graphite + red, all translucent
+   * enough for the backdrop-blur to work. */
+  --btn-glass-fill-primary: rgba(208, 74, 2, 0.65);
+  --btn-glass-fill-secondary: rgba(60, 50, 40, 0.18);
+  --btn-glass-fill-destructive: rgba(220, 38, 38, 0.65);
 
   /* ── Sidebar band glow (R13-PR2) ───────────────────────────────── */
   /*
