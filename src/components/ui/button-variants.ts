@@ -70,10 +70,30 @@ import { cva } from "class-variance-authority";
  *     `inset-0` + `rounded-[inherit]` + `pointer-events-none`
  *     positioning.
  */
+/**
+ * R24-hotfix-simplify — single-material glass.
+ *
+ * The original R24-PR-B recipe stacked FOUR translucent layers on
+ * the same surface:
+ *   1. `bg-[var(--btn-glass-fill-VARIANT)]` — variant translucent fill
+ *   2. `bg-[image:var(--btn-glass-tint)]` — top-bright white gradient
+ *   3. `inset shadow inner` — white top edge
+ *   4. `::before` radial — white top-half glow
+ *
+ * Three of those (2, 3, 4) all paint similar light near the top
+ * edge. With low alphas, the eye reads each layer separately —
+ * the user perceived it as "two buttons stacked on top of each
+ * other". The compositing math is correct; the visual is wrong.
+ *
+ * The fix: keep ONE source of top-edge brightness (the inset
+ * shadow — cleanest, most performant, no extra paint layers) and
+ * drop the redundant gradient + radial overlay. The variant fill +
+ * backdrop-blur + inset shadow + outer drop together carry the
+ * glass material in a single coherent surface.
+ */
 const glassSurface = [
   "border-transparent",
   "backdrop-blur-[var(--btn-glass-blur)]",
-  "bg-[image:var(--btn-glass-tint)]",
   "shadow-[var(--btn-glass-inner),var(--btn-glass-shadow)]",
   // R20-PR-D — state-conditional ambient elevation (preserved across
   // the R24 material swap). REST = inner+shadow only. PRESS = ambient
@@ -83,11 +103,6 @@ const glassSurface = [
   // indicator; a second shadow would over-compete.
   "active:shadow-[var(--btn-glass-inner),var(--btn-ambient-press)]",
   "focus-visible:shadow-[var(--btn-glass-inner),var(--btn-ambient-focus)]",
-  // R19 `::before` depth seam — retained, content swapped. Instead of
-  // the carbon grain + light pool, R24 paints a subtle inner radial
-  // glow that brightens the top half of the glass.
-  "before:content-[''] before:absolute before:inset-0 before:rounded-[inherit] before:pointer-events-none",
-  "before:bg-[radial-gradient(ellipse_140%_60%_at_50%_0%,rgba(255,255,255,0.10)_0%,rgba(255,255,255,0.00)_70%)]",
 ];
 
 /**

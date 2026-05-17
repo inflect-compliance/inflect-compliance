@@ -44,7 +44,12 @@ describe('R24-PR-B — Liquid-glass primitive redesign', () => {
             const end = SRC.indexOf('];', start);
             expect(start).toBeGreaterThan(-1);
             const block = SRC.slice(start, end);
-            expect(block).toContain('--btn-glass-tint');
+            // R24-hotfix-simplify: dropped the `--btn-glass-tint`
+            // gradient overlay AND the ::before radial overlay. They
+            // were redundant with the inset shadow's top-edge highlight
+            // and made the surface read as "stacked panes" rather than
+            // one cohesive glass material. The remaining tokens (blur,
+            // inner, shadow) carry the glass on a single layer.
             expect(block).toContain('--btn-glass-blur');
             expect(block).toContain('--btn-glass-inner');
             expect(block).toContain('--btn-glass-shadow');
