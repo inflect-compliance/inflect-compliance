@@ -35,6 +35,7 @@ import {
     type Connection,
     type Edge,
     type EdgeChange,
+    type EdgeTypes,
     type Node,
     type NodeChange,
     type NodeTypes,
@@ -50,6 +51,10 @@ import {
     ProcessStepNode,
     PROCESS_STEP_NODE_TYPE,
 } from "./ProcessStepNode";
+import {
+    ProcessEdge,
+    PROCESS_EDGE_TYPE,
+} from "./ProcessEdge";
 
 /**
  * R25-PR-C — custom node type registration. xyflow expects a
@@ -60,6 +65,14 @@ import {
  */
 const NODE_TYPES: NodeTypes = {
     [PROCESS_STEP_NODE_TYPE]: ProcessStepNode,
+};
+
+/**
+ * R25-PR-D — custom edge type registration. Same stable-reference
+ * pattern as NODE_TYPES.
+ */
+const EDGE_TYPES: EdgeTypes = {
+    [PROCESS_EDGE_TYPE]: ProcessEdge,
 };
 
 /**
@@ -97,7 +110,14 @@ function ProcessCanvasInner({
         [],
     );
     const onConnect = useCallback<OnConnect>(
-        (connection: Connection) => setEdges((eds) => addEdge(connection, eds)),
+        (connection: Connection) =>
+            // R25-PR-D — new connections render with the custom
+            // ProcessEdge (bezier stroke + optional control-on-edge
+            // overlay). Without the explicit `type`, xyflow falls
+            // back to the default thin grey edge.
+            setEdges((eds) =>
+                addEdge({ ...connection, type: PROCESS_EDGE_TYPE }, eds),
+            ),
         [],
     );
 
@@ -150,6 +170,7 @@ function ProcessCanvasInner({
                     nodes={nodes}
                     edges={edges}
                     nodeTypes={NODE_TYPES}
+                    edgeTypes={EDGE_TYPES}
                     onNodesChange={onNodesChange}
                     onEdgesChange={onEdgesChange}
                     onConnect={onConnect}

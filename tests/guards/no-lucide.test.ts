@@ -143,6 +143,7 @@ const LEGACY_LUCIDE_USERS = new Set<string>([
     // precedent as GraphExplorer (xyflow-based canvas pages use
     // diagramming-specific icons).
     'src/components/processes/ProcessPalette.tsx',
+    'src/components/processes/ProcessEdge.tsx',
     'src/components/ui/HeroMetric.tsx',
     'src/components/ui/icons/index.tsx',
     'src/components/ui/inline-notice.tsx',
