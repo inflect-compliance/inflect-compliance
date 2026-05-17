@@ -139,6 +139,10 @@ const LEGACY_LUCIDE_USERS = new Set<string>([
     'src/components/ui/FrameworkBuilder.tsx',
     'src/components/ui/FreshnessBadge.tsx',
     'src/components/ui/GraphExplorer.tsx',
+    // R25 — Processes canvas palette uses GitBranch icon. Same
+    // precedent as GraphExplorer (xyflow-based canvas pages use
+    // diagramming-specific icons).
+    'src/components/processes/ProcessPalette.tsx',
     'src/components/ui/HeroMetric.tsx',
     'src/components/ui/icons/index.tsx',
     'src/components/ui/inline-notice.tsx',
