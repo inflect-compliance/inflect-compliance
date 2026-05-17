@@ -135,7 +135,14 @@ describe('ConfirmDialog', () => {
         const confirm = await screen.findByRole('button', { name: 'Revoke' });
         // PR-1 migrated the danger button variant from bg-red-600/80 to the
         // semantic bg-bg-error-emphasis token.
-        expect(confirm.className).toMatch(/bg-bg-error-emphasis/);
+        // R24-hotfix replaced the opaque `bg-bg-error-emphasis` with the
+        // translucent `--btn-glass-fill-destructive` token so the glass
+        // backdrop-blur has a transparent base to act on. The assertion
+        // tracks the destructive fill token regardless of which opaque/
+        // translucent encoding it currently uses.
+        expect(confirm.className).toMatch(
+            /bg-(?:bg-error-emphasis|\[var\(--btn-glass-fill-destructive\)\])/,
+        );
     });
 
     it('keeps the modal open when onConfirm rejects', async () => {
