@@ -200,7 +200,8 @@ describe('New page token discipline', () => {
         // Each increment names the epic + page + reason; promotion
         // to MIGRATED_PAGES is the path forward, never silent
         // floor-bumping.
-        expect(unmigrated.length).toBeLessThanOrEqual(99);
+        //   - 101 (+2): R25 — Processes canvas pages (token-only).
+        expect(unmigrated.length).toBeLessThanOrEqual(101);
     });
 
     it('migrated page count is at least 4', () => {
