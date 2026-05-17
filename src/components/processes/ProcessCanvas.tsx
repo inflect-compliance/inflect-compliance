@@ -1,0 +1,185 @@
+"use client";
+
+/**
+ * R25-PR-B — ProcessCanvas.
+ *
+ * Wraps xyflow's `<ReactFlow>` with IC theming and the
+ * Processes-page interaction model (drag-drop from palette,
+ * pan/zoom defaults, dot-grid background). Custom node + edge
+ * types arrive in PR-C/D; PR-B uses xyflow's defaults so the
+ * interaction substrate is independently testable.
+ *
+ * Why a thin wrapper and not raw `<ReactFlow>` at the call site:
+ *   - Centralises the IC theming (background color, dot-grid
+ *     colour, pan-on-drag, zoom step). Drift across canvas
+ *     consumers is one of xyflow's common failure modes.
+ *   - Keeps the `<ReactFlowProvider>` mounting at one place so
+ *     downstream hooks (`useReactFlow`, `useUpdateNodeInternals`)
+ *     can be used freely by the palette / control overlays.
+ *
+ * Why `'use client'` + dynamic import in the page: xyflow uses
+ * browser-only APIs (ResizeObserver, getBoundingClientRect on
+ * mount) — SSRing it crashes. The GraphExplorer in this repo
+ * (the traceability page) sets the same boundary; pattern reused.
+ */
+
+import {
+    Background,
+    BackgroundVariant,
+    ReactFlow,
+    ReactFlowProvider,
+    addEdge,
+    applyEdgeChanges,
+    applyNodeChanges,
+    useReactFlow,
+    type Connection,
+    type Edge,
+    type EdgeChange,
+    type Node,
+    type NodeChange,
+    type OnConnect,
+    type OnEdgesChange,
+    type OnNodesChange,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+import { memo, useCallback, useRef, useState, type DragEvent, type ReactNode } from "react";
+
+import { ProcessPalette, PALETTE_DRAG_MIME } from "./ProcessPalette";
+
+/**
+ * Counter used to mint unique node ids on drop. Module-level so it
+ * survives re-renders of the canvas; the in-memory canvas state
+ * never persists across reloads anyway (per the R25 scope).
+ */
+let _nodeIdCounter = 1;
+function mintNodeId(): string {
+    return `node-${_nodeIdCounter++}`;
+}
+
+interface ProcessCanvasInnerProps {
+    initialNodes?: Node[];
+    initialEdges?: Edge[];
+    paletteSlot?: ReactNode;
+}
+
+function ProcessCanvasInner({
+    initialNodes = [],
+    initialEdges = [],
+    paletteSlot,
+}: ProcessCanvasInnerProps) {
+    const [nodes, setNodes] = useState<Node[]>(initialNodes);
+    const [edges, setEdges] = useState<Edge[]>(initialEdges);
+    const wrapperRef = useRef<HTMLDivElement>(null);
+    const { screenToFlowPosition } = useReactFlow();
+
+    const onNodesChange = useCallback<OnNodesChange>(
+        (changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)),
+        [],
+    );
+    const onEdgesChange = useCallback<OnEdgesChange>(
+        (changes: EdgeChange[]) => setEdges((eds) => applyEdgeChanges(changes, eds)),
+        [],
+    );
+    const onConnect = useCallback<OnConnect>(
+        (connection: Connection) => setEdges((eds) => addEdge(connection, eds)),
+        [],
+    );
+
+    // R25-PR-B drag-drop wiring: the palette emits an HTML5 drag
+    // with the canonical PALETTE_DRAG_MIME payload; the canvas
+    // accepts the drop and converts the screen position to the
+    // flow position via `screenToFlowPosition` (xyflow helper that
+    // accounts for current pan + zoom).
+    const onDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+    }, []);
+
+    const onDrop = useCallback(
+        (event: DragEvent<HTMLDivElement>) => {
+            event.preventDefault();
+            const payload = event.dataTransfer.getData(PALETTE_DRAG_MIME);
+            if (!payload) return;
+            // The palette ships just the label for now; PR-C extends
+            // the payload with a typed `kind` so different process-
+            // step shapes can be dragged.
+            const position = screenToFlowPosition({
+                x: event.clientX,
+                y: event.clientY,
+            });
+            const newNode: Node = {
+                id: mintNodeId(),
+                type: "default",
+                position,
+                data: { label: payload },
+            };
+            setNodes((nds) => [...nds, newNode]);
+        },
+        [screenToFlowPosition],
+    );
+
+    return (
+        <div
+            ref={wrapperRef}
+            className="flex h-full w-full flex-col"
+            data-process-canvas="true"
+        >
+            {paletteSlot}
+            <div
+                className="relative flex-1 min-h-0"
+                onDragOver={onDragOver}
+                onDrop={onDrop}
+            >
+                <ReactFlow
+                    nodes={nodes}
+                    edges={edges}
+                    onNodesChange={onNodesChange}
+                    onEdgesChange={onEdgesChange}
+                    onConnect={onConnect}
+                    fitView
+                    proOptions={{ hideAttribution: true }}
+                    aria-label="Process canvas"
+                >
+                    {/* IC token-aware background. Dot variant reads as
+                        a calm graph-paper surface — line variant adds
+                        too much visual chatter on the dark navy bg.
+                        24px gap matches the existing GraphExplorer's
+                        dot spacing. */}
+                    <Background
+                        variant={BackgroundVariant.Dots}
+                        gap={24}
+                        size={1.4}
+                        color="var(--border-subtle)"
+                    />
+                </ReactFlow>
+            </div>
+        </div>
+    );
+}
+
+const MemoizedInner = memo(ProcessCanvasInner);
+
+export interface ProcessCanvasProps {
+    initialNodes?: Node[];
+    initialEdges?: Edge[];
+    /**
+     * Optional palette element rendered above the canvas surface.
+     * The page wires `<ProcessPalette>` here; tests can pass null
+     * or a stub to isolate canvas behaviour.
+     */
+    paletteSlot?: ReactNode;
+}
+
+export function ProcessCanvas(props: ProcessCanvasProps) {
+    // ReactFlowProvider must wrap any consumer of `useReactFlow`.
+    // The page mounts this single provider at the top; downstream
+    // PRs (custom nodes, control overlays) can use the hook for
+    // free.
+    return (
+        <ReactFlowProvider>
+            <MemoizedInner {...props} />
+        </ReactFlowProvider>
+    );
+}
+
+export { ProcessPalette };

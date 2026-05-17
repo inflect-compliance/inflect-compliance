@@ -91,10 +91,15 @@ describe("R25-PR-A — Processes route + shell + nav", () => {
             expect(src).not.toMatch(/<ListPageShell\b/);
         });
 
-        it("client renders the three workspace slots", () => {
+        it("client renders the Header + Body slots", () => {
+            // Toolbar is optional on the shell API; the Processes
+            // page consumer in PR-B chose to nest the palette inside
+            // the canvas component (a more cohesive single-surface
+            // approach). The Header + Body slots stay required —
+            // every workspace page needs the title strip + the
+            // canvas surface.
             const src = read(CLIENT_PATH);
             expect(src).toMatch(/<WorkspaceShell\.Header\b/);
-            expect(src).toMatch(/<WorkspaceShell\.Toolbar\b/);
             expect(src).toMatch(/<WorkspaceShell\.Body\b/);
         });
     });

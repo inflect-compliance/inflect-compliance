@@ -1,15 +1,32 @@
 "use client";
 
 /**
- * R25-PR-A — Processes page client shell.
+ * R25-PR-A + PR-B — Processes page client shell.
  *
- * PR-A wires the `<WorkspaceShell>` layout with a placeholder
- * canvas body. PR-B replaces the placeholder with the xyflow
- * canvas + top palette.
+ * PR-A wired the `<WorkspaceShell>` layout. PR-B replaces the
+ * placeholder body with `<ProcessCanvas>` (xyflow ReactFlow with
+ * IC token theming) + the toolbar placeholder with
+ * `<ProcessPalette>`. PR-C custom node arrives next.
  */
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
 import { Heading } from "@/components/ui/typography";
 import { PageBreadcrumbs } from "@/components/layout/PageBreadcrumbs";
+import dynamic from "next/dynamic";
+
+// xyflow uses browser-only APIs (ResizeObserver, getBoundingClientRect
+// on mount) — dynamic-imported with ssr:false so the canvas never
+// SSRs. Same boundary the GraphExplorer (traceability page) uses.
+const ProcessCanvas = dynamic(
+    () => import("@/components/processes/ProcessCanvas").then((m) => m.ProcessCanvas),
+    { ssr: false },
+);
+const ProcessPalette = dynamic(
+    () =>
+        import("@/components/processes/ProcessPalette").then(
+            (m) => m.ProcessPalette,
+        ),
+    { ssr: false },
+);
 
 interface ProcessesClientProps {
     tenantSlug: string;
@@ -35,28 +52,14 @@ export function ProcessesClient({ tenantSlug }: ProcessesClientProps) {
                 </p>
             </WorkspaceShell.Header>
 
-            <WorkspaceShell.Toolbar
-                className="border border-border-subtle rounded-[8px] px-3 py-2"
-            >
-                {/* PR-B replaces this placeholder with the process-step
-                    palette. PR-A locks the toolbar slot's position
-                    (above the canvas body, slim, restrained). */}
-                <span className="text-xs text-content-muted">
-                    Tool palette (PR-B)
-                </span>
-            </WorkspaceShell.Toolbar>
-
             <WorkspaceShell.Body className="border border-border-subtle rounded-[8px] bg-bg-default/30">
-                {/* PR-B mounts the <ProcessCanvas> here (xyflow's
-                    <ReactFlow> wrapped with IC token theming). The
-                    placeholder communicates the intended visual
-                    weight — canvas should dominate the viewport. */}
-                <div
-                    className="flex h-full min-h-[60vh] items-center justify-center text-sm text-content-muted"
-                    data-testid="processes-canvas-placeholder"
-                >
-                    Canvas (PR-B)
-                </div>
+                {/* The palette is mounted INSIDE the canvas wrapper so
+                    the canvas owns the full body height (the palette
+                    stamps a slim top strip, the canvas fills the rest).
+                    Keeping them in one block avoids the page rendering
+                    a separate toolbar above the canvas which would
+                    fragment the workspace into two surfaces. */}
+                <ProcessCanvas paletteSlot={<ProcessPalette />} />
             </WorkspaceShell.Body>
         </WorkspaceShell>
     );
