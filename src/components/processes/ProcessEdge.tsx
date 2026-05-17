@@ -139,11 +139,11 @@ interface ControlOnEdgeProps {
 export function ControlOnEdge({ label }: ControlOnEdgeProps) {
     return (
         <div
-            className="inline-flex items-center gap-1 rounded-[8px] border border-border-emphasis bg-bg-elevated px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-content-emphasis shadow-sm"
+            className="inline-flex items-center gap-1 rounded-[8px] border border-border-emphasis bg-bg-elevated px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-content-emphasis "
             data-control-on-edge-badge="true"
         >
             <ShieldCheck className="h-3 w-3 shrink-0 text-[color:var(--brand-default)]" />
-            <span className="max-w-[120px] truncate">{label}</span>
+            <span className="max-w-trunc-tight truncate">{label}</span>
         </div>
     );
 }
