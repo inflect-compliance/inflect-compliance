@@ -1,0 +1,114 @@
+/**
+ * R25-PR-C — ProcessStepNode ratchet.
+ *
+ * Locks four invariants:
+ *   1. `<ProcessStepNode>` exists at the canonical path + exports
+ *      the canonical `PROCESS_STEP_NODE_TYPE` key. The canvas's
+ *      nodeTypes registry consumes the key — drift here silently
+ *      reverts nodes to xyflow's default rendering.
+ *   2. The node renders xyflow's `<Handle type="target">` (left)
+ *      + `<Handle type="source">` (right). The L→R handle layout
+ *      enforces the process-flow reading direction.
+ *   3. The selected state uses brand-emphasis ring (matches R23
+ *      KpiFilterCard so canvas + list pages share one selection
+ *      vocabulary).
+ *   4. ProcessCanvas registers PROCESS_STEP_NODE_TYPE in its
+ *      `nodeTypes` registry AND uses it as the default `type` on
+ *      drop — otherwise the custom rendering never reaches the
+ *      canvas.
+ */
+import * as fs from "node:fs";
+import * as path from "node:path";
+
+const ROOT = path.resolve(__dirname, "../..");
+const NODE_PATH = "src/components/processes/ProcessStepNode.tsx";
+const CANVAS_PATH = "src/components/processes/ProcessCanvas.tsx";
+
+function read(rel: string): string {
+    return fs.readFileSync(path.join(ROOT, rel), "utf8");
+}
+
+describe("R25-PR-C — ProcessStepNode", () => {
+    describe("Component file", () => {
+        it("exists at the canonical path", () => {
+            expect(fs.existsSync(path.join(ROOT, NODE_PATH))).toBe(true);
+        });
+
+        const src = read(NODE_PATH);
+
+        it("exports the ProcessStepNode component", () => {
+            expect(src).toMatch(/export const ProcessStepNode\b/);
+        });
+
+        it("exports the PROCESS_STEP_NODE_TYPE registration key", () => {
+            expect(src).toMatch(
+                /export const PROCESS_STEP_NODE_TYPE\s*=\s*["']processStep["']/,
+            );
+        });
+
+        it("uses memo to avoid re-renders on every canvas state change", () => {
+            // xyflow re-renders nodes whenever a SIBLING node moves.
+            // memo here turns those into shallow-prop comparisons,
+            // which is essentially free vs the full render path.
+            expect(src).toMatch(/memo\(ProcessStepNodeImpl\)/);
+        });
+    });
+
+    describe("Handle layout (L→R flow direction)", () => {
+        const src = read(NODE_PATH);
+
+        it("renders a target handle on the LEFT (input)", () => {
+            expect(src).toMatch(
+                /<Handle[\s\S]*?type="target"[\s\S]*?position=\{Position\.Left\}/,
+            );
+        });
+
+        it("renders a source handle on the RIGHT (output)", () => {
+            expect(src).toMatch(
+                /<Handle[\s\S]*?type="source"[\s\S]*?position=\{Position\.Right\}/,
+            );
+        });
+    });
+
+    describe("Selected state — brand-emphasis ring", () => {
+        const src = read(NODE_PATH);
+
+        it("brand ring + tinted surface on selected", () => {
+            // Matches R23 <KpiFilterCard> selected affordance:
+            // brand-default ring + bg-bg-elevated tint. Drift here
+            // forks the selection vocabulary across surfaces.
+            expect(src).toMatch(/ring-2\s+ring-\[color:var\(--brand-default\)\]/);
+            expect(src).toMatch(/bg-bg-elevated/);
+        });
+    });
+
+    describe("Canvas integration", () => {
+        const src = read(CANVAS_PATH);
+
+        it("imports PROCESS_STEP_NODE_TYPE + ProcessStepNode", () => {
+            expect(src).toMatch(
+                /import\s*\{[\s\S]*?ProcessStepNode[\s\S]*?PROCESS_STEP_NODE_TYPE[\s\S]*?\}\s*from\s*["']\.\/ProcessStepNode["']/,
+            );
+        });
+
+        it("registers the node type in a stable module-level NODE_TYPES", () => {
+            // xyflow expects a STABLE nodeTypes reference; recreating
+            // it per-render forces all nodes to remount and lose
+            // state. Pin the registry at module scope.
+            expect(src).toMatch(
+                /const NODE_TYPES:\s*NodeTypes\s*=\s*\{\s*\[PROCESS_STEP_NODE_TYPE\]:\s*ProcessStepNode/,
+            );
+        });
+
+        it("passes the registry to <ReactFlow nodeTypes=...>", () => {
+            expect(src).toMatch(/<ReactFlow[\s\S]*?nodeTypes=\{NODE_TYPES\}/);
+        });
+
+        it("drop creates nodes with type PROCESS_STEP_NODE_TYPE (not default)", () => {
+            // Critical: a drop that mints a node with type:'default'
+            // bypasses the custom rendering. Pin the assignment.
+            expect(src).toMatch(/type:\s*PROCESS_STEP_NODE_TYPE/);
+            expect(src).not.toMatch(/type:\s*["']default["']/);
+        });
+    });
+});

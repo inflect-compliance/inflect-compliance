@@ -37,6 +37,7 @@ import {
     type EdgeChange,
     type Node,
     type NodeChange,
+    type NodeTypes,
     type OnConnect,
     type OnEdgesChange,
     type OnNodesChange,
@@ -45,6 +46,21 @@ import "@xyflow/react/dist/style.css";
 import { memo, useCallback, useRef, useState, type DragEvent, type ReactNode } from "react";
 
 import { ProcessPalette, PALETTE_DRAG_MIME } from "./ProcessPalette";
+import {
+    ProcessStepNode,
+    PROCESS_STEP_NODE_TYPE,
+} from "./ProcessStepNode";
+
+/**
+ * R25-PR-C — custom node type registration. xyflow expects a
+ * STABLE `nodeTypes` object (re-creating it on every render
+ * triggers a warning + forces all nodes to remount, which would
+ * lose selection / position state). Module-level so the same
+ * reference is reused for every canvas mount.
+ */
+const NODE_TYPES: NodeTypes = {
+    [PROCESS_STEP_NODE_TYPE]: ProcessStepNode,
+};
 
 /**
  * Counter used to mint unique node ids on drop. Module-level so it
@@ -109,7 +125,7 @@ function ProcessCanvasInner({
             });
             const newNode: Node = {
                 id: mintNodeId(),
-                type: "default",
+                type: PROCESS_STEP_NODE_TYPE,
                 position,
                 data: { label: payload },
             };
@@ -133,6 +149,7 @@ function ProcessCanvasInner({
                 <ReactFlow
                     nodes={nodes}
                     edges={edges}
+                    nodeTypes={NODE_TYPES}
                     onNodesChange={onNodesChange}
                     onEdgesChange={onEdgesChange}
                     onConnect={onConnect}
