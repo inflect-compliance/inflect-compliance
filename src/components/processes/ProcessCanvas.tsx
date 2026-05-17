@@ -166,6 +166,23 @@ function ProcessCanvasInner({
                 onDragOver={onDragOver}
                 onDrop={onDrop}
             >
+                {nodes.length === 0 && (
+                    // R25-PR-F — empty state. Centered, calm, single
+                    // instructional sentence. Communicates the
+                    // primary interaction (drag from palette) without
+                    // requiring a help link or tutorial overlay. The
+                    // sentence disappears as soon as the first node
+                    // lands — affordances must NOT linger past the
+                    // moment of need.
+                    <div
+                        className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"
+                        data-canvas-empty-state="true"
+                    >
+                        <p className="text-sm text-content-muted">
+                            Drag a process step from the palette to begin.
+                        </p>
+                    </div>
+                )}
                 <ReactFlow
                     nodes={nodes}
                     edges={edges}
