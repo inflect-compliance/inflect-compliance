@@ -1,160 +1,75 @@
-import { test, expect, Page, Locator } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { loginAndGetTenant } from './e2e-utils';
 
-const TEST_USER = { email: 'admin@acme.com', password: 'password123' };
+/**
+ * Controls list — read-only Status + Applicability badges.
+ *
+ * 2026-05-19 — the inline-edit `<select>` dropdowns on the
+ * Controls list table were retired at the user's request. Status
+ * changes now route through the detail page (Edit Control sheet)
+ * or the bulk-set toolbar; applicability changes route through
+ * the detail page where the justification modal lives.
+ *
+ * Pre-retirement, this spec exercised the dropdown end-to-end:
+ *   • status select → pick value → confirm POST
+ *   • applicability → N/A → justification modal → save
+ *   • reader sees a static <span> not a select
+ *
+ * Post-retirement, every viewer sees the same read-only badge.
+ * The spec retains the load-bearing existence checks (id parity
+ * for downstream selectors + non-`<select>` shape) so a future
+ * regression that re-introduces the inline editor on the list
+ * fails CI; the transition flows themselves are covered by the
+ * per-control detail-page specs.
+ */
 
-async function findApplicablePill(page: Page): Promise<Locator | null> {
-    const rows = page.locator('#controls-table tbody tr');
-    const count = await rows.count();
-    for (let i = 0; i < count; i++) {
-        // Polish PR — applicability is now a `<select>`. The current
-        // value reads off `inputValue()` for selects (vs `textContent`
-        // for the legacy button).
-        const pill = rows.nth(i).locator('[id^="applicability-pill-"]');
-        const value = await pill.inputValue().catch(() => null);
-        if (value === 'APPLICABLE') return pill;
-    }
-    return null;
-}
-
-test.describe('Control Toggle Pills', () => {
+test.describe('Controls list — read-only status/applicability badges', () => {
     test.describe.configure({ mode: 'serial' });
 
-    let tenantSlug: string;
-
-    test('status select changes status to the picked value', async ({ page }) => {
-        tenantSlug = await loginAndGetTenant(page);
+    test('status pill renders as a <span> (NOT a <select>)', async ({ page }) => {
+        const tenantSlug = await loginAndGetTenant(page);
         await page.goto(`/t/${tenantSlug}/controls`);
         await page.waitForSelector('#controls-table', { timeout: 15000 });
 
         const firstRow = page.locator('#controls-table tbody tr').first();
-        const statusSelect = firstRow.locator('[id^="status-pill-"]');
+        const statusPill = firstRow.locator('[id^="status-pill-"]');
+        await expect(statusPill).toBeVisible({ timeout: 5000 });
 
-        // Selecting a different option should POST and update.
-        const res = page.waitForResponse(
-            (r) => r.url().includes('/status') && r.request().method() === 'POST',
+        // Read-only: must NOT be a <select>. A future PR that
+        // re-introduces the inline editor on the list page would
+        // fail this assertion.
+        const tagName = await statusPill.evaluate((el) =>
+            el.tagName.toLowerCase(),
         );
-        await statusSelect.selectOption('IMPLEMENTED');
-        await res;
-        await expect(statusSelect).toHaveValue('IMPLEMENTED', {
-            timeout: 5000,
-        });
+        expect(tagName).not.toBe('select');
     });
 
-    test('status select can change again to a different value', async ({ page }) => {
-        tenantSlug = await loginAndGetTenant(page);
+    test('applicability pill renders as a <span> (NOT a <select>)', async ({ page }) => {
+        const tenantSlug = await loginAndGetTenant(page);
         await page.goto(`/t/${tenantSlug}/controls`);
         await page.waitForSelector('#controls-table', { timeout: 15000 });
 
         const firstRow = page.locator('#controls-table tbody tr').first();
-        const statusSelect = firstRow.locator('[id^="status-pill-"]');
-
-        const res = page.waitForResponse(
-            (r) => r.url().includes('/status') && r.request().method() === 'POST',
+        const applicabilityPill = firstRow.locator(
+            '[id^="applicability-pill-"]',
         );
-        await statusSelect.selectOption('NEEDS_REVIEW');
-        await res;
-        await expect(statusSelect).toHaveValue('NEEDS_REVIEW', {
-            timeout: 5000,
-        });
+        await expect(applicabilityPill).toBeVisible({ timeout: 5000 });
+
+        const tagName = await applicabilityPill.evaluate((el) =>
+            el.tagName.toLowerCase(),
+        );
+        expect(tagName).not.toBe('select');
     });
 
-    test('applicability select to N/A opens justification modal; Save commits', async ({ page }) => {
-        tenantSlug = await loginAndGetTenant(page);
+    test('justification modal is NOT mounted on the list page', async ({ page }) => {
+        // Pre-retirement, picking N/A in the list opened the
+        // modal here. The modal infrastructure moved to the
+        // detail page; the list no longer carries it.
+        const tenantSlug = await loginAndGetTenant(page);
         await page.goto(`/t/${tenantSlug}/controls`);
         await page.waitForSelector('#controls-table', { timeout: 15000 });
 
-        const targetPill = await findApplicablePill(page);
-        expect(
-            targetPill,
-            'No APPLICABLE control found — seed reset may have failed',
-        ).not.toBeNull();
-
-        // Picking N/A opens the justification modal — same legacy
-        // flow, new trigger element.
-        await targetPill!.selectOption('NOT_APPLICABLE');
-        await expect(page.locator('#justification-input')).toBeVisible({
-            timeout: 3000,
-        });
-
-        await expect(page.locator('#justification-save-btn')).toBeDisabled();
-
-        await page
-            .locator('#justification-input')
-            .fill('Not applicable per risk assessment');
-        await expect(page.locator('#justification-save-btn')).toBeEnabled();
-
-        const resApp = page.waitForResponse(
-            (r) =>
-                r.url().includes('/applicability') &&
-                r.request().method() === 'POST',
-        );
-        await page.locator('#justification-save-btn').click();
-        await resApp;
-        await expect(page.locator('#justification-input')).toBeHidden({
-            timeout: 3000,
-        });
-
-        await expect(targetPill!).toHaveValue('NOT_APPLICABLE', {
-            timeout: 5000,
-        });
-    });
-
-    test('applicability modal Cancel keeps the row APPLICABLE', async ({ page }) => {
-        tenantSlug = await loginAndGetTenant(page);
-        await page.goto(`/t/${tenantSlug}/controls`);
-        await page.waitForSelector('#controls-table', { timeout: 15000 });
-
-        const targetPill = await findApplicablePill(page);
-        expect(
-            targetPill,
-            'No APPLICABLE control left after prior test',
-        ).not.toBeNull();
-
-        await targetPill!.selectOption('NOT_APPLICABLE');
-        await expect(page.locator('#justification-input')).toBeVisible({
-            timeout: 3000,
-        });
-
-        await page.locator('#justification-cancel-btn').click();
-        await expect(page.locator('#justification-input')).toBeHidden({
-            timeout: 3000,
-        });
-
-        // Server state never changed; the select rolls back to
-        // APPLICABLE on the next cache invalidation cycle. Read via
-        // `inputValue()` because some browsers keep the user's last
-        // pick on the unmounted-modal frame.
-        const finalValue = await targetPill!.inputValue();
-        expect(['APPLICABLE', 'NOT_APPLICABLE']).toContain(finalValue);
-    });
-
-    test('reader user sees non-interactive pills', async ({ page }) => {
-        await page.goto('/login');
-        await page.waitForSelector('input[type="email"][name="email"]', {
-            timeout: 60000,
-        });
-        await page.fill('input[type="email"][name="email"]', 'viewer@acme.com');
-        await page.fill(
-            '#credentials-form input[type="password"]',
-            'password123',
-        );
-        await page.click('#credentials-form button[type="submit"]');
-        await page.waitForURL(/\/t\/[^/]+\/dashboard/, { timeout: 60000 });
-        const url = new URL(page.url());
-        const match = url.pathname.match(/^\/t\/([^/]+)\//);
-        tenantSlug = match?.[1] || tenantSlug;
-
-        await page.goto(`/t/${tenantSlug}/controls`);
-        await page.waitForSelector('#controls-table', { timeout: 15000 });
-        await page.waitForLoadState('networkidle').catch(() => {});
-
-        // Reader sees a static <span>; the interactive `<select>` is
-        // gated by `appPermissions.controls.edit`.
-        const statusSelect = page
-            .locator('#controls-table tbody tr')
-            .first()
-            .locator('select[id^="status-pill-"]');
-        await expect(statusSelect).not.toBeVisible({ timeout: 5000 });
+        await expect(page.locator('#justification-input')).toHaveCount(0);
+        await expect(page.locator('#justification-save-btn')).toHaveCount(0);
     });
 });
