@@ -40,6 +40,15 @@ export interface ProcessEdgeData {
     control?: {
         label: string;
     };
+    /**
+     * R26-PR-C — when the canvas synthesises a transient "preview"
+     * edge during a proximity auto-bind drag, it tags the edge's
+     * data with `isPreview: true`. The renderer reads this and
+     * draws a dashed, brand-coloured stroke so the user SEES the
+     * auto-bind about to commit. The preview is stripped from the
+     * edges array on commit / cancellation.
+     */
+    isPreview?: boolean;
     [key: string]: unknown;
 }
 
@@ -91,6 +100,8 @@ function ProcessEdgeImpl(props: EdgeProps) {
         );
     }, [id, setEdges]);
 
+    const isPreview = edgeData?.isPreview === true;
+
     return (
         <>
             <BaseEdge
@@ -99,11 +110,20 @@ function ProcessEdgeImpl(props: EdgeProps) {
                 // Token-backed stroke — quiet at rest, emphasised
                 // on selected/hover so the connection state is
                 // legible without becoming a visual centerpiece.
+                //
+                // R26-PR-C — when this edge is a transient
+                // proximity preview, swap to a dashed brand-default
+                // stroke. The dash reads unambiguously as "not yet
+                // committed"; the brand colour matches the colour
+                // a selected edge takes on so the preview reads as
+                // a "selected-feeling" outline the user is steering.
                 style={{
-                    stroke: selected
-                        ? "var(--brand-default)"
-                        : "var(--border-default)",
-                    strokeWidth: selected ? 2 : 1.5,
+                    stroke:
+                        isPreview || selected
+                            ? "var(--brand-default)"
+                            : "var(--border-default)",
+                    strokeWidth: selected ? 2 : isPreview ? 2 : 1.5,
+                    strokeDasharray: isPreview ? "6 4" : undefined,
                 }}
             />
             {control && (

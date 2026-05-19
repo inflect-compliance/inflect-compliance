@@ -69,7 +69,17 @@ import {
     type ProcessNodeKind,
 } from "./node-taxonomy";
 import { ProcessEdge, PROCESS_EDGE_TYPE } from "./ProcessEdge";
+import { useProximityAutoBind } from "@/lib/processes/use-proximity-auto-bind";
 import type { ProcessMapSummary } from "@/app/t/[tenantSlug]/(app)/processes/ProcessesClient";
+
+/**
+ * Reserved edge id for the in-flight proximity preview. The
+ * canvas synthesises an edge with this id while the user is
+ * dragging near a candidate node, then strips it before commit.
+ * Kept module-level so tests + the commit handler can refer to
+ * the same constant.
+ */
+const PROXIMITY_PREVIEW_ID = "__proximity_preview__";
 
 // Every taxonomy kind registers the SAME renderer. The renderer
 // branches internally on `data.kind` so the chassis stays shared.
@@ -349,6 +359,42 @@ function Inner({
             ),
         [],
     );
+
+    // R26-PR-C — proximity auto-bind. When the user drags a node
+    // close enough to another, surface a candidate edge; on
+    // mouse-up still in range, commit it.
+    const handleProximityCommit = useCallback(
+        (cand: { source: string; target: string }) => {
+            setEdges((eds) => {
+                // Guard against the (rare) race where the candidate
+                // edge already landed via the in-flight onConnect
+                // path. addEdge would dedupe by id but not by
+                // (source, target).
+                if (
+                    eds.some(
+                        (e) =>
+                            e.source === cand.source &&
+                            e.target === cand.target,
+                    )
+                ) {
+                    return eds;
+                }
+                return [
+                    ...eds,
+                    {
+                        id: `edge-${Date.now()}`,
+                        source: cand.source,
+                        target: cand.target,
+                        type: PROCESS_EDGE_TYPE,
+                    },
+                ];
+            });
+        },
+        [],
+    );
+    const proximity = useProximityAutoBind(nodes, edges, {
+        onCommit: handleProximityCommit,
+    });
     const onDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
         event.preventDefault();
         event.dataTransfer.dropEffect = "move";
@@ -488,12 +534,34 @@ function Inner({
                 <ReactFlow
                     key={activeId ?? "no-map"}
                     nodes={nodes}
-                    edges={edges}
+                    // Synthesise a transient preview edge when the
+                    // proximity hook has a live candidate. The
+                    // dashed `data-preview` styling is wired into
+                    // ProcessEdge so the user sees the auto-bind
+                    // about to commit; the edge has a reserved id
+                    // that the commit path strips before persisting.
+                    edges={
+                        proximity.candidate
+                            ? [
+                                  ...edges,
+                                  {
+                                      id: PROXIMITY_PREVIEW_ID,
+                                      source: proximity.candidate.source,
+                                      target: proximity.candidate.target,
+                                      type: PROCESS_EDGE_TYPE,
+                                      data: { isPreview: true },
+                                      animated: true,
+                                  },
+                              ]
+                            : edges
+                    }
                     nodeTypes={NODE_TYPES}
                     edgeTypes={EDGE_TYPES}
                     onNodesChange={onNodesChange}
                     onEdgesChange={onEdgesChange}
                     onConnect={onConnect}
+                    onNodeDrag={proximity.onNodeDrag}
+                    onNodeDragStop={proximity.onNodeDragStop}
                     fitView
                     proOptions={{ hideAttribution: true }}
                     aria-label="Process canvas"
