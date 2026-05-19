@@ -59,20 +59,21 @@ describe('<NavItem>', () => {
             // DEFAULT recipe is present.
             expect(link.className).toContain('text-content-muted');
             expect(link.className).toContain('hover:text-content-emphasis');
-            expect(link.className).toContain('hover:before:opacity-100');
-            // R13 hover additions wired. R15-PR2 broadened the
-            // single-track `nav-band-shimmer` to the composed
-            // `nav-band-alive` (shimmer + halo-breath); the
-            // composed entry still embeds the shimmer track.
-            expect(link.className).toContain(
+            // 2026-05-19 — hover band reveal retired. The brand
+            // capsule still ships in BASE (for the active row), but
+            // the default recipe no longer fades it in / animates
+            // it / reaches it on hover. The remaining hover effects
+            // (gloss, bevel-shadow, liquid sweep) carry the signal.
+            expect(link.className).not.toContain('hover:before:opacity-100');
+            expect(link.className).not.toContain(
                 'hover:before:animate-nav-band-alive',
             );
+            expect(link.className).not.toContain('hover:before:top-1');
+            expect(link.className).not.toContain('hover:before:w-[4px]');
             expect(link.className).toContain('hover:after:opacity-100');
             expect(link.className).toContain(
                 'hover:shadow-[var(--nav-bevel-shadow)]',
             );
-            expect(link.className).toContain('hover:before:top-1');
-            expect(link.className).toContain('hover:before:w-[4px]');
             // R13-PR8 — press feedback present in base.
             expect(link.className).toContain('active:translate-y-px');
             expect(link.className).toContain(
