@@ -70,7 +70,7 @@
  *
  * @module jobs/control-test-scheduler
  */
-import { parseExpression } from 'cron-parser';
+import { CronExpressionParser } from 'cron-parser';
 import { prisma } from '@/lib/prisma';
 import { runJob } from '@/lib/observability/job-runner';
 import { logger } from '@/lib/observability/logger';
@@ -183,7 +183,7 @@ export function computeNextRunFromCron(
     from: Date,
 ): Date | null {
     try {
-        const it = parseExpression(cron, {
+        const it = CronExpressionParser.parse(cron, {
             currentDate: from,
             // Default to UTC explicitly — without a tz, cron-parser
             // uses the local process timezone, which would make a
