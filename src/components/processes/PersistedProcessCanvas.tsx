@@ -71,6 +71,7 @@ import {
 import { ProcessEdge, PROCESS_EDGE_TYPE } from "./ProcessEdge";
 import { useProximityAutoBind } from "@/lib/processes/use-proximity-auto-bind";
 import { ProcessInspector } from "./ProcessInspector";
+import { CanvasHelpStrip } from "./CanvasHelpStrip";
 import type { ProcessMapSummary } from "@/app/t/[tenantSlug]/(app)/processes/ProcessesClient";
 
 /**
@@ -777,6 +778,10 @@ function Inner({
             </div>
 
             <ProcessPalette />
+            <CanvasHelpStrip
+                nodeCount={nodes.length}
+                edgeCount={edges.length}
+            />
             <div className="flex flex-1 min-h-0">
                 <div
                     className="relative flex-1 min-h-0"
@@ -858,10 +863,17 @@ function CanvasEmpty({
     creating: boolean;
 }): ReactNode {
     return (
-        <div className="absolute inset-0 z-10 flex items-center justify-center">
-            <div className="flex flex-col items-center gap-default">
-                <p className="text-sm text-content-muted">
-                    No process maps yet.
+        <div
+            className="absolute inset-0 z-10 flex items-center justify-center"
+            data-canvas-empty="true"
+        >
+            <div className="flex max-w-[320px] flex-col items-center gap-default text-center">
+                <p className="text-sm font-medium text-content-emphasis">
+                    Map a business or IT process.
+                </p>
+                <p className="text-xs text-content-muted">
+                    Capture the steps, mark the controls between them, and
+                    annotate the risks and assets each step touches.
                 </p>
                 <Button
                     size="sm"
