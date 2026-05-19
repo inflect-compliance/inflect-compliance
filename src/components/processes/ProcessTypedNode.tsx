@@ -70,13 +70,27 @@ function ProcessTypedNodeImpl({ data, selected }: NodeProps) {
               ? "min-w-[160px] max-w-[280px] rounded-[6px]"
               : "min-w-[160px] max-w-[260px] rounded-[8px]";
 
-    // The "note" annotation kind drops the surface tint to read
-    // as a flat sticker, not a button. Rect + diamond keep the
-    // brand-default surface.
+    // R26-PR-D — surface tone varies by semantic category so the
+    // eye reads flow vs context vs note at a glance, without
+    // needing to parse the label:
+    //
+    //   flow     — solid (full opacity) → reads as "this IS the
+    //              process"
+    //   context  — muted (lower opacity) → reads as "this
+    //              ANNOTATES the process"
+    //   note     — sticker tint → reads as "this isn't part of
+    //              the graph at all"
+    //
+    // The shape selector still works alongside this: a diamond
+    // flow node is "a flow branch point"; a rect context node is
+    // "a context decorator". Three shapes × three categories
+    // gives six visual primitives without explosion.
     const surfaceClasses =
-        meta.shape === "note"
+        meta.category === "note"
             ? "bg-bg-subtle/60"
-            : "bg-bg-default/80 backdrop-blur-sm";
+            : meta.category === "context"
+              ? "bg-bg-default/60 backdrop-blur-sm"
+              : "bg-bg-default/90 backdrop-blur-sm";
 
     const accentBorder = NODE_ACCENT_BORDER[meta.accent];
     const iconTone = NODE_ACCENT_ICON_TONE[meta.accent];

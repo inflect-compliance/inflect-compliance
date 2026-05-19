@@ -83,7 +83,12 @@ describe("R26-PR-B — node taxonomy", () => {
         }
     });
 
-    it("NODE_TAXONOMY_ORDER lists each kind exactly once", () => {
+    it("NODE_TAXONOMY_ORDER lists each PALETTE kind exactly once", () => {
+        // R26-PR-D dropped `control` from the palette (edge-first
+        // canonical surface) while keeping the taxonomy entry for
+        // legacy-map rehydration. The palette order = canonical
+        // seven MINUS control. The dedicated R26-PR-D ratchet
+        // (r26-prd-edge-controls-semantics) locks the exclusion.
         const orderMatch = taxonomySrc.match(
             /NODE_TAXONOMY_ORDER:\s*ProcessNodeKind\[\]\s*=\s*\[([\s\S]*?)\]/,
         );
@@ -92,7 +97,8 @@ describe("R26-PR-B — node taxonomy", () => {
         const items =
             body.match(/['"](\w+)['"]/g)?.map((s) => s.replace(/['"]/g, "")) ??
             [];
-        expect(items.sort()).toEqual([...CANONICAL_KINDS].sort());
+        const palette = CANONICAL_KINDS.filter((k) => k !== "control");
+        expect(items.sort()).toEqual([...palette].sort());
     });
 
     it("every kind declares the required visual fields (icon, accent, shape, defaultLabel)", () => {

@@ -110,6 +110,27 @@ export type NodeAccent =
  */
 export type NodeShape = 'rect' | 'diamond' | 'note';
 
+/**
+ * R26-PR-D — semantic category. The three categories communicate
+ * the node's RELATIONSHIP to the flow, not its shape:
+ *
+ *   flow     — the node IS part of the operational flow
+ *              (processStep, decision). Solid surface.
+ *   context  — the node DECORATES the flow with governance /
+ *              risk / asset / external context. Slightly muted
+ *              surface so the eye reads "this is here to
+ *              annotate the flow, not be part of it."
+ *   note     — pure-text annotation (no flow semantics at all).
+ *              Sticker tone.
+ *
+ * The category drives a subtle render-time variation (surface
+ * opacity, drop-shadow strength) in the typed-node renderer.
+ * The accent / icon / shape still do the per-kind work — the
+ * category is the SECOND-order distinction the eye picks up
+ * without needing to read every label.
+ */
+export type NodeCategory = 'flow' | 'context' | 'note';
+
 export interface NodeTypeMeta {
     /** Canonical kind id (persisted in `ProcessNode.nodeType`). */
     id: ProcessNodeKind;
@@ -121,6 +142,13 @@ export interface NodeTypeMeta {
     icon: LucideIcon;
     accent: NodeAccent;
     shape: NodeShape;
+    /**
+     * R26-PR-D — semantic category. Drives a second-order visual
+     * variation (surface opacity) so the eye distinguishes
+     * flow-line-bearing nodes from contextual decorators without
+     * having to read every label.
+     */
+    category: NodeCategory;
     /**
      * Whether the kind participates in the graph as a source /
      * target of edges. Annotation is the only kind without
@@ -143,6 +171,7 @@ export const NODE_TAXONOMY: Record<ProcessNodeKind, NodeTypeMeta> = {
         icon: Box,
         accent: 'brand',
         shape: 'rect',
+        category: 'flow',
         hasHandles: true,
         defaultLabel: 'Untitled step',
     },
@@ -153,36 +182,42 @@ export const NODE_TAXONOMY: Record<ProcessNodeKind, NodeTypeMeta> = {
         icon: GitBranch,
         accent: 'neutral',
         shape: 'diamond',
+        category: 'flow',
         hasHandles: true,
         defaultLabel: 'Decision?',
     },
     control: {
         id: 'control',
         label: 'Control',
-        description: 'A governance / control element attached to a step.',
+        description:
+            'A governance / control element. Canonically edge-mounted (R26-PR-D); the node kind remains for legacy maps.',
         icon: ShieldCheck,
         accent: 'brand-secondary',
         shape: 'rect',
+        category: 'context',
         hasHandles: true,
         defaultLabel: 'Control',
     },
     risk: {
         id: 'risk',
         label: 'Risk',
-        description: 'A risk associated with this step.',
+        description: 'A risk associated with a step. Context, not flow.',
         icon: AlertTriangle,
         accent: 'warning',
         shape: 'rect',
+        category: 'context',
         hasHandles: true,
         defaultLabel: 'Risk',
     },
     asset: {
         id: 'asset',
         label: 'Asset',
-        description: 'A system, datastore, or document the step acts upon.',
+        description:
+            'A system, datastore, or document a step acts upon. Context, not flow.',
         icon: FileText,
         accent: 'success',
         shape: 'rect',
+        category: 'context',
         hasHandles: true,
         defaultLabel: 'Asset',
     },
@@ -193,6 +228,7 @@ export const NODE_TAXONOMY: Record<ProcessNodeKind, NodeTypeMeta> = {
         icon: Globe,
         accent: 'subtle',
         shape: 'rect',
+        category: 'context',
         hasHandles: true,
         defaultLabel: 'External party',
     },
@@ -203,6 +239,7 @@ export const NODE_TAXONOMY: Record<ProcessNodeKind, NodeTypeMeta> = {
         icon: StickyNote,
         accent: 'subtle',
         shape: 'note',
+        category: 'note',
         hasHandles: false,
         defaultLabel: 'Note',
     },
@@ -210,16 +247,24 @@ export const NODE_TAXONOMY: Record<ProcessNodeKind, NodeTypeMeta> = {
 
 /**
  * Ordered taxonomy — drives the palette's left-to-right layout.
- * Order matters: flow primitives (step + decision) first; then
- * the three governance/context kinds; then the two annotation-
- * tone kinds last. Reading from left to right, the palette
- * communicates "build the flow → layer the context → leave a
- * note".
+ *
+ * R26-PR-D dropped `control` from this list. Controls are now
+ * canonically edge-mounted (drag onto a connection between two
+ * steps), not standalone nodes hanging in space. The taxonomy
+ * entry stays in `NODE_TAXONOMY` so legacy map data carrying
+ * `nodeType: 'control'` still rehydrates correctly, but the
+ * palette never offers it as a primary affordance. The "Add
+ * control" button on the edge selection is the canonical entry
+ * point.
+ *
+ * Order otherwise: flow primitives (step + decision) first; then
+ * the three context kinds (risk + asset + external); then the
+ * annotation last. Reading left to right, the palette communicates
+ * "build the flow → layer the context → leave a note".
  */
 export const NODE_TAXONOMY_ORDER: ProcessNodeKind[] = [
     'processStep',
     'decision',
-    'control',
     'risk',
     'asset',
     'external',
