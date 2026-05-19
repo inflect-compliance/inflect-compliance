@@ -136,37 +136,25 @@ describe('Roadmap-13 PR-3 — band shimmer animation', () => {
             );
         });
 
-        it('NAV_ITEM_DEFAULT animates the band on hover only', () => {
-            // The animation MUST be gated to hover. An always-running
-            // animation on every sidebar row would burn CPU on
-            // 20+ invisible rows. `hover:before:animate-...` only
-            // fires while the row is pointed at, which is also the
-            // only moment the band is opacity-1 in the default state.
-            //
-            // R15-PR2 broadened the animation utility from
-            // `nav-band-shimmer` (single-track) to `nav-band-alive`
-            // (composed: shimmer + halo-breath). Both forms are
-            // accepted here — the load-bearing piece is that the
-            // 4-second shimmer pan reaches the rendered surface;
-            // the `nav-band-alive` keyframe definition (asserted
-            // separately by the R15-PR2 ratchet) embeds
-            // `nav-band-shimmer 4s ease-in-out infinite` as its
-            // first track, so the visual contract is preserved.
+        it('NAV_ITEM_DEFAULT does NOT animate the band on hover (2026-05-19)', () => {
+            // R13-PR3 originally gated the shimmer to hover via
+            // `hover:before:animate-...`. R15-PR2 broadened the
+            // utility to the composed `nav-band-alive`. 2026-05-19
+            // retired the hover-band reveal entirely; with the band
+            // no longer fading in on hover, no animation is required
+            // for the default state either. The band's animation
+            // still runs unconditionally on the ACTIVE recipe
+            // (asserted below — that's the part that makes the
+            // current page feel alive).
             const defaultRecipe =
                 NAV_ITEM_SRC.match(
                     /export\s+const\s+NAV_ITEM_DEFAULT\s*=\s*['"]([^'"]+)['"]/,
                 )?.[1] ?? '';
-            const shimmerForm = /hover:before:animate-nav-band-shimmer\b/.test(
-                defaultRecipe,
+            expect(defaultRecipe).not.toMatch(
+                /hover:before:animate-nav-band-(?:shimmer|alive)\b/,
             );
-            const aliveForm = /hover:before:animate-nav-band-alive\b/.test(
-                defaultRecipe,
-            );
-            expect(shimmerForm || aliveForm).toBe(true);
-            // Critical: the un-prefixed animate utility (either
-            // form) must NOT appear in the default recipe — that
-            // would run the animation even when the band is
-            // opacity-0.
+            // The un-prefixed forms must also not appear (would run
+            // the animation continuously on every idle row).
             expect(defaultRecipe).not.toMatch(
                 /(?<!hover:before:)animate-nav-band-shimmer\b/,
             );

@@ -5,7 +5,7 @@
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
 /* eslint-disable react-hooks/exhaustive-deps -- Various useMemo dep arrays in this file deliberately omit identity-unstable callbacks (handlers/derived arrays recreated each render). The proper structural fix is wrapping parent-level callbacks in useCallback. Tracked as follow-up; existing per-line eslint-disable-next-line markers preserved. */
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -28,8 +28,6 @@ import {
 import { Button, buttonVariants } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
-import { Modal } from '@/components/ui/modal';
-import { Tooltip } from '@/components/ui/tooltip';
 import {
     FilterProvider,
     filterStateToActiveFilters,
@@ -49,32 +47,9 @@ import {
     CONTROL_FILTER_KEYS,
     CONTROL_STATUS_LABELS,
 } from './filter-defs';
-import { StatusBadge, statusBadgeClassName, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 
 // ─── Constants ───
-
-// Full ControlStatus enum — the inline-edit dropdown can set any of
-// these directly (replaces the old 4-state cycle button). The cycle
-// helper below keeps working for the bulk "advance status" action so
-// triage flows unchanged for keyboard users who liked the rapid
-// click-to-advance pattern.
-const STATUS_CYCLE = [
-    'NOT_STARTED',
-    'IN_PROGRESS',
-    'IMPLEMENTED',
-    'NEEDS_REVIEW',
-] as const;
-type ControlStatusType = typeof STATUS_CYCLE[number];
-
-const ALL_STATUSES = [
-    'NOT_STARTED',
-    'PLANNED',
-    'IN_PROGRESS',
-    'IMPLEMENTING',
-    'IMPLEMENTED',
-    'NEEDS_REVIEW',
-    'NOT_APPLICABLE',
-] as const;
 
 const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
     NOT_STARTED: 'neutral',
@@ -95,11 +70,6 @@ const FREQ_LABELS: Record<string, string> = {
     AD_HOC: 'Ad Hoc', DAILY: 'Daily', WEEKLY: 'Weekly',
     MONTHLY: 'Monthly', QUARTERLY: 'Quarterly', ANNUALLY: 'Annually',
 };
-
-function nextStatus(current: string): ControlStatusType {
-    const idx = STATUS_CYCLE.indexOf(current as ControlStatusType);
-    return STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
-}
 
 // ─── Types ───
 
@@ -178,9 +148,6 @@ function ControlsPageInner({
     const { state, search, set, toggle, remove, removeAll, clearAll, hasActive } = filterCtx;
 
     // Justification modal state
-    const [justificationModal, setJustificationModal] = useState<{ controlId: string; code: string } | null>(null);
-    const [justification, setJustification] = useState('');
-    const justificationRef = useRef<HTMLTextAreaElement>(null);
 
     // Detail / edit Sheet state — selected control id or null for closed.
     const [sheetControlId, setSheetControlId] = useState<string | null>(null);
@@ -351,13 +318,6 @@ function ControlsPageInner({
         [state],
     );
 
-    // Focus justification textarea when modal opens
-    useEffect(() => {
-        if (justificationModal && justificationRef.current) {
-            justificationRef.current.focus();
-        }
-    }, [justificationModal]);
-
     // ─── Mutation: status cycle ───
 
     const statusMutation = useMutation({
@@ -404,93 +364,6 @@ function ControlsPageInner({
         },
     });
 
-    // ─── Mutation: applicability toggle ───
-
-    const applicabilityMutation = useMutation({
-        mutationFn: async ({ controlId, applicability, justificationText }: {
-            controlId: string;
-            applicability: string;
-            justificationText: string | null;
-        }) => {
-            const res = await fetch(apiUrl(`/controls/${controlId}/applicability`), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    applicability,
-                    justification: applicability === 'NOT_APPLICABLE' ? justificationText : null,
-                }),
-            });
-            if (!res.ok) throw new Error('Applicability update failed');
-            return res.json();
-        },
-        onMutate: async ({ controlId, applicability }) => {
-            await queryClient.cancelQueries({ queryKey: queryKeys.controls.all(tenantSlug) });
-
-            const listKey = queryKeys.controls.list(tenantSlug, queryKeyFilters);
-            // PR-5 — cache value is `CappedList<ControlListItem>`.
-            const previousList = queryClient.getQueryData<CappedList<ControlListItem>>(listKey);
-
-            if (previousList) {
-                queryClient.setQueryData<CappedList<ControlListItem>>(listKey, (old) =>
-                    old
-                        ? {
-                              ...old,
-                              rows: old.rows.map(c =>
-                                  c.id === controlId ? { ...c, applicability } : c,
-                              ),
-                          }
-                        : old,
-                );
-            }
-
-            return { previousList, listKey };
-        },
-        onError: (_err, _vars, context) => {
-            if (context?.previousList) {
-                queryClient.setQueryData(context.listKey, context.previousList);
-            }
-        },
-        onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.controls.all(tenantSlug) });
-        },
-    });
-
-    // ─── Handlers ───
-
-    const handleStatusClick = (controlId: string) => {
-        const control = controls.find(c => c.id === controlId);
-        if (!control || statusMutation.isPending) return;
-        statusMutation.mutate({ controlId, newStatus: nextStatus(control.status) });
-    };
-
-    const handleApplicabilityClick = (controlId: string, code: string) => {
-        const control = controls.find(c => c.id === controlId);
-        if (!control || applicabilityMutation.isPending) return;
-
-        if (control.applicability === 'NOT_APPLICABLE') {
-            applicabilityMutation.mutate({ controlId, applicability: 'APPLICABLE', justificationText: null });
-        } else {
-            setJustificationModal({ controlId, code: code || controlId.slice(0, 8) });
-            setJustification('');
-        }
-    };
-
-    const handleJustificationSave = () => {
-        if (!justificationModal || !justification.trim()) return;
-        applicabilityMutation.mutate({
-            controlId: justificationModal.controlId,
-            applicability: 'NOT_APPLICABLE',
-            justificationText: justification.trim(),
-        });
-        setJustificationModal(null);
-        setJustification('');
-    };
-
-    const handleJustificationCancel = () => {
-        setJustificationModal(null);
-        setJustification('');
-    };
-
     // ─── Helpers ───
 
     const taskStats = (c: ControlListItem) => {
@@ -527,55 +400,20 @@ function ControlsPageInner({
             header: 'Status',
             cell: ({ row }) => {
                 const c = row.original;
-                // Inline-edit dropdown — replaces the legacy cycle
-                // button. `<select>` keeps native a11y (label /
-                // arrow-key / search-by-letter) and the existing
-                // E2E `#status-pill-{id}` selector. Clicking the
-                // current value still cycles via `handleStatusClick`
-                // for keyboard-fast triage; explicit set goes
-                // through onChange.
-                if (!appPermissions.controls.edit) {
-                    return (
-                        <StatusBadge variant={STATUS_BADGE[c.status] || 'neutral'}>
-                            {STATUS_LABELS[c.status] || c.status}
-                        </StatusBadge>
-                    );
-                }
+                // 2026-05-19 — inline-edit dropdown retired. The
+                // cell is now a read-only badge; status changes
+                // route through the per-control detail page (Edit
+                // Control sheet) or the bulk-set toolbar actions
+                // (Mark Implemented / Needs Review / Not Applicable).
+                // Keeping the well-known `#status-pill-{id}` id on
+                // the badge so existing E2E selectors stay valid.
                 return (
-                    <Tooltip content="Pick a status (or click to cycle)">
-                        <select
-                            id={`status-pill-${c.id}`}
-                            className={`${statusBadgeClassName(STATUS_BADGE[c.status] ?? 'neutral')} cursor-pointer border-0 outline-none focus:ring-2 focus:ring-[var(--brand-default)]`}
-                            value={c.status}
-                            onClick={(e) => {
-                                // Click-to-cycle preserved for the
-                                // legacy fast-triage flow; mousedown
-                                // would interfere with the native
-                                // `<select>` open. Cycle only fires
-                                // when the click target is the select
-                                // itself (not the options popup).
-                                if (e.target === e.currentTarget) {
-                                    e.stopPropagation();
-                                }
-                            }}
-                            onChange={(e) => {
-                                e.stopPropagation();
-                                if (e.target.value !== c.status) {
-                                    statusMutation.mutate({
-                                        controlId: c.id,
-                                        newStatus: e.target.value,
-                                    });
-                                }
-                            }}
-                            aria-label={`Status for control ${c.code || c.annexId || c.name}`}
-                        >
-                            {ALL_STATUSES.map((s) => (
-                                <option key={s} value={s}>
-                                    {STATUS_LABELS[s] || s}
-                                </option>
-                            ))}
-                        </select>
-                    </Tooltip>
+                    <StatusBadge
+                        id={`status-pill-${c.id}`}
+                        variant={STATUS_BADGE[c.status] || 'neutral'}
+                    >
+                        {STATUS_LABELS[c.status] || c.status}
+                    </StatusBadge>
                 );
             },
         },
@@ -584,47 +422,18 @@ function ControlsPageInner({
             header: 'Applicability',
             cell: ({ row }) => {
                 const c = row.original;
-                const code = c.code || c.annexId || '';
-                if (!appPermissions.controls.edit) {
-                    return (
-                        <StatusBadge variant={c.applicability === 'NOT_APPLICABLE' ? 'warning' : 'success'}>
-                            {c.applicability === 'NOT_APPLICABLE' ? 'N/A' : 'Yes'}
-                        </StatusBadge>
-                    );
-                }
+                // 2026-05-19 — inline-edit dropdown retired alongside
+                // Status (see comment above). Applicability changes
+                // route through the per-control detail page; the
+                // justification modal is preserved there. Selector
+                // id `#applicability-pill-{id}` kept for E2E parity.
                 return (
-                    <Tooltip content="Mark applicable / not applicable">
-                        <select
-                            id={`applicability-pill-${c.id}`}
-                            className={`${statusBadgeClassName(c.applicability === 'NOT_APPLICABLE' ? 'warning' : 'success')} cursor-pointer border-0 outline-none focus:ring-2 focus:ring-[var(--brand-default)]`}
-                            value={c.applicability}
-                            onClick={(e) => e.stopPropagation()}
-                            onChange={(e) => {
-                                e.stopPropagation();
-                                const next = e.target.value;
-                                if (next === c.applicability) return;
-                                if (next === 'NOT_APPLICABLE') {
-                                    // Justification required — open
-                                    // the modal (legacy flow).
-                                    setJustificationModal({
-                                        controlId: c.id,
-                                        code: code || c.id.slice(0, 8),
-                                    });
-                                    setJustification('');
-                                } else {
-                                    applicabilityMutation.mutate({
-                                        controlId: c.id,
-                                        applicability: 'APPLICABLE',
-                                        justificationText: null,
-                                    });
-                                }
-                            }}
-                            aria-label={`Applicability for control ${code || c.name}`}
-                        >
-                            <option value="APPLICABLE">Yes</option>
-                            <option value="NOT_APPLICABLE">N/A</option>
-                        </select>
-                    </Tooltip>
+                    <StatusBadge
+                        id={`applicability-pill-${c.id}`}
+                        variant={c.applicability === 'NOT_APPLICABLE' ? 'warning' : 'success'}
+                    >
+                        {c.applicability === 'NOT_APPLICABLE' ? 'N/A' : 'Yes'}
+                    </StatusBadge>
                 );
             },
         },
@@ -730,7 +539,7 @@ function ControlsPageInner({
                 ) : null
             ),
         },
-    ]), [appPermissions, handleStatusClick, handleApplicabilityClick, tenantHref, taskStats]);
+    ]), [appPermissions, tenantHref, taskStats]);
 
     return (
         <EntityListPage<ControlListItem>
@@ -943,66 +752,6 @@ function ControlsPageInner({
                 canWrite={appPermissions.controls.edit}
             />
 
-            {/* Justification Modal — migrated to the shared <Modal> (Epic 54) */}
-            <Modal
-                showModal={!!justificationModal}
-                setShowModal={(v) => {
-                    const next = typeof v === 'function' ? v(!!justificationModal) : v;
-                    if (!next) handleJustificationCancel();
-                }}
-                size="sm"
-                title="Mark as Not Applicable"
-                description={
-                    justificationModal
-                        ? `Provide justification for marking control ${justificationModal.code} as not applicable.`
-                        : undefined
-                }
-            >
-                <Modal.Header
-                    title="Mark as Not Applicable"
-                    description={
-                        justificationModal ? (
-                            <>
-                                Provide justification for marking control{' '}
-                                <span className="font-mono text-content-emphasis">
-                                    {justificationModal.code}
-                                </span>{' '}
-                                as not applicable.
-                            </>
-                        ) : null
-                    }
-                />
-                <Modal.Body>
-                    <textarea
-                        ref={justificationRef}
-                        className="input w-full"
-                        rows={4}
-                        placeholder="Justification is required..."
-                        value={justification}
-                        onChange={(e) => setJustification(e.target.value)}
-                        id="justification-input"
-                    />
-                </Modal.Body>
-                <Modal.Actions>
-                    <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={handleJustificationCancel}
-                        id="justification-cancel-btn"
-                        text="Cancel"
-                    />
-                    <Button
-                        type="button"
-                        variant="primary"
-                        size="sm"
-                        onClick={handleJustificationSave}
-                        disabled={!justification.trim()}
-                        id="justification-save-btn"
-                        text="Save"
-                    />
-                </Modal.Actions>
-            </Modal>
         </EntityListPage>
     );
 }

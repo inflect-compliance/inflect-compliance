@@ -106,8 +106,11 @@ describe('Sidebar state-language ratchet (Elevation PR-3)', () => {
             /before:bg-\[[\s\S]*?var\(--brand-default\)/.test(navItem) &&
             /before:bg-\[[\s\S]*?var\(--brand-emphasis\)/.test(navItem);
         expect(utilityForm || arbitraryForm).toBe(true);
-        // Hover: band fades in via opacity 100 on `::before`.
-        expect(navItem).toMatch(/hover:before:opacity-100/);
+        // 2026-05-19 — the hover-band reveal (`hover:before:opacity-100`)
+        // was retired. The band stays as a permanent active-only
+        // signal; hover state expresses itself via text-brighten,
+        // gloss, bevel, liquid-sweep instead.
+        expect(navItem).not.toMatch(/hover:before:opacity-100/);
         // Active: band stays visible (un-gated opacity-100).
         expect(navItem).toMatch(/(?<!hover:)\bbefore:opacity-100\b/);
         // Active: brand wash — uniform (R12-PR6) OR radial (R13-PR11).

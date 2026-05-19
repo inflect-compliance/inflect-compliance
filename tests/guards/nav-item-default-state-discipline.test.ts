@@ -50,8 +50,11 @@ describe('Roadmap-12 PR-4/5 — NavItem default-state discipline', () => {
         expect(recipe).toMatch(/\btext-content-muted\b/);
         // Hover text colour — one rung up.
         expect(recipe).toMatch(/\bhover:text-content-emphasis\b/);
-        // Hover band — opacity 0 → 100 on the `::before` element.
-        expect(recipe).toMatch(/\bhover:before:opacity-100\b/);
+        // Hover band reveal was retired 2026-05-19 — `hover:before:
+        // opacity-100` must NOT appear in the default recipe. The
+        // band is now an active-only signal; hover speaks through
+        // text-brighten + gloss + liquid-sweep instead.
+        expect(recipe).not.toMatch(/\bhover:before:opacity-100\b/);
     });
 
     it('hover has NO full-row background (the band replaces it — R12-PR5)', () => {

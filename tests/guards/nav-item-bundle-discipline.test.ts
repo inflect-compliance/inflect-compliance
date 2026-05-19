@@ -126,8 +126,12 @@ describe('Roadmap-12 PR-10 — NavItem bundle discipline (capstone)', () => {
             expect(recipe).toContain('hover:text-content-emphasis');
         });
 
-        it('contains the hover band reveal', () => {
-            expect(recipe).toContain('hover:before:opacity-100');
+        it('does NOT contain the hover band reveal (retired 2026-05-19)', () => {
+            // The band stayed on the active row; hover speaks
+            // through text-brighten + gloss + bevel + liquid-sweep
+            // only. The `::before` element still exists in BASE
+            // (used by ACTIVE) — just no hover trigger.
+            expect(recipe).not.toContain('hover:before:opacity-100');
         });
     });
 

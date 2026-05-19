@@ -385,7 +385,7 @@ export const NAV_ITEM_BASE = [
  * colour only — locked by the motion-language ratchet.
  */
 export const NAV_ITEM_DEFAULT =
-    'text-content-muted hover:text-content-emphasis hover:before:opacity-100 hover:before:animate-nav-band-alive hover:before:top-1 hover:before:bottom-1 hover:before:w-[4px] hover:after:opacity-100 hover:shadow-[var(--nav-bevel-shadow)] hover:bg-[linear-gradient(135deg,_transparent_30%,_var(--nav-row-liquid-tint)_50%,_transparent_70%)] hover:[background-size:300%_100%] hover:animate-nav-row-liquid-sweep';
+    'text-content-muted hover:text-content-emphasis hover:after:opacity-100 hover:shadow-[var(--nav-bevel-shadow)] hover:bg-[linear-gradient(135deg,_transparent_30%,_var(--nav-row-liquid-tint)_50%,_transparent_70%)] hover:[background-size:300%_100%] hover:animate-nav-row-liquid-sweep';
 
 /**
  * Active state — conviction. (R12-PR6 lock, R13-PR4 evolution,

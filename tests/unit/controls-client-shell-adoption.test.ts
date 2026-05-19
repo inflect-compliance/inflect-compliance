@@ -98,7 +98,10 @@ describe('ControlsClient — EntityListPage adoption', () => {
         // shell — they own the page's state, not the shell's tree.
         expect(source).toContain('<NewControlModal');
         expect(source).toContain('<ControlDetailSheet');
-        // Justification modal stays as a <Modal> child of the page.
-        expect(source).toMatch(/<Modal[\s>]/);
+        // The justification modal was hosted here pre-2026-05-19;
+        // it left when the inline-edit dropdowns were retired. The
+        // justification flow now lives on the per-control detail
+        // page (asserted independently by control-detail-* tests).
+        expect(source).not.toMatch(/<Modal[\s>]/);
     });
 });

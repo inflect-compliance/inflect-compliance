@@ -125,14 +125,17 @@ describe('Roadmap-12 PR-5 — NavItem brand-gradient band discipline', () => {
         expect(baseRegion![0]).toMatch(/['"]relative\s+flex/);
     });
 
-    it('hover state fades the band in (opacity 0 → 100)', () => {
-        // The default state recipe applies `hover:before:opacity-100`.
-        // This is how the band becomes visible on hover.
+    it('hover state does NOT reveal the band (2026-05-19 — band is active-only)', () => {
+        // The R12-PR5 hover reveal (`hover:before:opacity-100`) was
+        // retired 2026-05-19 at the user's request. The brand-gradient
+        // band still ships and still anchors the active row — but the
+        // hover state now expresses itself through text-brighten +
+        // gloss + bevel-shadow + liquid-sweep ONLY. No band fade-in.
         const defaultRecipe = SRC.match(
             /export\s+const\s+NAV_ITEM_DEFAULT\s*=\s*['"]([^'"]+)['"]/,
         );
         expect(defaultRecipe).not.toBeNull();
-        expect(defaultRecipe![1]).toMatch(/hover:before:opacity-100/);
+        expect(defaultRecipe![1]).not.toMatch(/hover:before:opacity-100/);
     });
 
     it('active state holds the band visible (opacity 100)', () => {

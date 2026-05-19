@@ -193,15 +193,19 @@ describe('Roadmap-15 PR-2 — band halo breath', () => {
     });
 
     describe('NavItem wiring', () => {
-        it('NAV_ITEM_DEFAULT applies the composed alive animation on hover', () => {
-            // The composed `animate-nav-band-alive` replaces the
-            // single-track `animate-nav-band-shimmer` so hover-fade
-            // -in rows immediately get both timelines.
+        it('NAV_ITEM_DEFAULT no longer animates the band on hover (2026-05-19)', () => {
+            // R15-PR2 originally landed the composed `nav-band-alive`
+            // on hover so the band fade-in immediately carried both
+            // timelines. 2026-05-19 retired the hover-band reveal
+            // entirely — with no band fade-in to time, the hover-
+            // gated alive animation is gone too. The active recipe
+            // (next test) still carries the composed animation
+            // unconditionally so the current page still feels alive.
             const defaultRecipe =
                 NAV_ITEM_SRC.match(
                     /export\s+const\s+NAV_ITEM_DEFAULT\s*=\s*['"]([^'"]+)['"]/,
                 )?.[1] ?? '';
-            expect(defaultRecipe).toMatch(
+            expect(defaultRecipe).not.toMatch(
                 /hover:before:animate-nav-band-alive/,
             );
         });

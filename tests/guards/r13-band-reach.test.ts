@@ -93,12 +93,18 @@ describe('Roadmap-13 PR-9 — band reaches toward the cursor', () => {
         });
     });
 
-    describe('NAV_ITEM_DEFAULT reaches the band on hover', () => {
-        it('overrides band geometry on hover (top-1 / bottom-1 / w-[4px])', () => {
+    describe('NAV_ITEM_DEFAULT — band is no longer revealed on hover (2026-05-19)', () => {
+        it('does NOT override band geometry on hover (band is active-only now)', () => {
+            // R13-PR9 originally made the band "reach toward the
+            // cursor" by expanding the `::before` geometry on hover.
+            // 2026-05-19 retired the entire hover-band reveal at the
+            // user's request — these classes must NOT appear in the
+            // default recipe. The reach behaviour is preserved
+            // unconditionally on ACTIVE rows (locked below).
             const recipe = defaultRecipe();
-            expect(recipe).toMatch(/hover:before:top-1\b/);
-            expect(recipe).toMatch(/hover:before:bottom-1\b/);
-            expect(recipe).toMatch(/hover:before:w-\[4px\]/);
+            expect(recipe).not.toMatch(/hover:before:top-1\b/);
+            expect(recipe).not.toMatch(/hover:before:bottom-1\b/);
+            expect(recipe).not.toMatch(/hover:before:w-\[4px\]/);
         });
 
         it('hover NEVER uses translate / scale (R12 motion contract)', () => {

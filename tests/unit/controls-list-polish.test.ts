@@ -1,15 +1,18 @@
 /**
  * Structural ratchet — Controls list UX polish.
  *
- * Locks the five visible-change deltas applied after Epic 91's
+ * Locks the visible-change deltas applied after Epic 91's
  * structural-only refactor:
  *
  *   1. Owner column renders an avatar + name + email chip (data
  *      already comes back from the repo's `owner` include).
- *   2. Status pill is now a `<select>` covering every ControlStatus
- *      enum value, not a four-state cycle button.
- *   3. Applicability pill is a `<select>` whose N/A option opens the
- *      existing justification modal.
+ *   2. Status pill is a read-only `<StatusBadge id="status-pill-{id}">`.
+ *      The inline-edit `<select>` dropdown was retired 2026-05-19 at
+ *      the user's request; status changes route through the detail
+ *      page or the bulk-set toolbar actions.
+ *   3. Applicability pill is a read-only `<StatusBadge
+ *      id="applicability-pill-{id}">`. Same retirement as Status;
+ *      the justification modal lives on the detail page now.
  *   4. Evidence column carries a `<Paperclip>` icon next to the count.
  *   5. The DataTable's `batchActions` are wired with the bulk-status
  *      operations (Mark Implemented / Needs Review / Not Applicable).
@@ -43,61 +46,61 @@ describe('Controls list — UX polish', () => {
         });
     });
 
-    describe('Status select (replaces cycle button)', () => {
-        it('exposes ALL ControlStatus enum values in the dropdown', () => {
-            // The legacy cycle was 4 statuses. The new select reads
-            // off ALL_STATUSES (the prisma enum mirror). Drift here
-            // would silently shrink the editable set.
-            expect(source).toContain('ALL_STATUSES');
-            for (const s of [
-                'NOT_STARTED',
-                'PLANNED',
-                'IN_PROGRESS',
-                'IMPLEMENTING',
-                'IMPLEMENTED',
-                'NEEDS_REVIEW',
-                'NOT_APPLICABLE',
-            ]) {
-                expect(source).toContain(`'${s}'`);
-            }
-        });
-
-        it('renders as a <select id="status-pill-{id}"> not a <button>', () => {
-            // E2E selector contract preserved as the element-type
-            // changes; a future revert to <button> would break the
-            // selector + the new keyboard a11y story.
+    describe('Status read-only badge (dropdown retired 2026-05-19)', () => {
+        it('renders as a <StatusBadge id="status-pill-{id}">', () => {
+            // The inline-edit `<select>` was retired 2026-05-19 at
+            // the user's request. The cell is now a read-only badge
+            // for every viewer; status changes route through the
+            // per-control detail page or the bulk-set toolbar
+            // actions. E2E selector `#status-pill-{id}` preserved
+            // on the badge for parity with existing tests.
             expect(source).toMatch(
+                /<StatusBadge\s+id=\{`status-pill-\$\{c\.id\}`\}/,
+            );
+            // The cell must NOT carry an inline-edit `<select>` or
+            // any of the legacy `setJustification` / handler hooks.
+            expect(source).not.toMatch(
                 /<select\s+id=\{`status-pill-\$\{c\.id\}`\}/,
             );
+            // ALL_STATUSES + the dropdown <option> map are gone too.
+            expect(source).not.toContain('ALL_STATUSES');
         });
 
-        it('reader without edit permission sees a static StatusBadge', () => {
-            // The interactive control is gated by appPermissions —
-            // READER falls through to a static <StatusBadge> render.
-            // Updated in PR-2 from the legacy <span className="badge ...">
-            // to the canonical <StatusBadge variant={STATUS_BADGE[...]}>.
-            expect(source).toMatch(
-                /if \(!appPermissions\.controls\.edit\)\s*\{[\s\S]{0,200}<StatusBadge variant=\{STATUS_BADGE/,
+        it('no permission branch — read-only for every viewer', () => {
+            // Pre-2026-05-19 the cell had two branches (editable
+            // `<select>` for editors, read-only badge for readers).
+            // The new shape is single-branch; the permission gate
+            // is gone for this cell. A future PR that re-adds an
+            // `if (!appPermissions.controls.edit)` inside the
+            // Status accessor would regress the simplification.
+            const statusCell = source.match(
+                /accessorKey: 'status',[\s\S]+?\}\,\s+\{/,
+            );
+            expect(statusCell).not.toBeNull();
+            expect(statusCell![0]).not.toMatch(
+                /appPermissions\.controls\.edit/,
             );
         });
     });
 
-    describe('Applicability select', () => {
-        it('renders as a <select id="applicability-pill-{id}">', () => {
+    describe('Applicability read-only badge (dropdown retired 2026-05-19)', () => {
+        it('renders as a <StatusBadge id="applicability-pill-{id}">', () => {
             expect(source).toMatch(
+                /<StatusBadge\s+id=\{`applicability-pill-\$\{c\.id\}`\}/,
+            );
+            expect(source).not.toMatch(
                 /<select\s+id=\{`applicability-pill-\$\{c\.id\}`\}/,
             );
         });
 
-        it('NOT_APPLICABLE opens the justification modal (legacy flow preserved)', () => {
-            // Picking N/A still routes through the existing
-            // setJustificationModal flow — the Save button there
-            // commits the mutation; pure dropdown changes for
-            // APPLICABLE go straight to the mutation.
-            expect(source).toContain('setJustificationModal({');
-            expect(source).toMatch(
-                /next === 'NOT_APPLICABLE'[\s\S]{0,300}setJustificationModal/,
-            );
+        it('justification modal infrastructure removed from the list page', () => {
+            // The Not-Applicable justification flow now lives on the
+            // per-control detail page only. The list page no longer
+            // mounts the modal, the applicability mutation, or any
+            // of the supporting state.
+            expect(source).not.toContain('setJustificationModal');
+            expect(source).not.toContain('applicabilityMutation');
+            expect(source).not.toMatch(/<Modal\b/);
         });
     });
 

@@ -131,23 +131,25 @@ describe('Roadmap-13 PR-12 — Living Sidebar capstone bundle', () => {
                 /'nav-band-shimmer':\s*'nav-band-shimmer\s+4s\s+ease-in-out\s+infinite'/,
             );
         });
-        it('background-size 100% 200% in band base; shimmer gated hover + active (single-track OR R15-PR2 alive-composed)', () => {
+        it('background-size 100% 200% in band base; shimmer active-only (hover band retired 2026-05-19)', () => {
             // R15-PR2 broadened the band's animation utility from
             // `nav-band-shimmer` (single-track) to `nav-band-alive`
             // (composed: shimmer + halo-breath). The `nav-band-alive`
             // entry in tailwind.config.js embeds `nav-band-shimmer
             // 4s ease-in-out infinite` as its first track, so the
-            // R13-PR3 visual contract holds either way. Accept both
-            // utility names here.
+            // R13-PR3 visual contract holds either way for the
+            // active row.
+            //
+            // 2026-05-19 retired the hover-band reveal. The default
+            // recipe no longer needs the shimmer animation gated on
+            // hover; the band fade-in is gone. Only the active
+            // recipe still runs the animation (unconditionally).
             expect(bandBaseRegion).toMatch(
                 /before:\[background-size:100%_200%\]/,
             );
-            const defaultShimmer =
-                /hover:before:animate-nav-band-shimmer\b/.test(defaultRecipe);
-            const defaultAlive = /hover:before:animate-nav-band-alive\b/.test(
-                defaultRecipe,
+            expect(defaultRecipe).not.toMatch(
+                /hover:before:animate-nav-band-(?:shimmer|alive)\b/,
             );
-            expect(defaultShimmer || defaultAlive).toBe(true);
             const activeShimmer =
                 /(?<!hover:)before:animate-nav-band-shimmer\b/.test(
                     activeRecipe,
@@ -286,11 +288,14 @@ describe('Roadmap-13 PR-12 — Living Sidebar capstone bundle', () => {
         });
     });
 
-    describe('PR-9 — band reaches toward cursor', () => {
-        it('band geometry expanded on hover + active', () => {
-            expect(defaultRecipe).toMatch(/hover:before:top-1\b/);
-            expect(defaultRecipe).toMatch(/hover:before:bottom-1\b/);
-            expect(defaultRecipe).toMatch(/hover:before:w-\[4px\]/);
+    describe('PR-9 — band reach (active-only since 2026-05-19)', () => {
+        it('band geometry expanded on active only (hover reach retired)', () => {
+            // Hover-band reveal retired 2026-05-19 — the default
+            // recipe no longer carries the reach geometry on hover.
+            // The active recipe still holds the reach permanently.
+            expect(defaultRecipe).not.toMatch(/hover:before:top-1\b/);
+            expect(defaultRecipe).not.toMatch(/hover:before:bottom-1\b/);
+            expect(defaultRecipe).not.toMatch(/hover:before:w-\[4px\]/);
             expect(activeRecipe).toMatch(/before:top-1!/);
             expect(activeRecipe).toMatch(/before:bottom-1!/);
             expect(activeRecipe).toMatch(/before:w-\[4px\]!/);

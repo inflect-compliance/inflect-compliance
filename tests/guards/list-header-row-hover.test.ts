@@ -110,4 +110,36 @@ describe("v2-PR-12 DataTable row hover affordance", () => {
             /\(\s*onRowClick\s*\|\|\s*selectionEnabled\s*\)\s*&&\s*\n?\s*"cursor-pointer\s+select-none/,
         );
     });
+
+    it("hover + selected shadows attach to the row's TRUE leftmost cell (2026-05-19)", () => {
+        // R13-PR15 originally gated the inset-2px hover + selected
+        // shadows on `isFirstContent` — the first non-utility
+        // column. With selection mounted, that put the brand
+        // accent at the LEFT EDGE OF COLUMN 2 (the first data
+        // column), leaving the select-checkbox column (column 1)
+        // accent-less. The user asked 2026-05-19 to move both
+        // accents to the row's actual leftmost cell so the brand
+        // edge reads as "this row" rather than "the data starts
+        // here".
+        //
+        // New predicate: `columnId === "select"` OR
+        // `(isFirstContent && !hasSelectBefore)`. When the select
+        // column is mounted, the SELECT cell carries the accent;
+        // when it's not, the first content cell carries it.
+        // Either way, the leftmost visible cell wins.
+        //
+        // This ratchet locks BOTH the hover and selected shadow
+        // rules to the same predicate so they speak in one voice.
+        // A future regression that reverts either back to plain
+        // `isFirstContent &&` fails here.
+        const hoverRule = src.match(
+            /\(columnId\s*===\s*"select"\s*\|\|\s*\(isFirstContent\s*&&\s*!hasSelectBefore\)\)\s*&&\s*\n?\s*clickable\s*&&\s*\n?\s*"group-hover\/row:shadow-\[inset_2px_0_0_var\(--brand-default\)\]"/,
+        );
+        expect(hoverRule).not.toBeNull();
+
+        const selectedRule = src.match(
+            /\(columnId\s*===\s*"select"\s*\|\|\s*\(isFirstContent\s*&&\s*!hasSelectBefore\)\)\s*&&\s*\n?\s*"group-data-\[selected=true\]\/row:shadow-\[inset_2px_0_0_var\(--brand-default\)\]"/,
+        );
+        expect(selectedRule).not.toBeNull();
+    });
 });

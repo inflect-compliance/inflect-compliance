@@ -73,7 +73,7 @@ const tableCellClassName = (
     // theme). Pairs with `cursor-pointer` on the row itself to make
     // clickability unambiguous.
     clickable && "group-hover/row:bg-bg-muted transition-colors duration-75",
-    // R13-PR15 — brand-coloured 2-px left-edge accent on hover.
+    // Brand-coloured 2-px left-edge accent on hover + selected.
     //
     // History:
     //   - Originally lived on the `<tr>` as `hover:shadow-...`.
@@ -82,22 +82,29 @@ const tableCellClassName = (
     //   - R13-PR13 moved it to cells via `first-of-type:`. That
     //     selector matches the first `<td>` in each row — which
     //     became the SELECT column once R12-PR1 made selection
-    //     default-on. The rule excludes the select column, so it
+    //     default-on. The rule excluded the select column, so it
     //     never fired anywhere → no hover edge at all.
-    //   - R13-PR15 gates the shadow on an explicit
-    //     `isFirstContent` boolean computed at render time (the
-    //     first non-utility column id). Works regardless of
-    //     whether the select column is mounted.
-    isFirstContent &&
+    //   - R13-PR15 gated the shadow on an explicit
+    //     `isFirstContent` boolean — first non-utility column id.
+    //     The accent then sat at the left of the second column
+    //     (the data column) with the select circle in column 1
+    //     to its left.
+    //   - 2026-05-19 — moved to the row's TRUE leftmost cell so
+    //     the accent reads as "this row" rather than "the data
+    //     starts here". When the select column is mounted, the
+    //     select cell carries the accent (`columnId === "select"`).
+    //     When it's not (selectionEnabled={false} on a list page),
+    //     the first content cell carries it (`isFirstContent &&
+    //     !hasSelectBefore`).
+    (columnId === "select" || (isFirstContent && !hasSelectBefore)) &&
       clickable &&
       "group-hover/row:shadow-[inset_2px_0_0_var(--brand-default)]",
     // PR-7 selected-row signal — left-edge brand accent via inset
-    // box-shadow on the leftmost non-utility cell. Same
-    // `isFirstContent` plumbing — was `first-of-type:` before,
-    // would have silently broken once the select column was
-    // mounted.
+    // box-shadow. Same leftmost-cell rule as the hover accent
+    // above so hover + selected speak in one voice. Was
+    // `isFirstContent` before; moved 2026-05-19 alongside hover.
     "group-data-[selected=true]/row:bg-[var(--brand-subtle)]",
-    isFirstContent &&
+    (columnId === "select" || (isFirstContent && !hasSelectBefore)) &&
       "group-data-[selected=true]/row:shadow-[inset_2px_0_0_var(--brand-default)]",
   ]);
 

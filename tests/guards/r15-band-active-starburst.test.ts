@@ -277,17 +277,21 @@ describe('Roadmap-15 PR-4 — active starburst bloom', () => {
             );
         });
 
-        it('NAV_ITEM_DEFAULT still references the non-starburst alive utility', () => {
-            // The default state's hover composes the reveal +
-            // shimmer + halo-breath — no bloom. Verify the
-            // active-alive utility doesn't leak into the default
-            // recipe.
+        it('NAV_ITEM_DEFAULT carries NEITHER alive utility (2026-05-19 — hover band retired)', () => {
+            // The default state previously composed `nav-band-alive`
+            // (reveal + shimmer + halo-breath) on hover so the band
+            // fade-in immediately carried all three timelines.
+            // 2026-05-19 retired the hover-band reveal entirely;
+            // neither the plain nor the `active-alive` variant
+            // should appear in the default recipe. The active recipe
+            // still carries `nav-band-active-alive` unconditionally
+            // (asserted by the active-row tests above).
             const defaultRecipe =
                 NAV_ITEM_SRC.match(
                     /export\s+const\s+NAV_ITEM_DEFAULT\s*=\s*['"]([^'"]+)['"]/,
                 )?.[1] ?? '';
-            expect(defaultRecipe).toMatch(
-                /hover:before:animate-nav-band-alive\b/,
+            expect(defaultRecipe).not.toMatch(
+                /animate-nav-band-alive\b/,
             );
             expect(defaultRecipe).not.toMatch(
                 /animate-nav-band-active-alive/,
