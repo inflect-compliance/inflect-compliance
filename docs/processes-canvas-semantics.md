@@ -1,0 +1,89 @@
+# Processes canvas — semantic graph language
+
+The Processes canvas (Manage → Processes) is not a generic diagram editor. It is a
+domain-specific surface for **business + IT process documentation with governance
+context**. This document records the design commitments that make it so —
+how the visual vocabulary maps to the IC domain, and the rules a future
+contributor should not break without a good reason.
+
+## Three levels of visual distinction
+
+Every node on the canvas reads at three levels:
+
+1. **Category** (Roadmap-26 PR-D) — `flow` / `context` / `note`. Controls the
+   surface tone:
+   - `flow` nodes carry a solid surface tint. They ARE the process.
+   - `context` nodes carry a muted, more transparent surface. They
+     ANNOTATE the process.
+   - `note` is a flat sticker. It is not part of the graph at all.
+
+2. **Shape** (R26-PR-B) — `rect` / `diamond` / `note`. Three shapes total. A
+   diamond is universally a branch point; a note is universally a sticker;
+   everything else is a rectangle.
+
+3. **Accent + icon** — per-kind colour-coding and icon. The accent
+   distinguishes one rectangular context node from another (risk = warning
+   amber, asset = success green, external = subtle/dashed).
+
+## The seven canonical kinds
+
+| Kind | Category | Shape | Accent | Icon | In palette? |
+|---|---|---|---|---|---|
+| `processStep` | flow | rect | brand | Box | ✅ |
+| `decision` | flow | diamond | neutral | GitBranch | ✅ |
+| `control` | context | rect | brand-secondary | ShieldCheck | ❌ (edge-only) |
+| `risk` | context | rect | warning | AlertTriangle | ✅ |
+| `asset` | context | rect | success | FileText | ✅ |
+| `external` | context | rect | subtle (dashed) | Globe | ✅ |
+| `annotation` | note | note | subtle | StickyNote | ✅ |
+
+## Why control is **edge-first**
+
+Controls in IC are governance objects that GATE a transition between two
+process steps. The Roadmap-25 brief committed to representing them ON the
+connection (`<ControlOnEdge>` overlay) rather than as standalone nodes
+floating beside the flow. R26-PR-D enforces that commitment:
+
+- Controls are no longer offered in the palette. The canonical entry point
+  for adding a control is the **"Add control"** affordance that appears when
+  the user selects an edge with no existing control.
+- The `control` taxonomy entry stays in `NODE_TAXONOMY` so legacy map data
+  (R25 + R26-PR-A/B/C era) carrying `nodeType: 'control'` still rehydrates
+  correctly. The kind renders identically to other context nodes when it
+  appears; we just don't surface it as a primary affordance for NEW maps.
+
+A future PR is free to re-introduce a "node-style control" pattern if a
+strong use case emerges. The bar for re-adding it to the palette is high —
+edge-mounted is the architecturally chosen canonical surface.
+
+## Why risks and assets stay as nodes
+
+Risks and assets describe **what** a step touches; they are first-class
+entities in IC (their own list pages, detail pages, lifecycle). On the
+canvas they remain nodes because:
+
+- A risk often has its own attention story (severity, owner, treatment plan)
+  worth surfacing on the canvas.
+- An asset often appears as the data store / system / document the step
+  acts upon — calling it out visibly tells the reader "this step writes
+  to this asset" without needing to read the step's prose.
+
+To keep the canvas from competing with the flow, both kinds are rendered
+with the **context surface tone** (lower opacity, dashed-or-light border)
+so the eye reads them as ANNOTATIONS on the flow, not as PARTS of the flow.
+
+## Why external is dashed
+
+The dashed border on external-party nodes is a long-standing universal
+visual convention for "outside the org". One quick look and the reader knows
+"this step is performed by them, not us" without needing to read the label.
+
+## What this document is NOT
+
+This is not a developer setup guide. For the persistence layer see
+`prisma/schema/processes.prisma` + the R26-PR-A implementation note. For
+the palette + taxonomy implementation see `node-taxonomy.ts`. For the
+proximity auto-bind interaction see `use-proximity-auto-bind.ts`.
+
+This document is purely the design rationale future contributors need to
+NOT accidentally undo when "tidying up" the canvas.
