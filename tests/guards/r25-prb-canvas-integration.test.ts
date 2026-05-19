@@ -116,28 +116,44 @@ describe("R25-PR-B — xyflow canvas + palette", () => {
         });
     });
 
-    describe("Processes page consumer", () => {
-        const src = read(CLIENT_PATH);
+    describe("Processes page consumer (R26-PR-A — via PersistedProcessCanvas)", () => {
+        // R25 shipped the page mounting `<ProcessCanvas>` directly
+        // via `dynamic()` in ProcessesClient.tsx. R26-PR-A introduces
+        // a persistence layer between the page and the raw xyflow
+        // canvas (`<PersistedProcessCanvas>`), which owns the save/
+        // load wiring. The two invariants still hold — xyflow lives
+        // behind a `ssr:false` boundary, and `<ReactFlow>` is never
+        // mounted inline at the page-shell level — they just resolve
+        // on the wrapper component now.
+        const PERSISTED_PATH =
+            "src/components/processes/PersistedProcessCanvas.tsx";
+        const clientSrc = read(CLIENT_PATH);
+        const persistedSrc = read(PERSISTED_PATH);
 
-        it("dynamic-imports ProcessCanvas with ssr:false", () => {
-            // xyflow uses browser-only APIs. SSRing crashes. The
-            // dynamic-import boundary is load-bearing.
-            expect(src).toMatch(/dynamic\(/);
-            expect(src).toMatch(/ProcessCanvas/);
-            expect(src).toMatch(/ssr:\s*false/);
+        it("dynamic-imports the persisted-canvas wrapper with ssr:false", () => {
+            expect(clientSrc).toMatch(/dynamic\(/);
+            expect(clientSrc).toMatch(/PersistedProcessCanvas/);
+            expect(clientSrc).toMatch(/ssr:\s*false/);
         });
 
-        it("mounts ProcessCanvas (not a raw ReactFlow inline)", () => {
-            expect(src).toMatch(/<ProcessCanvas\b/);
-            expect(src).not.toMatch(/<ReactFlow\b/);
+        it("mounts the persisted-canvas wrapper (not raw ReactFlow inline) from the page", () => {
+            expect(clientSrc).toMatch(/<PersistedProcessCanvas\b/);
+            expect(clientSrc).not.toMatch(/<ReactFlow\b/);
         });
 
-        it("passes the palette via the paletteSlot prop", () => {
-            // The canvas owns the palette's position so the toolbar
-            // + canvas read as one cohesive surface. A future PR
-            // that splits the palette into a sibling slot would
-            // fragment the workspace into two surfaces.
-            expect(src).toMatch(/paletteSlot=\{<ProcessPalette\b/);
+        it("PersistedProcessCanvas remains a client component", () => {
+            // The wrapper that hosts xyflow MUST carry "use client"
+            // so it never runs through the SSR pipeline (xyflow
+            // touches browser-only APIs on mount). Same boundary
+            // R25 enforced via `dynamic(..., { ssr: false })`.
+            expect(persistedSrc).toMatch(/^["']use client["'];/m);
+        });
+
+        it("PersistedProcessCanvas mounts ReactFlowProvider + ReactFlow", () => {
+            // The wrapper owns the xyflow tree end-to-end. The page
+            // chrome above it only mounts the wrapper.
+            expect(persistedSrc).toMatch(/<ReactFlowProvider\b/);
+            expect(persistedSrc).toMatch(/<ReactFlow\b/);
         });
     });
 });

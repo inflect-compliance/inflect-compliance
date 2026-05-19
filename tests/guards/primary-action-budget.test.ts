@@ -102,6 +102,14 @@ const PRIMARY_BUDGET: Record<string, number> = {
     // primary). Two header CTAs side-by-side is the controls list
     // page's canonical shape.
     "src/app/t/[tenantSlug]/(app)/controls/ControlsClient.tsx": 2,
+
+    // R26-PR-A — the Processes canvas wrapper carries two primaries
+    // for two genuinely separate regions: the toolbar Save action
+    // (only meaningful when a map is open) and the empty-state
+    // "Create your first process" CTA (only mounts when no maps
+    // exist). Mutually exclusive at runtime; the ratchet's static
+    // scan doesn't know that.
+    "src/components/processes/PersistedProcessCanvas.tsx": 2,
 };
 
 const DEFAULT_BUDGET = 1;

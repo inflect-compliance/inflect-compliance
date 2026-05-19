@@ -1,39 +1,85 @@
 "use client";
 
 /**
- * R25-PR-A + PR-B — Processes page client shell.
+ * Processes page client shell.
  *
- * PR-A wired the `<WorkspaceShell>` layout. PR-B replaces the
- * placeholder body with `<ProcessCanvas>` (xyflow ReactFlow with
- * IC token theming) + the toolbar placeholder with
- * `<ProcessPalette>`. PR-C custom node arrives next.
+ * R25 mounted the canvas with zero persistence. R26-PR-A adds:
+ *   - the existing process list, selectable from a slim header
+ *     control
+ *   - a "New process" affordance that POSTs to the create endpoint
+ *   - a "Save" button that PUTs the canvas state back to the
+ *     selected map's endpoint
+ *   - rehydration: selecting a map loads its graph from the server
+ *     and seeds the canvas as `initialNodes` + `initialEdges`
+ *
+ * The richer editor UX (visible name, save-as, inspector, alignment
+ * helpers, undo-redo) lands in R26-PR-E; PR-A is the minimum
+ * needed to prove the persistence loop end-to-end.
+ *
+ * Component split:
+ *   - `<ProcessesClient>` (this file) owns the page chrome +
+ *     selection state. It does NOT own canvas state; the canvas
+ *     does (xyflow's internal nodes/edges, plus a wrapper that
+ *     exposes a save callback).
+ *   - `<PersistedProcessCanvas>` (sibling component) wraps the
+ *     R25 `<ProcessCanvas>` and adds the save/rehydrate plumbing.
+ *     Splitting keeps the page chrome simple and lets the canvas
+ *     own its xyflow state without prop-drilling.
  */
+import { useState } from "react";
+import dynamic from "next/dynamic";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
 import { Heading } from "@/components/ui/typography";
 import { PageBreadcrumbs } from "@/components/layout/PageBreadcrumbs";
-import dynamic from "next/dynamic";
 
-// xyflow uses browser-only APIs (ResizeObserver, getBoundingClientRect
-// on mount) — dynamic-imported with ssr:false so the canvas never
-// SSRs. Same boundary the GraphExplorer (traceability page) uses.
-const ProcessCanvas = dynamic(
-    () => import("@/components/processes/ProcessCanvas").then((m) => m.ProcessCanvas),
-    { ssr: false },
-);
-const ProcessPalette = dynamic(
+// xyflow uses browser-only APIs on mount (ResizeObserver,
+// getBoundingClientRect). The `ssr:false` boundary lives at this
+// import — the wrapper itself is a "use client" component, but
+// "use client" still runs through SSR for the initial paint.
+// Dynamic-import with ssr:false keeps the canvas off the server
+// pipeline entirely. Same pattern R25 established via the
+// `<ProcessCanvas>` import that this replaces.
+const PersistedProcessCanvas = dynamic(
     () =>
-        import("@/components/processes/ProcessPalette").then(
-            (m) => m.ProcessPalette,
+        import("@/components/processes/PersistedProcessCanvas").then(
+            (m) => m.PersistedProcessCanvas,
         ),
     { ssr: false },
 );
 
-interface ProcessesClientProps {
-    tenantSlug: string;
+export interface ProcessMapSummary {
+    id: string;
+    name: string;
+    description: string | null;
+    status: "DRAFT" | "ACTIVE" | "ARCHIVED";
+    version: number;
+    createdAt: string | Date;
+    updatedAt: string | Date;
+    nodeCount: number;
+    edgeCount: number;
 }
 
-export function ProcessesClient({ tenantSlug }: ProcessesClientProps) {
+interface ProcessesClientProps {
+    tenantSlug: string;
+    initialProcesses: ProcessMapSummary[];
+}
+
+export function ProcessesClient({
+    tenantSlug,
+    initialProcesses,
+}: ProcessesClientProps) {
     const tenantHref = (path: string) => `/t/${tenantSlug}${path}`;
+
+    // The full list is owned here so a save can refresh the
+    // selected map's metadata (version, updatedAt) without a full
+    // page reload. Selection itself drives the canvas's load
+    // sequence via its `processMapId` prop.
+    const [processes, setProcesses] = useState<ProcessMapSummary[]>(
+        initialProcesses,
+    );
+    const [activeId, setActiveId] = useState<string | null>(
+        initialProcesses[0]?.id ?? null,
+    );
 
     return (
         <WorkspaceShell className="animate-fadeIn">
@@ -53,13 +99,13 @@ export function ProcessesClient({ tenantSlug }: ProcessesClientProps) {
             </WorkspaceShell.Header>
 
             <WorkspaceShell.Body className="border border-border-subtle rounded-[8px] bg-bg-default/30">
-                {/* The palette is mounted INSIDE the canvas wrapper so
-                    the canvas owns the full body height (the palette
-                    stamps a slim top strip, the canvas fills the rest).
-                    Keeping them in one block avoids the page rendering
-                    a separate toolbar above the canvas which would
-                    fragment the workspace into two surfaces. */}
-                <ProcessCanvas paletteSlot={<ProcessPalette />} />
+                <PersistedProcessCanvas
+                    tenantSlug={tenantSlug}
+                    processes={processes}
+                    activeId={activeId}
+                    onActiveIdChange={setActiveId}
+                    onProcessesChange={setProcesses}
+                />
             </WorkspaceShell.Body>
         </WorkspaceShell>
     );

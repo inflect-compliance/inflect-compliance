@@ -773,3 +773,17 @@ enum TreatmentPlanStatus {
   COMPLETED
   OVERDUE
 }
+
+/// Roadmap-26 PR-A — Process Map lifecycle.
+///
+///   DRAFT    — being authored, not yet published. Default for
+///              every new map.
+///   ACTIVE   — published / canonical. The map represents the
+///              current understanding of the process.
+///   ARCHIVED — historical / superseded. Hidden from default
+///              list views; still readable for audit context.
+enum ProcessMapStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}

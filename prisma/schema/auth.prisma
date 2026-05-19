@@ -167,6 +167,11 @@ model Tenant {
   // Epic G-7 — risk treatment plans.
   riskTreatmentPlans                RiskTreatmentPlan[]
   treatmentMilestones               TreatmentMilestone[]
+  // Roadmap-26 PR-A — persisted process maps (xyflow canvases).
+  processMaps                       ProcessMap[]
+  processNodes                      ProcessNode[]
+  processEdges                      ProcessEdge[]
+  processEdgeControls               ProcessEdgeControl[]
   // Hub-and-spoke (Epic O-1).
   organization                      Organization?                      @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 
@@ -686,6 +691,9 @@ model User {
   riskTreatmentPlansCompleted   RiskTreatmentPlan[]          @relation("RiskTreatmentPlanCompleter")
   riskTreatmentPlansDeleted     RiskTreatmentPlan[]          @relation("RiskTreatmentPlanDeleter")
   treatmentMilestonesCompleted  TreatmentMilestone[]         @relation("TreatmentMilestoneCompleter")
+  // Roadmap-26 PR-A — persisted process maps.
+  processMapsCreated            ProcessMap[]                 @relation("ProcessMapCreatedBy")
+  processMapsDeleted            ProcessMap[]                 @relation("ProcessMapDeletedBy")
 }
 
 model Account {

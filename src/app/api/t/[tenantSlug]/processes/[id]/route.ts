@@ -1,0 +1,48 @@
+import { NextRequest } from 'next/server';
+import { getTenantCtx } from '@/app-layer/context';
+import {
+    getProcessMap,
+    saveProcessMap,
+    deleteProcessMap,
+} from '@/app-layer/usecases/process-map';
+import { withValidatedBody } from '@/lib/validation/route';
+import { SaveProcessMapSchema } from '@/app-layer/schemas/process-map';
+import { withApiErrorHandling } from '@/lib/errors/api';
+import { jsonResponse } from '@/lib/api-response';
+
+export const GET = withApiErrorHandling(
+    async (
+        req: NextRequest,
+        { params }: { params: { tenantSlug: string; id: string } },
+    ) => {
+        const ctx = await getTenantCtx(params, req);
+        const map = await getProcessMap(ctx, params.id);
+        return jsonResponse(map);
+    },
+);
+
+export const PUT = withApiErrorHandling(
+    withValidatedBody(
+        SaveProcessMapSchema,
+        async (
+            req,
+            { params }: { params: { tenantSlug: string; id: string } },
+            body,
+        ) => {
+            const ctx = await getTenantCtx(params, req);
+            const map = await saveProcessMap(ctx, params.id, body);
+            return jsonResponse(map);
+        },
+    ),
+);
+
+export const DELETE = withApiErrorHandling(
+    async (
+        req: NextRequest,
+        { params }: { params: { tenantSlug: string; id: string } },
+    ) => {
+        const ctx = await getTenantCtx(params, req);
+        const result = await deleteProcessMap(ctx, params.id);
+        return jsonResponse(result);
+    },
+);
