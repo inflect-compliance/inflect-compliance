@@ -66,7 +66,13 @@ jobs:
       NEXTAUTH_URL: http://localhost:3006
       NEXTAUTH_SECRET: ci-load-test-secret-do-not-use-in-prod
       DATA_ENCRYPTION_KEY: ci-load-test-data-encryption-key-32b
-      NODE_ENV: production
+      # NODE_ENV intentionally NOT set at the job level. Setting it
+      # to "production" here causes `npm install` to skip
+      # devDependencies — which includes `patch-package`. The
+      # repo's `postinstall` hook then invokes `patch-package`,
+      # can't find it on PATH, and exits 127. The Build + Start
+      # steps below set NODE_ENV=production inline so the app
+      # still runs as a production build.
       PORT: '3006'
       SKIP_ENV_VALIDATION: '1'
 
@@ -95,9 +101,13 @@ jobs:
           npm run db:seed
 
       - name: Build app
+        env:
+          NODE_ENV: production
         run: npm run build
 
       - name: Start app (background)
+        env:
+          NODE_ENV: production
         run: |
           npm start > /tmp/app.log 2>&1 &
           echo $! > /tmp/app.pid
