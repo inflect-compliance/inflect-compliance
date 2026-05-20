@@ -199,7 +199,85 @@ describe('REGRESSION: policy-review-reminder tenant isolation', () => {
 });
 
 // ═════════════════════════════════════════════════════════════════════
-// 3. Executor Registry — Structural Guards (source-code analysis)
+// 3. task-due-notification — REGRESSION for same bug class
+// ═════════════════════════════════════════════════════════════════════
+
+describe('REGRESSION: task-due-notification tenant isolation', () => {
+    const mockTaskFindMany = jest.fn().mockResolvedValue([]);
+    const mockNotificationCreate = jest.fn().mockResolvedValue({});
+
+    const mockPrisma = {
+        task: { findMany: (...args: unknown[]) => mockTaskFindMany(...args) },
+        notification: { create: (...args: unknown[]) => mockNotificationCreate(...args) },
+    } as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+
+    // Fixed anchor so "due today" classification is deterministic.
+    const NOW = new Date('2026-05-20T08:00:00.000Z');
+
+    test('tenant-scoped: task query includes tenantId', async () => {
+        const { processTaskDueNotifications } = await import(
+            '../../src/app-layer/jobs/task-due-notification'
+        );
+        await processTaskDueNotifications(mockPrisma, { tenantId: TENANT_A, now: NOW });
+
+        assertAllQueriesScoped(mockTaskFindMany, TENANT_A, 'task query');
+    });
+
+    test('tenant-scoped: tenant B never queried', async () => {
+        const { processTaskDueNotifications } = await import(
+            '../../src/app-layer/jobs/task-due-notification'
+        );
+        await processTaskDueNotifications(mockPrisma, { tenantId: TENANT_A, now: NOW });
+
+        assertNoTenantLeakage(mockTaskFindMany, TENANT_B);
+    });
+
+    test('system-wide: no tenantId when omitted', async () => {
+        const { processTaskDueNotifications } = await import(
+            '../../src/app-layer/jobs/task-due-notification'
+        );
+        await processTaskDueNotifications(mockPrisma, { now: NOW });
+
+        assertQueriesUnscoped(mockTaskFindMany);
+    });
+
+    test('notification is written to the task tenantId', async () => {
+        mockTaskFindMany.mockResolvedValueOnce([
+            {
+                id: 'task-1',
+                tenantId: TENANT_A,
+                title: 'Patch servers',
+                key: 'TSK-1',
+                dueAt: new Date('2026-05-20T15:00:00.000Z'),
+                assigneeUserId: 'user-1',
+                tenant: { slug: 'tenant-a-slug' },
+            },
+        ]);
+
+        const { processTaskDueNotifications } = await import(
+            '../../src/app-layer/jobs/task-due-notification'
+        );
+        await processTaskDueNotifications(mockPrisma, { tenantId: TENANT_A, now: NOW });
+
+        expect(mockNotificationCreate).toHaveBeenCalledTimes(1);
+        expect(mockNotificationCreate.mock.calls[0][0].data.tenantId).toBe(TENANT_A);
+    });
+
+    test('tenant-scoped: logging shows scope', async () => {
+        const { processTaskDueNotifications } = await import(
+            '../../src/app-layer/jobs/task-due-notification'
+        );
+        await processTaskDueNotifications(mockPrisma, { tenantId: TENANT_A, now: NOW });
+
+        assertScopeLogged(mockLogger, 'task-due notification scan starting', {
+            scope: 'tenant-scoped',
+            tenantId: TENANT_A,
+        });
+    });
+});
+
+// ═════════════════════════════════════════════════════════════════════
+// 4. Executor Registry — Structural Guards (source-code analysis)
 // ═════════════════════════════════════════════════════════════════════
 
 describe('Executor Registry — structural tenant-scope guards', () => {
@@ -267,7 +345,7 @@ describe('Executor Registry — structural tenant-scope guards', () => {
 });
 
 // ═════════════════════════════════════════════════════════════════════
-// 4. Payload Type Contract — tenantId must exist on all job payloads
+// 5. Payload Type Contract — tenantId must exist on all job payloads
 // ═════════════════════════════════════════════════════════════════════
 
 describe('Payload Type Contract — tenantId field audit', () => {

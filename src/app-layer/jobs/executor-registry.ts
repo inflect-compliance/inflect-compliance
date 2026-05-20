@@ -431,6 +431,29 @@ executorRegistry.register('exception-expiry-monitor', async (payload) => {
     );
 });
 
+// ── task-due-notification ───────────────────────────────────────────
+
+executorRegistry.register('task-due-notification', async (payload) => {
+    const startedAt = new Date().toISOString();
+    const startMs = performance.now();
+    const { processTaskDueNotifications } = await import(
+        './task-due-notification'
+    );
+    const { prisma } = await import('@/lib/prisma');
+    const r = await processTaskDueNotifications(prisma, {
+        tenantId: payload.tenantId,
+    });
+    return makeResult(
+        'task-due-notification',
+        startedAt,
+        startMs,
+        r.scanned,
+        r.created,
+        r.skippedDuplicate,
+        { byWindow: r.byWindow },
+    );
+});
+
 // ── retention-sweep ──────────────────────────────────────────────────
 
 executorRegistry.register('retention-sweep', async (payload) => {
