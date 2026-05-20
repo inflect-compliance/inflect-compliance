@@ -274,9 +274,12 @@ describe('TaskDetailPage — inline assign UserCombobox', () => {
         );
     });
 
-    it('wires setSelected into the existing setAssigneeInput reducer', () => {
+    it('wires the picker onChange into the assignee-draft state', () => {
+        // #102 item 5 — the page migrated to useTenantSWR; the
+        // assignee picker now writes a three-state draft
+        // (`setAssigneeDraft`) instead of the old `setAssigneeInput`.
         expect(TASK_DETAIL_SRC).toMatch(
-            /onChange=\{\(userId\)\s*=>\s*[\s\S]{0,80}setAssigneeInput\(userId\s*\?\?\s*['"]['"]\)/,
+            /onChange=\{\(userId\)\s*=>\s*[\s\S]{0,80}setAssigneeDraft\(userId\s*\?\?\s*null\)/,
         );
     });
 
@@ -295,9 +298,13 @@ describe('Epic 55 Prompt 5 — payload contracts preserved', () => {
     });
 
     it('TaskDetailPage still PATCHes assigneeUserId via /assign endpoint', () => {
+        // #102 item 5 — `handleAssign` derives `assigneeUserId` from
+        // the picker's effective value (`assigneeValue || null`) and
+        // POSTs it to the /assign endpoint.
         expect(TASK_DETAIL_SRC).toMatch(
-            /assigneeUserId:\s*assigneeInput\s*\|\|\s*null/,
+            /assigneeUserId\s*=\s*assigneeValue\s*\|\|\s*null/,
         );
+        expect(TASK_DETAIL_SRC).toMatch(/\/tasks\/\$\{taskId\}\/assign/);
     });
 
     it('NewTaskPage still carries assigneeUserId in form state', () => {
