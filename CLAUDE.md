@@ -41,8 +41,14 @@ docker-compose up -d
 
 ### Framework baseline
 
-**Next.js 15.5.15** (App Router) + **React 18.3** + **TypeScript 5.5**.
-GAP-05 (2026-04-25) migrated off the vulnerable `next@^14.2.0` line —
+**Next.js 16.2.6** (App Router) + **React 19.2** + **TypeScript 5.5**.
+The React 18 → 19 bump (#67) is complete: React 19 removed
+`propTypes`, function-component `defaultProps`, string refs and
+legacy context — the codebase carries none of those.
+`forwardRef` still works in React 19 (which also accepts `ref` as a
+plain prop); existing `forwardRef` call sites are fine and
+modernising them is optional.
+GAP-05 (2026-04-25) first migrated off the vulnerable `next@^14.2.0` line —
 the two HIGH advisories (Image Optimizer DoS, RSC request
 deserialization) were unfixable in 14.x. CI security gates restored
 to their pre-workaround strictness, and on 2026-05-12 tightened one
@@ -53,12 +59,13 @@ CI if either gate is silently re-lowered (`moderate` → `high` /
 `critical`, or `CRITICAL,HIGH` → `CRITICAL`) or `next` is downgraded
 back to 14.x.
 
-Async-request-API caveat: 249 wrapped route handlers still type
+Async-request-API caveat: wrapped route handlers still type
 `params` synchronously; the transparent-await shim in
 `src/lib/errors/api.ts::withApiErrorHandling` resolves the Promise
 before forwarding ctx to the inner handler so existing call sites stay
-correct. Next 16 will require explicit `await params` at every site —
-bounded follow-up before any future Next 16 jump. See
+correct. The codebase now runs on Next 16 — migrating every site to
+explicit `await params` (retiring the shim) is the remaining
+outstanding follow-up. See
 `docs/implementation-notes/2026-04-25-gap-05-next15-migration.md`.
 
 ### Layer Structure
