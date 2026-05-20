@@ -77,12 +77,31 @@ What's deliberately rejected:
 - `xyflow/system` low-level imports — `@xyflow/react` covers the API
 - The xyflow attribution badge — `proOptions={{ hideAttribution: true }}`
 
-## Visual contract
+## Visual contract (Roadmap-27 PR-A)
 
-- Canvas background: dot grid at 24px spacing, `var(--border-subtle)` colour
-- Process step nodes: IC card recipe, 8px radius (R24 chrome family), brand-emphasis selected ring (matches `<KpiFilterCard>`)
-- Edges: bezier, `var(--border-default)` stroke at rest, `var(--brand-default)` selected, 1.5/2 px stroke width
-- Control overlays: pill at edge midpoint, `<ShieldCheck>` icon prefix, `border-emphasis` + `bg-bg-elevated`, max-width 120px truncate
+The Processes surface uses a dedicated **`--canvas-*`** token family
+(`src/styles/tokens.css`, exposed via the Tailwind `canvas` colour
+group) — a deliberate depth ramp, not the flat blue-on-blue of the
+R25/R26 draft:
+
+| Layer | Token | Role |
+|---|---|---|
+| Page shell | `--bg-page` | App background behind the frame |
+| Workspace frame | `--canvas-frame` | Elevated panel — holds the chrome (toolbar + palette + help) and the inspector |
+| Canvas plane | `--canvas-surface` | The **recessed** working surface — deepest tone + a top inner shadow (`--canvas-recess`) so it reads as sunk below the chrome |
+| Nodes | `--canvas-node` / `--canvas-node-muted` | Solid **elevated** cards (`--canvas-shadow`) — flow nodes brightest, context nodes quieter |
+| Grid | `--canvas-grid` | Quiet dot grid, 24px spacing |
+| Hairlines | `--canvas-border` | Dividers between chrome strips + frame/inspector edges |
+
+Container architecture: **page → workspace frame → { chrome zone,
+recessed canvas plane, inspector }**. The frame is `rounded-lg`,
+`overflow-hidden` (inner strips clip to its corners), `shadow-lg`.
+Tonal separation — frame vs recessed plane vs elevated node — does
+the structural work; hairlines, not heavy panels, divide the chrome.
+
+- Process step nodes: solid elevated card, brand selected ring (matches `<KpiFilterCard>`)
+- Edges: bezier, `var(--border-default)` stroke at rest, `var(--brand-default)` selected (richer edge hierarchy lands in R27 PR-B)
+- Control overlays: pill at edge midpoint, `<ShieldCheck>` icon prefix, `border-emphasis` + `bg-bg-elevated`
 
 ## Test layout
 

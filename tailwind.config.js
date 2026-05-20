@@ -64,6 +64,18 @@ module.exports = {
                     info: 'var(--border-info)',
                 },
 
+                // ── Process canvas surfaces (Roadmap-27) ──
+                // Dedicated surface ramp for the node-based Processes
+                // editor — recessed plane, frame chrome, elevated nodes.
+                canvas: {
+                    surface: 'var(--canvas-surface)',
+                    frame: 'var(--canvas-frame)',
+                    grid: 'var(--canvas-grid)',
+                    node: 'var(--canvas-node)',
+                    'node-muted': 'var(--canvas-node-muted)',
+                    border: 'var(--canvas-border)',
+                },
+
                 // ── Inverted surface (used directly as bg-inverted) ──
                 inverted: 'var(--bg-inverted)',
 
@@ -94,6 +106,10 @@ module.exports = {
                 // reads as a glossy physical object. Token-backed
                 // (theme-aware: heavier in dark, lighter in light).
                 'chart-soft': 'var(--chart-soft-shadow)',
+                // Roadmap-27 — elevated process-node lift + the
+                // recessed canvas-plane inner shadow.
+                'canvas-node': 'var(--canvas-shadow)',
+                'canvas-recess': 'var(--canvas-recess)',
             },
 
             // ── Semantic spacing scale (v2-PR-2) ──

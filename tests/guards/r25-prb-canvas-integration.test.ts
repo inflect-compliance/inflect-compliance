@@ -82,11 +82,12 @@ describe("R25-PR-B — xyflow canvas + palette", () => {
             expect(src).toMatch(/proOptions[\s\S]*?hideAttribution[\s\S]*?true/);
         });
 
-        it("uses the IC border-subtle token for the dot grid colour", () => {
+        it("uses the IC canvas-grid token for the dot grid colour", () => {
             // The dot grid must be quiet — black or vivid colours
-            // read as visual noise. Pin to --border-subtle so theme
-            // flip resolves the right tone.
-            expect(src).toMatch(/var\(--border-subtle\)/);
+            // read as visual noise. Roadmap-27 pins it to the
+            // dedicated `--canvas-grid` token (the Processes surface
+            // ramp) so a theme flip resolves the right tone.
+            expect(src).toMatch(/var\(--canvas-grid\)/);
         });
     });
 

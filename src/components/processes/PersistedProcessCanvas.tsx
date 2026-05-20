@@ -682,10 +682,11 @@ function Inner({
 
     return (
         <div className="flex h-full w-full flex-col" data-process-canvas="true">
-            {/* Slim header strip: selector + actions. R26-PR-E will
-                refine this into a proper editor toolbar. */}
+            {/* Chrome zone — row 1 of 2: process metadata + document
+                actions. Transparent so it inherits the frame surface;
+                a hairline divides it from the palette row below. */}
             <div
-                className="flex items-center gap-default border-b border-border-subtle bg-bg-default/60 px-3 py-2"
+                className="flex items-center gap-default border-b border-canvas-border px-default py-2.5"
                 data-persisted-canvas-toolbar="true"
             >
                 <select
@@ -694,7 +695,7 @@ function Inner({
                         onActiveIdChange(e.target.value || null)
                     }
                     disabled={processes.length === 0 || loading || saving}
-                    className="rounded-[6px] border border-border-subtle bg-bg-default px-2 py-1 text-xs text-content-emphasis"
+                    className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-1 text-xs text-content-emphasis focus:border-border-emphasis focus:outline-none"
                     aria-label="Select process map"
                     data-testid="process-selector"
                 >
@@ -728,7 +729,7 @@ function Inner({
                         aria-label="Process name"
                         placeholder="Untitled"
                         data-testid="process-name-input"
-                        className="min-w-[120px] rounded-[6px] border border-transparent bg-transparent px-2 py-1 text-xs font-medium text-content-emphasis focus:border-border-emphasis focus:outline-none hover:border-border-subtle"
+                        className="min-w-[140px] rounded-[6px] border border-transparent bg-transparent px-2 py-1 text-xs font-medium text-content-emphasis hover:border-canvas-border focus:border-border-emphasis focus:bg-canvas-surface focus:outline-none"
                     />
                 )}
                 <Button
@@ -783,8 +784,12 @@ function Inner({
                 edgeCount={edges.length}
             />
             <div className="flex flex-1 min-h-0">
+                {/* The canvas plane — the recessed working surface.
+                    A distinct deep token + a top inner shadow make it
+                    read as sunk below the chrome: the dominant region,
+                    visually separated from the frame around it. */}
                 <div
-                    className="relative flex-1 min-h-0"
+                    className="relative flex-1 min-h-0 bg-canvas-surface shadow-canvas-recess"
                     onDragOver={onDragOver}
                     onDrop={onDrop}
                 >
@@ -839,8 +844,8 @@ function Inner({
                         <Background
                             variant={BackgroundVariant.Dots}
                             gap={24}
-                            size={1.4}
-                            color="var(--border-subtle)"
+                            size={1.3}
+                            color="var(--canvas-grid)"
                         />
                     </ReactFlow>
                 </div>

@@ -82,12 +82,14 @@ export function CanvasHelpStrip({
 
     return (
         <div
-            className="flex items-center gap-default border-b border-border-subtle bg-bg-default/40 px-3 py-2 text-xs text-content-muted"
+            className="flex items-center gap-default border-b border-canvas-border px-default py-1.5 text-[11px] text-content-subtle"
             data-canvas-help-strip="true"
             role="note"
             aria-label="Canvas usage hints"
         >
-            <span className="font-medium text-content-emphasis">Tips</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-content-muted">
+                Tips
+            </span>
             <span aria-hidden="true">·</span>
             <span>Drag from the palette to add a node.</span>
             <span aria-hidden="true">·</span>
@@ -99,7 +101,7 @@ export function CanvasHelpStrip({
             <button
                 type="button"
                 onClick={handleDismiss}
-                className="ml-auto rounded-[6px] border border-transparent px-2 py-0.5 text-content-subtle hover:border-border-subtle hover:text-content-emphasis transition-colors"
+                className="ml-auto rounded-[6px] border border-transparent px-2 py-0.5 text-content-subtle transition-colors hover:border-canvas-border hover:text-content-emphasis"
                 aria-label="Dismiss canvas hints"
                 data-testid="canvas-help-dismiss"
             >

@@ -55,6 +55,22 @@
   --border-subtle:   rgba(0, 83, 140, 0.50); /* navy @ 50% — soft dividers, card edges */
   --border-emphasis: #007BCC;               /* brighter navy — focused inputs, emphasized outlines */
 
+  /* ── Process canvas (Roadmap-27) ───────────────────────────────────
+   * A dedicated surface ramp for the node-based Processes editor. The
+   * canvas plane is the DEEPEST surface — a recessed "work pit"; the
+   * frame chrome sits above it; nodes are the brightest, most elevated
+   * objects. Tonal separation does the work, not hue noise — every
+   * value stays inside the METRO navy family.
+   *   depth ramp (dark → light): surface < page < frame < node. */
+  --canvas-surface:    #05121F;                   /* recessed work plane — deepest */
+  --canvas-frame:      #0A2138;                   /* workspace frame + chrome strips */
+  --canvas-grid:       rgba(127, 167, 215, 0.10); /* dot grid — faint cool light */
+  --canvas-node:       #123A60;                   /* node fill — elevated flow card */
+  --canvas-node-muted: #0D2A45;                   /* node fill — context (quieter) */
+  --canvas-border:     rgba(127, 167, 215, 0.20); /* hairline inside the workspace */
+  --canvas-shadow:     0 8px 20px -10px rgba(0, 0, 0, 0.70), 0 1px 2px rgba(0, 0, 0, 0.45); /* elevated-node lift */
+  --canvas-recess:     inset 0 11px 20px -16px rgba(0, 0, 0, 0.90); /* top inner shadow — plane reads sunk below the chrome */
+
   /* ── Brand / Primary (METRO yellow) ────────────────────────────── */
   --brand-default:  #FFCD11;                /* METRO signature yellow — brand accent, links */
   --brand-emphasis: #E6B800;                /* darker yellow — primary buttons, active brand */
@@ -579,6 +595,18 @@
   --border-default:  #E5E2DE;               /* warm gray — standard borders */
   --border-subtle:   rgba(229, 226, 222, 0.60); /* warm gray @ 60% — soft dividers */
   --border-emphasis: #C9C5BE;               /* medium warm gray — focused inputs */
+
+  /* ── Process canvas (Roadmap-27) — light mirror ──────────────────
+   *   depth ramp (light → dark): node < frame < page < surface;
+   *   the recessed plane is the only surface DARKER than the page. */
+  --canvas-surface:    #ECE9E1;                   /* recessed work plane — soft warm gray */
+  --canvas-frame:      #FBFAF8;                   /* workspace frame + chrome strips */
+  --canvas-grid:       rgba(74, 64, 52, 0.12);    /* dot grid — faint warm */
+  --canvas-node:       #FFFFFF;                   /* node fill — elevated flow card */
+  --canvas-node-muted: #F4F1EA;                   /* node fill — context (quieter) */
+  --canvas-border:     rgba(74, 64, 52, 0.14);    /* hairline inside the workspace */
+  --canvas-shadow:     0 6px 16px -10px rgba(60, 50, 40, 0.28), 0 1px 2px rgba(60, 50, 40, 0.12);
+  --canvas-recess:     inset 0 11px 20px -16px rgba(60, 50, 40, 0.22);
 
   /* ── Brand / Primary (PwC-inspired orange) ──────────────────────── */
   --brand-default:  #D04A02;                /* PwC signature orange — links, accents */

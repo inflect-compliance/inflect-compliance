@@ -70,27 +70,22 @@ function ProcessTypedNodeImpl({ data, selected }: NodeProps) {
               ? "min-w-[160px] max-w-[280px] rounded-[6px]"
               : "min-w-[160px] max-w-[260px] rounded-[8px]";
 
-    // R26-PR-D — surface tone varies by semantic category so the
-    // eye reads flow vs context vs note at a glance, without
-    // needing to parse the label:
+    // R26-PR-D / R27 — surface tone varies by semantic category so
+    // the eye reads flow vs context vs note at a glance, without
+    // needing to parse the label. R27 swaps the old translucent
+    // fills for SOLID, elevated cards: opaque nodes with a soft
+    // drop shadow read as deliberate objects floating above the
+    // recessed canvas plane, not washed-out tints of it.
     //
-    //   flow     — solid (full opacity) → reads as "this IS the
-    //              process"
-    //   context  — muted (lower opacity) → reads as "this
-    //              ANNOTATES the process"
-    //   note     — sticker tint → reads as "this isn't part of
-    //              the graph at all"
-    //
-    // The shape selector still works alongside this: a diamond
-    // flow node is "a flow branch point"; a rect context node is
-    // "a context decorator". Three shapes × three categories
-    // gives six visual primitives without explosion.
+    //   flow    — brightest fill + lift → "this IS the process"
+    //   context — quieter fill + lift  → "this ANNOTATES the flow"
+    //   note    — flat sticker tint    → "not part of the graph"
     const surfaceClasses =
         meta.category === "note"
-            ? "bg-bg-subtle/60"
+            ? "bg-bg-subtle"
             : meta.category === "context"
-              ? "bg-bg-default/60 backdrop-blur-sm"
-              : "bg-bg-default/90 backdrop-blur-sm";
+              ? "bg-canvas-node-muted shadow-canvas-node"
+              : "bg-canvas-node shadow-canvas-node";
 
     const accentBorder = NODE_ACCENT_BORDER[meta.accent];
     const iconTone = NODE_ACCENT_ICON_TONE[meta.accent];

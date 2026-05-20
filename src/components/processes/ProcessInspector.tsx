@@ -81,7 +81,7 @@ export function ProcessInspector({ node, onUpdate }: ProcessInspectorProps) {
 
     return (
         <aside
-            className="flex w-[240px] shrink-0 flex-col gap-default border-l border-border-subtle bg-bg-default/60 p-3"
+            className="flex w-[260px] shrink-0 flex-col gap-default border-l border-canvas-border bg-canvas-frame p-default"
             data-process-inspector="true"
             aria-label="Selected element properties"
         >
@@ -109,7 +109,7 @@ export function ProcessInspector({ node, onUpdate }: ProcessInspectorProps) {
                             e.currentTarget.blur();
                         }
                     }}
-                    className="rounded-[6px] border border-border-subtle bg-bg-default px-2 py-1 text-xs text-content-emphasis focus:outline-none focus:border-border-emphasis"
+                    className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-1 text-xs text-content-emphasis focus:border-border-emphasis focus:outline-none"
                     data-testid="inspector-label-input"
                 />
             </label>
@@ -128,7 +128,7 @@ export function ProcessInspector({ node, onUpdate }: ProcessInspectorProps) {
                         }
                     }}
                     placeholder="optional"
-                    className="rounded-[6px] border border-border-subtle bg-bg-default px-2 py-1 text-xs text-content-emphasis focus:outline-none focus:border-border-emphasis"
+                    className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-1 text-xs text-content-emphasis focus:border-border-emphasis focus:outline-none"
                     data-testid="inspector-subtitle-input"
                 />
             </label>

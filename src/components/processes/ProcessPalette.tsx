@@ -62,10 +62,10 @@ export function ProcessPalette() {
 
     return (
         <div
-            className="flex flex-wrap items-center gap-tight border-b border-border-subtle bg-bg-default/40 px-3 py-2"
+            className="flex flex-wrap items-center gap-tight border-b border-canvas-border px-default py-2.5"
             data-process-palette="true"
         >
-            <span className="text-xs uppercase tracking-wide text-content-muted mr-2">
+            <span className="mr-1 text-[10px] font-semibold uppercase tracking-wider text-content-subtle">
                 Palette
             </span>
             {NODE_TAXONOMY_ORDER.map((kind) => {
@@ -81,7 +81,7 @@ export function ProcessPalette() {
                         data-palette-item={kind}
                         title={meta.description}
                         aria-label={`Drag to add a ${meta.label.toLowerCase()} node`}
-                        className="inline-flex h-8 items-center gap-tight rounded-[8px] border border-border-subtle bg-bg-default/30 px-2.5 text-xs font-medium text-content-emphasis cursor-grab active:cursor-grabbing hover:border-border-emphasis hover:bg-bg-muted transition-colors"
+                        className="inline-flex h-8 cursor-grab items-center gap-tight rounded-[8px] border border-canvas-border bg-canvas-node-muted px-2.5 text-xs font-medium text-content-default shadow-sm transition-colors hover:border-border-emphasis hover:bg-canvas-node hover:text-content-emphasis active:cursor-grabbing"
                     >
                         <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                         {meta.label}

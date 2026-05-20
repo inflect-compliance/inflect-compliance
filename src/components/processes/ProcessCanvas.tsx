@@ -203,8 +203,8 @@ function ProcessCanvasInner({
                     <Background
                         variant={BackgroundVariant.Dots}
                         gap={24}
-                        size={1.4}
-                        color="var(--border-subtle)"
+                        size={1.3}
+                        color="var(--canvas-grid)"
                     />
                 </ReactFlow>
             </div>

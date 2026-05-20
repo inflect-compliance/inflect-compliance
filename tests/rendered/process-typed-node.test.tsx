@@ -124,3 +124,48 @@ describe('ProcessTypedNode — per-kind chrome', () => {
         expect(root!.getAttribute('data-process-node-kind')).toBe('processStep');
     });
 });
+
+/**
+ * R27-PR-A — nodes became SOLID elevated cards on the recessed
+ * canvas plane. These assert the computed surface classes per
+ * category + the preserved selected-state vocabulary.
+ */
+describe('ProcessTypedNode — R27 elevated surfaces', () => {
+    it('the default (flow) node is a solid elevated card', () => {
+        const { container } = renderNode('processStep');
+        const cls = container.querySelector('[data-process-node]')!.className;
+        expect(cls).toMatch(/bg-canvas-node(?!-)/);
+        expect(cls).toMatch(/shadow-canvas-node/);
+        // No translucent tint of the plane.
+        expect(cls).not.toMatch(/backdrop-blur/);
+    });
+
+    it('a context node uses the quieter elevated fill', () => {
+        const { container } = renderNode('risk');
+        const cls = container.querySelector('[data-process-node]')!.className;
+        expect(cls).toMatch(/bg-canvas-node-muted/);
+    });
+
+    it('an annotation stays a flat sticker tint (no card lift)', () => {
+        const { container } = renderNode('annotation');
+        const cls = container.querySelector('[data-process-node]')!.className;
+        expect(cls).toMatch(/bg-bg-subtle/);
+        expect(cls).not.toMatch(/shadow-canvas-node/);
+    });
+
+    it('the selected state keeps the brand ring + elevated tint', () => {
+        const { container } = render(
+            <ReactFlowProvider>
+                <ProcessTypedNode
+                    {...({
+                        data: { label: 'Selected', kind: 'processStep' },
+                        selected: true,
+                    } as any)}
+                />
+            </ReactFlowProvider>,
+        );
+        const cls = container.querySelector('[data-process-node]')!.className;
+        expect(cls).toMatch(/ring-2/);
+        expect(cls).toMatch(/bg-bg-elevated/);
+    });
+});

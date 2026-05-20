@@ -98,7 +98,12 @@ export function ProcessesClient({
                 </p>
             </WorkspaceShell.Header>
 
-            <WorkspaceShell.Body className="border border-border-subtle rounded-[8px] bg-bg-default/30">
+            {/* The workspace frame — an elevated panel that contains
+                the chrome (toolbar + palette) and the recessed canvas
+                plane. `overflow-hidden` clips every inner strip to the
+                frame's rounded corners so the composition reads as one
+                deliberate container, not a stack of loose bands. */}
+            <WorkspaceShell.Body className="overflow-hidden rounded-lg border border-canvas-border bg-canvas-frame shadow-lg">
                 <PersistedProcessCanvas
                     tenantSlug={tenantSlug}
                     processes={processes}
