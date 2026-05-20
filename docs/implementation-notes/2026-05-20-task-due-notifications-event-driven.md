@@ -64,16 +64,27 @@ backstop.
 
 | File | Role |
 |------|------|
-| `src/app-layer/jobs/task-due-notification.ts` | Extracted `createTaskDueNotification` + `TaskDueTarget` / `TaskDueNotificationOutcome`; cron loop now calls the shared helper |
-| `src/app-layer/usecases/task.ts` | `emitTaskDueNotification` wrapper; wired into `createTask` / `updateTask` / `assignTask` |
-| `tests/unit/task-due-notification.test.ts` | New `createTaskDueNotification` describe block — created / out-of-window / duplicate / propagating-error |
-| `tests/guards/task-due-notification-wiring.test.ts` | Structural ratchet — locks the export + the 3 usecase call sites |
+| `src/app-layer/notifications/task-due.ts` | **NEW** — shared window math + `createTaskDueNotification` writer (`createMany` + `skipDuplicates`). Neutral module both the cron and the usecase depend on |
+| `src/app-layer/jobs/task-due-notification.ts` | Cron scan loop only; consumes + re-exports the shared helper |
+| `src/app-layer/usecases/task.ts` | `emitTaskDueNotification` wrapper (post-commit, own txn); wired into `createTask` / `updateTask` / `assignTask` |
+| `tests/unit/task-due-notification.test.ts` | `createTaskDueNotification` + cron behaviour against a mocked `createMany` |
+| `tests/guards/task-due-notification-wiring.test.ts` | Structural ratchet — helper in `notifications/`, `createMany`+`skipDuplicates`, usecase imports from `notifications/` not `jobs/`, 3 call sites |
 
 ## Decisions
 
 - **Extract a shared helper, do not duplicate the insert.** One
   writer means one `dedupeKey` shape; the cron and the event path are
   guaranteed consistent by construction, not by review vigilance.
+- **The shared helper lives in `notifications/`, not `jobs/`.** The
+  task usecase is an HTTP request path; importing it from `jobs/`
+  pulls the job module graph into the request bundle. The first cut
+  put the helper in `jobs/task-due-notification.ts` and imported it
+  into `task.ts` — that perturbed the `/api/t/.../tasks` route bundle
+  and broke `createTask` (the `issues.spec` E2E went red even though
+  the runtime path is a no-op for an unassigned task). Moving the
+  helper to `notifications/task-due.ts` — a neutral leaf module whose
+  only import is the Prisma *type* — decouples the usecase from
+  `jobs/` entirely. The cron job now consumes the same module.
 - **`createMany` + `skipDuplicates`, never `create`.** This is the
   load-bearing decision. `create` throws `P2002` on a duplicate
   `dedupeKey` — and a thrown `P2002` inside a PostgreSQL interactive

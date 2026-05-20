@@ -9,9 +9,14 @@
  * reaches the bell the instant a task is created / rescheduled /
  * assigned.
  *
- * This ratchet locks that wiring in: a future refactor cannot
- * silently drop the event-driven path and leave the feature
- * cron-only again.
+ * This ratchet locks that wiring in — and locks the two structural
+ * fixes the rollout needed:
+ *   - the shared helper lives in `notifications/`, NOT `jobs/`, so
+ *     the task usecase (an HTTP request path) never imports the job
+ *     module graph;
+ *   - the insert is a `createMany` + `skipDuplicates`, never a
+ *     `create`, so a duplicate dedupeKey can't throw P2002 and
+ *     poison the caller's transaction.
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -22,42 +27,47 @@ function read(rel: string): string {
     return fs.readFileSync(path.join(ROOT, rel), 'utf8');
 }
 
+const SHARED = read('src/app-layer/notifications/task-due.ts');
 const JOB = read('src/app-layer/jobs/task-due-notification.ts');
 const TASK_USECASE = read('src/app-layer/usecases/task.ts');
 
 describe('TASK_DUE notification — event-driven wiring', () => {
-    it('the job exports the shared createTaskDueNotification helper', () => {
-        expect(JOB).toMatch(
+    it('the shared helper lives in notifications/, not jobs/', () => {
+        expect(SHARED).toMatch(
             /export async function createTaskDueNotification\b/,
         );
     });
 
-    it('the helper is idempotent — shares the cron dedupeKey', () => {
-        // Both the cron loop and the helper mint the key the same
-        // way, so the two paths never double-notify.
-        expect(JOB).toMatch(/buildTaskDueDedupeKey\(/);
+    it('the helper is idempotent — mints the dedupeKey', () => {
+        expect(SHARED).toMatch(/buildTaskDueDedupeKey\(/);
     });
 
     it('the duplicate insert never throws — createMany + skipDuplicates', () => {
         // A `create` would throw P2002 on a duplicate dedupeKey;
-        // thrown inside an interactive transaction that poisons the
+        // thrown inside an interactive transaction it poisons the
         // whole transaction. `createMany` + `skipDuplicates` compiles
         // to ON CONFLICT DO NOTHING and returns count 0 instead.
-        expect(JOB).toMatch(/notification\.createMany\(/);
-        expect(JOB).toMatch(/skipDuplicates:\s*true/);
-        expect(JOB).not.toMatch(/notification\.create\(/);
+        expect(SHARED).toMatch(/notification\.createMany\(/);
+        expect(SHARED).toMatch(/skipDuplicates:\s*true/);
+        expect(SHARED).not.toMatch(/notification\.create\(/);
     });
 
-    it('the task usecase imports the helper', () => {
-        expect(TASK_USECASE).toMatch(
-            /import \{ createTaskDueNotification \} from ['"]\.\.\/jobs\/task-due-notification['"]/,
+    it('the cron job consumes the shared helper', () => {
+        expect(JOB).toMatch(
+            /import \{[\s\S]*?createTaskDueNotification[\s\S]*?\} from ['"]\.\.\/notifications\/task-due['"]/,
         );
     });
 
+    it('the task usecase imports the helper from notifications/, not jobs/', () => {
+        // Load-bearing: a usecase importing from jobs/ couples the
+        // HTTP request path to the job module graph.
+        expect(TASK_USECASE).toMatch(
+            /import \{ createTaskDueNotification \} from ['"]\.\.\/notifications\/task-due['"]/,
+        );
+        expect(TASK_USECASE).not.toMatch(/from ['"]\.\.\/jobs\//);
+    });
+
     it('createTask, updateTask and assignTask each emit the notification', () => {
-        // Three call sites — one per write path. The
-        // `emitTaskDueNotification` wrapper is the defensive,
-        // fire-and-forget bridge to `createTaskDueNotification`.
         const callSites =
             TASK_USECASE.match(/emitTaskDueNotification\(ctx, result\)/g) ??
             [];
@@ -65,9 +75,9 @@ describe('TASK_DUE notification — event-driven wiring', () => {
     });
 
     it('the emit wrapper runs outside the task transaction', () => {
-        // It must take `ctx` (not the transaction `db`) and open its
-        // own `runInTenantContext` — a notification failure must
-        // never roll back the task write.
+        // It takes `ctx` (not the transaction `db`) and opens its own
+        // `runInTenantContext` — a notification failure must never
+        // roll back the task write.
         expect(TASK_USECASE).toMatch(
             /async function emitTaskDueNotification\(\s*ctx: RequestContext,/,
         );

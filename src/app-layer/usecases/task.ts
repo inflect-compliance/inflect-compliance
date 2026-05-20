@@ -4,7 +4,7 @@ import { assertCanReadTasks, assertCanWriteTasks, assertCanCommentOnTasks } from
 import { logEvent } from '../events/audit';
 import { emitAutomationEvent } from '../automation';
 import { enqueueEmail } from '../notifications/enqueue';
-import { createTaskDueNotification } from '../jobs/task-due-notification';
+import { createTaskDueNotification } from '../notifications/task-due';
 import { runInTenantContext } from '@/lib/db-context';
 import { notFound, badRequest } from '@/lib/errors/types';
 import { sanitizePlainText } from '@/lib/security/sanitize';
