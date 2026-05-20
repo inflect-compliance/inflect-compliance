@@ -23,10 +23,12 @@
  *   `Notification.dedupeKey` is unique. The key is
  *   `{tenantId}:TASK_DUE:{window}:{taskId}:{userId}:{YYYY-MM-DD}`
  *   where the date is the UTC run-day. Re-running the job within the
- *   same UTC day is idempotent — the second insert trips P2002 and is
- *   counted as `skippedDuplicate`. A task matches at most one window
- *   per run, so over its life a task yields at most three
- *   notifications (7d → 1d → 0d).
+ *   same UTC day is idempotent — the insert is a `createMany` with
+ *   `skipDuplicates` (`INSERT ... ON CONFLICT DO NOTHING`), so a
+ *   repeat is absorbed at the SQL layer with NO exception and counted
+ *   as `skippedDuplicate`. A task matches at most one window per run,
+ *   so over its life a task yields at most three notifications
+ *   (7d → 1d → 0d).
  *
  * In-app only. The email deadline digest (`notification-dispatch`)
  * already covers these deadlines over email; this job fills the gap
@@ -132,11 +134,6 @@ export function buildTaskDueDedupeKey(
     return `${tenantId}:TASK_DUE:${window}:${taskId}:${userId}:${utcDayKey(now)}`;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isUniqueConstraintError(error: any): boolean {
-    return error?.code === 'P2002' || error?.message?.includes('Unique constraint');
-}
-
 /** One task in the shape the per-task notification helper needs. */
 export interface TaskDueTarget {
     id: string;
@@ -156,9 +153,9 @@ export interface TaskDueNotificationOutcome {
 
 /**
  * Create the in-app `TASK_DUE` notification for ONE task, if its
- * `dueAt` lands on a {7,1,0}-day reminder window. Idempotent — the
- * `dedupeKey` unique index absorbs a repeat (the cron and the
- * event-driven usecase path, or two saves the same UTC day).
+ * `dueAt` lands on a {7,1,0}-day reminder window. Idempotent — a
+ * repeat `dedupeKey` (the cron and the event-driven usecase path, or
+ * two saves the same UTC day) is absorbed without an exception.
  *
  * The shared seam: the daily `task-due-notification` job calls this
  * per scanned task, AND the task usecases (`createTask` /
@@ -167,6 +164,15 @@ export interface TaskDueNotificationOutcome {
  * notification bell immediately rather than waiting on the 08:00
  * cron, and without depending on the scheduler having registered
  * the repeatable at all.
+ *
+ * The insert is a `createMany` with `skipDuplicates`, NOT a `create`.
+ * `skipDuplicates` compiles to `INSERT ... ON CONFLICT DO NOTHING`:
+ * a duplicate `dedupeKey` returns `count: 0` with NO exception. This
+ * is load-bearing — `create` would throw P2002 on a duplicate, and a
+ * thrown P2002 inside an interactive transaction poisons the WHOLE
+ * PostgreSQL transaction (a caught JS error does not un-poison an
+ * aborted PG transaction). The usecase callers run inside their own
+ * transaction; only never throwing keeps that transaction safe.
  */
 export async function createTaskDueNotification(
     db: Pick<PrismaClient, 'notification'>,
@@ -181,9 +187,9 @@ export async function createTaskDueNotification(
         ? `${task.key} "${task.title}"`
         : `"${task.title}"`;
 
-    try {
-        await db.notification.create({
-            data: {
+    const result = await db.notification.createMany({
+        data: [
+            {
                 tenantId: task.tenantId,
                 userId: task.assigneeUserId,
                 type: 'TASK_DUE',
@@ -198,15 +204,12 @@ export async function createTaskDueNotification(
                     now,
                 ),
             },
-        });
-        return { status: 'created', window };
-    } catch (error: unknown) {
-        if (isUniqueConstraintError(error)) {
-            // Already notified for this task+user+window this UTC day.
-            return { status: 'duplicate', window };
-        }
-        throw error;
-    }
+        ],
+        skipDuplicates: true,
+    });
+
+    // count 0 ⇒ the dedupeKey already existed ⇒ already notified.
+    return { status: result.count > 0 ? 'created' : 'duplicate', window };
 }
 
 /**

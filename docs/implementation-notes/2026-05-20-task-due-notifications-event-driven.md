@@ -27,12 +27,11 @@ Add an **event-driven path** alongside the cron, sharing one writer so
 the two never double-notify.
 
 ```
-                ┌─────────────────────────┐
-  createTask ──▶│                         │
-  updateTask ──▶│  emitTaskDueNotification │──▶ createTaskDueNotification ──▶ Notification
-  assignTask ──▶│  (usecase, fire-&-forget)│         (shared helper)            (dedupeKey)
-                └─────────────────────────┘                ▲
-  08:00 cron ── processTaskDueNotifications ────────────────┘
+  createTask ─┐  (after the task txn commits)
+  updateTask ─┼─▶ emitTaskDueNotification ─▶ runInTenantContext ─▶ createTaskDueNotification ─▶ Notification
+  assignTask ─┘     (usecase, fire-&-forget)    (own short txn)       (shared helper)     createMany + skipDuplicates
+                                                                            ▲
+  08:00 cron ─────────────── processTaskDueNotifications ────────────────────┘
 ```
 
 `createTaskDueNotification(db, task, now)` is extracted from the cron
@@ -45,17 +44,21 @@ rescheduled, or (re)assigned.
 
 **Idempotency carries the whole design.** Both paths mint the same
 `dedupeKey` (`{tenantId}:TASK_DUE:{window}:{taskId}:{userId}:{YYYY-MM-DD}`).
-A task created at 14:00 today gets its `today` notification
-immediately from the usecase; the next 08:00 cron re-attempts, trips
-the `dedupeKey` unique index, and counts it `skippedDuplicate`. No
-double-bell, ever — the DB enforces it.
+The insert is a `createMany` with `skipDuplicates` — `INSERT ... ON
+CONFLICT DO NOTHING`. A task created at 14:00 today gets its `today`
+notification immediately from the usecase; the next 08:00 cron
+re-attempts, the conflict is absorbed at the SQL layer (`count: 0`),
+and it is counted `skippedDuplicate`. No double-bell, ever — and,
+critically, **no exception** (see Decisions).
 
 **`emitTaskDueNotification`** is the usecase-side wrapper: a private
 `task.ts` helper that early-returns when the task has no assignee, no
-`dueAt`, or the context has no `tenantSlug` (the `linkUrl` needs it),
-and otherwise calls the shared helper inside a `try/catch` that logs a
-warning and **never throws**. A notification failure must not roll
-back the task write that triggered it — the cron is the backstop.
+`dueAt`, or the context has no `tenantSlug` (the `linkUrl` needs it).
+It runs **after the task's own transaction has committed**, opening
+its own short `runInTenantContext` transaction, inside a `try/catch`
+that logs a warning and **never throws**. A notification failure must
+not roll back the task write that triggered it — the cron is the
+backstop.
 
 ## Files
 
@@ -71,10 +74,24 @@ back the task write that triggered it — the cron is the backstop.
 - **Extract a shared helper, do not duplicate the insert.** One
   writer means one `dedupeKey` shape; the cron and the event path are
   guaranteed consistent by construction, not by review vigilance.
-- **Fire-and-forget at the usecase, never throwing.** The task write
-  is the user's intent; a notification is a side effect. A SIEM-style
-  "audit row already committed" fail-safe — the cron re-attempts on
-  its next pass anyway.
+- **`createMany` + `skipDuplicates`, never `create`.** This is the
+  load-bearing decision. `create` throws `P2002` on a duplicate
+  `dedupeKey` — and a thrown `P2002` inside a PostgreSQL interactive
+  transaction poisons the *whole* transaction (`25P02`); a caught JS
+  error does **not** un-poison it. The first cut of this change wrote
+  the notification with `create` inside the caller's transaction; a
+  duplicate `dedupeKey` then rolled back the entire `createTask` —
+  surfacing as `409 CONFLICT` on task creation (caught in CI by the
+  `issues.spec` E2E). `createMany` with `skipDuplicates` compiles to
+  `INSERT ... ON CONFLICT DO NOTHING`: a duplicate returns `count: 0`
+  with no exception, so the transaction is never poisoned.
+- **Run the emit *after* the task transaction, in its own.**
+  Defence in depth on top of the `createMany` fix: `emitTaskDue\
+  Notification` takes `ctx` (not the transaction `db`) and opens its
+  own short `runInTenantContext`. Even a genuine DB error during the
+  notification write now cannot touch the task transaction — the task
+  is already committed. Fire-and-forget in the true sense; the cron
+  re-attempts on its next pass anyway.
 - **Emit from `updateTask` too, not just create.** Rescheduling a
   task's `dueAt` into a near-term window is exactly the case the
   original cron-only design missed for same-day edits.

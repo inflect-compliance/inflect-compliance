@@ -38,6 +38,16 @@ describe('TASK_DUE notification — event-driven wiring', () => {
         expect(JOB).toMatch(/buildTaskDueDedupeKey\(/);
     });
 
+    it('the duplicate insert never throws — createMany + skipDuplicates', () => {
+        // A `create` would throw P2002 on a duplicate dedupeKey;
+        // thrown inside an interactive transaction that poisons the
+        // whole transaction. `createMany` + `skipDuplicates` compiles
+        // to ON CONFLICT DO NOTHING and returns count 0 instead.
+        expect(JOB).toMatch(/notification\.createMany\(/);
+        expect(JOB).toMatch(/skipDuplicates:\s*true/);
+        expect(JOB).not.toMatch(/notification\.create\(/);
+    });
+
     it('the task usecase imports the helper', () => {
         expect(TASK_USECASE).toMatch(
             /import \{ createTaskDueNotification \} from ['"]\.\.\/jobs\/task-due-notification['"]/,
@@ -49,14 +59,17 @@ describe('TASK_DUE notification — event-driven wiring', () => {
         // `emitTaskDueNotification` wrapper is the defensive,
         // fire-and-forget bridge to `createTaskDueNotification`.
         const callSites =
-            TASK_USECASE.match(/emitTaskDueNotification\(db, ctx, task\)/g) ??
+            TASK_USECASE.match(/emitTaskDueNotification\(ctx, result\)/g) ??
             [];
         expect(callSites.length).toBe(3);
     });
 
-    it('the emit wrapper is defined as a fire-and-forget helper', () => {
+    it('the emit wrapper runs outside the task transaction', () => {
+        // It must take `ctx` (not the transaction `db`) and open its
+        // own `runInTenantContext` — a notification failure must
+        // never roll back the task write.
         expect(TASK_USECASE).toMatch(
-            /async function emitTaskDueNotification\(/,
+            /async function emitTaskDueNotification\(\s*ctx: RequestContext,/,
         );
     });
 });

@@ -7,7 +7,9 @@
  *
  * Prisma is mocked — this is a behavioural unit test, not an
  * integration test. The job's only collaborators are `db.task` and
- * `db.notification`.
+ * `db.notification`. The notification write is a `createMany` with
+ * `skipDuplicates` (`INSERT ... ON CONFLICT DO NOTHING`): a duplicate
+ * `dedupeKey` returns `count: 0` instead of throwing P2002.
  */
 
 import type { PrismaClient } from '@prisma/client';
@@ -67,18 +69,20 @@ function makeTask(overrides: Partial<TaskRow> = {}): TaskRow {
 
 function makeDb(tasks: TaskRow[]) {
     const findMany = jest.fn().mockResolvedValue(tasks);
-    const create = jest.fn().mockResolvedValue({ id: 'notif-1' });
+    // `createMany` + `skipDuplicates` → `{ count: 1 }` on insert,
+    // `{ count: 0 }` when the dedupeKey already existed.
+    const createMany = jest.fn().mockResolvedValue({ count: 1 });
     const db = {
         task: { findMany },
-        notification: { create },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        notification: { createMany },
     } as unknown as PrismaClient;
-    return { db, findMany, create };
+    return { db, findMany, createMany };
 }
 
-/** Last `data` payload passed to `notification.create`. */
-function lastCreateData(create: jest.Mock): Record<string, unknown> {
-    return create.mock.calls[create.mock.calls.length - 1][0].data;
+/** Last row payload passed to `notification.createMany`. */
+function lastCreateData(createMany: jest.Mock): Record<string, unknown> {
+    const call = createMany.mock.calls[createMany.mock.calls.length - 1][0];
+    return call.data[0];
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -163,16 +167,15 @@ describe('buildTaskDueDedupeKey', () => {
 
 describe('processTaskDueNotifications — notification creation', () => {
     test('creates a TASK_DUE notification for a task due today', async () => {
-        const { db, create } = makeDb([makeTask()]);
+        const { db, createMany } = makeDb([makeTask()]);
 
         const result = await processTaskDueNotifications(db, {
             tenantId: 'tenant-a',
             now: NOW,
         });
 
-        expect(create).toHaveBeenCalledTimes(1);
-        const data = lastCreateData(create);
-        expect(data).toMatchObject({
+        expect(createMany).toHaveBeenCalledTimes(1);
+        expect(lastCreateData(createMany)).toMatchObject({
             tenantId: 'tenant-a',
             userId: 'user-1',
             type: 'TASK_DUE',
@@ -189,8 +192,16 @@ describe('processTaskDueNotifications — notification creation', () => {
         });
     });
 
+    test('the insert opts into skipDuplicates (ON CONFLICT DO NOTHING)', async () => {
+        const { db, createMany } = makeDb([makeTask()]);
+
+        await processTaskDueNotifications(db, { now: NOW });
+
+        expect(createMany.mock.calls[0][0]).toMatchObject({ skipDuplicates: true });
+    });
+
     test('fires distinct copy for each of the three windows', async () => {
-        const { db, create } = makeDb([
+        const { db, createMany } = makeDb([
             makeTask({ id: 't-today', dueAt: DUE_TODAY }),
             makeTask({ id: 't-tomorrow', dueAt: DUE_TOMORROW }),
             makeTask({ id: 't-week', dueAt: DUE_IN_7_DAYS }),
@@ -198,8 +209,8 @@ describe('processTaskDueNotifications — notification creation', () => {
 
         const result = await processTaskDueNotifications(db, { now: NOW });
 
-        expect(create).toHaveBeenCalledTimes(3);
-        const byTitle = create.mock.calls.map((c) => c[0].data.title).sort();
+        expect(createMany).toHaveBeenCalledTimes(3);
+        const byTitle = createMany.mock.calls.map((c) => c[0].data[0].title).sort();
         expect(byTitle).toEqual([
             'Task due in one week',
             'Task due today',
@@ -210,25 +221,25 @@ describe('processTaskDueNotifications — notification creation', () => {
     });
 
     test('window copy matches the TASK_DUE_WINDOWS table', async () => {
-        const { db, create } = makeDb([
+        const { db, createMany } = makeDb([
             makeTask({ id: 't-tomorrow', key: null, dueAt: DUE_TOMORROW }),
         ]);
 
         await processTaskDueNotifications(db, { now: NOW });
 
-        const data = lastCreateData(create);
+        const data = lastCreateData(createMany);
         expect(data.title).toBe(TASK_DUE_WINDOWS.day.title);
         expect(data.message).toBe('"Rotate API keys" is due tomorrow.');
     });
 
     test('ignores tasks not on a {7,1,0}-day touchpoint', async () => {
-        const { db, create } = makeDb([
+        const { db, createMany } = makeDb([
             makeTask({ id: 't-3days', dueAt: DUE_IN_3_DAYS }),
         ]);
 
         const result = await processTaskDueNotifications(db, { now: NOW });
 
-        expect(create).not.toHaveBeenCalled();
+        expect(createMany).not.toHaveBeenCalled();
         expect(result).toEqual({
             scanned: 1,
             created: 0,
@@ -238,29 +249,29 @@ describe('processTaskDueNotifications — notification creation', () => {
     });
 
     test('a task with no key omits the key prefix from the message', async () => {
-        const { db, create } = makeDb([makeTask({ key: null })]);
+        const { db, createMany } = makeDb([makeTask({ key: null })]);
 
         await processTaskDueNotifications(db, { now: NOW });
 
-        expect(lastCreateData(create).message).toBe('"Rotate API keys" is due today.');
+        expect(lastCreateData(createMany).message).toBe('"Rotate API keys" is due today.');
     });
 
     test('linkUrl is built from the task tenant slug', async () => {
-        const { db, create } = makeDb([
+        const { db, createMany } = makeDb([
             makeTask({ id: 'abc', tenant: { slug: 'globex' } }),
         ]);
 
         await processTaskDueNotifications(db, { now: NOW });
 
-        expect(lastCreateData(create).linkUrl).toBe('/t/globex/tasks/abc');
+        expect(lastCreateData(createMany).linkUrl).toBe('/t/globex/tasks/abc');
     });
 
     test('no matching tasks → no writes, zeroed result', async () => {
-        const { db, create } = makeDb([]);
+        const { db, createMany } = makeDb([]);
 
         const result = await processTaskDueNotifications(db, { now: NOW });
 
-        expect(create).not.toHaveBeenCalled();
+        expect(createMany).not.toHaveBeenCalled();
         expect(result).toEqual({
             scanned: 0,
             created: 0,
@@ -323,13 +334,13 @@ describe('processTaskDueNotifications — tenant scoping', () => {
     test('the notification inherits the task tenantId, not the option', async () => {
         // A system-wide scan returns rows from many tenants; each
         // notification must be written to the row's own tenant.
-        const { db, create } = makeDb([
+        const { db, createMany } = makeDb([
             makeTask({ id: 't-b', tenantId: 'tenant-b', tenant: { slug: 'beta' } }),
         ]);
 
         await processTaskDueNotifications(db, { now: NOW });
 
-        expect(lastCreateData(create).tenantId).toBe('tenant-b');
+        expect(lastCreateData(createMany).tenantId).toBe('tenant-b');
     });
 });
 
@@ -338,9 +349,10 @@ describe('processTaskDueNotifications — tenant scoping', () => {
 // ════════════════════════════════════════════════════════════════════
 
 describe('processTaskDueNotifications — deduplication', () => {
-    test('a dedupeKey collision (P2002) is counted as skipped, not thrown', async () => {
-        const { db, create } = makeDb([makeTask()]);
-        create.mockRejectedValueOnce({ code: 'P2002' });
+    test('a dedupeKey collision (count 0) is counted as skipped, not thrown', async () => {
+        const { db, createMany } = makeDb([makeTask()]);
+        // ON CONFLICT DO NOTHING absorbed the row → nothing inserted.
+        createMany.mockResolvedValueOnce({ count: 0 });
 
         const result = await processTaskDueNotifications(db, { now: NOW });
 
@@ -349,20 +361,20 @@ describe('processTaskDueNotifications — deduplication', () => {
     });
 
     test('a partial collision skips the duplicate and still writes the rest', async () => {
-        const { db, create } = makeDb([
+        const { db, createMany } = makeDb([
             makeTask({ id: 't-1' }),
             makeTask({ id: 't-2' }),
         ]);
-        create.mockRejectedValueOnce({ code: 'P2002' });
+        createMany.mockResolvedValueOnce({ count: 0 });
 
         const result = await processTaskDueNotifications(db, { now: NOW });
 
         expect(result).toMatchObject({ created: 1, skippedDuplicate: 1, scanned: 2 });
     });
 
-    test('a non-P2002 database error propagates', async () => {
-        const { db, create } = makeDb([makeTask()]);
-        create.mockRejectedValueOnce(new Error('connection reset'));
+    test('a database error propagates', async () => {
+        const { db, createMany } = makeDb([makeTask()]);
+        createMany.mockRejectedValueOnce(new Error('connection reset'));
 
         await expect(
             processTaskDueNotifications(db, { now: NOW }),
@@ -387,13 +399,14 @@ describe('createTaskDueNotification — per-task helper', () => {
     };
 
     it('creates a TASK_DUE notification for an in-window task', async () => {
-        const { db, create } = makeDb([]);
+        const { db, createMany } = makeDb([]);
 
         const outcome = await createTaskDueNotification(db, target, NOW);
 
         expect(outcome).toEqual({ status: 'created', window: 'day' });
-        expect(create).toHaveBeenCalledTimes(1);
-        expect(lastCreateData(create)).toMatchObject({
+        expect(createMany).toHaveBeenCalledTimes(1);
+        expect(createMany.mock.calls[0][0]).toMatchObject({ skipDuplicates: true });
+        expect(lastCreateData(createMany)).toMatchObject({
             tenantId: 'tenant-a',
             userId: 'user-1',
             type: 'TASK_DUE',
@@ -405,7 +418,7 @@ describe('createTaskDueNotification — per-task helper', () => {
     });
 
     it('does nothing for a task outside the {7,1,0}-day windows', async () => {
-        const { db, create } = makeDb([]);
+        const { db, createMany } = makeDb([]);
 
         const outcome = await createTaskDueNotification(
             db,
@@ -414,21 +427,21 @@ describe('createTaskDueNotification — per-task helper', () => {
         );
 
         expect(outcome).toEqual({ status: 'out-of-window', window: null });
-        expect(create).not.toHaveBeenCalled();
+        expect(createMany).not.toHaveBeenCalled();
     });
 
-    it('reports a dedupeKey collision as duplicate — not an error', async () => {
-        const { db, create } = makeDb([]);
-        create.mockRejectedValueOnce({ code: 'P2002' });
+    it('reports a dedupeKey collision (count 0) as duplicate — not an error', async () => {
+        const { db, createMany } = makeDb([]);
+        createMany.mockResolvedValueOnce({ count: 0 });
 
         const outcome = await createTaskDueNotification(db, target, NOW);
 
         expect(outcome).toEqual({ status: 'duplicate', window: 'day' });
     });
 
-    it('a non-P2002 database error propagates', async () => {
-        const { db, create } = makeDb([]);
-        create.mockRejectedValueOnce(new Error('connection reset'));
+    it('a database error propagates', async () => {
+        const { db, createMany } = makeDb([]);
+        createMany.mockRejectedValueOnce(new Error('connection reset'));
 
         await expect(
             createTaskDueNotification(db, target, NOW),

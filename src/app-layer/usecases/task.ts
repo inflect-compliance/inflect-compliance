@@ -166,12 +166,13 @@ export async function createTask(ctx: RequestContext, input: {
         if (input.assigneeUserId) {
             await enqueueTaskAssignedNotification(db, ctx, task.id, task.title, task.key, input.type || 'TASK', input.assigneeUserId);
         }
-        // In-app TASK_DUE notification if the new task is already
-        // assigned + due within a reminder window.
-        await emitTaskDueNotification(db, ctx, task);
 
         return task;
     });
+    // In-app TASK_DUE notification if the new task is already assigned
+    // and due within a reminder window. Runs AFTER the task
+    // transaction commits — see `emitTaskDueNotification`.
+    await emitTaskDueNotification(ctx, result);
     await bumpEntityCacheVersion(ctx, 'task');
     return result;
 }
@@ -204,11 +205,11 @@ export async function updateTask(ctx: RequestContext, taskId: string, patch: {
             detailsJson: { category: 'entity_lifecycle', entityName: 'Task', operation: 'updated', summary: 'TASK_UPDATED' },
             metadata: patch,
         });
-        // A rescheduled `dueAt` (or a reassignment) may move the task
-        // into a reminder window — re-evaluate the in-app notification.
-        await emitTaskDueNotification(db, ctx, task);
         return task;
     });
+    // A rescheduled `dueAt` may move the task into a reminder window —
+    // re-evaluate the in-app notification after the commit.
+    await emitTaskDueNotification(ctx, result);
     await bumpEntityCacheVersion(ctx, 'task');
     return result;
 }
@@ -276,12 +277,11 @@ export async function assignTask(ctx: RequestContext, taskId: string, assigneeUs
         if (assigneeUserId) {
             await enqueueTaskAssignedNotification(db, ctx, taskId, task.title, task.key, task.type, assigneeUserId);
         }
-        // In-app TASK_DUE notification for the new assignee if the
-        // task is due within a reminder window.
-        await emitTaskDueNotification(db, ctx, task);
-
         return task;
     });
+    // In-app TASK_DUE notification for the new assignee if the task
+    // is due within a reminder window — after the commit.
+    await emitTaskDueNotification(ctx, result);
     await bumpEntityCacheVersion(ctx, 'task');
     return result;
 }
@@ -336,14 +336,18 @@ async function enqueueTaskAssignedNotification(
  * daily 08:00 `task-due-notification` cron (which also depends on
  * the scheduler having registered the repeatable).
  *
- * `createTaskDueNotification` is idempotent — it shares the cron's
- * `dedupeKey`, so the cron never double-notifies a task this path
- * already covered, and a re-save the same UTC day is absorbed by
- * the unique index. Fire-and-forget — a notification failure must
- * never break the task write.
+ * Runs AFTER the task's own transaction has committed, in its own
+ * short `runInTenantContext` transaction. It must NOT share the
+ * caller's transaction:
+ *   - A notification write must never roll back the task write — the
+ *     task is the user's intent; the notification is a side effect.
+ *   - `createTaskDueNotification` is idempotent via `ON CONFLICT DO
+ *     NOTHING` (it shares the cron's `dedupeKey`), but isolating it
+ *     in its own transaction also keeps any genuine DB error off the
+ *     task transaction entirely.
+ * Fully fire-and-forget — any failure is logged and swallowed.
  */
 async function emitTaskDueNotification(
-    db: PrismaTx,
     ctx: RequestContext,
     task: {
         id: string;
@@ -355,16 +359,23 @@ async function emitTaskDueNotification(
     },
 ): Promise<void> {
     if (!task.assigneeUserId || !task.dueAt || !ctx.tenantSlug) return;
+    // Hoist the narrowed values — the closure below would otherwise
+    // see the wider nullable property types.
+    const tenantSlug = ctx.tenantSlug;
+    const assigneeUserId = task.assigneeUserId;
+    const dueAt = task.dueAt;
     try {
-        await createTaskDueNotification(db, {
-            id: task.id,
-            tenantId: task.tenantId,
-            tenantSlug: ctx.tenantSlug,
-            title: task.title,
-            key: task.key,
-            dueAt: task.dueAt,
-            assigneeUserId: task.assigneeUserId,
-        });
+        await runInTenantContext(ctx, (db) =>
+            createTaskDueNotification(db, {
+                id: task.id,
+                tenantId: task.tenantId,
+                tenantSlug,
+                title: task.title,
+                key: task.key,
+                dueAt,
+                assigneeUserId,
+            }),
+        );
     } catch (err) {
         logger.warn('failed to create task-due notification', {
             component: 'notifications',

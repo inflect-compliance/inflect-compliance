@@ -204,11 +204,12 @@ describe('REGRESSION: policy-review-reminder tenant isolation', () => {
 
 describe('REGRESSION: task-due-notification tenant isolation', () => {
     const mockTaskFindMany = jest.fn().mockResolvedValue([]);
-    const mockNotificationCreate = jest.fn().mockResolvedValue({});
+    // The job inserts via `createMany` + `skipDuplicates` — `{ count }`.
+    const mockNotificationCreateMany = jest.fn().mockResolvedValue({ count: 1 });
 
     const mockPrisma = {
         task: { findMany: (...args: unknown[]) => mockTaskFindMany(...args) },
-        notification: { create: (...args: unknown[]) => mockNotificationCreate(...args) },
+        notification: { createMany: (...args: unknown[]) => mockNotificationCreateMany(...args) },
     } as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
     // Fixed anchor so "due today" classification is deterministic.
@@ -259,8 +260,8 @@ describe('REGRESSION: task-due-notification tenant isolation', () => {
         );
         await processTaskDueNotifications(mockPrisma, { tenantId: TENANT_A, now: NOW });
 
-        expect(mockNotificationCreate).toHaveBeenCalledTimes(1);
-        expect(mockNotificationCreate.mock.calls[0][0].data.tenantId).toBe(TENANT_A);
+        expect(mockNotificationCreateMany).toHaveBeenCalledTimes(1);
+        expect(mockNotificationCreateMany.mock.calls[0][0].data[0].tenantId).toBe(TENANT_A);
     });
 
     test('tenant-scoped: logging shows scope', async () => {
