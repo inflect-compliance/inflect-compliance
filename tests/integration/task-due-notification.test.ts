@@ -18,6 +18,12 @@ import type { PrismaClient } from '@prisma/client';
 import { createTenant, createUser } from '../helpers/factories';
 import { processTaskDueNotifications } from '@/app-layer/jobs/task-due-notification';
 
+// The `beforeEach` resets ~30 tables via `resetDatabase` + a raw
+// TRUNCATE. Under a loaded CI run that reset can transiently block
+// on lock contention past Jest's 5 s hook default — raise the
+// per-file budget so a slow reset doesn't flake the suite.
+jest.setTimeout(30_000);
+
 const describeFn = DB_AVAILABLE ? describe : describe.skip;
 
 describeFn('task-due-notification (integration)', () => {
