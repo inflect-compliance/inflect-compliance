@@ -81,7 +81,7 @@ export function ProcessPalette() {
                         data-palette-item={kind}
                         title={meta.description}
                         aria-label={`Drag to add a ${meta.label.toLowerCase()} node`}
-                        className="inline-flex h-8 cursor-grab items-center gap-tight rounded-[8px] border border-canvas-border bg-canvas-node-muted px-2.5 text-xs font-medium text-content-default shadow-sm transition-colors hover:border-border-emphasis hover:bg-canvas-node hover:text-content-emphasis active:cursor-grabbing"
+                        className="inline-flex h-8 cursor-grab items-center gap-tight rounded-[8px] border border-canvas-border bg-canvas-node-muted px-2.5 text-xs font-medium text-content-default transition-colors hover:border-border-emphasis hover:bg-canvas-node hover:text-content-emphasis active:cursor-grabbing"
                     >
                         <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                         {meta.label}
