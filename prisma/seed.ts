@@ -787,7 +787,18 @@ async function main() {
                 createdByUserId: editor.id,
             },
         });
-        console.log('✅ Tasks seeded (TSK-1 / TSK-2 / TSK-3)');
+        // Seed the per-tenant key counter to match. `WorkItemRepository`
+        // mints `TSK-N` from `TaskKeySequence`; the #102 migration
+        // backfills that counter from existing keys, but the backfill
+        // runs BEFORE this seed inserts TSK-1/2/3. Without this row the
+        // first API-created task mints `TSK-1` and collides with the
+        // seeded task on the unique `[tenantId, key]` index.
+        await prisma.taskKeySequence.upsert({
+            where: { tenantId: tenant.id },
+            create: { tenantId: tenant.id, lastValue: 3 },
+            update: { lastValue: 3 },
+        });
+        console.log('✅ Tasks seeded (TSK-1 / TSK-2 / TSK-3) + key counter');
     }
 
     // ─── Policies (E2E: policies list + detail navigation) ───
