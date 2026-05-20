@@ -170,9 +170,19 @@ export class WorkItemRepository {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         metadataJson?: any;
     }) {
-        // Generate key: TSK-<count+1>
-        const count = await db.task.count({ where: { tenantId: ctx.tenantId } });
-        const key = `TSK-${count + 1}`;
+        // #102 item 2 — mint the `TSK-N` key from an atomic
+        // per-tenant counter. The upsert compiles to a native
+        // `INSERT … ON CONFLICT DO UPDATE`, so the increment is
+        // race-free even under concurrent imports — unlike the
+        // prior `db.task.count()` derivation, which raced the
+        // unique `[tenantId, key]` index and scaled linearly with
+        // tenant size.
+        const seq = await db.taskKeySequence.upsert({
+            where: { tenantId: ctx.tenantId },
+            create: { tenantId: ctx.tenantId, lastValue: 1 },
+            update: { lastValue: { increment: 1 } },
+        });
+        const key = `TSK-${seq.lastValue}`;
 
         return db.task.create({
             data: {

@@ -84,66 +84,117 @@ export async function getControlDashboard(ctx: RequestContext) {
     assertCanReadControls(ctx);
 
     return runInTenantContext(ctx, async (db) => {
-        const controls = await db.control.findMany({
-            where: { tenantId: ctx.tenantId },
-            include: {
-                owner: { select: { id: true, name: true } },
-                controlTasks: { select: { id: true, status: true, dueAt: true, assigneeUserId: true } },
-                _count: { select: { evidenceLinks: true, frameworkMappings: true } },
-            },
-        });
-
         const now = new Date();
         const soonThreshold = new Date(now);
         soonThreshold.setDate(soonThreshold.getDate() + 30);
 
-        // Status distribution
+        // #102 item 3 — the dashboard used to `findMany` every control
+        // WITH its full `controlTasks` array (plus an unused `_count`)
+        // and reduce in JS — loading the whole control × task graph
+        // for the tenant to produce a handful of counts. It is now a
+        // fan-out of indexed aggregate queries; each touches only the
+        // columns it needs.
+        const [
+            statusGroups,
+            applicabilityGroups,
+            implementedCount,
+            controlsDueSoon,
+            overdueTasks,
+            openTasksByControl,
+            controlOwners,
+        ] = await Promise.all([
+            db.control.groupBy({
+                by: ['status'],
+                where: { tenantId: ctx.tenantId },
+                _count: { _all: true },
+            }),
+            db.control.groupBy({
+                by: ['applicability'],
+                where: { tenantId: ctx.tenantId },
+                _count: { _all: true },
+            }),
+            db.control.count({
+                where: {
+                    tenantId: ctx.tenantId,
+                    applicability: 'APPLICABLE',
+                    status: 'IMPLEMENTED',
+                },
+            }),
+            db.control.count({
+                where: {
+                    tenantId: ctx.tenantId,
+                    applicability: 'APPLICABLE',
+                    nextDueAt: { not: null, lte: soonThreshold },
+                },
+            }),
+            db.controlTask.count({
+                where: {
+                    tenantId: ctx.tenantId,
+                    status: { not: 'DONE' },
+                    dueAt: { not: null, lt: now },
+                },
+            }),
+            // Open tasks per control. Prisma can't group ControlTask
+            // by Control.ownerUserId directly (cross-relation), so we
+            // group by controlId and fold into owners in JS over the
+            // thin control → owner projection below.
+            db.controlTask.groupBy({
+                by: ['controlId'],
+                where: { tenantId: ctx.tenantId, status: { not: 'DONE' } },
+                _count: { _all: true },
+            }),
+            db.control.findMany({
+                where: { tenantId: ctx.tenantId },
+                select: {
+                    id: true,
+                    owner: { select: { id: true, name: true } },
+                },
+            }),
+        ]);
+
+        // Status distribution → Record<status, count>; total folds out.
         const statusDistribution: Record<string, number> = {};
-        for (const c of controls) {
-            statusDistribution[c.status] = (statusDistribution[c.status] || 0) + 1;
+        let totalControls = 0;
+        for (const g of statusGroups) {
+            statusDistribution[g.status] = g._count._all;
+            totalControls += g._count._all;
         }
 
-        // Applicability distribution
-        const applicableCount = controls.filter(c => c.applicability === 'APPLICABLE').length;
-        const notApplicableCount = controls.filter(c => c.applicability === 'NOT_APPLICABLE').length;
+        // Applicability distribution.
+        const applicabilityOf = (value: string) =>
+            applicabilityGroups.find(g => g.applicability === value)?._count._all ?? 0;
+        const applicableCount = applicabilityOf('APPLICABLE');
+        const notApplicableCount = applicabilityOf('NOT_APPLICABLE');
 
-        // Overdue tasks
-        const allTasks = controls.flatMap(c => c.controlTasks);
-        const overdueTasks = allTasks.filter(t => t.dueAt && new Date(t.dueAt) < now && t.status !== 'DONE');
-
-        // Controls due soon
-        const controlsDueSoon = controls.filter(c =>
-            c.nextDueAt && new Date(c.nextDueAt) <= soonThreshold && c.applicability === 'APPLICABLE'
-        );
-
-        // Top owners by open tasks
+        // Top owners — fold per-control open-task counts into owners.
+        const openByControl = new Map<string, number>();
+        for (const row of openTasksByControl) {
+            if (row.controlId) openByControl.set(row.controlId, row._count._all);
+        }
         const ownerTaskMap: Record<string, { name: string; openTasks: number }> = {};
-        for (const c of controls) {
+        for (const c of controlOwners) {
             if (!c.owner) continue;
-            const openCount = c.controlTasks.filter(t => t.status !== 'DONE').length;
             if (!ownerTaskMap[c.owner.id]) {
                 ownerTaskMap[c.owner.id] = { name: c.owner.name || 'Unknown', openTasks: 0 };
             }
-            ownerTaskMap[c.owner.id].openTasks += openCount;
+            ownerTaskMap[c.owner.id].openTasks += openByControl.get(c.id) ?? 0;
         }
         const topOwners = Object.entries(ownerTaskMap)
             .sort(([, a], [, b]) => b.openTasks - a.openTasks)
             .slice(0, 5)
             .map(([id, { name, openTasks }]) => ({ id, name, openTasks }));
 
-        // Implementation progress: % IMPLEMENTED among APPLICABLE
-        const applicableControls = controls.filter(c => c.applicability === 'APPLICABLE');
-        const implementedCount = applicableControls.filter(c => c.status === 'IMPLEMENTED').length;
-        const implementationProgress = applicableControls.length > 0
-            ? Math.round((implementedCount / applicableControls.length) * 100)
+        // Implementation progress: % IMPLEMENTED among APPLICABLE.
+        const implementationProgress = applicableCount > 0
+            ? Math.round((implementedCount / applicableCount) * 100)
             : 0;
 
         return {
-            totalControls: controls.length,
+            totalControls,
             statusDistribution,
             applicabilityDistribution: { applicable: applicableCount, notApplicable: notApplicableCount },
-            overdueTasks: overdueTasks.length,
-            controlsDueSoon: controlsDueSoon.length,
+            overdueTasks,
+            controlsDueSoon,
             topOwners,
             implementationProgress,
             implementedCount,
