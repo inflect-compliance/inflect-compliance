@@ -84,7 +84,18 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Generate Prisma client
-        run: ./node_modules/.bin/prisma generate
+        # Roadmap-27 CI hardening — `prisma generate` intermittently
+        # crashes the runner with a V8 SIGILL (exit 132, internal
+        # "Check failed" assertion). Retry up to 3× so a flaky codegen
+        # crash never fails an otherwise-green job. The `if` form is
+        # errexit-safe — a failed attempt does not abort the step.
+        run: |
+          for attempt in 1 2 3; do
+            if ./node_modules/.bin/prisma generate; then exit 0; fi
+            echo "::warning::prisma generate failed (attempt ${attempt}/3) — retrying"
+            sleep 5
+          done
+          exit 1
 
       - name: Run ESLint
         run: npm run lint
@@ -110,7 +121,18 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Generate Prisma client
-        run: ./node_modules/.bin/prisma generate
+        # Roadmap-27 CI hardening — `prisma generate` intermittently
+        # crashes the runner with a V8 SIGILL (exit 132, internal
+        # "Check failed" assertion). Retry up to 3× so a flaky codegen
+        # crash never fails an otherwise-green job. The `if` form is
+        # errexit-safe — a failed attempt does not abort the step.
+        run: |
+          for attempt in 1 2 3; do
+            if ./node_modules/.bin/prisma generate; then exit 0; fi
+            echo "::warning::prisma generate failed (attempt ${attempt}/3) — retrying"
+            sleep 5
+          done
+          exit 1
 
       - name: Run tsc --noEmit
         run: npm run typecheck
@@ -168,7 +190,18 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Generate Prisma client
-        run: ./node_modules/.bin/prisma generate
+        # Roadmap-27 CI hardening — `prisma generate` intermittently
+        # crashes the runner with a V8 SIGILL (exit 132, internal
+        # "Check failed" assertion). Retry up to 3× so a flaky codegen
+        # crash never fails an otherwise-green job. The `if` form is
+        # errexit-safe — a failed attempt does not abort the step.
+        run: |
+          for attempt in 1 2 3; do
+            if ./node_modules/.bin/prisma generate; then exit 0; fi
+            echo "::warning::prisma generate failed (attempt ${attempt}/3) — retrying"
+            sleep 5
+          done
+          exit 1
 
       # ── Quality gate: migrations must exist ──
       - name: "Gate: Prisma migrations exist"
@@ -272,7 +305,18 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Generate Prisma client
-        run: ./node_modules/.bin/prisma generate
+        # Roadmap-27 CI hardening — `prisma generate` intermittently
+        # crashes the runner with a V8 SIGILL (exit 132, internal
+        # "Check failed" assertion). Retry up to 3× so a flaky codegen
+        # crash never fails an otherwise-green job. The `if` form is
+        # errexit-safe — a failed attempt does not abort the step.
+        run: |
+          for attempt in 1 2 3; do
+            if ./node_modules/.bin/prisma generate; then exit 0; fi
+            echo "::warning::prisma generate failed (attempt ${attempt}/3) — retrying"
+            sleep 5
+          done
+          exit 1
 
       # ── Create roles required by RLS migrations ──
       - name: Create PostgreSQL roles for RLS
@@ -339,7 +383,18 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Generate Prisma client
-        run: ./node_modules/.bin/prisma generate
+        # Roadmap-27 CI hardening — `prisma generate` intermittently
+        # crashes the runner with a V8 SIGILL (exit 132, internal
+        # "Check failed" assertion). Retry up to 3× so a flaky codegen
+        # crash never fails an otherwise-green job. The `if` form is
+        # errexit-safe — a failed attempt does not abort the step.
+        run: |
+          for attempt in 1 2 3; do
+            if ./node_modules/.bin/prisma generate; then exit 0; fi
+            echo "::warning::prisma generate failed (attempt ${attempt}/3) — retrying"
+            sleep 5
+          done
+          exit 1
 
       - name: Build Next.js (production)
         run: npx next build
@@ -434,7 +489,18 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Generate Prisma client
-        run: ./node_modules/.bin/prisma generate
+        # Roadmap-27 CI hardening — `prisma generate` intermittently
+        # crashes the runner with a V8 SIGILL (exit 132, internal
+        # "Check failed" assertion). Retry up to 3× so a flaky codegen
+        # crash never fails an otherwise-green job. The `if` form is
+        # errexit-safe — a failed attempt does not abort the step.
+        run: |
+          for attempt in 1 2 3; do
+            if ./node_modules/.bin/prisma generate; then exit 0; fi
+            echo "::warning::prisma generate failed (attempt ${attempt}/3) — retrying"
+            sleep 5
+          done
+          exit 1
 
       # ── Create roles required by RLS migrations ──
       - name: Create PostgreSQL roles for RLS
@@ -612,7 +678,18 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Generate Prisma client
-        run: ./node_modules/.bin/prisma generate
+        # Roadmap-27 CI hardening — `prisma generate` intermittently
+        # crashes the runner with a V8 SIGILL (exit 132, internal
+        # "Check failed" assertion). Retry up to 3× so a flaky codegen
+        # crash never fails an otherwise-green job. The `if` form is
+        # errexit-safe — a failed attempt does not abort the step.
+        run: |
+          for attempt in 1 2 3; do
+            if ./node_modules/.bin/prisma generate; then exit 0; fi
+            echo "::warning::prisma generate failed (attempt ${attempt}/3) — retrying"
+            sleep 5
+          done
+          exit 1
 
       - name: Setup k6
         uses: grafana/setup-k6-action@v1
@@ -820,7 +897,13 @@ jobs:
     name: Docker Build
     needs: [build]
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Roadmap-27 CI hardening — bumped 15 → 25. semantic-release
+    # bumps the package.json version on every release, which
+    # cache-misses the Docker `npm ci` layer; a cold full install
+    # pushes this job past 15 min and the run is cancelled. GHA
+    # layer caching is already enabled (cache-from/to: gha) — the
+    # cold npm-ci layer after a version bump is unavoidable.
+    timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@v6
