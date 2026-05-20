@@ -29,6 +29,13 @@ model Notification {
   message   String
   read      Boolean          @default(false)
   linkUrl   String?
+  // Optional idempotency key for job-generated notifications. Mirrors
+  // `NotificationOutbox.dedupeKey` — a unique key shaped
+  // `{tenantId}:{type}:{entityId}:{userId}:{YYYY-MM-DD}` so a job
+  // that re-runs (retry, redeploy) within the same UTC day trips the
+  // unique index instead of creating a duplicate. Left NULL by
+  // interactive/event-driven notification writers, which don't dedupe.
+  dedupeKey String?          @unique
   createdAt DateTime         @default(now())
   tenant    Tenant           @relation(fields: [tenantId], references: [id])
   user      User             @relation(fields: [userId], references: [id])

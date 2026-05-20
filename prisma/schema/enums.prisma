@@ -400,6 +400,12 @@ enum NotificationType {
   FINDING_ASSIGNED
   FINDING_VERIFIED
   TASK_ASSIGNED
+  // Fired by the `task-due-notification` job at 08:00 UTC. One
+  // notification per task at each of three reminder windows — one
+  // week before, one day before, and on the calendar day the
+  // task's `dueAt` falls. In-app only — the email deadline digest
+  // already covers the same surface.
+  TASK_DUE
   GENERAL
 }
 

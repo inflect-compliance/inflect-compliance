@@ -152,6 +152,13 @@ export interface PolicyReviewReminderPayload {
     tenantId?: string;
 }
 
+/** Task-due notification — in-app deadline reminders (7d / 1d / due day) */
+export interface TaskDueNotificationPayload {
+    /** Optional: scope the scan to a single tenant. Omit for the
+     *  system-wide nightly scan. */
+    tenantId?: string;
+}
+
 /** Epic G-5 — exception expiry monitor */
 export interface ExceptionExpiryMonitorPayload {
     /** Optional: scope the scan to a single tenant. Omit for the
@@ -430,6 +437,7 @@ export interface JobPayloadMap {
     'control-test-scheduler': ControlTestSchedulerPayload;
     'control-test-runner': ControlTestRunnerPayload;
     'access-review-reminder': AccessReviewReminderPayload;
+    'task-due-notification': TaskDueNotificationPayload;
 }
 
 /** Union of all valid job names */
@@ -478,6 +486,12 @@ export const JOB_DEFAULTS: Record<JobName, {
         removeOnFail: 500,
     },
     'access-review-reminder': {
+        attempts: 2,
+        backoff: { type: 'exponential', delay: 5000 },
+        removeOnComplete: 200,
+        removeOnFail: 500,
+    },
+    'task-due-notification': {
         attempts: 2,
         backoff: { type: 'exponential', delay: 5000 },
         removeOnComplete: 200,
