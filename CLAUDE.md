@@ -639,7 +639,33 @@ duplicating the limits table).
 - **Unit tests**: Mock dependencies with `jest.mock()` declared **before** imports. Use `buildRequestContext()` helper from `tests/helpers/make-context.ts` to construct test contexts.
 - **Integration tests**: Use `prismaTestClient()` and `resetDatabase()` from `tests/helpers/db.ts`. Hit a real DB — do not mock Prisma in integration tests.
 - **Guard tests** (`tests/guards/`): Static analysis tests that enforce architectural rules (no `as any`, no unsafe patterns). These are regular Jest tests that scan source files with regex.
-- **E2E tests**: Playwright in serial mode. Tests share state (tenantSlug, resource IDs) within a describe block. Use existing HTML `id` attributes — do not add `data-testid` attributes.
+- **E2E tests**: Playwright in serial mode. **Structural isolation, not shared state** (`chore/e2e-isolation`):
+    - **Read-only specs** (list pages, filters, a11y, theme, tooltips,
+      responsive, display checks — navigate + assert, never
+      create/edit/delete) keep the SHARED seeded tenant via
+      `loginAndGetTenant(page)` / `DEFAULT_USER`. They need the seed
+      data and read-only access cannot cascade.
+    - **Mutating specs** (anything that creates/edits/deletes) import
+      `{ test, expect }` from `./fixtures` and declare the
+      `isolatedTenant` / `authedPage` fixture. Each `test()` gets its
+      own fresh, EMPTY tenant via `createIsolatedTenant` — writes can
+      never touch the shared tenant or another test. An isolated
+      tenant starts empty: the spec creates the resources it needs in
+      its own body or a `beforeEach`.
+    - **No cross-test `let` cascade.** A `let`/`var` assigned inside
+      one `test()` and read by another is banned — a failed setup
+      step would cascade. Make each test self-contained, or collapse
+      a true sequence into ONE `test()` with `test.step(...)`
+      sub-steps. Assigning a top-level `let` in a `beforeEach` /
+      `beforeAll` is fine. Enforced by
+      `tests/guards/e2e-isolation.test.ts`.
+    - Use existing HTML `id` attributes — do NOT add `data-testid`
+      attributes.
+    - Scope `#id` / role locators to `getByRole('main')` where a
+      Next streaming duplicate of the page could match — never a
+      bare page-level locator (see the risk-matrix E2E lesson).
+  See `docs/implementation-notes/2026-05-21-e2e-isolation.md` and
+  `tests/e2e/fixtures.ts`.
 - `SKIP_ENV_VALIDATION=1` is set in `jest.setup.js` to prevent env loader crash in unit tests.
 - Coverage thresholds: 60% global (branches, functions, lines, statements); checked on `npm run test:coverage`.
 
