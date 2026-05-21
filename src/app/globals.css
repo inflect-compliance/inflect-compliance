@@ -1,7 +1,12 @@
+/* The remote Google-Fonts @import MUST be the first statement.
+ * `@import "tailwindcss"` is inlined and expands to thousands of
+ * generated rules; a remote-URL @import stays an @import rule in the
+ * output, and CSS requires @import rules before all other rules.
+ * Next 16's strict CSS parser hard-errors otherwise (site-wide 500). */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 @config "../../tailwind.config.js";
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import '../styles/tokens.css';
 
 /* ──────────────────────────────────────────────────────────────────
