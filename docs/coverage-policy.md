@@ -112,3 +112,30 @@ discipline.
 - **Per-layer keys** in that file enforce a higher bar on the
   higher-risk folders independently of the global number.
 - The CI job prints the observed-vs-floor table on every PR.
+
+### The ratchet guard
+
+`tests/guards/coverage-ratchet.test.ts` makes the **"never lower a
+floor"** rule structural, not just a convention. It carries a
+`RATCHET_FLOOR` — the hard minimum for every threshold — and fails
+CI if any value in `jest.thresholds.json` drops below it.
+
+- **Raising** a threshold always passes (a value above the floor is
+  fine) — that is the ratchet moving up.
+- **Lowering** one below the floor fails CI loudly. To genuinely
+  retire a floor you must edit `RATCHET_FLOOR` downward too — a
+  visible, reviewed act, never a drive-by "make CI green" change.
+- `RATCHET_FLOOR` is seeded at the post-Roadmap-3 state and is only
+  ever edited upward as the staged plan advances.
+
+This is the structural backstop for the policy: the
+`Coverage (≥60%)` job enforces the *current* numbers; the ratchet
+guard enforces that those numbers can only travel one direction.
+
+### Next ratchet steps
+
+- Add dedicated threshold keys for `policies/` and `events/`
+  (Tier A / B) once their coverage is measured and lockable, then
+  add them to `RATCHET_FLOOR`.
+- Advance the `usecases/` branch floor through the staged plan
+  (≈50 → ≈58 → ≈65 → 70) as further test sweeps land.
