@@ -262,6 +262,7 @@
     "next-auth": {
       "nodemailer": "$nodemailer",
       "next": "$next"
-    }
+    },
+    "uuid": "^11.1.1"
   }
 }
