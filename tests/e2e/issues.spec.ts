@@ -1,103 +1,126 @@
-import { test, expect, Page } from '@playwright/test';
-import {
-    loginAndGetTenant,
-    safeGoto,
-    gotoAndVerify,
-    selectComboboxOption,
-} from './e2e-utils';
+/**
+ * Issue Management — mutating E2E.
+ *
+ * Isolation: each `test()` runs on its own fresh, empty tenant via
+ * the `isolatedTenant` fixture. Tests that need a pre-existing issue
+ * create one in their own body via the `createIssue` helper — the
+ * previous shape had tests 3-6 click `text=E2E Issue <uid>` to find
+ * an issue minted by test 2, an implicit order-dependent cascade.
+ * Each test is now self-contained; a failed create degrades to one
+ * red test instead of cascading.
+ *
+ * All selectors use existing id attributes — no data-testid additions.
+ */
+import { randomUUID } from 'node:crypto';
+import { test, expect } from './fixtures';
+import type { Page } from '@playwright/test';
+import { loginAndGetTenant, gotoAndVerify, safeGoto, selectComboboxOption } from './e2e-utils';
 
-const TEST_USER = { email: 'admin@acme.com', password: 'password123' };
+/** Seed-tenant READER — only used by the read-only role-gate test. */
+const READER_USER = { email: 'viewer@acme.com', password: 'password123' };
+
+/**
+ * Create an INCIDENT issue on the isolated tenant and land on its
+ * detail page. Returns the issue title for later text-locator use.
+ */
+async function createIssue(page: Page, slug: string): Promise<string> {
+    const uid = `${Date.now().toString(36)}-${randomUUID().slice(0, 8)}`;
+    const title = `E2E Issue ${uid}`;
+    await gotoAndVerify(page, `/t/${slug}/tasks/new`, '#task-title-input');
+
+    await page.fill('#task-title-input', title);
+    await page.fill('#task-description-input', 'Test issue from e2e');
+    await selectComboboxOption(page, 'task-type-select', 'Incident');
+    await selectComboboxOption(page, 'task-severity-select', 'High');
+    await selectComboboxOption(page, 'task-priority-select', /^P1\b/);
+
+    // INCIDENT requires an asset or control link.
+    await selectComboboxOption(page, 'link-entity-type', 'Asset');
+    await page.fill('#link-entity-id', 'test-asset-id');
+    await page.click('#add-link-btn');
+    await page.waitForSelector('#pending-links-list', { timeout: 3000 });
+
+    await page.click('#create-task-btn');
+    await page.waitForURL('**/tasks/**', { timeout: 30000 });
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.waitForSelector('#task-title', { timeout: 30000 });
+    return title;
+}
 
 test.describe('Issue Management', () => {
-    test.describe.configure({ mode: 'serial' });
-
-    let tenantSlug: string;
-    const uniqueId = Date.now().toString(36);
-
-    test('issues list page loads with filters and CTA', async ({ page }) => {
-        tenantSlug = await loginAndGetTenant(page);
-        await gotoAndVerify(page, `/t/${tenantSlug}/tasks`, 'h1');
-        await expect(page.locator('#new-task-btn')).toBeVisible({ timeout: 10000 });
-        // R14 (#443) removed the FilterToolbar text-search input from every
-        // list page — the navbar ⌘K palette is the sole search affordance
-        // now. No `#task-search` element to assert.
+    test('issues list page loads with filters and CTA', async ({
+        authedPage,
+        isolatedTenant,
+    }) => {
+        await gotoAndVerify(authedPage, `/t/${isolatedTenant.tenantSlug}/tasks`, 'h1');
+        await expect(authedPage.locator('#new-task-btn')).toBeVisible({
+            timeout: 10000,
+        });
     });
 
-    test('create a new issue and see detail', async ({ page }) => {
-        tenantSlug = await loginAndGetTenant(page);
-        await gotoAndVerify(page, `/t/${tenantSlug}/tasks/new`, '#task-title-input');
+    test('create a new issue and see detail', async ({ authedPage, isolatedTenant }) => {
+        const uid = Date.now().toString(36);
+        const title = `E2E Issue ${uid}`;
+        await gotoAndVerify(
+            authedPage,
+            `/t/${isolatedTenant.tenantSlug}/tasks/new`,
+            '#task-title-input',
+        );
 
-        await page.fill('#task-title-input', `E2E Issue ${uniqueId}`);
-        await page.fill('#task-description-input', 'Test issue from e2e');
-        // Epic 55: native <select>s migrated to <Combobox>; pick by
-        // visible label rather than enum value.
-        await selectComboboxOption(page, 'task-type-select', 'Incident');
-        await selectComboboxOption(page, 'task-severity-select', 'High');
-        await selectComboboxOption(page, 'task-priority-select', /^P1\b/);
+        await authedPage.fill('#task-title-input', title);
+        await authedPage.fill('#task-description-input', 'Test issue from e2e');
+        await selectComboboxOption(authedPage, 'task-type-select', 'Incident');
+        await selectComboboxOption(authedPage, 'task-severity-select', 'High');
+        await selectComboboxOption(authedPage, 'task-priority-select', /^P1\b/);
 
-        // INCIDENT requires asset or control link
-        await selectComboboxOption(page, 'link-entity-type', 'Asset');
-        await page.fill('#link-entity-id', 'test-asset-id');
-        await page.click('#add-link-btn');
-        await page.waitForSelector('#pending-links-list', { timeout: 3000 });
+        await selectComboboxOption(authedPage, 'link-entity-type', 'Asset');
+        await authedPage.fill('#link-entity-id', 'test-asset-id');
+        await authedPage.click('#add-link-btn');
+        await authedPage.waitForSelector('#pending-links-list', { timeout: 3000 });
 
-        await page.click('#create-task-btn');
-
-        await page.waitForURL('**/tasks/**', { timeout: 30000 });
-        await page.waitForLoadState('networkidle').catch(() => {});
-        await page.waitForSelector('#task-title', { timeout: 30000 });
-        await expect(page.locator('#task-title')).toContainText(`E2E Issue ${uniqueId}`, { timeout: 15000 });
-        await expect(page.locator('#task-severity')).toContainText('HIGH', { timeout: 5000 });
+        await authedPage.click('#create-task-btn');
+        await authedPage.waitForURL('**/tasks/**', { timeout: 30000 });
+        await authedPage.waitForLoadState('networkidle').catch(() => {});
+        await authedPage.waitForSelector('#task-title', { timeout: 30000 });
+        await expect(authedPage.locator('#task-title')).toContainText(title, {
+            timeout: 15000,
+        });
+        await expect(authedPage.locator('#task-severity')).toContainText('HIGH', {
+            timeout: 5000,
+        });
     });
 
-    test('change issue status', async ({ page }) => {
-        tenantSlug = await loginAndGetTenant(page);
-        await gotoAndVerify(page, `/t/${tenantSlug}/tasks`, 'h1');
+    test('change issue status', async ({ authedPage, isolatedTenant }) => {
+        await createIssue(authedPage, isolatedTenant.tenantSlug);
 
-        await page.click(`text=E2E Issue ${uniqueId}`);
-        await page.waitForSelector('#task-title', { timeout: 10000 });
+        await authedPage.waitForSelector('#task-status-select', { timeout: 10000 });
+        await selectComboboxOption(authedPage, 'task-status-select', 'Triaged');
+        await expect(authedPage.locator('#task-status')).toContainText('Triaged', {
+            timeout: 15000,
+        });
 
-        // Wait for permissions to hydrate and status select to appear
-        await page.waitForSelector('#task-status-select', { timeout: 10000 });
-        // Change status to TRIAGED — Epic 55 migrated this select to a
-        // <Combobox>; pick by visible label "Triaged".
-        await selectComboboxOption(page, 'task-status-select', 'Triaged');
-
-        // Wait for the React component to reflect the change (POST + fetchTask completes)
-        await expect(page.locator('#task-status')).toContainText('Triaged', { timeout: 15000 });
-
-        // Reload and verify persistence
-        await page.reload();
-        await page.waitForSelector('#task-status', { timeout: 10000 });
-        await expect(page.locator('#task-status')).toContainText('Triaged');
+        await authedPage.reload();
+        await authedPage.waitForSelector('#task-status', { timeout: 10000 });
+        await expect(authedPage.locator('#task-status')).toContainText('Triaged');
     });
 
-    test('assign issue', async ({ page }) => {
-        tenantSlug = await loginAndGetTenant(page);
-        await gotoAndVerify(page, `/t/${tenantSlug}/tasks`, 'h1');
+    test('assign issue', async ({ authedPage, isolatedTenant }) => {
+        await createIssue(authedPage, isolatedTenant.tenantSlug);
 
-        await page.click(`text=E2E Issue ${uniqueId}`);
-        await page.waitForSelector('#task-title', { timeout: 10000 });
+        await expect(authedPage.locator('#task-assignee-input')).toBeVisible();
+        await expect(authedPage.locator('#assign-task-btn')).toBeVisible();
 
-        // Verify assign controls are visible for admin. Epic 55:
-        // #task-assignee-input is now a <UserCombobox> trigger button,
-        // not a text input. Interact via click + search + option click.
-        await expect(page.locator('#task-assignee-input')).toBeVisible();
-        await expect(page.locator('#assign-task-btn')).toBeVisible();
-
-        // Pull current user's email/name from session so we can pick
-        // ourselves out of the member picker fuzzy-search index.
-        const session = await page.evaluate(async () => {
+        const session = await authedPage.evaluate(async () => {
             const res = await fetch('/api/auth/session');
             return res.json();
         });
         const email = session?.user?.email as string | undefined;
         const name = (session?.user?.name as string | undefined) || email;
         if (email && name) {
-            await page.click('#task-assignee-input');
-            const search = page.getByPlaceholder('Search members…');
+            await authedPage.click('#task-assignee-input');
+            const search = authedPage.getByPlaceholder('Search members…');
             await search.fill(name);
-            const option = page
+            const option = authedPage
                 .getByRole('option')
                 .filter({ hasText: email })
                 .first();
@@ -107,106 +130,109 @@ test.describe('Issue Management', () => {
                 .catch(() => false);
             if (visible) {
                 await option.click();
-                await page.click('#assign-task-btn');
-                await page.waitForLoadState('networkidle').catch(() => {});
-                await page.reload();
-                await page.waitForSelector('#task-assignee', { timeout: 10000 });
+                await authedPage.click('#assign-task-btn');
+                await authedPage.waitForLoadState('networkidle').catch(() => {});
+                await authedPage.reload();
+                await authedPage.waitForSelector('#task-assignee', {
+                    timeout: 10000,
+                });
             }
         }
     });
 
-    test('add link to issue', async ({ page }) => {
-        tenantSlug = await loginAndGetTenant(page);
-        await gotoAndVerify(page, `/t/${tenantSlug}/tasks`, 'h1');
+    test('add link to issue', async ({ authedPage, isolatedTenant }) => {
+        await createIssue(authedPage, isolatedTenant.tenantSlug);
 
-        await page.click(`text=E2E Issue ${uniqueId}`);
-        await page.waitForSelector('#task-title', { timeout: 10000 });
+        await authedPage.click('#tab-links');
+        await authedPage.waitForLoadState('networkidle').catch(() => {});
 
-        // Go to links tab
-        await page.click('#tab-links');
-        await page.waitForLoadState('networkidle').catch(() => {});
+        await authedPage.click('#add-link-btn');
+        await authedPage.waitForSelector('#link-entity-type', { timeout: 5000 });
+        await selectComboboxOption(authedPage, 'link-entity-type', 'CONTROL');
+        await authedPage.fill('#link-entity-id', 'test-control-id');
+        await authedPage.click('#submit-link-btn');
+        await authedPage.waitForLoadState('networkidle').catch(() => {});
 
-        // Add a link — the task-detail picker uses raw enum values
-        // (CONTROL/RISK/ASSET/…) as the visible labels.
-        await page.click('#add-link-btn');
-        await page.waitForSelector('#link-entity-type', { timeout: 5000 });
-        await selectComboboxOption(page, 'link-entity-type', 'CONTROL');
-        await page.fill('#link-entity-id', 'test-control-id');
-        await page.click('#submit-link-btn');
-        await page.waitForLoadState('networkidle').catch(() => {});
-
-        // Verify link appears
-        await expect(page.locator('[data-testid="task-links-table"]')).toContainText('CONTROL', { timeout: 5000 });
-        await expect(page.locator('[data-testid="task-links-table"]')).toContainText('test-control-id');
+        await expect(
+            authedPage.locator('[data-testid="task-links-table"]'),
+        ).toContainText('CONTROL', { timeout: 5000 });
+        await expect(
+            authedPage.locator('[data-testid="task-links-table"]'),
+        ).toContainText('test-control-id');
     });
 
-    test('add comment to issue', async ({ page }) => {
-        tenantSlug = await loginAndGetTenant(page);
-        await gotoAndVerify(page, `/t/${tenantSlug}/tasks`, 'h1');
+    test('add comment to issue', async ({ authedPage, isolatedTenant }) => {
+        const uid = Date.now().toString(36);
+        await createIssue(authedPage, isolatedTenant.tenantSlug);
 
-        await page.click(`text=E2E Issue ${uniqueId}`);
-        await page.waitForLoadState('networkidle').catch(() => {});
-        await page.waitForSelector('#task-title', { timeout: 30000 });
+        await authedPage.click('#tab-comments');
+        await authedPage.waitForLoadState('networkidle').catch(() => {});
 
-        // Go to comments tab
-        await page.click('#tab-comments');
-        await page.waitForLoadState('networkidle').catch(() => {});
+        await authedPage.fill('#comment-body', `E2E comment ${uid}`);
+        await authedPage.click('#submit-comment-btn');
+        await authedPage.waitForLoadState('networkidle').catch(() => {});
 
-        // Add a comment
-        await page.fill('#comment-body', `E2E comment ${uniqueId}`);
-        await page.click('#submit-comment-btn');
-        await page.waitForLoadState('networkidle').catch(() => {});
-
-        // Verify comment appears
-        await expect(page.locator('#comments-list')).toContainText(`E2E comment ${uniqueId}`, { timeout: 15000 });
+        await expect(authedPage.locator('#comments-list')).toContainText(
+            `E2E comment ${uid}`,
+            { timeout: 15000 },
+        );
     });
 
-    test('dashboard page renders metrics', async ({ page }) => {
-        tenantSlug = await loginAndGetTenant(page);
-        await gotoAndVerify(page, `/t/${tenantSlug}/tasks/dashboard`, 'h1');
-
-        // Verify dashboard elements
-        await expect(page.locator('#dashboard-metrics')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('h1')).toContainText('Dashboard');
+    test('dashboard page renders metrics', async ({ authedPage, isolatedTenant }) => {
+        await gotoAndVerify(
+            authedPage,
+            `/t/${isolatedTenant.tenantSlug}/tasks/dashboard`,
+            'h1',
+        );
+        await expect(authedPage.locator('#dashboard-metrics')).toBeVisible({
+            timeout: 10000,
+        });
+        await expect(authedPage.locator('h1')).toContainText('Dashboard');
     });
 
-    test('bulk action toolbar appears when issues selected', async ({ page }) => {
-        tenantSlug = await loginAndGetTenant(page);
-        await gotoAndVerify(page, `/t/${tenantSlug}/tasks`, 'h1');
+    test('bulk action toolbar appears when issues selected', async ({
+        authedPage,
+        isolatedTenant,
+    }) => {
+        // Create an issue so the list has a selectable row.
+        await createIssue(authedPage, isolatedTenant.tenantSlug);
+        await gotoAndVerify(authedPage, `/t/${isolatedTenant.tenantSlug}/tasks`, 'h1');
 
-        // Check that bulk toolbar is NOT visible initially
-        await expect(page.locator('#bulk-toolbar')).not.toBeVisible({ timeout: 3000 });
+        await expect(authedPage.locator('#bulk-toolbar')).not.toBeVisible({
+            timeout: 3000,
+        });
 
-        // R12-PR1 — DataTable's built-in selection replaces the
-        // custom `.task-checkbox` square checkboxes. The Radix Checkbox
-        // inside has `pointer-events-none`; the click target is the
-        // wrapping `<div title="Select">` (canonical pattern used by
-        // selection-toolbar e2e tests, see tooltip-and-copy.spec.ts).
-        const checkboxes = page.locator('tbody tr').locator('[title="Select"]');
+        // DataTable's built-in selection — the click target is the
+        // wrapping `<div title="Select">`.
+        const checkboxes = authedPage
+            .locator('tbody tr')
+            .locator('[title="Select"]');
         const count = await checkboxes.count();
         if (count > 0) {
             await checkboxes.first().click();
-            // Now toolbar should appear
-            await expect(page.locator('#bulk-toolbar')).toBeVisible({ timeout: 5000 });
-            await expect(page.locator('#bulk-action-select')).toBeVisible();
+            await expect(authedPage.locator('#bulk-toolbar')).toBeVisible({
+                timeout: 5000,
+            });
+            await expect(authedPage.locator('#bulk-action-select')).toBeVisible();
         }
     });
 
+    // Read-only role-gate check — kept on the SHARED seeded tenant.
+    // The `isolatedTenant` factory only provisions an OWNER; this test
+    // needs the seeded `viewer@acme.com` READER. It only navigates +
+    // asserts, so it cannot pollute the shared tenant.
     test('reader user sees view-only issues', async ({ page }) => {
-        // Login as reader using the shared helper (includes React hydration wait)
-        const READER_USER = { email: 'viewer@acme.com', password: 'password123' };
-        tenantSlug = await loginAndGetTenant(page, READER_USER);
-
+        const tenantSlug = await loginAndGetTenant(page, READER_USER);
         await gotoAndVerify(page, `/t/${tenantSlug}/tasks`, 'h1');
-
-        // Reader should NOT see create button
         await expect(page.locator('#new-task-btn')).not.toBeVisible({ timeout: 3000 });
     });
 
-    test('legacy /issues URL redirects to /tasks', async ({ page }) => {
-        tenantSlug = await loginAndGetTenant(page);
-        await safeGoto(page, `/t/${tenantSlug}/issues`);
-        await page.waitForURL(`**/tasks`, { timeout: 15000 });
-        await expect(page.url()).toContain('/tasks');
+    test('legacy /issues URL redirects to /tasks', async ({
+        authedPage,
+        isolatedTenant,
+    }) => {
+        await safeGoto(authedPage, `/t/${isolatedTenant.tenantSlug}/issues`);
+        await authedPage.waitForURL(`**/tasks`, { timeout: 15000 });
+        await expect(authedPage.url()).toContain('/tasks');
     });
 });

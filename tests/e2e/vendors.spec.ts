@@ -1,88 +1,119 @@
-import { test, expect, Page } from '@playwright/test';
-import { loginAndGetTenant, gotoAndVerify, selectComboboxOption } from './e2e-utils';
+/**
+ * Vendor Management — mutating E2E.
+ *
+ * Isolation: each `test()` runs on its own fresh, empty tenant via
+ * the `isolatedTenant` fixture. Tests that need a pre-existing
+ * vendor create one via the `createVendor` helper — the previous
+ * shape had tests 3-4 click `[id^="vendor-link-"]` to find a vendor
+ * minted by test 2, an implicit order-dependent cascade. Each test
+ * is now self-contained.
+ *
+ * All selectors use existing id attributes — no data-testid additions.
+ */
+import { randomUUID } from 'node:crypto';
+import { test, expect } from './fixtures';
+import type { Page } from '@playwright/test';
+import { gotoAndVerify, selectComboboxOption } from './e2e-utils';
 
-const TEST_USER = { email: 'admin@acme.com', password: 'password123' };
+/** Create a vendor on the isolated tenant and land on its detail page. */
+async function createVendor(page: Page, slug: string): Promise<string> {
+    const uid = `${Date.now().toString(36)}-${randomUUID().slice(0, 8)}`;
+    const name = `E2E Vendor ${uid}`;
+    await gotoAndVerify(page, `/t/${slug}/vendors/new`, '#vendor-name-input');
+    await page.fill('#vendor-name-input', name);
+    await selectComboboxOption(page, 'vendor-criticality-select', 'High');
+    await page.click('#create-vendor-submit');
+    await page.waitForURL(/\/vendors\//, { timeout: 60000 });
+    await expect(page.locator('#vendor-detail-name')).toBeVisible({ timeout: 30000 });
+    return name;
+}
 
 test.describe('Vendor Management', () => {
-    test.describe.configure({ mode: 'serial', retries: 2 });
-
-    let tenantSlug: string;
-    const uid = Date.now().toString(36);
-
-    test('vendor register page loads', async ({ page }) => {
-        tenantSlug = await loginAndGetTenant(page);
-        await gotoAndVerify(page, `/t/${tenantSlug}/vendors`, 'h1');
-        await expect(page.locator('h1')).toContainText('Vendor Register', { timeout: 15000 });
-        await expect(page.locator('#new-vendor-btn')).toBeVisible();
-        // R14 (#443) removed the FilterToolbar text-search input from every
-        // list page — no `#vendor-search` element to assert.
+    test('vendor register page loads', async ({ authedPage, isolatedTenant }) => {
+        await gotoAndVerify(authedPage, `/t/${isolatedTenant.tenantSlug}/vendors`, 'h1');
+        await expect(authedPage.locator('h1')).toContainText('Vendor Register', {
+            timeout: 15000,
+        });
+        await expect(authedPage.locator('#new-vendor-btn')).toBeVisible();
     });
 
-    test('create vendor and navigate to detail', async ({ page }) => {
-        await loginAndGetTenant(page);
-        await gotoAndVerify(page, `/t/${tenantSlug}/vendors/new`, '#vendor-name-input');
-        await expect(page.locator('#vendor-name-input')).toBeVisible({ timeout: 15000 });
+    test('create vendor and navigate to detail', async ({
+        authedPage,
+        isolatedTenant,
+    }) => {
+        const uid = Date.now().toString(36);
+        const name = `E2E Vendor ${uid}`;
+        await gotoAndVerify(
+            authedPage,
+            `/t/${isolatedTenant.tenantSlug}/vendors/new`,
+            '#vendor-name-input',
+        );
+        await expect(authedPage.locator('#vendor-name-input')).toBeVisible({
+            timeout: 15000,
+        });
 
-        await page.fill('#vendor-name-input', `E2E Vendor ${uid}`);
-        // Epic 55: vendor-criticality-select migrated to <Combobox> —
-        // pick by visible label "High".
-        await selectComboboxOption(page, 'vendor-criticality-select', 'High');
-        await page.click('#create-vendor-submit');
+        await authedPage.fill('#vendor-name-input', name);
+        await selectComboboxOption(authedPage, 'vendor-criticality-select', 'High');
+        await authedPage.click('#create-vendor-submit');
 
-        await page.waitForURL(/\/vendors\//, { timeout: 60000 });
-        await expect(page.locator('#vendor-detail-name')).toBeVisible({ timeout: 30000 });
-        await expect(page.locator('#vendor-detail-name')).toContainText(`E2E Vendor ${uid}`);
+        await authedPage.waitForURL(/\/vendors\//, { timeout: 60000 });
+        await expect(authedPage.locator('#vendor-detail-name')).toBeVisible({
+            timeout: 30000,
+        });
+        await expect(authedPage.locator('#vendor-detail-name')).toContainText(name);
     });
 
-    test('vendor detail tabs work', async ({ page }) => {
-        tenantSlug = await loginAndGetTenant(page);
-        await gotoAndVerify(page, `/t/${tenantSlug}/vendors`, '[id^="vendor-link-"]');
-        await page.locator('[id^="vendor-link-"]').first().click();
-        await expect(page.locator('#vendor-detail-name')).toBeVisible({ timeout: 15000 });
+    test('vendor detail tabs work', async ({ authedPage, isolatedTenant }) => {
+        // Self-contained: create the vendor this test inspects.
+        await createVendor(authedPage, isolatedTenant.tenantSlug);
 
-        await page.click('#tab-documents');
-        await expect(page.locator('text=No documents')).toBeVisible({ timeout: 10000 });
-        await page.click('#tab-assessments');
-        await expect(page.locator('text=No assessments')).toBeVisible({ timeout: 10000 });
+        await authedPage.click('#tab-documents');
+        await expect(authedPage.locator('text=No documents')).toBeVisible({
+            timeout: 10000,
+        });
+        await authedPage.click('#tab-assessments');
+        await expect(authedPage.locator('text=No assessments')).toBeVisible({
+            timeout: 10000,
+        });
     });
 
-    // Test vendor document creation — React state is now updated optimistically.
-    test('add document to vendor', async ({ page, request }) => {
-        const slug = await loginAndGetTenant(page);
-        await gotoAndVerify(page, `/t/${slug}/vendors`, '[id^="vendor-link-"]');
-        // Extract vendor URL from the first link
-        const vendorUrl = await page.locator('[id^="vendor-link-"]').first().getAttribute('href');
-        await page.locator('[id^="vendor-link-"]').first().click();
-        await page.waitForLoadState('networkidle').catch(() => {});
-        await expect(page.locator('#vendor-detail-name')).toBeVisible({ timeout: 60000 });
+    test('add document to vendor', async ({ authedPage, isolatedTenant }) => {
+        const uid = Date.now().toString(36);
+        await createVendor(authedPage, isolatedTenant.tenantSlug);
 
-        await page.click('#tab-documents');
-        await page.waitForLoadState('networkidle').catch(() => {});
+        await authedPage.click('#tab-documents');
+        await authedPage.waitForLoadState('networkidle').catch(() => {});
 
-        await expect(page.locator('#add-doc-btn')).toBeVisible({ timeout: 20000 });
-        await page.click('#add-doc-btn');
-        await expect(page.locator('#doc-type-select')).toBeVisible({ timeout: 5000 });
-        // Epic 55: doc-type-select migrated to <Combobox>; option label
-        // for SOC2 is "SOC 2" (with the space).
-        await selectComboboxOption(page, 'doc-type-select', 'SOC 2');
-        await page.fill('#doc-title-input', `SOC2 Report 2025 ${uid}`);
-        await page.fill('#doc-url-input', 'https://example.com/soc2.pdf');
+        await expect(authedPage.locator('#add-doc-btn')).toBeVisible({
+            timeout: 20000,
+        });
+        await authedPage.click('#add-doc-btn');
+        await expect(authedPage.locator('#doc-type-select')).toBeVisible({
+            timeout: 5000,
+        });
+        await selectComboboxOption(authedPage, 'doc-type-select', 'SOC 2');
+        await authedPage.fill('#doc-title-input', `SOC2 Report 2025 ${uid}`);
+        await authedPage.fill('#doc-url-input', 'https://example.com/soc2.pdf');
 
-        await page.click('#submit-doc-btn');
-        // Wait for the form to close (it closes on success by hiding the form)
-        await expect(page.locator('#doc-type-select')).not.toBeVisible({ timeout: 15000 });
-        // Allow time for the UI to settle
-        await page.waitForTimeout(2000);
-        // Check if the document is visible now or after a reload 
-        const docVisible = await page.locator(`text=SOC2 Report 2025 ${uid}`).isVisible();
+        await authedPage.click('#submit-doc-btn');
+        await expect(authedPage.locator('#doc-type-select')).not.toBeVisible({
+            timeout: 15000,
+        });
+
+        const docVisible = await authedPage
+            .locator(`text=SOC2 Report 2025 ${uid}`)
+            .isVisible();
         if (!docVisible) {
-            // Reload to force re-fetch
-            await page.reload();
-            await page.waitForLoadState('networkidle').catch(() => {});
-            await expect(page.locator('#vendor-detail-name')).toBeVisible({ timeout: 60000 });
-            await page.click('#tab-documents');
-            await page.waitForLoadState('networkidle').catch(() => {});
+            await authedPage.reload();
+            await authedPage.waitForLoadState('networkidle').catch(() => {});
+            await expect(authedPage.locator('#vendor-detail-name')).toBeVisible({
+                timeout: 60000,
+            });
+            await authedPage.click('#tab-documents');
+            await authedPage.waitForLoadState('networkidle').catch(() => {});
         }
-        await expect(page.locator(`text=SOC2 Report 2025 ${uid}`)).toBeVisible({ timeout: 20000 });
+        await expect(
+            authedPage.locator(`text=SOC2 Report 2025 ${uid}`),
+        ).toBeVisible({ timeout: 20000 });
     });
 });

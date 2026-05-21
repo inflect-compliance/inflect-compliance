@@ -1,105 +1,117 @@
-import { test, expect, Page } from '@playwright/test';
-import { loginAndGetTenant, safeGoto } from './e2e-utils';
+/**
+ * Controls Enhanced — mutating E2E (dashboard + detail-page extras).
+ *
+ * Isolation: each `test()` runs on its own fresh, empty tenant via
+ * the `isolatedTenant` fixture. The "activity tab" / "automation
+ * section" tests previously clicked the FIRST row of the controls
+ * table — which only works if the seed tenant already has controls.
+ * On an isolated (empty) tenant they now create their own control
+ * first, so the test is self-contained and order-independent.
+ *
+ * All selectors use existing id attributes — no data-testid additions.
+ */
+import { randomUUID } from 'node:crypto';
+import { test, expect } from './fixtures';
+import type { Page } from '@playwright/test';
+import { safeGoto } from './e2e-utils';
 
-const TEST_USER = { email: 'admin@acme.com', password: 'password123' };
+/** Create a control on the isolated tenant; land on its detail page. */
+async function createControl(page: Page, slug: string): Promise<void> {
+    const uid = `${Date.now().toString(36)}-${randomUUID().slice(0, 8)}`;
+    let r = 3;
+    while (r > 0) {
+        const resp = await safeGoto(page, `/t/${slug}/controls/new`, {
+            waitUntil: 'domcontentloaded',
+        });
+        if (resp && resp.status() < 500) break;
+        r--;
+        if (r > 0) await page.waitForTimeout(5000);
+    }
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.waitForSelector('#control-name-input', { timeout: 30000 });
+    await page.fill('#control-name-input', `Enhanced Test ${uid}`);
+    await page.fill('#control-code-input', `ENH-${uid}`);
+    await page.click('#create-control-btn');
+    await page.waitForURL('**/controls/**', { timeout: 30000 });
+    await page.waitForSelector('#control-title', { timeout: 30000 });
+}
 
 test.describe('Controls Enhanced', () => {
-    test.describe.configure({ mode: 'serial' });
-
-    let tenantSlug: string;
-
-    test('dashboard loads and shows metrics', async ({ page }) => {
-        tenantSlug = await loginAndGetTenant(page);
-        // Dev server may return 500 on first load while JIT-compiling under load.
-        // safeGoto handles net:: errors; this loop handles HTTP 500s.
+    test('dashboard loads and shows metrics', async ({
+        authedPage,
+        isolatedTenant,
+    }) => {
+        const { tenantSlug } = isolatedTenant;
         let retries = 3;
         while (retries > 0) {
-            const resp = await safeGoto(page, `/t/${tenantSlug}/controls/dashboard`, { waitUntil: 'domcontentloaded' });
+            const resp = await safeGoto(
+                authedPage,
+                `/t/${tenantSlug}/controls/dashboard`,
+                { waitUntil: 'domcontentloaded' },
+            );
             if (resp && resp.status() < 500) break;
             retries--;
-            if (retries > 0) await page.waitForTimeout(5000);
+            if (retries > 0) await authedPage.waitForTimeout(5000);
         }
-        await page.waitForLoadState('networkidle').catch(() => {});
-        await page.waitForSelector('#dashboard-heading', { timeout: 60000 });
-        await expect(page.locator('#dashboard-heading')).toContainText('Controls Dashboard');
-        await expect(page.locator('#implementation-progress')).toBeVisible({ timeout: 15000 });
-        await expect(page.locator('#dashboard-stats')).toBeVisible({ timeout: 15000 });
+        await authedPage.waitForLoadState('networkidle').catch(() => {});
+        await authedPage.waitForSelector('#dashboard-heading', { timeout: 60000 });
+        await expect(authedPage.locator('#dashboard-heading')).toContainText(
+            'Controls Dashboard',
+        );
+        await expect(authedPage.locator('#implementation-progress')).toBeVisible({
+            timeout: 15000,
+        });
+        await expect(authedPage.locator('#dashboard-stats')).toBeVisible({
+            timeout: 15000,
+        });
     });
 
-    test('mark test completed updates last tested', async ({ page }) => {
-        tenantSlug = await loginAndGetTenant(page);
+    test('mark test completed updates last tested', async ({
+        authedPage,
+        isolatedTenant,
+    }) => {
+        await createControl(authedPage, isolatedTenant.tenantSlug);
 
-        // First create a control to test with
-        let r2 = 3;
-        while (r2 > 0) {
-            const resp = await safeGoto(page, `/t/${tenantSlug}/controls/new`, { waitUntil: 'domcontentloaded' });
-            if (resp && resp.status() < 500) break;
-            r2--;
-            if (r2 > 0) await page.waitForTimeout(5000);
-        }
-        await page.waitForLoadState('networkidle').catch(() => {});
-        await page.waitForSelector('#control-name-input', { timeout: 30000 });
-        const uniqueId = Date.now().toString(36);
-        await page.fill('#control-name-input', `Cadence Test ${uniqueId}`);
-        await page.fill('#control-code-input', `CAD-${uniqueId}`);
-        await page.click('#create-control-btn');
-        await page.waitForURL('**/controls/**', { timeout: 30000 });
-        await page.waitForSelector('#control-title', { timeout: 30000 });
-        await expect(page.locator('#control-title')).toContainText(`Cadence Test ${uniqueId}`, { timeout: 10000 });
+        await authedPage.click('#mark-test-completed-btn');
+        await authedPage.waitForLoadState('networkidle').catch(() => {});
 
-        // Click "Mark Test Completed"
-        await page.click('#mark-test-completed-btn');
-        await page.waitForTimeout(2000);
-
-        // Verify overview tab shows last tested date
-        await page.click('#tab-overview');
-        await expect(page.locator('text=Last Tested')).toBeVisible();
+        await authedPage.click('#tab-overview');
+        await expect(authedPage.locator('text=Last Tested')).toBeVisible();
     });
 
-    test('activity tab shows events', async ({ page }) => {
-        tenantSlug = await loginAndGetTenant(page);
-        await page.goto(`/t/${tenantSlug}/controls`);
-        await page.waitForLoadState('networkidle').catch(() => {});
-        await page.waitForSelector('h1', { timeout: 15000 });
+    test('activity tab shows events', async ({ authedPage, isolatedTenant }) => {
+        // Self-contained: create the control whose activity we inspect.
+        await createControl(authedPage, isolatedTenant.tenantSlug);
 
-        // Click any control
-        const firstControl = page.locator('#controls-table tbody tr a').first();
-        if (await firstControl.isVisible()) {
-            await firstControl.click();
-            await page.waitForSelector('#control-title', { timeout: 10000 });
+        await authedPage.click('#tab-activity');
+        await authedPage.waitForLoadState('networkidle').catch(() => {});
 
-            // Click activity tab and wait for data to load
-            await page.click('#tab-activity');
-            await page.waitForLoadState('networkidle').catch(() => {});
+        await Promise.race([
+            authedPage
+                .waitForSelector('#activity-feed', { timeout: 15000 })
+                .catch(() => null),
+            authedPage
+                .waitForSelector('text=No activity recorded', { timeout: 15000 })
+                .catch(() => null),
+        ]);
 
-            // Wait for either the activity feed or the empty state to appear
-            await Promise.race([
-                page.waitForSelector('#activity-feed', { timeout: 15000 }).catch(() => null),
-                page.waitForSelector('text=No activity recorded', { timeout: 15000 }).catch(() => null),
-            ]);
-
-            // Should show activity feed (at least for controls that have events)
-            const hasActivity = await page.locator('#activity-feed').isVisible();
-            const hasNoActivity = await page.locator('text=No activity recorded').isVisible();
-            expect(hasActivity || hasNoActivity).toBe(true);
-        }
+        const hasActivity = await authedPage.locator('#activity-feed').isVisible();
+        const hasNoActivity = await authedPage
+            .locator('text=No activity recorded')
+            .isVisible();
+        expect(hasActivity || hasNoActivity).toBe(true);
     });
 
-    test('automation section is visible on detail page', async ({ page }) => {
-        tenantSlug = await loginAndGetTenant(page);
-        await page.goto(`/t/${tenantSlug}/controls`);
-        await page.waitForLoadState('networkidle').catch(() => {});
-        await page.waitForSelector('h1', { timeout: 15000 });
+    test('automation section is visible on detail page', async ({
+        authedPage,
+        isolatedTenant,
+    }) => {
+        await createControl(authedPage, isolatedTenant.tenantSlug);
 
-        const firstControl = page.locator('#controls-table tbody tr a').first();
-        if (await firstControl.isVisible()) {
-            await firstControl.click();
-            await page.waitForLoadState('networkidle').catch(() => {});
-            await page.waitForSelector('#control-title', { timeout: 30000 });
-
-            // Should see automation section in overview
-            await expect(page.getByRole('heading', { name: 'Automation' })).toBeVisible({ timeout: 15000 });
-            await expect(page.locator('#edit-automation-btn')).toBeVisible();
-        }
+        await authedPage.click('#tab-overview');
+        await expect(
+            authedPage.getByRole('heading', { name: 'Automation' }),
+        ).toBeVisible({ timeout: 15000 });
+        await expect(authedPage.locator('#edit-automation-btn')).toBeVisible();
     });
 });
