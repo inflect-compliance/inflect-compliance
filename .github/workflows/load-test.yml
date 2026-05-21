@@ -85,12 +85,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        # `--legacy-peer-deps` mirrors every other workflow in `.github/`.
-        # The repo carries an unfixable peer-dep gap (visx/axis@3.x peers
-        # `^16 || ^17 || ^18` while we run React 19) — `npm ci` enforces
-        # that strictly post-npm-10 and the daily scheduled load-test
-        # was the only workflow still failing on it.
-        run: npm install --legacy-peer-deps
+        run: npm install
 
       - name: Setup k6
         uses: grafana/setup-k6-action@v1

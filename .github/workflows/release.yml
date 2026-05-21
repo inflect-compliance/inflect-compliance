@@ -62,7 +62,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: npm install
 
       # semantic-release reads .releaserc.json and does everything:
       # analyze commits → determine version → generate notes → publish
