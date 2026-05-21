@@ -430,4 +430,5 @@ model VendorRelationship {
 
   @@unique([tenantId, primaryVendorId, subprocessorVendorId])
   @@index([tenantId, primaryVendorId])
+  @@index([tenantId, subprocessorVendorId])
 }

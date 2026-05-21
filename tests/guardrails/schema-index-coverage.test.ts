@@ -118,7 +118,7 @@ const TENANT_INDEX_EXEMPT: Record<string, string> = {};
 //
 // The baseline below records the FKs that are genuinely NOT indexed
 // (neither leading, nor in a tenant composite). Every entry is honest,
-// one of six reason classes:
+// one of five reason classes:
 //
 //   R_ACTOR        — audit-trail actor FK (createdBy / approvedBy /
 //                    deletedBy / …). Never list-queried "by actor";
@@ -130,13 +130,11 @@ const TENANT_INDEX_EXEMPT: Record<string, string> = {};
 //                    a sequential scan is acceptable for now.
 //   R_CHILD_VIA_PARENT — child rows always loaded via a parent
 //                    include, never by a bare FK scan.
-//   R_TODO_INDEX   — genuine index gap: a real reverse-lookup UI
-//                    surface lists rows by this parent. An index
-//                    SHOULD land — remove the entry in the same diff.
 //
-// Ratchet direction: toward zero. The `R_TODO_INDEX` entries are the
-// actionable index debt this layer surfaces; a follow-up PR adds those
-// indexes and deletes the entries.
+// Ratchet direction: toward zero. An exemption is deleted the moment
+// the FK gets a real index — the "no stale entries" test enforces it.
+// (The 8 genuine index gaps this layer first surfaced were closed by
+// migration 20260521120000_perf_fk_reverse_lookup_indexes.)
 
 const R_ACTOR =
     'audit-trail actor FK (who created / changed / approved the row) — never list-queried in the "by actor" direction; the rare admin lookup tolerates a sequential scan. Ratchet target: index only if an actor-scoped list view ships.';
@@ -148,8 +146,6 @@ const R_REVERSE_RARE =
     'reverse lookup exists but is a low-frequency admin / background query — a sequential scan is acceptable today. Ratchet target: add an index if the reverse direction becomes a hot UI path.';
 const R_CHILD_VIA_PARENT =
     'child rows are always loaded through the parent record\'s include (the parent FK is already indexed), never by a bare scan on this FK.';
-const R_TODO_INDEX =
-    'genuine index gap — a reverse-lookup UI surface lists rows by this parent, but neither a leading index nor a [tenantId, fk] composite covers it. Add the index and remove this entry in the same diff.';
 
 const FK_INDEX_EXEMPT: Record<string, string> = {
     'AuditLog.userId': R_ACTOR,
@@ -181,12 +177,9 @@ const FK_INDEX_EXEMPT: Record<string, string> = {
     'RiskSuggestionItem.assetId': R_ONE_TO_ONE,
     'Control.applicabilityDecidedByUserId': R_ACTOR,
     'Control.createdByUserId': R_ACTOR,
-    'RiskControl.controlId': R_TODO_INDEX,
     'RiskControl.createdByUserId': R_ACTOR,
-    'ControlAsset.assetId': R_TODO_INDEX,
     'ControlAsset.createdByUserId': R_ACTOR,
     'AssetRiskLink.createdByUserId': R_ACTOR,
-    'AssetRiskLink.riskId': R_TODO_INDEX,
     'ControlContributor.userId': R_ACTOR,
     'ControlTask.assigneeUserId': R_ACTOR,
     'ControlEvidenceLink.createdByUserId': R_ACTOR,
@@ -198,18 +191,14 @@ const FK_INDEX_EXEMPT: Record<string, string> = {
     'Policy.ownerUserId': R_ACTOR,
     'PolicyVersion.createdById': R_ACTOR,
     'PolicyApproval.approvedByUserId': R_ACTOR,
-    'PolicyApproval.policyId': R_TODO_INDEX,
-    'PolicyApproval.policyVersionId': R_TODO_INDEX,
     'PolicyApproval.requestedByUserId': R_ACTOR,
     'PolicyAcknowledgement.userId': R_ACTOR,
-    'Finding.auditId': R_TODO_INDEX,
     'FrameworkPack.frameworkId': R_LIBRARY_TABLE,
     'PackTemplateLink.templateId': R_LIBRARY_TABLE,
     'FrameworkMapping.toControlId': R_REVERSE_RARE,
     'FrameworkMapping.toRequirementId': R_REVERSE_RARE,
     'ControlTestPlan.createdByUserId': R_ACTOR,
     'ControlTestPlan.ownerUserId': R_ACTOR,
-    'ControlTestRun.controlId': R_TODO_INDEX,
     'ControlTestRun.createdByUserId': R_ACTOR,
     'ControlTestRun.executedByUserId': R_ACTOR,
     'ControlTestEvidenceLink.createdByUserId': R_ACTOR,
@@ -239,7 +228,6 @@ const FK_INDEX_EXEMPT: Record<string, string> = {
     'VendorAssessmentAnswer.questionId': R_CHILD_VIA_PARENT,
     'VendorAssessmentAnswer.evidenceId': R_ONE_TO_ONE,
     'VendorEvidenceBundle.createdByUserId': R_ACTOR,
-    'VendorRelationship.subprocessorVendorId': R_TODO_INDEX,
 };
 
 // ─────────────────────────────────────────────────────────────────────

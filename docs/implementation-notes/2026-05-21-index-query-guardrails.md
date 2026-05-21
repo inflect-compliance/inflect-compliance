@@ -47,11 +47,10 @@ small and regular.
   second column of a `[tenantId, fk]` composite (every repository
   query carries `tenantId`, so that composite serves the universal
   `WHERE tenantId = ? AND fk = ?` reverse lookup). `tenantId` is
-  skipped (Layer A owns it). `FK_INDEX_EXEMPT` baselines 88 FKs that
+  skipped (Layer A owns it). `FK_INDEX_EXEMPT` baselines 80 FKs that
   are genuinely un-indexed — actor FKs, 1:1 pointers, library tables,
-  rare reverse lookups, child-via-parent, and 8 tracked
-  `R_TODO_INDEX` gaps. Each entry carries one of six honest reason
-  classes.
+  rare reverse lookups, and child-via-parent. Each entry carries one
+  of five honest reason classes.
 
 - **Layer C (curated)** — `LIST_QUERY_INDEXES`, a reviewed list of
   multi-column indexes backing specific list filter+sort shapes. The
@@ -139,9 +138,11 @@ in lockstep with reality via the slack-drift test.
   `tenantId`, that composite IS the correct index. Layer B counts a
   FK that is the second column of a `[tenantId, fk]` composite as
   covered; flagging it would be a guardrail crying wolf. The residual
-  88-entry baseline is FKs with genuinely no index support; the 8
-  `R_TODO_INDEX` entries are the actionable debt a follow-up PR
-  closes.
+  80-entry baseline is FKs with genuinely no index support. The 8
+  genuine index gaps the layer first surfaced (`R_TODO_INDEX`) were
+  closed immediately by migration
+  `20260521120000_perf_fk_reverse_lookup_indexes` — the framework's
+  first ratchet-down.
 
 - **D1 reports every distinct (method, accessor) per loop**, not just
   the first read — a multi-read loop (e.g. `vendor-audit.ts` freezes

@@ -444,6 +444,7 @@ model RiskControl {
   tenant          Tenant   @relation(fields: [tenantId], references: [id])
 
   @@unique([tenantId, riskId, controlId])
+  @@index([tenantId, controlId])
   @@index([tenantId])
 }
 
@@ -462,6 +463,7 @@ model ControlAsset {
   tenant          Tenant       @relation(fields: [tenantId], references: [id])
 
   @@unique([tenantId, controlId, assetId])
+  @@index([tenantId, assetId])
   @@index([tenantId])
 }
 
@@ -480,6 +482,7 @@ model AssetRiskLink {
   tenant          Tenant        @relation(fields: [tenantId], references: [id])
 
   @@unique([tenantId, assetId, riskId])
+  @@index([tenantId, riskId])
   @@index([tenantId])
 }
 
@@ -769,6 +772,12 @@ model PolicyApproval {
   policy            Policy               @relation(fields: [policyId], references: [id], onDelete: Cascade)
   policyVersion     PolicyVersion        @relation(fields: [policyVersionId], references: [id], onDelete: Cascade)
   requestedBy       User                 @relation("PolicyApprovalRequester", fields: [requestedByUserId], references: [id])
+
+  // FK reverse-lookup indexes. PolicyApproval is ownership-chained
+  // (no tenantId of its own — tenant scope flows via `policy`), so
+  // each FK must lead a standalone index.
+  @@index([policyId])
+  @@index([policyVersionId])
 }
 
 model PolicyAcknowledgement {
@@ -844,6 +853,7 @@ model Finding {
   @@index([tenantId])
   @@index([tenantId, createdAt])
   @@index([tenantId, deletedAt])
+  @@index([tenantId, auditId])
 }
 
 model FindingEvidence {
@@ -1089,6 +1099,7 @@ model ControlTestRun {
   @@index([tenantId, testPlanId])
   @@index([tenantId, result])
   @@index([tenantId, executedAt])
+  @@index([tenantId, controlId])
 }
 
 model ControlTestEvidenceLink {
