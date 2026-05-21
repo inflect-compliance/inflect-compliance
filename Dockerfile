@@ -2,8 +2,12 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
 
+# `npm ci` — strict, deterministic install: installs exactly the
+# package-lock.json tree and fails if it is out of sync with
+# package.json. Never `npm install` in an image build (it can mutate
+# the lockfile and resolve fresh versions, defeating reproducibility).
 COPY package.json package-lock.json ./
-RUN npm install
+RUN npm ci
 
 # ─── Stage 2: Builder ──────────────────────────────────────
 FROM node:22-alpine AS builder

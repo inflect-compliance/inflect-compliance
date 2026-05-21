@@ -2,6 +2,10 @@
   "name": "inflect-compliance",
   "version": "1.345.1",
   "private": true,
+  "engines": {
+    "node": ">=22.0.0 <23.0.0",
+    "npm": ">=10.0.0"
+  },
   "scripts": {
     "postinstall": "patch-package",
     "prepare": "husky",
@@ -150,17 +154,6 @@
     "use-debounce": "^10.1.1",
     "vaul": "^1.1.2",
     "zod": "^4.4.3"
-  },
-  "optionalDependencies": {
-    "@next/swc-darwin-arm64": "14.2.35",
-    "@next/swc-darwin-x64": "14.2.35",
-    "@next/swc-linux-arm64-gnu": "14.2.35",
-    "@next/swc-linux-arm64-musl": "16.2.6",
-    "@next/swc-linux-x64-gnu": "14.2.35",
-    "@next/swc-linux-x64-musl": "14.2.35",
-    "@next/swc-win32-arm64-msvc": "14.2.35",
-    "@next/swc-win32-ia32-msvc": "14.2.35",
-    "@next/swc-win32-x64-msvc": "14.2.35"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.3",

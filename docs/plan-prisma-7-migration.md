@@ -106,7 +106,9 @@ Branch off main with both `prisma`@7 and `@prisma/client`@7 plus
 `@prisma/adapter-pg`. No middleware changes yet; just swap the
 client construction.
 
-1. `npm install --legacy-peer-deps prisma@^7 @prisma/client@^7 @prisma/adapter-pg`.
+1. `npm install prisma@^7 @prisma/client@^7 @prisma/adapter-pg`
+   (strict peer resolution — never `--legacy-peer-deps`; see
+   `docs/dependency-policy.md`).
 2. Create `prisma.config.ts` with the schema folder + datasource
    URLs from env.
 3. Remove `url` + `directUrl` from `prisma/schema/base.prisma`'s

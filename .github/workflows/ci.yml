@@ -81,7 +81,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Generate Prisma client
         # Roadmap-27 CI hardening — `prisma generate` intermittently
@@ -118,7 +118,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Generate Prisma client
         # Roadmap-27 CI hardening — `prisma generate` intermittently
@@ -187,7 +187,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Generate Prisma client
         # Roadmap-27 CI hardening — `prisma generate` intermittently
@@ -302,7 +302,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Generate Prisma client
         # Roadmap-27 CI hardening — `prisma generate` intermittently
@@ -380,7 +380,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Generate Prisma client
         # Roadmap-27 CI hardening — `prisma generate` intermittently
@@ -486,7 +486,7 @@ jobs:
         run: cp .env.e2e.example .env
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Generate Prisma client
         # Roadmap-27 CI hardening — `prisma generate` intermittently
@@ -675,7 +675,7 @@ jobs:
         run: cp .env.e2e.example .env
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Generate Prisma client
         # Roadmap-27 CI hardening — `prisma generate` intermittently
@@ -808,7 +808,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       # ── npm audit: BLOCKING on moderate+ severity (production deps) ──
       # `--omit=dev` scans only the runtime dependency tree, so a

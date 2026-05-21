@@ -38,7 +38,48 @@ When a package in the table ships a release whose peer range
 genuinely includes the version we run, drop its `overrides` entry —
 the override is a bridge, not a destination.
 
+## Deterministic installs — `npm ci`
+
+Every install path — the `Dockerfile` and all CI workflows — runs
+**`npm ci`**, never `npm install`:
+
+| | `npm install` | `npm ci` |
+|---|---|---|
+| Lockfile | may be **mutated** (re-resolves semver ranges) | read-only; install fails if it drifts from `package.json` |
+| Reproducibility | two runs of one commit can differ | identical tree every run |
+| Corrupt lockfile | silently "repaired" | **surfaced** as a hard error |
+
+`npm ci` is therefore both the install command AND the
+lockfile-integrity check — there is no separate CI step for it. A
+stale or hand-mangled `package-lock.json` fails fast in every job
+instead of being papered over.
+
+Enforced by `tests/guards/deterministic-install.test.ts`, which
+fails CI if any install path reverts to `npm install`.
+
+### A worked example — the `@next/swc-*` corruption
+
+Adopting `npm ci` immediately surfaced a real defect that
+`npm install` had been masking: a stale `optionalDependencies`
+block in `package.json` pinned all nine `@next/swc-*` platform
+binaries to the **Next 14** version `14.2.35` — a leftover from the
+Next 14 → 16 migration, never updated. `@next/swc-*` are `next`'s
+own transitive optional dependencies; a consumer project must never
+pin them. The stale block conflicted with `next@16.2.6`'s own SWC
+deps and corrupted the lockfile — exactly the kind of
+incompatibility `npm install` absorbs silently. The fix: delete the
+block — `next` resolves its own platform binaries.
+
 ## Node / npm
 
-Node 22 across all environments (`Dockerfile`, CI `NODE_VERSION`,
-local). npm ships with Node 22; no separate npm pin is required.
+Node **22** across every environment, pinned in three places that
+`deterministic-install.test.ts` keeps in agreement:
+
+- **`.nvmrc`** (`22`) — `nvm` / `fnm` auto-select it.
+- **`engines`** in `package.json` (`node >=22 <23`, `npm >=10`) —
+  declares the supported runtime; npm warns on a mismatch.
+- **CI / container** — `NODE_VERSION` in `ci.yml`, the literal
+  `"22"` in `release.yml` / `deploy.yml` / `load-test.yml`, and the
+  `node:22-alpine` base image in the `Dockerfile`.
+
+npm ships with Node 22; no separate npm install step is required.

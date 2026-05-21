@@ -62,7 +62,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       # semantic-release reads .releaserc.json and does everything:
       # analyze commits → determine version → generate notes → publish

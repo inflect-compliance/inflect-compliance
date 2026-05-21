@@ -67,7 +67,7 @@ jobs:
       NEXTAUTH_SECRET: ci-load-test-secret-do-not-use-in-prod
       DATA_ENCRYPTION_KEY: ci-load-test-data-encryption-key-32b
       # NODE_ENV intentionally NOT set at the job level. Setting it
-      # to "production" here causes `npm install` to skip
+      # to "production" here causes `npm ci` to skip
       # devDependencies — which includes `patch-package`. The
       # repo's `postinstall` hook then invokes `patch-package`,
       # can't find it on PATH, and exits 127. The Build + Start
@@ -85,7 +85,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Setup k6
         uses: grafana/setup-k6-action@v1
