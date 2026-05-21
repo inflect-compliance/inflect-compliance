@@ -3,7 +3,7 @@ FROM node:22-alpine AS deps
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm install --legacy-peer-deps
+RUN npm install
 
 # ─── Stage 2: Builder ──────────────────────────────────────
 FROM node:22-alpine AS builder
@@ -26,7 +26,7 @@ RUN npx next build
 # handlebars@4.7.8 via ts-jest) — which Trivy then reports as
 # production vulnerabilities even though the runtime never executes
 # those modules.
-RUN npm prune --omit=dev --legacy-peer-deps
+RUN npm prune --omit=dev
 
 # ─── Stage 3: Runner ──────────────────────────────────────
 FROM node:22-alpine AS runner
