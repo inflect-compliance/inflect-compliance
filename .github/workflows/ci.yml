@@ -396,6 +396,21 @@ jobs:
           done
           exit 1
 
+      # Env validation is INTENTIONALLY skipped at build time.
+      # `SKIP_ENV_VALIDATION: "1"` (workflow-level `env:` above)
+      # makes `src/env.ts` skip its zod check — CI has only dummy
+      # secrets, so a real validation would fail. This is deliberate,
+      # not an oversight.
+      #
+      # The REAL env gate is RUNTIME, not build time:
+      #   - `src/env.ts` validates on process start (when
+      #     SKIP_ENV_VALIDATION is unset — i.e. in prod);
+      #   - `src/instrumentation.ts` runs the GAP-03 fail-fast
+      #     startup checks (encryption key, Redis auth, …).
+      # A green Build job is therefore NOT an env-config pass —
+      # runtime is. See docs/ci-cd-pipeline-integrity.md § Build /
+      # env-validation discipline. The posture is locked by
+      # tests/guards/ci-pipeline-integrity.test.ts.
       - name: Build Next.js (production)
         run: npx next build
         env:
