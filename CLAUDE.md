@@ -643,6 +643,50 @@ duplicating the limits table).
 - `SKIP_ENV_VALIDATION=1` is set in `jest.setup.js` to prevent env loader crash in unit tests.
 - Coverage thresholds: 60% global (branches, functions, lines, statements); checked on `npm run test:coverage`.
 
+### Index & query-shape guardrails
+
+Two structural guardrails enforce database-performance hygiene. Both
+read the LIVE Prisma schema / `src/app-layer` source — no DB, no
+migration-file coupling. The structured schema parser they stand on
+is `tests/helpers/prisma-schema-models.ts` (`parseSchemaModels()`).
+
+- `tests/guardrails/schema-index-coverage.test.ts` — four index
+  layers. **A** (auto): every model with a `tenantId` field must have
+  a `tenantId`-leading `@@index`/`@@unique`/`@@id`. **B** (auto):
+  every foreign-key scalar field must be indexed — leading an index,
+  or (on a tenant model) the 2nd column of a `[tenantId, fk]`
+  composite. **C**
+  (curated): `LIST_QUERY_INDEXES` — composite indexes backing
+  specific list filter+sort shapes. **C-completeness** (auto): every
+  tenant-scoped model that is `findMany`'d in `src/app-layer` must be
+  in `LIST_QUERY_INDEXES` or `LIST_MODELS_TENANT_INDEX_SUFFICIENT`.
+
+- `tests/guardrails/query-shape-guardrails.test.ts` — two query
+  layers. **D1**: no Prisma READ call inside a loop (N+1).
+  **D2**: a one-way-down budget on unbounded (`take:`-less)
+  repository `findMany` calls.
+
+**When you add a model:** Layers A/B/C-completeness fire
+automatically. If the model has a `tenantId`, add a
+`@@index([tenantId])` (or a tenantId-leading composite). Index every
+FK column (a `[tenantId, fk]` composite counts) or expect Layer B to
+flag it. The first `findMany` on the
+model forces a Layer C-completeness triage — add it to
+`LIST_QUERY_INDEXES` (with a real composite index) or to
+`LIST_MODELS_TENANT_INDEX_SUFFICIENT` (with a written reason).
+
+**When you add a `findMany`:** keep it bounded with `take:`. An
+unbounded repository `findMany` must either add `take:` or carry
+`// guardrail-allow: unbounded` with a reason. A read inside a loop
+trips D1 — hoist it to one `findMany({ where: { id: { in: [...] } } })`
+plus an in-memory map, or (for an intentional bounded-loop
+idempotency check) add `// guardrail-allow: n+1` or a
+`KNOWN_N_PLUS_ONE` entry with a reason.
+
+All exempt/baseline maps carry a written reason per entry and a
+"no stale entries" test — when a real index lands or an N+1 is
+fixed, delete the entry in the same diff.
+
 ## Failing tests
 
 A failing test on a branch is a failing test, full stop. "Pre-existing on
