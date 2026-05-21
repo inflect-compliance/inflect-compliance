@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTenantCtx } from '@/app-layer/context';
-import { mapRequirementToControl, unmapRequirementFromControl } from '@/app-layer/usecases/control';
+import { mapRequirementToControl, unmapRequirementFromControl, listControlMappings } from '@/app-layer/usecases/control';
 import { withValidatedBody } from '@/lib/validation/route';
 import { MapRequirementSchema } from '@/lib/schemas';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
+
+// GET — framework mappings for the control (#102 item 1, Mappings tab).
+export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string; controlId: string } }) => {
+    const ctx = await getTenantCtx(params, req);
+    const mappings = await listControlMappings(ctx, params.controlId);
+    return jsonResponse(mappings);
+});
 
 export const POST = withApiErrorHandling(withValidatedBody(MapRequirementSchema, async (req, { params }: { params: { tenantSlug: string; controlId: string } }, body) => {
     const ctx = await getTenantCtx(params, req);

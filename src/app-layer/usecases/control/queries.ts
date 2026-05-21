@@ -60,6 +60,33 @@ export async function getControl(ctx: RequestContext, id: string) {
     });
 }
 
+/**
+ * Header-only control read (#102 item 1 — tab-lazy refactor).
+ *
+ * Returns the control scalars + user refs + `contributors` + a
+ * `_count` of the four tabbed relations, without their arrays. The
+ * detail page renders the Overview tab + header from this; the
+ * Tasks / Evidence / Mappings tabs fetch their own data on demand.
+ *
+ * `doneControlTasks` is the one derived extra: `_count.controlTasks`
+ * gives the total, but the Overview "Tasks Progress" widget also
+ * needs the DONE count — a relation `_count` can't carry both a
+ * total and a filtered count for the same relation, so it ships as
+ * a separate field. The `[tenantId, controlId, status]` index added
+ * in #102 item 4 covers this count.
+ */
+export async function getControlHeader(ctx: RequestContext, id: string) {
+    assertCanReadControls(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const control = await ControlRepository.getHeaderById(db, ctx, id);
+        if (!control) throw notFound('Control not found');
+        const doneControlTasks = await db.controlTask.count({
+            where: { controlId: id, tenantId: ctx.tenantId, status: 'DONE' },
+        });
+        return { ...control, doneControlTasks };
+    });
+}
+
 // ─── Activity Trail ───
 
 export async function getControlActivity(ctx: RequestContext, controlId: string) {

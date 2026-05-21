@@ -8,6 +8,7 @@ export {
     listControls,
     listControlsPaginated,
     getControl,
+    getControlHeader,
     getControlActivity,
     getControlDashboard,
     runConsistencyCheck,
@@ -35,6 +36,7 @@ export {
 
 export {
     listEvidenceLinks,
+    getControlEvidenceTab,
     linkEvidence,
     unlinkEvidence,
     linkAssetToControl,
@@ -51,6 +53,7 @@ export {
     listFrameworkRequirements,
     mapRequirementToControl,
     unmapRequirementFromControl,
+    listControlMappings,
 } from './templates';
 
 // Page-data orchestration (collapses control + sync waterfall on detail page)

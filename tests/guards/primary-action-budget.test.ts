@@ -53,7 +53,10 @@ const EXEMPT_FILE_PATTERNS: RegExp[] = [
  */
 const PRIMARY_BUDGET: Record<string, number> = {
     // Heavy detail pages — page-header CTA + multiple modal CTAs
-    "src/app/t/[tenantSlug]/(app)/controls/[controlId]/page.tsx": 10,
+    // #102 item 1 dropped 2 (Map Requirement + Map) to the extracted
+    // Mappings tab component below.
+    "src/app/t/[tenantSlug]/(app)/controls/[controlId]/page.tsx": 8,
+    "src/app/t/[tenantSlug]/(app)/controls/[controlId]/_tabs/ControlMappingsTab.tsx": 2,
     "src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx": 9,
 
     // Cross-entity link/unlink panel — multiple pairwise actions

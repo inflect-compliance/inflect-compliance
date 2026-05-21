@@ -136,6 +136,55 @@ export class ControlRepository {
         });
     }
 
+    /**
+     * Header-only control fetch — the tab-lazy counterpart to
+     * `getById` (#102 item 1).
+     *
+     * Loads control scalars, the three lightweight user refs, and
+     * `contributors` (all read by the Overview tab + header), plus a
+     * `_count` for the four tabbed relations so the tab badges render
+     * without their arrays. The heavy arrays themselves —
+     * `controlTasks` / `evidenceLinks` / `evidence` /
+     * `frameworkMappings` — are deliberately NOT loaded; each tab
+     * fetches its own slice on demand via its own endpoint.
+     */
+    static async getHeaderById(db: PrismaTx, ctx: RequestContext, id: string) {
+        return traceRepository('control.getHeaderById', ctx, async () => {
+            return db.control.findFirst({
+                where: {
+                    id,
+                    OR: [{ tenantId: ctx.tenantId }, { tenantId: null }],
+                },
+                include: {
+                    owner: { select: { id: true, name: true, email: true } },
+                    createdBy: { select: { id: true, name: true, email: true } },
+                    applicabilityDecidedBy: { select: { id: true, name: true, email: true } },
+                    contributors: { include: { user: { select: { id: true, name: true, email: true } } } },
+                    _count: {
+                        select: {
+                            controlTasks: true,
+                            evidenceLinks: true,
+                            evidence: true,
+                            frameworkMappings: true,
+                        },
+                    },
+                },
+            });
+        });
+    }
+
+    /**
+     * Framework mappings for one control — the per-tab fetch that
+     * replaces the eager `frameworkMappings` array on `getById`
+     * (#102 item 1). Same `include` shape the page already renders.
+     */
+    static async listFrameworkMappings(db: PrismaTx, ctx: RequestContext, controlId: string) {
+        return db.frameworkMapping.findMany({
+            where: { toControlId: controlId, toControl: { tenantId: ctx.tenantId } },
+            include: { fromRequirement: { include: { framework: { select: { name: true } } } } },
+        });
+    }
+
     static async create(db: PrismaTx, ctx: RequestContext, data: Omit<Prisma.ControlUncheckedCreateInput, 'tenantId'>) {
         return traceRepository('control.create', ctx, async () => {
             return db.control.create({

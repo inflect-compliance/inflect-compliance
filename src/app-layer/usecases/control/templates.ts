@@ -1,5 +1,6 @@
 import { RequestContext } from '../../types';
 import { ControlTemplateRepository } from '../../repositories/ControlTemplateRepository';
+import { ControlRepository } from '../../repositories/ControlRepository';
 import { FrameworkRepository } from '../../repositories/FrameworkRepository';
 import {
     assertCanReadControls, assertCanCreateControl, assertCanMapFramework,
@@ -151,5 +152,23 @@ export async function unmapRequirementFromControl(ctx: RequestContext, controlId
 
         await db.frameworkMapping.delete({ where: { id: mapping.id } });
         return { success: true };
+    });
+}
+
+/**
+ * Framework mappings for one control (#102 item 1 — tab-lazy).
+ *
+ * The Mappings tab fetches this on demand instead of reading the
+ * eager `frameworkMappings` array that `getById` used to carry. The
+ * payload shape matches what the page already renders.
+ */
+export async function listControlMappings(ctx: RequestContext, controlId: string) {
+    assertCanReadControls(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const control = await db.control.findFirst({
+            where: { id: controlId, tenantId: ctx.tenantId },
+        });
+        if (!control) throw notFound('Control not found');
+        return ControlRepository.listFrameworkMappings(db, ctx, controlId);
     });
 }

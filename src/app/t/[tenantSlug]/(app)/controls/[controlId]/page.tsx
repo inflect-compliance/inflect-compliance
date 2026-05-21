@@ -8,13 +8,13 @@ import { formatDate, formatDateTime } from '@/lib/format-date';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { InlineEmptyState } from '@/components/ui/inline-empty-state';
 import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
-import { useSWRConfig } from 'swr';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading, textLinkVariants } from '@/components/ui/typography';
 import { CardHeader } from '@/components/ui/card-header';
 import { EditControlModal } from './_modals/EditControlModal';
+import { ControlMappingsTab } from './_tabs/ControlMappingsTab';
 import { MetaStrip } from '@/components/ui/meta-strip';
 import { CONTROL_STATUS_VARIANT } from '@/app-layer/domain/entity-status-mapping';
 // Inline pencil icon to avoid lucide-react barrel import issue with Next.js 14
@@ -74,9 +74,8 @@ const LinkedTasksPanel = dynamic(() => import('@/components/LinkedTasksPanel'), 
 });
 import type {
     ControlDetailDTO, ControlTaskDTO, EvidenceLinkDTO,
-    FrameworkMappingDTO, ContributorDTO, AuditLogEntry,
+    ContributorDTO, AuditLogEntry,
 } from '@/lib/dto';
-import type { FrameworkDTO, RequirementDTO } from '@/lib/dto';
 
 // Polish PR-1 — STATUS_BADGE moved to shared domain mapping as
 // CONTROL_STATUS_VARIANT in @/app-layer/domain/entity-status-mapping.
@@ -107,6 +106,17 @@ const EVIDENCE_SOURCE_OPTIONS: ComboboxOption[] = [
 
 type Tab = 'overview' | 'tasks' | 'evidence' | 'mappings' | 'traceability' | 'activity' | 'tests';
 
+/**
+ * Evidence-tab payload — `GET /controls/{id}/evidence` (#102 item 1).
+ * Carries both the manual evidence links and the `Evidence` entities
+ * attached directly to the control.
+ */
+interface EvidenceTabData {
+    links: EvidenceLinkDTO[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    evidence: any[];
+}
+
 const EVENT_LABELS: Record<string, string> = {
     CONTROL_CREATED: 'Created', CONTROL_UPDATED: 'Updated', CONTROL_STATUS_CHANGED: 'Status Changed',
     CONTROL_APPLICABILITY_CHANGED: 'Applicability Changed', CONTROL_OWNER_CHANGED: 'Owner Changed',
@@ -123,7 +133,6 @@ export default function ControlDetailPage() {
     const tenantHref = useTenantHref();
     const { permissions, tenantSlug } = useTenantContext();
     const controlId = params?.controlId as string;
-    const { mutate: swrMutate } = useSWRConfig();
     const triggerUndoToast = useToastWithUndo();
 
     // ─── Page data — Epic 69 SWR-first read ──────────────────────────
@@ -142,7 +151,10 @@ export default function ControlDetailPage() {
     // the rest of the UI sees immediately. Other pages on this
     // codebase still use React Query — that migration is incremental.
     interface ControlPageDataDTO {
-        control: ControlDetailDTO;
+        // `_count` carries the tab badge counts; `doneControlTasks`
+        // backs the Overview "Tasks Progress" widget (#102 item 1) —
+        // the heavy relation arrays no longer ride on this payload.
+        control: ControlDetailDTO & { doneControlTasks?: number };
         syncStatus: {
             syncStatus: string | null;
             lastSyncedAt: string | null;
@@ -170,6 +182,25 @@ export default function ControlDetailPage() {
     );
     const initialSyncStatus = pageDataQuery.data?.syncStatus ?? null;
     const [tab, setTab] = useState<Tab>('overview');
+
+    // ─── Per-tab lazy reads (#102 item 1) ───────────────────────────
+    //
+    // The Tasks / Evidence / Mappings tab bodies each fetch their own
+    // slice on demand. The SWR key is `null` until that tab is the
+    // active one, so nothing loads until the user opens the tab — and
+    // `getControlHeader` no longer eager-loads these four arrays into
+    // the page-data payload. Mirrors the existing Activity /
+    // Traceability / Tests panels, which already self-fetch.
+    const tasksSWR = useTenantSWR<ControlTaskDTO[]>(
+        controlId && tab === 'tasks'
+            ? CACHE_KEYS.controls.tasks(controlId)
+            : null,
+    );
+    const evidenceSWR = useTenantSWR<EvidenceTabData>(
+        controlId && tab === 'evidence'
+            ? CACHE_KEYS.controls.evidence(controlId)
+            : null,
+    );
 
     // Status change
     const [changingStatus, setChangingStatus] = useState(false);
@@ -200,14 +231,6 @@ export default function ControlDetailPage() {
     const [fileUploading, setFileUploading] = useState(false);
     const [fileUploadError, setFileUploadError] = useState('');
     const fileUploadRef = useRef<HTMLInputElement>(null);
-
-    // Mapping
-    const [showMapForm, setShowMapForm] = useState(false);
-    const [frameworks, setFrameworks] = useState<FrameworkDTO[]>([]);
-    const [selectedFramework, setSelectedFramework] = useState('');
-    const [requirements, setRequirements] = useState<RequirementDTO[]>([]);
-    const [selectedReq, setSelectedReq] = useState('');
-    const [savingMap, setSavingMap] = useState(false);
 
     // Activity trail
     const [activity, setActivity] = useState<AuditLogEntry[]>([]);
@@ -356,20 +379,6 @@ export default function ControlDetailPage() {
         setShowEditModal(false);
         setEditError('');
     };
-
-    // Fetch frameworks when mapping tab opens
-    useEffect(() => {
-        if (tab !== 'mappings') return;
-        fetch(apiUrl('/controls/frameworks')).then(r => r.ok ? r.json() : []).then(setFrameworks).catch(() => { });
-    }, [tab, apiUrl]);
-
-    // Fetch requirements when framework selected
-    useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        if (!selectedFramework) { setRequirements([]); return; }
-        fetch(apiUrl(`/controls/frameworks/${selectedFramework}/requirements`))
-            .then(r => r.ok ? r.json() : []).then(setRequirements).catch(() => { });
-    }, [selectedFramework, apiUrl]);
 
     // Fetch activity when activity tab opens
     useEffect(() => {
@@ -529,7 +538,9 @@ export default function ControlDetailPage() {
         });
         setTaskTitle(''); setTaskDesc(''); setTaskDue('');
         setShowTaskForm(false);
-        await refetch();
+        // Revalidate the Tasks-tab list and the header (badge count +
+        // Overview progress both come off page-data).
+        await Promise.all([tasksSWR.mutate(), refetch()]);
         setSavingTask(false);
     };
 
@@ -538,7 +549,7 @@ export default function ControlDetailPage() {
             method: 'PATCH', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status }),
         });
-        await refetch();
+        await Promise.all([tasksSWR.mutate(), refetch()]);
     };
 
     // R11-PR6 — control tasks moved off raw <table> to DataTable so
@@ -631,7 +642,7 @@ export default function ControlDetailPage() {
         });
         setEvidenceUrl(''); setEvidenceNote('');
         setShowEvidenceForm(false);
-        await refetch();
+        await Promise.all([evidenceSWR.mutate(), refetch()]);
         setSavingEvidence(false);
     };
 
@@ -645,21 +656,19 @@ export default function ControlDetailPage() {
     // Migrated from `queryClient.setQueryData/getQueryData` to the
     // SWR equivalent in the Epic 69 pass — semantics identical.
     const unlinkEvidence = (linkId: string) => {
-        if (!pageDataKey) return;
-        const cacheKey = apiUrl(pageDataKey);
-        const previous = pageDataQuery.data;
+        // Epic 67 delayed-commit unlink — now scoped to the Evidence
+        // tab's own SWR cache (#102 item 1). Optimistically drop the
+        // link so the row disappears immediately; the DELETE fires
+        // after the 5 s undo window. Snapshot is the whole tab
+        // payload so undo restores even after a concurrent change.
+        const previous = evidenceSWR.data;
         if (previous) {
-            swrMutate<ControlPageDataDTO>(
-                cacheKey,
+            evidenceSWR.mutate(
                 {
                     ...previous,
-                    control: {
-                        ...previous.control,
-                        evidenceLinks: (previous.control.evidenceLinks || [])
-                            .filter(
-                                (link: EvidenceLinkDTO) => link.id !== linkId,
-                            ),
-                    },
+                    links: previous.links.filter(
+                        (link) => link.id !== linkId,
+                    ),
                 },
                 { revalidate: false },
             );
@@ -673,20 +682,17 @@ export default function ControlDetailPage() {
                     { method: 'DELETE' },
                 );
                 if (!res.ok) throw new Error('Unlink failed');
-                await refetch();
+                // Confirm the tab list + refresh the header badge.
+                await Promise.all([evidenceSWR.mutate(), refetch()]);
             },
             undoAction: () => {
                 if (previous) {
-                    swrMutate<ControlPageDataDTO>(cacheKey, previous, {
-                        revalidate: false,
-                    });
+                    evidenceSWR.mutate(previous, { revalidate: false });
                 }
             },
             onError: () => {
                 if (previous) {
-                    swrMutate<ControlPageDataDTO>(cacheKey, previous, {
-                        revalidate: false,
-                    });
+                    evidenceSWR.mutate(previous, { revalidate: false });
                 }
             },
         });
@@ -711,81 +717,12 @@ export default function ControlDetailPage() {
             setFileUploadTitle('');
             setShowFileUpload(false);
             if (fileUploadRef.current) fileUploadRef.current.value = '';
-            await refetch();
+            await Promise.all([evidenceSWR.mutate(), refetch()]);
         } catch (err: unknown) {
             setFileUploadError(err instanceof Error ? err.message : 'Upload failed');
         } finally {
             setFileUploading(false);
         }
-    };
-
-    const mapRequirement = async () => {
-        if (!selectedReq) return;
-        setSavingMap(true);
-        await fetch(apiUrl(`/controls/${controlId}/requirements`), {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ requirementId: selectedReq }),
-        });
-        setSelectedReq('');
-        setShowMapForm(false);
-        await refetch();
-        setSavingMap(false);
-    };
-
-    // Epic 67 — delayed-commit unmap. Same shape as unlinkEvidence
-    // above; migrated to SWR cache writes in the Epic 69 pass.
-    const unmapRequirement = (reqId: string) => {
-        if (!pageDataKey) return;
-        const cacheKey = apiUrl(pageDataKey);
-        const previous = pageDataQuery.data;
-        if (previous) {
-            swrMutate<ControlPageDataDTO>(
-                cacheKey,
-                {
-                    ...previous,
-                    control: {
-                        ...previous.control,
-                        frameworkMappings: (previous.control.frameworkMappings || [])
-                            .filter(
-                                (m: FrameworkMappingDTO) =>
-                                    m.fromRequirement?.id !== reqId &&
-                                    m.fromRequirementId !== reqId,
-                            ),
-                    },
-                },
-                { revalidate: false },
-            );
-        }
-        triggerUndoToast({
-            message: 'Requirement unmapped',
-            undoMessage: 'Undo',
-            action: async () => {
-                const res = await fetch(
-                    apiUrl(`/controls/${controlId}/requirements`),
-                    {
-                        method: 'DELETE',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ requirementId: reqId }),
-                    },
-                );
-                if (!res.ok) throw new Error('Unmap failed');
-                await refetch();
-            },
-            undoAction: () => {
-                if (previous) {
-                    swrMutate<ControlPageDataDTO>(cacheKey, previous, {
-                        revalidate: false,
-                    });
-                }
-            },
-            onError: () => {
-                if (previous) {
-                    swrMutate<ControlPageDataDTO>(cacheKey, previous, {
-                        revalidate: false,
-                    });
-                }
-            },
-        });
     };
 
     // Loading / error / empty states render through the shared
@@ -813,14 +750,24 @@ export default function ControlDetailPage() {
         );
     }
 
-    const doneTasks = control.controlTasks?.filter((t: ControlTaskDTO) => t.status === 'DONE').length ?? 0;
-    const totalTasks = control.controlTasks?.length ?? 0;
+    // Tab badge counts + Overview progress now read `_count` off the
+    // header payload (#102 item 1) — the relation arrays no longer
+    // ride on page-data. The Evidence badge is `links + evidence`
+    // counts; the prior exact de-dup of file-backed evidence already
+    // linked is dropped — a badge tolerates the rare double-count.
+    const totalTasks = control._count?.controlTasks ?? 0;
+    const doneTasks = control.doneControlTasks ?? 0;
     const tabs: { key: Tab; label: string; count?: number }[] = [
         { key: 'overview', label: 'Overview' },
         { key: 'tasks', label: 'Tasks', count: totalTasks },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        { key: 'evidence', label: 'Evidence', count: (control.evidenceLinks?.length ?? 0) + ((control.evidence ?? []).filter((e: any) => !e.fileRecordId || !control.evidenceLinks?.some((l: EvidenceLinkDTO) => l.fileId === e.fileRecordId)).length) },
-        { key: 'mappings', label: 'Mappings', count: control.frameworkMappings?.length ?? 0 },
+        {
+            key: 'evidence',
+            label: 'Evidence',
+            count:
+                (control._count?.evidenceLinks ?? 0) +
+                (control._count?.evidence ?? 0),
+        },
+        { key: 'mappings', label: 'Mappings', count: control._count?.frameworkMappings ?? 0 },
         { key: 'traceability', label: 'Traceability' },
         { key: 'activity', label: 'Activity' },
         { key: 'tests', label: 'Tests' },
@@ -1210,19 +1157,28 @@ export default function ControlDetailPage() {
                             </Button>
                         </form>
                     )}
-                    <DataTable
-                        data={control.controlTasks ?? []}
-                        columns={controlTaskColumns}
-                        getRowId={(t) => t.id}
-                        emptyState={
-                            <InlineEmptyState
-                                title="No tasks yet"
-                                description="Tasks linked to this control show up here once any are created."
-                            />
-                        }
-                        resourceName={(p) => (p ? 'tasks' : 'task')}
-                        data-testid="control-tasks-table"
-                    />
+                    {tasksSWR.isLoading && !tasksSWR.data ? (
+                        <SkeletonCard lines={4} />
+                    ) : tasksSWR.error ? (
+                        <InlineEmptyState
+                            title="Couldn't load tasks"
+                            description="Something went wrong fetching this control's tasks. Reload the page to try again."
+                        />
+                    ) : (
+                        <DataTable
+                            data={tasksSWR.data ?? []}
+                            columns={controlTaskColumns}
+                            getRowId={(t) => t.id}
+                            emptyState={
+                                <InlineEmptyState
+                                    title="No tasks yet"
+                                    description="Tasks linked to this control show up here once any are created."
+                                />
+                            }
+                            resourceName={(p) => (p ? 'tasks' : 'task')}
+                            data-testid="control-tasks-table"
+                        />
+                    )}
                     {/* Linked Work Items (via TaskLink) */}
                     <div className={cn(cardVariants({ density: 'compact' }), 'mt-4')} id="linked-work-items-section">
                         <CardHeader title="Linked Work Items (Tasks)" className="mb-3" />
@@ -1302,11 +1258,22 @@ export default function ControlDetailPage() {
                         </form>
                     )}
                     <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
-                        {(() => {
-                            const linkedFileIds = new Set(control.evidenceLinks?.map((l: EvidenceLinkDTO) => l.fileId).filter(Boolean) ?? []);
+                        {evidenceSWR.isLoading && !evidenceSWR.data ? (
+                            <div className="p-6">
+                                <SkeletonCard lines={3} />
+                            </div>
+                        ) : evidenceSWR.error ? (
+                            <InlineEmptyState
+                                title="Couldn't load evidence"
+                                description="Something went wrong fetching this control's evidence. Reload the page to try again."
+                            />
+                        ) : (() => {
+                            const links = evidenceSWR.data?.links ?? [];
+                            const evidenceRows = evidenceSWR.data?.evidence ?? [];
+                            const linkedFileIds = new Set(links.map((l) => l.fileId).filter(Boolean));
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            const directEvidence = (control.evidence ?? []).filter((e: any) => !e.fileRecordId || !linkedFileIds.has(e.fileRecordId));
-                            const hasLinks = (control.evidenceLinks?.length ?? 0) > 0;
+                            const directEvidence = evidenceRows.filter((e: any) => !e.fileRecordId || !linkedFileIds.has(e.fileRecordId));
+                            const hasLinks = links.length > 0;
                             const hasEvidence = directEvidence.length > 0;
                             if (!hasLinks && !hasEvidence) {
                                 return (
@@ -1324,7 +1291,7 @@ export default function ControlDetailPage() {
                                         <tr><th>Type</th><th>Title / URL</th><th>Status</th><th>Date</th>{permissions.canWrite && <th>Actions</th>}</tr>
                                     </thead>
                                     <tbody>
-                                        {control.evidenceLinks?.map((el: EvidenceLinkDTO) => (
+                                        {links.map((el) => (
                                             <tr key={`link-${el.id}`}>
                                                 <td><StatusBadge variant={el.kind === 'FILE' ? 'success' : 'info'}>{el.kind}</StatusBadge></td>
                                                 <td className="text-sm">
@@ -1366,83 +1333,11 @@ export default function ControlDetailPage() {
             )}
 
             {tab === 'mappings' && (
-                <div className="space-y-default">
-                    {permissions.canWrite && (
-                        <div className="flex justify-end">
-                            <Button variant="primary" onClick={() => setShowMapForm(!showMapForm)} id="map-requirement-btn">
-                                + Map Requirement
-                            </Button>
-                        </div>
-                    )}
-                    {showMapForm && permissions.canWrite && (
-                        <div className={cn(cardVariants({ density: 'compact' }), 'space-y-compact')}>
-                            <Combobox
-                                id="framework-select"
-                                selected={frameworks.map((f: FrameworkDTO) => ({ value: f.key ?? f.id ?? '', label: f.name })).find(o => o.value === selectedFramework) ?? null}
-                                setSelected={(opt) => setSelectedFramework(opt?.value ?? '')}
-                                options={frameworks.map((f: FrameworkDTO) => ({ value: f.key ?? f.id ?? '', label: f.name }))}
-                                placeholder="Select Framework..."
-                                matchTriggerWidth
-                            />
-                            {requirements.length > 0 && (
-                                <>
-                                    <Combobox
-                                        id="requirement-select"
-                                        selected={requirements.map((r: RequirementDTO) => ({ value: r.id, label: `${r.code ? `${r.code} — ` : ''}${r.title || r.description}` })).find(o => o.value === selectedReq) ?? null}
-                                        setSelected={(opt) => setSelectedReq(opt?.value ?? '')}
-                                        options={requirements.map((r: RequirementDTO) => ({ value: r.id, label: `${r.code ? `${r.code} — ` : ''}${r.title || r.description}` }))}
-                                        placeholder="Select Requirement..."
-                                        matchTriggerWidth
-                                    />
-                                    <Button variant="primary" onClick={mapRequirement} disabled={!selectedReq || savingMap} id="submit-mapping-btn">
-                                        {savingMap ? 'Mapping...' : 'Map'}
-                                    </Button>
-                                </>
-                            )}
-                        </div>
-                    )}
-                    <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
-                        {(control.frameworkMappings?.length ?? 0) === 0 ? (
-                            <InlineEmptyState
-                                title="No framework mappings"
-                                description="Map this control to specific framework requirements to track coverage."
-                            />
-                        ) : (
-                            <table className="data-table" id="mappings-table">
-                                <thead>
-                                    <tr><th>Framework</th><th>Requirement</th>{permissions.canWrite && <th>Actions</th>}</tr>
-                                </thead>
-                                <tbody>
-                                    {control.frameworkMappings?.map((m: FrameworkMappingDTO) => (
-                                        <tr key={m.id}>
-                                            <td className="text-sm text-content-emphasis">{m.fromRequirement?.framework?.name || '—'}</td>
-                                            <td className="text-sm text-content-default">
-                                                {m.fromRequirement?.code && (
-                                                    <CopyText
-                                                        value={m.fromRequirement.code}
-                                                        label={`Copy requirement code ${m.fromRequirement.code}`}
-                                                        successMessage="Requirement code copied"
-                                                        className="mr-2 text-content-subtle"
-                                                    >
-                                                        {m.fromRequirement.code}
-                                                    </CopyText>
-                                                )}
-                                                {m.fromRequirement?.title || m.fromRequirement?.description || '—'}
-                                            </td>
-                                            {permissions.canWrite && (
-                                                <td>
-                                                    <button className="text-content-error text-xs hover:text-content-error" onClick={() => unmapRequirement(m.fromRequirement?.id || m.fromRequirementId || '')} id={`unmap-${m.id}`}>
-                                                        × Remove
-                                                    </button>
-                                                </td>
-                                            )}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        )}
-                    </div>
-                </div>
+                <ControlMappingsTab
+                    controlId={controlId}
+                    canWrite={permissions.canWrite}
+                    onMutated={refetch}
+                />
             )}
 
             {tab === 'traceability' && (

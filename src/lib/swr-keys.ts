@@ -100,6 +100,12 @@ export const CACHE_KEYS = {
          */
         pageData: (id: string) => `/controls/${id}/page-data` as const,
         activity: (id: string) => `/controls/${id}/activity` as const,
+        // #102 item 1 — per-tab lazy fetches. The detail page's
+        // Tasks / Evidence / Mappings tabs each read their own slice
+        // on demand instead of off the eager page-data payload.
+        tasks: (id: string) => `/controls/${id}/tasks` as const,
+        evidence: (id: string) => `/controls/${id}/evidence` as const,
+        mappings: (id: string) => `/controls/${id}/requirements` as const,
     },
     risks: makeResource('risks'),
     evidence: {

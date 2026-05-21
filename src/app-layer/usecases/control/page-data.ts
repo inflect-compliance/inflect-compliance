@@ -17,7 +17,9 @@
  * This orchestrator runs both reads server-side, sequenced in one
  * tenant transaction:
  *
- *   • The control fetch is the same as `getControl(ctx, id)`.
+ *   • The control fetch is `getControlHeader(ctx, id)` — header
+ *     scalars + user refs + `contributors` + relation `_count`s,
+ *     without the heavy tabbed arrays (#102 item 1 tab-lazy split).
  *   • The sync-mapping lookup runs only if `automationKey` is
  *     present, mirroring the GET /sync endpoint's branch — but
  *     reusing the already-loaded control row instead of re-reading.
@@ -33,7 +35,7 @@
  *     whole call — the conflict badge degrades gracefully.
  */
 import { RequestContext } from '../../types';
-import { getControl } from './queries';
+import { getControlHeader } from './queries';
 import { runInTenantContext } from '@/lib/db-context';
 import { logger } from '@/lib/observability/logger';
 
@@ -46,7 +48,7 @@ export interface SyncStatusPayload {
 }
 
 export interface ControlPageDataPayload {
-    control: Awaited<ReturnType<typeof getControl>>;
+    control: Awaited<ReturnType<typeof getControlHeader>>;
     /**
      * Sync status for the control's automation provider. Null when
      * the control has no automationKey, or when the lookup failed.
@@ -60,7 +62,7 @@ export async function getControlPageData(
     ctx: RequestContext,
     controlId: string,
 ): Promise<ControlPageDataPayload> {
-    const control = await getControl(ctx, controlId);
+    const control = await getControlHeader(ctx, controlId);
 
     // Branch on the already-loaded control row. The previous flow
     // had the GET /sync endpoint re-read this same column from the DB.

@@ -70,7 +70,9 @@ const EXEMPTIONS: Record<string, string> = {
     // inline-edit / delete actions specific to those tabs; future
     // R11 follow-up may convert them.
     'controls/[controlId]/page.tsx':
-        '(b) detail-page sub-tables (evidence + mappings) — tasks migrated R11-PR6, others pending',
+        '(b) detail-page sub-table (evidence) — tasks migrated R11-PR6, evidence pending',
+    'controls/[controlId]/_tabs/ControlMappingsTab.tsx':
+        '(b) detail-page sub-table (mappings) — extracted from page.tsx in #102 item 1, migration pending',
 
     // Vendor detail page — documents migrated to DataTable in
     // R11-PR7. Assessments + risk sub-tables remain as exemptions.

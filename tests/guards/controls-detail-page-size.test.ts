@@ -48,7 +48,14 @@ const PAGE = 'src/app/t/[tenantSlug]/(app)/controls/[controlId]/page.tsx';
 // replaces ~28 lines of raw <tr>/<td> markup, net +42 + import +
 // useMemo wrapping. Visual uniformity (tasks table now matches
 // every other table in the product) is the trade.
-const MAX_LINES = 1510;
+//
+// #102 item 1 lowered by 106 (1510 → 1404): the tab-lazy refactor
+// added per-tab `useTenantSWR` reads + loading states (~+60), then
+// extracted the whole Mappings tab — state, effects, map/unmap
+// handlers and JSX — into `_tabs/ControlMappingsTab.tsx` (~-165 net
+// on the page). A genuine downward ratchet: the page shrank below
+// every prior floor.
+const MAX_LINES = 1404;
 
 describe('Controls detail page size ratchet (Elevation PR-2)', () => {
     it('controls/[controlId]/page.tsx stays at or below the size floor', () => {

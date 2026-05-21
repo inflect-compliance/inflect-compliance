@@ -16,6 +16,33 @@ export async function listEvidenceLinks(ctx: RequestContext, controlId: string) 
     );
 }
 
+/**
+ * Combined Evidence-tab payload (#102 item 1 — tab-lazy).
+ *
+ * The Evidence tab renders two collections: `controlEvidenceLink`
+ * rows (manual URL / file links) AND the `Evidence` entities
+ * directly attached to the control. Both used to ride on the eager
+ * `getById` payload; the tab now fetches them together on demand —
+ * one round-trip, one SWR key.
+ */
+export async function getControlEvidenceTab(ctx: RequestContext, controlId: string) {
+    assertCanReadControls(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const control = await db.control.findFirst({
+            where: { id: controlId, tenantId: ctx.tenantId },
+        });
+        if (!control) throw notFound('Control not found');
+        const [links, evidence] = await Promise.all([
+            ControlRepository.listEvidenceLinks(db, ctx, controlId),
+            db.evidence.findMany({
+                where: { controlId, tenantId: ctx.tenantId },
+                orderBy: { createdAt: 'desc' },
+            }),
+        ]);
+        return { links, evidence };
+    });
+}
+
 export async function linkEvidence(ctx: RequestContext, controlId: string, data: { kind: string; fileId?: string | null; url?: string | null; note?: string | null }) {
     assertCanLinkEvidence(ctx);
     return runInTenantContext(ctx, async (db) => {

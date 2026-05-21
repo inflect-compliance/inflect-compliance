@@ -14,11 +14,15 @@
  *   3. A failing sync lookup degrades to `syncStatus: null` rather
  *      than failing the whole call (the conflict badge is
  *      informational; the page must still load).
- *   4. `getControl` errors propagate (not-found stays not-found).
+ *   4. `getControlHeader` errors propagate (not-found stays
+ *      not-found).
+ *
+ * #102 item 1: the orchestrator reads `getControlHeader` (header
+ * scalars + `_count`), not the full `getControl`.
  */
 
 jest.mock('../../../src/app-layer/usecases/control/queries', () => ({
-    getControl: jest.fn(),
+    getControlHeader: jest.fn(),
 }));
 
 jest.mock('@/lib/db-context', () => ({
@@ -33,10 +37,12 @@ jest.mock('@/app-layer/integrations/prisma-sync-store', () => ({
 }));
 
 import { getControlPageData } from '@/app-layer/usecases/control/page-data';
-import { getControl } from '@/app-layer/usecases/control/queries';
+import { getControlHeader } from '@/app-layer/usecases/control/queries';
 import { makeRequestContext } from '../../helpers/make-context';
 
-const mockGetControl = getControl as jest.MockedFunction<typeof getControl>;
+const mockGetControlHeader = getControlHeader as jest.MockedFunction<
+    typeof getControlHeader
+>;
 
 beforeEach(() => {
     jest.clearAllMocks();
@@ -50,11 +56,11 @@ const ctrl = (overrides: Partial<{ id: string; automationKey: string | null }> =
         name: 'Sample',
         automationKey: null,
         ...overrides,
-    }) as unknown as Awaited<ReturnType<typeof getControl>>;
+    }) as unknown as Awaited<ReturnType<typeof getControlHeader>>;
 
 describe('getControlPageData — no automationKey', () => {
     it('returns syncStatus: null and skips the sync store entirely', async () => {
-        mockGetControl.mockResolvedValue(ctrl({ automationKey: null }));
+        mockGetControlHeader.mockResolvedValue(ctrl({ automationKey: null }));
 
         const out = await getControlPageData(ctx(), 'ctrl-1');
 
@@ -64,7 +70,7 @@ describe('getControlPageData — no automationKey', () => {
     });
 
     it('treats undefined automationKey the same as null', async () => {
-        mockGetControl.mockResolvedValue(
+        mockGetControlHeader.mockResolvedValue(
             ctrl({ automationKey: undefined as unknown as string | null }),
         );
         const out = await getControlPageData(ctx(), 'ctrl-1');
@@ -75,7 +81,7 @@ describe('getControlPageData — no automationKey', () => {
 
 describe('getControlPageData — with automationKey', () => {
     it('looks up the sync mapping and maps it into SyncStatusPayload', async () => {
-        mockGetControl.mockResolvedValue(ctrl({ automationKey: 'jira.ABC-123' }));
+        mockGetControlHeader.mockResolvedValue(ctrl({ automationKey: 'jira.ABC-123' }));
         mockFindByLocalEntity.mockResolvedValue({
             syncStatus: 'IN_SYNC',
             lastSyncedAt: new Date('2026-01-01T00:00:00Z'),
@@ -101,7 +107,7 @@ describe('getControlPageData — with automationKey', () => {
     });
 
     it('returns null sync fields when no mapping exists', async () => {
-        mockGetControl.mockResolvedValue(ctrl({ automationKey: 'jira.X' }));
+        mockGetControlHeader.mockResolvedValue(ctrl({ automationKey: 'jira.X' }));
         mockFindByLocalEntity.mockResolvedValue(null);
 
         const out = await getControlPageData(ctx(), 'ctrl-1');
@@ -118,7 +124,7 @@ describe('getControlPageData — with automationKey', () => {
 
 describe('getControlPageData — degradation', () => {
     it('returns syncStatus: null when the sync lookup throws (does not fail the page)', async () => {
-        mockGetControl.mockResolvedValue(ctrl({ automationKey: 'jira.X' }));
+        mockGetControlHeader.mockResolvedValue(ctrl({ automationKey: 'jira.X' }));
         mockFindByLocalEntity.mockRejectedValue(new Error('store down'));
 
         const out = await getControlPageData(ctx(), 'ctrl-1');
@@ -127,9 +133,9 @@ describe('getControlPageData — degradation', () => {
         expect(out.syncStatus).toBeNull();
     });
 
-    it('propagates getControl errors (not-found stays not-found)', async () => {
+    it('propagates getControlHeader errors (not-found stays not-found)', async () => {
         const err = Object.assign(new Error('Control not found'), { code: 'NOT_FOUND' });
-        mockGetControl.mockRejectedValue(err);
+        mockGetControlHeader.mockRejectedValue(err);
 
         await expect(getControlPageData(ctx(), 'ctrl-missing')).rejects.toThrow(
             'Control not found',

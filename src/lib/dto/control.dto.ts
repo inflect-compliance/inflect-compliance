@@ -37,6 +37,9 @@ export const ControlListItemDTOSchema = z.object({
         controlTasks: z.number().optional(),
         evidenceLinks: z.number().optional(),
         contributors: z.number().optional(),
+        // #102 item 1 — the control detail header's tab badge for
+        // Mappings reads this count off the page-data payload.
+        frameworkMappings: z.number().optional(),
     }).optional(),
 }).passthrough().openapi('ControlListItem', {
     description: 'Control as it appears in list views — summary fields plus aggregate counts. The detail endpoint returns ControlDetail with the full include shape.',
