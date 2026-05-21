@@ -371,9 +371,13 @@ and `tests/guardrails/api-permission-coverage.test.ts` now treats
 `billing/`, `sso/`, and `security/` as privileged roots with five
 self-service routes (own MFA enrolment, own session revocation)
 explicitly listed in `EXCLUDED_ROUTES` with written reasons. The
-canonical pattern for new admin routes is now
-`requirePermission('<key>', handler)`; `requireAdminCtx` is
-explicitly marked legacy/fallback in its own docstring.
+canonical pattern for new admin routes is
+`requirePermission('<key>', handler)` — now the *only*
+admin-authorization guard: the legacy `requireAdminCtx` /
+`requireWriteCtx` / `requireRoleCtx` helpers were removed
+(2026-05-21) once every route had migrated, and the ratchet
+`tests/guardrails/no-legacy-admin-guard.test.ts` keeps them from
+returning.
 
 **See `docs/epic-d-completeness.md`** for the Epic D operator
 runbook (verification commands, rollback procedures, the five

@@ -267,10 +267,10 @@ TypeScript edit + redeploy — the guardrail at
 regression.
 
 If the entire layer needs to be disabled for one route in a 5-alarm
-fire, swap `requirePermission(<key>, handler)` for `requireAdminCtx`
-(the legacy guard). Both still pass the legacy
-`tests/guardrails/admin-route-coverage.test.ts`. Do NOT swap to
-unguarded `getTenantCtx` — that drops the role check entirely.
+fire, `git revert` the commit that wrapped it with
+`requirePermission`. The legacy `requireAdminCtx` swap-back is gone —
+the helper was deleted 2026-05-21. Do NOT swap to unguarded
+`getTenantCtx`; that drops the role check entirely.
 
 ### C.2 — Secret detection
 

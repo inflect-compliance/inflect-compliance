@@ -4,12 +4,12 @@
  * Scans all admin-only API route files to ensure they import a centralised
  * authorization guard rather than raw `getTenantCtx`.
  *
- * Accepted guards:
- *   - `requirePermission` — preferred (Epic C.1 — granular PermissionKey).
- *   - `requireAdminCtx` / `requireWriteCtx` / `requireRoleCtx` — legacy
- *     role-based guards that predate the permission-key model. Routes
- *     that haven't migrated yet still satisfy the guardrail through
- *     these.
+ * Accepted guard:
+ *   - `requirePermission` — the sole admin-authorization guard
+ *     (Epic C.1 — granular PermissionKey). The legacy role-tier
+ *     helpers (`requireAdminCtx` / `requireWriteCtx` / `requireRoleCtx`)
+ *     were removed once every route had migrated; the ratchet at
+ *     `no-legacy-admin-guard.test.ts` keeps them from returning.
  *
  * Adding a new admin route? Wrap the handler with
  * `requirePermission('admin.X', …)` from
@@ -24,7 +24,7 @@ import * as path from 'path';
 // ─── Configuration ───
 
 /**
- * Routes that MUST use requireAdminCtx (or requireWriteCtx/requireRoleCtx).
+ * Routes that MUST use the centralized `requirePermission` guard.
  *
  * Format: relative path from src/app/api/t/[tenantSlug]/
  * Every route file listed here is checked for the centralized admin guard import.
@@ -68,18 +68,14 @@ const ADMIN_ONLY_ROUTES = [
 ];
 
 /**
- * The import patterns that indicate proper admin authorization.
- * A route must import at least one of these.
+ * The import pattern that indicates proper admin authorization.
  *
- * `requirePermission` is the Epic C.1 canonical guard; the three
- * `require*Ctx` helpers are the legacy role-based guards that still
- * satisfy the rule for routes pending migration.
+ * `requirePermission` (Epic C.1) is the sole canonical guard — the
+ * legacy `require*Ctx` role helpers were removed once every route had
+ * migrated, so this is now a single-element list.
  */
 const ADMIN_GUARD_PATTERNS = [
     'requirePermission',
-    'requireAdminCtx',
-    'requireWriteCtx',
-    'requireRoleCtx',
 ];
 
 const BASE_DIR = path.resolve(
