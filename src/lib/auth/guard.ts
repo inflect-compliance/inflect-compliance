@@ -10,6 +10,8 @@ import { NextResponse } from 'next/server';
 const PUBLIC_PATH_PREFIXES = [
     '/login',
     '/register',
+    '/forgot-password',  // Password-reset request page — unauthenticated users must reach it
+    '/reset-password',   // Password-reset confirm page — reached from an emailed token link
     '/no-tenant',        // Landing page for uninvited users — must not gate-loop
     '/tenants',          // R-1: tenant picker — must be reachable before active-tenant is set
     '/invite/',          // Invite preview page — public so unauthenticated users can see invite details
@@ -208,12 +210,21 @@ export function extractTenantSlugFromPath(pathname: string): string | null {
  *   'allow'             — pass through
  *   'no_tenant_access'  — authed user has no tenant memberships at all
  *   'cross_tenant'      — the URL slug is not in any of the user's memberships
+ *
+ * `membershipsTruncated` — set when the JWT carries only a capped subset
+ * of the user's memberships (see `MAX_JWT_MEMBERSHIPS` in `auth.ts`). A
+ * slug-miss is then NOT definitive — the slug may be a membership that
+ * did not fit — so the gate returns 'allow' and lets the authoritative,
+ * DB-backed server-side check (`TenantLayout` / `getTenantCtx`) decide.
+ * This is safe because the middleware gate is the early-rejection layer,
+ * never the sole authority.
  */
 export type TenantGateResult = 'allow' | 'no_tenant_access' | 'cross_tenant';
 
 export function checkTenantAccess(
     pathname: string,
     memberships: ReadonlyArray<{ slug: string }> | null | undefined,
+    membershipsTruncated = false,
 ): TenantGateResult {
     // Only gate tenant-scoped routes.
     const urlSlug = extractTenantSlugFromPath(pathname);
@@ -223,8 +234,15 @@ export function checkTenantAccess(
     // Already checked upstream in isPublicPath, but be defensive.
     if (isPublicPath(pathname)) return 'allow';
 
+    // An empty list is unambiguous — a truncated list is never empty, so
+    // this genuinely means the user holds no memberships.
     if (!memberships || memberships.length === 0) return 'no_tenant_access';
-    if (!memberships.some((m) => m.slug === urlSlug)) return 'cross_tenant';
+
+    if (!memberships.some((m) => m.slug === urlSlug)) {
+        // Slug not in the (possibly capped) list. If capped, defer to
+        // the server-side gate rather than redirect a legitimate member.
+        return membershipsTruncated ? 'allow' : 'cross_tenant';
+    }
     return 'allow';
 }
 
@@ -258,12 +276,17 @@ export function extractOrgSlugFromPath(pathname: string): string | null {
  * Anti-enumeration: middleware MUST collapse both `no_org_access` and
  * `cross_org` to the SAME external response (404 / no-tenant). The
  * distinction exists for log/metric tagging, not for the user.
+ *
+ * `orgMembershipsTruncated` — same contract as `checkTenantAccess`'s
+ * `membershipsTruncated`: a slug-miss against a capped list defers to
+ * the authoritative server-side org gate instead of denying.
  */
 export type OrgGateResult = 'allow' | 'no_org_access' | 'cross_org';
 
 export function checkOrgAccess(
     pathname: string,
     orgMemberships: ReadonlyArray<{ slug: string }> | null | undefined,
+    orgMembershipsTruncated = false,
 ): OrgGateResult {
     const urlSlug = extractOrgSlugFromPath(pathname);
     if (!urlSlug) return 'allow';
@@ -271,6 +294,9 @@ export function checkOrgAccess(
     if (isPublicPath(pathname)) return 'allow';
 
     if (!orgMemberships || orgMemberships.length === 0) return 'no_org_access';
-    if (!orgMemberships.some((m) => m.slug === urlSlug)) return 'cross_org';
+
+    if (!orgMemberships.some((m) => m.slug === urlSlug)) {
+        return orgMembershipsTruncated ? 'allow' : 'cross_org';
+    }
     return 'allow';
 }

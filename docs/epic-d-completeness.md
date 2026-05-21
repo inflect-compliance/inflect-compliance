@@ -116,10 +116,16 @@ written justification in the SAME PR.
 Migrated routes now use `requirePermission(<key>, handler)`. Denials
 flow through the Epic C.1 path: 403 with a generic message, audit
 row with `entity: 'Permission'`, `entityId: '<key>'`, `action:
-'AUTHZ_DENIED'`, `detailsJson.category: 'access'`. The legacy
-helper's docstring is updated to state "legacy/fallback only" and
-explicitly directs new admin tenant-API routes to the canonical
-pattern.
+'AUTHZ_DENIED'`, `detailsJson.category: 'access'`.
+
+**2026-05-21 follow-up — legacy helper removed.** Once every route
+had migrated, `src/lib/auth/require-admin.ts` (and its
+`requireAdminCtx` / `requireWriteCtx` / `requireRoleCtx` exports)
+was deleted outright — it had zero production call sites left.
+`requirePermission` is now the only admin-authorization guard. The
+ratchet `tests/guardrails/no-legacy-admin-guard.test.ts` fails CI if
+any of those identifiers, or the module that exported them,
+reappears under `src/`.
 
 ## Verification runbook
 
@@ -242,17 +248,17 @@ Before D.3: this same probe returned 403 but wrote nothing to
 `AuditLog`. The audit row is the new property the migration
 guarantees.
 
-### V.4 — `grep` says zero legacy guards in tenant API tree
+### V.4 — `grep` says zero legacy guards anywhere in `src/`
 
 ```bash
-grep -rln "requireAdminCtx" src/app/api/t/
+grep -rln "requireAdminCtx\|requireWriteCtx\|requireRoleCtx" src/
 ```
 
-Must return no output. The legacy guard is still defined in
-`src/lib/auth/require-admin.ts` for non-tenant routes
-(`/api/admin/diagnostics` and similar) and for the legacy guardrail's
-accept list — that is intentional. Inside `src/app/api/t/`, the
-canonical pattern is now `requirePermission`.
+Must return no output — the legacy helpers and their defining module
+(`src/lib/auth/require-admin.ts`) were removed on 2026-05-21.
+`requirePermission` is the only admin-authorization guard. The
+ratchet `tests/guardrails/no-legacy-admin-guard.test.ts` enforces
+this on every CI run.
 
 ## Failure modes (by design)
 
@@ -260,7 +266,7 @@ canonical pattern is now `requirePermission`.
 |---|---|---|
 | D.1 | If a future RLS policy edit accidentally drops `WITH CHECK` from `UserSession.tenant_isolation`, the post-loop guardrail check fires with the migration name + the qual/with_check values shown. | Catches the asymmetric-shape regression before merge. |
 | D.2 | If a future PR removes a `sanitizePlainText` call from a covered usecase, the per-file dangling-import check (`tests/guardrails/sanitize-rich-text-coverage.test.ts`) trips. If a usecase file is deleted entirely, the stale-path check trips. If the list shrinks below 8, the floor trips. | Three independent checks; a regression hits at least one. |
-| D.3 | If a migrated route reverts to `requireAdminCtx`, the api-permission-coverage guardrail trips with: "Privileged route is missing API-layer permission enforcement." with copy-paste-actionable remediation. | Ratchet — covered routes can only ever use `requirePermission`. |
+| D.3 | A privileged route that drops `requirePermission` trips `api-permission-coverage.test.ts` ("Privileged route is missing API-layer permission enforcement"). Reintroducing the deleted `requireAdminCtx` helper trips `no-legacy-admin-guard.test.ts`. | Two ratchets — covered routes can only ever use `requirePermission`. |
 
 ## Rollback procedure
 
@@ -292,12 +298,11 @@ broken sanitiser cannot block business operations.
 
 ### D.3 — Migrated routes
 
-For one specific route, swap the call site temporarily back to
-`requireAdminCtx` (still imported from
-`@/lib/auth/require-admin`). The legacy guardrail
-(`admin-route-coverage`) accepts both patterns; CI will pass.
-Lose: AUTHZ_DENIED audit row + permission-coverage guardrail
-visibility for that route. Re-migrate when the incident clears.
+`requirePermission` is the only admin guard — the legacy
+`requireAdminCtx` swap-back is no longer available (the helper was
+deleted 2026-05-21). To roll back a route, `git revert` the commit
+that introduced its `requirePermission` wrapping. Never drop to
+unguarded `getTenantCtx`, which removes the role check entirely.
 
 ## Remaining non-blocking caveats
 
@@ -334,10 +339,11 @@ visibility for that route. Re-migrate when the incident clears.
    a written reason. The exclusion list itself is part of the
    review surface.
 
-5. **`requireAdminCtx` is still defined.** For non-tenant routes
-   (e.g. `/api/admin/diagnostics`) and for the legacy guardrail's
-   accept list. The docstring explicitly marks the function as
-   "legacy / fallback only" and points to `requirePermission` as
-   the canonical pattern. A future Epic E that retires the legacy
-   helper would also need to fold those non-tenant routes into the
-   permission-key model first.
+5. **`requireAdminCtx` removed (2026-05-21).** This caveat is
+   resolved. The legacy role-tier helpers had no production call
+   sites — every route, tenant-scoped and otherwise, already used
+   `requirePermission` — so `src/lib/auth/require-admin.ts` was
+   deleted. The non-tenant `/api/admin/*` routes are gated by the
+   platform-admin API key, not by the legacy helper. The ratchet
+   `tests/guardrails/no-legacy-admin-guard.test.ts` keeps the helper
+   from returning.

@@ -23,8 +23,11 @@
  *
  * The middleware is permission-key driven, not role driven, so the same
  * helper covers built-in roles, custom roles, and (future) API-key
- * scope checks. To gate by raw role, keep using `requireAdminCtx` /
- * `requireRoleCtx` from `@/lib/auth/require-admin`.
+ * scope checks. It is the ONLY admin-authorization guard in the
+ * codebase: the legacy role-tier helpers (`requireAdminCtx` and its
+ * `requireWriteCtx` / `requireRoleCtx` siblings) were removed once every
+ * route had migrated. The ratchet at
+ * `tests/guardrails/no-legacy-admin-guard.test.ts` keeps them gone.
  */
 
 import type { NextRequest, NextResponse } from 'next/server';

@@ -30,17 +30,28 @@ test.describe('Risk matrix admin → live rendering loop', () => {
     test('admin can edit the axis title and see it propagate to /risks', async ({ page }) => {
         const tenantSlug = await loginAndGetTenant(page, ADMIN_USER);
 
+        // The `/admin/*` segment has a `loading.tsx`, so Next.js streams
+        // the page through a Suspense boundary. Under slow/loaded CI the
+        // streaming staging DOM can leave a SECOND, hidden copy of the
+        // editor in the document — invalid duplicate `id`, but harmless
+        // (the live page renders fine). A bare `#risk-matrix-admin`
+        // locator then trips Playwright strict mode ("resolved to 2
+        // elements"). Scope every editor locator to the live `<main>`
+        // region so the test always targets the rendered, visible
+        // editor and ignores the hidden streaming artifact.
+        const editor = page.getByRole('main').locator('#risk-matrix-admin');
+
         // ── 1. Admin lands on the matrix config page ──────────────
         await safeGoto(page, `/t/${tenantSlug}/admin/risk-matrix`, {
             waitUntil: 'domcontentloaded',
         });
         await page.waitForLoadState('networkidle').catch(() => {});
-        await expect(page.locator('#risk-matrix-admin')).toBeVisible({
+        await expect(editor).toBeVisible({
             timeout: 30_000,
         });
 
         // ── 2. Edit the likelihood axis title ─────────────────────
-        const titleInput = page.locator('#rm-axis-likelihood');
+        const titleInput = editor.locator('#rm-axis-likelihood');
         await expect(titleInput).toBeVisible();
         await titleInput.fill(CUSTOM_LABEL);
 
@@ -60,12 +71,12 @@ test.describe('Risk matrix admin → live rendering loop', () => {
                 ) && res.request().method() === 'PUT',
             { timeout: 30_000 },
         );
-        await page.click('#risk-matrix-save-btn');
+        await editor.locator('#risk-matrix-save-btn').click();
         const saveRes = await savePromise;
         expect(saveRes.ok()).toBe(true);
         // Belt-and-braces: also wait for the button to settle back
         // to its idle label (covers React state-update propagation).
-        await expect(page.locator('#risk-matrix-save-btn')).toHaveText(
+        await expect(editor.locator('#risk-matrix-save-btn')).toHaveText(
             /Save changes/i,
             { timeout: 15_000 },
         );
@@ -93,10 +104,10 @@ test.describe('Risk matrix admin → live rendering loop', () => {
         await safeGoto(page, `/t/${tenantSlug}/admin/risk-matrix`, {
             waitUntil: 'domcontentloaded',
         });
-        await expect(page.locator('#risk-matrix-admin')).toBeVisible({
+        await expect(editor).toBeVisible({
             timeout: 30_000,
         });
-        await page.click('#risk-matrix-restore-defaults');
+        await editor.locator('#risk-matrix-restore-defaults').click();
         // Same response-wait as the main save above so cleanup
         // fully lands before the test exits and other serial-mode
         // tests start from the canonical default.
@@ -107,9 +118,9 @@ test.describe('Risk matrix admin → live rendering loop', () => {
                 ) && res.request().method() === 'PUT',
             { timeout: 30_000 },
         );
-        await page.click('#risk-matrix-save-btn');
+        await editor.locator('#risk-matrix-save-btn').click();
         await cleanupPromise;
-        await expect(page.locator('#risk-matrix-save-btn')).toHaveText(
+        await expect(editor.locator('#risk-matrix-save-btn')).toHaveText(
             /Save changes/i,
             { timeout: 15_000 },
         );

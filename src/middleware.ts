@@ -140,11 +140,18 @@ async function authMiddleware(req: NextRequest): Promise<NextResponse> {
     }
 
     // ── 5. Tenant-access gate ──
-    // R-1: check whether the URL slug appears in the user's memberships array.
-    // No DB hit — the JWT claim is the authority. O(memberships) per request.
+    // R-1: check whether the URL slug appears in the user's memberships
+    // array. No DB hit — the JWT claim is the early-rejection layer. If
+    // the membership list was capped at sign-in (membershipsTruncated),
+    // a slug-miss defers to the authoritative server-side gate
+    // (TenantLayout / getTenantCtx) instead of a definitive denial.
     if (isTenantPath(pathname)) {
         const memberships = token.memberships;
-        const gateResult = checkTenantAccess(pathname, memberships);
+        const gateResult = checkTenantAccess(
+            pathname,
+            memberships,
+            token.membershipsTruncated === true,
+        );
 
         if (gateResult === 'no_tenant_access') {
             if (isApiRoute(pathname)) {
@@ -181,7 +188,11 @@ async function authMiddleware(req: NextRequest): Promise<NextResponse> {
     // (`getOrgCtx`) checks remain in place as defense-in-depth — this
     // is the early-rejection layer, not a replacement.
     if (isOrgPath(pathname)) {
-        const gateResult = checkOrgAccess(pathname, token.orgMemberships);
+        const gateResult = checkOrgAccess(
+            pathname,
+            token.orgMemberships,
+            token.orgMembershipsTruncated === true,
+        );
         if (gateResult !== 'allow') {
             if (isApiRoute(pathname)) {
                 return NextResponse.json(

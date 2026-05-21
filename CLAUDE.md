@@ -165,8 +165,19 @@ modules live under `src/lib/rate-limit/`.
 equalised via `dummyVerify` so lockout is indistinguishable from
 wrong-password. Signup rejects known-breached passwords via
 `checkPasswordAgainstHIBP` (k-anonymity, fail-open on HIBP outage).
-Password change / reset routes do not exist yet; when they land,
-wire HIBP the same way.
+
+**Password change + reset.** Three routes under `/api/auth/`:
+`change-password` (authenticated — verifies the current password),
+`forgot-password` (issues a token, enumeration-safe), and
+`reset-password` (consumes the token). Reset tokens are
+`SHA-256`-hashed at rest in `PasswordResetToken`, single-use
+(conditional-`updateMany` claim), and expire after 1 hour. Both
+set-password routes run `validatePasswordPolicy` + the HIBP check;
+every success revokes ALL of the user's sessions (`sessionVersion`
+bump + `UserSession.revokedAt`). Logic lives in
+`src/lib/auth/password-management.ts`. Any future password-accepting
+route MUST wire HIBP the same way — the Epic E.4 guardrail enforces
+it.
 
 **See `docs/epic-a-security.md`** for the unified operator runbook
 (verification commands, rollback procedure, observability signals)
@@ -371,9 +382,13 @@ and `tests/guardrails/api-permission-coverage.test.ts` now treats
 `billing/`, `sso/`, and `security/` as privileged roots with five
 self-service routes (own MFA enrolment, own session revocation)
 explicitly listed in `EXCLUDED_ROUTES` with written reasons. The
-canonical pattern for new admin routes is now
-`requirePermission('<key>', handler)`; `requireAdminCtx` is
-explicitly marked legacy/fallback in its own docstring.
+canonical pattern for new admin routes is
+`requirePermission('<key>', handler)` — now the *only*
+admin-authorization guard: the legacy `requireAdminCtx` /
+`requireWriteCtx` / `requireRoleCtx` helpers were removed
+(2026-05-21) once every route had migrated, and the ratchet
+`tests/guardrails/no-legacy-admin-guard.test.ts` keeps them from
+returning.
 
 **See `docs/epic-d-completeness.md`** for the Epic D operator
 runbook (verification commands, rollback procedures, the five
@@ -436,12 +451,14 @@ locks in the invariant that every API route ingesting a
 user-chosen password MUST import AND call
 `checkPasswordAgainstHIBP`. Mirrors the
 `sanitize-rich-text-coverage.test.ts` template: a curated
-`HIBP_REQUIRED_ROUTES` list (today: just `auth/register`) paired
-with a structural scan of `src/app/api/**/route.ts` for
-password-shaped Zod fields. An in-memory mutation regression proof
-confirms the detector catches removals. Vacuously passes today —
-the first password-change / reset / recovery route forced to
-register is the point.
+`HIBP_REQUIRED_ROUTES` list (`auth/register`, `auth/change-password`,
+`auth/reset-password`) paired with a structural scan of
+`src/app/api/**/route.ts` for password-shaped Zod fields. An
+in-memory mutation regression proof confirms the detector catches
+removals. The structural scan auto-fails any new route that parses
+a `password` / `newPassword` / `currentPassword` Zod field without
+registering — define password schemas inline in the route file so
+the scan sees them.
 
 **See `docs/epic-e-observability.md`** for the Epic E operator
 runbook (verification commands, rollback procedures, how to add a
@@ -575,6 +592,8 @@ All structured logging, tracing, and metrics flow through `src/lib/observability
 ### Auth
 
 NextAuth v4.24.14 (stable) is configured in `src/auth.ts`. Providers: Google OAuth, Microsoft Entra ID (via the v4 `azure-ad` provider — same OAuth endpoints, Microsoft renamed the product), SAML (via `src/app/api/auth/sso/`), and Credentials. The JWT carries `tenantId`, `role`, `mfaPending`, `memberships[]`, and the Epic C.3 `userSessionId`. Token refresh logic lives in `src/lib/auth/refresh.ts`.
+
+**Bounded JWT membership payload.** The JWT is a fixed-size cookie credential — `memberships[]` / `orgMemberships[]` are capped at `MAX_JWT_MEMBERSHIPS` (50) in the `jwt` callback. Over the cap, `membershipsTruncated` / `orgMembershipsTruncated` is set and the middleware's `checkTenantAccess` / `checkOrgAccess` defers a slug-miss to the authoritative DB-backed server gate (`TenantLayout` / `getTenantCtx`) instead of denying. UI that needs the COMPLETE list (the `/tenants` picker) does its own server-side DB lookup — the JWT list is a bounded fast-path, not the source of truth. Old sessions (pre-cap, no flag) degrade gracefully: an absent flag reads as `false`, so they behave exactly as before until natural re-mint. Locked by `tests/guardrails/jwt-membership-bound.test.ts`.
 
 **GAP-04 — type augmentation pattern.** `src/auth.ts` declares two module augmentations: `next-auth` for `Session.user` (id/tenantId/role/mfaPending/memberships) and `next-auth/jwt` for the full JWT shape (every custom field the codebase stores). Middleware reads typed `token.role` / `token.memberships` directly via `getToken({ req, secret })`. There are zero `as any` casts in the auth-critical path; the structural guardrail at `tests/guardrails/auth-stack-pinning.test.ts` fails CI if any are reintroduced.
 

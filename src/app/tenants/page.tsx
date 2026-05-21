@@ -9,19 +9,32 @@
  * This page is listed in PUBLIC_PATH_PREFIXES in guard.ts so the
  * middleware tenant-access gate does not bounce the user trying to
  * reach the picker before an active tenant is set in the JWT.
+ *
+ * The membership list is queried directly from the DB, NOT read from
+ * `session.user.memberships`: the JWT list is capped at
+ * `MAX_JWT_MEMBERSHIPS` for cookie-size safety, but the picker is a
+ * server component with no Edge constraint and must show EVERY
+ * workspace the user belongs to.
  */
 import { auth, signOut } from '@/auth';
 import { redirect } from 'next/navigation';
+import prisma from '@/lib/prisma';
 import { Heading } from '@/components/ui/typography';
 
 export default async function TenantsPage() {
     const session = await auth();
 
-    if (!session?.user) {
+    if (!session?.user?.id) {
         redirect('/login');
     }
 
-    const memberships = session.user.memberships ?? [];
+    // Complete, authoritative membership list — see the file header.
+    const rows = await prisma.tenantMembership.findMany({
+        where: { userId: session.user.id, status: 'ACTIVE' },
+        orderBy: { createdAt: 'asc' },
+        include: { tenant: { select: { slug: true } } },
+    });
+    const memberships = rows.map((m) => ({ slug: m.tenant.slug, role: m.role }));
 
     if (memberships.length === 0) {
         redirect('/no-tenant');

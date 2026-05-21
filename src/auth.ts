@@ -53,6 +53,24 @@ import { hashForLookup } from '@/lib/security/encryption';
 // declaring both Session.user AND the JWT shape so middleware +
 // server-component reads are typed end-to-end.
 
+/**
+ * Hard cap on how many membership entries are embedded in the JWT.
+ *
+ * A user in very many tenants/orgs would otherwise grow the session
+ * cookie without bound — the JWT is a fixed-size credential, not a
+ * data store. 50 is far above any realistic human workspace count, so
+ * this is a safety valve rather than an everyday limit.
+ *
+ * When the real membership count exceeds this, the JWT carries the
+ * first `MAX_JWT_MEMBERSHIPS` entries and `membershipsTruncated` /
+ * `orgMembershipsTruncated` is set. The Edge middleware then defers a
+ * slug-miss to the authoritative server-side gate (`TenantLayout` /
+ * `getTenantCtx`, both DB-backed) instead of treating it as a
+ * definitive cross-tenant denial. UI surfaces that need the COMPLETE
+ * list (the `/tenants` picker) do their own server-side DB lookup.
+ */
+export const MAX_JWT_MEMBERSHIPS = 50;
+
 /** One entry per active membership the user holds. */
 export interface MembershipEntry {
     slug: string;
@@ -101,8 +119,14 @@ declare module 'next-auth/jwt' {
         role?: Role;
         mfaPending?: boolean;
         mfaFailClosed?: boolean;
+        /** Active tenant memberships, capped at MAX_JWT_MEMBERSHIPS. */
         memberships?: MembershipEntry[];
+        /** Active org memberships, capped at MAX_JWT_MEMBERSHIPS. */
         orgMemberships?: OrgMembershipEntry[];
+        /** True when `memberships` is a capped subset of the real set. */
+        membershipsTruncated?: boolean;
+        /** True when `orgMemberships` is a capped subset of the real set. */
+        orgMembershipsTruncated?: boolean;
         /** Provider name when the user signed in via OAuth. */
         provider?: string;
         accessToken?: string;
@@ -393,22 +417,33 @@ export const authOptions: NextAuthOptions = {
                     token.userId = dbUser.id;
                     token.sessionVersion = dbUser.sessionVersion;
 
-                    // R-1: store ALL active memberships so the middleware can allow
-                    // any slug the user is a member of.
-                    token.memberships = dbUser.tenantMemberships.map((m) => ({
-                        slug: m.tenant.slug,
-                        role: m.role,
-                        tenantId: m.tenantId,
-                    }));
+                    // Store the user's active memberships so the Edge
+                    // middleware can authorize any slug they belong to
+                    // with no DB hit. Capped at MAX_JWT_MEMBERSHIPS so the
+                    // cookie stays bounded; `membershipsTruncated` flags
+                    // the rare over-cap case for the middleware gate.
+                    token.memberships = dbUser.tenantMemberships
+                        .slice(0, MAX_JWT_MEMBERSHIPS)
+                        .map((m) => ({
+                            slug: m.tenant.slug,
+                            role: m.role,
+                            tenantId: m.tenantId,
+                        }));
+                    token.membershipsTruncated =
+                        dbUser.tenantMemberships.length > MAX_JWT_MEMBERSHIPS;
 
-                    // GAP O4-1: same pattern for the org-layer memberships
-                    // so the middleware can gate `/org/:slug/*` against the
-                    // user's org membership list with no DB hit.
-                    token.orgMemberships = dbUser.orgMemberships.map((m) => ({
-                        slug: m.organization.slug,
-                        role: m.role,
-                        organizationId: m.organizationId,
-                    }));
+                    // GAP O4-1: same pattern (and same cap) for the
+                    // org-layer memberships so the middleware can gate
+                    // `/org/:slug/*` with no DB hit.
+                    token.orgMemberships = dbUser.orgMemberships
+                        .slice(0, MAX_JWT_MEMBERSHIPS)
+                        .map((m) => ({
+                            slug: m.organization.slug,
+                            role: m.role,
+                            organizationId: m.organizationId,
+                        }));
+                    token.orgMembershipsTruncated =
+                        dbUser.orgMemberships.length > MAX_JWT_MEMBERSHIPS;
 
                     // Backward-compat: keep tenantId/tenantSlug/role as the
                     // "primary" membership (oldest by createdAt).
@@ -428,6 +463,8 @@ export const authOptions: NextAuthOptions = {
                     token.sessionVersion = 0;
                     token.memberships = [];
                     token.orgMemberships = [];
+                    token.membershipsTruncated = false;
+                    token.orgMembershipsTruncated = false;
                 }
 
                 if (account.provider !== 'credentials') {

@@ -135,7 +135,10 @@ describe('ProgressBar', () => {
         );
         const bar = getByRole('progressbar');
         const html = bar.outerHTML;
-        // Tailwind arbitrary-value class → `bg-[var(--content-*)]` in the DOM.
+        // The fill's arbitrary-value background class embeds the
+        // status CSS var (cssVar) — assert it reached the DOM. NB:
+        // do not write the literal class form here — Tailwind scans
+        // this file and would emit it as a (broken) utility.
         expect(html).toContain(cssVar);
     });
 

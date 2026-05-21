@@ -12,10 +12,13 @@
  * the active one is marked, and the choice is one keystroke away.
  *
  * Data: memberships read from the NextAuth session JWT
- * (`session.user.memberships`). Same source the `/tenants` picker
- * uses, same shape — `{ slug, role, tenantId }`. Lazy: no fetch on
- * first paint; the data is already in the JWT cookie by the time
- * the switcher mounts.
+ * (`session.user.memberships`), shape `{ slug, role, tenantId }`.
+ * Lazy: no fetch on first paint; the data is already in the JWT
+ * cookie by the time the switcher mounts. The JWT list is capped at
+ * `MAX_JWT_MEMBERSHIPS` (auth.ts) so the cookie stays bounded — for
+ * the rare user above the cap the switcher shows the capped subset,
+ * and the "Manage workspaces" link routes to the `/tenants` picker,
+ * which queries the COMPLETE list server-side.
  *
  * Visual: same pill geometry as the R2 `TenantIdentityPill` (small
  * radius, brand-subtle avatar, content-muted text → emphasis on
@@ -33,7 +36,7 @@
  *     mount `<OrgIdentityPill>` until a future PR extends.
  *
  *   • Live-search through memberships. The membership list is
- *     bounded by JWT size (a few hundred at most); rendering all
+ *     bounded by the JWT cap (`MAX_JWT_MEMBERSHIPS`); rendering all
  *     items + scroll is faster than a search-by-typing flow at
  *     that scale. The shared `<Combobox>` primitive auto-virtualizes
  *     past 50 items if a user ever exceeds — but PR-4 keeps the

@@ -302,12 +302,13 @@ describe('Admin UI & Routes Coverage', () => {
     });
 
     test('admin routes are gated by an authorisation guard', () => {
-        // Epic C.1 / D.3 — `requireAdminCtx` is the legacy role-tier
-        // guard; new admin routes use `requirePermission(<key>, …)`
-        // from `@/lib/security/permission-middleware` (which also
-        // writes the `AUTHZ_DENIED` audit row on denial). Either
-        // guard satisfies the contract for this test.
-        const ADMIN_GUARDS = /requireAdminCtx|requirePermission/;
+        // Epic C.1 / D.3 — every admin route uses
+        // `requirePermission(<key>, …)` from
+        // `@/lib/security/permission-middleware` (which also writes the
+        // `AUTHZ_DENIED` audit row on denial). The legacy `requireAdminCtx`
+        // role-tier guard was removed once the migration completed; the
+        // ratchet at `no-legacy-admin-guard.test.ts` keeps it gone.
+        const ADMIN_GUARDS = /requirePermission/;
         const rolesRoute = read('src/app/api/t/[tenantSlug]/admin/roles/route.ts');
         const apiKeysRoute = read('src/app/api/t/[tenantSlug]/admin/api-keys/route.ts');
         expect(rolesRoute).toMatch(ADMIN_GUARDS);
