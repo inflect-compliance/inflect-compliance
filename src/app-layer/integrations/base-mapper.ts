@@ -264,32 +264,47 @@ export function getNestedValue(
  * defined, source-controlled), so the risk is theoretical — but
  * the guard is cheap and forecloses the bug class.
  */
-const PROTOTYPE_POLLUTION_KEYS = new Set([
-    '__proto__',
-    'constructor',
-    'prototype',
-]);
-
 export function setNestedValue(
     obj: Record<string, unknown>,
     path: string,
     value: unknown,
 ): void {
-    if (!path.includes('.')) {
-        if (PROTOTYPE_POLLUTION_KEYS.has(path)) return;
-        obj[path] = value;
-        return;
+    const parts = path.split('.');
+
+    // Upfront rejection — a path with ANY prototype-polluting
+    // segment is dropped whole, before a single object is created.
+    for (const segment of parts) {
+        if (
+            segment === '__proto__' ||
+            segment === 'constructor' ||
+            segment === 'prototype'
+        ) {
+            return;
+        }
     }
 
-    const parts = path.split('.');
-    if (parts.some((p) => PROTOTYPE_POLLUTION_KEYS.has(p))) return;
     let current = obj;
-    for (let i = 0; i < parts.length - 1; i++) {
+    for (let i = 0; i < parts.length; i++) {
         const part = parts[i];
-        if (!(part in current) || typeof current[part] !== 'object') {
+        // The upfront loop already rejected these — but CodeQL's
+        // js/prototype-pollution-utility query only recognises a
+        // check that directly dominates the assignment, so the
+        // guard is repeated inline at the use site.
+        if (
+            part === '__proto__' ||
+            part === 'constructor' ||
+            part === 'prototype'
+        ) {
+            return;
+        }
+        if (i === parts.length - 1) {
+            current[part] = value;
+            return;
+        }
+        const next = current[part];
+        if (typeof next !== 'object' || next === null) {
             current[part] = {};
         }
         current = current[part] as Record<string, unknown>;
     }
-    current[parts[parts.length - 1]] = value;
 }

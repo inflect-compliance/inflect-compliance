@@ -44,12 +44,12 @@ export class LocalStorageProvider implements StorageProvider {
         const dir = path.dirname(finalPath);
         await fs.mkdir(dir, { recursive: true });
 
-        // Full randomUUID — 128 bits of entropy. The earlier
-        // `.slice(0, 8)` form was 32 bits (4B options) which is
-        // already collision-safe in a per-tenant storage dir, but
-        // the full UUID costs nothing and silences the CodeQL
-        // `js/insecure-temporary-file` rule, which assumes the
-        // sliced form is predictable enough for a symlink attack.
+        // Temp file: a 128-bit-random suffix, written below with `wx`
+        // (exclusive create — O_EXCL, so the open FAILS rather than
+        // follows an attacker-planted symlink) and mode 0o600 (so it
+        // is owner-readable only). Exclusive + private temp-file
+        // creation is the `js/insecure-temporary-file` mitigation —
+        // the default storage root can be `/tmp/uploads` in dev.
         const tmpPath = finalPath + '.tmp.' + crypto.randomUUID();
         const hash = crypto.createHash('sha256');
         const maxSize = opts?.maxSizeBytes ?? DEFAULT_MAX_SIZE;
@@ -62,9 +62,9 @@ export class LocalStorageProvider implements StorageProvider {
                 if (sizeBytes > maxSize) {
                     throw new Error(`File size exceeds maximum allowed (${maxSize} bytes)`);
                 }
-                await fs.writeFile(tmpPath, source);
+                await fs.writeFile(tmpPath, source, { flag: 'wx', mode: 0o600 });
             } else {
-                const writeStream = createWriteStream(tmpPath);
+                const writeStream = createWriteStream(tmpPath, { flags: 'wx', mode: 0o600 });
                 await pipeline(
                     source,
                     async function* (src) {
