@@ -71,12 +71,15 @@ describe('Control evidence tab — unified display', () => {
     );
     const pageContent = require('fs').readFileSync(pagePath, 'utf-8');
 
-    test('evidence tab renders evidenceLinks', () => {
-        expect(pageContent).toContain('control.evidenceLinks');
+    // #102 item 1 — the Evidence tab is tab-lazy: it fetches its own
+    // `{ links, evidence }` payload via `evidenceSWR` instead of
+    // reading the arrays off the eager page-data control.
+    test('evidence tab fetches its links + evidence payload', () => {
+        expect(pageContent).toContain('evidenceSWR.data?.links');
+        expect(pageContent).toContain('evidenceSWR.data?.evidence');
     });
 
     test('evidence tab renders direct evidence records', () => {
-        expect(pageContent).toContain('control.evidence');
         expect(pageContent).toContain('directEvidence');
     });
 
@@ -86,8 +89,9 @@ describe('Control evidence tab — unified display', () => {
     });
 
     test('evidence tab count includes both sources', () => {
-        // The tab count should sum both evidenceLinks and non-duplicate evidence
-        expect(pageContent).toMatch(/evidenceLinks\?\.length.*evidence/);
+        // The Evidence badge sums the link + direct-evidence counts
+        // off the page-data `_count`.
+        expect(pageContent).toMatch(/_count\?\.evidenceLinks[\s\S]*?_count\?\.evidence/);
     });
 });
 

@@ -1340,6 +1340,9 @@ exports[`API contract — per-schema snapshots schema: ControlListItem 1`] = `
         },
         "contributors": {
           "type": "number"
+        },
+        "frameworkMappings": {
+          "type": "number"
         }
       }
     }
