@@ -1,6 +1,6 @@
 {
   "name": "inflect-compliance",
-  "version": "1.343.0",
+  "version": "1.343.1",
   "private": true,
   "scripts": {
     "postinstall": "patch-package",
@@ -222,17 +222,53 @@
     "protobufjs": "^8.2.0",
     "@hono/node-server": "^1.19.13",
     "postcss": "$postcss",
-    "@visx/axis": { "react": "$react", "react-dom": "$react-dom" },
-    "@visx/clip-path": { "react": "$react", "react-dom": "$react-dom" },
-    "@visx/curve": { "react": "$react", "react-dom": "$react-dom" },
-    "@visx/event": { "react": "$react", "react-dom": "$react-dom" },
-    "@visx/gradient": { "react": "$react", "react-dom": "$react-dom" },
-    "@visx/group": { "react": "$react", "react-dom": "$react-dom" },
-    "@visx/responsive": { "react": "$react", "react-dom": "$react-dom" },
-    "@visx/scale": { "react": "$react", "react-dom": "$react-dom" },
-    "@visx/shape": { "react": "$react", "react-dom": "$react-dom" },
-    "@visx/text": { "react": "$react", "react-dom": "$react-dom" },
-    "@visx/tooltip": { "react": "$react", "react-dom": "$react-dom" },
-    "next-auth": { "nodemailer": "$nodemailer", "next": "$next" }
+    "@visx/axis": {
+      "react": "$react",
+      "react-dom": "$react-dom"
+    },
+    "@visx/clip-path": {
+      "react": "$react",
+      "react-dom": "$react-dom"
+    },
+    "@visx/curve": {
+      "react": "$react",
+      "react-dom": "$react-dom"
+    },
+    "@visx/event": {
+      "react": "$react",
+      "react-dom": "$react-dom"
+    },
+    "@visx/gradient": {
+      "react": "$react",
+      "react-dom": "$react-dom"
+    },
+    "@visx/group": {
+      "react": "$react",
+      "react-dom": "$react-dom"
+    },
+    "@visx/responsive": {
+      "react": "$react",
+      "react-dom": "$react-dom"
+    },
+    "@visx/scale": {
+      "react": "$react",
+      "react-dom": "$react-dom"
+    },
+    "@visx/shape": {
+      "react": "$react",
+      "react-dom": "$react-dom"
+    },
+    "@visx/text": {
+      "react": "$react",
+      "react-dom": "$react-dom"
+    },
+    "@visx/tooltip": {
+      "react": "$react",
+      "react-dom": "$react-dom"
+    },
+    "next-auth": {
+      "nodemailer": "$nodemailer",
+      "next": "$next"
+    }
   }
 }
