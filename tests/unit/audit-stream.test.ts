@@ -17,11 +17,19 @@
 // ones). Keep everything else as requireActual.
 jest.mock('@/lib/observability/metrics', () => {
     const actual = jest.requireActual('@/lib/observability/metrics');
-    return { ...actual, recordAuditStreamDeliveryFailure: jest.fn() };
+    return {
+        ...actual,
+        recordAuditStreamDelivery: jest.fn(),
+        recordAuditStreamBufferOverflow: jest.fn(),
+        startAuditStreamBufferReporting: jest.fn(),
+    };
 });
 
 import { computeHmacSha256 } from '@/app-layer/integrations/webhook-crypto';
-import { recordAuditStreamDeliveryFailure } from '@/lib/observability/metrics';
+import {
+    recordAuditStreamDelivery,
+    recordAuditStreamBufferOverflow,
+} from '@/lib/observability/metrics';
 
 import {
     streamAuditEvent,
@@ -29,16 +37,17 @@ import {
     __setStreamPost,
     __setTenantStreamConfigResolver,
     __resetAuditStreamForTests,
-    __getDeliveryFailureCount,
-    __resetDeliveryFailureCount,
     __setRetryBaseDelayMs,
     __resetRetryBaseDelayMs,
     type StreamedAuditEvent,
     type AuditStreamPayload,
 } from '@/app-layer/events/audit-stream';
 
-const mockRecordFailure = recordAuditStreamDeliveryFailure as jest.MockedFunction<
-    typeof recordAuditStreamDeliveryFailure
+const mockRecordDelivery = recordAuditStreamDelivery as jest.MockedFunction<
+    typeof recordAuditStreamDelivery
+>;
+const mockRecordOverflow = recordAuditStreamBufferOverflow as jest.MockedFunction<
+    typeof recordAuditStreamBufferOverflow
 >;
 
 // ─── Test harness ──────────────────────────────────────────────────
@@ -78,8 +87,8 @@ function makeEvent(
 
 beforeEach(() => {
     __resetAuditStreamForTests();
-    __resetDeliveryFailureCount();
-    mockRecordFailure.mockClear();
+    mockRecordDelivery.mockClear();
+    mockRecordOverflow.mockClear();
     // Zero backoff so retry loops don't introduce real-time waits in tests.
     __setRetryBaseDelayMs(0);
     capturedPosts = [];
@@ -103,7 +112,6 @@ beforeEach(() => {
 
 afterEach(() => {
     __resetAuditStreamForTests();
-    __resetDeliveryFailureCount();
     __resetRetryBaseDelayMs();
     __setStreamPost(null);
     __setTenantStreamConfigResolver(null);
@@ -337,10 +345,12 @@ describe('audit-stream — retry behaviour', () => {
         expect(capturedPosts[0].headers['X-Inflect-Batch-Id']).toBe(
             capturedPosts[1].headers['X-Inflect-Batch-Id'],
         );
-        // Final result was ok — failure counter must NOT have been bumped.
-        expect(__getDeliveryFailureCount()).toBe(0);
-        // OTel counter must also be untouched — one success = zero failures.
-        expect(mockRecordFailure).not.toHaveBeenCalled();
+        // Final result was ok — recorded once as a SUCCESS outcome,
+        // carrying the 2 attempts (1 retry) it actually took.
+        expect(mockRecordDelivery).toHaveBeenCalledTimes(1);
+        expect(mockRecordDelivery).toHaveBeenCalledWith(
+            expect.objectContaining({ outcome: 'success', status: 200, attempts: 2 }),
+        );
     });
 
     it('Case B — retry double-fail: 503 on all attempts increments failure count once', async () => {
@@ -354,12 +364,12 @@ describe('audit-stream — retry behaviour', () => {
 
         // 3 attempts total (1 initial + 2 retries).
         expect(capturedPosts).toHaveLength(3);
-        // Only one batch failed — failure counter bumped exactly once (not per-attempt).
-        expect(__getDeliveryFailureCount()).toBe(1);
-        // OTel counter mirrors the in-process counter — one failure with the
-        // final attempt's status carried as the label.
-        expect(mockRecordFailure).toHaveBeenCalledTimes(1);
-        expect(mockRecordFailure).toHaveBeenCalledWith({ status: 503 });
+        // One batch failed — recorded exactly once (not per-attempt),
+        // as a FAILURE outcome carrying the final status + 3 attempts.
+        expect(mockRecordDelivery).toHaveBeenCalledTimes(1);
+        expect(mockRecordDelivery).toHaveBeenCalledWith(
+            expect.objectContaining({ outcome: 'failure', status: 503, attempts: 3 }),
+        );
     });
 
     it('Case C — network throw then 200 succeeds via retry', async () => {
@@ -378,7 +388,9 @@ describe('audit-stream — retry behaviour', () => {
 
         // Second call succeeded — one captured POST (throw on first was swallowed).
         expect(capturedPosts).toHaveLength(1);
-        expect(__getDeliveryFailureCount()).toBe(0);
+        expect(mockRecordDelivery).toHaveBeenCalledWith(
+            expect.objectContaining({ outcome: 'success', attempts: 2 }),
+        );
     });
 
     it('Case D — kill switch AUDIT_STREAM_RETRY_ENABLED=0 sends exactly one POST', async () => {
@@ -394,6 +406,55 @@ describe('audit-stream — retry behaviour', () => {
 
         // Kill-switch forces single attempt — no retry.
         expect(capturedPosts).toHaveLength(1);
-        expect(__getDeliveryFailureCount()).toBe(1);
+        expect(mockRecordDelivery).toHaveBeenCalledWith(
+            expect.objectContaining({ outcome: 'failure', status: 503, attempts: 1 }),
+        );
+    });
+});
+
+// ─── Delivery metrics (roadmap-2 P1) ───────────────────────────────
+
+describe('audit-stream — delivery metrics', () => {
+    it('records a success outcome with attempt count + duration on a clean delivery', async () => {
+        streamAuditEvent(makeEvent({ id: 'metrics-ok' }));
+        await flushAllAuditStreams();
+
+        expect(mockRecordDelivery).toHaveBeenCalledTimes(1);
+        expect(mockRecordDelivery).toHaveBeenCalledWith({
+            outcome: 'success',
+            status: 200,
+            attempts: 1,
+            durationMs: expect.any(Number),
+        });
+    });
+
+    it('records a failure outcome carrying the final HTTP status', async () => {
+        nextPostResult = { ok: false, status: 502, statusText: 'Bad Gateway' };
+        streamAuditEvent(makeEvent({ id: 'metrics-fail' }));
+        await flushAllAuditStreams();
+
+        expect(mockRecordDelivery).toHaveBeenCalledWith(
+            expect.objectContaining({ outcome: 'failure', status: 502 }),
+        );
+    });
+
+    it('records NO delivery when streaming is disabled for the tenant', async () => {
+        // No webhook configured → the batch is dropped before
+        // deliverBatch; neither success nor failure is recorded.
+        streamAuditEvent(makeEvent({ tenantId: 'tenant-without-webhook' }));
+        await flushAllAuditStreams();
+        expect(mockRecordDelivery).not.toHaveBeenCalled();
+    });
+
+    it('records a buffer overflow when a stalled buffer exceeds the hard cap', async () => {
+        // BUFFER_HARD_CAP is 1000. In a synchronous enqueue loop the
+        // first flush's `flushInFlight` promise cannot settle (no
+        // microtask runs mid-loop), so later flushes no-op and the
+        // buffer grows until the cap sheds the oldest event.
+        for (let i = 0; i <= 1200; i++) {
+            streamAuditEvent(makeEvent({ id: `ov-${i}` }));
+        }
+        expect(mockRecordOverflow).toHaveBeenCalled();
+        await flushAllAuditStreams();
     });
 });

@@ -45,7 +45,11 @@
 import { computeHmacSha256 } from '@/app-layer/integrations/webhook-crypto';
 import { logger } from '@/lib/observability/logger';
 import { buildOutboundHeaders, computeBatchId } from '@/app-layer/events/webhook-headers';
-import { recordAuditStreamDeliveryFailure } from '@/lib/observability/metrics';
+import {
+    recordAuditStreamDelivery,
+    recordAuditStreamBufferOverflow,
+    startAuditStreamBufferReporting,
+} from '@/lib/observability/metrics';
 import { env } from '@/env';
 
 // ─── Public payload shape ──────────────────────────────────────────
@@ -185,27 +189,6 @@ export function __setStreamPost(fn: StreamPostFn | null): void {
     postFn = fn ?? defaultPost;
 }
 
-// ─── Delivery failure counter ──────────────────────────────────────
-
-/**
- * In-process counter bumped once per batch whose final attempt is
- * not-ok. Exposed via `__getDeliveryFailureCount` for tests. The
- * same event also increments the OTel counter
- * `audit_stream.delivery.failures` via
- * `recordAuditStreamDeliveryFailure` — this local counter exists
- * purely so tests can assert "exactly N failures" without reaching
- * into the OTel SDK.
- */
-let _deliveryFailureCount = 0;
-
-export function __getDeliveryFailureCount(): number {
-    return _deliveryFailureCount;
-}
-
-export function __resetDeliveryFailureCount(): void {
-    _deliveryFailureCount = 0;
-}
-
 // ─── Retry helpers ─────────────────────────────────────────────────
 
 /**
@@ -251,6 +234,22 @@ function getBuffer(tenantId: string): TenantBuffer {
     return buf;
 }
 
+/**
+ * Total events buffered across every per-tenant buffer — the source
+ * for the `audit_stream.buffer.depth` observable gauge. A sustained
+ * high value means delivery is not keeping up with ingestion.
+ */
+function totalBufferedEventCount(): number {
+    let total = 0;
+    for (const buf of buffers.values()) total += buf.events.length;
+    return total;
+}
+
+// Register the buffer-depth gauge once, on module init. The gauge
+// callback only runs at metric-scrape time, so this is cheap even
+// for processes that never stream a single event.
+startAuditStreamBufferReporting(totalBufferedEventCount);
+
 // ─── Public API ────────────────────────────────────────────────────
 
 /**
@@ -273,6 +272,7 @@ export function streamAuditEvent(event: StreamedAuditEvent): void {
         // audit writer.
         if (buf.events.length >= BUFFER_HARD_CAP) {
             buf.events.shift();
+            recordAuditStreamBufferOverflow();
             logger.warn('audit-stream buffer overflow — dropped oldest event', {
                 component: 'audit-stream',
                 tenantId: event.tenantId,
@@ -377,6 +377,7 @@ async function deliverBatch(
     config: TenantStreamConfig,
     batch: StreamedAuditEvent[],
 ): Promise<void> {
+    const startedAt = Date.now();
     const payload: AuditStreamPayload = {
         schemaVersion: SCHEMA_VERSION,
         tenantId,
@@ -431,9 +432,16 @@ async function deliverBatch(
         attempts += 1;
     }
 
+    // One delivery-outcome record per batch — success OR failure,
+    // with the attempt count (retry pressure) and wall-clock latency.
+    recordAuditStreamDelivery({
+        outcome: result.ok ? 'success' : 'failure',
+        status: result.status,
+        attempts,
+        durationMs: Date.now() - startedAt,
+    });
+
     if (!result.ok) {
-        _deliveryFailureCount += 1;
-        recordAuditStreamDeliveryFailure({ status: result.status });
         logger.warn('audit-stream POST returned non-2xx', {
             component: 'audit-stream',
             tenantId,

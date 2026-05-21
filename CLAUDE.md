@@ -410,9 +410,16 @@ throw`. Linear backoff (1 s, 2 s). Every attempt carries the SAME
 `X-Inflect-Idempotency-Key`, so consumer SIEMs dedupe retries with
 zero retry-aware code on our side. Kill-switch via
 `AUDIT_STREAM_RETRY_ENABLED=0` (force single-POST for debugging a
-misbehaving SIEM without redeploy). A module-level
-`_deliveryFailureCount` counter bumps once per batch whose final
-attempt is still not-ok — future work wires this to OTel.
+misbehaving SIEM without redeploy). Delivery is fully instrumented
+with OTel metrics — `deliverBatch` calls `recordAuditStreamDelivery`
+once per batch (success/failure counter + an attempts histogram for
+retry pressure + a duration histogram), `streamAuditEvent` calls
+`recordAuditStreamBufferOverflow` when a per-tenant buffer sheds an
+event at the hard cap, and an `audit_stream.buffer.depth` observable
+gauge reports backlog. Audit-stream failures deliberately do NOT
+gate `/api/readyz` — the path is out-of-band + fail-safe (the audit
+row is already committed); escalation is alert-based on the metrics.
+See `docs/implementation-notes/2026-05-21-audit-stream-observability.md`.
 
 `webhook-headers.ts` is the canonical module for any future outbound
 webhook in the repo (SCIM push, billing fanout, per-tenant SIEM

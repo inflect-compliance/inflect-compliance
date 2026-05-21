@@ -23,9 +23,19 @@
  *   job.queue.depth        — Observable Gauge (queue_name, state)
  *
  * ── AUDIT-STREAM METRICS ──
- *   audit_stream.delivery.failures — Counter (http.status_code)
- *     Bumped once per batch whose final delivery attempt (after retry)
- *     was not-ok. Status 0 == network throw / timeout.
+ *   audit_stream.delivery.success  — Counter   (http.status_code)
+ *   audit_stream.delivery.failures — Counter   (http.status_code)
+ *   audit_stream.delivery.attempts — Histogram (outcome)
+ *   audit_stream.delivery.duration — Histogram (outcome) [ms]
+ *   audit_stream.buffer.overflow_dropped — Counter
+ *   audit_stream.buffer.depth      — Observable Gauge
+ *     One delivery-outcome record per batch (after the retry loop).
+ *     success + failures give the delivery success ratio; attempts
+ *     shows retry pressure; buffer.depth + overflow_dropped show
+ *     downstream backpressure. Status 0 == network throw / timeout.
+ *     Audit-stream failures deliberately do NOT gate /api/readyz —
+ *     the path is out-of-band + fail-safe (the audit row is already
+ *     committed); escalation is alert-based on these metrics.
  *
  * CARDINALITY SAFETY:
  *   Route labels are normalized via `normalizeRoute()` to collapse dynamic
@@ -288,9 +298,36 @@ export function recordJobMetrics(attrs: {
 
 // ════════════════════════════════════════════════════════════════════════
 // AUDIT-STREAM METRICS — Instrument Singletons
+//
+// Delivery outcomes are recorded once per batch, after the retry loop in
+// `deliverBatch` (src/app-layer/events/audit-stream.ts) settles. The set
+// answers the operator questions:
+//   - are batches landing?            success / failures counters
+//   - what is the success ratio?      success / (success + failures)
+//   - is the downstream flaky?        attempts histogram (1..3)
+//   - how slow is delivery?           duration histogram [ms]
+//   - is the buffer under pressure?   buffer.depth gauge + overflow counter
+//
+// Cardinality: only `http.status_code` (finite) and `outcome`
+// (success|failure). tenantId is NEVER a label — tenant-level
+// debugging uses the structured `logger.warn` in the same code path.
 // ════════════════════════════════════════════════════════════════════════
 
+let _auditStreamSuccess: ReturnType<ReturnType<typeof getMeter>['createCounter']> | null = null;
 let _auditStreamFailures: ReturnType<ReturnType<typeof getMeter>['createCounter']> | null = null;
+let _auditStreamAttempts: ReturnType<ReturnType<typeof getMeter>['createHistogram']> | null = null;
+let _auditStreamDuration: ReturnType<ReturnType<typeof getMeter>['createHistogram']> | null = null;
+let _auditStreamOverflow: ReturnType<ReturnType<typeof getMeter>['createCounter']> | null = null;
+
+function getAuditStreamSuccess() {
+    if (!_auditStreamSuccess) {
+        _auditStreamSuccess = getMeter().createCounter('audit_stream.delivery.success', {
+            description: 'Audit-stream batches delivered successfully (2xx on the final attempt)',
+            unit: '1',
+        });
+    }
+    return _auditStreamSuccess;
+}
 
 function getAuditStreamFailures() {
     if (!_auditStreamFailures) {
@@ -302,23 +339,109 @@ function getAuditStreamFailures() {
     return _auditStreamFailures;
 }
 
+function getAuditStreamAttempts() {
+    if (!_auditStreamAttempts) {
+        _auditStreamAttempts = getMeter().createHistogram('audit_stream.delivery.attempts', {
+            description: 'Delivery attempts made per audit-stream batch (1 = no retry, up to 3)',
+            unit: '1',
+        });
+    }
+    return _auditStreamAttempts;
+}
+
+function getAuditStreamDuration() {
+    if (!_auditStreamDuration) {
+        _auditStreamDuration = getMeter().createHistogram('audit_stream.delivery.duration', {
+            description: 'Wall-clock time to deliver an audit-stream batch, including retry backoff',
+            unit: 'ms',
+        });
+    }
+    return _auditStreamDuration;
+}
+
+function getAuditStreamOverflow() {
+    if (!_auditStreamOverflow) {
+        _auditStreamOverflow = getMeter().createCounter('audit_stream.buffer.overflow_dropped', {
+            description: 'Audit-stream events dropped because a per-tenant buffer hit its hard cap',
+            unit: '1',
+        });
+    }
+    return _auditStreamOverflow;
+}
+
 /**
- * Record a final-attempt delivery failure for an audit-stream batch.
+ * Record the outcome of an audit-stream batch delivery — called once
+ * per batch by `deliverBatch` after the retry loop settles (NOT per
+ * retry attempt).
  *
- * Called from `deliverBatch` in `src/app-layer/events/audit-stream.ts`
- * when the retry loop exhausts all attempts. NOT called per retry
- * attempt — one bump per batch.
+ * Emits, in one call:
+ *   - `audit_stream.delivery.success` OR `.failures` (by outcome);
+ *   - `audit_stream.delivery.attempts` (retry-pressure histogram);
+ *   - `audit_stream.delivery.duration` (delivery latency).
  *
- * Labels: only `http.status_code` (finite cardinality). Status 0
- * means the final attempt threw (network error, timeout) rather
- * than returning an HTTP response. TenantId deliberately NOT a
- * label — tenant-level debugging uses the existing structured
- * `logger.warn` in the same code path.
+ * `status` is the final HTTP status (0 == network throw / timeout).
+ * TenantId is deliberately NOT a label — tenant-level debugging
+ * uses the structured `logger.warn` in the same code path.
  */
-export function recordAuditStreamDeliveryFailure(attrs: { status: number }): void {
-    getAuditStreamFailures().add(1, {
-        'http.status_code': attrs.status,
+export function recordAuditStreamDelivery(attrs: {
+    outcome: 'success' | 'failure';
+    status: number;
+    attempts: number;
+    durationMs: number;
+}): void {
+    const statusLabel = { 'http.status_code': attrs.status };
+    if (attrs.outcome === 'success') {
+        getAuditStreamSuccess().add(1, statusLabel);
+    } else {
+        getAuditStreamFailures().add(1, statusLabel);
+    }
+    const outcomeLabel = { outcome: attrs.outcome };
+    getAuditStreamAttempts().record(attrs.attempts, outcomeLabel);
+    getAuditStreamDuration().record(attrs.durationMs, outcomeLabel);
+}
+
+/**
+ * Record an audit-stream buffer overflow — one event dropped because
+ * a per-tenant in-memory buffer hit `BUFFER_HARD_CAP`. A non-zero
+ * rate here means the downstream SIEM is too slow to keep up with
+ * audit volume and events are being shed.
+ */
+export function recordAuditStreamBufferOverflow(): void {
+    getAuditStreamOverflow().add(1);
+}
+
+let _auditStreamBufferGaugeStarted = false;
+
+/**
+ * Register the observable gauge `audit_stream.buffer.depth` — the
+ * total number of audit events buffered across all per-tenant
+ * buffers, read at metric-scrape time. A sustained high depth means
+ * delivery is not keeping up with ingestion.
+ *
+ * Idempotent. Called once from `audit-stream.ts` on module init.
+ *
+ * @param getDepthFn — returns the current total buffered event count.
+ */
+export function startAuditStreamBufferReporting(getDepthFn: () => number): void {
+    if (_auditStreamBufferGaugeStarted) return;
+    _auditStreamBufferGaugeStarted = true;
+
+    const gauge = getMeter().createObservableGauge('audit_stream.buffer.depth', {
+        description: 'Total audit events buffered across all per-tenant audit-stream buffers',
+        unit: '1',
     });
+    gauge.addCallback((result) => {
+        try {
+            result.observe(getDepthFn());
+        } catch {
+            // Buffer not available — noop; the gauge simply won't report.
+        }
+    });
+}
+
+/** Reset the buffer-gauge flag (testing only). @internal */
+export function _resetAuditStreamBufferGaugeForTesting(): void {
+    _auditStreamBufferGaugeStarted = false;
 }
 
 // ════════════════════════════════════════════════════════════════════════
