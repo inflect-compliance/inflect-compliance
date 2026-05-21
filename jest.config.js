@@ -116,6 +116,12 @@ const nodeProject = {
     collectCoverageFrom: sharedCollectCoverageFrom,
     // ─── Coverage ratchet (GAP-15) ───────────────────────────────────
     //
+    // POLICY: `docs/coverage-policy.md` is the risk-tiered coverage
+    // policy — why each layer carries the bar it does (usecases/ and
+    // policies/ are the highest-assurance tier), the end-state
+    // targets, and the staged ratchet plan. The numbers below /
+    // in `jest.thresholds.json` are the CURRENT FLOOR on that path.
+    //
     // These thresholds DO enforce — they live on the node project, not
     // at the top-level config (where jest silently ignores them in
     // multi-project mode).
