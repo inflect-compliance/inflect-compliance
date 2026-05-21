@@ -38,6 +38,22 @@ When a package in the table ships a release whose peer range
 genuinely includes the version we run, drop its `overrides` entry —
 the override is a bridge, not a destination.
 
+## Security overrides
+
+`overrides` also force a **patched transitive dependency** when an
+advisory lands against a version pulled in by a package we don't
+control. The CI `Security` job (`npm audit --omit=dev
+--audit-level=moderate`) blocks merges on MODERATE+ advisories in
+production deps, so an un-fixable transitive CVE would otherwise
+wedge the whole pipeline.
+
+| Override | Advisory | Why |
+|----------|----------|-----|
+| `uuid` → `^11.1.1` | GHSA-w5hq-g745-h8pq — missing buffer bounds check in uuid v3/v5/v6 when `buf` is provided (moderate) | `next-auth@4` declares `uuid@^8.3.2`; the whole `<11.1.1` line is vulnerable, so the only fix is forcing the patched major. `next-auth` uses the version-stable named `uuid` exports (`v4`, …), which are unchanged v8 → v11. Drop this entry if `next-auth` itself moves to a patched `uuid` range. |
+
+A security override is NOT a bridge to drop on convenience — keep it
+until the upstream package legitimately depends on a patched range.
+
 ## Deterministic installs — `npm ci`
 
 Every install path — the `Dockerfile` and all CI workflows — runs
