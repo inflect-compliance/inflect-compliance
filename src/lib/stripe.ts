@@ -42,7 +42,6 @@ export async function findOrCreateCustomer(
     const stripe = getStripe();
 
     // Check for existing billing account
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const existing = await prisma.billingAccount.findUnique({
         where: { tenantId },
     });
@@ -62,7 +61,6 @@ export async function findOrCreateCustomer(
     });
 
     // Create billing account
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const billingAccount = await prisma.billingAccount.create({
         data: {
             tenantId,
@@ -182,8 +180,7 @@ function getSubscriptionTrialEnd(sub: Record<string, unknown>): Date | null {
 
 // ─── Event processor (source of truth for billing state) ───
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const db = prisma as any; // Prisma client may not have generated billing models yet in IDE
+const db = prisma;
 
 export async function handleWebhookEvent(event: Stripe.Event): Promise<void> {
     // Idempotency: skip if already processed

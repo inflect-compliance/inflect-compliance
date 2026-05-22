@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- Client component receiving server-rendered domain data; tanstack column callbacks; or library-boundary callbacks. Per-site narrowing requires generated DTOs / per-cell CellContext imports — out of scope for the lint cleanup PR. */
 import { cn } from "@dub/utils";
 import { RectClipPath } from "@visx/clip-path";
 import { Group } from "@visx/group";
@@ -35,6 +34,15 @@ import { ChartGloss, chartGlossId } from "./chart-gloss";
  * CENTRE. Two transforms, two pivots, two motion.g layers — the
  * column-level settle-bounce wraps the per-bar hover bubble.
  */
+
+interface BarItem {
+  id: string;
+  value: number;
+  colorClassName: string | undefined;
+  styles: { id: string; barClassName?: string; barFill?: string } | undefined;
+  y: number;
+  height: number;
+}
 
 /** Per-column stagger (ms) so the bars bubble up left-to-right. */
 const BAR_STAGGER_MS = 45;
@@ -125,7 +133,7 @@ export function Bars({
                   height: height - y, // height from bottom to top of bar
                 },
               ];
-            }, [] as any[]);
+            }, [] as BarItem[]);
 
             return (
               // R18-PR8 — settle-bounce. The whole date-column

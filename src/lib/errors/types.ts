@@ -206,10 +206,8 @@ export function toApiErrorResponse(error: unknown, requestId?: string): { payloa
             message: iss.message
         }));
         // Prisma known error detection (without explicitly importing Prisma to keep Edge safe)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } else if (typeof error === 'object' && error !== null && 'code' in error && typeof (error as any).code === 'string') {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const prismaError = error as { code: string; meta?: any; message?: string };
+    } else if (typeof error === 'object' && error !== null && 'code' in error && typeof (error as Record<string, unknown>).code === 'string') {
+        const prismaError = error as { code: string; meta?: { target?: unknown }; message?: string };
         if (prismaError.code === 'P2002') {
             status = 409;
             payload.error.code = 'CONFLICT';
@@ -223,8 +221,7 @@ export function toApiErrorResponse(error: unknown, requestId?: string): { payloa
     }
 
     // Never leak stack traces or raw messages for 500s unless in strict dev mode testing
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (status === 500 && env.NODE_ENV === 'test' && error instanceof Error && (error as any).testExpose) {
+    if (status === 500 && env.NODE_ENV === 'test' && error instanceof Error && 'testExpose' in error && (error as Error & { testExpose?: unknown }).testExpose) {
         payload.error.details = error.message;
     }
 

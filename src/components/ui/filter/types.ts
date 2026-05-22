@@ -1,8 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any --
- * Filter primitive types. The `any` defaults on the value-shape
- * generics let consumers specialise without forcing an unbound
- * generic on the primitive's public API.
- */
 import { type FilterOperator } from "@dub/utils";
 import { LucideIcon } from "lucide-react";
 import { ComponentType, ReactNode, SVGProps } from "react";
@@ -75,6 +70,7 @@ export type Filter = {
 };
 
 export type FilterOption = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- filter option values are heterogeneous (string | number | object) across all filter types; `unknown` would require casts at every consumer
   value: any;
   /** The human-facing label — what users see in the dropdown/pill. */
   label: string;
@@ -87,6 +83,7 @@ export type FilterOption = {
   right?: ReactNode;
   icon?: FilterIcon;
   hideDuringSearch?: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- arbitrary per-option metadata bag; shape varies by filter type
   data?: Record<string, any>;
   permalink?: string;
 };
@@ -176,7 +173,7 @@ export function normalizeActiveFilter(filter: ActiveFilterInput): ActiveFilter {
   }
 
   if (
-    Array.isArray((filter as any).values) &&
+    "values" in filter && Array.isArray((filter as LegacyActiveFilterPlural).values) &&
     (!("operator" in filter) || !filter.operator)
   ) {
     const values = (filter as LegacyActiveFilterPlural).values;

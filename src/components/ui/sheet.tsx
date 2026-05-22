@@ -99,14 +99,14 @@ function SheetRoot({
     );
 
     // Vaul's `DialogProps` is a discriminated union over snapPoints; TS
-    // can't narrow the rest-spread through that, so we assert the
-    // assignment. Both Root and NestedRoot accept the same runtime shape.
+    // can't narrow the rest-spread through that, so we assert the composed
+    // object as `DialogProps` — both Root and NestedRoot accept the same
+    // runtime shape, and `SheetRootBaseProps extends Omit<DialogProps, …>`.
     const rootProps = {
         direction: effectiveDirection,
         handleOnly: true,
         ...rest,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any;
+    } as DialogProps;
 
     return (
         <RootComponent {...rootProps}>

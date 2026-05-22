@@ -26,8 +26,7 @@ const DEFAULTS: Required<TableRenderOptions> = {
 export function renderTable(
     doc: PDFKit.PDFDocument,
     columns: TableColumn[],
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    rows: Record<string, any>[],
+    rows: Record<string, unknown>[],
     opts?: TableRenderOptions,
     totals?: TotalsRow,
 ): number {
@@ -108,8 +107,7 @@ export function renderTable(
                         width: col.width - o.rowPadding * 2,
                         align: col.align || 'left',
                         lineBreak: true,
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    } as any);
+                    });
             }
             cellX += col.width;
         }
@@ -148,8 +146,7 @@ function drawHeaderRow(
                 width: col.width - o.rowPadding * 2,
                 align: col.align || 'left',
                 lineBreak: false,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } as any);
+            });
         cellX += col.width;
     }
     doc.font('Helvetica');
@@ -176,8 +173,7 @@ function drawRowCells(
             width: col.width - o.rowPadding * 2,
             align: col.align || 'left',
             lineBreak: true,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any);
+        });
 
         cellX += col.width;
     }

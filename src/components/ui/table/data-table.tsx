@@ -28,6 +28,7 @@ import { Dispatch, MouseEvent, ReactNode, SetStateAction, useCallback, useState 
 import { type BatchAction, renderBatchActions } from "./selection-toolbar";
 import { Table, useTable } from "./table";
 import { cn } from "./table-utils";
+import type { UseTableProps } from "./types";
 import { VirtualTable } from "./virtual-table-body";
 
 // ── Public Column Helper ────────────────────────────────────────────
@@ -365,7 +366,11 @@ export function DataTable<T>({
         scrollWrapperClassName: filledScrollWrapperClassName,
       };
 
-  const { table, ...rest } = useTable(tableProps as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+  // `tableProps` is one branch of a discriminated union (paginated vs. not);
+  // TypeScript can't unify the branches through the spread, so we narrow to
+  // the exact target type. `UseTableProps<T>` is the correct shape here —
+  // this is NOT a loose cast.
+  const { table, ...rest } = useTable(tableProps as unknown as UseTableProps<T>);
 
   // The outermost wrapper exists for the dataTestId / id hooks the
   // E2E suite uses. When fillBody is on it participates in the
@@ -396,16 +401,10 @@ export function DataTable<T>({
     virtualizationDecision && hasRows && !wantsPagination;
 
   if (useVirtual) {
-    // The table instance is typed `Table<unknown>` here because the
-    // upstream `useTable(tableProps as any)` cast erases the row
-    // generic. VirtualTable is row-generic and TanStack table's
-    // structural shape is identical, so this re-cast is safe.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tableT = table as any;
     return (
       <div id={dataTestId} data-testid={dataTestId} className={wrapperClassName}>
         <VirtualTable<T>
-          table={tableT}
+          table={table}
           rowHeight={virtualRowHeight}
           height={virtualHeight}
           onRowClick={onRowClick}

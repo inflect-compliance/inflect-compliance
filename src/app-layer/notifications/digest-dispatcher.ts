@@ -385,7 +385,6 @@ async function enqueueDigest(
     );
 
     try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const record = await prisma.notificationOutbox.create({
             data: {
                 tenantId,
@@ -400,8 +399,11 @@ async function enqueueDigest(
         return { id: record.id, dedupeKey };
     } catch (error: unknown) {
         // P2002 = unique constraint = duplicate dedupe key → skip
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if ((error as any)?.code === 'P2002' || (error as any)?.message?.includes('Unique constraint')) {
+        const errorCode = typeof error === 'object' && error !== null && 'code' in error
+            ? (error as Record<string, unknown>).code
+            : undefined;
+        const errorMessage = error instanceof Error ? error.message : undefined;
+        if (errorCode === 'P2002' || errorMessage?.includes('Unique constraint')) {
             logger.debug('digest skipped — duplicate', {
                 component: 'digest-dispatcher',
                 category,
