@@ -107,11 +107,38 @@ services:
       # key is absent from deploy/.env.prod. The :? syntax aborts the
       # container start before the app process is spawned, so the
       # operator gets a single clear error instead of a crash loop.
-      DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:?DATA_ENCRYPTION_KEY is required for production. Generate with: openssl rand -base64 48}
+      DATA_ENCRYPTION_KEY: "${DATA_ENCRYPTION_KEY:?DATA_ENCRYPTION_KEY is required for production. Generate with: openssl rand -base64 48}"
     volumes:
       - app-uploads:/data/uploads
     expose:
       - "3000"
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+
+  # ── Worker ────────────────────────────────────────────────────
+  # The BullMQ worker + scheduler — a SEPARATE process from `app`
+  # (same image, ENTRYPOINT overridden). Without it NO scheduled job
+  # runs and enqueued jobs pile up in Redis. The command registers
+  # the repeatable schedules (idempotent) then daemonises the
+  # worker. Watchtower-enabled so it updates in lockstep with `app`.
+  # See docs/deployment.md "Background worker".
+  worker:
+    image: ghcr.io/h0mele55/inflect-compliance:latest
+    restart: unless-stopped
+    pull_policy: always
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["node dist/scheduler.mjs && node dist/worker.mjs"]
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - ./.env.prod
+    environment:
+      DATA_ENCRYPTION_KEY: "${DATA_ENCRYPTION_KEY:?DATA_ENCRYPTION_KEY is required for production. Generate with: openssl rand -base64 48}"
+    volumes:
+      - app-uploads:/data/uploads
     labels:
       com.centurylinklabs.watchtower.enable: "true"
 

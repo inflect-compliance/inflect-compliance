@@ -126,7 +126,7 @@ services:
       # GAP-03 — staging runs NODE_ENV=production and is treated as
       # production for encryption-at-rest. Boot will exit(1) if this
       # is unset.
-      DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:?DATA_ENCRYPTION_KEY is required for staging (NODE_ENV=production). Generate with: openssl rand -base64 48}
+      DATA_ENCRYPTION_KEY: "${DATA_ENCRYPTION_KEY:?DATA_ENCRYPTION_KEY is required for staging (NODE_ENV=production). Generate with: openssl rand -base64 48}"
     volumes:
       - staging-uploads:/data/uploads
     healthcheck:
@@ -135,6 +135,41 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+
+  # ── Worker ────────────────────────────────────────────────────
+  # BullMQ worker + scheduler — a SEPARATE process from `app` (same
+  # image, ENTRYPOINT overridden). Without it NO scheduled job runs
+  # and enqueued jobs pile up in Redis. See docker-compose.prod.yml.
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: inflect-staging-worker
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["node dist/scheduler.mjs && node dist/worker.mjs"]
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      clamav:
+        condition: service_healthy
+    env_file:
+      - .env.staging
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-inflect}:${POSTGRES_PASSWORD:-staging_password_change_me}@pgbouncer:5432/${POSTGRES_DB:-inflect_staging}?schema=public&pgbouncer=true
+      DIRECT_DATABASE_URL: postgresql://${POSTGRES_USER:-inflect}:${POSTGRES_PASSWORD:-staging_password_change_me}@postgres:5432/${POSTGRES_DB:-inflect_staging}?schema=public
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      CLAMAV_HOST: clamav:3310
+      AV_SCAN_MODE: strict
+      STORAGE_PROVIDER: s3
+      FILE_STORAGE_ROOT: /data/uploads
+      UPLOAD_DIR: /data/uploads
+      DATA_ENCRYPTION_KEY: "${DATA_ENCRYPTION_KEY:?DATA_ENCRYPTION_KEY is required for staging (NODE_ENV=production). Generate with: openssl rand -base64 48}"
+    volumes:
+      - staging-uploads:/data/uploads
 
 volumes:
   staging-pgdata:

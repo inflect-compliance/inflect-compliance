@@ -127,9 +127,11 @@ describe('GAP-03 ratchet — Docker Compose surfaces', () => {
             // the container is even created. A refactor that switches
             // to a default value (`:-`) or drops the directive entirely
             // would silently allow `compose up` to start a container
-            // with the var unset.
+            // with the var unset. The value is double-quoted (the
+            // fail-fast message contains a `: ` that breaks unquoted
+            // YAML) — the optional `"?` accepts that quoted form.
             expect(src).toMatch(
-                /DATA_ENCRYPTION_KEY:\s*\$\{DATA_ENCRYPTION_KEY:\?/,
+                /DATA_ENCRYPTION_KEY:\s*"?\$\{DATA_ENCRYPTION_KEY:\?/,
             );
         },
     );

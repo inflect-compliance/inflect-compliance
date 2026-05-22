@@ -24,6 +24,12 @@ ENV SKIP_ENV_VALIDATION=1
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npx next build
 
+# Build the standalone BullMQ worker + scheduler bundles. esbuild is
+# a devDependency, so this MUST run before the prune below. Produces
+# self-contained dist/worker.mjs + dist/scheduler.mjs (node_modules
+# external) — the `worker` compose service runs these.
+RUN npm run build:worker
+
 # Prune dev dependencies before the runner stage copies node_modules.
 # Without this, the runtime image carries ts-jest, semantic-release,
 # playwright, and friends — including their transitive CVEs (e.g.
@@ -59,6 +65,9 @@ COPY --from=builder /app/prisma ./prisma
 # "datasource.url property is required in your Prisma config file".
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/scripts/entrypoint.sh ./scripts/entrypoint.sh
+# The compiled BullMQ worker + scheduler bundles — run by the
+# `worker` compose service, a separate process from `next start`.
+COPY --from=builder /app/dist ./dist
 
 # Ensure entrypoint is executable and upload dir exists
 RUN chmod +x ./scripts/entrypoint.sh && \

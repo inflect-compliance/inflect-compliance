@@ -143,6 +143,40 @@ Two layers keep this from regressing:
   unavailable (managed Redis disables it), since terraform +
   `terraform-redis-storage.test.ts` enforce that path.
 
+### Background worker
+
+The Next.js `app` container serves HTTP only. **Every background
+job runs in a separate `worker` container** — the BullMQ worker
+(`scripts/worker.ts`) plus the scheduler (`scripts/scheduler.ts`).
+Without it, the 12 repeatable crons in `src/app-layer/jobs/schedules.ts`
+never run (task-due reminders, evidence-expiry sweeps, retention,
+the notification digest, …) and anything the app enqueues piles up
+in Redis unprocessed.
+
+How it is wired:
+
+- The Docker image build (`Dockerfile`) runs `npm run build:worker`,
+  which esbuild-bundles the two entrypoints into self-contained
+  `dist/worker.mjs` + `dist/scheduler.mjs` (the production image is
+  dev-dependency-pruned, so it cannot run the TypeScript sources
+  via `tsx`).
+- Each production-like Compose file (`docker-compose.prod.yml`,
+  `docker-compose.staging.yml`, `deploy/docker-compose.prod.yml`)
+  declares a `worker` service using the **same image** as `app`,
+  with the ENTRYPOINT overridden to
+  `node dist/scheduler.mjs && node dist/worker.mjs` — register the
+  repeatable schedules (idempotent), then daemonise the worker.
+- `tests/guards/worker-deployment.test.ts` fails CI if the `worker`
+  service, the build step, or the build script is dropped.
+
+> **Operator action — existing self-hosted VM.** The GCP VM's
+> `/opt/inflect/` Compose file is hand-managed; Watchtower only
+> swaps the *image*, it does NOT apply Compose structure changes.
+> After this change ships, add the `worker` service to the VM's
+> Compose file (copy the block from `deploy/docker-compose.prod.yml`)
+> and run `docker compose up -d worker`. Until then, no scheduled
+> job runs on that host.
+
 ---
 
 ## Railway
