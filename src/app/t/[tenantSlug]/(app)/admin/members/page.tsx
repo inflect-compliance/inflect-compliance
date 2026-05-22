@@ -34,6 +34,7 @@ import { Modal } from '@/components/ui/modal';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { Tooltip } from '@/components/ui/tooltip';
 import { DataTable, createColumns } from '@/components/ui/table';
+import { InitialsAvatar } from '@/components/ui/initials-avatar';
 import { InlineNotice } from '@/components/ui/inline-notice';
 import { cn } from '@dub/utils';
 import { Heading } from '@/components/ui/typography';
@@ -337,9 +338,10 @@ export default function MembersAdminPage() {
                     const m = row.original;
                     return (
                         <div className="flex items-center gap-tight">
-                            <div className="w-7 h-7 rounded-full bg-[var(--brand-subtle)] text-[var(--brand-default)] flex items-center justify-center text-xs font-semibold">
-                                {(m.user.name || m.user.email).charAt(0).toUpperCase()}
-                            </div>
+                            <InitialsAvatar
+                                value={m.user.name || m.user.email}
+                                size="md"
+                            />
                             <span className="text-sm font-medium text-content-emphasis">{m.user.name || '—'}</span>
                         </div>
                     );

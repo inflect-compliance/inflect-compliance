@@ -32,6 +32,7 @@
 import { useQuery } from "@tanstack/react-query";
 import * as React from "react";
 import { Combobox, type ComboboxOption } from "./combobox";
+import { InitialsAvatar } from "@/components/ui/initials-avatar";
 import { queryKeys } from "@/lib/queryKeys";
 
 // ─── Types ──────────────────────────────────────────────────────────
@@ -187,6 +188,20 @@ function toOption(member: Member): ComboboxOption<Member> {
     return {
         value: member.id,
         label: memberLabel(member),
+        // Avatar roadmap P1 — the people-picker renders identity
+        // through the shared `<InitialsAvatar>` primitive (one
+        // renderer, app-wide). Initials derive from the name, falling
+        // back to the email; image-backed rendering arrives for free
+        // when P2 adds `imageUrl` to the primitive.
+        icon: (
+            <InitialsAvatar
+                value={
+                    readableField(member.name) ??
+                    readableField(member.email)
+                }
+                size="sm"
+            />
+        ),
         meta: member,
     };
 }
