@@ -1,5 +1,10 @@
 # Dependency risk review
 
+> Part of the dependency-governance model — see
+> `docs/dependency-governance.md` for the four-pillar overview and
+> the contributor lifecycle. This document is the **runtime-risk**
+> layer.
+
 A periodic, package-by-package security + classification review of
 dependencies with a history of CVE activity or a large blast radius.
 This is a *posture document* — a reusable template for future audits,

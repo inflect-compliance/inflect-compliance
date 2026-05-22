@@ -1,5 +1,12 @@
 # Dependency installation policy
 
+> Part of the dependency-governance model — see
+> `docs/dependency-governance.md` for the four-pillar overview, the
+> contributor lifecycle (adding / upgrading / removing a
+> dependency), and the NextAuth stay-on-v4 policy. This document is
+> the **install-time** layer: strict peers, `npm ci`, the
+> `overrides` table, Node/npm pinning.
+
 ## Strict peer-dependency resolution
 
 Installs are **strict**. No install path passes `--legacy-peer-deps`.
