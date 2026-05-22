@@ -41,9 +41,13 @@ describe('No console.* in backend server code', () => {
         'instrumentation.ts',                  // Pre-init bootstrap (R-6 startup abort runs before logger)
     ]);
 
-    // Dub-ported modules use console.* by upstream design
+    // Adapted / vendored modules. `lib/dub-utils/` was REMOVED from
+    // this list (Roadmap-6 P2) — adapted, dub-ported code is held to
+    // the same console.* discipline as the rest of src/. The remaining
+    // entries are client-component directories: their browser-side
+    // console.* is acceptable, and their .tsx files are also caught by
+    // the isClientComponent skip below.
     const CONSOLE_ALLOWLIST_PREFIXES = [
-        'lib/dub-utils/',
         'components/ui/charts/',
         'components/ui/hooks/',
         'components/ui/filter/',
@@ -92,6 +96,18 @@ describe('No console.* in backend server code', () => {
                 `(use logger from @/lib/observability/logger instead):\n` +
                 violations.map(v => `  ${v}`).join('\n'),
             );
+        }
+    });
+
+    it('lib/dub-utils/ has no blanket console.* exemption (Roadmap-6 P2)', () => {
+        // The dub-ported utility tree was once exempt wholesale, a
+        // semi-blind spot where noisy logging could persist. Adapted
+        // external code obeys the same logging standard as the rest of
+        // src/. Re-adding a `lib/dub-utils/` prefix or an individual
+        // `lib/dub-utils/*` file here silently reopens that blind spot.
+        expect(CONSOLE_ALLOWLIST_PREFIXES).not.toContain('lib/dub-utils/');
+        for (const f of CONSOLE_ALLOWLIST) {
+            expect(f.startsWith('lib/dub-utils/')).toBe(false);
         }
     });
 });

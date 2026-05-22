@@ -27,7 +27,11 @@ export * from "./is-click-on-interactive-child";
 export * from "./is-iframeable";
 export * from "./keys";
 export * from "./link-constructor";
-export * from "./log";
+// `./log` re-export removed — the Dub-Slack-webhook logger was orphan
+// dead code (zero consumers; read undeclared DUB_SLACK_HOOK_* env
+// vars and console.log'd unconditionally). The app's logging surface
+// is `@/lib/observability` (`logger` / `log` / `edgeLogger`).
+// Roadmap-6 P2.
 export * from "./nanoid";
 export * from "./nformatter";
 export * from "./normalize-string";
@@ -35,7 +39,9 @@ export * from "./parse-filter-value";
 export * from "./pick";
 export * from "./pluralize";
 export * from "./pretty-print";
-export * from "./promises";
+// `./promises` re-export removed — `logPromiseResults` (console.* on
+// every settled result) plus the `isFulfilled`/`isRejected` type
+// guards had no consumers. Roadmap-6 P2.
 export * from "./punycode";
 export * from "./random-value";
 export * from "./regex-escape";

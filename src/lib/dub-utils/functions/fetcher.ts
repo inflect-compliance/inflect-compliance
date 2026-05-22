@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- Dub-ported utility code; preserves upstream shape. See CLAUDE.md "dub-ported modules" allowlist (also covers console.* in this directory tree). */
+/* eslint-disable @typescript-eslint/no-explicit-any -- Dub-ported utility code; preserves upstream shape. */
 interface SWRError extends Error {
   info: any;
   status: number;
