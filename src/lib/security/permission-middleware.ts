@@ -196,7 +196,18 @@ export function requirePermission<
         // `getTenantCtx` handles auth (session or API key), tenant
         // resolution, membership check, and custom-role-aware
         // appPermissions hydration. Throws AppError on auth failure.
-        const ctx = await getTenantCtx(routeArgs.params, req);
+        //
+        // `routeArgs.params` must be awaited: under the Next 15+ runtime
+        // the route export receives `params` as a Promise, and the
+        // transparent-await shim in `withApiErrorHandling` was retired
+        // by the async-params migration (#636) — the wrapper now
+        // forwards `ctx` untouched. Without the await, `getTenantCtx`
+        // (and `resolveTenantContext` under it) sees `params.tenantSlug`
+        // as `undefined` on a Promise and throws "Tenant identifier
+        // required", 404-ing every privileged route. `await` on a plain
+        // sync object (the unit-test call shape) resolves to itself, so
+        // both call shapes stay correct.
+        const ctx = await getTenantCtx(await routeArgs.params, req);
 
         const granted = checkPermissions(ctx.appPermissions, keys, mode);
         if (!granted) {
