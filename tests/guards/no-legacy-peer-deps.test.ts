@@ -12,7 +12,7 @@
  *   - `eslint-config-next@16` peers `eslint >=9` (the repo was on
  *     eslint 8 — now bumped to 9);
  *   - `next-auth@4` peers `next ^12 || ^13 || ^14` and `nodemailer
- *     ^6` (the repo runs next 16 / nodemailer 7).
+ *     ^6` (the repo runs next 16 / nodemailer 8).
  *
  * All three are now resolved explicitly: eslint bumped to 9, and a
  * targeted `overrides` block in package.json pins the visx and
