@@ -8,7 +8,7 @@
  * tokenisation modes, the empty-input placeholder, the size
  * presets, and the decorative `aria-hidden` contract.
  */
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import * as React from 'react';
 
 import { InitialsAvatar, getInitials } from '@/components/ui/initials-avatar';
@@ -64,5 +64,47 @@ describe('<InitialsAvatar>', () => {
         const md = render(<InitialsAvatar value="X" size="md" />);
         expect((sm.container.firstChild as HTMLElement).className).toContain('h-5');
         expect((md.container.firstChild as HTMLElement).className).toContain('h-8');
+    });
+});
+
+describe('<InitialsAvatar> — image-backed (avatar roadmap P2)', () => {
+    it('renders no <img> when imageUrl is absent — initials only', () => {
+        render(<InitialsAvatar value="Ada Lovelace" />);
+        expect(screen.queryByTestId('initials-avatar-image')).toBeNull();
+        expect(screen.getByText('AL')).toBeInTheDocument();
+    });
+
+    it('renders the image at the supplied URL when imageUrl is given', () => {
+        render(
+            <InitialsAvatar
+                value="Ada Lovelace"
+                imageUrl="https://cdn.example.com/ada.jpg"
+            />,
+        );
+        const img = screen.getByTestId('initials-avatar-image');
+        expect(img).toHaveAttribute('src', 'https://cdn.example.com/ada.jpg');
+        // Initials stay in the DOM underneath as the fallback layer.
+        expect(screen.getByText('AL')).toBeInTheDocument();
+    });
+
+    it('falls back to initials when the image fails to load', () => {
+        render(
+            <InitialsAvatar
+                value="Ada Lovelace"
+                imageUrl="https://cdn.example.com/broken.jpg"
+            />,
+        );
+        const img = screen.getByTestId('initials-avatar-image');
+        // Simulate a load failure → the <img> is dropped, never a
+        // broken-image glyph; the initials beneath carry through.
+        fireEvent.error(img);
+        expect(screen.queryByTestId('initials-avatar-image')).toBeNull();
+        expect(screen.getByText('AL')).toBeInTheDocument();
+    });
+
+    it('a null imageUrl is treated as initials-only', () => {
+        render(<InitialsAvatar value="Cher" imageUrl={null} />);
+        expect(screen.queryByTestId('initials-avatar-image')).toBeNull();
+        expect(screen.getByText('C')).toBeInTheDocument();
     });
 });

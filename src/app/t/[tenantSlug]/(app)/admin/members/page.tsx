@@ -341,6 +341,7 @@ export default function MembersAdminPage() {
                             <InitialsAvatar
                                 value={m.user.name || m.user.email}
                                 size="md"
+                                imageUrl={m.user.image}
                             />
                             <span className="text-sm font-medium text-content-emphasis">{m.user.name || '—'}</span>
                         </div>

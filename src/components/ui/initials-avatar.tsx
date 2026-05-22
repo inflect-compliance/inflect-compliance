@@ -1,25 +1,28 @@
+'use client';
+
 /**
- * `<InitialsAvatar>` — the single initials-avatar primitive.
+ * `<InitialsAvatar>` — the single avatar primitive.
  *
  * Before this existed, four chrome surfaces (`UserMenu`,
  * `TenantSwitcher`, `TenantIdentityPill`, `OrgIdentityPill`) each
  * carried their own `initials*()` helper and their own
  * `bg-[var(--brand-subtle)]` circle recipe — four subtly-divergent
- * copies of one idea. This is the one home.
+ * copies of one idea. This is the one home — and since avatar
+ * roadmap P1, the one renderer for the member list and the
+ * people-picker too.
  *
- * ── Deliberate scope: initials only ──────────────────────────────
- * The account / workspace chrome represents identity with INITIALS,
- * never an uploaded image — a settled product decision. Avatar-image
- * upload is a SEPARATE roadmap (image upload already exists in
- * Settings; surfacing it in the chrome is future work).
+ * ── Image-backed avatars (avatar roadmap P2) ──────────────────────
+ * Pass `imageUrl` and the primitive renders that image, clipped to
+ * the circle, with the initials as the ALWAYS-PRESENT fallback layer
+ * underneath — shown when no URL is given OR when the image fails to
+ * load (`onError`). There is never a broken-image glyph.
  *
- * This component is the safe seam for that future roadmap: when it
- * lands, `<InitialsAvatar>` gains an optional `imageUrl` prop and
- * renders the image with the initials as the fallback — and every
- * call site upgrades for free, with no churn. Until that roadmap is
- * scheduled, do NOT add image rendering here. Keeping the seam in
- * one component is the whole point: the future change is one file.
+ * Precedence is the caller's: resolve whichever URL wins (an uploaded
+ * avatar, else the OAuth `User.image`, else omit for initials-only)
+ * and pass it as `imageUrl`. The primitive never builds URLs and
+ * never decides precedence.
  */
+import { useState } from 'react';
 import { cn } from '@dub/utils';
 
 // ─── Initials ──────────────────────────────────────────────────────
@@ -62,30 +65,64 @@ export interface InitialsAvatarProps {
     mode?: 'name' | 'slug';
     /** Size preset. Defaults to `sm` (the pill avatar). */
     size?: keyof typeof SIZE_CLASS;
+    /**
+     * Optional avatar image URL (avatar roadmap P2). When present and
+     * the image loads, it covers the circle; the initials beneath
+     * remain as the fallback for a missing URL or a load failure.
+     * Omit (or pass null) for initials-only — the established default.
+     */
+    imageUrl?: string | null;
     className?: string;
 }
 
 /**
- * A round, brand-subtle circle showing 1–2 initials. Decorative —
- * `aria-hidden`; the interactive parent (button / link) carries the
- * accessible label.
+ * A round, brand-subtle circle showing 1–2 initials — or an avatar
+ * image clipped to the same circle when `imageUrl` resolves.
+ * Decorative — `aria-hidden`; the interactive parent (button / link)
+ * carries the accessible label.
  */
 export function InitialsAvatar({
     value,
     mode = 'name',
     size = 'sm',
+    imageUrl,
     className,
 }: InitialsAvatarProps) {
+    // Track the URL that failed (not just a boolean) so a CHANGED
+    // `imageUrl` — a different user in a recycled list row — retries
+    // the new image instead of inheriting the previous user's
+    // failure.
+    const [failedUrl, setFailedUrl] = useState<string | null>(null);
+    const resolvedUrl =
+        imageUrl && imageUrl !== failedUrl ? imageUrl : null;
+
     return (
         <span
             aria-hidden="true"
             className={cn(
-                'flex items-center justify-center rounded-full bg-[var(--brand-subtle)] font-semibold text-[var(--brand-emphasis)]',
+                'relative flex items-center justify-center overflow-hidden rounded-full bg-[var(--brand-subtle)] font-semibold text-[var(--brand-emphasis)]',
                 SIZE_CLASS[size],
                 className,
             )}
         >
+            {/* Initials are the always-present fallback layer — the
+                image (when it resolves) is painted on top. */}
             {getInitials(value, mode)}
+            {resolvedUrl && (
+                // Plain <img>, not next/image — these avatars are
+                // 20–32px chrome; the optimizer round-trip costs more
+                // than it saves at that size, and the initials layer
+                // beneath already covers the loading gap.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                    src={resolvedUrl}
+                    alt=""
+                    loading="lazy"
+                    className="absolute inset-0 h-full w-full rounded-full object-cover"
+                    onError={() => setFailedUrl(resolvedUrl)}
+                    data-testid="initials-avatar-image"
+                />
+            )}
         </span>
     );
 }

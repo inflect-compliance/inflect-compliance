@@ -59,3 +59,34 @@ describe('Avatar renderer convergence (avatar roadmap P1)', () => {
         expect(src).toMatch(/export function getInitials\(/);
     });
 });
+
+/**
+ * Avatar roadmap, P2 — image-backed avatars.
+ *
+ * `<InitialsAvatar>` gains an optional `imageUrl`: it renders the
+ * image clipped to the circle with the initials as the always-present
+ * fallback (shown on a missing URL or an `onError` load failure).
+ * The two P1-converged surfaces now feed it `User.image`.
+ */
+describe('Image-backed avatars (avatar roadmap P2)', () => {
+    it('<InitialsAvatar> accepts imageUrl and renders an <img> with a fallback', () => {
+        const src = read(AVATAR_PATH);
+        // A client component now — it holds load-failure state.
+        expect(src).toMatch(/^'use client';/);
+        expect(src).toMatch(/imageUrl\?:\s*string\s*\|\s*null/);
+        expect(src).toMatch(/<img\b/);
+        // The image must degrade to initials on load failure — never a
+        // broken-image glyph.
+        expect(src).toMatch(/onError=/);
+    });
+
+    it('admin/members feeds User.image to the avatar', () => {
+        const src = read(MEMBERS_PATH);
+        expect(src).toMatch(/<InitialsAvatar[\s\S]*?imageUrl=\{m\.user\.image\}/);
+    });
+
+    it('user-combobox feeds User.image to the avatar', () => {
+        const src = read(USER_COMBOBOX_PATH);
+        expect(src).toMatch(/<InitialsAvatar[\s\S]*?imageUrl=\{member\.image\}/);
+    });
+});
