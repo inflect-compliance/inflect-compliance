@@ -23,11 +23,10 @@ export const POST = withApiErrorHandling(
         CloseBodySchema,
         async (
             req,
-            {
-                params,
-            }: { params: { tenantSlug: string; assessmentId: string } },
+            { params: paramsPromise }: { params: Promise<{ tenantSlug: string; assessmentId: string }> },
             body,
         ) => {
+            const params = await paramsPromise;
             const ctx = await getTenantCtx(params, req);
             const result = await closeAssessment(
                 ctx,

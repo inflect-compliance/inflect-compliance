@@ -8,9 +8,10 @@ import { jsonResponse } from '@/lib/api-response';
 
 export const POST = withApiErrorHandling(withValidatedBody(RiskAssessmentInputSchema, async (
     req: NextRequest,
-    { params }: { params: { tenantSlug: string } },
+    { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> },
     body,
 ) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const input = { frameworks: body.frameworks ?? [], assetIds: body.assetIds ?? [], context: body.context };
     const result = await generateRiskSuggestions(ctx, input);

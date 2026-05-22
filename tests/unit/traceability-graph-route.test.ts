@@ -101,7 +101,7 @@ describe('GET /api/t/[tenantSlug]/traceability/graph', () => {
         getGraphMock.mockResolvedValue(samplePayload);
 
         const res = await GET(makeRequest(), {
-            params: { tenantSlug: 'acme' },
+            params: Promise.resolve({ tenantSlug: 'acme' }),
         });
         expect(res.status).toBe(200);
         const body = await res.json();
@@ -117,7 +117,7 @@ describe('GET /api/t/[tenantSlug]/traceability/graph', () => {
         getGraphMock.mockResolvedValue(samplePayload);
 
         await GET(makeRequest('?kinds=control,risk'), {
-            params: { tenantSlug: 'acme' },
+            params: Promise.resolve({ tenantSlug: 'acme' }),
         });
         expect(getGraphMock).toHaveBeenCalledTimes(1);
         const opts = getGraphMock.mock.calls[0][1];
@@ -129,7 +129,7 @@ describe('GET /api/t/[tenantSlug]/traceability/graph', () => {
         getGraphMock.mockResolvedValue(samplePayload);
 
         const res = await GET(makeRequest('?kinds=control,frobnicator,risk'), {
-            params: { tenantSlug: 'acme' },
+            params: Promise.resolve({ tenantSlug: 'acme' }),
         });
         expect(res.status).toBe(200);
         const opts = getGraphMock.mock.calls[0][1];
@@ -141,7 +141,7 @@ describe('GET /api/t/[tenantSlug]/traceability/graph', () => {
         getGraphMock.mockResolvedValue(samplePayload);
 
         await GET(makeRequest('?focusId=c1&focusRadius=2'), {
-            params: { tenantSlug: 'acme' },
+            params: Promise.resolve({ tenantSlug: 'acme' }),
         });
         const opts = getGraphMock.mock.calls[0][1];
         expect(opts.filters.focusId).toBe('c1');
@@ -153,7 +153,7 @@ describe('GET /api/t/[tenantSlug]/traceability/graph', () => {
         getGraphMock.mockResolvedValue(samplePayload);
 
         await GET(makeRequest('?focusId=c1&focusRadius=99'), {
-            params: { tenantSlug: 'acme' },
+            params: Promise.resolve({ tenantSlug: 'acme' }),
         });
         const opts = getGraphMock.mock.calls[0][1];
         // Out-of-range radius is silently dropped — focusId still
@@ -167,7 +167,7 @@ describe('GET /api/t/[tenantSlug]/traceability/graph', () => {
         getGraphMock.mockRejectedValue(forbidden('Authentication required'));
 
         const res = await GET(makeRequest(), {
-            params: { tenantSlug: 'acme' },
+            params: Promise.resolve({ tenantSlug: 'acme' }),
         });
         expect(res.status).toBe(403);
     });

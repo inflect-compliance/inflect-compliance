@@ -7,7 +7,8 @@ import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
 
 // Submit, Approve, or Reject evidence
-export const POST = withApiErrorHandling(withValidatedBody(EvidenceReviewSchema, async (req, { params }: { params: { tenantSlug: string; id: string } }, body) => {
+export const POST = withApiErrorHandling(withValidatedBody(EvidenceReviewSchema, async (req, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; id: string }> }, body) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const result = await reviewEvidence(ctx, params.id, body);
     return jsonResponse(result);

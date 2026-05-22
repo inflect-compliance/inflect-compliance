@@ -12,8 +12,9 @@ import { jsonResponse } from '@/lib/api-response';
  */
 export const GET = withApiErrorHandling(async (
     req: NextRequest,
-    { params }: { params: { tenantSlug: string } },
+    { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> },
 ) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const status = await getUserMfaStatus(ctx);
 
@@ -28,8 +29,9 @@ export const GET = withApiErrorHandling(async (
  */
 export const DELETE = withApiErrorHandling(async (
     req: NextRequest,
-    { params }: { params: { tenantSlug: string } },
+    { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> },
 ) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
 
     let targetUserId: string | undefined;

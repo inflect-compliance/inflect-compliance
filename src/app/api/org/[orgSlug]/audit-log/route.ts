@@ -34,14 +34,14 @@ import { badRequest, forbidden } from '@/lib/errors/types';
 import { OrgAuditAction } from '@prisma/client';
 
 interface RouteContext {
-    params: { orgSlug: string };
+    params: Promise<{ orgSlug: string }>;
 }
 
 const VALID_ACTIONS = new Set<string>(Object.values(OrgAuditAction));
 
 export const GET = withApiErrorHandling(
     async (req: NextRequest, routeCtx: RouteContext) => {
-        const ctx = await getOrgCtx(routeCtx.params, req);
+        const ctx = await getOrgCtx((await routeCtx.params), req);
         if (!ctx.permissions.canManageMembers) {
             throw forbidden(
                 'You do not have permission to view the audit log of this organization',

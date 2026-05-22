@@ -7,7 +7,8 @@ import { retestFromRun } from '@/app-layer/usecases/control-test';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
 
-export const POST = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string; runId: string } }) => {
+export const POST = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; runId: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const run = await retestFromRun(ctx, params.runId);
     return jsonResponse(run, { status: 201 });

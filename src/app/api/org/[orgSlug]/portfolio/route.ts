@@ -45,12 +45,12 @@ type View = (typeof SUPPORTED_VIEWS)[number];
 const DRILL_DOWN_VIEWS: ReadonlySet<View> = new Set(['controls', 'risks', 'evidence']);
 
 interface RouteContext {
-    params: { orgSlug: string };
+    params: Promise<{ orgSlug: string }>;
 }
 
 export const GET = withApiErrorHandling(
     async (req: NextRequest, routeCtx: RouteContext) => {
-        const ctx = await getOrgCtx(routeCtx.params, req);
+        const ctx = await getOrgCtx((await routeCtx.params), req);
 
         const rawView = req.nextUrl.searchParams.get('view');
         if (!rawView) {

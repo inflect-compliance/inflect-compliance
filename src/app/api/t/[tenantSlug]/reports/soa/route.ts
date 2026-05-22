@@ -12,7 +12,8 @@ const SoAQuerySchema = z.object({
     includeTests: z.enum(['true', 'false']).default('false'),
 }).strip();
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const sp = Object.fromEntries(req.nextUrl.searchParams.entries());
     const query = SoAQuerySchema.parse(sp);

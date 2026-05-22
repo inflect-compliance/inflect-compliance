@@ -103,7 +103,7 @@ describe('GET /api/t/[tenantSlug]/frameworks/[frameworkKey]/tree', () => {
         getFrameworkTreeMock.mockResolvedValue(samplePayload);
 
         const res = await GET(makeRequest(), {
-            params: { tenantSlug: 'acme', frameworkKey: 'ISO27001' },
+            params: Promise.resolve({ tenantSlug: 'acme', frameworkKey: 'ISO27001' }),
         });
         expect(res.status).toBe(200);
         const body = await res.json();
@@ -148,7 +148,7 @@ describe('GET /api/t/[tenantSlug]/frameworks/[frameworkKey]/tree', () => {
         };
         getFrameworkTreeMock.mockResolvedValue(decorated);
         const res = await GET(makeRequest(), {
-            params: { tenantSlug: 'acme', frameworkKey: 'ISO27001' },
+            params: Promise.resolve({ tenantSlug: 'acme', frameworkKey: 'ISO27001' }),
         });
         const body = await res.json();
         expect(body.nodes[0].complianceStatus).toBe('partial');
@@ -161,7 +161,7 @@ describe('GET /api/t/[tenantSlug]/frameworks/[frameworkKey]/tree', () => {
         getFrameworkTreeMock.mockResolvedValue(samplePayload);
 
         await GET(makeRequest('?version=2022'), {
-            params: { tenantSlug: 'acme', frameworkKey: 'ISO27001' },
+            params: Promise.resolve({ tenantSlug: 'acme', frameworkKey: 'ISO27001' }),
         });
         expect(getFrameworkTreeMock.mock.calls[0][2]).toBe('2022');
     });
@@ -174,7 +174,7 @@ describe('GET /api/t/[tenantSlug]/frameworks/[frameworkKey]/tree', () => {
         getFrameworkTreeMock.mockRejectedValue(forbidden('Authentication required'));
 
         const res = await GET(makeRequest(), {
-            params: { tenantSlug: 'acme', frameworkKey: 'ISO27001' },
+            params: Promise.resolve({ tenantSlug: 'acme', frameworkKey: 'ISO27001' }),
         });
         expect(res.status).toBe(403);
     });
@@ -184,7 +184,7 @@ describe('GET /api/t/[tenantSlug]/frameworks/[frameworkKey]/tree', () => {
         getFrameworkTreeMock.mockRejectedValue(notFound('Framework not found'));
 
         const res = await GET(makeRequest(), {
-            params: { tenantSlug: 'acme', frameworkKey: 'no-such-fw' },
+            params: Promise.resolve({ tenantSlug: 'acme', frameworkKey: 'no-such-fw' }),
         });
         expect(res.status).toBe(404);
     });

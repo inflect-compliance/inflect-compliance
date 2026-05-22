@@ -8,7 +8,8 @@ import { jsonResponse } from '@/lib/api-response';
 
 // POST /api/t/[tenantSlug]/policies/[id]/versions — create new version
 export const POST = withApiErrorHandling(
-    withValidatedBody(CreatePolicyVersionSchema, async (req: NextRequest, { params }: { params: { tenantSlug: string; id: string } }, body) => {
+    withValidatedBody(CreatePolicyVersionSchema, async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; id: string }> }, body) => {
+        const params = await paramsPromise;
         const ctx = await getTenantCtx(params, req);
         const version = await policyUsecases.createPolicyVersion(ctx, params.id, body);
         return jsonResponse(version, { status: 201 });

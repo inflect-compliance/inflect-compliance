@@ -5,7 +5,8 @@ import { processOutbox } from '@/app-layer/notifications/processOutbox';
 import { runDailyEvidenceExpiryNotifications } from '@/app-layer/jobs/dailyEvidenceExpiry';
 import { jsonResponse } from '@/lib/api-response';
 
-export const POST = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string } }) => {
+export const POST = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     // Epic 1 — OWNER is a superset of ADMIN per CLAUDE.md RBAC.
     if (ctx.role !== 'OWNER' && ctx.role !== 'ADMIN') {

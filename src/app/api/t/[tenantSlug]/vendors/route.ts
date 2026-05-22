@@ -20,7 +20,8 @@ const VendorQuerySchema = z.object({
     q: z.string().optional().transform(normalizeQ),
 }).strip();
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const sp = Object.fromEntries(req.nextUrl.searchParams.entries());
     const query = VendorQuerySchema.parse(sp);
@@ -64,7 +65,8 @@ export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { p
     return jsonResponse(result);
 });
 
-export const POST = withApiErrorHandling(withValidatedBody(CreateVendorSchema, async (req: NextRequest, { params }: { params: { tenantSlug: string } }, body) => {
+export const POST = withApiErrorHandling(withValidatedBody(CreateVendorSchema, async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }, body) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const vendor = await createVendor(ctx, body);
     return jsonResponse(vendor, { status: 201 });

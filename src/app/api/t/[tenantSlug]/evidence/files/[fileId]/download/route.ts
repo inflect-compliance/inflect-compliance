@@ -10,7 +10,8 @@ import { getTenantCtx } from '@/app-layer/context';
 import { downloadEvidenceFile } from '@/app-layer/usecases/evidence';
 import { withApiErrorHandling } from '@/lib/errors/api';
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string; fileId: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; fileId: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const result = await downloadEvidenceFile(ctx, params.fileId);
 

@@ -98,7 +98,7 @@ describe('GET /api/org/[orgSlug]/portfolio', () => {
 
         const res = await viewGET(
             makeRequest('/api/org/acme-org/portfolio'),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
         expect(res.status).toBe(400);
     });
@@ -108,7 +108,7 @@ describe('GET /api/org/[orgSlug]/portfolio', () => {
 
         const res = await viewGET(
             makeRequest('/api/org/acme-org/portfolio?view=anything-else'),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
         expect(res.status).toBe(400);
     });
@@ -119,7 +119,7 @@ describe('GET /api/org/[orgSlug]/portfolio', () => {
 
         const res = await viewGET(
             makeRequest('/api/org/acme-org/portfolio?view=summary'),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
         expect(res.status).toBe(200);
         const body = await res.json();
@@ -133,7 +133,7 @@ describe('GET /api/org/[orgSlug]/portfolio', () => {
 
         const res = await viewGET(
             makeRequest('/api/org/acme-org/portfolio?view=health'),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
         const body = await res.json();
         expect(body.rows).toEqual([{ tenantId: 't-1' }]);
@@ -145,7 +145,7 @@ describe('GET /api/org/[orgSlug]/portfolio', () => {
 
         await viewGET(
             makeRequest('/api/org/acme-org/portfolio?view=trends&days=30'),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
         expect(getPortfolioTrendsMock).toHaveBeenCalledWith(adminCtx, 30);
     });
@@ -156,7 +156,7 @@ describe('GET /api/org/[orgSlug]/portfolio', () => {
 
         await viewGET(
             makeRequest('/api/org/acme-org/portfolio?view=trends'),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
         expect(getPortfolioTrendsMock).toHaveBeenCalledWith(adminCtx, 90);
     });
@@ -166,7 +166,7 @@ describe('GET /api/org/[orgSlug]/portfolio', () => {
 
         const res = await viewGET(
             makeRequest('/api/org/acme-org/portfolio?view=trends&days=abc'),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
         expect(res.status).toBe(400);
     });
@@ -180,7 +180,7 @@ describe('GET /api/org/[orgSlug]/portfolio', () => {
 
         const res = await viewGET(
             makeRequest('/api/org/acme-org/portfolio?view=controls'),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
         const body = await res.json();
         expect(body.rows).toEqual([{ controlId: 'c-1' }]);
@@ -198,7 +198,7 @@ describe('GET /api/org/[orgSlug]/portfolio', () => {
             makeRequest(
                 '/api/org/acme-org/portfolio?view=controls&cursor=opaque-cursor&limit=25',
             ),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
         expect(res.status).toBe(200);
         expect(listNonPerformingControlsMock).toHaveBeenCalledTimes(1);
@@ -215,7 +215,7 @@ describe('GET /api/org/[orgSlug]/portfolio', () => {
         for (const v of ['controls', 'risks', 'evidence']) {
             const res = await viewGET(
                 makeRequest(`/api/org/acme-org/portfolio?view=${v}`),
-                { params: { orgSlug: 'acme-org' } },
+                { params: Promise.resolve({ orgSlug: 'acme-org' }) },
             );
             expect(res.status).toBe(403);
         }
@@ -233,7 +233,7 @@ describe('GET /api/org/[orgSlug]/portfolio', () => {
         for (const v of ['summary', 'health', 'trends']) {
             const res = await viewGET(
                 makeRequest(`/api/org/acme-org/portfolio?view=${v}`),
-                { params: { orgSlug: 'acme-org' } },
+                { params: Promise.resolve({ orgSlug: 'acme-org' }) },
             );
             expect(res.status).toBe(200);
         }
@@ -248,7 +248,7 @@ describe('GET /api/org/[orgSlug]/portfolio', () => {
 
         const res = await viewGET(
             makeRequest('/api/org/acme-org/portfolio?view=risks'),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
         const body = await res.json();
         expect(body.rows).toEqual([{ riskId: 'r-1' }]);
@@ -264,7 +264,7 @@ describe('GET /api/org/[orgSlug]/portfolio', () => {
 
         const res = await viewGET(
             makeRequest('/api/org/acme-org/portfolio?view=evidence'),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
         const body = await res.json();
         expect(body.rows).toEqual([{ evidenceId: 'e-1' }]);
@@ -277,7 +277,7 @@ describe('GET /api/org/[orgSlug]/portfolio', () => {
 
         const res = await viewGET(
             makeRequest('/api/org/acme-org/portfolio?view=risks&limit=not-a-number'),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
         expect(res.status).toBe(200);
         // No `limit` key in the call args → usecase falls back to default.
@@ -332,7 +332,7 @@ describe('GET /api/org/[orgSlug]/portfolio/export', () => {
 
         const res = await exportGET(
             makeRequest('/api/org/acme-org/portfolio/export'),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
         expect(res.status).toBe(200);
         expect(res.headers.get('content-type')).toMatch(/text\/csv/);
@@ -361,7 +361,7 @@ describe('GET /api/org/[orgSlug]/portfolio/export', () => {
 
         const res = await exportGET(
             makeRequest('/api/org/acme-org/portfolio/export'),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
         const body = await res.text();
         // Section banners present
@@ -385,7 +385,7 @@ describe('GET /api/org/[orgSlug]/portfolio/export', () => {
 
         const res = await exportGET(
             makeRequest('/api/org/acme-org/portfolio/export'),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
         expect(res.status).toBe(200);
         const body = await res.text();
@@ -411,7 +411,7 @@ describe('GET /api/org/[orgSlug]/portfolio/export', () => {
 
         const res = await exportGET(
             makeRequest('/api/org/acme-org/portfolio/export'),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
         expect(res.status).toBe(403);
 
@@ -438,7 +438,7 @@ describe('GET /api/org/[orgSlug]/portfolio/export', () => {
 
         const res = await exportGET(
             makeRequest('/api/org/acme-org/portfolio/export'),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
         const body = await res.text();
         // Quoted + escaped value should appear

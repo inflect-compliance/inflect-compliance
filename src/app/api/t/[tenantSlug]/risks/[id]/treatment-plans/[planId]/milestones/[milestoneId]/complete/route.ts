@@ -17,18 +17,15 @@ export const POST = withApiErrorHandling(
         CompleteMilestoneSchema,
         async (
             req: NextRequest,
-            {
-                params,
-            }: {
-                params: {
+            { params: paramsPromise }: { params: Promise<{
                     tenantSlug: string;
                     id: string;
                     planId: string;
                     milestoneId: string;
-                };
-            },
+                }> },
             body,
         ) => {
+            const params = await paramsPromise;
             const ctx = await getTenantCtx(params, req);
             const result = await completeMilestone(
                 ctx,

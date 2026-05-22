@@ -3,7 +3,8 @@ import { getLegacyCtx } from '@/app-layer/context';
 import { downloadFile } from '@/app-layer/usecases/file';
 import { withApiErrorHandling } from '@/lib/errors/api';
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { fileName: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ fileName: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getLegacyCtx(req);
     const result = await downloadFile(ctx, params.fileName);
     return new NextResponse(result.buffer as unknown as BodyInit, {

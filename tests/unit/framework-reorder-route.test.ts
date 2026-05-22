@@ -67,7 +67,7 @@ describe('POST /api/t/[slug]/frameworks/[key]/reorder', () => {
         reorderMock.mockResolvedValue({ updated: 3 });
 
         const res = await POST(makeRequest(validBody), {
-            params: { tenantSlug: 'acme', frameworkKey: 'ISO27001' },
+            params: Promise.resolve({ tenantSlug: 'acme', frameworkKey: 'ISO27001' }),
         });
         expect(res.status).toBe(200);
         const body = await res.json();
@@ -81,7 +81,7 @@ describe('POST /api/t/[slug]/frameworks/[key]/reorder', () => {
         getTenantCtxMock.mockResolvedValue(ctxFor('ADMIN'));
 
         const res = await POST(makeRequest({}), {
-            params: { tenantSlug: 'acme', frameworkKey: 'ISO27001' },
+            params: Promise.resolve({ tenantSlug: 'acme', frameworkKey: 'ISO27001' }),
         });
         expect(res.status).toBe(400);
         expect(reorderMock).not.toHaveBeenCalled();
@@ -90,7 +90,7 @@ describe('POST /api/t/[slug]/frameworks/[key]/reorder', () => {
     it('returns 400 on malformed body (sections is not an array)', async () => {
         getTenantCtxMock.mockResolvedValue(ctxFor('ADMIN'));
         const res = await POST(makeRequest({ sections: 'oops' }), {
-            params: { tenantSlug: 'acme', frameworkKey: 'ISO27001' },
+            params: Promise.resolve({ tenantSlug: 'acme', frameworkKey: 'ISO27001' }),
         });
         expect(res.status).toBe(400);
     });
@@ -101,7 +101,7 @@ describe('POST /api/t/[slug]/frameworks/[key]/reorder', () => {
             forbidden('Only OWNER or ADMIN can install framework packs'),
         );
         const res = await POST(makeRequest(validBody), {
-            params: { tenantSlug: 'acme', frameworkKey: 'ISO27001' },
+            params: Promise.resolve({ tenantSlug: 'acme', frameworkKey: 'ISO27001' }),
         });
         expect(res.status).toBe(403);
     });
@@ -110,7 +110,7 @@ describe('POST /api/t/[slug]/frameworks/[key]/reorder', () => {
         getTenantCtxMock.mockResolvedValue(ctxFor('ADMIN'));
         reorderMock.mockRejectedValue(notFound('Framework not found'));
         const res = await POST(makeRequest(validBody), {
-            params: { tenantSlug: 'acme', frameworkKey: 'no-such-fw' },
+            params: Promise.resolve({ tenantSlug: 'acme', frameworkKey: 'no-such-fw' }),
         });
         expect(res.status).toBe(404);
     });

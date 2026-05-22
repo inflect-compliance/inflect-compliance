@@ -14,10 +14,9 @@ import { jsonResponse } from '@/lib/api-response';
 export const GET = withApiErrorHandling(
     async (
         req: NextRequest,
-        {
-            params,
-        }: { params: { tenantSlug: string; reviewId: string } },
+        { params: paramsPromise }: { params: Promise<{ tenantSlug: string; reviewId: string }> },
     ) => {
+        const params = await paramsPromise;
         const ctx = await getTenantCtx(params, req);
         const review = await getAccessReviewWithActivity(
             ctx,

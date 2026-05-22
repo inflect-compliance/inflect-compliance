@@ -5,7 +5,8 @@ import { getTaskMetrics } from '@/app-layer/usecases/task';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const metrics = await getTaskMetrics(ctx);
     return jsonResponse(metrics);

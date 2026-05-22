@@ -17,8 +17,9 @@ import { jsonResponse } from '@/lib/api-response';
  */
 export const GET = withApiErrorHandling(async (
     req: NextRequest,
-    { params }: { params: { tenantSlug: string } },
+    { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> },
 ) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const settings = await getTenantSecuritySettings(ctx);
     return jsonResponse(settings);

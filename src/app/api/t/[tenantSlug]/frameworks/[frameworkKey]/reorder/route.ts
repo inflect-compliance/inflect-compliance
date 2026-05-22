@@ -41,8 +41,9 @@ const ReorderSchema = z
 export const POST = withApiErrorHandling(
     async (
         req: NextRequest,
-        { params }: { params: { tenantSlug: string; frameworkKey: string } },
+        { params: paramsPromise }: { params: Promise<{ tenantSlug: string; frameworkKey: string }> },
     ) => {
+        const params = await paramsPromise;
         const ctx = await getTenantCtx(params, req);
         const raw = await req.json();
         const body = ReorderSchema.parse(raw);

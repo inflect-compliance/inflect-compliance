@@ -11,7 +11,8 @@ import {
 import { jsonResponse } from '@/lib/api-response';
 
 /** GET — returns tenant notification settings + outbox stats */
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     assertCanAdmin(ctx);
 
@@ -26,7 +27,8 @@ export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { p
 });
 
 /** PUT — update tenant notification settings (admin-only) */
-export const PUT = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string } }) => {
+export const PUT = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     assertCanAdmin(ctx);
 

@@ -27,8 +27,9 @@ import { CalendarQuerySchema } from '@/app-layer/schemas/calendar.schemas';
 export const GET = withApiErrorHandling(
     async (
         req: NextRequest,
-        { params }: { params: { tenantSlug: string } },
+        { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> },
     ) => {
+        const params = await paramsPromise;
         const ctx = await getTenantCtx(params, req);
         const sp = Object.fromEntries(req.nextUrl.searchParams.entries());
         const query = CalendarQuerySchema.parse(sp);

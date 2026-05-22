@@ -10,7 +10,8 @@ import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
 
 export const GET = withApiErrorHandling(
-    async (req: NextRequest, { params }: { params: { tenantSlug: string } }) => {
+    async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
+        const params = await paramsPromise;
         const ctx = await getTenantCtx(params, req);
         const maps = await listProcessMaps(ctx);
         return jsonResponse(maps);
@@ -22,9 +23,10 @@ export const POST = withApiErrorHandling(
         CreateProcessMapSchema,
         async (
             req,
-            { params }: { params: { tenantSlug: string } },
+            { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> },
             body,
         ) => {
+            const params = await paramsPromise;
             const ctx = await getTenantCtx(params, req);
             const map = await createProcessMap(ctx, body);
             return jsonResponse(map, { status: 201 });

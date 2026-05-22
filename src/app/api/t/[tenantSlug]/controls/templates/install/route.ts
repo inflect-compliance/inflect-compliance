@@ -7,7 +7,8 @@ import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
 
 // POST /controls/templates/install — install controls from templates
-export const POST = withApiErrorHandling(withValidatedBody(InstallTemplatesSchema, async (req, { params }: { params: { tenantSlug: string } }, body) => {
+export const POST = withApiErrorHandling(withValidatedBody(InstallTemplatesSchema, async (req, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }, body) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const results = await installControlsFromTemplate(ctx, body.templateIds);
     return jsonResponse(results, { status: 201 });

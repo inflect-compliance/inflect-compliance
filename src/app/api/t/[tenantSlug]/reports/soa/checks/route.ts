@@ -8,7 +8,8 @@ import { jsonResponse } from '@/lib/api-response';
 export { runSoAChecks };
 export type { SoACheck, SoAChecksResult } from '@/app-layer/usecases/soa-checks';
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const report = await getSoA(ctx, {
         includeEvidence: true,

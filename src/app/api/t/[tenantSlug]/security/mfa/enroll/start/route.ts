@@ -17,8 +17,9 @@ import { jsonResponse } from '@/lib/api-response';
  */
 export const POST = withApiErrorHandling(async (
     req: NextRequest,
-    { params }: { params: { tenantSlug: string } },
+    { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> },
 ) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
 
     // Check if user already has verified MFA — prevent re-enrollment without explicit removal

@@ -14,8 +14,9 @@ import { jsonResponse } from '@/lib/api-response';
  */
 export const POST = withApiErrorHandling(async (
     req: NextRequest,
-    { params }: { params: { tenantSlug: string; controlId: string } }
+    { params: paramsPromise }: { params: Promise<{ tenantSlug: string; controlId: string }> }
 ) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     if (!ctx.permissions?.canWrite) throw forbidden('Write permission required');
 
@@ -34,8 +35,9 @@ export const POST = withApiErrorHandling(async (
  */
 export const GET = withApiErrorHandling(async (
     req: NextRequest,
-    { params }: { params: { tenantSlug: string; controlId: string } }
+    { params: paramsPromise }: { params: Promise<{ tenantSlug: string; controlId: string }> }
 ) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
 
     const { PrismaSyncMappingStore } = await import('@/app-layer/integrations/prisma-sync-store');

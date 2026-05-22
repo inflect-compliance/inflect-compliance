@@ -13,12 +13,9 @@ import { notFound } from '@/lib/errors/types';
 export const GET = withApiErrorHandling(
     async (
         req: NextRequest,
-        {
-            params,
-        }: {
-            params: { tenantSlug: string; id: string; planId: string };
-        },
+        { params: paramsPromise }: { params: Promise<{ tenantSlug: string; id: string; planId: string }> },
     ) => {
+        const params = await paramsPromise;
         const ctx = await getTenantCtx(params, req);
         const plan = await getTreatmentPlan(ctx, params.planId);
         if (plan.riskId !== params.id) {

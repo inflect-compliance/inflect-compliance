@@ -24,8 +24,9 @@ import { jsonResponse } from '@/lib/api-response';
 export const GET = withApiErrorHandling(
     async (
         req: NextRequest,
-        { params }: { params: { tenantSlug: string; controlId: string } },
+        { params: paramsPromise }: { params: Promise<{ tenantSlug: string; controlId: string }> },
     ) => {
+        const params = await paramsPromise;
         const ctx = await getTenantCtx(params, req);
         return jsonResponse(await getControlPageData(ctx, params.controlId));
     },

@@ -8,7 +8,8 @@ import { jsonResponse } from '@/lib/api-response';
 import { LIST_BACKFILL_CAP, applyBackfillCap } from '@/lib/list-backfill-cap';
 import { recordListPageRowCount } from '@/lib/observability/list-page-metrics';
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     // PR-5 — backfill cap.
     const findings = await listFindings(ctx, { take: LIST_BACKFILL_CAP + 1 });
@@ -23,7 +24,8 @@ export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { p
     return jsonResponse(result);
 });
 
-export const POST = withApiErrorHandling(withValidatedBody(CreateFindingSchema, async (req, { params }: { params: { tenantSlug: string } }, body) => {
+export const POST = withApiErrorHandling(withValidatedBody(CreateFindingSchema, async (req, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }, body) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const finding = await createFinding(ctx, body);
     return jsonResponse(finding, { status: 201 });

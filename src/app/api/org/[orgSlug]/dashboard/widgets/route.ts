@@ -22,12 +22,12 @@ import {
 } from '@/app-layer/usecases/org-dashboard-widgets';
 
 interface RouteContext {
-    params: { orgSlug: string };
+    params: Promise<{ orgSlug: string }>;
 }
 
 export const GET = withApiErrorHandling(
     async (req: NextRequest, routeCtx: RouteContext) => {
-        const ctx = await getOrgCtx(routeCtx.params, req);
+        const ctx = await getOrgCtx((await routeCtx.params), req);
         const widgets = await listOrgDashboardWidgets(ctx);
         return NextResponse.json({ widgets });
     },
@@ -37,7 +37,7 @@ export const POST = withApiErrorHandling(
     withValidatedBody(
         CreateOrgDashboardWidgetInput,
         async (req: NextRequest, routeCtx: RouteContext, body) => {
-            const ctx = await getOrgCtx(routeCtx.params, req);
+            const ctx = await getOrgCtx((await routeCtx.params), req);
             const widget = await createOrgDashboardWidget(ctx, body);
             return NextResponse.json({ widget }, { status: 201 });
         },

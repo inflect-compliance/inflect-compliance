@@ -22,14 +22,14 @@ import { createTenantUnderOrg } from '@/app-layer/usecases/org-tenants';
 import { forbidden } from '@/lib/errors/types';
 
 interface RouteContext {
-    params: { orgSlug: string };
+    params: Promise<{ orgSlug: string }>;
 }
 
 export const POST = withApiErrorHandling(
     withValidatedBody(
         CreateOrgTenantInput,
         async (req: NextRequest, routeCtx: RouteContext, body) => {
-            const ctx = await getOrgCtx(routeCtx.params, req);
+            const ctx = await getOrgCtx((await routeCtx.params), req);
             if (!ctx.permissions.canManageTenants) {
                 throw forbidden('You do not have permission to create tenants in this organization');
             }
@@ -52,7 +52,7 @@ export const POST = withApiErrorHandling(
 
 export const GET = withApiErrorHandling(
     async (req: NextRequest, routeCtx: RouteContext) => {
-        const ctx = await getOrgCtx(routeCtx.params, req);
+        const ctx = await getOrgCtx((await routeCtx.params), req);
 
         const tenants = await prisma.tenant.findMany({
             where: { organizationId: ctx.organizationId },

@@ -9,7 +9,8 @@ import { CompleteTestRunSchema } from '@/lib/schemas';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
 
-export const POST = withApiErrorHandling(withValidatedBody(CompleteTestRunSchema, async (req, { params }: { params: { tenantSlug: string; runId: string } }, body) => {
+export const POST = withApiErrorHandling(withValidatedBody(CompleteTestRunSchema, async (req, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; runId: string }> }, body) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const run = await completeTestRun(ctx, params.runId, body);
     return jsonResponse(run);

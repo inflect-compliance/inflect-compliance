@@ -26,17 +26,14 @@ export const PUT = withApiErrorHandling(
         SubmitDecisionSchema,
         async (
             req: NextRequest,
-            {
-                params,
-            }: {
-                params: {
+            { params: paramsPromise }: { params: Promise<{
                     tenantSlug: string;
                     reviewId: string;
                     decisionId: string;
-                };
-            },
+                }> },
             body,
         ) => {
+            const params = await paramsPromise;
             const ctx = await getTenantCtx(params, req);
             const result = await submitDecision(
                 ctx,

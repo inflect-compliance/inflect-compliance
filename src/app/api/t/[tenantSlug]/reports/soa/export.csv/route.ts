@@ -25,7 +25,8 @@ function escapeCSV(value: string | null | undefined): string {
     return s;
 }
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
 
     const report = await getSoA(ctx, {

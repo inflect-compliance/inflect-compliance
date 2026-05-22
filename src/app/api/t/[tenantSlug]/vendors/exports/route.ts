@@ -36,7 +36,8 @@ function flattenObj(obj: Record<string, any>, prefix = ''): Record<string, any> 
     return result;
 }
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const url = new URL(req.url);
     const type = url.searchParams.get('type') || 'vendors';

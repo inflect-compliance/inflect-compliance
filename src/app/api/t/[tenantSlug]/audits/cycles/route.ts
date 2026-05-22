@@ -13,12 +13,14 @@ const CreateCycleSchema = z.object({
     periodEndAt: z.string().optional(),
 }).strip();
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     return jsonResponse(await listAuditCycles(ctx));
 });
 
-export const POST = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string } }) => {
+export const POST = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const body = CreateCycleSchema.parse(await req.json());
     return jsonResponse(await createAuditCycle(ctx, body), { status: 201 });

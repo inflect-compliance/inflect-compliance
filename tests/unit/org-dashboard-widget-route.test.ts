@@ -100,7 +100,7 @@ describe('GET /api/org/[orgSlug]/dashboard/widgets', () => {
         ]);
 
         const res = await listGet(makeReq('GET'), {
-            params: { orgSlug: 'acme-org' },
+            params: Promise.resolve({ orgSlug: 'acme-org' }),
         });
         expect(res.status).toBe(200);
         const body = await res.json();
@@ -119,7 +119,7 @@ describe('POST /api/org/[orgSlug]/dashboard/widgets', () => {
         });
 
         const res = await createPost(makeReq('POST', VALID_KPI_PAYLOAD), {
-            params: { orgSlug: 'acme-org' },
+            params: Promise.resolve({ orgSlug: 'acme-org' }),
         });
         expect(res.status).toBe(201);
         const body = await res.json();
@@ -135,7 +135,7 @@ describe('POST /api/org/[orgSlug]/dashboard/widgets', () => {
                 ...VALID_KPI_PAYLOAD,
                 chartType: 'made-up-metric',
             }),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
         expect(res.status).toBe(400);
         expect(createOrgDashboardWidgetMock).not.toHaveBeenCalled();
@@ -149,7 +149,7 @@ describe('POST /api/org/[orgSlug]/dashboard/widgets', () => {
                 ...VALID_KPI_PAYLOAD,
                 position: { x: 999, y: 0 },
             }),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
         expect(res.status).toBe(400);
         expect(createOrgDashboardWidgetMock).not.toHaveBeenCalled();
@@ -177,7 +177,7 @@ describe('PATCH /api/org/[orgSlug]/dashboard/widgets/[widgetId]', () => {
 
         const res = await updatePatch(
             makePatchReq({ position: { x: 4, y: 2 } }),
-            { params: { orgSlug: 'acme-org', widgetId: 'w-1' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org', widgetId: 'w-1' }) },
         );
         expect(res.status).toBe(200);
         const body = await res.json();
@@ -189,7 +189,7 @@ describe('PATCH /api/org/[orgSlug]/dashboard/widgets/[widgetId]', () => {
 
         const res = await updatePatch(
             makePatchReq({ chartType: 'critical-risks' }),
-            { params: { orgSlug: 'acme-org', widgetId: 'w-1' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org', widgetId: 'w-1' }) },
         );
         expect(res.status).toBe(400);
         expect(updateOrgDashboardWidgetMock).not.toHaveBeenCalled();
@@ -209,7 +209,7 @@ describe('DELETE /api/org/[orgSlug]/dashboard/widgets/[widgetId]', () => {
                 'http://localhost/api/org/acme-org/dashboard/widgets/w-1',
                 { method: 'DELETE' },
             ),
-            { params: { orgSlug: 'acme-org', widgetId: 'w-1' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org', widgetId: 'w-1' }) },
         );
         expect(res.status).toBe(200);
         const body = await res.json();

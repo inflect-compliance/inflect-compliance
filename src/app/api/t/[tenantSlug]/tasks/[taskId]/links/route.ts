@@ -6,13 +6,15 @@ import { AddTaskLinkSchema } from '@/lib/schemas';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string; taskId: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; taskId: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const links = await listTaskLinks(ctx, params.taskId);
     return jsonResponse(links);
 });
 
-export const POST = withApiErrorHandling(withValidatedBody(AddTaskLinkSchema, async (req, { params }: { params: { tenantSlug: string; taskId: string } }, body) => {
+export const POST = withApiErrorHandling(withValidatedBody(AddTaskLinkSchema, async (req, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; taskId: string }> }, body) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const link = await addTaskLink(ctx, params.taskId, body.entityType, body.entityId, body.relation);
     return jsonResponse(link, { status: 201 });

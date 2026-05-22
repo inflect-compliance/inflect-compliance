@@ -23,8 +23,9 @@ import { jsonResponse } from '@/lib/api-response';
 export const GET = withApiErrorHandling(
     async (
         req: NextRequest,
-        { params }: { params: { tenantSlug: string; controlId: string } },
+        { params: paramsPromise }: { params: Promise<{ tenantSlug: string; controlId: string }> },
     ) => {
+        const params = await paramsPromise;
         const ctx = await getTenantCtx(params, req);
         const rows = await listControlExceptions(ctx, {
             controlId: params.controlId,
@@ -38,9 +39,10 @@ export const POST = withApiErrorHandling(
         RequestExceptionSchema,
         async (
             req: NextRequest,
-            { params }: { params: { tenantSlug: string; controlId: string } },
+            { params: paramsPromise }: { params: Promise<{ tenantSlug: string; controlId: string }> },
             body,
         ) => {
+            const params = await paramsPromise;
             const ctx = await getTenantCtx(params, req);
             // The body's controlId MUST match the path's controlId —
             // a mismatched body is a 400, not a silent override.

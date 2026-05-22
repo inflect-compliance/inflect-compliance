@@ -31,9 +31,9 @@ import { withApiErrorHandling } from '@/lib/errors/api';
 // inside would surface as a normal JSON 4xx/5xx, not the redirect).
 export const GET = withApiErrorHandling(async (
     req: NextRequest,
-    ctx: { params: { token: string } },
+    ctx: { params: Promise<{ token: string }> },
 ): Promise<NextResponse> => {
-    const { token } = ctx.params;
+    const { token } = await ctx.params;
 
     const response = NextResponse.redirect(
         new URL('/login', req.nextUrl.origin),

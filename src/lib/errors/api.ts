@@ -137,32 +137,15 @@ export function withApiErrorHandling<Context = unknown>(
         req: NextRequest,
         ctxIn: unknown,
     ): Promise<NextResponse | Response> => {
-        // The outer signature is `ApiRouteHandler<Context>` so both
-        // Next 16's RouteHandlerConfig (Promise<params>) and existing
-        // unit tests (sync params) can call this. Internally we reify
-        // `params` to its sync form (the runtime shim below) so the
-        // inner handler — which still types `params` synchronously —
-        // sees the expected shape.
-        let ctx = ctxIn as Context;
-        // ── GAP-05: Next 15 async-params transparent await ──
-        // Next 15 made `params` a Promise. Most route handlers in this
-        // codebase wrap their inner handler in `withApiErrorHandling`
-        // and access `params.id` synchronously — that worked under
-        // Next 14 but logs a deprecation warning under Next 15 and
-        // throws under Next 16. Resolving the params promise here
-        // (transparently to the inner handler) keeps the 250+ existing
-        // call sites correct without churn. The inner handler still
-        // types `params` as the sync object — at runtime it is one.
-        const ctxObj = ctx as { params?: { then?: unknown } } | null | undefined;
-        if (
-            ctxObj &&
-            typeof ctxObj === 'object' &&
-            ctxObj.params &&
-            typeof ctxObj.params.then === 'function'
-        ) {
-            const resolvedParams = await ctxObj.params;
-            ctx = { ...ctxObj, params: resolvedParams } as Context;
-        }
+        // GAP-05 follow-up (Roadmap-6 P3): the transparent async-params
+        // shim that once reified a Promise-shaped `ctx.params` to its
+        // sync form was removed once every route handler migrated to
+        // the Next 15 contract — each handler now types `params` as
+        // `Promise<…>` and `await`s it itself. `withApiErrorHandling`
+        // forwards `ctx` through untouched. (Unit tests that pass a
+        // plain sync `params` object still work: a migrated handler's
+        // `await params` resolves a non-thenable to itself.)
+        const ctx = ctxIn as Context;
         const requestId = req.headers.get('x-request-id') || generateRequestId();
         const route = req.nextUrl.pathname;
         const method = req.method;

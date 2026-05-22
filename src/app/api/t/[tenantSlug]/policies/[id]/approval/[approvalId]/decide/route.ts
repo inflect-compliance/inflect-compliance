@@ -8,7 +8,8 @@ import { jsonResponse } from '@/lib/api-response';
 
 // POST /api/t/[tenantSlug]/policies/[id]/approval/[approvalId]/decide — approve or reject
 export const POST = withApiErrorHandling(
-    withValidatedBody(DecideApprovalSchema, async (req: NextRequest, { params }: { params: { tenantSlug: string; id: string; approvalId: string } }, body) => {
+    withValidatedBody(DecideApprovalSchema, async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; id: string; approvalId: string }> }, body) => {
+        const params = await paramsPromise;
         const ctx = await getTenantCtx(params, req);
         const result = await policyUsecases.decidePolicyApproval(ctx, params.approvalId, body);
         return jsonResponse(result);

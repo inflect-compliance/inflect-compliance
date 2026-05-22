@@ -38,7 +38,8 @@ const CloneSchema = z.object({
     name: z.string().min(1).max(200).optional(),
 }).strip();
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string; packId: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; packId: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const url = new URL(req.url);
     const action = url.searchParams.get('action');
@@ -60,13 +61,15 @@ export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { p
     return jsonResponse(await getAuditPack(ctx, params.packId));
 });
 
-export const PATCH = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string; packId: string } }) => {
+export const PATCH = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; packId: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const body = UpdatePackSchema.parse(await req.json());
     return jsonResponse(await updateAuditPack(ctx, params.packId, body));
 });
 
-export const POST = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string; packId: string } }) => {
+export const POST = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; packId: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const url = new URL(req.url);
     const action = url.searchParams.get('action');

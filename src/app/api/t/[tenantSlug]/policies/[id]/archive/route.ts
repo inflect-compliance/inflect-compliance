@@ -5,7 +5,8 @@ import * as policyUsecases from '@/app-layer/usecases/policy';
 import { jsonResponse } from '@/lib/api-response';
 
 // POST /api/t/[tenantSlug]/policies/[id]/archive — archive policy (ADMIN)
-export const POST = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string; id: string } }) => {
+export const POST = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; id: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const result = await policyUsecases.archivePolicy(ctx, params.id);
     return jsonResponse(result);

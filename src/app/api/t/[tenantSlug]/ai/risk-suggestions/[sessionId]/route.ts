@@ -6,8 +6,9 @@ import { jsonResponse } from '@/lib/api-response';
 
 export const GET = withApiErrorHandling(async (
     req: NextRequest,
-    { params }: { params: { tenantSlug: string; sessionId: string } },
+    { params: paramsPromise }: { params: Promise<{ tenantSlug: string; sessionId: string }> },
 ) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const session = await getSession(ctx, params.sessionId);
     return jsonResponse(session);

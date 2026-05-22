@@ -13,16 +13,13 @@ import { notFound } from '@/lib/errors/types';
 export const GET = withApiErrorHandling(
     async (
         req: NextRequest,
-        {
-            params,
-        }: {
-            params: {
+        { params: paramsPromise }: { params: Promise<{
                 tenantSlug: string;
                 controlId: string;
                 exceptionId: string;
-            };
-        },
+            }> },
     ) => {
+        const params = await paramsPromise;
         const ctx = await getTenantCtx(params, req);
         const ex = await getControlException(ctx, params.exceptionId);
         // The exception MUST belong to the control in the URL —

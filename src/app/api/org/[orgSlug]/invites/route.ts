@@ -22,7 +22,7 @@ import {
 import { forbidden } from '@/lib/errors/types';
 
 interface RouteContext {
-    params: { orgSlug: string };
+    params: Promise<{ orgSlug: string }>;
 }
 
 const CreateOrgInviteInput = z.object({
@@ -34,7 +34,7 @@ export const POST = withApiErrorHandling(
     withValidatedBody(
         CreateOrgInviteInput,
         async (req: NextRequest, routeCtx: RouteContext, body) => {
-            const ctx = await getOrgCtx(routeCtx.params, req);
+            const ctx = await getOrgCtx((await routeCtx.params), req);
             if (!ctx.permissions.canManageMembers) {
                 throw forbidden(
                     'You do not have permission to invite members to this organization',
@@ -63,7 +63,7 @@ export const POST = withApiErrorHandling(
 
 export const GET = withApiErrorHandling(
     async (req: NextRequest, routeCtx: RouteContext) => {
-        const ctx = await getOrgCtx(routeCtx.params, req);
+        const ctx = await getOrgCtx((await routeCtx.params), req);
         if (!ctx.permissions.canManageMembers) {
             throw forbidden(
                 'You do not have permission to view invites for this organization',

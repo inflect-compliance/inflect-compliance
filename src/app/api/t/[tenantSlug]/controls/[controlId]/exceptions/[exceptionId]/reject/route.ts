@@ -17,17 +17,14 @@ export const POST = withApiErrorHandling(
         RejectExceptionSchema,
         async (
             req: NextRequest,
-            {
-                params,
-            }: {
-                params: {
+            { params: paramsPromise }: { params: Promise<{
                     tenantSlug: string;
                     controlId: string;
                     exceptionId: string;
-                };
-            },
+                }> },
             body,
         ) => {
+            const params = await paramsPromise;
             const ctx = await getTenantCtx(params, req);
             const result = await rejectException(ctx, params.exceptionId, body);
             return jsonResponse(result);

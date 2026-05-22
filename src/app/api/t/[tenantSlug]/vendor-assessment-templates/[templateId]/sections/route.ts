@@ -15,11 +15,10 @@ export const POST = withApiErrorHandling(
         AddVendorAssessmentTemplateSectionSchema,
         async (
             req,
-            {
-                params,
-            }: { params: { tenantSlug: string; templateId: string } },
+            { params: paramsPromise }: { params: Promise<{ tenantSlug: string; templateId: string }> },
             body,
         ) => {
+            const params = await paramsPromise;
             const ctx = await getTenantCtx(params, req);
             const section = await addSection(ctx, params.templateId, body);
             return jsonResponse(section, { status: 201 });

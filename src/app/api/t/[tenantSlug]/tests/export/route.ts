@@ -8,7 +8,8 @@ import { exportTestEvidenceBundle } from '@/app-layer/usecases/test-hardening';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const url = new URL(req.url);
     const controlId = url.searchParams.get('controlId') || undefined;

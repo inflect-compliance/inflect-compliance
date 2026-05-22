@@ -8,9 +8,10 @@ import { jsonResponse } from '@/lib/api-response';
 
 export const POST = withApiErrorHandling(withValidatedBody(ApplySessionSchema, async (
     req: NextRequest,
-    { params }: { params: { tenantSlug: string; sessionId: string } },
+    { params: paramsPromise }: { params: Promise<{ tenantSlug: string; sessionId: string }> },
     body,
 ) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const result = await applySession(ctx, params.sessionId, body);
     return jsonResponse(result);

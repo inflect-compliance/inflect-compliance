@@ -18,7 +18,8 @@ import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
 
 export const GET = withApiErrorHandling(
-    async (req: NextRequest, { params }: { params: { tenantSlug: string } }) => {
+    async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
+        const params = await paramsPromise;
         const ctx = await getTenantCtx(params, req);
         const templates = await listTemplates(ctx);
         return jsonResponse(templates);
@@ -30,9 +31,10 @@ export const POST = withApiErrorHandling(
         CreateVendorAssessmentTemplateSchema,
         async (
             req,
-            { params }: { params: { tenantSlug: string } },
+            { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> },
             body,
         ) => {
+            const params = await paramsPromise;
             const ctx = await getTenantCtx(params, req);
             const template = await createTemplate(ctx, body);
             return jsonResponse(template, { status: 201 });

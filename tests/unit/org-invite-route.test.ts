@@ -90,7 +90,7 @@ describe('POST /api/org/[orgSlug]/invites', () => {
 
         const res = await createPost(
             makeReq({ email: 'a@b.com', role: 'ORG_READER' }),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
         expect(res.status).toBe(201);
         const body = await res.json();
@@ -103,7 +103,7 @@ describe('POST /api/org/[orgSlug]/invites', () => {
 
         const res = await createPost(
             makeReq({ email: 'a@b.com', role: 'ORG_READER' }),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
         expect(res.status).toBe(403);
         expect(createOrgInviteTokenMock).not.toHaveBeenCalled();
@@ -125,7 +125,7 @@ describe('GET /api/org/[orgSlug]/invites', () => {
         ]);
 
         const req = new NextRequest('http://localhost/api/org/acme-org/invites');
-        const res = await listGet(req, { params: { orgSlug: 'acme-org' } });
+        const res = await listGet(req, { params: Promise.resolve({ orgSlug: 'acme-org' }) });
         expect(res.status).toBe(200);
         const body = await res.json();
         expect(body.invites).toHaveLength(1);
@@ -135,7 +135,7 @@ describe('GET /api/org/[orgSlug]/invites', () => {
     it('returns 403 for ORG_READER', async () => {
         getOrgCtxMock.mockResolvedValue(ctxFor(false));
         const req = new NextRequest('http://localhost/api/org/acme-org/invites');
-        const res = await listGet(req, { params: { orgSlug: 'acme-org' } });
+        const res = await listGet(req, { params: Promise.resolve({ orgSlug: 'acme-org' }) });
         expect(res.status).toBe(403);
     });
 });

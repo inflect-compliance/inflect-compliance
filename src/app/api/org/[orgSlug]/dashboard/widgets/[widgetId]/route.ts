@@ -21,7 +21,7 @@ import {
 } from '@/app-layer/usecases/org-dashboard-widgets';
 
 interface RouteContext {
-    params: { orgSlug: string; widgetId: string };
+    params: Promise<{ orgSlug: string; widgetId: string }>;
 }
 
 export const PATCH = withApiErrorHandling(
@@ -29,12 +29,12 @@ export const PATCH = withApiErrorHandling(
         UpdateOrgDashboardWidgetInput,
         async (req: NextRequest, routeCtx: RouteContext, body) => {
             const ctx = await getOrgCtx(
-                { orgSlug: routeCtx.params.orgSlug },
+                { orgSlug: (await routeCtx.params).orgSlug },
                 req,
             );
             const widget = await updateOrgDashboardWidget(
                 ctx,
-                routeCtx.params.widgetId,
+                (await routeCtx.params).widgetId,
                 body,
             );
             return NextResponse.json({ widget });
@@ -45,12 +45,12 @@ export const PATCH = withApiErrorHandling(
 export const DELETE = withApiErrorHandling(
     async (req: NextRequest, routeCtx: RouteContext) => {
         const ctx = await getOrgCtx(
-            { orgSlug: routeCtx.params.orgSlug },
+            { orgSlug: (await routeCtx.params).orgSlug },
             req,
         );
         const result = await deleteOrgDashboardWidget(
             ctx,
-            routeCtx.params.widgetId,
+            (await routeCtx.params).widgetId,
         );
         return NextResponse.json(result);
     },

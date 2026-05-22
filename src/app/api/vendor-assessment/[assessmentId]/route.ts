@@ -18,8 +18,9 @@ import {
 
 export async function GET(
     req: NextRequest,
-    { params }: { params: { assessmentId: string } },
+    { params: paramsPromise }: { params: Promise<{ assessmentId: string }> },
 ) {
+    const params = await paramsPromise;
     const url = new URL(req.url);
     const rawToken = url.searchParams.get('t');
 

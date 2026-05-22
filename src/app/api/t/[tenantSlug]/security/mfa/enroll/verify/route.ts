@@ -19,7 +19,8 @@ import { jsonResponse } from '@/lib/api-response';
  */
 export const POST = withApiErrorHandling(withValidatedBody(
     VerifyMfaInput,
-    async (req: NextRequest, { params }: { params: { tenantSlug: string } }, body) => {
+    async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }, body) => {
+        const params = await paramsPromise;
         const ctx = await getTenantCtx(params, req);
 
         // Rate limit check

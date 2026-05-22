@@ -6,8 +6,9 @@ import { badRequest } from '@/lib/errors/types';
 
 export const GET = withApiErrorHandling(async (
     req: NextRequest,
-    { params }: { params: { tenantSlug: string; fileName: string } }
+    { params: paramsPromise }: { params: Promise<{ tenantSlug: string; fileName: string }> }
 ) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
 
     if (!params.fileName) {

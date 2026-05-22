@@ -21,7 +21,8 @@ const ControlsQuerySchema = z.object({
     includeDeleted: z.enum(['true', 'false']).optional(),
 }).strip();
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const sp = Object.fromEntries(req.nextUrl.searchParams.entries());
     const query = ControlsQuerySchema.parse(sp);
@@ -63,7 +64,8 @@ export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { p
     return jsonResponse(result);
 });
 
-export const POST = withApiErrorHandling(withValidatedBody(CreateControlSchema, async (req, { params }: { params: { tenantSlug: string } }, body) => {
+export const POST = withApiErrorHandling(withValidatedBody(CreateControlSchema, async (req, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }, body) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const control = await createControl(ctx, body);
     return jsonResponse(control, { status: 201 });

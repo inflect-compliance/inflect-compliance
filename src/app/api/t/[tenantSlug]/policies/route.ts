@@ -21,7 +21,8 @@ const PolicyQuerySchema = z.object({
 }).strip();
 
 // GET /api/t/[tenantSlug]/policies — list with filters + pagination
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
+  const params = await paramsPromise;
   const ctx = await getTenantCtx(params, req);
   const sp = Object.fromEntries(req.nextUrl.searchParams.entries());
   const query = PolicyQuerySchema.parse(sp);
@@ -70,7 +71,8 @@ export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { p
 
 // POST /api/t/[tenantSlug]/policies — create (blank or from template)
 export const POST = withApiErrorHandling(
-  withValidatedBody(CreatePolicySchema, async (req: NextRequest, { params }: { params: { tenantSlug: string } }, body) => {
+  withValidatedBody(CreatePolicySchema, async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }, body) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
 
     let policy;

@@ -6,13 +6,15 @@ import { CreateControlTaskSchema } from '@/lib/schemas';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string; controlId: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; controlId: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const tasks = await listControlTasks(ctx, params.controlId);
     return jsonResponse(tasks);
 });
 
-export const POST = withApiErrorHandling(withValidatedBody(CreateControlTaskSchema, async (req, { params }: { params: { tenantSlug: string; controlId: string } }, body) => {
+export const POST = withApiErrorHandling(withValidatedBody(CreateControlTaskSchema, async (req, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; controlId: string }> }, body) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const task = await createControlTask(ctx, params.controlId, body);
     return jsonResponse(task, { status: 201 });

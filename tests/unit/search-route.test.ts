@@ -78,7 +78,7 @@ describe('GET /api/t/[tenantSlug]/search', () => {
         getTenantCtxMock.mockResolvedValue(ctxFor('READER'));
         getSearchMock.mockResolvedValue(samplePayload);
 
-        const res = await GET(req('?q=policy'), { params: { tenantSlug: 'acme' } });
+        const res = await GET(req('?q=policy'), { params: Promise.resolve({ tenantSlug: 'acme' }) });
         expect(res.status).toBe(200);
         const body = await res.json();
         expect(body).toEqual(samplePayload);
@@ -90,7 +90,7 @@ describe('GET /api/t/[tenantSlug]/search', () => {
         getTenantCtxMock.mockResolvedValue(ctxFor('READER'));
         getSearchMock.mockResolvedValue(samplePayload);
 
-        await GET(req('?q=phishing'), { params: { tenantSlug: 'acme' } });
+        await GET(req('?q=phishing'), { params: Promise.resolve({ tenantSlug: 'acme' }) });
         const opts = getSearchMock.mock.calls[0][2];
         expect(opts.perTypeLimit).toBe(5);
     });
@@ -99,7 +99,7 @@ describe('GET /api/t/[tenantSlug]/search', () => {
         getTenantCtxMock.mockResolvedValue(ctxFor('READER'));
         getSearchMock.mockResolvedValue(samplePayload);
 
-        await GET(req('?q=phish&limit=10'), { params: { tenantSlug: 'acme' } });
+        await GET(req('?q=phish&limit=10'), { params: Promise.resolve({ tenantSlug: 'acme' }) });
         const opts = getSearchMock.mock.calls[0][2];
         expect(opts.perTypeLimit).toBe(10);
     });
@@ -108,7 +108,7 @@ describe('GET /api/t/[tenantSlug]/search', () => {
         getTenantCtxMock.mockResolvedValue(ctxFor('READER'));
         getSearchMock.mockResolvedValue(samplePayload);
 
-        await GET(req('?q=phish&limit=999'), { params: { tenantSlug: 'acme' } });
+        await GET(req('?q=phish&limit=999'), { params: Promise.resolve({ tenantSlug: 'acme' }) });
         const opts = getSearchMock.mock.calls[0][2];
         expect(opts.perTypeLimit).toBe(25);
     });
@@ -117,12 +117,12 @@ describe('GET /api/t/[tenantSlug]/search', () => {
         getTenantCtxMock.mockResolvedValue(ctxFor('READER'));
         getSearchMock.mockResolvedValue(samplePayload);
 
-        await GET(req('?q=phish&limit=oops'), { params: { tenantSlug: 'acme' } });
+        await GET(req('?q=phish&limit=oops'), { params: Promise.resolve({ tenantSlug: 'acme' }) });
         let opts = getSearchMock.mock.calls[0][2];
         expect(opts.perTypeLimit).toBe(5);
 
         getSearchMock.mockClear();
-        await GET(req('?q=phish&limit=0'), { params: { tenantSlug: 'acme' } });
+        await GET(req('?q=phish&limit=0'), { params: Promise.resolve({ tenantSlug: 'acme' }) });
         opts = getSearchMock.mock.calls[0][2];
         expect(opts.perTypeLimit).toBe(5);
     });
@@ -131,7 +131,7 @@ describe('GET /api/t/[tenantSlug]/search', () => {
         getTenantCtxMock.mockResolvedValue(ctxFor('READER'));
         getSearchMock.mockResolvedValue({ ...samplePayload, hits: [] });
 
-        const res = await GET(req(''), { params: { tenantSlug: 'acme' } });
+        const res = await GET(req(''), { params: Promise.resolve({ tenantSlug: 'acme' }) });
         expect(res.status).toBe(200);
         expect(getSearchMock.mock.calls[0][1]).toBe('');
     });
@@ -140,7 +140,7 @@ describe('GET /api/t/[tenantSlug]/search', () => {
         getTenantCtxMock.mockResolvedValue(ctxFor('READER'));
         getSearchMock.mockRejectedValue(forbidden('Authentication required'));
 
-        const res = await GET(req('?q=anything'), { params: { tenantSlug: 'acme' } });
+        const res = await GET(req('?q=anything'), { params: Promise.resolve({ tenantSlug: 'acme' }) });
         expect(res.status).toBe(403);
     });
 });

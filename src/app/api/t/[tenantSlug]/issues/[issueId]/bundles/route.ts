@@ -6,13 +6,15 @@ import { CreateBundleSchema } from '@/lib/schemas';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string; issueId: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; issueId: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const bundles = await listBundles(ctx, params.issueId);
     return jsonResponse(bundles);
 });
 
-export const POST = withApiErrorHandling(withValidatedBody(CreateBundleSchema, async (req: NextRequest, { params }: { params: { tenantSlug: string; issueId: string } }, body) => {
+export const POST = withApiErrorHandling(withValidatedBody(CreateBundleSchema, async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; issueId: string }> }, body) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const bundle = await createBundle(ctx, params.issueId, body.name);
     return jsonResponse(bundle, { status: 201 });

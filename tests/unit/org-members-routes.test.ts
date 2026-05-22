@@ -76,7 +76,7 @@ describe('PUT /api/org/[orgSlug]/members', () => {
 
         const res = await PUT(
             makeRequest({ userId: 'user-2', role: 'ORG_ADMIN' }),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
 
         expect(res.status).toBe(200);
@@ -106,7 +106,7 @@ describe('PUT /api/org/[orgSlug]/members', () => {
 
         const res = await PUT(
             makeRequest({ userId: 'user-2', role: 'ORG_READER' }),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
 
         expect(res.status).toBe(200);
@@ -133,7 +133,7 @@ describe('PUT /api/org/[orgSlug]/members', () => {
 
         const res = await PUT(
             makeRequest({ userId: 'user-2', role: 'ORG_READER' }),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
 
         expect(res.status).toBe(200);
@@ -148,7 +148,7 @@ describe('PUT /api/org/[orgSlug]/members', () => {
 
         const res = await PUT(
             makeRequest({ userId: 'user-2', role: 'ORG_ADMIN' }),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
 
         expect(res.status).toBe(403);
@@ -161,7 +161,7 @@ describe('PUT /api/org/[orgSlug]/members', () => {
 
         const res = await PUT(
             makeRequest({ role: 'ORG_ADMIN' }),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
 
         expect(res.status).toBe(400);
@@ -173,7 +173,7 @@ describe('PUT /api/org/[orgSlug]/members', () => {
 
         const res = await PUT(
             makeRequest({ userId: 'user-2', role: 'OWNER' }),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
 
         expect(res.status).toBe(400);

@@ -37,14 +37,14 @@ import {
 import { badRequest, forbidden } from '@/lib/errors/types';
 
 interface RouteContext {
-    params: { orgSlug: string };
+    params: Promise<{ orgSlug: string }>;
 }
 
 export const POST = withApiErrorHandling(
     withValidatedBody(
         AddOrgMemberInput,
         async (req: NextRequest, routeCtx: RouteContext, body) => {
-            const ctx = await getOrgCtx(routeCtx.params, req);
+            const ctx = await getOrgCtx((await routeCtx.params), req);
             if (!ctx.permissions.canManageMembers) {
                 throw forbidden('You do not have permission to manage members of this organization');
             }
@@ -76,7 +76,7 @@ export const PUT = withApiErrorHandling(
     withValidatedBody(
         ChangeOrgMemberRoleInput,
         async (req: NextRequest, routeCtx: RouteContext, body) => {
-            const ctx = await getOrgCtx(routeCtx.params, req);
+            const ctx = await getOrgCtx((await routeCtx.params), req);
             if (!ctx.permissions.canManageMembers) {
                 throw forbidden('You do not have permission to manage members of this organization');
             }
@@ -109,7 +109,7 @@ export const PUT = withApiErrorHandling(
 
 export const DELETE = withApiErrorHandling(
     async (req: NextRequest, routeCtx: RouteContext) => {
-        const ctx = await getOrgCtx(routeCtx.params, req);
+        const ctx = await getOrgCtx((await routeCtx.params), req);
         if (!ctx.permissions.canManageMembers) {
             throw forbidden('You do not have permission to manage members of this organization');
         }

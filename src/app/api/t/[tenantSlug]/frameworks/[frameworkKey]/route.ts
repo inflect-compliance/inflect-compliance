@@ -46,7 +46,8 @@ const UpsertRequirementsSchema = z.object({
 }).strip();
 
 // GET /api/t/[tenantSlug]/frameworks/[frameworkKey]?action=...
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string; frameworkKey: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; frameworkKey: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const url = new URL(req.url);
     const version = url.searchParams.get('version') || undefined;
@@ -111,7 +112,8 @@ export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { p
 });
 
 // POST /api/t/[tenantSlug]/frameworks/[frameworkKey]
-export const POST = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string; frameworkKey: string } }) => {
+export const POST = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; frameworkKey: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const url = new URL(req.url);
     const action = url.searchParams.get('action');

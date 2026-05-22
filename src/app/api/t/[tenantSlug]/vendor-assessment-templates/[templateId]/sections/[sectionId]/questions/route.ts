@@ -16,17 +16,14 @@ export const POST = withApiErrorHandling(
         AddVendorAssessmentTemplateQuestionSchema,
         async (
             req,
-            {
-                params,
-            }: {
-                params: {
+            { params: paramsPromise }: { params: Promise<{
                     tenantSlug: string;
                     templateId: string;
                     sectionId: string;
-                };
-            },
+                }> },
             body,
         ) => {
+            const params = await paramsPromise;
             const ctx = await getTenantCtx(params, req);
             const question = await addQuestion(ctx, params.sectionId, {
                 prompt: body.prompt,

@@ -10,12 +10,14 @@ const AddItemSchema = z.object({
     entityId: z.string().min(1),
 }).strip();
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string; vendorId: string; bundleId: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; vendorId: string; bundleId: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     return jsonResponse(await getEvidenceBundle(ctx, params.bundleId));
 });
 
-export const POST = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string; vendorId: string; bundleId: string } }) => {
+export const POST = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; vendorId: string; bundleId: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const url = new URL(req.url);
     if (url.searchParams.get('action') === 'freeze') {
@@ -26,7 +28,8 @@ export const POST = withApiErrorHandling(async (req: NextRequest, { params }: { 
     return jsonResponse(await addBundleItem(ctx, params.bundleId, body), { status: 201 });
 });
 
-export const DELETE = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string; vendorId: string; bundleId: string } }) => {
+export const DELETE = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; vendorId: string; bundleId: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const url = new URL(req.url);
     const itemId = url.searchParams.get('itemId');

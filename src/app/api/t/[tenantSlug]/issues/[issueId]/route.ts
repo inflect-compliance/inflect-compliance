@@ -9,13 +9,15 @@ import { UpdateTaskSchema } from '@/lib/schemas';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string; issueId: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; issueId: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const task = await getTask(ctx, params.issueId);
     return jsonResponse(task);
 });
 
-export const PATCH = withApiErrorHandling(withValidatedBody(UpdateTaskSchema, async (req, { params }: { params: { tenantSlug: string; issueId: string } }, body) => {
+export const PATCH = withApiErrorHandling(withValidatedBody(UpdateTaskSchema, async (req, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; issueId: string }> }, body) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const task = await updateTask(ctx, params.issueId, body);
     return jsonResponse(task);

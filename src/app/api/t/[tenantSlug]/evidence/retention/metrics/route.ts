@@ -8,7 +8,8 @@ import { withApiErrorHandling } from '@/lib/errors/api';
 import { getRetentionMetrics } from '@/app-layer/usecases/evidence-retention';
 import { jsonResponse } from '@/lib/api-response';
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const metrics = await getRetentionMetrics(ctx);
     return jsonResponse(metrics);

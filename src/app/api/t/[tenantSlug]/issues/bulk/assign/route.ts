@@ -6,7 +6,8 @@ import { BulkAssignSchema } from '@/lib/schemas';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
 
-export const POST = withApiErrorHandling(withValidatedBody(BulkAssignSchema, async (req: NextRequest, { params }: { params: { tenantSlug: string } }, body) => {
+export const POST = withApiErrorHandling(withValidatedBody(BulkAssignSchema, async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }, body) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const result = await bulkAssign(ctx, body.taskIds, body.assigneeUserId);
     return jsonResponse({ updated: result.count });

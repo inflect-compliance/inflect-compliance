@@ -6,13 +6,15 @@ import { AddTaskCommentSchema } from '@/lib/schemas';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string; taskId: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; taskId: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const comments = await listTaskComments(ctx, params.taskId);
     return jsonResponse(comments);
 });
 
-export const POST = withApiErrorHandling(withValidatedBody(AddTaskCommentSchema, async (req, { params }: { params: { tenantSlug: string; taskId: string } }, body) => {
+export const POST = withApiErrorHandling(withValidatedBody(AddTaskCommentSchema, async (req, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; taskId: string }> }, body) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const comment = await addTaskComment(ctx, params.taskId, body.body);
     return jsonResponse(comment, { status: 201 });

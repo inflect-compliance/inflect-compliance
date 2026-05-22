@@ -59,7 +59,7 @@ describe('GET /api/org/[orgSlug]/audit-log', () => {
             nextCursor: 'cursor-abc',
         });
 
-        const res = await GET(makeRequest(), { params: { orgSlug: 'acme-org' } });
+        const res = await GET(makeRequest(), { params: Promise.resolve({ orgSlug: 'acme-org' }) });
         expect(res.status).toBe(200);
         const body = await res.json();
         expect(body.rows).toHaveLength(1);
@@ -69,7 +69,7 @@ describe('GET /api/org/[orgSlug]/audit-log', () => {
     it('returns 403 when caller lacks canManageMembers', async () => {
         getOrgCtxMock.mockResolvedValue(ctxFor(false));
 
-        const res = await GET(makeRequest(), { params: { orgSlug: 'acme-org' } });
+        const res = await GET(makeRequest(), { params: Promise.resolve({ orgSlug: 'acme-org' }) });
         expect(res.status).toBe(403);
         expect(listOrgAuditMock).not.toHaveBeenCalled();
     });
@@ -80,7 +80,7 @@ describe('GET /api/org/[orgSlug]/audit-log', () => {
 
         await GET(
             makeRequest('?cursor=abc&limit=5&action=ORG_MEMBER_REMOVED'),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
         expect(listOrgAuditMock).toHaveBeenCalledTimes(1);
         const args = listOrgAuditMock.mock.calls[0][1];
@@ -94,7 +94,7 @@ describe('GET /api/org/[orgSlug]/audit-log', () => {
 
         const res = await GET(
             makeRequest('?action=NOT_A_REAL_ACTION'),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
         expect(res.status).toBe(400);
         expect(listOrgAuditMock).not.toHaveBeenCalled();
@@ -105,7 +105,7 @@ describe('GET /api/org/[orgSlug]/audit-log', () => {
 
         const res = await GET(
             makeRequest('?limit=abc'),
-            { params: { orgSlug: 'acme-org' } },
+            { params: Promise.resolve({ orgSlug: 'acme-org' }) },
         );
         expect(res.status).toBe(400);
         expect(listOrgAuditMock).not.toHaveBeenCalled();
@@ -115,7 +115,7 @@ describe('GET /api/org/[orgSlug]/audit-log', () => {
         getOrgCtxMock.mockResolvedValue(ctxFor(true));
         listOrgAuditMock.mockResolvedValue({ rows: [], nextCursor: null });
 
-        await GET(makeRequest(), { params: { orgSlug: 'acme-org' } });
+        await GET(makeRequest(), { params: Promise.resolve({ orgSlug: 'acme-org' }) });
         const args = listOrgAuditMock.mock.calls[0][1];
         expect(args.cursor).toBeNull();
         expect(args.limit).toBeUndefined();

@@ -14,7 +14,8 @@ import { jsonResponse } from '@/lib/api-response';
  *   - from: ISO-8601 date (optional, filter entries from this date)
  *   - to:   ISO-8601 date (optional, filter entries to this date)
  */
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
 
     // OWNER + ADMIN. OWNER is a superset of ADMIN per CLAUDE.md RBAC.

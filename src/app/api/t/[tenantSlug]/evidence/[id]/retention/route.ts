@@ -18,8 +18,9 @@ const RetentionSchema = z.object({
 
 export const POST = withApiErrorHandling(async (
     req: NextRequest,
-    { params }: { params: { tenantSlug: string; id: string } },
+    { params: paramsPromise }: { params: Promise<{ tenantSlug: string; id: string }> },
 ) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const body = RetentionSchema.parse(await req.json());
     const result = await updateEvidenceRetention(ctx, params.id, body);

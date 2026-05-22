@@ -41,8 +41,9 @@ function parseLimit(raw: string | null): number | undefined {
 export const GET = withApiErrorHandling(
     async (
         req: NextRequest,
-        { params }: { params: { tenantSlug: string } },
+        { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> },
     ) => {
+        const params = await paramsPromise;
         const ctx = await getTenantCtx(params, req);
         const url = new URL(req.url);
         const q = url.searchParams.get('q') ?? '';

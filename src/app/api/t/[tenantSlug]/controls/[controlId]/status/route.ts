@@ -6,7 +6,8 @@ import { SetControlStatusSchema } from '@/lib/schemas';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
 
-export const POST = withApiErrorHandling(withValidatedBody(SetControlStatusSchema, async (req, { params }: { params: { tenantSlug: string; controlId: string } }, body) => {
+export const POST = withApiErrorHandling(withValidatedBody(SetControlStatusSchema, async (req, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; controlId: string }> }, body) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const control = await setControlStatus(ctx, params.controlId, body.status);
     return jsonResponse(control);

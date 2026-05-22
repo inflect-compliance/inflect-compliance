@@ -8,7 +8,8 @@ import { jsonResponse } from '@/lib/api-response';
 
 // POST /api/t/[tenantSlug]/policies/[id]/publish — publish a version (ADMIN)
 export const POST = withApiErrorHandling(
-    withValidatedBody(PublishPolicySchema, async (req: NextRequest, { params }: { params: { tenantSlug: string; id: string } }, body) => {
+    withValidatedBody(PublishPolicySchema, async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; id: string }> }, body) => {
+        const params = await paramsPromise;
         const ctx = await getTenantCtx(params, req);
         const policy = await policyUsecases.publishPolicy(ctx, params.id, body.versionId);
         return jsonResponse(policy);

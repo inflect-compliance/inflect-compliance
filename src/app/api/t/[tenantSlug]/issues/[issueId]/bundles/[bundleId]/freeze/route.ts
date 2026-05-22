@@ -4,7 +4,8 @@ import { freezeBundle } from '@/app-layer/usecases/issue';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
 
-export const POST = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string; issueId: string; bundleId: string } }) => {
+export const POST = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; issueId: string; bundleId: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const bundle = await freezeBundle(ctx, params.bundleId);
     return jsonResponse(bundle);

@@ -15,11 +15,10 @@ export const POST = withApiErrorHandling(
         ReorderVendorAssessmentTemplateSchema,
         async (
             req,
-            {
-                params,
-            }: { params: { tenantSlug: string; templateId: string } },
+            { params: paramsPromise }: { params: Promise<{ tenantSlug: string; templateId: string }> },
             body,
         ) => {
+            const params = await paramsPromise;
             const ctx = await getTenantCtx(params, req);
             const result = await reorderTemplate(
                 ctx,

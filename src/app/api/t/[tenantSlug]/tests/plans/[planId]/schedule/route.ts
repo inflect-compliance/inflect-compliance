@@ -22,9 +22,10 @@ export const PUT = withApiErrorHandling(
         ScheduleTestPlanSchema,
         async (
             req,
-            { params }: { params: { tenantSlug: string; planId: string } },
+            { params: paramsPromise }: { params: Promise<{ tenantSlug: string; planId: string }> },
             body,
         ) => {
+            const params = await paramsPromise;
             const ctx = await getTenantCtx(params, req);
             const updated = await scheduleTestPlan(ctx, params.planId, {
                 schedule: body.schedule,

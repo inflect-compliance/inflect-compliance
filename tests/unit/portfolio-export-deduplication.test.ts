@@ -107,7 +107,7 @@ describe('Epic E.3 — CSV export tenants/snapshots deduplication', () => {
             async () => {
                 const res = await exportGET(
                     makeRequest('/api/org/acme-org/portfolio/export'),
-                    { params: { orgSlug: 'acme-org' } },
+                    { params: Promise.resolve({ orgSlug: 'acme-org' }) },
                 );
                 expect(res.status).toBe(200);
                 const body = await res.text();
@@ -145,7 +145,7 @@ describe('Epic E.3 — CSV export tenants/snapshots deduplication', () => {
             async () => {
                 const res = await exportGET(
                     makeRequest('/api/org/acme-org/portfolio/export'),
-                    { params: { orgSlug: 'acme-org' } },
+                    { params: Promise.resolve({ orgSlug: 'acme-org' }) },
                 );
                 const body = await res.text();
                 expect(body).toContain('# Portfolio Summary');

@@ -38,8 +38,9 @@ const SubmitBodySchema = z
 
 export async function POST(
     req: NextRequest,
-    { params }: { params: { assessmentId: string } },
+    { params: paramsPromise }: { params: Promise<{ assessmentId: string }> },
 ) {
+    const params = await paramsPromise;
     let body: z.infer<typeof SubmitBodySchema>;
     try {
         body = SubmitBodySchema.parse(await req.json());

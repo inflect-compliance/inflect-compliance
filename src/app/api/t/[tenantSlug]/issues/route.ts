@@ -10,7 +10,8 @@ import { CreateTaskSchema } from '@/lib/schemas';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const sp = req.nextUrl.searchParams;
     const tasks = await listTasks(ctx, {
@@ -25,7 +26,8 @@ export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { p
     return jsonResponse(tasks);
 });
 
-export const POST = withApiErrorHandling(withValidatedBody(CreateTaskSchema, async (req, { params }: { params: { tenantSlug: string } }, body) => {
+export const POST = withApiErrorHandling(withValidatedBody(CreateTaskSchema, async (req, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }, body) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const task = await createTask(ctx, body);
     return jsonResponse(task, { status: 201 });

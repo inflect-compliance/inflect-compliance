@@ -13,13 +13,13 @@ import { revokeOrgInvite } from '@/app-layer/usecases/org-invites';
 import { forbidden } from '@/lib/errors/types';
 
 interface RouteContext {
-    params: { orgSlug: string; inviteId: string };
+    params: Promise<{ orgSlug: string; inviteId: string }>;
 }
 
 export const DELETE = withApiErrorHandling(
     async (req: NextRequest, routeCtx: RouteContext) => {
         const ctx = await getOrgCtx(
-            { orgSlug: routeCtx.params.orgSlug },
+            { orgSlug: (await routeCtx.params).orgSlug },
             req,
         );
         if (!ctx.permissions.canManageMembers) {
@@ -27,7 +27,7 @@ export const DELETE = withApiErrorHandling(
                 'You do not have permission to revoke invites for this organization',
             );
         }
-        await revokeOrgInvite(ctx, { inviteId: routeCtx.params.inviteId });
+        await revokeOrgInvite(ctx, { inviteId: (await routeCtx.params).inviteId });
         return NextResponse.json({ revoked: true });
     },
 );

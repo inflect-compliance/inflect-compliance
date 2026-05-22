@@ -39,7 +39,7 @@ import {
 } from '@/app-layer/usecases/portfolio';
 
 interface RouteContext {
-    params: { orgSlug: string };
+    params: Promise<{ orgSlug: string }>;
 }
 
 // ── CSV helpers ────────────────────────────────────────────────────────
@@ -69,7 +69,7 @@ const EVIDENCE_COLUMNS = 6;
 
 export const GET = withApiErrorHandling(
     async (req: NextRequest, routeCtx: RouteContext) => {
-        const ctx = await getOrgCtx(routeCtx.params, req);
+        const ctx = await getOrgCtx((await routeCtx.params), req);
         if (!ctx.permissions.canExportReports) {
             throw forbidden('You do not have permission to export portfolio reports');
         }

@@ -17,13 +17,10 @@ export const POST = withApiErrorHandling(
         AddMilestoneSchema,
         async (
             req: NextRequest,
-            {
-                params,
-            }: {
-                params: { tenantSlug: string; id: string; planId: string };
-            },
+            { params: paramsPromise }: { params: Promise<{ tenantSlug: string; id: string; planId: string }> },
             body,
         ) => {
+            const params = await paramsPromise;
             const ctx = await getTenantCtx(params, req);
             const result = await addMilestone(ctx, params.planId, body);
             return jsonResponse(result, { status: 201 });

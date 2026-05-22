@@ -27,8 +27,9 @@ import { recordListPageRowCount } from '@/lib/observability/list-page-metrics';
 export const GET = withApiErrorHandling(
     async (
         req: NextRequest,
-        { params }: { params: { tenantSlug: string } },
+        { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> },
     ) => {
+        const params = await paramsPromise;
         const ctx = await getTenantCtx(params, req);
         const reviews = await listAccessReviews(ctx, {
             take: LIST_BACKFILL_CAP + 1,
@@ -49,9 +50,10 @@ export const POST = withApiErrorHandling(
         CreateAccessReviewSchema,
         async (
             req: NextRequest,
-            { params }: { params: { tenantSlug: string } },
+            { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> },
             body,
         ) => {
+            const params = await paramsPromise;
             const ctx = await getTenantCtx(params, req);
             const result = await createAccessReview(ctx, body);
             return jsonResponse(result, { status: 201 });

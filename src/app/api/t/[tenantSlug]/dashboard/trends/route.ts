@@ -9,7 +9,8 @@ import { jsonResponse } from '@/lib/api-response';
  *
  * Returns daily compliance KPI snapshots for trend visualization.
  */
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const days = parseInt(req.nextUrl.searchParams.get('days') ?? '90', 10);
     const payload = await getComplianceTrends(ctx, isNaN(days) ? 90 : days);

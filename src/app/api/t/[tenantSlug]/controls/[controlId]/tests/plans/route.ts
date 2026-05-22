@@ -10,13 +10,15 @@ import { CreateTestPlanSchema } from '@/lib/schemas';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string; controlId: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; controlId: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const plans = await listControlTestPlans(ctx, params.controlId);
     return jsonResponse(plans);
 });
 
-export const POST = withApiErrorHandling(withValidatedBody(CreateTestPlanSchema, async (req, { params }: { params: { tenantSlug: string; controlId: string } }, body) => {
+export const POST = withApiErrorHandling(withValidatedBody(CreateTestPlanSchema, async (req, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; controlId: string }> }, body) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const plan = await createTestPlan(ctx, params.controlId, body);
     return jsonResponse(plan, { status: 201 });

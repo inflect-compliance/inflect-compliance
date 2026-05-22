@@ -23,8 +23,9 @@ import { getQueue } from '@/app-layer/jobs/queue';
 export const GET = withApiErrorHandling(
     async (
         req: NextRequest,
-        { params }: { params: { tenantSlug: string; jobId: string } },
+        { params: paramsPromise }: { params: Promise<{ tenantSlug: string; jobId: string }> },
     ) => {
+        const params = await paramsPromise;
         const ctx = await getTenantCtx(params, req);
         if (!ctx.appPermissions.evidence.upload) {
             return jsonResponse(

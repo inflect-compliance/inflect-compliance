@@ -26,14 +26,12 @@ import { env } from '@/env';
 import { withApiErrorHandling } from '@/lib/errors/api';
 
 // Epic E — wrapped for x-request-id + standardized error contract.
-// Mirrors the tenant invites/start-signin wrap. The wrapper resolves
-// the params Promise transparently (GAP-05), so the inner handler
-// types `params` as the resolved sync object.
+// Mirrors the tenant invites/start-signin wrap.
 export const GET = withApiErrorHandling(async (
     req: NextRequest,
-    ctx: { params: { token: string } },
+    ctx: { params: Promise<{ token: string }> },
 ): Promise<NextResponse> => {
-    const { token } = ctx.params;
+    const { token } = await ctx.params;
 
     const response = NextResponse.redirect(
         new URL('/login', req.nextUrl.origin),

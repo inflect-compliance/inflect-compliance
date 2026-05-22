@@ -13,8 +13,9 @@ import { jsonResponse } from '@/lib/api-response';
 export const GET = withApiErrorHandling(
     async (
         req: NextRequest,
-        { params }: { params: { tenantSlug: string; templateId: string } },
+        { params: paramsPromise }: { params: Promise<{ tenantSlug: string; templateId: string }> },
     ) => {
+        const params = await paramsPromise;
         const ctx = await getTenantCtx(params, req);
         const template = await getTemplateTree(ctx, params.templateId);
         return jsonResponse(template);

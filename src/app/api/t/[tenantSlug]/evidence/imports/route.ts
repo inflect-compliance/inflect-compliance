@@ -43,7 +43,8 @@ const ALLOWED_ARCHIVE_MIMES = new Set([
 ]);
 
 export const POST = withApiErrorHandling(
-    async (req: NextRequest, { params }: { params: { tenantSlug: string } }) => {
+    async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
+        const params = await paramsPromise;
         const ctx = await getTenantCtx(params, req);
 
         if (!ctx.appPermissions.evidence.upload) {

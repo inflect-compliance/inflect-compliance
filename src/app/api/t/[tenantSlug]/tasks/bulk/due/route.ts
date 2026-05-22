@@ -11,9 +11,10 @@ export const POST = withApiErrorHandling(
         BulkTaskDueDateSchema,
         async (
             req: NextRequest,
-            { params }: { params: { tenantSlug: string } },
+            { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> },
             body,
         ) => {
+            const params = await paramsPromise;
             const ctx = await getTenantCtx(params, req);
             const result = await bulkSetTaskDueDate(
                 ctx,

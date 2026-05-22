@@ -9,7 +9,8 @@ import { createAutomatedTestRun } from '@/app-layer/usecases/control-test';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
 
-export const POST = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string; planId: string } }) => {
+export const POST = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; planId: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const body = await req.json();
     if (!body.result || !['PASS', 'FAIL', 'INCONCLUSIVE'].includes(body.result)) {

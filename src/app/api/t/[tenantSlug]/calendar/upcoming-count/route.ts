@@ -24,8 +24,9 @@ const QuerySchema = z.object({
 export const GET = withApiErrorHandling(
     async (
         req: NextRequest,
-        { params }: { params: { tenantSlug: string } },
+        { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> },
     ) => {
+        const params = await paramsPromise;
         const ctx = await getTenantCtx(params, req);
         const sp = Object.fromEntries(req.nextUrl.searchParams.entries());
         const { days } = QuerySchema.parse(sp);

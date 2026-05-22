@@ -14,7 +14,8 @@ const MapBody = z.object({
     controlId: z.string().min(1),
 }).strip();
 
-export const POST = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string } }) => {
+export const POST = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     assertCanWrite(ctx);
 

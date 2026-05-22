@@ -25,7 +25,8 @@ const TaskQuerySchema = z.object({
     linkedEntityId: z.string().optional(),
 }).strip();
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const sp = Object.fromEntries(req.nextUrl.searchParams.entries());
     const query = TaskQuerySchema.parse(sp);
@@ -82,7 +83,8 @@ export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { p
     return jsonResponse(result);
 });
 
-export const POST = withApiErrorHandling(withValidatedBody(CreateTaskSchema, async (req, { params }: { params: { tenantSlug: string } }, body) => {
+export const POST = withApiErrorHandling(withValidatedBody(CreateTaskSchema, async (req, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }, body) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const task = await createTask(ctx, body);
     return jsonResponse(task, { status: 201 });

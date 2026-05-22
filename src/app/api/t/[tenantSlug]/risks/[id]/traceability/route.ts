@@ -4,7 +4,8 @@ import { getRiskTraceability } from '@/app-layer/usecases/traceability';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string; id: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; id: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     return jsonResponse(await getRiskTraceability(ctx, params.id));
 });

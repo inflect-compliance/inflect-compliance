@@ -13,8 +13,9 @@ import { jsonResponse } from '@/lib/api-response';
 export const GET = withApiErrorHandling(
     async (
         req: NextRequest,
-        { params }: { params: { tenantSlug: string; id: string } },
+        { params: paramsPromise }: { params: Promise<{ tenantSlug: string; id: string }> },
     ) => {
+        const params = await paramsPromise;
         const ctx = await getTenantCtx(params, req);
         const map = await getProcessMap(ctx, params.id);
         return jsonResponse(map);
@@ -26,9 +27,10 @@ export const PUT = withApiErrorHandling(
         SaveProcessMapSchema,
         async (
             req,
-            { params }: { params: { tenantSlug: string; id: string } },
+            { params: paramsPromise }: { params: Promise<{ tenantSlug: string; id: string }> },
             body,
         ) => {
+            const params = await paramsPromise;
             const ctx = await getTenantCtx(params, req);
             const map = await saveProcessMap(ctx, params.id, body);
             return jsonResponse(map);
@@ -39,8 +41,9 @@ export const PUT = withApiErrorHandling(
 export const DELETE = withApiErrorHandling(
     async (
         req: NextRequest,
-        { params }: { params: { tenantSlug: string; id: string } },
+        { params: paramsPromise }: { params: Promise<{ tenantSlug: string; id: string }> },
     ) => {
+        const params = await paramsPromise;
         const ctx = await getTenantCtx(params, req);
         const result = await deleteProcessMap(ctx, params.id);
         return jsonResponse(result);

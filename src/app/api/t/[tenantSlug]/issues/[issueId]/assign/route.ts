@@ -7,7 +7,8 @@ import { AssignTaskSchema } from '@/lib/schemas';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
 
-export const POST = withApiErrorHandling(withValidatedBody(AssignTaskSchema, async (req, { params }: { params: { tenantSlug: string; issueId: string } }, body) => {
+export const POST = withApiErrorHandling(withValidatedBody(AssignTaskSchema, async (req, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; issueId: string }> }, body) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const task = await assignTask(ctx, params.issueId, body.assigneeUserId);
     return jsonResponse(task);

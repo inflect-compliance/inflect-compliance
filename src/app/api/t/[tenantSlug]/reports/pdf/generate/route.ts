@@ -55,7 +55,8 @@ function collectPdfBuffer(pdfDoc: PDFKit.PDFDocument): Promise<Buffer> {
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-export const POST = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string } }) => {
+export const POST = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
 
     // ─── Plan check: PDF exports require TRIAL+ ───

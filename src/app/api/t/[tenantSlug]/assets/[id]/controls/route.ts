@@ -11,12 +11,14 @@ const LinkSchema = z.object({
     rationale: z.string().optional(),
 }).strip();
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string; id: string } }) => {
+export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; id: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     return jsonResponse(await listAssetControls(ctx, params.id));
 });
 
-export const POST = withApiErrorHandling(async (req: NextRequest, { params }: { params: { tenantSlug: string; id: string } }) => {
+export const POST = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; id: string }> }) => {
+    const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const body = LinkSchema.parse(await req.json());
     return jsonResponse(await mapAssetToControl(ctx, params.id, body.controlId, body.coverageType, body.rationale), { status: 201 });
