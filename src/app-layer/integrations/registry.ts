@@ -181,19 +181,34 @@ export const registry = new ProviderRegistry();
 // ═══════════════════════════════════════════════════════════════════════
 
 import type { BaseIntegrationClient, BaseConnectionConfig } from './base-client';
-import type { BaseFieldMapper } from './base-mapper';
+import type { BaseFieldMapper, FieldMapperOptions } from './base-mapper';
+import type { BaseSyncOrchestrator } from './sync-orchestrator';
 
 /**
  * Constructor type for BaseIntegrationClient subclasses.
+ * `config` is typed `any` to handle contravariant constructor parameters:
+ * each concrete subclass narrows config to its own shape (e.g. GitHubConnectionConfig),
+ * but the registry must accept any subclass — `BaseConnectionConfig` would break callers.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- contravariant constructor parameter; see comment above
 export type IntegrationClientConstructor<T extends BaseIntegrationClient = BaseIntegrationClient> = new (config: any, fetchImpl?: typeof globalThis.fetch) => T;
 
 /**
  * Constructor type for BaseFieldMapper subclasses.
+ * `options` is typed `any` for the same contravariant constructor reason —
+ * each concrete mapper may narrow the options shape.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- contravariant constructor parameter; see comment above
 export type FieldMapperConstructor<T extends BaseFieldMapper = BaseFieldMapper> = new (options?: any) => T;
+
+/**
+ * Orchestrator constructor options type.
+ * Typed `any` because concrete orchestrators (e.g. GitHubSyncOrchestrator)
+ * accept additional fields beyond the BaseSyncOrchestrator base shape —
+ * the registry stores the constructor for any concrete subclass.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- contravariant constructor parameter; concrete subclasses extend the base opts shape
+export type OrchestratorConstructorOpts = any;
 
 /**
  * A registered integration bundle — groups client + mapper classes
@@ -213,8 +228,7 @@ export interface IntegrationBundle {
     /** Field mapper class constructor */
     readonly mapperClass: FieldMapperConstructor;
     /** Sync orchestrator class constructor (optional) */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    readonly orchestratorClass?: new (opts: any) => import('./sync-orchestrator').BaseSyncOrchestrator;
+    readonly orchestratorClass?: new (opts: OrchestratorConstructorOpts) => BaseSyncOrchestrator; // OrchestratorConstructorOpts is intentionally `any` — see its declaration
 }
 
 /**
@@ -227,8 +241,7 @@ export interface IntegrationBundleRegistration {
     description?: string;
     clientClass: IntegrationClientConstructor;
     mapperClass: FieldMapperConstructor;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    orchestratorClass?: new (opts: any) => import('./sync-orchestrator').BaseSyncOrchestrator;
+    orchestratorClass?: new (opts: OrchestratorConstructorOpts) => BaseSyncOrchestrator; // OrchestratorConstructorOpts is intentionally `any`
 }
 
 /**
@@ -344,8 +357,7 @@ class IntegrationRegistryImpl {
         fetchImpl?: typeof globalThis.fetch,
     ): import('./base-client').BaseIntegrationClient<TConfig> {
         const bundle = this.requireBundle(providerName);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return new bundle.clientClass(config, fetchImpl) as any;
+        return new bundle.clientClass(config, fetchImpl) as BaseIntegrationClient<TConfig>;
     }
 
     /**
@@ -363,8 +375,7 @@ class IntegrationRegistryImpl {
      * Factory: create an orchestrator instance for the given provider.
      * Returns undefined if the bundle does not support orchestration.
      */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    createOrchestrator(providerName: string, opts: any) {
+    createOrchestrator(providerName: string, opts: OrchestratorConstructorOpts): BaseSyncOrchestrator | undefined { // opts typed via OrchestratorConstructorOpts (intentionally any)
         const bundle = this.requireBundle(providerName);
         if (!bundle.orchestratorClass) {
             return undefined;

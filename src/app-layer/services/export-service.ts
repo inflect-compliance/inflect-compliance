@@ -30,6 +30,12 @@
  */
 
 import { withTenantDb, type PrismaTx } from '@/lib/db-context';
+
+// Dynamic model access: model names are resolved from ROOT_PRISMA_MODELS / ExportEdge
+// at runtime — only findMany is called via these delegates.
+interface ReadonlyModelDelegate {
+    findMany(args: object): Promise<Record<string, unknown>[]>;
+}
 import { logger } from '@/lib/observability/logger';
 import {
     EXPORT_FORMAT_VERSION,
@@ -219,13 +225,11 @@ async function fetchRootEntities(
     tenantId: string,
 ): Promise<Record<string, unknown>[]> {
     const modelName = ROOT_PRISMA_MODELS[entityType];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const model = (db as any)[modelName];
+    const model = (db as unknown as Record<string, ReadonlyModelDelegate | undefined>)[modelName];
     if (!model?.findMany) return [];
 
     // Build WHERE clause — tenant-scoped, exclude soft-deleted
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     // Framework/FrameworkRequirement don't have tenantId
     if (entityType !== 'framework' && entityType !== 'frameworkRequirement') {
@@ -250,12 +254,10 @@ async function traverseEdge(
     parentId: string,
     tenantId: string,
 ): Promise<Record<string, unknown>[]> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const model = (db as any)[edge.prismaModel];
+    const model = (db as unknown as Record<string, ReadonlyModelDelegate | undefined>)[edge.prismaModel];
     if (!model?.findMany) return [];
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = { [edge.foreignKey]: parentId };
+    const where: Record<string, unknown> = { [edge.foreignKey]: parentId };
 
     if (edge.tenantScoped) {
         where.tenantId = tenantId;
