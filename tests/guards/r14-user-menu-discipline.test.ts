@@ -96,16 +96,16 @@ describe('Roadmap-14 PR-5 — UserMenu discipline', () => {
             );
         });
 
-        it('renders 32×32 round avatar with initials (aria-hidden)', () => {
-            // The visible avatar is decorative — the aria-label on
-            // the trigger button is the accessible name.
+        it('renders 32×32 round avatar through the shared <InitialsAvatar>', () => {
+            // Avatar roadmap P4 — the user-menu avatar trigger now
+            // routes through the shared primitive (was a per-component
+            // `<span>{getInitials(...)}</span>`). The button still
+            // owns the 32×32 round click target + hover/focus chrome;
+            // the avatar owns initials, fill, and image fallback.
             expect(USER_MENU_SRC).toMatch(/h-8\s+w-8/);
             expect(USER_MENU_SRC).toMatch(/rounded-full/);
-            // Initials come from the shared `getInitials` primitive
-            // (`@/components/ui/initials-avatar`) — the per-component
-            // `initialsFromName` helper was retired into it.
             expect(USER_MENU_SRC).toMatch(
-                /<span\s+aria-hidden="true">\{getInitials\(effectiveName\)\}<\/span>/,
+                /<InitialsAvatar[\s\S]*?value=\{effectiveName\}[\s\S]*?size="md"[\s\S]*?imageUrl=\{displayImage\}/,
             );
         });
 

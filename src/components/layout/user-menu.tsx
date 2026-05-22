@@ -38,7 +38,7 @@ import { signOut } from 'next-auth/react';
 import { LogOut, ShieldCheck } from 'lucide-react';
 
 import { Popover } from '@/components/ui/popover';
-import { getInitials } from '@/components/ui/initials-avatar';
+import { InitialsAvatar } from '@/components/ui/initials-avatar';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { NAV_BAR_SLOT_PRESS } from './nav-bar';
 
@@ -53,17 +53,35 @@ export interface UserMenuProps {
      */
     displayName: string | null;
     displayEmail: string | null;
+    /**
+     * Profile-photo URL — OAuth `User.image` written at sign-in OR
+     * the in-app serve URL from the avatar upload flow. Surfaced in
+     * the avatar trigger; initials remain the fallback layer. Avatar
+     * roadmap P4. JWT-lag note: after a fresh upload, this lags until
+     * the next JWT re-mint, but the member list (DB-backed) updates
+     * immediately.
+     */
+    displayImage: string | null;
 }
 
 // ─── Recipe ────────────────────────────────────────────────────────
 
+// Wraps the shared `<InitialsAvatar size="md">` (which owns the
+// circle's fill, sizing, and initials styling). The button class
+// supplies the click target, hover lift, focus ring, and press
+// motion — visual styles the avatar primitive deliberately does not
+// carry.
 const AVATAR_BUTTON_CLASS =
-    `flex h-8 w-8 items-center justify-center rounded-full bg-[var(--brand-subtle)] text-[11px] font-semibold text-[var(--brand-emphasis)] transition-[filter] duration-150 ease-out hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-bg-page ${NAV_BAR_SLOT_PRESS}`;
+    `inline-flex h-8 w-8 items-center justify-center rounded-full transition-[filter] duration-150 ease-out hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-bg-page ${NAV_BAR_SLOT_PRESS}`;
 
 const MENU_ROW_CLASS =
     'flex w-full cursor-pointer select-none items-center gap-compact rounded-md px-2.5 py-1.5 text-left text-sm text-content-default transition-colors duration-100 ease-out hover:bg-bg-muted hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]';
 
-export function UserMenu({ displayName, displayEmail }: UserMenuProps) {
+export function UserMenu({
+    displayName,
+    displayEmail,
+    displayImage,
+}: UserMenuProps) {
     const [open, setOpen] = useState(false);
     const close = useCallback(() => setOpen(false), []);
 
@@ -162,7 +180,11 @@ export function UserMenu({ displayName, displayEmail }: UserMenuProps) {
                 aria-haspopup="menu"
                 data-testid="top-chrome-user-menu"
             >
-                <span aria-hidden="true">{getInitials(effectiveName)}</span>
+                <InitialsAvatar
+                    value={effectiveName}
+                    size="md"
+                    imageUrl={displayImage}
+                />
             </button>
         </Popover>
     );

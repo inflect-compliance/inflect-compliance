@@ -153,3 +153,52 @@ describe('Avatar upload flow (avatar roadmap P3)', () => {
         expect(field).toMatch(/image\/webp/);
     });
 });
+
+/**
+ * Avatar roadmap, P4 — surface the avatar in the chrome.
+ *
+ * The top-bar user menu was the last hand-rolled initials surface.
+ * P4 threads the user's photo URL through `<AppShell>` → `<TopChrome>`
+ * → `<UserMenu>` and converts the menu's avatar trigger to the shared
+ * `<InitialsAvatar>` — finally one renderer everywhere, with image
+ * support reaching the chrome for free.
+ */
+describe('Avatar in the chrome (avatar roadmap P4)', () => {
+    const USER_MENU = 'src/components/layout/user-menu.tsx';
+    const TOP_CHROME = 'src/components/layout/TopChrome.tsx';
+    const APP_SHELL = 'src/components/layout/AppShell.tsx';
+    const TENANT_LAYOUT =
+        'src/app/t/[tenantSlug]/(app)/layout.tsx';
+    const ORG_LAYOUT = 'src/app/org/[orgSlug]/layout.tsx';
+
+    it('UserMenu renders the trigger through <InitialsAvatar> with imageUrl', () => {
+        const src = read(USER_MENU);
+        expect(src).toMatch(
+            /import\s*\{[^}]*\bInitialsAvatar\b/,
+        );
+        expect(src).toMatch(/displayImage:\s*string\s*\|\s*null/);
+        expect(src).toMatch(
+            /<InitialsAvatar[\s\S]*?imageUrl=\{displayImage\}/,
+        );
+        // The per-component `<span>{getInitials(...)}</span>` is gone.
+        expect(src).not.toMatch(/getInitials\(effectiveName\)/);
+    });
+
+    it('TopChrome carries `image` on its user prop and threads it to UserMenu', () => {
+        const src = read(TOP_CHROME);
+        expect(src).toMatch(/image\?:\s*string\s*\|\s*null/);
+        expect(src).toMatch(/displayImage=\{user\.image\s*\?\?\s*null\}/);
+    });
+
+    it('AppShellUser carries `image`', () => {
+        const src = read(APP_SHELL);
+        expect(src).toMatch(/image\?:\s*string\s*\|\s*null/);
+    });
+
+    it('both server layouts feed session.user.image into the shell', () => {
+        for (const path of [TENANT_LAYOUT, ORG_LAYOUT]) {
+            const src = read(path);
+            expect(src).toMatch(/image:\s*session\.user\.image/);
+        }
+    });
+});

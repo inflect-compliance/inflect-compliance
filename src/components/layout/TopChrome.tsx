@@ -65,6 +65,9 @@ interface TopChromeProps {
     user: {
         name?: string | null;
         email?: string | null;
+        /** Profile-photo URL (OAuth image or the avatar serve route)
+         *  — threaded into the user-menu avatar. Avatar roadmap P4. */
+        image?: string | null;
         memberships?: Array<{
             slug: string;
             role: string;
@@ -159,6 +162,7 @@ export function TopChrome({ variant, user, onMobileMenuClick }: TopChromeProps) 
                     <UserMenu
                         displayName={user.name ?? null}
                         displayEmail={user.email ?? null}
+                        displayImage={user.image ?? null}
                     />
                 </>
             }

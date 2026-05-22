@@ -24,6 +24,14 @@ interface AppShellUser {
     name?: string | null;
     email?: string | null;
     /**
+     * Profile-photo URL. Either the OAuth `User.image` written at
+     * sign-in (e.g. a Google CDN URL) or the in-app serve URL written
+     * by the avatar upload flow (`/api/account/avatar/<id>`). Threaded
+     * through to the user-menu avatar in the top chrome — avatar
+     * roadmap P4.
+     */
+    image?: string | null;
+    /**
      * Active tenant memberships from the JWT. Same shape as
      * `MembershipEntry` in `src/auth.ts` — `{ slug, role,
      * tenantId }`. Optional because the org variant has no

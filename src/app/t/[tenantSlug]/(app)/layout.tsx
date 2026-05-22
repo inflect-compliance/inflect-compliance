@@ -43,6 +43,7 @@ export default async function AppLayout({
             user={{
                 name: session.user.name,
                 email: session.user.email,
+                image: session.user.image,
                 memberships: session.user.memberships,
             }}
             appName={tc('appName')}
