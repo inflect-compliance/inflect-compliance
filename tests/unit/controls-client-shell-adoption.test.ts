@@ -69,7 +69,10 @@ describe('ControlsClient — EntityListPage adoption', () => {
         expect(source).toMatch(/table\s*=\s*\{\{/);
         expect(source).toContain('data: controls');
         expect(source).toContain('columns: controlColumns');
-        expect(source).toContain('getRowId: (c) => c.id');
+        // `getRowId` is a stable `useCallback` (right-rail Phase 2 —
+        // a referentially-stable row-id fn keeps a selection-toggle
+        // re-render from rebuilding the DataTable model).
+        expect(source).toContain('getRowId: getControlRowId');
         expect(source).toContain("'data-testid': 'controls-table'");
     });
 

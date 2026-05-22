@@ -5,10 +5,10 @@
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
 /* eslint-disable react-hooks/exhaustive-deps -- Various useMemo dep arrays in this file deliberately omit identity-unstable callbacks (handlers/derived arrays recreated each render). The proper structural fix is wrapping parent-level callbacks in useCallback. Tracked as follow-up; existing per-line eslint-disable-next-line markers preserved. */
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { RowSelectionState } from '@tanstack/react-table';
+import type { Row, RowSelectionState } from '@tanstack/react-table';
 import { useRouter, useSearchParams } from 'next/navigation';
 // NewControlModal and ControlDetailSheet were previously lazy-loaded
 // via next/dynamic, but the JIT race in `next dev` made the modals
@@ -142,8 +142,18 @@ function ControlsPageInner({
     tenantSlug,
     appPermissions,
 }: ControlsClientProps) {
-    const apiUrl = (path: string) => `/api/t/${tenantSlug}${path}`;
-    const tenantHref = (path: string) => `/t/${tenantSlug}${path}`;
+    // Stable across renders — selection-toggle re-renders (Phase 2)
+    // must NOT hand the DataTable fresh `columns` / `onRowClick` /
+    // `getRowId` references, or it rebuilds the whole table model
+    // mid-double-click and breaks double-click-to-navigate.
+    const apiUrl = useCallback(
+        (path: string) => `/api/t/${tenantSlug}${path}`,
+        [tenantSlug],
+    );
+    const tenantHref = useCallback(
+        (path: string) => `/t/${tenantSlug}${path}`,
+        [tenantSlug],
+    );
     const queryClient = useQueryClient();
     const router = useRouter();
 
@@ -404,14 +414,32 @@ function ControlsPageInner({
         }
     };
 
+    // Stable DataTable callbacks — see the apiUrl/tenantHref note above.
+    // `handleRowClick` is the double-click→navigate handler; keeping it
+    // referentially stable means a selection-toggle re-render does not
+    // rebuild the table's column model.
+    const handleRowClick = useCallback(
+        (row: Row<ControlListItem>) =>
+            router.push(tenantHref(`/controls/${row.original.id}`)),
+        [router, tenantHref],
+    );
+    const getControlRowId = useCallback((c: ControlListItem) => c.id, []);
+    const handleRowSelectionChange = useCallback(
+        (rows: Row<ControlListItem>[]) =>
+            setRowSelection(
+                Object.fromEntries(rows.map((r) => [r.id, true])),
+            ),
+        [],
+    );
+
     // ─── Helpers ───
 
-    const taskStats = (c: ControlListItem) => {
+    const taskStats = useCallback((c: ControlListItem) => {
         const total = c._count?.controlTasks ?? 0;
         // guardrail-ignore: aggregating the row's own controlTasks array.
         const done = c.controlTasks?.filter(t => t.status === 'DONE').length ?? 0;
         return { total, done };
-    };
+    }, []);
 
     // ── Column definitions ──
     const controlColumns = useMemo(() => createColumns<ControlListItem>([
@@ -724,14 +752,14 @@ function ControlsPageInner({
                 data: controls,
                 columns: controlColumns,
                 loading,
-                getRowId: (c) => c.id,
+                getRowId: getControlRowId,
                 // Epic 68 — Controls page is the canonical opt-out
                 // for auto-virtualization. Per product directive the
                 // existing card scrolling on Controls stays as it is;
                 // bespoke per-row affordances + the JS whole-row clip
                 // depend on the standard <table> layout.
                 virtualize: false,
-                onRowClick: (row) => router.push(tenantHref(`/controls/${row.original.id}`)),
+                onRowClick: handleRowClick,
                 emptyState: hasActive ? (
                     <EmptyState
                         size="sm"
@@ -773,12 +801,7 @@ function ControlsPageInner({
                 // checkboxes, no rail — exactly the prior behaviour.
                 selectedRows: canEditControls ? rowSelection : undefined,
                 onRowSelectionChange: canEditControls
-                    ? (rows) =>
-                          setRowSelection(
-                              Object.fromEntries(
-                                  rows.map((r) => [r.id, true]),
-                              ),
-                          )
+                    ? handleRowSelectionChange
                     : undefined,
             }}
         >
