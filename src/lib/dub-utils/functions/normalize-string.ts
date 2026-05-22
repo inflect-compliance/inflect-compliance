@@ -1,7 +1,6 @@
 export const normalizeString = (key: string) => {
   if (!key) return "";
 
-  const original = key;
   const normalized = key
     // Remove BOM and other special characters
     .replace(/^\uFEFF/, "")
@@ -18,15 +17,6 @@ export const normalizeString = (key: string) => {
     .trim()
     // Optional: normalize case
     .toLowerCase();
-
-  // Optional: Add logging in development
-  if (process.env.NODE_ENV === "development" && original !== normalized) {
-    // console.log(`Normalized key: "${original}" -> "${normalized}"`);
-    // console.log(
-    //   "Original char codes:",
-    //   Array.from(original).map((c) => c.charCodeAt(0)),
-    // );
-  }
 
   return normalized;
 };
