@@ -1,13 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any --
- * The adapter writes JSON-typed columns (lifecycleHistoryJson,
- * answerJson) and runtime-validated enum strings (status, riskRating)
- * that Prisma's generated types treat as their narrower compile-time
- * shapes. The `as any` casts here are deliberate at the persistence
- * boundary — runtime values are validated upstream by
- * EditableLifecycle and the per-column zod schemas. Re-typing through
- * Prisma.JsonValue + per-column union types is a structural refactor
- * of the adapter pattern, not a one-liner.
- */
 /**
  * Vendor Assessment Lifecycle Adapter — Bridges the VendorAssessment domain
  * to the generic EditableLifecycle.
@@ -43,10 +33,12 @@
  * @module app-layer/services/vendor-assessment-lifecycle-adapter
  */
 
+import { Prisma, AssessmentStatus, VendorCriticality } from '@prisma/client';
 import type { PrismaTx } from '@/lib/db-context';
 import type {
     EditablePhase,
     EditableState,
+    PublishedSnapshot,
 } from '../domain/editable-lifecycle.types';
 import type { EditableRepository, LifecycleAuditConfig, PublishValidator } from '../usecases/editable-lifecycle-usecase';
 
@@ -77,7 +69,7 @@ export interface VendorAssessmentPayload {
     /** Computed assessment score */
     readonly score: number | null;
     /** Derived risk rating (LOW, MEDIUM, HIGH, CRITICAL) */
-    readonly riskRating: string | null;
+    readonly riskRating: VendorCriticality | null;
     /** Reviewer/decider notes */
     readonly notes: string | null;
 }
@@ -177,11 +169,11 @@ export const validateAssessmentPayload: PublishValidator<VendorAssessmentPayload
  *   51-75%  → MEDIUM
  *   76-100% → LOW
  */
-export function deriveRiskRating(percentScore: number): string {
-    if (percentScore <= 25) return 'CRITICAL';
-    if (percentScore <= 50) return 'HIGH';
-    if (percentScore <= 75) return 'MEDIUM';
-    return 'LOW';
+export function deriveRiskRating(percentScore: number): VendorCriticality {
+    if (percentScore <= 25) return VendorCriticality.CRITICAL;
+    if (percentScore <= 50) return VendorCriticality.HIGH;
+    if (percentScore <= 75) return VendorCriticality.MEDIUM;
+    return VendorCriticality.LOW;
 }
 
 // ─── Repository Adapter ─────────────────────────────────────────────
@@ -263,12 +255,15 @@ export class VendorAssessmentEditableAdapter implements EditableRepository<Vendo
 
         // ── Version counter ──────────────────────────────────────────
         // Prefer persisted lifecycleVersion; fall back to derived value for legacy data
-        const currentVersion = (assessment as any).lifecycleVersion ?? (hasBeenApproved ? 2 : 1);
+        const currentVersion = assessment.lifecycleVersion ?? (hasBeenApproved ? 2 : 1);
 
         // ── History ──────────────────────────────────────────────────
         // Prefer persisted lifecycleHistoryJson; fall back to empty for legacy data
-        const persistedHistory = (assessment as any).lifecycleHistoryJson;
-        const history = Array.isArray(persistedHistory) ? persistedHistory : [];
+        const persistedHistory = assessment.lifecycleHistoryJson;
+        const history: PublishedSnapshot<VendorAssessmentPayload>[] =
+            Array.isArray(persistedHistory)
+                ? (persistedHistory as unknown as PublishedSnapshot<VendorAssessmentPayload>[])
+                : [];
 
         return {
             phase,
@@ -293,16 +288,14 @@ export class VendorAssessmentEditableAdapter implements EditableRepository<Vendo
             await db.vendorAssessment.updateMany({
                 where: { id: assessmentId, tenantId: this.tenantId },
                 data: {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    status: newStatus as any,
+                    status: newStatus as AssessmentStatus,
                     score: state.published.score,
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    riskRating: state.published.riskRating as any,
+                    riskRating: state.published.riskRating,
                     notes: state.published.notes,
                     decidedByUserId: this.userId,
                     decidedAt: new Date(),
                     lifecycleVersion: state.currentVersion,
-                    ...(historyJson ? { lifecycleHistoryJson: historyJson as any } : {}),
+                    ...(historyJson ? { lifecycleHistoryJson: historyJson as unknown as Prisma.InputJsonValue } : {}),
                 },
             });
 
@@ -319,11 +312,11 @@ export class VendorAssessmentEditableAdapter implements EditableRepository<Vendo
                         tenantId: this.tenantId,
                         assessmentId,
                         questionId: answer.questionId,
-                        answerJson: answer.answerJson as any,
+                        answerJson: answer.answerJson as Prisma.InputJsonValue,
                         computedPoints: answer.computedPoints,
                     },
                     update: {
-                        answerJson: answer.answerJson as any,
+                        answerJson: answer.answerJson as Prisma.InputJsonValue,
                         computedPoints: answer.computedPoints,
                     },
                 });
@@ -333,14 +326,12 @@ export class VendorAssessmentEditableAdapter implements EditableRepository<Vendo
             await db.vendorAssessment.updateMany({
                 where: { id: assessmentId, tenantId: this.tenantId },
                 data: {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    status: newStatus as any,
+                    status: newStatus as AssessmentStatus,
                     score: state.draft.score,
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    riskRating: state.draft.riskRating as any,
+                    riskRating: state.draft.riskRating,
                     notes: state.draft.notes,
                     lifecycleVersion: state.currentVersion,
-                    ...(historyJson ? { lifecycleHistoryJson: historyJson as any } : {}),
+                    ...(historyJson ? { lifecycleHistoryJson: historyJson as unknown as Prisma.InputJsonValue } : {}),
                 },
             });
 
@@ -357,11 +348,11 @@ export class VendorAssessmentEditableAdapter implements EditableRepository<Vendo
                         tenantId: this.tenantId,
                         assessmentId,
                         questionId: answer.questionId,
-                        answerJson: answer.answerJson as any,
+                        answerJson: answer.answerJson as Prisma.InputJsonValue,
                         computedPoints: answer.computedPoints,
                     },
                     update: {
-                        answerJson: answer.answerJson as any,
+                        answerJson: answer.answerJson as Prisma.InputJsonValue,
                         computedPoints: answer.computedPoints,
                     },
                 });
@@ -371,10 +362,9 @@ export class VendorAssessmentEditableAdapter implements EditableRepository<Vendo
             await db.vendorAssessment.updateMany({
                 where: { id: assessmentId, tenantId: this.tenantId },
                 data: {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    status: newStatus as any,
+                    status: newStatus as AssessmentStatus,
                     lifecycleVersion: state.currentVersion,
-                    ...(historyJson ? { lifecycleHistoryJson: historyJson as any } : {}),
+                    ...(historyJson ? { lifecycleHistoryJson: historyJson as unknown as Prisma.InputJsonValue } : {}),
                 },
             });
         }

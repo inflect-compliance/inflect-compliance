@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { PrismaTx } from '@/lib/db-context';
 import { RequestContext } from '../types';
 import { getISO27001Clauses } from '@/app-layer/libraries';
+import { ClauseStatus } from '@prisma/client';
 
 export class ClauseRepository {
     static async list(db: PrismaTx, ctx: RequestContext) {
@@ -32,7 +33,7 @@ export class ClauseRepository {
         });
     }
 
-    static async updateProgress(db: PrismaTx, ctx: RequestContext, clauseId: string, data: { status: string; notes?: string }) {
+    static async updateProgress(db: PrismaTx, ctx: RequestContext, clauseId: string, data: { status: string; notes?: string | null }) {
         return db.clauseProgress.upsert({
             where: {
                 tenantId_clauseId: { tenantId: ctx.tenantId, clauseId },
@@ -40,13 +41,11 @@ export class ClauseRepository {
             create: {
                 tenantId: ctx.tenantId,
                 clauseId,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                status: data.status as any,
+                status: data.status as ClauseStatus,
                 notes: data.notes || '',
             },
             update: {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                status: data.status as any,
+                status: data.status as ClauseStatus,
                 notes: data.notes || '',
             },
         });

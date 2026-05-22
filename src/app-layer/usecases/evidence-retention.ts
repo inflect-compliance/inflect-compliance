@@ -6,6 +6,7 @@
  * - archiveEvidence
  * - unarchiveEvidence
  */
+import { Prisma, RetentionPolicy } from '@prisma/client';
 import { RequestContext } from '../types';
 import { assertCanRead, assertCanWrite, assertCanAdmin } from '../policies/common';
 import { logEvent } from '../events/audit';
@@ -34,26 +35,23 @@ export async function updateEvidenceRetention(
         });
         if (!evidence) throw notFound('Evidence not found');
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const updateData: any = {};
+        const updateData: Prisma.EvidenceUpdateInput = {};
         if (data.retentionUntil !== undefined) {
             updateData.retentionUntil = data.retentionUntil ? new Date(data.retentionUntil) : null;
         }
         if (data.retentionPolicy !== undefined) {
-            updateData.retentionPolicy = data.retentionPolicy;
+            updateData.retentionPolicy = data.retentionPolicy as RetentionPolicy;
         }
         if (data.retentionDays !== undefined) {
             updateData.retentionDays = data.retentionDays;
         }
 
         // If retentionPolicy is DAYS_AFTER_UPLOAD and retentionDays set, compute retentionUntil
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const ev = evidence as any;
         if (
-            (data.retentionPolicy === 'DAYS_AFTER_UPLOAD' || ev.retentionPolicy === 'DAYS_AFTER_UPLOAD') &&
-            (data.retentionDays ?? ev.retentionDays)
+            (data.retentionPolicy === 'DAYS_AFTER_UPLOAD' || evidence.retentionPolicy === 'DAYS_AFTER_UPLOAD') &&
+            (data.retentionDays ?? evidence.retentionDays)
         ) {
-            const days = data.retentionDays ?? ev.retentionDays ?? 0;
+            const days = data.retentionDays ?? evidence.retentionDays ?? 0;
             const base = evidence.createdAt;
             updateData.retentionUntil = new Date(base.getTime() + days * 86_400_000);
         }
@@ -94,8 +92,7 @@ export async function listExpiringEvidence(ctx: RequestContext, days: number = 3
     const future = new Date(Date.now() + days * 86_400_000);
 
     return runInTenantContext(ctx, (db) =>
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (db.evidence as any).findMany({
+        db.evidence.findMany({
             where: {
                 tenantId: ctx.tenantId,
                 retentionUntil: { not: null, lte: future },
@@ -117,8 +114,7 @@ export async function listExpiredEvidence(ctx: RequestContext) {
     assertCanRead(ctx);
 
     return runInTenantContext(ctx, (db) =>
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (db.evidence as any).findMany({
+        db.evidence.findMany({
             where: {
                 tenantId: ctx.tenantId,
                 expiredAt: { not: null },
@@ -143,13 +139,11 @@ export async function archiveEvidence(ctx: RequestContext, evidenceId: string) {
             where: { id: evidenceId, tenantId: ctx.tenantId },
         });
         if (!evidence) throw notFound('Evidence not found');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if ((evidence as any).isArchived) return evidence; // idempotent
+        if (evidence.isArchived) return evidence; // idempotent
 
         const updated = await db.evidence.update({
             where: { id: evidenceId },
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            data: { isArchived: true } as any,
+            data: { isArchived: true },
         });
 
         await logEvent(db, ctx, {
@@ -180,13 +174,11 @@ export async function unarchiveEvidence(ctx: RequestContext, evidenceId: string)
             where: { id: evidenceId, tenantId: ctx.tenantId },
         });
         if (!evidence) throw notFound('Evidence not found');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (!(evidence as any).isArchived) return evidence; // idempotent
+        if (!evidence.isArchived) return evidence; // idempotent
 
         const updated = await db.evidence.update({
             where: { id: evidenceId },
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            data: { isArchived: false } as any,
+            data: { isArchived: false },
         });
 
         await logEvent(db, ctx, {
@@ -228,10 +220,7 @@ export async function getRetentionMetrics(ctx: RequestContext) {
     const in30Days = new Date(Date.now() + 30 * 86_400_000);
 
     return runInTenantContext(ctx, async (db) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const dbAny = db.evidence as any;
-
-        const expiringCount = await dbAny.count({
+        const expiringCount = await db.evidence.count({
             where: {
                 tenantId: ctx.tenantId,
                 retentionUntil: { not: null, lte: in30Days, gt: now },
@@ -240,7 +229,7 @@ export async function getRetentionMetrics(ctx: RequestContext) {
             },
         });
 
-        const archivedCount = await dbAny.count({
+        const archivedCount = await db.evidence.count({
             where: {
                 tenantId: ctx.tenantId,
                 isArchived: true,
@@ -248,7 +237,7 @@ export async function getRetentionMetrics(ctx: RequestContext) {
             },
         });
 
-        const expiredCount = await dbAny.count({
+        const expiredCount = await db.evidence.count({
             where: {
                 tenantId: ctx.tenantId,
                 expiredAt: { not: null },
@@ -258,7 +247,7 @@ export async function getRetentionMetrics(ctx: RequestContext) {
         });
 
         // Top controls with expiring evidence
-        const expiringEvidence = await dbAny.findMany({
+        const expiringEvidence = await db.evidence.findMany({
             where: {
                 tenantId: ctx.tenantId,
                 retentionUntil: { not: null, lte: in30Days, gt: now },
@@ -270,9 +259,9 @@ export async function getRetentionMetrics(ctx: RequestContext) {
         });
 
         const controlMap = new Map<string, { controlId: string; name: string; annexId: string; count: number }>();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        for (const ev of expiringEvidence as any[]) {
+        for (const ev of expiringEvidence) {
             const key = ev.controlId;
+            if (!key) continue;
             if (!controlMap.has(key)) {
                 controlMap.set(key, {
                     controlId: key,
@@ -307,8 +296,7 @@ export async function assertNotArchived(ctx: RequestContext, evidenceId: string)
             where: { id: evidenceId, tenantId: ctx.tenantId },
         });
         if (!evidence) throw notFound('Evidence not found');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if ((evidence as any).isArchived) {
+        if (evidence.isArchived) {
             const { badRequest } = await import('@/lib/errors/types');
             throw badRequest('Cannot link archived evidence. Unarchive first or use active evidence.');
         }

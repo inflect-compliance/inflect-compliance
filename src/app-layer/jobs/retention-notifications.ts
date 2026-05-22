@@ -8,6 +8,7 @@
  *   await runEvidenceRetentionNotifications({ days: 30 });           // all tenants
  *   await runEvidenceRetentionNotifications({ tenantId: 'xxx' });    // single tenant
  */
+import { Prisma } from '@prisma/client';
 import { formatDate } from '@/lib/format-date';
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/observability/logger';
@@ -31,16 +32,14 @@ export async function runEvidenceRetentionNotifications(
     const days = options.days ?? 30;
     const futureDate = new Date(Date.now() + days * 86_400_000);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {
+    const where: Prisma.EvidenceWhereInput = {
         retentionUntil: { not: null, lte: futureDate, gt: new Date() },
         isArchived: false,
         deletedAt: null,
     };
     if (options.tenantId) where.tenantId = options.tenantId;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const expiring = await (prisma.evidence as any).findMany({
+    const expiring = await prisma.evidence.findMany({
         where,
         select: {
             id: true, tenantId: true, title: true, owner: true, controlId: true,
@@ -64,13 +63,7 @@ export async function runEvidenceRetentionNotifications(
                         entityId: ev.id,
                     },
                 },
-            // The where shape is correct but Prisma's generated type
-            // doesn't accept `links: { some: {...} }` without an
-            // explicit cast (entityType enum widening). Replacing the
-            // cast with a typed `Prisma.TaskWhereInput` is bounded
-            // follow-up.
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } as any,
+            } satisfies Prisma.TaskWhereInput,
         });
 
         if (existingTask) {
@@ -79,15 +72,13 @@ export async function runEvidenceRetentionNotifications(
         }
 
         // Create Task + link
-        const daysLeft = Math.ceil((new Date(ev.retentionUntil).getTime() - Date.now()) / 86_400_000);
+        // retentionUntil is non-null: the where clause filters `retentionUntil: { not: null }`
+        const daysLeft = Math.ceil((new Date(ev.retentionUntil!).getTime() - Date.now()) / 86_400_000);
         // KNOWN BUG: this create misses the required `createdByUserId`
-        // field (Task.createdByUserId is NOT NULL). The cast hides a
-        // runtime crash that hasn't fired because the retention job
-        // hasn't been live in prod under Prisma 7. Bounded follow-up:
-        // introduce a system-user id for background jobs and pass it
-        // here. Tracked in #BUG-retention-task-creator.
+        // field (Task.createdByUserId is NOT NULL). Background jobs have
+        // no actor userId — a system-user sentinel is needed.
+        // Tracked in #BUG-retention-task-creator.
         const task = await prisma.task.create({
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             data: {
                 tenantId: ev.tenantId,
                 type: 'IMPROVEMENT',
@@ -96,12 +87,11 @@ export async function runEvidenceRetentionNotifications(
                 status: 'OPEN',
                 priority: daysLeft <= 7 ? 'HIGH' : 'MEDIUM',
                 ...(ev.controlId ? { controlId: ev.controlId } : {}),
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- createdByUserId missing: background job has no actor; requires system-user id (tracked #BUG-retention-task-creator)
             } as any,
         });
 
         // Create task link to evidence
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await prisma.taskLink.create({
             data: {
                 taskId: task.id,
@@ -139,7 +129,6 @@ export async function runEvidenceRetentionNotifications(
 
                 for (const m of members) {
                     if (!m.user.email) continue;
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     await prisma.notificationOutbox.create({
                         data: {
                             tenantId: ev.tenantId,

@@ -225,8 +225,7 @@ export async function markControlTestCompleted(ctx: RequestContext, controlId: s
         const updated = await ControlRepository.update(db, ctx, controlId, {
             lastTested: now,
             nextDueAt: nextDue,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any);
+        });
 
         await logEvent(db, ctx, {
             action: 'CONTROL_TEST_COMPLETED',

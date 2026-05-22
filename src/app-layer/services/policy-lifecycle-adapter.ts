@@ -1,9 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any --
- * Same Prisma-vs-runtime gap as the vendor adapter: lifecycleHistoryJson
- * and contentType are stored as JSON / enum strings narrower than
- * Prisma's generated types. Casts at the persistence boundary; runtime
- * validation upstream.
- */
 /**
  * Policy Lifecycle Adapter — Bridges Policy domain to the generic EditableLifecycle.
  *
@@ -36,6 +30,7 @@
  * @module app-layer/services/policy-lifecycle-adapter
  */
 
+import { Prisma, PolicyStatus, PolicyContentType } from '@prisma/client';
 import type { PrismaTx } from '@/lib/db-context';
 import type {
     EditableState,
@@ -54,7 +49,7 @@ import type { EditableRepository, LifecycleAuditConfig, PublishValidator } from 
  */
 export interface PolicyPayload {
     /** Content type: MARKDOWN, HTML, or EXTERNAL_LINK */
-    readonly contentType: string;
+    readonly contentType: PolicyContentType;
     /** Content text for MARKDOWN/HTML types */
     readonly contentText: string | null;
     /** External URL for EXTERNAL_LINK type */
@@ -135,10 +130,10 @@ import { badRequest } from '@/lib/errors/types';
  * - MARKDOWN/HTML requires contentText
  */
 export const validatePolicyPayload: PublishValidator<PolicyPayload> = (draft) => {
-    if (draft.contentType === 'EXTERNAL_LINK' && !draft.externalUrl) {
+    if (draft.contentType === PolicyContentType.EXTERNAL_LINK && !draft.externalUrl) {
         throw badRequest('externalUrl is required for EXTERNAL_LINK content type');
     }
-    if ((draft.contentType === 'MARKDOWN' || draft.contentType === 'HTML') && !draft.contentText) {
+    if ((draft.contentType === PolicyContentType.MARKDOWN || draft.contentType === PolicyContentType.HTML) && !draft.contentText) {
         throw badRequest('contentText is required for MARKDOWN/HTML content type');
     }
 };
@@ -190,7 +185,7 @@ export class PolicyEditableAdapter implements EditableRepository<PolicyPayload> 
 
         // ── Version counter ──────────────────────────────────────────
         // Prefer persisted lifecycleVersion; fall back to versionNumber for legacy data
-        const currentVersionNumber = (policy as any).lifecycleVersion ?? currentVersion?.versionNumber ?? 1;
+        const currentVersionNumber = policy.lifecycleVersion ?? currentVersion?.versionNumber ?? 1;
 
         // ── Published payload ────────────────────────────────────────
         let published: PolicyPayload | null = null;
@@ -221,12 +216,12 @@ export class PolicyEditableAdapter implements EditableRepository<PolicyPayload> 
 
         // ── History ──────────────────────────────────────────────────
         // Prefer persisted lifecycleHistoryJson; fall back to version-row reconstruction
-        const persistedHistory = (policy as any).lifecycleHistoryJson;
+        const persistedHistory = policy.lifecycleHistoryJson;
         let history: PublishedSnapshot<PolicyPayload>[];
 
         if (Array.isArray(persistedHistory) && persistedHistory.length > 0) {
             // Use persisted history (post-migration data)
-            history = persistedHistory as PublishedSnapshot<PolicyPayload>[];
+            history = persistedHistory as unknown as PublishedSnapshot<PolicyPayload>[];
         } else {
             // Fall back to reconstruction from PolicyVersion rows (pre-migration data)
             history = versions
@@ -278,8 +273,7 @@ export class PolicyEditableAdapter implements EditableRepository<PolicyPayload> 
                         tenantId: this.tenantId,
                         policyId,
                         versionNumber: state.currentVersion,
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        contentType: state.published.contentType as any,
+                        contentType: state.published.contentType,
                         contentText: state.published.contentText,
                         externalUrl: state.published.externalUrl,
                         changeSummary: state.published.changeSummary,
@@ -291,10 +285,9 @@ export class PolicyEditableAdapter implements EditableRepository<PolicyPayload> 
                     where: { id: policyId, tenantId: this.tenantId },
                     data: {
                         currentVersionId: newVersion.id,
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        status: newStatus as any,
+                        status: newStatus as PolicyStatus,
                         lifecycleVersion: state.currentVersion,
-                        ...(historyJson ? { lifecycleHistoryJson: historyJson as any } : {}),
+                        ...(historyJson ? { lifecycleHistoryJson: historyJson as unknown as Prisma.InputJsonValue } : {}),
                     },
                 });
             } else {
@@ -302,10 +295,9 @@ export class PolicyEditableAdapter implements EditableRepository<PolicyPayload> 
                     where: { id: policyId, tenantId: this.tenantId },
                     data: {
                         currentVersionId: existing.id,
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        status: newStatus as any,
+                        status: newStatus as PolicyStatus,
                         lifecycleVersion: state.currentVersion,
-                        ...(historyJson ? { lifecycleHistoryJson: historyJson as any } : {}),
+                        ...(historyJson ? { lifecycleHistoryJson: historyJson as unknown as Prisma.InputJsonValue } : {}),
                     },
                 });
             }
@@ -314,10 +306,9 @@ export class PolicyEditableAdapter implements EditableRepository<PolicyPayload> 
             await db.policy.updateMany({
                 where: { id: policyId, tenantId: this.tenantId },
                 data: {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    status: newStatus as any,
+                    status: newStatus as PolicyStatus,
                     lifecycleVersion: state.currentVersion,
-                    ...(historyJson ? { lifecycleHistoryJson: historyJson as any } : {}),
+                    ...(historyJson ? { lifecycleHistoryJson: historyJson as unknown as Prisma.InputJsonValue } : {}),
                 },
             });
         }

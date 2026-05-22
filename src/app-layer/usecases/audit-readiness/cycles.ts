@@ -1,6 +1,7 @@
 ﻿/**
  * Audit Readiness — Cycle CRUD
  */
+import { AuditCycleStatus } from '@prisma/client';
 import { RequestContext } from '../../types';
 import {
     assertCanManageAuditCycles, assertCanViewPack,
@@ -73,8 +74,7 @@ export async function updateAuditCycle(
             where: { id: cycleId },
             data: {
                 ...(data.name !== undefined && { name: data.name }),
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                ...(data.status !== undefined && { status: data.status as any }),
+                ...(data.status !== undefined && { status: data.status as AuditCycleStatus }),
                 ...(data.periodStartAt !== undefined && { periodStartAt: data.periodStartAt ? new Date(data.periodStartAt) : null }),
                 ...(data.periodEndAt !== undefined && { periodEndAt: data.periodEndAt ? new Date(data.periodEndAt) : null }),
             },

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Statement of Applicability — Computation Use Case
  *
@@ -80,8 +79,21 @@ export async function getSoA(ctx: RequestContext, options: SoAOptions = {}): Pro
     const reqIds = requirements.map((r) => r.id);
 
     // 2. Load all ControlRequirementLinks for this tenant + framework
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const links: any[] = await runInTenantContext(ctx, (db) =>
+    interface ControlLinkRow {
+        requirementId: string;
+        control: {
+            id: string;
+            code: string | null;
+            name: string;
+            status: string;
+            applicability: string;
+            applicabilityJustification: string | null;
+            ownerUserId: string | null;
+            frequency: string | null;
+            deletedAt: Date | null;
+        };
+    }
+    const links: ControlLinkRow[] = await runInTenantContext(ctx, (db) =>
         db.controlRequirementLink.findMany({
             where: {
                 tenantId: ctx.tenantId,
@@ -103,16 +115,13 @@ export async function getSoA(ctx: RequestContext, options: SoAOptions = {}): Pro
                 },
             },
         })
-    );
+    ) as ControlLinkRow[];
 
     // Filter out deleted controls
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const activeLinks = links.filter((l) => !l.control.deletedAt);
 
     // Group links by requirement ID
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const linksByReq = new Map<string, any[]>();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const linksByReq = new Map<string, ControlLinkRow[]>();
     for (const link of activeLinks) {
         const arr = linksByReq.get(link.requirementId) || [];
         arr.push(link);
@@ -147,12 +156,10 @@ export async function getSoA(ctx: RequestContext, options: SoAOptions = {}): Pro
         missingJustification: 0,
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for (const req of requirements as any[]) {
+    for (const req of requirements) {
         const reqLinks = linksByReq.get(req.id) || [];
 
         // Build mapped controls list
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const mappedControls: SoAMappedControlDTO[] = reqLinks.map((l) => ({
             controlId: l.control.id,
             code: l.control.code,
@@ -267,8 +274,7 @@ async function loadEvidenceCounts(ctx: RequestContext, controlIds: string[]): Pr
             _count: { id: true },
         })
     );
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for (const row of counts as any[]) {
+    for (const row of counts) {
         if (row.controlId) result.set(row.controlId, row._count.id);
     }
     return result;
@@ -287,8 +293,7 @@ async function loadOpenTaskCounts(ctx: RequestContext, controlIds: string[]): Pr
             _count: { id: true },
         })
     );
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for (const row of counts as any[]) {
+    for (const row of counts) {
         result.set(row.controlId, row._count.id);
     }
     return result;
@@ -310,8 +315,7 @@ async function loadLatestTestResults(ctx: RequestContext, controlIds: string[]):
         })
     );
     // Take first (latest) per control
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for (const run of runs as any[]) {
+    for (const run of runs) {
         if (!result.has(run.controlId) && run.result) {
             result.set(run.controlId, run.result);
         }

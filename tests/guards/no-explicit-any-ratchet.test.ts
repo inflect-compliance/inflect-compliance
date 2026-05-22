@@ -48,20 +48,17 @@ const PATTERNS: Pattern[] = [
  * decision and a commit-message rationale.
  */
 const CAPS: Record<string, number> = {
-    // +2 for bcryptjs interop normalisation `: any` annotations in
-    // src/lib/auth/passwords.ts AND src/lib/auth.ts. Without those casts
-    // the ESM-CJS namespace shape on Node ≥ 22 breaks every credentials
-    // login (verifyPassword silently returns false on TypeError).
-    ': any': 497,
-    // Epic 1, PR 3: +4 for new invite admin + public routes that follow
-    // the existing NextResponse.json<any>(...) convention across the codebase.
-    '<any>': 500,
-    'useState<any>': 26,
-    // Epic 1 R-1/R-5: +3 for src/auth.config.ts (token.memberships /
-    // token.role mapping into session.user — NextAuth v5 beta types
-    // don't yet expose these custom JWT fields cleanly without casts).
-    'as any': 280,
-    '// @ts-ignore': 2,
+    // Roadmap-6 P1 (2026-05-22) — `as any` debt paydown. The cast sweep
+    // across ~65 files drove every pattern down; each cap is lowered to
+    // the exact post-cleanup floor so the gain cannot silently erode.
+    // The `as any` cap counts comment mentions too (this ratchet does
+    // not strip comments) — the code-level count is 4, tracked by
+    // tests/guardrails/no-explicit-any-ratchet.test.ts.
+    ': any': 357,
+    '<any>': 61,
+    'useState<any>': 24,
+    'as any': 18,
+    '// @ts-ignore': 0,
 };
 
 function walk(dir: string): string[] {

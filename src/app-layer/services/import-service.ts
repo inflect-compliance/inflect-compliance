@@ -1,10 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any --
- * Tenant import works on free-form JSON envelope payloads where each
- * entity's row shape is validated at parse time (zod) but typed as
- * `unknown` flowing through the FK-resolution graph. The `any` casts
- * here are at the resolver-output boundary — narrowing to a specific
- * Prisma model type would re-do the validation unnecessarily.
- */
 /**
  * Import Service — Topological, FK-Aware Tenant Data Import
  *
@@ -216,6 +209,29 @@ function prepareEntityData(
     return data;
 }
 
+// ─── Dynamic Model Delegate ─────────────────────────────────────────
+
+/**
+ * Minimal delegate interface for dynamic Prisma model access by string key.
+ * Import service resolves model names at runtime from PRISMA_MODEL_MAP —
+ * only the methods actually called are listed here.
+ */
+interface ModelDelegate {
+    findUnique?(args: object): Promise<unknown>;
+    create(args: object): Promise<unknown>;
+    update(args: object): Promise<unknown>;
+}
+
+/** Type guard: checks whether an unknown value has a string `code` field. */
+function hasStringCode(e: unknown): e is { code: string } {
+    return (
+        typeof e === 'object' &&
+        e !== null &&
+        'code' in e &&
+        typeof (e as Record<string, unknown>).code === 'string'
+    );
+}
+
 // ─── Entity Persistence ─────────────────────────────────────────────
 
 /**
@@ -234,8 +250,8 @@ async function persistEntity(
     idMap: IdMap,
 ): Promise<'imported' | 'skipped' | 'conflict' | 'error'> {
     const modelName = PRISMA_MODEL_MAP[entityType];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const model = (tx as any)[modelName];
+    // Dynamic model access: entityType is resolved to a Prisma model name at runtime.
+    const model = (tx as unknown as Record<string, ModelDelegate>)[modelName];
     if (!model) return 'error';
 
     const entityId = idMap.resolve(entityType, record.id);
@@ -276,8 +292,11 @@ async function persistEntity(
         return 'imported';
 
     } catch (error: unknown) {
-        // Prisma unique constraint violation → conflict
-        if ((error as any)?.code === 'P2002') {
+        // Prisma unique constraint violation → conflict. Detected by the
+        // `code` property (not `instanceof`) so it stays robust across
+        // Prisma client instances / bundling boundaries — the original
+        // property-based behaviour.
+        if (hasStringCode(error) && error.code === 'P2002') {
             if (strategy === 'SKIP') return 'skipped';
             return 'conflict';
         }
@@ -568,7 +587,7 @@ export async function importTenantData(
                             entityType,
                             entityId: record.id,
                             message: `Persistence error: ${(error as Error).message}`,
-                            code: (error as any)?.code,
+                            code: hasStringCode(error) ? error.code : undefined,
                         });
                     }
                 }
@@ -620,7 +639,7 @@ export async function importTenantData(
                 entityType: 'control' as ExportEntityType,
                 entityId: '_transaction',
                 message: `Transaction failed: ${(error as Error).message}`,
-                code: (error as any)?.code,
+                code: hasStringCode(error) ? error.code : undefined,
             }],
             durationMs,
             dryRun: false,

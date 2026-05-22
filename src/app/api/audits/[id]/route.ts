@@ -14,7 +14,6 @@ export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { p
 
 export const PUT = withApiErrorHandling(withValidatedBody(UpdateAuditSchema, async (req, { params }: { params: { id: string } }, body) => {
     const ctx = await getLegacyCtx(req);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const audit = await updateAudit(ctx, params.id, body as any);
+    const audit = await updateAudit(ctx, params.id, body);
     return jsonResponse({ success: true, audit });
 }));

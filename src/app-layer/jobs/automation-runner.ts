@@ -46,6 +46,7 @@
  *
  * @module jobs/automation-runner
  */
+import { Prisma, EvidenceType } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { runJob } from '@/lib/observability/job-runner';
 import { logger } from '@/lib/observability/logger';
@@ -126,8 +127,7 @@ export async function findDueAutomationControls(
     now: Date,
     tenantId?: string
 ): Promise<DueControl[]> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {
+    const where: Prisma.ControlWhereInput = {
         automationKey: { not: null },
         evidenceSource: 'INTEGRATION',
         deletedAt: null,
@@ -339,8 +339,9 @@ export async function executeControlAutomation(
             data: {
                 tenantId: control.tenantId,
                 controlId: control.id,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                type: evidencePayload.type as any,
+                // EvidencePayload.type uses integration-layer vocab (CONFIGURATION etc.)
+                // that maps to Prisma EvidenceType at runtime; cast is narrow and bounded.
+                type: evidencePayload.type as EvidenceType,
                 title: evidencePayload.title,
                 content: evidencePayload.content,
                 category: evidencePayload.category ?? 'integration',
@@ -355,8 +356,7 @@ export async function executeControlAutomation(
         where: { id: execution.id },
         data: {
             status: result.status,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            resultJson: result.details as any,
+            resultJson: result.details as Prisma.InputJsonValue,
             evidenceId,
             errorMessage: result.errorMessage,
             durationMs,

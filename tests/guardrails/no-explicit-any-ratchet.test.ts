@@ -50,8 +50,17 @@ const SRC_DIR = path.join(REPO_ROOT, 'src');
  *     cleanup in heavy data-path files, typed EntitlementError +
  *     ambient EdgeRuntime declaration. (Counting only code-level
  *     occurrences — docstring/comment mentions are excluded.)
+ *   • 175 → 4: Roadmap-6 P1 (2026-05-22) — `as any` debt paydown
+ *     across ~65 files: Prisma enum/Json typing in repositories,
+ *     services and usecases; schema-derived (`z.infer`) input types
+ *     at the API route ↔ usecase boundary; typed delegate adapters
+ *     for dynamic model access; `instanceof` error narrowing. The
+ *     remaining 4 are documented staged debt — onboarding's
+ *     STEP_ORDER vs ONBOARDING_STEPS divergence (×3, a latent bug
+ *     out of P1 scope) and retention-notifications' system-user gap
+ *     (×1) — each carries an inline eslint-disable + reason.
  */
-const CURRENT_BASELINE = 175;
+const CURRENT_BASELINE = 4;
 
 const AS_ANY_RE = /\bas\s+any\b/;
 

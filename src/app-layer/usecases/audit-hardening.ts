@@ -6,6 +6,7 @@
  * - Pack cloning for retest workflows
  * - Events: AUDIT_PACK_CLONED, RETEST_REQUESTED
  */
+import { WorkItemStatus, Prisma } from '@prisma/client';
 import { RequestContext } from '../types';
 import {
     assertCanManageAuditPacks, assertCanFreezePack, assertCanViewPack,
@@ -122,15 +123,11 @@ export async function storeExportArtifact(
 
 // ─── Pack Cloning (Retest) ───
 
-// Prisma's `auditPack.create({ include })` return is a deeply nested
-// generic shape; the call site only reads `.id` and `.name` and the
-// wider type would force a 5+ line literal at every consumer.
 export async function clonePackForRetest(
     ctx: RequestContext,
     sourcePackId: string,
     name?: string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-): Promise<any> {
+): Promise<{ id: string; name: string; status: string; tenantId: string; auditCycleId: string }> {
     assertCanManageAuditPacks(ctx);
 
     const sourcePack = await runInTenantContext(ctx, (tdb) =>
@@ -158,10 +155,8 @@ export async function clonePackForRetest(
     );
 
     // Copy item selections (NOT snapshots — new snapshots will be created on freeze)
-    const itemsToClone = sourcePack.items
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const itemsToClone: Prisma.AuditPackItemCreateManyInput[] = sourcePack.items
         .filter((i) => i.entityType !== 'FILE' && i.entityType !== 'READINESS_REPORT')
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .map((item) => ({
             tenantId: ctx.tenantId,
             auditPackId: clonedPack.id,
@@ -171,23 +166,21 @@ export async function clonePackForRetest(
             snapshotJson: '',
         }));
 
-    // Auto-include READY_FOR_RETEST issues
+    // Auto-include IN_PROGRESS issues (legacy "READY_FOR_RETEST" status migrated
+    // to IN_PROGRESS in the unified task model; see migration 20260310191803).
     const retestIssues = await runInTenantContext(ctx, (tdb) =>
         tdb.task.findMany({
             where: {
                 tenantId: ctx.tenantId,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                status: 'READY_FOR_RETEST' as any,
+                status: WorkItemStatus.IN_PROGRESS,
             },
             select: { id: true },
             take: 50,
         })
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const existingIssueIds = new Set(itemsToClone.filter((i) => i.entityType === 'ISSUE').map((i) => i.entityId));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let sortOrder = Math.max(...itemsToClone.map((i) => i.sortOrder || 0), 0) + 1;
+    let sortOrder = Math.max(...itemsToClone.map((i) => (i.sortOrder as number) || 0), 0) + 1;
 
     for (const issue of retestIssues) {
         if (!existingIssueIds.has(issue.id)) {
@@ -204,8 +197,7 @@ export async function clonePackForRetest(
 
     if (itemsToClone.length > 0) {
         await runInTenantContext(ctx, (tdb) =>
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            tdb.auditPackItem.createMany({ data: itemsToClone as any[] })
+            tdb.auditPackItem.createMany({ data: itemsToClone })
         );
     }
 
@@ -255,8 +247,11 @@ export async function clonePackForRetest(
 
 // ─── Auditor Pack Access ───
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function getAuditorAssignedPacks(ctx: RequestContext): Promise<any[]> {
+export async function getAuditorAssignedPacks(ctx: RequestContext): Promise<Array<{
+    id: string; name: string; status: string; tenantId: string; auditCycleId: string;
+    cycle: { name: string; frameworkKey: string; frameworkVersion: string } | null;
+    items: Array<{ id: string; entityType: string }>;
+}>> {
     if (ctx.role !== 'AUDITOR') throw forbidden('Only auditors can access this view');
 
     // Look up user email from userId
@@ -279,7 +274,6 @@ export async function getAuditorAssignedPacks(ctx: RequestContext): Promise<any[
         })
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const packIds = accesses.map((a) => a.auditPackId);
     if (packIds.length === 0) return [];
 

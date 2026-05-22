@@ -8,7 +8,6 @@ import { jsonResponse } from '@/lib/api-response';
 
 export const PUT = withApiErrorHandling(withValidatedBody(UpdateClauseProgressSchema, async (req, { params }: { params: { tenantSlug: string; id: string } }, body) => {
     const ctx = await getTenantCtx(params, req);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const progress = await updateClauseProgress(ctx, params.id, body as any);
+    const progress = await updateClauseProgress(ctx, params.id, body);
     return jsonResponse(progress);
 }));

@@ -76,7 +76,6 @@ export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { p
 
 export const POST = withApiErrorHandling(withValidatedBody(CreateRiskSchema, async (req, { params }: { params: { tenantSlug: string } }, body) => {
     const ctx = await getTenantCtx(params, req);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const risk = await createRisk(ctx, body as any);
+    const risk = await createRisk(ctx, body);
     return jsonResponse(risk, { status: 201 });
 }));

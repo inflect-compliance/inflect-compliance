@@ -16,6 +16,7 @@
  *
  * @module usecases/webhook-processor
  */
+import { EvidenceType } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { registry, integrationRegistry } from '../integrations/registry';
 import { isWebhookEventProvider } from '../integrations/types';
@@ -339,8 +340,9 @@ export async function processIncomingWebhook(input: WebhookInput): Promise<Webho
                             data: {
                                 tenantId: matchedConnection.tenantId,
                                 controlId: control.id,
-                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                type: 'CONFIGURATION' as any,
+                                // Webhook-created evidence is text-based; EvidenceType enum uses FILE/LINK/TEXT.
+                                // Map to TEXT as the semantically closest value for automation-generated content.
+                                type: EvidenceType.TEXT,
                                 title: `[${provider}] Webhook: ${automationKey}`,
                                 content: `Automated evidence from ${provider} webhook event.\nEvent type: ${event.eventType ?? 'unknown'}\nExecution ID: ${execution.id}`,
                                 category: 'integration',
@@ -386,8 +388,7 @@ export async function processIncomingWebhook(input: WebhookInput): Promise<Webho
                 store: new PrismaSyncMappingStore(),
                 localStore: new PrismaLocalStore(),
                 logger: {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    log: (syncEvent: any) => logger.info('Sync event from webhook', {
+                    log: (syncEvent: Record<string, unknown>) => logger.info('Sync event from webhook', {
                         component: 'integrations',
                         provider,
                         eventId: event.id,

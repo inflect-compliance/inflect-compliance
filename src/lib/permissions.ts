@@ -342,8 +342,7 @@ export function parsePermissionsJson(json: unknown, baseRole: Role): PermissionS
                 }
             }
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (result as any)[domain] = domainResult;
+            (result as Record<keyof PermissionSet, Record<string, boolean>>)[domain] = domainResult;
         }
     }
 

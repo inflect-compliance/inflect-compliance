@@ -7,6 +7,8 @@ import { notFound, badRequest, forbidden } from '@/lib/errors/types';
 import { runInTenantContext } from '@/lib/db-context';
 import { cachedListRead, bumpEntityCacheVersion } from '@/lib/cache/list-cache';
 import type { EvidenceType, ReviewCadence } from '@prisma/client';
+import { z } from 'zod';
+import { CreateEvidenceSchema, UpdateEvidenceSchema } from '@/lib/schemas';
 
 export async function listEvidence(
     ctx: RequestContext,
@@ -56,20 +58,10 @@ export async function getEvidence(ctx: RequestContext, id: string) {
     });
 }
 
-export async function createEvidence(ctx: RequestContext, data: {
-    type: string;
-    title: string;
-    content?: string | null;
-    fileName?: string | null;
-    fileSize?: number | null;
-    controlId?: string | null;
-    category?: string;
-    owner?: string;         // Legacy free-text
-    ownerUserId?: string;   // Real user FK (preferred)
-    reviewCycle?: string | null;
-    nextReviewDate?: string | null;
-    file?: File;
-}) {
+export async function createEvidence(
+    ctx: RequestContext,
+    data: z.infer<typeof CreateEvidenceSchema> & { file?: File },
+) {
     assertCanWrite(ctx);
 
     // File upload happens outside the tenant transaction (filesystem I/O)
@@ -161,15 +153,7 @@ export async function createEvidence(ctx: RequestContext, data: {
     return created;
 }
 
-export async function updateEvidence(ctx: RequestContext, id: string, data: {
-    title?: string;
-    content?: string | null;
-    category?: string;
-    owner?: string;         // Legacy free-text
-    ownerUserId?: string;   // Real user FK (preferred)
-    reviewCycle?: string;
-    nextReviewDate?: string | null;
-}) {
+export async function updateEvidence(ctx: RequestContext, id: string, data: z.infer<typeof UpdateEvidenceSchema>) {
     assertCanWrite(ctx);
 
     const updated = await runInTenantContext(ctx, async (db) => {
@@ -614,8 +598,7 @@ export async function downloadEvidenceFile(ctx: RequestContext, fileId: string) 
         }
 
         // ─── Strict Policy: control-aware access ───
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const evidence = await (db.evidence as any).findFirst({
+        const evidence = await db.evidence.findFirst({
             where: { tenantId: ctx.tenantId, fileRecordId: fileId },
             select: { id: true, controlId: true, deletedAt: true },
         });

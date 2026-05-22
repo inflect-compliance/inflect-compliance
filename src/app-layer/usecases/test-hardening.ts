@@ -10,7 +10,7 @@ import { RequestContext } from '../types';
 import { assertCanReadTests, assertCanLinkTestEvidence } from '../policies/test.policies';
 import { assertCanManageAuditPacks, assertCanViewPack } from '../policies/audit-readiness.policies';
 import { logEvent } from '../events/audit';
-import { runInTenantContext } from '@/lib/db-context';
+import { runInTenantContext, type PrismaTx } from '@/lib/db-context';
 import { notFound, badRequest } from '@/lib/errors/types';
 import { computeFileHash, verifyFileIntegrity } from './audit-hardening';
 
@@ -34,8 +34,7 @@ export async function linkEvidenceWithHash(
 ) {
     assertCanLinkTestEvidence(ctx);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return runInTenantContext(ctx, async (db) => {
+    return runInTenantContext(ctx, async (db: PrismaTx) => {
         const run = await db.controlTestRun.findFirst({
             where: { id: runId, tenantId: ctx.tenantId },
         });
@@ -91,8 +90,7 @@ export async function linkEvidenceWithHash(
 export async function verifyRunEvidence(ctx: RequestContext, runId: string) {
     assertCanReadTests(ctx);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return runInTenantContext(ctx, async (db) => {
+    return runInTenantContext(ctx, async (db: PrismaTx) => {
         const run = await db.controlTestRun.findFirst({
             where: { id: runId, tenantId: ctx.tenantId },
             include: {
@@ -114,8 +112,7 @@ export async function verifyRunEvidence(ctx: RequestContext, runId: string) {
 
         const results: VerificationResult[] = [];
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        for (const ev of run.evidence as any[]) {
+        for (const ev of run.evidence) {
             if (ev.kind === 'FILE' && ev.fileId) {
                 try {
                     const integrity = await verifyFileIntegrity(ctx, ev.fileId);
@@ -179,8 +176,7 @@ export async function verifyRunEvidence(ctx: RequestContext, runId: string) {
 export async function snapshotTestRun(ctx: RequestContext, runId: string, packId: string) {
     assertCanManageAuditPacks(ctx);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return runInTenantContext(ctx, async (db) => {
+    return runInTenantContext(ctx, async (db: PrismaTx) => {
         // Verify pack exists and is not frozen
         const pack = await db.auditPack.findFirst({
             where: { id: packId, tenantId: ctx.tenantId },
@@ -304,8 +300,7 @@ interface ExportOptions {
 export async function exportTestEvidenceBundle(ctx: RequestContext, options: ExportOptions) {
     assertCanReadTests(ctx);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return runInTenantContext(ctx, async (db) => {
+    return runInTenantContext(ctx, async (db: PrismaTx) => {
         const where: Record<string, unknown> = { tenantId: ctx.tenantId };
         if (options.controlId) where.controlId = options.controlId;
         if (options.periodDays) {
@@ -329,10 +324,8 @@ export async function exportTestEvidenceBundle(ctx: RequestContext, options: Exp
             },
             orderBy: { createdAt: 'desc' },
             take: 500,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         });
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const rows = runs.map((run) => ({
             runId: run.id,
             controlCode: run.control?.code || '',
@@ -348,9 +341,7 @@ export async function exportTestEvidenceBundle(ctx: RequestContext, options: Exp
             findingSummary: run.findingSummary || '',
             evidenceCount: run.evidence?.length || 0,
             evidenceHashes: run.evidence
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 ?.filter((e) => e.sha256Hash)
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 .map((e) => `${e.fileId}:${e.sha256Hash}`)
                 .join('; ') || '',
         }));

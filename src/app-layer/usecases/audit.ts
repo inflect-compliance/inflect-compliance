@@ -6,6 +6,8 @@ import { notFound } from '@/lib/errors/types';
 import { runInTenantContext } from '@/lib/db-context';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import type { AuditStatus } from '@prisma/client';
+import { z } from 'zod';
+import { UpdateAuditSchema } from '@/lib/schemas';
 
 // Epic D.2 — preserve the three-state contract on update paths.
 function sanitizeOptional(v: string | null | undefined): string | null | undefined {
@@ -108,15 +110,7 @@ export async function createAudit(ctx: RequestContext, data: {
     });
 }
 
-export async function updateAudit(ctx: RequestContext, id: string, data: {
-    title?: string;
-    scope?: string | null;
-    criteria?: string | null;
-    status?: string;
-    auditors?: string | null;
-    auditees?: string | null;
-    checklistUpdates?: { id: string; result: string; notes?: string }[];
-}) {
+export async function updateAudit(ctx: RequestContext, id: string, data: z.infer<typeof UpdateAuditSchema>) {
     assertCanWrite(ctx);
 
     return runInTenantContext(ctx, async (db) => {

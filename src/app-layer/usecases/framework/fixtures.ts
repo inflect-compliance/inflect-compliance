@@ -1,5 +1,4 @@
-﻿/* eslint-disable @typescript-eslint/no-explicit-any */
-import { RequestContext } from '../../types';
+﻿import { RequestContext } from '../../types';
 import { assertCanViewFrameworks, assertCanInstallFrameworkPack } from '../../policies/framework.policies';
 import { logEvent } from '../../events/audit';
 import { runInTenantContext } from '@/lib/db-context';
@@ -34,7 +33,7 @@ export async function upsertRequirements(
     if (!requirements || requirements.length === 0) throw badRequest('At least one requirement required');
 
     // Validate unique codes within the fixture
-    const codes = requirements.map((r: any) => r.code);
+    const codes = requirements.map((r) => r.code);
     const uniqueCodes = new Set(codes);
     if (uniqueCodes.size !== codes.length) {
         const dupes = codes.filter((c, i) => codes.indexOf(c) !== i);
@@ -115,24 +114,21 @@ export async function computeRequirementsDiff(
     if (!fwFrom) throw notFound(`Framework "${frameworkKeyFrom}" not found`);
     if (!fwTo) throw notFound(`Framework "${frameworkKeyTo}" not found`);
 
-    const reqsFrom: any[] = await db.frameworkRequirement.findMany({
+    const reqsFrom = await db.frameworkRequirement.findMany({
         where: { frameworkId: fwFrom.id, deprecatedAt: null },
         orderBy: { sortOrder: 'asc' },
     });
-    const reqsTo: any[] = await db.frameworkRequirement.findMany({
+    const reqsTo = await db.frameworkRequirement.findMany({
         where: { frameworkId: fwTo.id, deprecatedAt: null },
         orderBy: { sortOrder: 'asc' },
     });
 
-    const fromMap = new Map(reqsFrom.map((r: any) => [r.code, r]));
-    const toMap = new Map(reqsTo.map((r: any) => [r.code, r]));
+    const fromMap = new Map(reqsFrom.map((r) => [r.code, r]));
+    const toMap = new Map(reqsTo.map((r) => [r.code, r]));
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const added: any[] = [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const removed: any[] = [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const changed: any[] = [];
+    const added: Array<{ code: string; title: string; section: string | null | undefined }> = [];
+    const removed: Array<{ code: string; title: string; section: string | null | undefined }> = [];
+    const changed: Array<{ code: string; changes: string[]; from: { title: string; section: string | null | undefined }; to: { title: string; section: string | null | undefined } }> = [];
 
     // Added in "to" but not in "from"
     for (const [code, req] of toMap) {
@@ -170,21 +166,19 @@ export async function computeRequirementsDiff(
     // Compute impact: how many new requirements are unmapped for this tenant
     let unmappedNewCount = 0;
     if (added.length > 0) {
-        const newReqIds = added.map((a: any) => {
+        const newReqIds = added.map((a) => {
             const req = toMap.get(a.code);
             return req?.id;
-        }).filter(Boolean) as string[];
+        }).filter((id): id is string => id !== undefined);
 
         const existingMappings = await runInTenantContext(ctx, (tdb) =>
             tdb.controlRequirementLink.findMany({
                 where: { tenantId: ctx.tenantId, requirementId: { in: newReqIds } },
                 select: { requirementId: true },
             })
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ) as any[];
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const mappedIds = new Set(existingMappings.map((l: any) => l.requirementId));
-        unmappedNewCount = newReqIds.filter((id: any) => !mappedIds.has(id)).length;
+        );
+        const mappedIds = new Set(existingMappings.map((l) => l.requirementId));
+        unmappedNewCount = newReqIds.filter((id) => !mappedIds.has(id)).length;
     }
 
     return {

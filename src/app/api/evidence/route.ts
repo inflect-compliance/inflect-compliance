@@ -14,7 +14,6 @@ export const GET = withApiErrorHandling(async (req: NextRequest) => {
 
 export const POST = withApiErrorHandling(withValidatedBody(CreateEvidenceSchema, async (req, _ctx, body) => {
     const ctx = await getLegacyCtx(req);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const item = await createEvidence(ctx, body as any);
+    const item = await createEvidence(ctx, body);
     return jsonResponse(item, { status: 201 });
 }));

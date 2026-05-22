@@ -2,6 +2,7 @@
  * @deprecated Legacy Issue usecase — delegates to Task repositories (WorkItemRepository).
  * All functions are preserved for backward compatibility with old Issue API routes.
  */
+import { TaskLinkEntityType } from '@prisma/client';
 import { RequestContext } from '../types';
 import { WorkItemRepository, TaskLinkRepository, TaskCommentRepository, TaskWatcherRepository, TaskFilters } from '../repositories/WorkItemRepository';
 import { EvidenceBundleRepository } from '../repositories/EvidenceBundleRepository';
@@ -249,7 +250,6 @@ export async function getIssueMetrics(ctx: RequestContext) {
 export async function getIssueActivity(ctx: RequestContext, issueId: string) {
     assertCanReadIssues(ctx);
     return runInTenantContext(ctx, (db) =>
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         db.auditLog.findMany({
             where: { tenantId: ctx.tenantId, entity: 'Issue', entityId: issueId },
             orderBy: { createdAt: 'desc' },
@@ -324,8 +324,7 @@ export async function findOverdueIssuesAndEmitEvents(ctx: RequestContext) {
             where: {
                 tenantId: ctx.tenantId,
                 dueAt: { lt: new Date() },
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                status: { notIn: [...TERMINAL_WORK_ITEM_STATUSES] as any },
+                status: { notIn: [...TERMINAL_WORK_ITEM_STATUSES] },
             },
             select: { id: true, title: true, dueAt: true, assigneeUserId: true },
         });
@@ -351,8 +350,7 @@ export async function listIssuesByControl(ctx: RequestContext, controlId: string
     assertCanReadIssues(ctx);
     return runInTenantContext(ctx, async (db) => {
         const links = await db.taskLink.findMany({
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            where: { tenantId: ctx.tenantId, entityType: 'CONTROL' as any, entityId: controlId },
+            where: { tenantId: ctx.tenantId, entityType: TaskLinkEntityType.CONTROL, entityId: controlId },
             include: {
                 task: {
                     include: {
@@ -362,8 +360,7 @@ export async function listIssuesByControl(ctx: RequestContext, controlId: string
             },
             orderBy: { createdAt: 'desc' },
         });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return links.map((l: any) => l.task);
+        return links.map((l) => l.task);
     });
 }
 

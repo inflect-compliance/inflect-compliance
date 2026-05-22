@@ -1,6 +1,6 @@
 import { PrismaTx } from '@/lib/db-context';
 import { RequestContext } from '../types';
-import { Prisma } from '@prisma/client';
+import { Prisma, PolicyStatus } from '@prisma/client';
 import { buildCursorWhere, CURSOR_ORDER_BY, computePageInfo, clampLimit } from '@/lib/pagination';
 import type { PaginatedResponse } from '@/lib/dto/pagination';
 
@@ -82,9 +82,8 @@ export class PolicyRepository {
     }
 
     private static _buildWhere(ctx: RequestContext, filters?: PolicyFilters): Prisma.PolicyWhereInput {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const where: any = { tenantId: ctx.tenantId };
-        if (filters?.status) where.status = filters.status;
+        const where: Prisma.PolicyWhereInput = { tenantId: ctx.tenantId };
+        if (filters?.status) where.status = filters.status as Prisma.EnumPolicyStatusFilter;
         if (filters?.category) where.category = filters.category;
         if (filters?.language) where.language = filters.language;
         if (filters?.q) {
@@ -177,8 +176,7 @@ export class PolicyRepository {
     static async updateStatus(db: PrismaTx, ctx: RequestContext, id: string, status: string) {
         return db.policy.updateMany({
             where: { id, tenantId: ctx.tenantId },
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            data: { status: status as any },
+            data: { status: status as PolicyStatus },
         });
     }
 

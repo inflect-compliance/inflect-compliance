@@ -21,6 +21,7 @@
  *
  * @module app-layer/jobs/evidence-expiry-monitor
  */
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { runJob } from '@/lib/observability/job-runner';
 import { logger } from '@/lib/observability/logger';
@@ -61,8 +62,7 @@ async function scanExpiringEvidence(
     const horizon = new Date(now.getTime() + maxWindow * 86_400_000);
 
     // 1. Evidence expiring within window (retentionUntil set and within horizon)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const expiringWhere: any = {
+    const expiringWhere: Prisma.EvidenceWhereInput = {
         deletedAt: null,
         isArchived: false,
         status: { notIn: ['REJECTED'] },
@@ -72,8 +72,7 @@ async function scanExpiringEvidence(
     };
     if (tenantId) expiringWhere.tenantId = tenantId;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const expiring = await (prisma.evidence as any).findMany({
+    const expiring = await prisma.evidence.findMany({
         where: expiringWhere,
         select: {
             id: true,
@@ -89,8 +88,7 @@ async function scanExpiringEvidence(
     });
 
     // 2. Evidence already expired (expiredAt set, not archived yet)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const expiredWhere: any = {
+    const expiredWhere: Prisma.EvidenceWhereInput = {
         deletedAt: null,
         isArchived: false,
         status: { notIn: ['REJECTED'] },
@@ -98,8 +96,7 @@ async function scanExpiringEvidence(
     };
     if (tenantId) expiredWhere.tenantId = tenantId;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const expired = await (prisma.evidence as any).findMany({
+    const expired = await prisma.evidence.findMany({
         where: expiredWhere,
         select: {
             id: true,
@@ -122,7 +119,8 @@ async function scanExpiringEvidence(
         if (seenIds.has(ev.id)) continue;
         seenIds.add(ev.id);
 
-        const retentionDate = new Date(ev.retentionUntil);
+        // retentionUntil is non-null: the where clause filters `retentionUntil: { not: null }`
+        const retentionDate = new Date(ev.retentionUntil!);
         const diffMs = retentionDate.getTime() - now.getTime();
         const daysRemaining = Math.ceil(diffMs / 86_400_000);
 
@@ -158,7 +156,8 @@ async function scanExpiringEvidence(
         if (seenIds.has(ev.id)) continue;
         seenIds.add(ev.id);
 
-        const expiredDate = new Date(ev.expiredAt);
+        // expiredAt is non-null: the where clause filters `expiredAt: { not: null }`
+        const expiredDate = new Date(ev.expiredAt!);
         const diffMs = expiredDate.getTime() - now.getTime();
         const daysRemaining = Math.ceil(diffMs / 86_400_000);
 

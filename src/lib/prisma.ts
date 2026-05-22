@@ -53,20 +53,17 @@ function generateCuid(): string {
  */
 function buildDiffJson(
     action: string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    data: Record<string, any> | null | undefined,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    data: Record<string, unknown> | null | undefined,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- result is the raw Prisma return value; its shape is model-specific and unknown at the middleware layer
     result: any,
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-): Record<string, any> | null {
+): Record<string, unknown> | null {
     if (!DIFF_ACTIONS.has(action) || !data) return null;
 
     const changedFields = extractChangedFields(data);
     if (changedFields.length === 0) return null;
 
     // Build redacted "after" snapshot from result, limited to changed fields
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const afterRaw: Record<string, any> = {};
+    const afterRaw: Record<string, unknown> = {};
     for (const field of changedFields) {
         if (result && field in result) {
             afterRaw[field] = result[field];
@@ -141,16 +138,17 @@ function buildAuditExtension() {
         const requestId = ctx?.requestId || null;
         const source = ctx?.source || 'api';
 
-        // For upsert, the update payload is in args.update, not args.data
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const argsAny = args as any;
+        // For upsert, the update payload is in args.update, not args.data.
+        // `args` is typed as `object` by the Prisma query-extension API —
+        // casting to a narrowed record shape is the correct probe pattern.
+        const argsRecord = args as Record<string, unknown>;
         const updateData =
             operation === 'upsert'
-                ? argsAny?.update ?? null
-                : argsAny?.data ?? null;
+                ? (argsRecord.update as Record<string, unknown> | null | undefined) ?? null
+                : (argsRecord.data as Record<string, unknown> | null | undefined) ?? null;
 
         // Execute the original operation first — never block it
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- query() returns the Prisma result whose shape depends on the model/operation; narrowing it generically is impossible without generated overloads
         const result: any = await query(args);
 
         // Best-effort audit logging — never throw
@@ -159,8 +157,7 @@ function buildAuditExtension() {
 
             // Extract record ID(s) from the result
             let entityId = 'unknown';
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            let recordIds: any = null;
+            let recordIds: { count: number } | null = null;
 
             if (
                 operation === 'create' ||
@@ -177,19 +174,18 @@ function buildAuditExtension() {
                 recordIds = { count: result?.count ?? 0 };
             }
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const metadataJson: Record<string, any> = { source };
+            const metadataJson: Record<string, unknown> = { source };
+            const argsWhere = argsRecord.where as Record<string, unknown> | null | undefined;
             if (
-                argsAny?.where &&
+                argsWhere &&
                 (operation === 'updateMany' || operation === 'deleteMany')
             ) {
-                metadataJson.filterKeys = Object.keys(argsAny.where);
+                metadataJson.filterKeys = Object.keys(argsWhere);
             }
 
             const diffJson = buildDiffJson(operation, updateData, result);
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const detailsJson: Record<string, any> = {
+            const detailsJson: Record<string, unknown> = {
                 category: 'entity_lifecycle',
                 entityName: model,
                 operation: action.toLowerCase(),

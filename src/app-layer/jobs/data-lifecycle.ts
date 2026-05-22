@@ -16,10 +16,17 @@
  *   import { purgeSoftDeletedOlderThan, purgeExpiredEvidenceOlderThan, runRetentionSweep }
  *       from '@/app-layer/jobs/data-lifecycle';
  */
+import { Prisma } from '@prisma/client';
 import { prisma as defaultPrisma } from '@/lib/prisma';
 import { SOFT_DELETE_MODELS, withDeleted } from '@/lib/soft-delete';
 import { runJob } from '@/lib/observability/job-runner';
 import { logger } from '@/lib/observability/logger';
+
+/** Minimal delegate interface for dynamic model access by string key */
+interface ModelDelegate {
+    findMany(args: object): Promise<Array<{ id: string; tenantId: string }>>;
+    update(args: object): Promise<unknown>;
+}
 
 // ─── Constants ──────────────────────────────────────────────────────
 
@@ -41,8 +48,7 @@ export interface PurgeOptions {
     tenantId?: string;
     dryRun?: boolean;
     now?: Date;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    db?: any; // injectable PrismaClient for testing
+    db?: typeof defaultPrisma; // injectable PrismaClient for testing
 }
 
 export interface PurgeSoftDeletedOptions extends PurgeOptions {
@@ -95,13 +101,11 @@ export async function purgeSoftDeletedOlderThan(
 
         for (const model of SOFT_DELETE_MODELS) {
             const key = model.charAt(0).toLowerCase() + model.slice(1);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const delegate = (db as any)[key];
+            const delegate = (db as unknown as Record<string, ModelDelegate>)[key];
             if (!delegate) continue;
 
             // Find eligible records: soft-deleted before cutoff
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const whereClause: any = {
+            const whereClause: Record<string, unknown> = {
                 deletedAt: { not: null, lt: cutoff },
             };
             if (options.tenantId) {
@@ -181,8 +185,7 @@ export async function purgeExpiredEvidenceOlderThan(
         const db = options.db ?? defaultPrisma;
         const cutoff = new Date(now.getTime() - graceDays * 86_400_000);
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const where: any = {
+        const where: Prisma.EvidenceWhereInput = {
             isArchived: true,
             expiredAt: { not: null, lt: cutoff },
         };
@@ -190,8 +193,7 @@ export async function purgeExpiredEvidenceOlderThan(
             where.tenantId = options.tenantId;
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const candidates = await (db.evidence as any).findMany(withDeleted({
+        const candidates = await db.evidence.findMany(withDeleted({
             where,
             select: { id: true, tenantId: true, title: true },
         }));
@@ -260,13 +262,11 @@ export async function runRetentionSweep(
             if (model === 'Evidence') continue;
 
             const key = model.charAt(0).toLowerCase() + model.slice(1);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const delegate = (db as any)[key];
+            const delegate = (db as unknown as Record<string, ModelDelegate>)[key];
             if (!delegate) continue;
 
             // Find records with retentionUntil < now AND not already soft-deleted
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const where: any = {
+            const where: Record<string, unknown> = {
                 retentionUntil: { not: null, lt: now },
                 deletedAt: null,
             };

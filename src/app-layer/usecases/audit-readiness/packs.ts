@@ -1,7 +1,8 @@
-﻿/* eslint-disable @typescript-eslint/no-explicit-any */
-/**
+﻿/**
  * Audit Readiness — Pack CRUD, Freeze, Snapshots, Export, Default Pack Preview
  */
+import { AuditPackItemEntityType, WorkItemStatus } from '@prisma/client';
+import { type PrismaTx } from '@/lib/db-context';
 import { RequestContext } from '../../types';
 import {
     assertCanManageAuditPacks, assertCanFreezePack, assertCanViewPack,
@@ -84,8 +85,7 @@ export async function addAuditPackItems(
         const payload = items.map(item => ({
             tenantId: ctx.tenantId,
             auditPackId: packId,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            entityType: item.entityType as any,
+            entityType: item.entityType as AuditPackItemEntityType,
             entityId: item.entityId,
             snapshotJson: item.snapshotJson || '{}',
             sortOrder: item.sortOrder ?? 0,
@@ -106,17 +106,11 @@ export async function addAuditPackItems(
 
 // РІвЂќР‚РІвЂќР‚РІвЂќР‚ Snapshot Creation РІвЂќР‚РІвЂќР‚РІвЂќР‚
 
-// TODO(epic-c-followup): tightening tdb to PrismaTx exposed schema
-// drift (dueDate vs dueAt; ownerId vs ownerUserId) — the snapshot
-// payload appears to reference fields that don't exist on the
-// current schema. Fixing requires audit-pack regression tests; left
-// as a documented exception.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function createControlSnapshot(tdb: any, controlId: string, tenantId: string): Promise<string> {
+async function createControlSnapshot(tdb: PrismaTx, controlId: string, tenantId: string): Promise<string> {
     const ctrl = await tdb.control.findFirst({
         where: { id: controlId, tenantId },
         include: {
-            tasks: { select: { id: true, title: true, status: true, dueDate: true } },
+            tasks: { select: { id: true, title: true, status: true, dueAt: true } },
             evidence: { select: { id: true, title: true, status: true, type: true } },
             requirementLinks: { include: { requirement: { select: { code: true, title: true, frameworkId: true } } } },
         },
@@ -125,38 +119,30 @@ async function createControlSnapshot(tdb: any, controlId: string, tenantId: stri
     return JSON.stringify({
         code: ctrl.code, name: ctrl.name, status: ctrl.status,
         description: ctrl.description,
-        owner: ctrl.ownerId,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        taskCompletion: { total: ctrl.tasks.length, done: ctrl.tasks.filter((t: any) => t.status === 'DONE').length },
+        owner: ctrl.ownerUserId,
+        taskCompletion: { total: ctrl.tasks.length, done: ctrl.tasks.filter((t) => t.status === WorkItemStatus.RESOLVED || t.status === WorkItemStatus.CLOSED).length },
         evidenceCount: ctrl.evidence.length,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        mappedRequirements: (ctrl.requirementLinks || []).map((l: any) => ({
+        mappedRequirements: (ctrl.requirementLinks || []).map((l) => ({
             code: l.requirement.code, title: l.requirement.title,
         })),
         snapshotAt: new Date().toISOString(),
     });
 }
 
-// TODO(epic-c-followup): same schema-drift situation as
-// createControlSnapshot — versions[0].status doesn't exist on
-// the current PolicyVersion select shape.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function createPolicySnapshot(tdb: any, policyId: string, tenantId: string): Promise<string> {
+async function createPolicySnapshot(tdb: PrismaTx, policyId: string, tenantId: string): Promise<string> {
     const pol = await tdb.policy.findFirst({
         where: { id: policyId, tenantId },
-        include: { versions: { orderBy: { versionNumber: 'desc' }, take: 1, select: { versionNumber: true, status: true } } },
+        include: { versions: { orderBy: { versionNumber: 'desc' }, take: 1, select: { versionNumber: true } } },
     });
     if (!pol) return JSON.stringify({ error: 'Policy not found', entityId: policyId });
     return JSON.stringify({
         title: pol.title, status: pol.status, category: pol.category,
         currentVersion: pol.versions[0]?.versionNumber,
-        currentVersionStatus: pol.versions[0]?.status,
         snapshotAt: new Date().toISOString(),
     });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function createEvidenceSnapshot(tdb: any, evidenceId: string, tenantId: string): Promise<string> {
+async function createEvidenceSnapshot(tdb: PrismaTx, evidenceId: string, tenantId: string): Promise<string> {
     const ev = await tdb.evidence.findFirst({ where: { id: evidenceId, tenantId } });
     if (!ev) return JSON.stringify({ error: 'Evidence not found', entityId: evidenceId });
     return JSON.stringify({
@@ -165,8 +151,7 @@ async function createEvidenceSnapshot(tdb: any, evidenceId: string, tenantId: st
     });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function createIssueSnapshot(tdb: any, issueId: string, tenantId: string): Promise<string> {
+async function createIssueSnapshot(tdb: PrismaTx, issueId: string, tenantId: string): Promise<string> {
     const issue = await tdb.task.findFirst({ where: { id: issueId, tenantId } });
     if (!issue) return JSON.stringify({ error: 'Issue not found', entityId: issueId });
     return JSON.stringify({
@@ -238,7 +223,6 @@ export async function freezeAuditPack(ctx: RequestContext, packId: string) {
             framework: soaReport.framework,
             generatedAt: soaReport.generatedAt,
             summary: soaReport.summary,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             entries: soaReport.entries.map((e) => ({
                 code: e.requirementCode,
                 title: e.requirementTitle,
@@ -246,8 +230,7 @@ export async function freezeAuditPack(ctx: RequestContext, packId: string) {
                 applicable: e.applicable,
                 justification: e.justification,
                 status: e.implementationStatus,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                controlRefs: e.mappedControls.map((c) => `${c.code || 'вЂ”'} ${c.title}`).join('; '),
+                controlRefs: e.mappedControls.map((c) => `${c.code ?? '—'} ${c.title}`).join('; '),
                 evidenceCount: e.evidenceCount,
             })),
             snapshotAt: new Date().toISOString(),
@@ -257,8 +240,8 @@ export async function freezeAuditPack(ctx: RequestContext, packId: string) {
                 data: {
                     tenantId: ctx.tenantId,
                     auditPackId: packId,
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    entityType: 'EXPORT_ARTIFACT' as any,
+                    // EXPORT_ARTIFACT not yet in AuditPackItemEntityType enum; pending schema migration
+                    entityType: 'EXPORT_ARTIFACT' as AuditPackItemEntityType,
                     entityId: `soa-${soaReport.framework}`,
                     snapshotJson: soaSnapshot,
                     sortOrder: frozenPack.itemCount + 1,
@@ -301,7 +284,6 @@ async function previewISO27001DefaultPack(ctx: RequestContext) {
                 select: { controlId: true },
             })
         );
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         controlIds = [...new Set(links.map((l) => l.controlId))];
     }
 
@@ -310,7 +292,6 @@ async function previewISO27001DefaultPack(ctx: RequestContext) {
         const controls = await runInTenantContext(ctx, (tdb) =>
             tdb.control.findMany({ where: { tenantId: ctx.tenantId }, select: { id: true } })
         );
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         controlIds = controls.map((c) => c.id);
     }
 
@@ -321,9 +302,7 @@ async function previewISO27001DefaultPack(ctx: RequestContext) {
             select: { id: true, category: true },
         })
     );
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const securityPolicies = policies.filter((p) => p.category === 'Security' || p.category === 'INFORMATION_SECURITY');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const policyIds = (securityPolicies.length > 0 ? securityPolicies : policies).map((p) => p.id);
 
     // Evidence linked to those controls (via direct Control.evidence relation)
@@ -333,7 +312,6 @@ async function previewISO27001DefaultPack(ctx: RequestContext) {
             select: { evidence: { select: { id: true } } },
         })
     );
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const evidenceIds = [...new Set(controlsWithEvidence.flatMap((c) => c.evidence.map((e) => e.id)))];
 
     // Open issues
@@ -343,7 +321,6 @@ async function previewISO27001DefaultPack(ctx: RequestContext) {
             select: { id: true },
         })
     );
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const issueIds = issues.map((i) => i.id);
 
     return {
@@ -370,7 +347,6 @@ async function previewNIS2DefaultPack(ctx: RequestContext) {
                 select: { controlId: true },
             })
         );
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         controlIds = [...new Set(links.map((l) => l.controlId))];
     }
 
@@ -378,7 +354,6 @@ async function previewNIS2DefaultPack(ctx: RequestContext) {
         const controls = await runInTenantContext(ctx, (tdb) =>
             tdb.control.findMany({ where: { tenantId: ctx.tenantId }, select: { id: true } })
         );
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         controlIds = controls.map((c) => c.id);
     }
 
@@ -390,12 +365,10 @@ async function previewNIS2DefaultPack(ctx: RequestContext) {
         })
     );
     const nis2Keywords = ['incident', 'business continuity', 'disaster recovery', 'access control', 'supplier', 'supply chain'];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const nis2Policies = policies.filter((p) => {
         const text = `${p.title} ${p.category || ''}`.toLowerCase();
         return nis2Keywords.some(kw => text.includes(kw));
     });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const policyIds = (nis2Policies.length > 0 ? nis2Policies : policies).map((p) => p.id);
 
     // Evidence tied to controls (via direct Control.evidence relation)
@@ -405,7 +378,6 @@ async function previewNIS2DefaultPack(ctx: RequestContext) {
             select: { evidence: { select: { id: true } } },
         })
     );
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const evidenceIds = [...new Set(controlsWithEvidence.flatMap((c) => c.evidence.map((e) => e.id)))];
 
     // Issues
@@ -415,7 +387,6 @@ async function previewNIS2DefaultPack(ctx: RequestContext) {
             select: { id: true },
         })
     );
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const issueIds = issues.map((i) => i.id);
 
     return {
@@ -437,7 +408,6 @@ export async function exportAuditPack(ctx: RequestContext, packId: string, forma
     const pack = await getAuditPack(ctx, packId);
     if (pack.status === 'DRAFT') throw badRequest('Cannot export a draft pack');
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const items = pack.items.map((item) => ({
         entityType: item.entityType,
         entityId: item.entityId,

@@ -34,6 +34,7 @@
 
 import { cn } from '@dub/utils';
 import { addMonths, addYears, format } from 'date-fns';
+import type { Locale as DateFnsLocale } from 'date-fns/locale';
 import {
     ChevronLeft,
     ChevronRight,
@@ -142,15 +143,11 @@ export function Calendar({
 
     return (
         <DayPicker
-            // react-day-picker v9 types `DayPickerProps` as a
-            // discriminated union over `mode`, so spreading a generic
-            // bag of props + a literal `mode` doesn't satisfy any
-            // single branch. An `any` cast is the idiomatic escape
-            // here (the upstream Dub original used the same).
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            {...(props as any)}
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            mode={mode as any}
+            // react-day-picker v9 types `DayPickerProps` as a discriminated
+            // union over `mode`; spreading a generic bag + a `mode` literal
+            // doesn't satisfy any single branch. Cast the merged object to the
+            // public union type — this is the narrowest sound cast available.
+            {...({ ...props, mode } as DayPickerProps)}
             month={month}
             onMonthChange={handleMonthChange}
             weekStartsOn={weekStartsOn}
@@ -252,8 +249,7 @@ export function Calendar({
                                 className="text-sm font-semibold capitalize tabular-nums text-content-emphasis"
                             >
                                 {format(displayMonth, 'LLLL yyy', {
-                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                    locale: locale as any,
+                                    locale: locale as DateFnsLocale | undefined,
                                 })}
                             </div>
 

@@ -6,10 +6,11 @@
  * getTestDashboardMetrics() — computes all dashboard metrics server-side
  * listAllTestPlans() — lists all plans across controls (fixes N+1)
  */
+import { Prisma, TestPlanStatus } from '@prisma/client';
 import { RequestContext } from '../types';
 import { assertCanReadTests, assertCanManageTestPlans } from '../policies/test.policies';
 import { logEvent } from '../events/audit';
-import { runInTenantContext } from '@/lib/db-context';
+import { runInTenantContext, type PrismaTx } from '@/lib/db-context';
 
 // ─── Due Queue ───
 
@@ -20,8 +21,7 @@ export async function getDueQueue(ctx: RequestContext) {
     const soon = new Date(now);
     soon.setDate(soon.getDate() + 7);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const plans = await runInTenantContext(ctx, async (db: any) => {
+    const plans = await runInTenantContext(ctx, async (db: PrismaTx) => {
         return db.controlTestPlan.findMany({
             where: {
                 tenantId: ctx.tenantId,
@@ -42,11 +42,9 @@ export async function getDueQueue(ctx: RequestContext) {
             },
             orderBy: { nextDueAt: 'asc' },
         });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    }) as any[];
+    });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return plans.map((p: any) => ({
+    return plans.map((p) => ({
         ...p,
         isOverdue: p.nextDueAt ? p.nextDueAt <= now : false,
         hasPendingRun: p.runs?.length > 0,
@@ -58,8 +56,7 @@ export async function getDueQueue(ctx: RequestContext) {
 export async function runDuePlanning(ctx: RequestContext) {
     assertCanManageTestPlans(ctx);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return runInTenantContext(ctx, async (db: any) => {
+    return runInTenantContext(ctx, async (db: PrismaTx) => {
         const now = new Date();
 
         // Find ACTIVE plans that are due and don't already have a PLANNED/RUNNING run
@@ -80,12 +77,10 @@ export async function runDuePlanning(ctx: RequestContext) {
         });
 
         // Filter to only plans without pending runs (idempotent)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const needsRun = duePlans.filter((p: any) => p.runs.length === 0);
+        const needsRun = duePlans.filter((p) => p.runs.length === 0);
 
         const created: string[] = [];
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        for (const plan of needsRun as any[]) {
+        for (const plan of needsRun) {
             const run = await db.controlTestRun.create({
                 data: {
                     tenantId: ctx.tenantId,
@@ -135,8 +130,7 @@ interface RunRecord {
 export async function getTestDashboardMetrics(ctx: RequestContext, periodDays: number = 30) {
     assertCanReadTests(ctx);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return runInTenantContext(ctx, async (db: any) => {
+    return runInTenantContext(ctx, async (db: PrismaTx) => {
         const now = new Date();
         const periodStart = new Date(now);
         periodStart.setDate(periodStart.getDate() - periodDays);
@@ -191,10 +185,8 @@ export async function getTestDashboardMetrics(ctx: RequestContext, periodDays: n
             const controls = await db.control.findMany({
                 where: { id: { in: repeatedFailures.map((f: { controlId: string }) => f.controlId) }, tenantId: ctx.tenantId },
                 select: { id: true, name: true, code: true },
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            }) as any[];
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const cMap = new Map(controls.map((c: any) => [c.id, c]));
+            });
+            const cMap = new Map(controls.map((c) => [c.id, c]));
             repeatedFailureDetails = repeatedFailures.map(f => ({
                 controlId: f.controlId,
                 controlName: cMap.get(f.controlId)?.name || 'Unknown',
@@ -240,12 +232,10 @@ export interface TestPlanFilters {
 export async function listAllTestPlans(ctx: RequestContext, filters: TestPlanFilters = {}) {
     assertCanReadTests(ctx);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return runInTenantContext(ctx, async (db: any) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const where: any = { tenantId: ctx.tenantId };
+    return runInTenantContext(ctx, async (db: PrismaTx) => {
+        const where: Prisma.ControlTestPlanWhereInput = { tenantId: ctx.tenantId };
 
-        if (filters.status) where.status = filters.status;
+        if (filters.status) where.status = filters.status as TestPlanStatus;
         if (filters.controlId) where.controlId = filters.controlId;
         if (filters.due === 'overdue') {
             where.nextDueAt = { lt: new Date() };

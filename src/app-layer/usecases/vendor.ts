@@ -1,3 +1,5 @@
+import { z } from 'zod';
+import { VendorStatus } from '@prisma/client';
 import { RequestContext } from '../types';
 import { VendorRepository, VendorDocumentRepository, VendorLinkRepository, VendorFilters, VendorListParams } from '../repositories/VendorRepository';
 import { QuestionnaireRepository, VendorAssessmentRepository, VendorAnswerRepository } from '../repositories/AssessmentRepository';
@@ -6,6 +8,7 @@ import { logEvent } from '../events/audit';
 import { runInTenantContext } from '@/lib/db-context';
 import { notFound, badRequest } from '@/lib/errors/types';
 import { sanitizePlainText } from '@/lib/security/sanitize';
+import { CreateVendorSchema } from '@/lib/schemas';
 import { computeAnswerPoints, computeAssessmentScore, scoreToRiskRating } from '../services/vendor-scoring';
 
 // Epic D.2 — preserve the three-state contract on update paths.
@@ -52,21 +55,7 @@ export async function getVendor(ctx: RequestContext, vendorId: string) {
     });
 }
 
-export async function createVendor(ctx: RequestContext, input: {
-    name: string;
-    legalName?: string | null;
-    status?: string;
-    criticality?: string;
-    inherentRisk?: string | null;
-    dataAccess?: string | null;
-    country?: string | null;
-    tags?: string[];
-    ownerUserId?: string | null;
-    isSubprocessor?: boolean;
-    websiteUrl?: string | null;
-    domain?: string | null;
-    description?: string | null;
-}) {
+export async function createVendor(ctx: RequestContext, input: z.infer<typeof CreateVendorSchema>) {
     assertCanManageVendors(ctx);
     // Epic D.2 — sanitise every free-text column. Enums + booleans +
     // FK ids pass through untouched.
@@ -520,8 +509,7 @@ export async function updateVendorStatusWithGate(ctx: RequestContext, vendorId: 
             }
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma enum cast
-        const updated = await db.vendor.update({ where: { id: vendorId }, data: { status: newStatus as any } });
+        const updated = await db.vendor.update({ where: { id: vendorId }, data: { status: newStatus as VendorStatus } });
 
         await logEvent(db, ctx, {
             action: 'VENDOR_STATUS_CHANGED',

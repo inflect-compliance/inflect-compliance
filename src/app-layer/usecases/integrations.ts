@@ -9,6 +9,7 @@
  *
  * @module usecases/integrations
  */
+import { Prisma, EvidenceType } from '@prisma/client';
 import type { RequestContext } from '../types';
 import { runInTenantContext } from '@/lib/db-context';
 import { registry } from '../integrations/registry';
@@ -109,8 +110,7 @@ export async function upsertIntegrationConnection(
                 where: { id: input.id },
                 data: {
                     name: input.name,
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    configJson: input.configJson as any ?? undefined,
+                    configJson: input.configJson != null ? (input.configJson as Prisma.InputJsonValue) : undefined,
                     ...(secretEncrypted ? { secretEncrypted } : {}),
                     isEnabled: input.isEnabled ?? true,
                 },
@@ -138,8 +138,7 @@ export async function upsertIntegrationConnection(
                 tenantId: ctx.tenantId,
                 provider: input.provider,
                 name: input.name,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                configJson: input.configJson as any ?? {},
+                configJson: (input.configJson ?? {}) as Prisma.InputJsonValue,
                 secretEncrypted,
                 isEnabled: input.isEnabled ?? true,
             },
@@ -303,8 +302,7 @@ export async function runAutomationForControl(
                 provider: parsed.provider,
                 automationKey: control.automationKey,
                 controlId: control.id,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                error: errorMessage as any,
+                error: errorMessage,
             });
 
             return { execution: { ...execution, status: 'ERROR', errorMessage, durationMs } };
@@ -334,8 +332,11 @@ export async function runAutomationForControl(
                     data: {
                         tenantId: ctx.tenantId,
                         controlId: control.id,
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        type: evidencePayload.type as any,
+                        // Integration EvidencePayload.type uses a wider vocabulary
+                        // (DOCUMENT/SCREENSHOT/LOG/CONFIGURATION/REPORT) than the
+                        // Prisma EvidenceType enum (FILE/LINK/TEXT). Integration-created
+                        // evidence is always text-based content; map to TEXT.
+                        type: EvidenceType.TEXT,
                         title: evidencePayload.title,
                         content: evidencePayload.content,
                         category: evidencePayload.category ?? 'integration',
@@ -351,8 +352,7 @@ export async function runAutomationForControl(
             where: { id: execution.id },
             data: {
                 status: result.status,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                resultJson: result.details as any,
+                resultJson: result.details as Prisma.InputJsonValue,
                 evidenceId,
                 errorMessage: result.errorMessage,
                 durationMs,

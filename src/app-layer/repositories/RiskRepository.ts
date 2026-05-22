@@ -1,6 +1,6 @@
 import { PrismaTx } from '@/lib/db-context';
 import { RequestContext } from '../types';
-import { Prisma } from '@prisma/client';
+import { Prisma, RiskStatus } from '@prisma/client';
 import { buildCursorWhere, CURSOR_ORDER_BY, computePageInfo, clampLimit } from '@/lib/pagination';
 import type { PaginatedResponse } from '@/lib/dto/pagination';
 import { traceRepository } from '@/lib/observability/repository-tracing';
@@ -96,8 +96,7 @@ export class RiskRepository {
     private static _buildWhere(ctx: RequestContext, filters: RiskFilters = {}): Prisma.RiskWhereInput {
         const where: Prisma.RiskWhereInput = { tenantId: ctx.tenantId };
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (filters.status) where.status = filters.status as any;
+        if (filters.status) where.status = filters.status as RiskStatus;
         if (filters.scoreMin !== undefined || filters.scoreMax !== undefined) {
             where.score = {};
             if (filters.scoreMin !== undefined) where.score.gte = filters.scoreMin;

@@ -1,8 +1,10 @@
+import { z } from 'zod';
 import { RequestContext } from '../types';
 import { ClauseRepository } from '../repositories/ClauseRepository';
 import { assertCanRead, assertCanWrite } from '../policies/common';
 import { logEvent } from '../events/audit';
 import { runInTenantContext } from '@/lib/db-context';
+import { UpdateClauseProgressSchema } from '@/lib/schemas';
 
 export async function listClauses(ctx: RequestContext) {
     assertCanRead(ctx);
@@ -11,7 +13,7 @@ export async function listClauses(ctx: RequestContext) {
     );
 }
 
-export async function updateClauseProgress(ctx: RequestContext, id: string, data: { status: string; notes?: string }) {
+export async function updateClauseProgress(ctx: RequestContext, id: string, data: z.infer<typeof UpdateClauseProgressSchema>) {
     assertCanWrite(ctx);
 
     return runInTenantContext(ctx, async (db) => {

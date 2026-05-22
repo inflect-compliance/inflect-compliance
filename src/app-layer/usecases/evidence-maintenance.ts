@@ -66,7 +66,6 @@ export async function cleanupFailedOrPendingUploads(
     const cutoff = new Date(Date.now() - olderThanMinutes * 60_000);
 
     return withTenantDb(tenantId, async (db) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const pending = await db.fileRecord.findMany({
             where: {
                 tenantId,
@@ -76,14 +75,12 @@ export async function cleanupFailedOrPendingUploads(
         });
 
         let cleaned = 0;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        for (const record of pending as any[]) {
+        for (const record of pending) {
             try {
                 const provider = getProviderByName((record.storageProvider || 'local') as 'local' | 's3');
                 await provider.delete(record.pathKey);
             } catch { /* best effort */ }
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             await db.fileRecord.update({
                 where: { id: record.id },
                 data: { status: 'FAILED' },
@@ -108,14 +105,12 @@ export async function detectBrokenEvidence(tenantId: string) {
         const broken: Array<{ id: string; title: string | null; reason: string }> = [];
 
         for (const ev of fileEvidence) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const fileRecordId = (ev as any).fileRecordId as string | null;
+            const fileRecordId = ev.fileRecordId;
             if (!fileRecordId) {
                 broken.push({ id: ev.id, title: ev.title, reason: 'missing_file_record_id' });
                 continue;
             }
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const record = await db.fileRecord.findUnique({
                 where: { id: fileRecordId },
                 select: { status: true },

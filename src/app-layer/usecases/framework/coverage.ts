@@ -1,4 +1,4 @@
-﻿/* eslint-disable @typescript-eslint/no-explicit-any */
+﻿import { Prisma, WorkItemStatus } from '@prisma/client';
 import { RequestContext } from '../../types';
 import { assertCanViewFrameworks, assertCanInstallFrameworkPack } from '../../policies/framework.policies';
 import { logEvent } from '../../events/audit';
@@ -25,7 +25,7 @@ export async function computeCoverage(ctx: RequestContext, frameworkKey: string,
     // Get all tenant control requirement links for this framework
     const links = await runInTenantContext(ctx, (tdb) =>
         tdb.controlRequirementLink.findMany({
-            where: { tenantId: ctx.tenantId, requirementId: { in: requirements.map((r: any) => r.id) } },
+            where: { tenantId: ctx.tenantId, requirementId: { in: requirements.map((r) => r.id) } },
             include: {
                 control: { select: { id: true, code: true, name: true, status: true } },
                 requirement: { select: { id: true, code: true, title: true } },
@@ -33,18 +33,17 @@ export async function computeCoverage(ctx: RequestContext, frameworkKey: string,
         })
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mappedReqIds = new Set(links.map((l: any) => l.requirementId));
-    const mapped = requirements.filter((r: any) => mappedReqIds.has(r.id));
-    const unmapped = requirements.filter((r: any) => !mappedReqIds.has(r.id));
+    const mappedReqIds = new Set(links.map((l) => l.requirementId));
+    const mapped = requirements.filter((r) => mappedReqIds.has(r.id));
+    const unmapped = requirements.filter((r) => !mappedReqIds.has(r.id));
     const total = requirements.length;
     const coveragePercent = total > 0 ? Math.round((mapped.length / total) * 100) : 0;
 
     // Group by section
-    const sections = [...new Set(requirements.map((r: any) => r.section || r.category || 'Other'))];
-    const bySection = sections.map((s: any) => {
-        const sectionReqs = requirements.filter((r: any) => (r.section || r.category || 'Other') === s);
-        const sectionMapped = sectionReqs.filter((r: any) => mappedReqIds.has(r.id));
+    const sections = [...new Set(requirements.map((r) => r.section || r.category || 'Other'))];
+    const bySection = sections.map((s) => {
+        const sectionReqs = requirements.filter((r) => (r.section || r.category || 'Other') === s);
+        const sectionMapped = sectionReqs.filter((r) => mappedReqIds.has(r.id));
         return {
             section: s,
             total: sectionReqs.length,
@@ -60,9 +59,8 @@ export async function computeCoverage(ctx: RequestContext, frameworkKey: string,
         unmapped: unmapped.length,
         coveragePercent,
         bySection,
-        unmappedRequirements: unmapped.map((r: any) => ({ code: r.code, title: r.title, section: r.section || r.category })),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        controlMappings: links.map((l: any) => ({
+        unmappedRequirements: unmapped.map((r) => ({ code: r.code, title: r.title, section: r.section || r.category })),
+        controlMappings: links.map((l) => ({
             requirementCode: l.requirement.code,
             requirementTitle: l.requirement.title,
             controlCode: l.control.code,
@@ -81,8 +79,7 @@ export async function listTemplates(
     assertCanViewFrameworks(ctx);
     const db = prisma;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {};
+    const where: Prisma.ControlTemplateWhereInput = {};
     if (filters.frameworkKey) {
         const fw = await db.framework.findFirst({ where: { key: filters.frameworkKey } });
         if (!fw) throw notFound('Framework not found');
@@ -111,23 +108,21 @@ export async function listTemplates(
     // Check install status per template for this tenant
     const existingControls = await runInTenantContext(ctx, (tdb) =>
         tdb.control.findMany({
-            where: { tenantId: ctx.tenantId, code: { in: templates.map((t: any) => t.code) } },
+            where: { tenantId: ctx.tenantId, code: { in: templates.map((t) => t.code) } },
             select: { code: true },
         })
     );
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const installedCodes = new Set(existingControls.map((c: any) => c.code));
+    const installedCodes = new Set(existingControls.map((c) => c.code));
 
     // Filter by section if specified (section comes from linked requirement)
     let result = templates;
     if (filters.section) {
-        result = templates.filter((t: any) =>
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            t.requirementLinks.some((rl: any) => (rl.requirement.section || rl.requirement.category) === filters.section)
+        result = templates.filter((t) =>
+            t.requirementLinks.some((rl) => (rl.requirement.section || rl.requirement.category) === filters.section)
         );
     }
 
-    return result.map((t: any) => ({
+    return result.map((t) => ({
         id: t.id,
         code: t.code,
         title: t.title,
@@ -136,16 +131,14 @@ export async function listTemplates(
         defaultFrequency: t.defaultFrequency,
         isGlobal: t.isGlobal,
         installed: installedCodes.has(t.code),
-        tasks: t.tasks.map((tt: any) => ({ id: tt.id, title: tt.title, description: tt.description })),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        requirements: t.requirementLinks.map((rl: any) => ({
+        tasks: t.tasks.map((tt) => ({ id: tt.id, title: tt.title, description: tt.description })),
+        requirements: t.requirementLinks.map((rl) => ({
             code: rl.requirement.code,
             title: rl.requirement.title,
             section: rl.requirement.section || rl.requirement.category,
             framework: { key: rl.requirement.framework.key, name: rl.requirement.framework.name },
         })),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        packs: t.packLinks.map((pl: any) => ({ key: pl.pack.key, name: pl.pack.name })),
+        packs: t.packLinks.map((pl) => ({ key: pl.pack.key, name: pl.pack.name })),
     }));
 }
 
@@ -169,13 +162,13 @@ export async function exportCoverageData(
     ];
 
     for (const m of coverage.controlMappings) {
-        rows.push(['Mapped', m.requirementCode, m.requirementTitle, '', m.controlCode, m.controlName, m.controlStatus]);
+        rows.push(['Mapped', m.requirementCode, m.requirementTitle, '', m.controlCode || '', m.controlName, m.controlStatus]);
     }
     for (const r of coverage.unmappedRequirements) {
         rows.push(['Unmapped', r.code, r.title, r.section || '', '', '', '']);
     }
 
-    const csv = rows.map((r: any) => r.map((c: any) => `"${(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const csv = rows.map((r) => r.map((c) => `"${(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
     return { csv, filename: `${frameworkKey}-coverage.csv` };
 }
 
@@ -197,7 +190,7 @@ export async function generateReadinessReport(ctx: RequestContext, frameworkKey:
     // Get tenant control-requirement mappings
     const links = await runInTenantContext(ctx, (tdb) =>
         tdb.controlRequirementLink.findMany({
-            where: { tenantId: ctx.tenantId, requirementId: { in: requirements.map((r: any) => r.id) } },
+            where: { tenantId: ctx.tenantId, requirementId: { in: requirements.map((r) => r.id) } },
             include: {
                 control: {
                     include: {
@@ -207,18 +200,17 @@ export async function generateReadinessReport(ctx: RequestContext, frameworkKey:
                 },
             },
         })
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ) as any[];
+    );
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mappedReqIds = new Set(links.map((l: any) => l.requirementId));
-    const mapped = requirements.filter((r: any) => mappedReqIds.has(r.id));
-    const unmapped = requirements.filter((r: any) => !mappedReqIds.has(r.id));
+    const mappedReqIds = new Set(links.map((l) => l.requirementId));
+    const mapped = requirements.filter((r) => mappedReqIds.has(r.id));
+    const unmapped = requirements.filter((r) => !mappedReqIds.has(r.id));
     const total = requirements.length;
     const coveragePercent = total > 0 ? Math.round((mapped.length / total) * 100) : 0;
 
     // Unique controls involved
-    const controlsMap = new Map<string, any>();
+    type LinkControl = (typeof links)[0]['control'];
+    const controlsMap = new Map<string, LinkControl>();
     for (const l of links) {
         if (!controlsMap.has(l.control.id)) {
             controlsMap.set(l.control.id, l.control);
@@ -227,27 +219,23 @@ export async function generateReadinessReport(ctx: RequestContext, frameworkKey:
     const controls = Array.from(controlsMap.values());
 
     // NOT_APPLICABLE controls
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const notApplicable = controls.filter((c: any) => c.status === 'NOT_APPLICABLE').map((c: any) => ({
+    const notApplicable = controls.filter((c) => c.status === 'NOT_APPLICABLE').map((c) => ({
         code: c.code,
         name: c.name,
         justification: c.description || 'No justification provided',
     }));
 
     // Controls missing evidence
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const missingEvidence = controls.filter((c: any) =>
+    const missingEvidence = controls.filter((c) =>
         c.status !== 'NOT_APPLICABLE' && (!c.evidence || c.evidence.length === 0)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ).map((c: any) => ({ code: c.code, name: c.name, status: c.status }));
+    ).map((c) => ({ code: c.code, name: c.name, status: c.status }));
 
     // Overdue tasks
     const now = new Date();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const overdueTasks: any[] = [];
+    const overdueTasks: Array<{ taskTitle: string; taskStatus: string; dueDate: Date; controlCode: string | null; controlName: string }> = [];
     for (const ctrl of controls) {
         for (const task of (ctrl.tasks || [])) {
-            if (task.dueAt && new Date(task.dueAt) < now && task.status !== 'DONE') {
+            if (task.dueAt && new Date(task.dueAt) < now && task.status !== WorkItemStatus.RESOLVED && task.status !== WorkItemStatus.CLOSED && task.status !== WorkItemStatus.CANCELED) {
                 overdueTasks.push({
                     taskTitle: task.title,
                     taskStatus: task.status,
@@ -260,10 +248,10 @@ export async function generateReadinessReport(ctx: RequestContext, frameworkKey:
     }
 
     // By section
-    const sections = [...new Set(requirements.map((r: any) => r.section || r.category || 'Other'))];
-    const bySection = sections.map((s: any) => {
-        const sectionReqs = requirements.filter((r: any) => (r.section || r.category || 'Other') === s);
-        const sectionMapped = sectionReqs.filter((r: any) => mappedReqIds.has(r.id));
+    const sections = [...new Set(requirements.map((r) => r.section || r.category || 'Other'))];
+    const bySection = sections.map((s) => {
+        const sectionReqs = requirements.filter((r) => (r.section || r.category || 'Other') === s);
+        const sectionMapped = sectionReqs.filter((r) => mappedReqIds.has(r.id));
         return {
             section: s,
             total: sectionReqs.length,
@@ -277,7 +265,7 @@ export async function generateReadinessReport(ctx: RequestContext, frameworkKey:
         generatedAt: now.toISOString(),
         coverage: { total, mapped: mapped.length, unmapped: unmapped.length, coveragePercent },
         bySection,
-        unmappedRequirements: unmapped.map((r: any) => ({
+        unmappedRequirements: unmapped.map((r) => ({
             code: r.code, title: r.title, section: r.section || r.category,
         })),
         notApplicableControls: notApplicable,
@@ -312,15 +300,15 @@ export async function exportReadinessReport(
         rows.push([r.section || '', 'Unmapped Requirement', r.code, r.title, '', '']);
     }
     for (const c of report.notApplicableControls) {
-        rows.push(['', 'Not Applicable Control', c.code, `${c.name} вЂ” ${c.justification}`, 'NOT_APPLICABLE', '']);
+        rows.push(['', 'Not Applicable Control', c.code || '', `${c.name} — ${c.justification}`, 'NOT_APPLICABLE', '']);
     }
     for (const c of report.controlsMissingEvidence) {
-        rows.push(['', 'Missing Evidence', c.code, c.name, c.status, '']);
+        rows.push(['', 'Missing Evidence', c.code || '', c.name, c.status, '']);
     }
     for (const t of report.overdueTasks) {
-        rows.push(['', 'Overdue Task', t.controlCode, `${t.taskTitle} (${t.controlName})`, t.taskStatus, t.dueDate?.toString() || '']);
+        rows.push(['', 'Overdue Task', t.controlCode || '', `${t.taskTitle} (${t.controlName})`, t.taskStatus, t.dueDate?.toString() || '']);
     }
 
-    const csv = rows.map((r: any) => r.map((c: any) => `"${(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const csv = rows.map((r) => r.map((c) => `"${(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
     return { csv, filename: `${frameworkKey}-readiness-report.csv`, summary: report.summary };
 }

@@ -25,7 +25,6 @@ export const GET = withApiErrorHandling(async (req: NextRequest, { params }: { p
 
 export const POST = withApiErrorHandling(withValidatedBody(CreateFindingSchema, async (req, { params }: { params: { tenantSlug: string } }, body) => {
     const ctx = await getTenantCtx(params, req);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const finding = await createFinding(ctx, body as any);
+    const finding = await createFinding(ctx, body);
     return jsonResponse(finding, { status: 201 });
 }));

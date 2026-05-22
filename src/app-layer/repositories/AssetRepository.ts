@@ -1,6 +1,6 @@
 import { PrismaTx } from '@/lib/db-context';
 import { RequestContext } from '../types';
-import { Prisma } from '@prisma/client';
+import { Prisma, AssetType, AssetStatus, Criticality } from '@prisma/client';
 import { buildCursorWhere, CURSOR_ORDER_BY, computePageInfo, clampLimit } from '@/lib/pagination';
 import type { PaginatedResponse } from '@/lib/dto/pagination';
 
@@ -54,12 +54,9 @@ export class AssetRepository {
     private static _buildWhere(ctx: RequestContext, filters?: AssetFilters): Prisma.AssetWhereInput {
         const where: Prisma.AssetWhereInput = { tenantId: ctx.tenantId };
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (filters?.type) where.type = filters.type as any;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (filters?.status) where.status = filters.status as any;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (filters?.criticality) where.criticality = filters.criticality as any;
+        if (filters?.type) where.type = filters.type as AssetType;
+        if (filters?.status) where.status = filters.status as AssetStatus;
+        if (filters?.criticality) where.criticality = filters.criticality as Criticality;
         if (filters?.q) {
             where.OR = [
                 { name: { contains: filters.q, mode: 'insensitive' } },

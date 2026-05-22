@@ -1,11 +1,10 @@
 /* eslint-disable react-hooks/exhaustive-deps -- Various useEffect/useMemo dep arrays in this file deliberately omit identity-unstable callbacks (handlers recreated each render) or use selector functions whose change-detection happens elsewhere. Adding the deps would either trigger unnecessary re-runs OR cause infinite render loops; the proper structural fix is to wrap parent-level callbacks in useCallback. Tracked as follow-up. */
 /* eslint-disable @typescript-eslint/no-explicit-any --
- * Tanstack-react-table primitive wrapper. The `any` casts here are
- * structural — column meta, getValue<T>(), and the heterogeneous
- * row.original access work against a generic `TData` that downstream
- * consumers specialise. Replacing each with the right `Cell<TData, T>`
- * / `RowData` import would lock the wrapper to one row shape; the
- * primitive deliberately stays open.
+ * Tanstack-react-table primitive wrapper. Remaining `any` usages are
+ * structural — `getValue<T>()`, generic `T extends any` bounds, and the
+ * heterogeneous `column: any` param in sort helpers. The `ColumnMeta`
+ * fields (disableTruncate / headerTooltip) are now typed via the module
+ * augmentation in `./tanstack-table.d.ts` and no longer require casts.
  */
 import { cn, deepEqual, isClickOnInteractiveChild } from "./table-utils";
 import {
@@ -512,8 +511,7 @@ const ResizableTableRow = memo(
             (c) => !["select", "menu"].includes(c.column.id),
           )?.column.id;
           const isFirstContent = cell.column.id === firstContentId;
-          const disableTruncate = !!(cell.column.columnDef.meta as any)
-            ?.disableTruncate;
+          const disableTruncate = !!cell.column.columnDef.meta?.disableTruncate;
 
           return (
             <td
@@ -901,9 +899,8 @@ export function Table<T>({
                                       header.column.columnDef.header,
                                       header.getContext(),
                                     );
-                                    const headerTooltip = (
-                                      header.column.columnDef.meta as any
-                                    )?.headerTooltip;
+                                    const headerTooltip =
+                                      header.column.columnDef.meta?.headerTooltip;
 
                                     return (
                                       <HeaderWithTooltip
@@ -1034,9 +1031,8 @@ export function Table<T>({
                         const isColumnAfterSelect = columnsAfterSelect.has(
                           cell.column.id,
                         );
-                        const disableTruncate = !!(
-                          cell.column.columnDef.meta as any
-                        )?.disableTruncate;
+                        const disableTruncate =
+                          !!cell.column.columnDef.meta?.disableTruncate;
 
                         return (
                           <td

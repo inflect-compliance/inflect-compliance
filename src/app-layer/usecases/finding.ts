@@ -6,6 +6,8 @@ import { notFound } from '@/lib/errors/types';
 import { runInTenantContext } from '@/lib/db-context';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import type { FindingSeverity, FindingType, FindingStatus } from '@prisma/client';
+import { z } from 'zod';
+import { CreateFindingSchema, UpdateFindingSchema } from '@/lib/schemas';
 
 // Epic D.2 — sanitise optional free-text on UPDATE without disturbing
 // the three-state contract: undefined → don't touch, null → SET NULL,
@@ -37,17 +39,7 @@ export async function getFinding(ctx: RequestContext, id: string) {
     });
 }
 
-export async function createFinding(ctx: RequestContext, data: {
-    auditId?: string | null;
-    severity: string;
-    type: string;
-    title: string;
-    description?: string;
-    rootCause?: string;
-    correctiveAction?: string;
-    owner?: string;
-    dueDate?: string | null;
-}) {
+export async function createFinding(ctx: RequestContext, data: z.infer<typeof CreateFindingSchema>) {
     assertCanWrite(ctx);
 
     return runInTenantContext(ctx, async (db) => {
@@ -88,18 +80,7 @@ export async function createFinding(ctx: RequestContext, data: {
     });
 }
 
-export async function updateFinding(ctx: RequestContext, id: string, data: {
-    severity?: string;
-    type?: string;
-    title?: string;
-    description?: string;
-    rootCause?: string;
-    correctiveAction?: string;
-    owner?: string;
-    dueDate?: string | null;
-    status?: string;
-    verificationNotes?: string;
-}) {
+export async function updateFinding(ctx: RequestContext, id: string, data: z.infer<typeof UpdateFindingSchema>) {
     assertCanWrite(ctx);
 
     return runInTenantContext(ctx, async (db) => {

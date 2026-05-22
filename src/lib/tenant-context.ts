@@ -93,8 +93,7 @@ export async function resolveTenantContext(
     }
 
     // Block deactivated or removed members from accessing tenant resources
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const memberStatus = (membership as any).status;
+    const memberStatus = membership.status;
     if (memberStatus === 'DEACTIVATED') {
         throw forbidden('Your account has been deactivated by a tenant administrator. Contact your admin for access.');
     }

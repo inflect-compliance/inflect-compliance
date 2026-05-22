@@ -10,6 +10,7 @@
  *   await runEvidenceRetentionSweep({ now: new Date() });          // all tenants
  *   await runEvidenceRetentionSweep({ dryRun: true });             // preview
  */
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { runJob } from '@/lib/observability/job-runner';
 import { logger } from '@/lib/observability/logger';
@@ -35,8 +36,7 @@ export async function runEvidenceRetentionSweep(
         const dryRun = options.dryRun ?? false;
 
         // Find evidence with retentionUntil < now AND not already archived AND not soft-deleted
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const where: any = {
+        const where: Prisma.EvidenceWhereInput = {
             retentionUntil: { not: null, lt: now },
             isArchived: false,
             deletedAt: null,
@@ -45,8 +45,7 @@ export async function runEvidenceRetentionSweep(
             where.tenantId = options.tenantId;
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const candidates = await (prisma.evidence as any).findMany({
+        const candidates = await prisma.evidence.findMany({
             where,
             select: { id: true, tenantId: true, title: true, expiredAt: true },
         });
@@ -61,8 +60,7 @@ export async function runEvidenceRetentionSweep(
         }
 
         for (const ev of candidates) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const updateData: any = {
+            const updateData: Prisma.EvidenceUpdateInput = {
                 isArchived: true,
             };
 

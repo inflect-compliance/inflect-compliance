@@ -1,6 +1,6 @@
 import { PrismaTx } from '@/lib/db-context';
 import { RequestContext } from '../types';
-import { Prisma } from '@prisma/client';
+import { Prisma, VendorStatus, VendorCriticality, VendorDataAccess, VendorDocumentType, VendorLinkEntityType, VendorLinkRelation, AssessmentStatus } from '@prisma/client';
 import { buildCursorWhere, CURSOR_ORDER_BY, computePageInfo, clampLimit } from '@/lib/pagination';
 import { validateVendorTags } from '../schemas/json-columns.schemas';
 import type { PaginatedResponse } from '@/lib/dto/pagination';
@@ -87,13 +87,10 @@ export class VendorRepository {
     private static _buildWhere(ctx: RequestContext, filters: VendorFilters = {}): Prisma.VendorWhereInput {
         const where: Prisma.VendorWhereInput = { tenantId: ctx.tenantId };
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (filters.status) where.status = filters.status as any;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (filters.criticality) where.criticality = filters.criticality as any;
+        if (filters.status) where.status = filters.status as VendorStatus;
+        if (filters.criticality) where.criticality = filters.criticality as VendorCriticality;
         if (filters.riskRating) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            where.assessments = { some: { riskRating: filters.riskRating as any } };
+            where.assessments = { some: { riskRating: filters.riskRating as VendorCriticality } };
         }
         if (filters.q) {
             where.OR = [
@@ -123,8 +120,23 @@ export class VendorRepository {
         });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    static async create(db: PrismaTx, ctx: RequestContext, data: any) {
+    static async create(db: PrismaTx, ctx: RequestContext, data: {
+        name: string;
+        legalName?: string | null;
+        websiteUrl?: string | null;
+        domain?: string | null;
+        country?: string | null;
+        description?: string | null;
+        ownerUserId?: string | null;
+        status?: string;
+        criticality?: string;
+        inherentRisk?: string | null;
+        dataAccess?: string | null;
+        isSubprocessor?: boolean;
+        tags?: Prisma.InputJsonValue | null;
+        nextReviewAt?: string | null;
+        contractRenewalAt?: string | null;
+    }) {
         return db.vendor.create({
             data: {
                 tenantId: ctx.tenantId,
@@ -135,14 +147,10 @@ export class VendorRepository {
                 country: data.country || null,
                 description: data.description || null,
                 ownerUserId: data.ownerUserId || null,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                status: (data.status as any) || 'ONBOARDING',
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                criticality: (data.criticality as any) || 'MEDIUM',
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                inherentRisk: (data.inherentRisk as any) || null,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                dataAccess: (data.dataAccess as any) || null,
+                status: (data.status as VendorStatus) ?? VendorStatus.ONBOARDING,
+                criticality: (data.criticality as VendorCriticality) ?? VendorCriticality.MEDIUM,
+                inherentRisk: (data.inherentRisk as VendorCriticality) ?? null,
+                dataAccess: (data.dataAccess as VendorDataAccess) ?? null,
                 isSubprocessor: data.isSubprocessor ?? false,
                 tags: data.tags ? validateVendorTags(data.tags) : Prisma.JsonNull,
                 nextReviewAt: data.nextReviewAt ? new Date(data.nextReviewAt) : null,
@@ -152,8 +160,24 @@ export class VendorRepository {
         });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    static async update(db: PrismaTx, ctx: RequestContext, id: string, data: any) {
+    static async update(db: PrismaTx, ctx: RequestContext, id: string, data: {
+        name?: string;
+        legalName?: string | null;
+        websiteUrl?: string | null;
+        domain?: string | null;
+        country?: string | null;
+        description?: string | null;
+        ownerUserId?: string | null;
+        status?: string;
+        criticality?: string;
+        inherentRisk?: string | null;
+        residualRisk?: string | null;
+        dataAccess?: string | null;
+        isSubprocessor?: boolean;
+        tags?: Prisma.InputJsonValue | null;
+        nextReviewAt?: string | null;
+        contractRenewalAt?: string | null;
+    }) {
         const existing = await db.vendor.findFirst({ where: { id, tenantId: ctx.tenantId } });
         if (!existing) return null;
 
@@ -167,16 +191,11 @@ export class VendorRepository {
                 ...(data.country !== undefined && { country: data.country }),
                 ...(data.description !== undefined && { description: data.description }),
                 ...(data.ownerUserId !== undefined && { ownerUserId: data.ownerUserId }),
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                ...(data.status !== undefined && { status: data.status as any }),
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                ...(data.criticality !== undefined && { criticality: data.criticality as any }),
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                ...(data.inherentRisk !== undefined && { inherentRisk: (data.inherentRisk as any) || null }),
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                ...(data.residualRisk !== undefined && { residualRisk: (data.residualRisk as any) || null }),
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                ...(data.dataAccess !== undefined && { dataAccess: (data.dataAccess as any) || null }),
+                ...(data.status !== undefined && { status: data.status as VendorStatus }),
+                ...(data.criticality !== undefined && { criticality: data.criticality as VendorCriticality }),
+                ...(data.inherentRisk !== undefined && { inherentRisk: (data.inherentRisk as VendorCriticality) ?? null }),
+                ...(data.residualRisk !== undefined && { residualRisk: (data.residualRisk as VendorCriticality) ?? null }),
+                ...(data.dataAccess !== undefined && { dataAccess: (data.dataAccess as VendorDataAccess) ?? null }),
                 ...(data.isSubprocessor !== undefined && { isSubprocessor: data.isSubprocessor }),
                 ...(data.tags !== undefined && { tags: data.tags ? validateVendorTags(data.tags) : Prisma.JsonNull }),
                 ...(data.nextReviewAt !== undefined && { nextReviewAt: data.nextReviewAt ? new Date(data.nextReviewAt) : null }),
@@ -189,8 +208,7 @@ export class VendorRepository {
     static async setStatus(db: PrismaTx, ctx: RequestContext, id: string, status: string) {
         const existing = await db.vendor.findFirst({ where: { id, tenantId: ctx.tenantId } });
         if (!existing) return null;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return db.vendor.update({ where: { id }, data: { status: status as any } });
+        return db.vendor.update({ where: { id }, data: { status: status as VendorStatus } });
     }
 }
 
@@ -203,14 +221,20 @@ export class VendorDocumentRepository {
         });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    static async create(db: PrismaTx, ctx: RequestContext, vendorId: string, data: any) {
+    static async create(db: PrismaTx, ctx: RequestContext, vendorId: string, data: {
+        type: string;
+        fileId?: string | null;
+        externalUrl?: string | null;
+        title?: string | null;
+        validFrom?: string | null;
+        validTo?: string | null;
+        notes?: string | null;
+    }) {
         return db.vendorDocument.create({
             data: {
                 tenantId: ctx.tenantId,
                 vendorId,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                type: data.type as any,
+                type: data.type as VendorDocumentType,
                 fileId: data.fileId || null,
                 externalUrl: data.externalUrl || null,
                 title: data.title || null,
@@ -238,17 +262,18 @@ export class VendorLinkRepository {
         });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    static async create(db: PrismaTx, ctx: RequestContext, vendorId: string, data: any) {
+    static async create(db: PrismaTx, ctx: RequestContext, vendorId: string, data: {
+        entityType: string;
+        entityId: string;
+        relation?: string;
+    }) {
         return db.vendorLink.create({
             data: {
                 tenantId: ctx.tenantId,
                 vendorId,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                entityType: data.entityType as any,
+                entityType: data.entityType as VendorLinkEntityType,
                 entityId: data.entityId,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                relation: (data.relation as any) || 'RELATED',
+                relation: (data.relation as VendorLinkRelation) ?? VendorLinkRelation.RELATED,
             },
         });
     }

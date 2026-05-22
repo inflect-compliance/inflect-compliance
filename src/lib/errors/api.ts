@@ -129,8 +129,7 @@ interface ApiRouteHandler<Context> {
  *   stricter presets (LOGIN_LIMIT, API_KEY_CREATE_LIMIT), or
  *   `{ rateLimit: false }` to opt out.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function withApiErrorHandling<Context = any>(
+export function withApiErrorHandling<Context = unknown>(
     handler: (req: NextRequest, ctx: Context) => Promise<NextResponse | Response> | NextResponse | Response,
     options: ApiWrapperOptions = {},
 ): ApiRouteHandler<Context> {
@@ -154,8 +153,7 @@ export function withApiErrorHandling<Context = any>(
         // (transparently to the inner handler) keeps the 250+ existing
         // call sites correct without churn. The inner handler still
         // types `params` as the sync object — at runtime it is one.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const ctxObj = ctx as any;
+        const ctxObj = ctx as { params?: { then?: unknown } } | null | undefined;
         if (
             ctxObj &&
             typeof ctxObj === 'object' &&

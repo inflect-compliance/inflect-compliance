@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Audit Readiness Scoring & Exports
  *
@@ -21,6 +20,7 @@
  * and soft-deleted (deletedAt!=null) evidence. This ensures readiness
  * scores only reflect active, valid evidence.
  */
+import { type AuditCycle } from '@prisma/client';
 import { RequestContext } from '../types';
 import { assertCanViewPack } from '../policies/audit-readiness.policies';
 import { logEvent } from '../events/audit';
@@ -113,8 +113,7 @@ export async function computeReadiness(ctx: RequestContext, cycleId: string): Pr
 
 // ─── ISO27001 Scoring ───
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function computeISO27001Readiness(ctx: RequestContext, cycle: any): Promise<ReadinessResult> {
+async function computeISO27001Readiness(ctx: RequestContext, cycle: AuditCycle): Promise<ReadinessResult> {
     const gaps: ReadinessGap[] = [];
 
     // 1) Requirement coverage
@@ -156,7 +155,6 @@ async function computeISO27001Readiness(ctx: RequestContext, cycle: any): Promis
             select: { id: true, code: true, name: true, status: true },
         }));
     const totalControls = controls.length;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const implementedControls = controls.filter((c) => c.status === 'IMPLEMENTED').length;
     const implScore = totalControls > 0 ? (implementedControls / totalControls) * 100 : 0;
 
@@ -167,19 +165,15 @@ async function computeISO27001Readiness(ctx: RequestContext, cycle: any): Promis
             select: { id: true, code: true, name: true, evidence: {
                 where: { isArchived: false, deletedAt: null },
                 select: { id: true },
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } as any },
+            } },
         }));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const withEvidence = controlsWithEvidence.filter((c) => c.evidence?.length > 0).length;
     const evidenceScore = totalControls > 0 ? (withEvidence / totalControls) * 100 : 0;
 
     // Controls missing evidence (top 10)
     controlsWithEvidence
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .filter((c) => !c.evidence?.length)
         .slice(0, 10)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .forEach((c) => gaps.push({
             type: 'MISSING_EVIDENCE', severity: 'MEDIUM',
             title: `${c.code}: ${c.name}`, details: 'No active evidence attached (archived/expired excluded)', entityId: c.id,
@@ -199,7 +193,6 @@ async function computeISO27001Readiness(ctx: RequestContext, cycle: any): Promis
     const overdueCount = overdueTasks.length;
     const taskScore = Math.max(0, 100 - (overdueCount * 10));
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     overdueTasks.slice(0, 5).forEach((t) => gaps.push({
         type: 'OVERDUE_TASK', severity: 'MEDIUM',
         title: t.title, details: `Due: ${t.dueAt?.toISOString().split('T')[0] || 'unknown'}`, entityId: t.id,
@@ -219,7 +212,6 @@ async function computeISO27001Readiness(ctx: RequestContext, cycle: any): Promis
     const issueCount = openIssues.length;
     const issueScore = Math.max(0, 100 - (issueCount * 15));
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     openIssues.slice(0, 5).forEach((i) => gaps.push({
         type: 'OPEN_ISSUE', severity: i.severity === 'CRITICAL' ? 'HIGH' : 'MEDIUM',
         title: i.title, details: `Severity: ${i.severity}`, entityId: i.id,
@@ -252,8 +244,7 @@ async function computeISO27001Readiness(ctx: RequestContext, cycle: any): Promis
 
 // ─── NIS2 Scoring ───
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function computeNIS2Readiness(ctx: RequestContext, cycle: any): Promise<ReadinessResult> {
+async function computeNIS2Readiness(ctx: RequestContext, cycle: AuditCycle): Promise<ReadinessResult> {
     const gaps: ReadinessGap[] = [];
 
     // 1) Requirement coverage
@@ -295,13 +286,11 @@ async function computeNIS2Readiness(ctx: RequestContext, cycle: any): Promise<Re
                 where: { tenantId: ctx.tenantId, requirement: { frameworkId: fw.id } },
                 select: { controlId: true },
             }));
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         controlIds = [...new Set(links.map((l) => l.controlId))];
     }
     if (controlIds.length === 0) {
         const allControls = await runInTenantContext(ctx, (tdb) =>
             tdb.control.findMany({ where: { tenantId: ctx.tenantId }, select: { id: true } }));
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         controlIds = allControls.map((c) => c.id);
     }
 
@@ -311,19 +300,15 @@ async function computeNIS2Readiness(ctx: RequestContext, cycle: any): Promise<Re
             select: { id: true, code: true, name: true, evidence: {
                 where: { isArchived: false, deletedAt: null },
                 select: { id: true },
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } as any },
+            } },
         }));
     const totalControls = controlsWithEv.length;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const withEvidence = controlsWithEv.filter((c) => c.evidence?.length > 0).length;
     const evidenceScore = totalControls > 0 ? (withEvidence / totalControls) * 100 : 0;
 
     controlsWithEv
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .filter((c) => !c.evidence?.length)
         .slice(0, 10)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .forEach((c) => gaps.push({
             type: 'MISSING_EVIDENCE', severity: 'MEDIUM',
             title: `${c.code}: ${c.name}`, details: 'No active evidence for this control (archived/expired excluded)', entityId: c.id,
@@ -340,7 +325,6 @@ async function computeNIS2Readiness(ctx: RequestContext, cycle: any): Promise<Re
     const expectedPolicies = NIS2_KEY_POLICIES.map((p) => p.label);
 
     for (const kp of NIS2_KEY_POLICIES) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const found = policies.some((p) => {
             const text = `${p.title} ${p.category || ''}`.toLowerCase();
             return text.includes(kp.keyword);
@@ -367,7 +351,6 @@ async function computeNIS2Readiness(ctx: RequestContext, cycle: any): Promise<Re
     const issueCount = openIssues.length;
     const issueScore = Math.max(0, 100 - (issueCount * 10));
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     openIssues.slice(0, 5).forEach((i) => gaps.push({
         type: 'OPEN_ISSUE', severity: i.severity === 'CRITICAL' ? 'HIGH' : 'MEDIUM',
         title: i.title, details: `${i.type} · Severity: ${i.severity}`, entityId: i.id,
@@ -425,8 +408,7 @@ function generateNIS2Recommendations(coverage: number, evidence: number, policie
 
 // ─── Export Generators ───
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function exportReadinessJson(ctx: RequestContext, cycleId: string): Promise<any> {
+export async function exportReadinessJson(ctx: RequestContext, cycleId: string): Promise<ReadinessResult> {
     const result = await computeReadiness(ctx, cycleId);
     await runInTenantContext(ctx, (tdb) =>
         logEvent(tdb, ctx, {

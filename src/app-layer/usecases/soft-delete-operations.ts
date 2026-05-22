@@ -11,6 +11,12 @@ import { runInTenantContext } from '@/lib/db-context';
 import { notFound } from '@/lib/errors/types';
 import { withDeleted, SOFT_DELETE_MODELS } from '@/lib/soft-delete';
 
+/** Minimal delegate interface for dynamic model access by string key */
+interface ModelDelegate {
+    findFirst(args: object): Promise<{ id: string; tenantId: string; deletedAt: Date | null } | null>;
+    update(args: object): Promise<unknown>;
+}
+
 type SoftDeletableModel =
     | 'Asset' | 'Risk' | 'Control' | 'Evidence' | 'Policy'
     | 'Vendor' | 'FileRecord' | 'Task' | 'Finding'
@@ -29,8 +35,7 @@ export async function restoreEntity(
 
     return runInTenantContext(ctx, async (db) => {
         // We need to find the record including deleted ones
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const delegate = (db as any)[model.charAt(0).toLowerCase() + model.slice(1)];
+        const delegate = (db as unknown as Record<string, ModelDelegate>)[model.charAt(0).toLowerCase() + model.slice(1)];
 
         // Find the record (including deleted, using withDeleted pattern)
         const record = await delegate.findFirst(withDeleted({
@@ -76,8 +81,7 @@ export async function purgeEntity(
     assertCanAdmin(ctx);
 
     return runInTenantContext(ctx, async (db) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const delegate = (db as any)[model.charAt(0).toLowerCase() + model.slice(1)];
+        const delegate = (db as unknown as Record<string, ModelDelegate>)[model.charAt(0).toLowerCase() + model.slice(1)];
 
         // Find the record (including deleted)
         const record = await delegate.findFirst(withDeleted({
@@ -89,8 +93,7 @@ export async function purgeEntity(
         }
 
         // Hard delete: use $executeRawUnsafe to bypass the soft-delete middleware
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (db as any).$executeRawUnsafe(
+        await db.$executeRawUnsafe(
             `DELETE FROM "${model}" WHERE "id" = $1 AND "tenantId" = $2`,
             id,
             ctx.tenantId,

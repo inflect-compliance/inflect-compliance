@@ -1,6 +1,6 @@
 import { PrismaTx } from '@/lib/db-context';
 import { RequestContext } from '../types';
-import { Prisma } from '@prisma/client';
+import { Prisma, ChecklistResult } from '@prisma/client';
 
 // PR-3 — tight SELECT shape for the Audits master/detail list. Master
 // list renders id/title/status + the two _count badges; detail pane
@@ -67,10 +67,15 @@ export class AuditRepository {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    static async updateChecklistItem(db: PrismaTx, ctx: RequestContext, itemId: string, data: { result: any, notes?: string }) {
+    static async updateChecklistItem(db: PrismaTx, ctx: RequestContext, itemId: string, data: { result?: string | null; notes?: string | null }) {
         return db.auditChecklistItem.update({
             where: { id: itemId },
-            data,
+            data: {
+                // `result` maps to the non-null ChecklistResult enum column —
+                // a null/absent input means "leave unchanged".
+                result: data.result == null ? undefined : (data.result as ChecklistResult),
+                notes: data.notes,
+            },
         });
     }
 }
