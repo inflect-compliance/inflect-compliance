@@ -86,6 +86,13 @@ deps and corrupted the lockfile — exactly the kind of
 incompatibility `npm install` absorbs silently. The fix: delete the
 block — `next` resolves its own platform binaries.
 
+`tests/guards/swc-version-coherence.test.ts` now makes the skew
+unrepeatable: it fails CI if `package.json` pins any `@next/swc-*`
+package directly, or if any `@next/swc-*` entry in the lockfile
+carries a version other than the resolved `next` version. Re-add a
+pin and the platforms desynchronise from `next` — the guard catches
+it before merge.
+
 ## Node / npm
 
 Node **22** across every environment, pinned in three places that
