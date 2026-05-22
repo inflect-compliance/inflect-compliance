@@ -191,8 +191,9 @@ function toOption(member: Member): ComboboxOption<Member> {
         // Avatar roadmap P1 — the people-picker renders identity
         // through the shared `<InitialsAvatar>` primitive (one
         // renderer, app-wide). Initials derive from the name, falling
-        // back to the email; image-backed rendering arrives for free
-        // when P2 adds `imageUrl` to the primitive.
+        // back to the email. P2 — `imageUrl` surfaces the member's
+        // photo (OAuth `User.image` today) with initials as the
+        // load-failure fallback.
         icon: (
             <InitialsAvatar
                 value={
@@ -200,6 +201,7 @@ function toOption(member: Member): ComboboxOption<Member> {
                     readableField(member.email)
                 }
                 size="sm"
+                imageUrl={member.image}
             />
         ),
         meta: member,
