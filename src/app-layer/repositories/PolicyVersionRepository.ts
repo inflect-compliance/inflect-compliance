@@ -1,5 +1,6 @@
 import { PrismaTx } from '@/lib/db-context';
 import { RequestContext } from '../types';
+import { PolicyContentType } from '@prisma/client';
 
 export class PolicyVersionRepository {
     static async create(db: PrismaTx, ctx: RequestContext, policyId: string, data: {
@@ -20,8 +21,7 @@ export class PolicyVersionRepository {
                 tenantId: ctx.tenantId,
                 policyId,
                 versionNumber: nextVersion,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                contentType: data.contentType as any,
+                contentType: data.contentType as PolicyContentType,
                 contentText: data.contentText,
                 externalUrl: data.externalUrl,
                 changeSummary: data.changeSummary,

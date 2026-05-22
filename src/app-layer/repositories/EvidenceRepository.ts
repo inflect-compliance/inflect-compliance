@@ -105,15 +105,13 @@ export class EvidenceRepository {
             where.controlId = filters.controlId;
         }
         if (filters?.archived !== undefined) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma generated types may lag schema
-            (where as any).isArchived = filters.archived;
+            where.isArchived = filters.archived;
         }
         if (filters?.expiring) {
             // Evidence expiring within 30 days
             const soon = new Date();
             soon.setDate(soon.getDate() + 30);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma generated types may lag schema
-            (where as any).retentionUntil = { lte: soon };
+            where.retentionUntil = { lte: soon };
         }
         if (filters?.q) {
             andConditions.push({

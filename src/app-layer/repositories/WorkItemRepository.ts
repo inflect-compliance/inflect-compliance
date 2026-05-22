@@ -1,6 +1,6 @@
 import { PrismaTx } from '@/lib/db-context';
 import { RequestContext } from '../types';
-import { Prisma, WorkItemStatus } from '@prisma/client';
+import { Prisma, WorkItemStatus, WorkItemType, WorkItemSeverity, WorkItemPriority, WorkItemSource, TaskLinkEntityType, TaskLinkRelation } from '@prisma/client';
 import { buildCursorWhere, CURSOR_ORDER_BY, computePageInfo, clampLimit } from '@/lib/pagination';
 import type { PaginatedResponse } from '@/lib/dto/pagination';
 import { TERMINAL_WORK_ITEM_STATUSES, isTerminalStatus } from '../domain/work-item-status';
@@ -94,14 +94,10 @@ export class WorkItemRepository {
         const where: Prisma.TaskWhereInput = { tenantId: ctx.tenantId };
         const and: Prisma.TaskWhereInput[] = [];
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (filters.status) where.status = filters.status as any;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (filters.type) where.type = filters.type as any;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (filters.severity) where.severity = filters.severity as any;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (filters.priority) where.priority = filters.priority as any;
+        if (filters.status) where.status = filters.status as WorkItemStatus;
+        if (filters.type) where.type = filters.type as WorkItemType;
+        if (filters.severity) where.severity = filters.severity as WorkItemSeverity;
+        if (filters.priority) where.priority = filters.priority as WorkItemPriority;
         if (filters.assigneeUserId) where.assigneeUserId = filters.assigneeUserId;
         if (filters.controlId) where.controlId = filters.controlId;
         if (filters.due === 'overdue') {
@@ -124,8 +120,7 @@ export class WorkItemRepository {
         if (filters.linkedEntityType && filters.linkedEntityId) {
             where.links = {
                 some: {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    entityType: filters.linkedEntityType as any,
+                    entityType: filters.linkedEntityType as TaskLinkEntityType,
                     entityId: filters.linkedEntityId,
                 },
             };
@@ -167,7 +162,7 @@ export class WorkItemRepository {
         assigneeUserId?: string | null;
         reviewerUserId?: string | null;
         controlId?: string | null;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- caller-supplied JSON blob from Zod parse, typed as any at the usecase boundary
         metadataJson?: any;
     }) {
         // #102 item 2 — mint the `TSK-N` key from an atomic
@@ -190,20 +185,16 @@ export class WorkItemRepository {
                 key,
                 title: data.title,
                 description: data.description || null,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                type: (data.type as any) || 'TASK',
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                severity: (data.severity as any) || 'MEDIUM',
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                priority: (data.priority as any) || 'P2',
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                source: (data.source as any) || 'MANUAL',
+                type: (data.type as WorkItemType) ?? WorkItemType.TASK,
+                severity: (data.severity as WorkItemSeverity) ?? WorkItemSeverity.MEDIUM,
+                priority: (data.priority as WorkItemPriority) ?? WorkItemPriority.P2,
+                source: (data.source as WorkItemSource) ?? WorkItemSource.MANUAL,
                 dueAt: data.dueAt ? new Date(data.dueAt) : null,
                 assigneeUserId: data.assigneeUserId || null,
                 reviewerUserId: data.reviewerUserId || null,
                 controlId: data.controlId || null,
                 createdByUserId: ctx.userId,
-                metadataJson: data.metadataJson || null,
+                metadataJson: data.metadataJson != null ? data.metadataJson : Prisma.JsonNull,
             },
             include: {
                 assignee: { select: { id: true, name: true, email: true } },
@@ -220,35 +211,30 @@ export class WorkItemRepository {
         dueAt?: string | null;
         controlId?: string | null;
         reviewerUserId?: string | null;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- caller-supplied JSON blob from Zod parse, typed as any at the usecase boundary
         metadataJson?: any;
     }) {
         const existing = await db.task.findFirst({ where: { id, tenantId: ctx.tenantId } });
         if (!existing) return null;
 
-        return db.task.update({
-            where: { id },
-            data: {
-                ...(data.title !== undefined && { title: data.title }),
-                ...(data.description !== undefined && { description: data.description }),
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                ...(data.severity !== undefined && { severity: data.severity as any }),
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                ...(data.priority !== undefined && { priority: data.priority as any }),
-                ...(data.dueAt !== undefined && { dueAt: data.dueAt ? new Date(data.dueAt) : null }),
-                ...(data.controlId !== undefined && { controlId: data.controlId }),
-                ...(data.reviewerUserId !== undefined && { reviewerUserId: data.reviewerUserId }),
-                ...(data.metadataJson !== undefined && { metadataJson: data.metadataJson }),
-            },
-        });
+        const updateData: Prisma.TaskUncheckedUpdateInput = {
+            ...(data.title !== undefined && { title: data.title }),
+            ...(data.description !== undefined && { description: data.description }),
+            ...(data.severity !== undefined && { severity: data.severity as WorkItemSeverity }),
+            ...(data.priority !== undefined && { priority: data.priority as WorkItemPriority }),
+            ...(data.dueAt !== undefined && { dueAt: data.dueAt ? new Date(data.dueAt) : null }),
+            ...(data.controlId !== undefined && { controlId: data.controlId }),
+            ...(data.reviewerUserId !== undefined && { reviewerUserId: data.reviewerUserId }),
+            ...(data.metadataJson !== undefined && { metadataJson: data.metadataJson != null ? data.metadataJson : Prisma.JsonNull }),
+        };
+        return db.task.update({ where: { id }, data: updateData });
     }
 
     static async setStatus(db: PrismaTx, ctx: RequestContext, id: string, status: string, resolution?: string | null) {
         const existing = await db.task.findFirst({ where: { id, tenantId: ctx.tenantId } });
         if (!existing) return null;
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const updateData: any = { status: status as any };
+        const updateData: Prisma.TaskUncheckedUpdateInput = { status: status as WorkItemStatus };
         if (isTerminalStatus(status)) {
             updateData.completedAt = new Date();
             if (resolution !== undefined) updateData.resolution = resolution;
@@ -279,8 +265,7 @@ export class WorkItemRepository {
         const in30d = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
         const ago30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const openFilter = { notIn: [...TERMINAL_WORK_ITEM_STATUSES] as any[] };
+        const openFilter = { notIn: [...TERMINAL_WORK_ITEM_STATUSES] as WorkItemStatus[] };
 
         const [byStatus, bySeverity, byType, overdueCount, due7dCount, due30dCount, total, recentCreated, recentResolved] = await Promise.all([
             db.task.groupBy({ by: ['status'], where: { tenantId }, _count: true }),
@@ -322,8 +307,7 @@ export class WorkItemRepository {
             by: ['entityType', 'entityId'],
             where: {
                 tenantId,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                entityType: { in: ['ASSET', 'RISK'] as any[] },
+                entityType: { in: [TaskLinkEntityType.ASSET, TaskLinkEntityType.RISK] },
                 task: { status: openFilter },
             },
             _count: true,
@@ -360,8 +344,7 @@ export class WorkItemRepository {
     }
 
     static async bulkSetStatus(db: PrismaTx, ctx: RequestContext, taskIds: string[], status: string, resolution?: string | null) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const updateData: any = { status: status as any };
+        const updateData: Prisma.TaskUncheckedUpdateManyInput = { status: status as WorkItemStatus };
         if (isTerminalStatus(status)) {
             updateData.completedAt = new Date();
             if (resolution !== undefined) updateData.resolution = resolution;
@@ -395,11 +378,9 @@ export class TaskLinkRepository {
             data: {
                 tenantId: ctx.tenantId,
                 taskId,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                entityType: entityType as any,
+                entityType: entityType as TaskLinkEntityType,
                 entityId,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                relation: (relation as any) || 'RELATES_TO',
+                relation: (relation as TaskLinkRelation) ?? TaskLinkRelation.RELATES_TO,
             },
         });
     }

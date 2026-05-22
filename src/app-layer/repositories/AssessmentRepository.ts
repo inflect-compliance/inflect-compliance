@@ -1,5 +1,6 @@
 import { PrismaTx } from '@/lib/db-context';
 import { RequestContext } from '../types';
+import { AssessmentStatus, VendorCriticality, Prisma } from '@prisma/client';
 
 export class QuestionnaireRepository {
     static async listTemplates(db: PrismaTx) {
@@ -82,8 +83,7 @@ export class VendorAssessmentRepository {
         return db.vendorAssessment.update({
             where: { id },
             data: {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                status: decision as any,
+                status: decision as AssessmentStatus,
                 decidedAt: new Date(),
                 decidedByUserId: ctx.userId,
                 notes: notes || null,
@@ -94,14 +94,13 @@ export class VendorAssessmentRepository {
     static async updateScore(db: PrismaTx, id: string, score: number, riskRating: string) {
         return db.vendorAssessment.update({
             where: { id },
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            data: { score, riskRating: riskRating as any },
+            data: { score, riskRating: riskRating as VendorCriticality },
         });
     }
 }
 
 export class VendorAnswerRepository {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- answerJson is an opaque questionnaire answer blob typed as any at the usecase boundary
     static async upsertMany(db: PrismaTx, ctx: RequestContext, assessmentId: string, answers: { questionId: string; answerJson: any; computedPoints: number }[]) {
         const results = [];
         for (const a of answers) {

@@ -1,4 +1,5 @@
 import { PrismaTx } from '@/lib/db-context';
+import { CoverageType, ExposureLevel } from '@prisma/client';
 
 export class ControlRiskRepository {
     static async listByControl(db: PrismaTx, tenantId: string, controlId: string) {
@@ -49,8 +50,7 @@ export class AssetControlRepository {
 
     static async link(db: PrismaTx, tenantId: string, assetId: string, controlId: string, coverageType: string | null, rationale: string | null, userId: string) {
         return db.controlAsset.create({
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            data: { tenantId, assetId, controlId, coverageType: (coverageType as any) || 'UNKNOWN', rationale, createdByUserId: userId },
+            data: { tenantId, assetId, controlId, coverageType: (coverageType as CoverageType) ?? CoverageType.UNKNOWN, rationale, createdByUserId: userId },
         });
     }
 
@@ -87,11 +87,9 @@ export class AssetRiskRepository {
     static async link(db: PrismaTx, tenantId: string, assetId: string, riskId: string, exposureLevel: string | null, rationale: string | null, userId: string) {
         return db.assetRiskLink.upsert({
             where: { tenantId_assetId_riskId: { tenantId, assetId, riskId } },
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            create: { tenantId, assetId, riskId, exposureLevel: (exposureLevel as any) || 'MEDIUM', rationale, createdByUserId: userId },
+            create: { tenantId, assetId, riskId, exposureLevel: (exposureLevel as ExposureLevel) ?? ExposureLevel.MEDIUM, rationale, createdByUserId: userId },
             update: {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                ...(exposureLevel ? { exposureLevel: exposureLevel as any } : {}),
+                ...(exposureLevel ? { exposureLevel: exposureLevel as ExposureLevel } : {}),
                 ...(rationale !== null ? { rationale } : {}),
             },
         });
