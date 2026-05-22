@@ -374,10 +374,28 @@ function ControlsPageInner({
     // selection-summary rail with the bulk-status verbs — a calmer,
     // persistent home than the floating batch-action toolbar.
     const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+
+    // The rail is gated on the *settled* selection, not the live one.
+    // DataTable's R13-PR14 click model has a single click toggle row
+    // selection and a double-click navigate — so a double-click toggles
+    // selection on, then off, within the double-click window. Gating
+    // the rail (a layout-reflowing surface) on the live selection would
+    // flash it in and then out mid-double-click, and the reflow between
+    // the two physical clicks breaks double-click-to-navigate. Settling
+    // the selection for 250ms before the rail reacts means a
+    // double-click never trips it; a genuine single-click selection
+    // (which stays put) mounts the rail a quarter-second later —
+    // imperceptible.
+    const [settledSelection, setSettledSelection] =
+        useState<RowSelectionState>({});
+    useEffect(() => {
+        const t = setTimeout(() => setSettledSelection(rowSelection), 250);
+        return () => clearTimeout(t);
+    }, [rowSelection]);
     const selectedIds = useMemo(
         // guardrail-ignore: reads the truthy keys out of the local RowSelectionState record (selected row ids) — not server-data filtering.
-        () => Object.keys(rowSelection).filter((id) => rowSelection[id]),
-        [rowSelection],
+        () => Object.keys(settledSelection).filter((id) => settledSelection[id]),
+        [settledSelection],
     );
     const canEditControls = appPermissions.controls.edit;
     const bulkSetStatus = (newStatus: string) => {
