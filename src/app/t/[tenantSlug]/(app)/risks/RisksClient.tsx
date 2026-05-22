@@ -36,6 +36,9 @@ import {
 } from '@/components/ui/filter';
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
 import { ListPageShell } from '@/components/layout/ListPageShell';
+import { AsidePanel } from '@/components/ui/aside-panel';
+import { AiAssistRail } from '@/components/ui/ai-assist-rail';
+import { Sparkle3 } from '@/components/ui/icons/nucleo/sparkle3';
 import { toApiSearchParams } from '@/lib/filters/url-sync';
 import {
     buildRiskFilters,
@@ -490,6 +493,23 @@ function RisksPageInner({
         },
     ]), [t, getRiskLevel, matrixConfig]);
 
+    // Right-rail Phase 3 — the AI assist co-pilot rail. A persistent,
+    // co-resident entry point to the AI risk-assessment flow that
+    // follows the user across the register. Gated on write permission
+    // (the AI flow itself requires `risks.create`); `defaultCollapsed`
+    // so it lands as a quiet 44px spine, not a 320px land-grab — the
+    // user expands it when they want to engage.
+    const aiAssistRail = permissions.canWrite ? (
+        <AsidePanel
+            title="AI Assist"
+            surfaceKey="risks-list"
+            defaultCollapsed
+            icon={<Sparkle3 className="h-4 w-4" />}
+        >
+            <AiAssistRail aiHref={tenantHref('/risks/ai')} />
+        </AsidePanel>
+    ) : undefined;
+
     return (
         <ListPageShell className="animate-fadeIn gap-section">
             <ListPageShell.Header>
@@ -570,7 +590,7 @@ function RisksPageInner({
                 />
             </ListPageShell.Filters>
 
-            <ListPageShell.Body>
+            <ListPageShell.Body aside={aiAssistRail}>
                 <TruncationBanner truncated={truncated} />
                 {view === 'heatmap' ? (
                     <RiskMatrix

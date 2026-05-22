@@ -48,6 +48,14 @@ export interface AsidePanelProps {
      * one icon family.
      */
     icon?: ReactNode;
+    /**
+     * When true, the panel starts collapsed-to-spine on first visit —
+     * before the user has set a preference for this `surfaceKey`. Once
+     * the user expands/collapses, that choice persists and wins. Use
+     * for a persistent-but-secondary rail (e.g. an assist co-pilot)
+     * that should not claim 320px unprompted. Default false.
+     */
+    defaultCollapsed?: boolean;
     /** Rail content — rendered once, in the docked panel or the Sheet. */
     children: ReactNode;
 }
@@ -59,11 +67,12 @@ export function AsidePanel({
     title,
     surfaceKey,
     icon,
+    defaultCollapsed = false,
     children,
 }: AsidePanelProps) {
     const [collapsed, setCollapsed] = useLocalStorage<boolean>(
         `aside:collapsed:${surfaceKey}`,
-        false,
+        defaultCollapsed,
     );
     const [sheetOpen, setSheetOpen] = useState(false);
 

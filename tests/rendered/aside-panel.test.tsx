@@ -97,4 +97,41 @@ describe('<AsidePanel>', () => {
             screen.getByTestId('aside-panel-sheet-trigger'),
         ).toBeInTheDocument();
     });
+
+    // ── defaultCollapsed (right-rail Phase 3) ──
+
+    it('starts collapsed-to-spine when defaultCollapsed and storage is empty', async () => {
+        render(
+            <AsidePanel
+                title="AI Assist"
+                surfaceKey="risks-list"
+                defaultCollapsed
+            >
+                <p>rail body</p>
+            </AsidePanel>,
+        );
+        // First visit, no stored preference → the panel honours
+        // `defaultCollapsed` and lands as the 44px spine.
+        expect(
+            await screen.findByTestId('aside-panel-spine'),
+        ).toBeInTheDocument();
+    });
+
+    it('a stored preference wins over defaultCollapsed', async () => {
+        // The user previously expanded this surface — that choice
+        // persists and overrides the default.
+        window.localStorage.setItem('aside:collapsed:risks-list', 'false');
+        render(
+            <AsidePanel
+                title="AI Assist"
+                surfaceKey="risks-list"
+                defaultCollapsed
+            >
+                <p>rail body</p>
+            </AsidePanel>,
+        );
+        expect(
+            await screen.findByTestId('aside-panel-docked'),
+        ).toBeInTheDocument();
+    });
 });
