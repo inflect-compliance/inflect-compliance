@@ -94,6 +94,71 @@ describe('checkCredentialsAttempt — memory fallback', () => {
     });
 });
 
+describe('resetCredentialsBackoff — Upstash DEL', () => {
+    // Build a chainable Redis mock that captures what the module
+    // calls without needing an actual Upstash instance. The
+    // `Ratelimit.limit` wrapper just needs to resolve to a "success"
+    // shape; reset just needs the `del` channel.
+    const mockDel = jest.fn().mockResolvedValue(1);
+    const mockLimit = jest
+        .fn()
+        .mockResolvedValue({ success: true, reset: Date.now() + 60_000 });
+
+    beforeEach(() => {
+        mockDel.mockClear();
+        mockLimit.mockClear();
+        jest.resetModules();
+        jest.doMock('@upstash/redis', () => ({
+            Redis: { fromEnv: () => ({ del: mockDel }) },
+        }));
+        jest.doMock('@upstash/ratelimit', () => ({
+            Ratelimit: Object.assign(
+                function () {
+                    return { limit: mockLimit };
+                },
+                { slidingWindow: () => ({}) },
+            ),
+        }));
+        mockEnv.RATE_LIMIT_MODE = 'upstash';
+    });
+
+    afterEach(() => {
+        jest.dontMock('@upstash/redis');
+        jest.dontMock('@upstash/ratelimit');
+        mockEnv.RATE_LIMIT_MODE = 'memory';
+    });
+
+    it('fires `redis.del(key)` against Upstash on reset', async () => {
+        const fresh = await import('@/lib/auth/credential-rate-limit');
+        fresh.__resetCredentialsRateLimitForTests();
+
+        // One attempt to bootstrap initLimiter() — that's when the
+        // mocked Redis singleton lands inside the module.
+        await fresh.checkCredentialsAttempt('alice@example.com');
+        expect(mockLimit).toHaveBeenCalledTimes(1);
+
+        await fresh.resetCredentialsBackoff('alice@example.com');
+        expect(mockDel).toHaveBeenCalledTimes(1);
+        // The key shape is the documented `rl:cred:id:<sha256(email)>`.
+        expect(mockDel.mock.calls[0][0]).toMatch(/^rl:cred:id:[0-9a-f]{64}$/);
+    });
+
+    it('reset fails open if Redis throws — memory bucket still cleared', async () => {
+        mockDel.mockRejectedValueOnce(new Error('upstash blip'));
+        const fresh = await import('@/lib/auth/credential-rate-limit');
+        fresh.__resetCredentialsRateLimitForTests();
+        await fresh.checkCredentialsAttempt('bob@example.com');
+
+        // The Redis call inside reset should reject, but the function
+        // resolves cleanly — better to let a successful login through
+        // than to 500 on a Redis blip.
+        await expect(
+            fresh.resetCredentialsBackoff('bob@example.com'),
+        ).resolves.toBeUndefined();
+        expect(mockDel).toHaveBeenCalledTimes(1);
+    });
+});
+
 describe('checkCredentialsAttempt — kill switches', () => {
     it('AUTH_TEST_MODE=1 bypasses the gate regardless of attempt count', async () => {
         mockEnv.AUTH_TEST_MODE = '1';

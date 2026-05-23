@@ -223,10 +223,13 @@ one extra brute-force attempt through.
 After a successful verify, the chokepoint calls
 `resetCredentialsBackoff(email)` to clear the per-email counter. A user
 who typo'd their password four times and then got it right isn't
-locked out on the correct fifth attempt. Upstash sliding-window mode
-doesn't implement per-key delete; the counter ages out naturally
-within 15 minutes (documented limitation in
-`credential-rate-limit.ts`).
+locked out on the correct fifth attempt. Both stores are cleared
+synchronously — the in-process memory fallback gets a `Map.delete`,
+and Upstash mode gets a direct `DEL` on the sliding-window key via
+the bare `Redis` singleton kept alongside the `Ratelimit` wrapper.
+Failure on the Upstash `DEL` falls open (logs + lets the login
+proceed; the bucket will age out within 15 minutes anyway) — better
+than 500ing a successful login on a Redis blip.
 
 ## Cookie / session settings
 
