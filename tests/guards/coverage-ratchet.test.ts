@@ -39,7 +39,20 @@ type Metrics = { branches: number; functions: number; lines: number; statements:
  */
 const RATCHET_FLOOR: Record<string, Metrics> = {
     global: { branches: 56, functions: 54, lines: 70, statements: 69 },
-    './src/app-layer/usecases/': { branches: 42, functions: 38, lines: 54, statements: 51 },
+    // `usecases/` — quality roadmap P1/P2 lock. The post-Roadmap-3
+    // floor was 42 (branches); measured branch coverage had since
+    // climbed to ~58 without the floor following. This locks the
+    // accumulated gain (seeded ~3 points below measured so a
+    // single-test flake does not trip CI). Next stage: ≈65 → 70.
+    './src/app-layer/usecases/': { branches: 55, functions: 49, lines: 65, statements: 62 },
+    // `policies/` — quality roadmap P3. Authorization decisions —
+    // a wrong branch is a security hole. Measured ≈82 branches /
+    // 91 funcs / 91 lines; seeded a few points below.
+    './src/app-layer/policies/': { branches: 78, functions: 88, lines: 88, statements: 85 },
+    // `events/` — quality roadmap P3. The hash-chained audit
+    // trail — integrity-critical. Measured ≈75 branches / 63 funcs
+    // / 80 lines.
+    './src/app-layer/events/': { branches: 72, functions: 60, lines: 78, statements: 75 },
     './src/lib/': { branches: 66, functions: 61, lines: 71, statements: 69 },
 };
 
