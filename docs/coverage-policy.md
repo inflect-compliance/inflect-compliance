@@ -36,10 +36,11 @@ Two consequences shape this policy:
 | **B — High assurance** | `src/app-layer/events/` | The hash-chained audit trail — integrity-critical. | **65 / 65 / 75** |
 | **C — Standard** | Global (everything else) | API route handlers are thin HTTP glue; React components are UI. Real, but a 500 not a compliance breach. | **65 / 65 / 78** |
 
-`policies/` and `events/` do not have dedicated threshold keys
-**yet** — a new key must be seeded at or below *measured* coverage
-or it fails CI on the next run (see `jest.config.js`). Roadmap-3 P4
-adds those keys once their coverage is measured and lockable.
+`policies/` and `events/` got their dedicated threshold keys in
+**quality-roadmap P3** — seeded a few points below measured coverage
+so the existing assurance is locked while leaving margin for
+single-test flake. Roadmap-3 P4 originally reserved this slot; it was
+filled by quality-roadmap P3.
 
 ## Current floors vs. targets
 
@@ -49,13 +50,20 @@ lowered, raised whenever a PR earns it.
 
 | Scope | Branches now → target | Functions now → target | Lines now → target |
 |-------|----------------------|------------------------|--------------------|
-| `usecases/` | 37 → **70** | 30 → **70** | 49 → **80** |
-| `lib/` | 48 → **65** | 48 → **65** | 57 → **75** |
-| global | 56 → **65** | 54 → **65** | 70 → **78** |
+| `usecases/` | **55** → **70** | **49** → **70** | **65** → **80** |
+| `policies/` | **78** → 75† | **88** → 75 | **88** → 80 |
+| `events/` | **72** → 65† | **60** → 65 | **78** → 75 |
+| `lib/` | **66** → 65 | **61** → 65 | **71** → 75 |
+| global | **56** → 65 | **54** → 65 | **70** → 78 |
 
-The gap in `usecases/` is the headline risk: **sub-50% branch
-coverage in the layer that *is* the product.** Roughly two in three
-business decision paths are unexercised.
+†`policies/` and `events/` already SURPASS their tier targets on
+branches — the tier target stays as written for parity with the
+other dimensions; the ratchet enforces the higher measured floor.
+
+`usecases/` remains the headline gap, but the picture is much less
+dire than the original "sub-50% branches" framing: measured branch
+coverage is **≈58%**, with the floor at 55 holding it. The remaining
+work is the climb from 55 to 70 across the next stages.
 
 ## The staged ratchet plan
 
@@ -66,17 +74,17 @@ the same diff so the gain is locked.
 
 `usecases/` branch coverage — the priority metric:
 
-| Stage | Branch floor | How |
-|-------|-------------|-----|
-| 0 (today) | 37 | — |
-| 1 | **≈50** | Roadmap-3 P2 — branch tests for the highest-risk usecases |
-| 2 | **≈58** | follow-up usecase test sweeps |
-| 3 | **≈65** | continued, plus new usecases land test-complete |
-| 4 (target) | **70** | end state; held by the ratchet |
+| Stage | Branch floor | Status | How |
+|-------|-------------|--------|-----|
+| 0 | 37 | ✅ done | starting point |
+| 1 | ≈50 | ✅ done — Roadmap-3 P2 (#623 floor 37→42) + accumulated drift | |
+| 2 | **55** | ✅ done — quality-roadmap P1/P2 (lock the gain; measured ≈58) | |
+| 3 | **≈65** | in flight | next sweep of usecase branch tests on the lowest-covered files (`audit-readiness/packs`, `framework/*`, …) |
+| 4 (target) | **70** | — | end state; held by the ratchet |
 
-`lib/` follows the same shape (48 → ≈56 → ≈62 → 65), driven by
-Roadmap-3 P3. Global rises as a *consequence* of A/B-tier gains
-plus standard-tier hygiene — it is not chased directly.
+`lib/` is already at its tier target (66/61/71). Global rises as a
+*consequence* of A/B-tier gains plus standard-tier hygiene — it is
+not chased directly.
 
 Two rules keep the ratchet honest, both already CI-enforced via
 `jest.config.js` + the `Coverage (≥60%)` job:
@@ -134,8 +142,13 @@ guard enforces that those numbers can only travel one direction.
 
 ### Next ratchet steps
 
-- Add dedicated threshold keys for `policies/` and `events/`
-  (Tier A / B) once their coverage is measured and lockable, then
-  add them to `RATCHET_FLOOR`.
-- Advance the `usecases/` branch floor through the staged plan
-  (≈50 → ≈58 → ≈65 → 70) as further test sweeps land.
+- ~~Add dedicated threshold keys for `policies/` and `events/`.~~
+  ✅ done in quality-roadmap P3 — keys seeded at the measured values
+  (`policies/` 78/88/88/85, `events/` 72/60/78/75) and added to
+  `RATCHET_FLOOR`.
+- Advance the `usecases/` branch floor through the remaining stages:
+  **stage 3 (≈65)** next — branch tests for the lowest-covered
+  files (`audit-readiness/packs`, `framework/*`, `control/*`,
+  `evidence-maintenance`, …), each currently at 0% branch
+  coverage despite carrying substantial business logic — then
+  **stage 4 (70)** as the end state held by the ratchet.

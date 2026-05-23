@@ -6,10 +6,22 @@
     "statements": 69
   },
   "./src/app-layer/usecases/": {
-    "branches": 42,
-    "functions": 38,
-    "lines": 54,
-    "statements": 51
+    "branches": 55,
+    "functions": 49,
+    "lines": 65,
+    "statements": 62
+  },
+  "./src/app-layer/policies/": {
+    "branches": 78,
+    "functions": 88,
+    "lines": 88,
+    "statements": 85
+  },
+  "./src/app-layer/events/": {
+    "branches": 72,
+    "functions": 60,
+    "lines": 78,
+    "statements": 75
   },
   "./src/lib/": {
     "branches": 66,
