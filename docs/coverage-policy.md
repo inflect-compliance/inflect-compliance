@@ -79,7 +79,9 @@ the same diff so the gain is locked.
 | 0 | 37 | ✅ done | starting point |
 | 1 | ≈50 | ✅ done — Roadmap-3 P2 (#623 floor 37→42) + accumulated drift | |
 | 2 | **55** | ✅ done — quality-roadmap P1/P2 (lock the gain; measured ≈58) | |
-| 3 | **≈65** | in flight | next sweep of usecase branch tests on the lowest-covered files (`audit-readiness/packs`, `framework/*`, …) |
+| 3a | **56** | ✅ done — auth-followups quality wave: 3 previously-untested usecase files (`evidence-maintenance`, `control/templates`, `audit-readiness/sharing`) got 51 branch-focused tests across ~50 decision paths. Floor bumped functions 49→50, lines 65→66, statements 62→63, branches 55→56 in the same diff. | |
+| 3b | **≈60** | next | continue the sweep on `audit-readiness/packs` (443 lines, untested) + `framework/install` (544 lines, untested) — the two largest untested usecase files |
+| 3c | **≈65** | — | finish the long tail of branch-heavy decision logic |
 | 4 (target) | **70** | — | end state; held by the ratchet |
 
 `lib/` is already at its tier target (66/61/71). Global rises as a
