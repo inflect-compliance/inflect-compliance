@@ -85,7 +85,7 @@ const RATCHET_FLOOR: Record<string, Metrics> = {
     // Combined ~143 covered branches. Conservative +1 across all
     // metrics after stages 3d/3e showed the broader-tree dilution
     // (a dense file contributes ~0.5-1% absolute on the tree).
-    // Stage 3g (this wave): 40 tests across THREE files —
+    // Stage 3g (#672): 40 tests across THREE files —
     //   - `soft-delete-lifecycle.ts` (143 lines): file-level
     //     **100/100/100/100** (perfect). 4 fns, 6 throw guards.
     //   - `vendor-assessment-reminder.ts` (129 lines): file-level
@@ -94,10 +94,30 @@ const RATCHET_FLOOR: Record<string, Metrics> = {
     //     **100/96/100/100**. Cross-org-id leak defence locked.
     // Combined ~85 covered branches; +1 across all metrics
     // (matches stage 3f's broader-tree-dilution pattern).
-    // Next stage 3h (planned): remaining 5 small files
-    // (`org-dashboard-presets`, `framework/fixtures`,
-    // `org-tenants`, `control/page-data`, `test-readiness`).
-    './src/app-layer/usecases/': { branches: 64, functions: 59, lines: 75, statements: 72 },
+    // Stage 3h (this wave): 54 tests across FIVE small files in
+    // one PR. `control/page-data.ts` was dropped from the original
+    // candidate list (already at 100/94/100/100); replaced with
+    // `soft-delete-operations.ts`.
+    //   - `test-readiness.ts` (105 lines): file-level **100/75/100/100**.
+    //   - `soft-delete-operations.ts` (117 lines): **100/100/100/100**.
+    //     Generic restore + purge for every soft-deletable entity.
+    //   - `org-tenants.ts` (149 lines): **100/100/100/100**.
+    //     `createTenantUnderOrg` — tx + best-effort provisioning.
+    //   - `framework/fixtures.ts` (196 lines): **100/95/100/100**.
+    //     `upsertRequirements` + `computeRequirementsDiff`.
+    //   - `org-dashboard-presets.ts` seeder (218 lines): **100/80/100/100**.
+    //     The existing preset-shape test only covered 25% of the file;
+    //     extended to cover the actual `seedDefaultOrgDashboard` flow.
+    // Combined ~80 newly-covered branches. CI full-suite measured
+    // usecases/: branches **67.78%**, fn 65.55%, lines 77.99%,
+    // stmts 76.32% — slack of +3.78 / +6.55 / +2.99 / +4.32 over
+    // the post-3g floor (64/59/75/72). Conservative bump:
+    //   - branches: 64 → 66 (+2)
+    //   - functions: 59 → 62 (+3, biggest measured headroom)
+    //   - lines: 75 → 77 (+2)
+    //   - statements: 72 → 74 (+2)
+    // Leaves ~1-2pp slack against measured for single-test flake.
+    './src/app-layer/usecases/': { branches: 66, functions: 62, lines: 77, statements: 74 },
     // `policies/` — quality roadmap P3. Authorization decisions —
     // a wrong branch is a security hole. Measured ≈82 branches /
     // 91 funcs / 91 lines; seeded a few points below.

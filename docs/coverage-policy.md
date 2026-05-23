@@ -50,7 +50,7 @@ lowered, raised whenever a PR earns it.
 
 | Scope | Branches now → target | Functions now → target | Lines now → target |
 |-------|----------------------|------------------------|--------------------|
-| `usecases/` | **55** → **70** | **49** → **70** | **65** → **80** |
+| `usecases/` | **66** → **70** | **62** → **70** | **77** → **80** |
 | `policies/` | **78** → 75† | **88** → 75 | **88** → 80 |
 | `events/` | **72** → 65† | **60** → 65 | **78** → 75 |
 | `lib/` | **66** → 65 | **61** → 65 | **71** → 75 |
@@ -60,10 +60,12 @@ lowered, raised whenever a PR earns it.
 branches — the tier target stays as written for parity with the
 other dimensions; the ratchet enforces the higher measured floor.
 
-`usecases/` remains the headline gap, but the picture is much less
-dire than the original "sub-50% branches" framing: measured branch
-coverage is **≈58%**, with the floor at 55 holding it. The remaining
-work is the climb from 55 to 70 across the next stages.
+After stage 3h, `usecases/` measured branch coverage is **67.78%**
+with the floor at 66 holding it. From the original "sub-50% branches"
+framing (Roadmap-3 P2 baseline) we have climbed ~18 percentage points
+across stages 3a-3h. The remaining work is the climb from 66 to the
+end-state 70 — accumulated drift across small file additions plus
+one more focused wave should close it.
 
 ## The staged ratchet plan
 
@@ -86,8 +88,8 @@ the same diff so the gain is locked.
 | 3e | **62 / 57 / 73 / 70** | ✅ done — stage-3e wave: 22 branch-focused tests on `webhook-processor.ts` (485 lines, previously untested). Security-critical: replay-defense + cross-tenant resolution (tenant from `IntegrationConnection`, never from caller) + signature verification (github/gitlab/generic-hmac/no-secret-allow branches) + provider-impl fan-out + best-effort orchestrator dispatch + sanitizeHeaders PII redaction. File-level **0/0/0/0 → 98/86/86/99**. CI's full-suite measured branches at **62.98%** (only +0.5 over stage-3d's 62.5% — the new file adds ~25-35 of the ~4962 tree branches). +2 → 64 missed by ~1; backed off to **branches stays at 62**, others +1 (functions 57, lines 73, statements 70). The test file is durable; the floor reflects measured. | |
 | 3f | **63 / 58 / 74 / 71** | ✅ done — stage-3f wave: 49 tests across TWO files in one PR. `framework/coverage.ts` (313 lines, **previously had duplicate exports tested under framework/install but not the unique `exportCoverageData` / `generateReadinessReport` / `exportReadinessReport`**): file-level **98/78/95/98**. `control/queries.ts` (337 lines, **completely untested**): file-level **100/95/100/100** — dashboard aggregator + consistency-check RBAC + 3 not-found paths + topOwners fold. Floor bumped +1 across all (conservative after stages 3d/3e showed broader-tree dilution). | |
 | 3g | **64 / 59 / 75 / 72** | ✅ done — stage-3g wave: 40 tests across 3 files. `soft-delete-lifecycle.ts` (143 lines) at **100/100/100/100** — perfect file-level coverage on restore + purge + list with all model/delegate/not-found guards. `vendor-assessment-reminder.ts` (129 lines) at **100/96/100/100** — all 5 reject paths (not-found / status / no-email / expired token / missing relations) plus dedup behavior. `org-dashboard-widgets.ts` (225 lines) at **100/96/100/100** — cross-org-id leak defence locked across update + delete; partial-update branch coverage on title / position / size / enabled / chartType+config revalidation. Floor +1 across all (consistent with stage 3f's broader-tree-dilution pattern). | |
-| 3h | **≈65** | next | Long-tail remaining: `org-dashboard-presets`, `framework/fixtures`, `org-tenants`, `control/page-data`, `test-readiness` |
-| 4 (target) | **70** | — | end state; held by the ratchet (overlaps stage 3g — the floor lands at 70 once 3g's measured supports it) |
+| 3h | **66 / 62 / 77 / 74** | ✅ done — stage-3h wave: 54 tests across 5 files in one PR. `control/page-data.ts` (originally on the candidate list) was dropped as already-covered (100/94/100/100); `soft-delete-operations.ts` replaced it. `test-readiness.ts` (105 lines) at **100/75/100/100**. `soft-delete-operations.ts` (117 lines) at **100/100/100/100** — generic restore + purge for every soft-deletable entity. `org-tenants.ts` (149 lines) at **100/100/100/100** — `createTenantUnderOrg` with tx + best-effort provisioning + P2002 → ConflictError translation. `framework/fixtures.ts` (196 lines) at **100/95/100/100** — `upsertRequirements` + `computeRequirementsDiff`. `org-dashboard-presets.ts` seeder (218 lines) at **100/80/100/100** — the existing preset-shape test covered only 25/0/0/25; extended with 8 tests for `seedDefaultOrgDashboard` idempotency + payload mapping. CI full-suite measured usecases/: branches **67.78%**, fn 65.55%, lines 77.99%, stmts 76.32%. Conservative bump matched measured headroom: branches +2, functions +3, lines +2, statements +2. Leaves ~1-2pp slack. | |
+| 4 (target) | **70** | — | end state; held by the ratchet. Stage 3h landed branches at 66/measured 67.78% — one more focused wave or accumulated drift across small file additions should clear the 70 bar. |
 
 `lib/` is already at its tier target (66/61/71). Global rises as a
 *consequence* of A/B-tier gains plus standard-tier hygiene — it is
