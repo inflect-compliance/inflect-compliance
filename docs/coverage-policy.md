@@ -79,9 +79,9 @@ the same diff so the gain is locked.
 | 0 | 37 | ✅ done | starting point |
 | 1 | ≈50 | ✅ done — Roadmap-3 P2 (#623 floor 37→42) + accumulated drift | |
 | 2 | **55** | ✅ done — quality-roadmap P1/P2 (lock the gain; measured ≈58) | |
-| 3a | **56** | ✅ done — auth-followups quality wave: 3 previously-untested usecase files (`evidence-maintenance`, `control/templates`, `audit-readiness/sharing`) got 51 branch-focused tests across ~50 decision paths. Floor bumped functions 49→50, lines 65→66, statements 62→63, branches 55→56 in the same diff. | |
-| 3b | **≈60** | next | continue the sweep on `audit-readiness/packs` (443 lines, untested) + `framework/install` (544 lines, untested) — the two largest untested usecase files |
-| 3c | **≈65** | — | finish the long tail of branch-heavy decision logic |
+| 3a | **56** | ✅ done — auth-followups quality wave: 3 previously-untested usecase files (`evidence-maintenance`, `control/templates`, `audit-readiness/sharing`) got 51 branch-focused tests across ~50 decision paths. Floor bumped +1 across all 4 metrics in the same diff. | |
+| 3b | **58** | ✅ done — stage-3b wave: 41 branch-focused tests on `audit-readiness/packs.ts` (443 lines, previously untested) covering ~30 decision branches across 8 exported functions + 4 snapshot helpers + 2 default-pack pickers. File-level coverage **92/85/89/95**. Floor bumped +2 across all 4 metrics in the same diff. | |
+| 3c | **≈65** | next | finish the long tail starting with `framework/install` (544 lines, untested) and the remaining substantial files |
 | 4 (target) | **70** | — | end state; held by the ratchet |
 
 `lib/` is already at its tier target (66/61/71). Global rises as a
