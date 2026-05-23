@@ -124,6 +124,22 @@ async function handleRegister(body: any) {
     // by SMTP latency or outages.
     await issueEmailVerification(email, { userId: user.id }).catch(() => undefined);
 
+    // ── DEPRECATED: legacy `token` cookie (see docs/auth.md → "Legacy
+    //    `token` cookie — deprecated") ────────────────────────────────
+    //
+    // This cookie predates the NextAuth migration. Today's product
+    // login flow uses the NextAuth `__Secure-authjs.session-token`
+    // cookie exclusively; nothing in the codebase reads `token` (zero
+    // consumers of `verifyToken`, no `cookies.get('token')` anywhere).
+    // It's kept here for one more release in case an external
+    // integration still relies on it. The next-release PR will:
+    //   1. Drop this block.
+    //   2. Drop `signToken` + `verifyToken` exports from `@/lib/auth`.
+    //   3. Drop the cookie-clear in `src/app/api/auth/logout/route.ts`.
+    //   4. Add a structural ratchet rejecting reintroduction.
+    //
+    // If you find a real external consumer DURING this window: open
+    // an issue with the consumer details before the delete lands.
     const token = signToken({
         userId: user.id,
         tenantId: tenant.id,

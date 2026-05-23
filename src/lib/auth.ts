@@ -197,6 +197,18 @@ export async function verifyPassword(
     return bcrypt.compare(password, hash);
 }
 
+/**
+ * @deprecated Legacy pre-NextAuth helper. Today's only caller is
+ * `src/app/api/auth/register/route.ts`, which mints the legacy
+ * `token` cookie alongside the canonical NextAuth session cookie.
+ *
+ * The corresponding `verifyToken` has **zero consumers** in the
+ * codebase, so the cookie is never validated server-side. The
+ * mint/clear pair stays for one more release in case an external
+ * integration depends on the cookie shape; both will be removed
+ * next release together with `LEGACY_JWT_SECRET`. See
+ * `docs/auth.md` → "Legacy `token` cookie — deprecated".
+ */
 export function signToken(payload: JwtPayload): string {
     if (!LEGACY_JWT_SECRET) {
         throw new Error('JWT_SECRET not set — legacy token signing disabled');
@@ -204,6 +216,11 @@ export function signToken(payload: JwtPayload): string {
     return jwt.sign(payload, LEGACY_JWT_SECRET, { expiresIn: '7d' });
 }
 
+/**
+ * @deprecated Companion to {@link signToken}. Currently has no
+ * call sites — kept exported for the deprecation window only.
+ * See the `@deprecated` block on `signToken` above.
+ */
 export function verifyToken(token: string): JwtPayload | null {
     if (!LEGACY_JWT_SECRET) return null;
     try {

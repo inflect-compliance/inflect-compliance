@@ -127,6 +127,28 @@ to decide whether to show the "check your inbox" copy.
 exclusively through NextAuth. `AuthLoginSchema` is gone from
 `src/lib/schemas/`.
 
+### Legacy `token` cookie — deprecated
+
+> [!CAUTION]
+> The register route also sets a legacy `token` HttpOnly cookie
+> (signed via `signToken` from `@/lib/auth`, separate
+> `LEGACY_JWT_SECRET`). **This cookie is unused by the product** —
+> NextAuth's `__Secure-authjs.session-token` carries the session,
+> and there are **zero callers of `verifyToken`** anywhere in the
+> codebase, so the legacy cookie is never validated server-side.
+>
+> Kept for one more release in case any external integration reads
+> it. The next release will:
+>   - Drop the `cookies.set('token', ...)` in `register/route.ts`.
+>   - Drop the `cookies.set('token', '', ...)` in `logout/route.ts`.
+>   - Remove `signToken` + `verifyToken` from `@/lib/auth` (and the
+>     `LEGACY_JWT_SECRET` env var).
+>   - Add a structural ratchet rejecting reintroduction.
+>
+> **If an external integration depends on this cookie:** open an
+> issue *during this window* with the consumer details, otherwise
+> the next release will break it.
+
 ## Verification flow
 
 ```
