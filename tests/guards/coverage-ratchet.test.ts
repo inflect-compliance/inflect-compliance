@@ -53,16 +53,29 @@ const RATCHET_FLOOR: Record<string, Metrics> = {
     // `org-invites.ts` (512 lines, completely untested,
     // compliance-critical: 1 of 3 OrgMembership write paths).
     // File-level 0/0/0/0 → **100/89/100/100**.
-    // ORIGINAL bump was +3 across all to match the documented
-    // stage-3d target of 63 — but CI's full-suite Coverage gate
-    // measured `usecases/` branches at 62.5%, so 63 missed by
-    // 0.5 points. Backed off to **+2 across all** in this
-    // fixup; the rest of the wave (test file, file-level lift)
-    // is unchanged. Stage 3d's documented target stays at 63;
-    // the actual landed floor is 62, and the next wave (3e)
-    // is the one that lifts to 64-65.
-    // Next stage 3e (planned): `webhook-processor.ts` (485 lines).
-    './src/app-layer/usecases/': { branches: 62, functions: 56, lines: 72, statements: 69 },
+    // Stage 3d landed at 62/56/72/69 (the +3 → +2 fixup after
+    // CI measured branches at 62.5%).
+    // Stage 3e (this wave): 22 branch-focused tests on
+    // `webhook-processor.ts` (485 lines, previously untested).
+    // Security-critical: signature verification + cross-tenant
+    // resolution + replay defense + provider dispatch fan-out.
+    // File-level 0/0/0/0 → **98/86/86/99**.
+    //
+    // CI's full-suite measured: branches **62.98%** (only +0.5
+    // over stage-3d's 62.5%) and lines **73.5%**. The +2 bump
+    // to 64 branches missed by ~1; the +2 to 74 lines missed
+    // by 0.5. Backed off in fixup to:
+    //   - branches: stays at 62 (the wave's branch lift on the
+    //     broader tree was sub-percentage)
+    //   - functions: 56 → 57 (+1)
+    //   - lines:     72 → 73 (+1; measured 73.5%)
+    //   - statements: 69 → 70 (+1)
+    // The test file (durable gain) stays — only the floor moved
+    // less aggressively. Branch coverage's plateau here is real
+    // signal — webhook-processor is dense but only adds ~25-35
+    // branches to the ~4962-branch usecases tree.
+    // Next stage 3f (planned): `control/queries.ts` + `framework/coverage.ts`.
+    './src/app-layer/usecases/': { branches: 62, functions: 57, lines: 73, statements: 70 },
     // `policies/` — quality roadmap P3. Authorization decisions —
     // a wrong branch is a security hole. Measured ≈82 branches /
     // 91 funcs / 91 lines; seeded a few points below.

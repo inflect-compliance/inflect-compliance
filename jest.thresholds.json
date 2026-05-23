@@ -7,9 +7,9 @@
   },
   "./src/app-layer/usecases/": {
     "branches": 62,
-    "functions": 56,
-    "lines": 72,
-    "statements": 69
+    "functions": 57,
+    "lines": 73,
+    "statements": 70
   },
   "./src/app-layer/policies/": {
     "branches": 78,
