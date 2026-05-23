@@ -81,8 +81,12 @@ the same diff so the gain is locked.
 | 2 | **55** | ✅ done — quality-roadmap P1/P2 (lock the gain; measured ≈58) | |
 | 3a | **56** | ✅ done — auth-followups quality wave: 3 previously-untested usecase files (`evidence-maintenance`, `control/templates`, `audit-readiness/sharing`) got 51 branch-focused tests across ~50 decision paths. Floor bumped +1 across all 4 metrics in the same diff. | |
 | 3b | **58** | ✅ done — stage-3b wave: 41 branch-focused tests on `audit-readiness/packs.ts` (443 lines, previously untested) covering ~30 decision branches across 8 exported functions + 4 snapshot helpers + 2 default-pack pickers. File-level coverage **92/85/89/95**. Floor bumped +2 across all 4 metrics in the same diff. | |
-| 3c | **≈65** | next | finish the long tail starting with `framework/install` (544 lines, untested) and the remaining substantial files |
-| 4 (target) | **70** | — | end state; held by the ratchet |
+| 3c | **60** | ✅ done — stage-3c wave: `framework/install.ts` already had a 15-test wave-4 unit test, but it covered only **35.48%** of branches (5 of 7 functions, with gaps). Extended to 39 tests covering `computeCoverage` + `listTemplates` (previously untested) + the missing branches across the prior 5 functions. File-level jumped **45/35/47/44 → 97/95/93/97** — a 60-point branches lift on 544 lines. Floor bumped +2 across all 4 metrics. | |
+| 3d | **≈63** | next | `org-invites.ts` (512 lines, genuinely untested) — compliance-critical: one of only 3 paths that can write `TenantMembership`. Branches cover token issuance, revoke, expiry, atomic redeem with email-mismatch burn, last-OWNER edges. |
+| 3e | **≈66** | — | `webhook-processor.ts` (485 lines) — signature verification + payload dispatch + idempotency |
+| 3f | **≈68** | — | `control/queries.ts` (337) + `framework/coverage.ts` (313) — coverage + readiness reports |
+| 3g | **≈70** | — | Long-tail medium files (`org-dashboard-{widgets,presets}`, `framework/fixtures`, `org-tenants`, `soft-delete-lifecycle`, `vendor-assessment-reminder`, `control/page-data`, `test-readiness`) |
+| 4 (target) | **70** | — | end state; held by the ratchet (overlaps stage 3g — the floor lands at 70 once 3g's measured supports it) |
 
 `lib/` is already at its tier target (66/61/71). Global rises as a
 *consequence* of A/B-tier gains plus standard-tier hygiene — it is

@@ -39,18 +39,20 @@ type Metrics = { branches: number; functions: number; lines: number; statements:
  */
 const RATCHET_FLOOR: Record<string, Metrics> = {
     global: { branches: 56, functions: 54, lines: 70, statements: 69 },
-    // `usecases/` — quality roadmap P1/P2 lock + stage-3a/3b waves.
-    // The post-Roadmap-3 floor was 42 (branches); measured branch
-    // coverage had since climbed to ~58 without the floor
-    // following. Stage 3a (auth-followups quality wave) added 51
-    // branch-focused tests across `evidence-maintenance`,
-    // `control/templates`, and `audit-readiness/sharing` and
-    // bumped every dimension +1. Stage 3b (this wave) added 41
-    // tests on `audit-readiness/packs` covering ~30 decision
-    // branches across 8 functions + 4 snapshot helpers + 2
-    // default-pack pickers — file-level 92/85/89/95 — and bumped
-    // every dimension +2. Next stage 3c: ≈65 via `framework/install`.
-    './src/app-layer/usecases/': { branches: 58, functions: 52, lines: 68, statements: 65 },
+    // `usecases/` — quality roadmap + stage-3a/3b/3c waves.
+    // Post-Roadmap-3 floor was 42 (branches); measured branch
+    // coverage had climbed to ~58 without the floor following.
+    // Stage 3a (#664): 51 tests on 3 small files, +1 across all.
+    // Stage 3b (#666): 41 tests on `audit-readiness/packs` (443
+    // lines), file-level 92/85/89/95, +2 across all.
+    // Stage 3c (this wave): extended `framework-install.test.ts`
+    // from 15 → 39 tests adding `computeCoverage` + `listTemplates`
+    // + missing branches across the prior 5 functions. File-level
+    // jumped 45/35/47/44 → 97/95/93/97 — a 60-point branches
+    // lift on 544 lines. +2 across all.
+    // Next stage 3d (planned): `org-invites.ts` (512 lines,
+    // untested, compliance-critical tenant-membership path).
+    './src/app-layer/usecases/': { branches: 60, functions: 54, lines: 70, statements: 67 },
     // `policies/` — quality roadmap P3. Authorization decisions —
     // a wrong branch is a security hole. Measured ≈82 branches /
     // 91 funcs / 91 lines; seeded a few points below.

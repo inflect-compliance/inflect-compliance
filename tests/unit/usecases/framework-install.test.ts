@@ -41,6 +41,8 @@ jest.mock('../../../src/app-layer/events/audit', () => ({
 import {
     previewPackInstall,
     installPack,
+    computeCoverage,
+    listTemplates,
     installSingleTemplate,
     bulkMapControls,
     bulkInstallTemplates,
@@ -53,6 +55,7 @@ import { makeRequestContext } from '../../helpers/make-context';
 const mockRunInTx = runInTenantContext as jest.MockedFunction<typeof runInTenantContext>;
 const mockPackFind = prisma.frameworkPack.findUnique as jest.MockedFunction<typeof prisma.frameworkPack.findUnique>;
 const mockFrameworkFindFirst = prisma.framework.findFirst as jest.MockedFunction<typeof prisma.framework.findFirst>;
+const mockFrameworkFindUnique = prisma.framework.findUnique as jest.MockedFunction<typeof prisma.framework.findUnique>;
 const mockReqFindMany = prisma.frameworkRequirement.findMany as jest.MockedFunction<typeof prisma.frameworkRequirement.findMany>;
 const mockTemplateFindUnique = prisma.controlTemplate.findUnique as jest.MockedFunction<typeof prisma.controlTemplate.findUnique>;
 const mockTemplateFindMany = prisma.controlTemplate.findMany as jest.MockedFunction<typeof prisma.controlTemplate.findMany>;
@@ -335,5 +338,418 @@ describe('bulkInstallTemplates', () => {
                 'A.5.1', 'NO-SUCH',
             ]),
         ).rejects.toThrow(/Templates not found/);
+    });
+
+    it('rejects empty array (defensive null check)', async () => {
+        await expect(
+            bulkInstallTemplates(makeRequestContext('ADMIN'), []),
+        ).rejects.toThrow(/at least one template code/i);
+    });
+
+    it('handles a MIX of skip-existing + happy-path templates in one call', async () => {
+        // Stage-3c addition: existing tests covered the "all-error"
+        // and "all-skip" branches separately; the mixed sweep covers
+        // the inter-template state independence (the existing skip
+        // doesn't poison the later happy-path).
+        mockTemplateFindMany.mockResolvedValueOnce([
+            { id: 't-1', code: 'A', title: 'X', description: 'd', category: 'G', defaultFrequency: 'Q',
+              tasks: [], requirementLinks: [{ requirementId: 'r-1' }] },
+            { id: 't-2', code: 'B', title: 'Y', description: 'd', category: 'G', defaultFrequency: 'Q',
+              tasks: [{ title: 'T', description: 'd' }], requirementLinks: [] },
+        ] as never);
+        const findFirst = jest.fn()
+            .mockResolvedValueOnce({ id: 'c-A-existing' })
+            .mockResolvedValueOnce(null);
+        const create = jest.fn().mockResolvedValueOnce({ id: 'c-B-new' });
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({
+                control: { findFirst, create },
+                task: { create: jest.fn() },
+                controlRequirementLink: { create: jest.fn(), upsert: jest.fn() },
+            } as never),
+        );
+
+        const result = await bulkInstallTemplates(makeRequestContext('ADMIN'), ['A', 'B']);
+
+        expect(result.controlsCreated).toBe(1);
+        expect(result.skipped).toBe(1);
+        expect(result.tasksCreated).toBe(1);
+        expect(mockLog).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.anything(),
+            expect.objectContaining({ action: 'BULK_TEMPLATES_INSTALLED' }),
+        );
+    });
+});
+
+// ──────────────────────────────────────────────────────────────────────
+// Stage-3c additions: coverage of previously-untested functions +
+// branches the existing wave-4 left uncovered.
+// ──────────────────────────────────────────────────────────────────────
+
+describe('computeCoverage', () => {
+    it('uses findUnique by (key, version) when version is given', async () => {
+        mockFrameworkFindUnique.mockResolvedValueOnce({
+            id: 'fw-1', key: 'iso', name: 'X', version: '2022',
+        } as never);
+        mockReqFindMany.mockResolvedValueOnce([]);
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({
+                controlRequirementLink: { findMany: jest.fn().mockResolvedValue([]) },
+            } as never),
+        );
+
+        await computeCoverage(makeRequestContext('ADMIN'), 'iso', '2022');
+
+        expect(mockFrameworkFindUnique).toHaveBeenCalledWith({
+            where: { key_version: { key: 'iso', version: '2022' } },
+        });
+        expect(mockFrameworkFindFirst).not.toHaveBeenCalled();
+    });
+
+    it('uses findFirst (latest) when no version is given', async () => {
+        mockFrameworkFindFirst.mockResolvedValueOnce({ id: 'fw-1', key: 'iso', name: 'X', version: '2022' } as never);
+        mockReqFindMany.mockResolvedValueOnce([]);
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({
+                controlRequirementLink: { findMany: jest.fn().mockResolvedValue([]) },
+            } as never),
+        );
+
+        await computeCoverage(makeRequestContext('ADMIN'), 'iso');
+
+        expect(mockFrameworkFindFirst).toHaveBeenCalled();
+        expect(mockFrameworkFindUnique).not.toHaveBeenCalled();
+    });
+
+    it('throws notFound when the framework lookup fails', async () => {
+        mockFrameworkFindFirst.mockResolvedValueOnce(null);
+        await expect(
+            computeCoverage(makeRequestContext('ADMIN'), 'bogus'),
+        ).rejects.toThrow(/framework not found/i);
+    });
+
+    it('handles total=0 — coveragePercent is 0, not NaN', async () => {
+        // The /0 guard is load-bearing; without it the UI renders
+        // "NaN%" on a brand-new tenant with no requirements yet.
+        mockFrameworkFindFirst.mockResolvedValueOnce({ id: 'fw-1', key: 'iso', name: 'X', version: '2022' } as never);
+        mockReqFindMany.mockResolvedValueOnce([]);
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({
+                controlRequirementLink: { findMany: jest.fn().mockResolvedValue([]) },
+            } as never),
+        );
+
+        const result = await computeCoverage(makeRequestContext('ADMIN'), 'iso');
+
+        expect(result.total).toBe(0);
+        expect(result.coveragePercent).toBe(0);
+        expect(result.bySection).toEqual([]);
+    });
+
+    it('groups by section with per-section coverage percentages', async () => {
+        mockFrameworkFindFirst.mockResolvedValueOnce({ id: 'fw-1', key: 'iso', name: 'X', version: '2022' } as never);
+        mockReqFindMany.mockResolvedValueOnce([
+            { id: 'r-1', code: 'A.5.1', title: 'X', section: 'Organisational', sortOrder: 1 },
+            { id: 'r-2', code: 'A.5.2', title: 'Y', section: 'Organisational', sortOrder: 2 },
+            { id: 'r-3', code: 'A.6.1', title: 'Z', section: 'People', sortOrder: 3 },
+        ] as never);
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({
+                controlRequirementLink: {
+                    findMany: jest.fn().mockResolvedValue([
+                        { requirementId: 'r-1', requirement: { code: 'A.5.1', title: 'X' }, control: { code: 'CC1', name: 'M', status: 'ACTIVE' } },
+                    ]),
+                },
+            } as never),
+        );
+
+        const result = await computeCoverage(makeRequestContext('ADMIN'), 'iso');
+
+        expect(result.total).toBe(3);
+        expect(result.mapped).toBe(1);
+        expect(result.unmapped).toBe(2);
+        expect(result.coveragePercent).toBe(33);
+        const org = result.bySection.find((s: any) => s.section === 'Organisational');
+        expect(org).toMatchObject({ total: 2, mapped: 1, coveragePercent: 50 });
+        const people = result.bySection.find((s: any) => s.section === 'People');
+        expect(people).toMatchObject({ total: 1, mapped: 0, coveragePercent: 0 });
+    });
+
+    it('falls back from null section → category → "Other"', async () => {
+        // Compliance UI uses category-or-section as the row group.
+        // The fallback chain is load-bearing for frameworks that
+        // only populate one of the two fields.
+        mockFrameworkFindFirst.mockResolvedValueOnce({ id: 'fw-1', key: 'iso', name: 'X', version: '2022' } as never);
+        mockReqFindMany.mockResolvedValueOnce([
+            { id: 'r-1', code: 'A', title: 'X', section: null, category: 'CatA', sortOrder: 1 },
+            { id: 'r-2', code: 'B', title: 'Y', section: null, category: null, sortOrder: 2 },
+        ] as never);
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({
+                controlRequirementLink: { findMany: jest.fn().mockResolvedValue([]) },
+            } as never),
+        );
+
+        const result = await computeCoverage(makeRequestContext('ADMIN'), 'iso');
+        const sections = result.bySection.map((s: any) => s.section);
+        expect(sections).toContain('CatA');
+        expect(sections).toContain('Other');
+    });
+});
+
+describe('listTemplates', () => {
+    it('applies no filter clauses when none provided', async () => {
+        mockTemplateFindMany.mockResolvedValueOnce([] as never);
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({ control: { findMany: jest.fn().mockResolvedValue([]) } } as never),
+        );
+
+        await listTemplates(makeRequestContext('ADMIN'), {});
+
+        const where = (mockTemplateFindMany.mock.calls[0][0] as any).where;
+        expect(where).toEqual({});
+    });
+
+    it('frameworkKey filter: throws notFound when the framework lookup fails', async () => {
+        mockFrameworkFindFirst.mockResolvedValueOnce(null);
+        await expect(
+            listTemplates(makeRequestContext('ADMIN'), { frameworkKey: 'bogus' }),
+        ).rejects.toThrow(/framework not found/i);
+    });
+
+    it('frameworkKey filter: adds the requirementLinks.some clause', async () => {
+        mockFrameworkFindFirst.mockResolvedValueOnce({ id: 'fw-1' } as never);
+        mockTemplateFindMany.mockResolvedValueOnce([] as never);
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({ control: { findMany: jest.fn().mockResolvedValue([]) } } as never),
+        );
+
+        await listTemplates(makeRequestContext('ADMIN'), { frameworkKey: 'iso' });
+
+        const where = (mockTemplateFindMany.mock.calls[0][0] as any).where;
+        expect(where.requirementLinks.some.requirement.frameworkId).toBe('fw-1');
+    });
+
+    it('category filter is passed through to the WHERE clause', async () => {
+        mockTemplateFindMany.mockResolvedValueOnce([] as never);
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({ control: { findMany: jest.fn().mockResolvedValue([]) } } as never),
+        );
+
+        await listTemplates(makeRequestContext('ADMIN'), { category: 'GOVERNANCE' });
+
+        const where = (mockTemplateFindMany.mock.calls[0][0] as any).where;
+        expect(where.category).toBe('GOVERNANCE');
+    });
+
+    it('search filter applies OR over code + title', async () => {
+        mockTemplateFindMany.mockResolvedValueOnce([] as never);
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({ control: { findMany: jest.fn().mockResolvedValue([]) } } as never),
+        );
+
+        await listTemplates(makeRequestContext('ADMIN'), { search: 'access' });
+
+        const where = (mockTemplateFindMany.mock.calls[0][0] as any).where;
+        expect(where.OR).toEqual([
+            { code: { contains: 'access' } },
+            { title: { contains: 'access' } },
+        ]);
+    });
+
+    it('section filter is applied IN MEMORY post-query (section comes from requirement, not template)', async () => {
+        // Section is a property of the linked requirement, not the
+        // template itself. Filtering must happen post-query; a
+        // template that ONLY links to wrong-section requirements
+        // drops out.
+        mockTemplateFindMany.mockResolvedValueOnce([
+            { id: 't-1', code: 'A.5.1', title: 'X', tasks: [], packLinks: [],
+              requirementLinks: [{ requirement: { code: 'r-1', title: 'X', section: 'People', framework: { key: 'iso', name: 'I' } } }] },
+            { id: 't-2', code: 'A.6.1', title: 'Y', tasks: [], packLinks: [],
+              requirementLinks: [{ requirement: { code: 'r-2', title: 'Y', section: 'Organisational', framework: { key: 'iso', name: 'I' } } }] },
+        ] as never);
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({ control: { findMany: jest.fn().mockResolvedValue([]) } } as never),
+        );
+
+        const result = await listTemplates(makeRequestContext('ADMIN'), { section: 'People' });
+
+        expect(result).toHaveLength(1);
+        expect(result[0].code).toBe('A.5.1');
+    });
+
+    it('marks template as installed based on the tenant control intersection', async () => {
+        mockTemplateFindMany.mockResolvedValueOnce([
+            { id: 't-1', code: 'A.5.1', title: 'X', tasks: [], packLinks: [], requirementLinks: [] },
+            { id: 't-2', code: 'A.5.2', title: 'Y', tasks: [], packLinks: [], requirementLinks: [] },
+        ] as never);
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({ control: { findMany: jest.fn().mockResolvedValue([{ code: 'A.5.1' }]) } } as never),
+        );
+
+        const result = await listTemplates(makeRequestContext('ADMIN'), {});
+
+        expect(result.find((t: any) => t.code === 'A.5.1')!.installed).toBe(true);
+        expect(result.find((t: any) => t.code === 'A.5.2')!.installed).toBe(false);
+    });
+});
+
+// ──────────────────────────────────────────────────────────────────────
+// Stage-3c additions in existing describes: cover the branches the
+// wave-4 tests missed.
+// ──────────────────────────────────────────────────────────────────────
+
+describe('installPack — stage-3c additions', () => {
+    it('uses the 60s transaction-timeout opts (large-pack tolerance)', async () => {
+        const observedOpts: any[] = [];
+        (mockPackFind as jest.Mock).mockResolvedValueOnce({
+            key: 'small', name: 'Small', frameworkId: 'fw-1',
+            framework: { key: 'X' },
+            templateLinks: [],
+        });
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn, opts) => {
+            if (opts) observedOpts.push(opts);
+            return fn({
+                control: { findFirst: jest.fn(), create: jest.fn() },
+                task: { create: jest.fn() },
+                controlRequirementLink: { create: jest.fn(), upsert: jest.fn() },
+            } as never);
+        });
+
+        await installPack(makeRequestContext('ADMIN'), 'small');
+
+        expect(observedOpts[0]).toEqual({ timeout: 60_000, maxWait: 10_000 });
+    });
+
+    it('happy-path: creates control + tasks + mappings with correct counts', async () => {
+        mockPackFind.mockResolvedValueOnce({
+            key: 'iso', name: 'ISO', frameworkId: 'fw-1',
+            framework: { key: 'ISO27001' },
+            templateLinks: [
+                {
+                    template: {
+                        code: 'A.5.1', title: 'T', description: 'd', category: 'GOV',
+                        defaultFrequency: 'QUARTERLY',
+                        tasks: [{ title: 'task-1', description: 'd' }, { title: 'task-2', description: 'd' }],
+                        requirementLinks: [{ requirementId: 'r-1' }, { requirementId: 'r-2' }, { requirementId: 'r-3' }],
+                    },
+                },
+            ],
+        } as never);
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({
+                control: {
+                    findFirst: jest.fn().mockResolvedValue(null),
+                    create: jest.fn().mockResolvedValue({ id: 'c-new' }),
+                },
+                task: { create: jest.fn() },
+                controlRequirementLink: { create: jest.fn(), upsert: jest.fn() },
+            } as never),
+        );
+
+        const result = await installPack(makeRequestContext('ADMIN'), 'iso');
+
+        expect(result.controlsCreated).toBe(1);
+        expect(result.tasksCreated).toBe(2);
+        expect(result.mappingsCreated).toBe(3);
+    });
+});
+
+describe('installSingleTemplate — stage-3c additions', () => {
+    it('throws notFound for an unknown template code', async () => {
+        mockTemplateFindUnique.mockResolvedValueOnce(null);
+        await expect(
+            installSingleTemplate(makeRequestContext('ADMIN'), 'T-missing'),
+        ).rejects.toThrow(/template not found/i);
+    });
+
+    it('happy-path: creates control + tasks + mappings and fires TEMPLATE_INSTALLED audit', async () => {
+        mockTemplateFindUnique.mockResolvedValueOnce({
+            id: 't-1', code: 'A.5.1', title: 'X', description: 'd', category: 'GOV', defaultFrequency: 'Q',
+            tasks: [{ title: 'T', description: 'd' }],
+            requirementLinks: [{ requirementId: 'r-1' }],
+        } as never);
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({
+                control: {
+                    findFirst: jest.fn().mockResolvedValue(null),
+                    create: jest.fn().mockResolvedValue({ id: 'c-new' }),
+                },
+                task: { create: jest.fn() },
+                controlRequirementLink: { create: jest.fn() },
+            } as never),
+        );
+
+        const result = await installSingleTemplate(makeRequestContext('ADMIN'), 'A.5.1');
+
+        expect(result).toMatchObject({
+            controlId: 'c-new',
+            code: 'A.5.1',
+            alreadyExisted: false,
+            tasksCreated: 1,
+            mappingsCreated: 1,
+        });
+        expect(mockLog).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.anything(),
+            expect.objectContaining({ action: 'TEMPLATE_INSTALLED' }),
+        );
+    });
+});
+
+describe('bulkMapControls — stage-3c additions', () => {
+    it('rejects empty mappings array', async () => {
+        await expect(
+            bulkMapControls(makeRequestContext('ADMIN'), 'iso', []),
+        ).rejects.toThrow(/at least one mapping/i);
+    });
+
+    it('rejects null mappings (defensive)', async () => {
+        await expect(
+            bulkMapControls(makeRequestContext('ADMIN'), 'iso', null as any),
+        ).rejects.toThrow(/at least one mapping/i);
+    });
+
+    it('throws notFound when the framework lookup fails', async () => {
+        mockFrameworkFindFirst.mockResolvedValueOnce(null);
+        await expect(
+            bulkMapControls(makeRequestContext('ADMIN'), 'bogus', [
+                { controlId: 'c-1', requirementIds: ['r-1'] },
+            ]),
+        ).rejects.toThrow(/framework not found/i);
+    });
+
+    it('counts created vs existing — unique-constraint violations land in "existing"', async () => {
+        // The P2002 catch-and-account branch — covers idempotent
+        // re-runs where a previously-attempted mapping survived.
+        mockFrameworkFindFirst.mockResolvedValueOnce({ id: 'fw-1' } as never);
+        mockReqFindMany.mockResolvedValueOnce([{ id: 'r-1' }, { id: 'r-2' }] as never);
+        const linkCreate = jest.fn()
+            .mockResolvedValueOnce({ id: 'link-1' })
+            .mockRejectedValueOnce(Object.assign(new Error('unique'), { code: 'P2002' }));
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({
+                control: { findMany: jest.fn().mockResolvedValue([{ id: 'c-1' }]) },
+                controlRequirementLink: { create: linkCreate },
+            } as never),
+        );
+
+        const result = await bulkMapControls(makeRequestContext('ADMIN'), 'iso', [
+            { controlId: 'c-1', requirementIds: ['r-1', 'r-2'] },
+        ]);
+
+        expect(result).toEqual({ frameworkKey: 'iso', created: 1, existing: 1, total: 2 });
+        expect(mockLog).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.anything(),
+            expect.objectContaining({ action: 'BULK_REQUIREMENTS_MAPPED' }),
+        );
+    });
+
+    it('rejects empty-mappings when array is undefined', async () => {
+        await expect(
+            bulkMapControls(makeRequestContext('ADMIN'), 'iso', undefined as any),
+        ).rejects.toThrow(/at least one mapping/i);
     });
 });
