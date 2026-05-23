@@ -225,12 +225,20 @@ export function EvidenceSubTable({
         [canWrite, onUnlink, tenantHref],
     );
 
-    // The wrapper preserves the original `id="evidence-table"` anchor
-    // that pre-existing E2E specs target (`tests/e2e/control-evidence.spec.ts`
-    // looks up `#evidence-table tbody tr` rows). DataTable mounts its
-    // own real `<table>` inside, so the `tbody tr` descent still works.
-    return (
-        <div id="evidence-table">
+    // E2E semantics — preserve the pre-migration contract:
+    //
+    //   • `#evidence-table` is present ONLY when rows are rendering.
+    //     `toBeVisible({...})` in the E2E specs is therefore a
+    //     wait-for-data signal (the helper `linkUrlEvidence` relies
+    //     on this — it clicks Submit and then asserts visibility, and
+    //     the next assertion immediately reads `tbody tr` row count).
+    //   • The empty-state branch retains `#no-evidence` (its own
+    //     distinct selector).
+    //   • DataTable mounts a real `<table>` inside the wrapper, so
+    //     `#evidence-table tbody tr` descent still works for
+    //     row-count / row-click assertions.
+    if (rows.length === 0) {
+        return (
             <DataTable
                 data={rows}
                 columns={columns}
@@ -244,6 +252,16 @@ export function EvidenceSubTable({
                         />
                     </div>
                 }
+            />
+        );
+    }
+    return (
+        <div id="evidence-table">
+            <DataTable
+                data={rows}
+                columns={columns}
+                getRowId={(r) => r.rowKey}
+                loading={loading}
             />
         </div>
     );
