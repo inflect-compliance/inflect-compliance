@@ -10,6 +10,8 @@ import { useEffect, useMemo, useState, useCallback, use } from 'react';
 import Link from 'next/link';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
+import { Pen2, Plus } from '@/components/ui/icons/nucleo';
+import { Tooltip } from '@/components/ui/tooltip';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { InlineEmptyState } from '@/components/ui/inline-empty-state';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
@@ -287,7 +289,18 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                         </Button>
                     )}
                     {canWrite && !editing && (
-                        <Button variant="secondary" onClick={() => setEditing(true)} id="edit-vendor-btn">Edit</Button>
+                        // B2 — icon-only edit affordance.
+                        <Tooltip content="Edit vendor">
+                            <Button
+                                variant="secondary"
+                                size="icon"
+                                onClick={() => setEditing(true)}
+                                id="edit-vendor-btn"
+                                aria-label="Edit vendor"
+                            >
+                                <Pen2 className="size-4" />
+                            </Button>
+                        </Tooltip>
                     )}
                 </>
             }
@@ -365,8 +378,16 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                 <div className="space-y-default">
                     {canWrite && (
                         <div className="flex justify-end">
-                            <Button variant="primary" onClick={() => setShowDocForm(!showDocForm)} id="add-doc-btn">
-                                {showDocForm ? 'Cancel' : '+ Document'}
+                            {/* B2 cleanup — '+ ' literal in the label
+                                was an action-label-vocabulary
+                                offender. Plus icon goes in the slot. */}
+                            <Button
+                                variant="primary"
+                                icon={showDocForm ? undefined : <Plus />}
+                                onClick={() => setShowDocForm(!showDocForm)}
+                                id="add-doc-btn"
+                            >
+                                {showDocForm ? 'Cancel' : 'Add document'}
                             </Button>
                         </div>
                     )}
@@ -390,7 +411,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                 <label className="block text-sm text-content-muted mb-1">Notes</label>
                                 <input className="input w-full" value={docForm.notes} onChange={e => setDocForm(p => ({ ...p, notes: e.target.value }))} id="doc-notes-input" />
                             </div>
-                            <Button type="submit" variant="primary" id="submit-doc-btn">+ Document</Button>
+                            <Button type="submit" variant="primary" icon={<Plus />} id="submit-doc-btn">Add document</Button>
                         </form>
                     )}
                     <VendorDocsTable

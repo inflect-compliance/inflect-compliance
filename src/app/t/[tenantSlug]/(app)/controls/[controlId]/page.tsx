@@ -946,12 +946,16 @@ export default function ControlDetailPage() {
                         <div className="flex justify-end -mt-1 -mb-2">
                             <Button
                                 variant="secondary"
+                                size="icon"
                                 onClick={openEditModal}
                                 data-testid="control-edit-button"
                                 id="control-edit-button"
+                                aria-label="Edit control"
+                                title="Edit control"
                             >
-                                <PencilIcon size={14} />
-                                Edit
+                                {/* B2 — icon-only edit affordance,
+                                    canonical unified pattern. */}
+                                <PencilIcon size={16} />
                             </Button>
                         </div>
                     )}

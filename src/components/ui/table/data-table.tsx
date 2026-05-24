@@ -151,6 +151,21 @@ export interface DataTableProps<T> {
   /** Total row count (required for pagination). */
   rowCount?: number;
 
+  // ── Column resizing (B2) ──
+
+  /**
+   * Enable user-controlled column resizing. When `true`, every column
+   * carries a drag handle on its right edge; the table switches to
+   * `table-layout: fixed` and respects per-column `size` / `minSize`
+   * / `maxSize` hints in the column definitions.
+   *
+   * Off by default to keep the existing tables visually stable —
+   * pages opt in explicitly. Sub-tables that nest inside a detail
+   * card should usually stay opted out (the parent card already
+   * clamps width).
+   */
+  enableColumnResizing?: boolean;
+
   // ── Styling ──
 
   /** Additional class for the outer container. */

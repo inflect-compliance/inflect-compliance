@@ -37,6 +37,8 @@ const RiskTreatmentPlanCard = dynamic(
     },
 );
 import { Button } from '@/components/ui/button';
+import { Pen2 } from '@/components/ui/icons/nucleo';
+import { Tooltip } from '@/components/ui/tooltip';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { DatePicker } from '@/components/ui/date-picker/date-picker';
 import {
@@ -300,7 +302,19 @@ export default function RiskDetailPage() {
             actions={
                 canWrite && !editing && (
                     <>
-                        <Button variant="secondary" onClick={startEditing} id="edit-risk-btn">Edit</Button>
+                        {/* B2 — icon-only edit affordance, canonical
+                            unified pattern across detail pages. */}
+                        <Tooltip content="Edit risk">
+                            <Button
+                                variant="secondary"
+                                size="icon"
+                                onClick={startEditing}
+                                id="edit-risk-btn"
+                                aria-label="Edit risk"
+                            >
+                                <Pen2 className="size-4" />
+                            </Button>
+                        </Tooltip>
                         <Combobox
                             hideSearch
                             id="risk-status-select"

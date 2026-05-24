@@ -440,6 +440,11 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             // dedicated Type column.
 
             cell: ({ row }: { row: any }) => (
+                // Evidence has no dedicated detail page yet — the
+                // record opens via the master/detail pattern from
+                // this list page. Wiring a navigation href here is
+                // part of B5 (Evidence workflow completion), which
+                // also introduces the detail surface.
                 <TableTitleCell>{row.original.title}</TableTitleCell>
             ),
         },

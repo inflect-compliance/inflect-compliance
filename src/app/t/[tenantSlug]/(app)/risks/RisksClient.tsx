@@ -359,8 +359,20 @@ function RisksPageInner({
         {
             accessorKey: 'title',
             header: t.riskTitle,
-            cell: ({ getValue }) => (
-                <TableTitleCell>{getValue<string>()}</TableTitleCell>
+            cell: ({ row, getValue }) => (
+                // B2 — match the Controls table standard: the title
+                // cell is a `<Link>` so single-click on the title
+                // navigates while double-click on the row (handled
+                // by DataTable) does the same. Pre-B2 the risks
+                // table rendered the title as plain text, leaving
+                // navigation only on double-click — inconsistent
+                // with the canonical Controls behaviour.
+                <TableTitleCell
+                    href={tenantHref(`/risks/${row.original.id}`)}
+                    id={`risk-link-${row.original.id}`}
+                >
+                    {getValue<string>()}
+                </TableTitleCell>
             ),
         },
         {

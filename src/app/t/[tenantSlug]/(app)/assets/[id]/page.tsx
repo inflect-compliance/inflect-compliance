@@ -17,6 +17,8 @@ import LinkedTasksPanel from '@/components/LinkedTasksPanel';
 import { CopyText } from '@/components/ui/copy-text';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
+import { Pen2 } from '@/components/ui/icons/nucleo';
+import { Tooltip } from '@/components/ui/tooltip';
 import { type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading, Eyebrow } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
@@ -148,7 +150,21 @@ export default function AssetDetailPage() {
                 permissions.canWrite && (
                     <>
                         <Link href={tenantHref(`/risks/ai?assetId=${assetId}`)} className={buttonVariants({ variant: 'secondary' })} id="suggest-risks-btn">Suggest Risks</Link>
-                        <Button variant="secondary" onClick={() => setEditing(true)} id="edit-asset-btn">Edit</Button>
+                        {/* B2 — icon-only edit affordance, with
+                            tooltip for screen-reader + hover labelling.
+                            Mirrors the canonical pattern picked across
+                            the product as the unified edit shape. */}
+                        <Tooltip content="Edit asset">
+                            <Button
+                                variant="secondary"
+                                size="icon"
+                                onClick={() => setEditing(true)}
+                                id="edit-asset-btn"
+                                aria-label="Edit asset"
+                            >
+                                <Pen2 className="size-4" />
+                            </Button>
+                        </Tooltip>
                     </>
                 )
             }

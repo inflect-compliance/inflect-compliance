@@ -572,6 +572,12 @@ export const buttonVariants = cva(
         sm: "h-8 px-2.5 text-xs gap-1.5 tracking-[0.01em] font-medium [&_svg]:size-3.5",
         md: "h-9 px-2.5 text-sm gap-tight tracking-[-0.005em] font-semibold [&_svg]:size-4",
         lg: "h-10 px-3 text-sm gap-tight tracking-[-0.01em] font-bold [&_svg]:size-[18px]",
+        // B2 — icon-only button size variant. Square (h=w=h-9) so
+        // the chrome stays balanced regardless of icon size; same
+        // height as md so it lines up beside text buttons in the
+        // detail-page header row. Callers MUST supply
+        // `aria-label="…"` (lint enforces it for accessibility).
+        icon: "h-9 w-9 p-0 rounded-md tracking-normal font-medium [&_svg]:size-4",
       },
     },
     defaultVariants: {

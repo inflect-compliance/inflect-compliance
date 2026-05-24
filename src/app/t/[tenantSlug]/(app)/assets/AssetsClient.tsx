@@ -204,7 +204,16 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
         {
             accessorKey: 'name',
             header: t.name,
-            cell: ({ getValue }: any) => <TableTitleCell>{getValue()}</TableTitleCell>,
+            // B2 — match Controls table standard: title cell is a
+            // `<Link>` so single-click on the name navigates.
+            cell: ({ row, getValue }: any) => (
+                <TableTitleCell
+                    href={tenantHref(`/assets/${row.original.id}`)}
+                    id={`asset-link-${row.original.id}`}
+                >
+                    {getValue()}
+                </TableTitleCell>
+            ),
         },
         {
             accessorKey: 'type',
