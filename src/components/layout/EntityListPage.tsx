@@ -225,6 +225,15 @@ export interface EntityListPageProps<TRow> {
      * `xl` it stacks above the table.
      */
     leftRail?: ReactNode;
+    /**
+     * PR-1 — rendered inside `<ListPageShell.Body>` AFTER the
+     * `<DataTable>`. Canonical use: the shared
+     * `<TableLoadMoreFooter>` driven by `useThresholdLoadMore`, so
+     * tenant list pages can match the org-level "Load more …"
+     * pattern without dropping into bespoke layout. Pure passthrough
+     * — the shell doesn't reach inside.
+     */
+    tableFooter?: ReactNode;
     /** Forwarded to the outer ListPageShell. */
     className?: string;
 }
@@ -232,8 +241,18 @@ export interface EntityListPageProps<TRow> {
 // ─── Component ──────────────────────────────────────────────────
 
 export function EntityListPage<TRow>(props: EntityListPageProps<TRow>) {
-    const { header, filters, table, banner, kpis, aside, leftRail, children, className } =
-        props;
+    const {
+        header,
+        filters,
+        table,
+        banner,
+        kpis,
+        aside,
+        leftRail,
+        tableFooter,
+        children,
+        className,
+    } = props;
 
     return (
         <ListPageShell
@@ -279,6 +298,12 @@ export function EntityListPage<TRow>(props: EntityListPageProps<TRow>) {
                     fillBody={table.fillBody ?? true}
                     {...table}
                 />
+                {/* PR-1 — Load-more footer slot. Pass a
+                    `<TableLoadMoreFooter>` driven by either
+                    `useThresholdLoadMore` (tenant in-memory) or
+                    `useCursorPagination` (org server cursor) and the
+                    footer matches the org table experience. */}
+                {tableFooter}
             </ListPageShell.Body>
 
             {children}

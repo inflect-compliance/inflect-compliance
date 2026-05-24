@@ -77,8 +77,15 @@ describe('Epic 43.2 — view toggle wiring', () => {
         expect(src).toMatch(
             /<EvidenceGallery[\s\S]{0,300}rows=\{displayEvidence\}/,
         );
+        // PR-1 — the table view binds `data` to the
+        // `useThresholdLoadMore`-windowed `visibleEvidence` slice,
+        // not the full `displayEvidence` array. The slice is the
+        // same source filtered through a window — filter preservation
+        // is unaffected (the hook narrows on the same array). Match
+        // either binding so the gallery↔table regression class stays
+        // covered.
         expect(src).toMatch(
-            /<DataTable[\s\S]{0,300}data=\{displayEvidence\}/,
+            /<DataTable[\s\S]{0,300}data=\{(visibleEvidence|displayEvidence)\}/,
         );
     });
 

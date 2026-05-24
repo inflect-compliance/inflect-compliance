@@ -44,6 +44,8 @@ import {
 } from '@/components/ui/filter';
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
 import { ListPageShell } from '@/components/layout/ListPageShell';
+import { TableLoadMoreFooter } from '@/components/ui/table-load-more-footer';
+import { useThresholdLoadMore } from '@/components/ui/hooks';
 import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
 import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
 import {
@@ -390,6 +392,68 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
         : retentionFilter === 'expiring'
             ? expiringEvidence
             : activeEvidence;
+
+    // ─── PR-1: org-parity sortable headers + progressive disclosure ───
+    const [sortBy, setSortBy] = useState<string | undefined>(undefined);
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | undefined>(
+        undefined,
+    );
+    const sortedEvidence = useMemo(() => {
+        if (!sortBy) return displayEvidence;
+        // PR-1 — minimal typed shape for the sort accessor. The
+        // top-level `evidence` array is intentionally `any[]` per
+        // the file's existing convention (see comment at L184),
+        // but the sort path doesn't need the rest of the surface.
+        // A local `Sortable` shape lets the accessor stay typed
+        // without forcing a global rewrite.
+        type Sortable = {
+            title?: string | null;
+            type?: string | null;
+            control?: {
+                annexId?: string | null;
+                name?: string | null;
+            } | null;
+            retentionUntil?: string | null;
+            status?: string | null;
+            ownerUser?: { name?: string | null } | null;
+            owner?: string | null;
+        };
+        const accessor = (ev: Sortable): string | number => {
+            switch (sortBy) {
+                case 'title':
+                    return ev.title || '';
+                case 'type':
+                    return ev.type || '';
+                case 'control':
+                    return ev.control?.annexId || ev.control?.name || '';
+                case 'retention':
+                    return ev.retentionUntil || '';
+                case 'status':
+                    return ev.status || '';
+                case 'owner':
+                    return ev.ownerUser?.name || ev.owner || '';
+                default:
+                    return '';
+            }
+        };
+        const dir = sortOrder === 'asc' ? 1 : -1;
+        return [...displayEvidence].sort((a: Sortable, b: Sortable) => {
+            const av = accessor(a);
+            const bv = accessor(b);
+            if (av === bv) return 0;
+            return av > bv ? dir : -dir;
+        });
+    }, [displayEvidence, sortBy, sortOrder]);
+    const sortableEvidenceColumns = useMemo(
+        () => ['title', 'type', 'control', 'retention', 'status', 'owner'],
+        [],
+    );
+    const {
+        visibleRows: visibleEvidence,
+        totalCount: totalEvidenceCount,
+        hasMore: hasMoreEvidence,
+        loadMore: loadMoreEvidence,
+    } = useThresholdLoadMore(sortedEvidence);
 
     // Epic 62 — celebrate when every active evidence row is fresh.
     // Gates that suppress false positives:
@@ -947,9 +1011,19 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                 ) : (
                     <DataTable
                         fillBody
-                        data={displayEvidence}
+                        data={visibleEvidence}
                         columns={evidenceColumns}
                         getRowId={(ev: any) => ev.id}
+                        sortableColumns={sortableEvidenceColumns}
+                        sortBy={sortBy}
+                        sortOrder={sortOrder}
+                        onSortChange={({
+                            sortBy: nextBy,
+                            sortOrder: nextOrder,
+                        }) => {
+                            setSortBy(nextBy);
+                            setSortOrder(nextOrder);
+                        }}
                         // B5 — row click opens the detail sheet so
                         // users can actually drill into an evidence
                         // record. Pre-B5 the table was read-only
@@ -993,6 +1067,15 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                         className="hover:bg-bg-muted"
                     />
                 )}
+                {/* PR-1 — org-parity load-more footer. */}
+                <TableLoadMoreFooter
+                    hasMore={hasMoreEvidence}
+                    visibleCount={visibleEvidence.length}
+                    totalCount={totalEvidenceCount}
+                    onLoadMore={loadMoreEvidence}
+                    resourceName="evidence rows"
+                    testId="tenant-evidence-load-more"
+                />
             </ListPageShell.Body>
         </ListPageShell>
     );

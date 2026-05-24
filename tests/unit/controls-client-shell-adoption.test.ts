@@ -67,7 +67,11 @@ describe('ControlsClient — EntityListPage adoption', () => {
     it('threads the table config through the shell', () => {
         // table prop is required — shell forwards data/columns/etc.
         expect(source).toMatch(/table\s*=\s*\{\{/);
-        expect(source).toContain('data: controls');
+        // PR-1 — `data:` may bind to either the raw `controls`
+        // array or its `useThresholdLoadMore`-windowed `visibleControls`
+        // slice. Both surface the same row shape to the table; what
+        // matters is that the shell receives `controls`-derived data.
+        expect(source).toMatch(/data:\s*(visibleControls|controls)\b/);
         expect(source).toContain('columns: controlColumns');
         // `getRowId` is a stable `useCallback` (right-rail Phase 2 —
         // a referentially-stable row-id fn keeps a selection-toggle
