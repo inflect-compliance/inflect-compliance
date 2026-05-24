@@ -26,12 +26,21 @@ const FINDINGS_SRC = read(
 const CLAUSES_SRC = read(
     'src/app/t/[tenantSlug]/(app)/clauses/ClausesBrowser.tsx',
 );
-const POLICIES_NEW_SRC = read(
-    'src/app/t/[tenantSlug]/(app)/policies/new/page.tsx',
-);
-const TASKS_NEW_SRC = read(
-    'src/app/t/[tenantSlug]/(app)/tasks/new/page.tsx',
-);
+// Modal-form P1 (2026-05-24) — page wrappers decomposed into
+// page + extracted form module. Structural assertions resolve
+// against the joined surface.
+const POLICIES_NEW_SRC =
+    read('src/app/t/[tenantSlug]/(app)/policies/new/page.tsx') +
+    '\n' +
+    read('src/app/t/[tenantSlug]/(app)/policies/_form/NewPolicyFields.tsx') +
+    '\n' +
+    read('src/app/t/[tenantSlug]/(app)/policies/_form/useNewPolicyForm.ts');
+const TASKS_NEW_SRC =
+    read('src/app/t/[tenantSlug]/(app)/tasks/new/page.tsx') +
+    '\n' +
+    read('src/app/t/[tenantSlug]/(app)/tasks/_form/NewTaskFields.tsx') +
+    '\n' +
+    read('src/app/t/[tenantSlug]/(app)/tasks/_form/useNewTaskForm.ts');
 const STRATEGY_DOC = read('docs/combobox-form-strategy.md');
 
 // ─── findings severity + type ───────────────────────────────────

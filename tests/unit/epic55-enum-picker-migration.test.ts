@@ -25,7 +25,18 @@ function read(rel: string): string {
     return fs.readFileSync(path.join(ROOT, rel), 'utf-8');
 }
 
-const TASK_NEW_SRC = read('src/app/t/[tenantSlug]/(app)/tasks/new/page.tsx');
+// Modal-form P1 (2026-05-24) — the `/tasks/new` and `/vendors/new`
+// pages were decomposed into page wrapper + extracted form hook +
+// extracted field component. The Epic 55 structural assertions lock
+// the migration SHAPE, not the specific file the import / id /
+// constant ended up in. Concatenate the relevant files so the
+// assertions resolve correctly post-extraction.
+const TASK_NEW_SRC =
+    read('src/app/t/[tenantSlug]/(app)/tasks/new/page.tsx') +
+    '\n' +
+    read('src/app/t/[tenantSlug]/(app)/tasks/_form/NewTaskFields.tsx') +
+    '\n' +
+    read('src/app/t/[tenantSlug]/(app)/tasks/_form/useNewTaskForm.ts');
 const CONTROL_MODAL_SRC = read(
     'src/app/t/[tenantSlug]/(app)/controls/NewControlModal.tsx',
 );
@@ -35,9 +46,12 @@ const CONTROL_SHEET_SRC = read(
 const RISK_MODAL_SRC = read(
     'src/app/t/[tenantSlug]/(app)/risks/NewRiskModal.tsx',
 );
-const VENDORS_NEW_SRC = read(
-    'src/app/t/[tenantSlug]/(app)/vendors/new/page.tsx',
-);
+const VENDORS_NEW_SRC =
+    read('src/app/t/[tenantSlug]/(app)/vendors/new/page.tsx') +
+    '\n' +
+    read('src/app/t/[tenantSlug]/(app)/vendors/_form/NewVendorFields.tsx') +
+    '\n' +
+    read('src/app/t/[tenantSlug]/(app)/vendors/_form/useNewVendorForm.ts');
 
 // ─── 1. tasks/new — type / severity / priority ────────────────────
 
@@ -238,11 +252,16 @@ describe('vendors/new — mixed primitives (RadioGroup + Combobox)', () => {
     });
 
     it('criticality + dataAccess use Combobox hideSearch (4–5 option enums)', () => {
+        // Modal-form P1 — window widened from 500→900 because the
+        // extracted field component spreads each Combobox's selected/
+        // setSelected callbacks across multi-line indented bodies; the
+        // ratchet's intent (the Combobox carries `hideSearch`) doesn't
+        // care about formatting density.
         expect(VENDORS_NEW_SRC).toMatch(
-            /<Combobox[\s\S]{0,500}id=["']vendor-criticality-select["'][\s\S]{0,500}hideSearch/,
+            /<Combobox[\s\S]{0,900}id=["']vendor-criticality-select["'][\s\S]{0,900}hideSearch/,
         );
         expect(VENDORS_NEW_SRC).toMatch(
-            /<Combobox[\s\S]{0,500}id=["']vendor-data-access["'][\s\S]{0,500}hideSearch/,
+            /<Combobox[\s\S]{0,900}id=["']vendor-data-access["'][\s\S]{0,900}hideSearch/,
         );
     });
 

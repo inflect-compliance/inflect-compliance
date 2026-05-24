@@ -19,19 +19,46 @@ import * as path from 'path';
 const REPO_ROOT = path.resolve(__dirname, '../..');
 
 /**
- * Every app-page file that is required to carry `useFormTelemetry`.
- * Listed as repo-root-relative paths so failures cite the exact file.
+ * Every CRUD surface that is required to carry `useFormTelemetry`.
+ *
+ * Modal-form P1 (2026-05-24) — the `/tasks/new` and `/policies/new`
+ * pages were decomposed into page wrapper + extracted form hook +
+ * extracted field component. The telemetry hook lives in the
+ * extracted `_form/use<Entity>Form.ts` now. The structural assertion
+ * resolves against the SURFACE (page + hook), not a single file.
  */
-const EXPECTED_SURFACES = [
-    // Originally instrumented (Epic 54 first pass).
-    'src/app/t/[tenantSlug]/(app)/controls/NewControlModal.tsx',
-    // Added in the Epic 54 finishing pass.
-    'src/app/t/[tenantSlug]/(app)/risks/NewRiskModal.tsx',
-    'src/app/t/[tenantSlug]/(app)/evidence/UploadEvidenceModal.tsx',
-    'src/app/t/[tenantSlug]/(app)/evidence/NewEvidenceTextModal.tsx',
-    'src/app/t/[tenantSlug]/(app)/tasks/new/page.tsx',
-    'src/app/t/[tenantSlug]/(app)/policies/new/page.tsx',
+type TelemetrySurface = { label: string; files: string[] };
+
+const EXPECTED_SURFACES: TelemetrySurface[] = [
+    { label: 'controls/NewControlModal.tsx', files: ['src/app/t/[tenantSlug]/(app)/controls/NewControlModal.tsx'] },
+    { label: 'risks/NewRiskModal.tsx', files: ['src/app/t/[tenantSlug]/(app)/risks/NewRiskModal.tsx'] },
+    { label: 'evidence/UploadEvidenceModal.tsx', files: ['src/app/t/[tenantSlug]/(app)/evidence/UploadEvidenceModal.tsx'] },
+    { label: 'evidence/NewEvidenceTextModal.tsx', files: ['src/app/t/[tenantSlug]/(app)/evidence/NewEvidenceTextModal.tsx'] },
+    {
+        label: 'tasks/new (page + hook)',
+        files: [
+            'src/app/t/[tenantSlug]/(app)/tasks/new/page.tsx',
+            'src/app/t/[tenantSlug]/(app)/tasks/_form/useNewTaskForm.ts',
+        ],
+    },
+    {
+        label: 'policies/new (page + hook)',
+        files: [
+            'src/app/t/[tenantSlug]/(app)/policies/new/page.tsx',
+            'src/app/t/[tenantSlug]/(app)/policies/_form/useNewPolicyForm.ts',
+        ],
+    },
 ];
+
+function readSurface(surface: TelemetrySurface): string {
+    return surface.files
+        .map((f) => {
+            const full = path.join(REPO_ROOT, f);
+            if (!fs.existsSync(full)) return '';
+            return fs.readFileSync(full, 'utf-8');
+        })
+        .join('\n');
+}
 
 // Minimum number of CRUD surfaces that must be instrumented. The
 // count can only go UP — drop the guard by removing an entry from
@@ -41,11 +68,10 @@ const MIN_SURFACE_COUNT = EXPECTED_SURFACES.length;
 
 describe('Epic 54 — useFormTelemetry adoption', () => {
     it.each(EXPECTED_SURFACES)(
-        '%s imports and invokes useFormTelemetry',
-        (rel) => {
-            const full = path.join(REPO_ROOT, rel);
-            expect(fs.existsSync(full)).toBe(true);
-            const src = fs.readFileSync(full, 'utf-8');
+        '$label imports and invokes useFormTelemetry',
+        (surface) => {
+            const src = readSurface(surface);
+            expect(src.length).toBeGreaterThan(0);
 
             expect(src).toMatch(
                 /from\s+['"]@\/lib\/telemetry\/form-telemetry['"]/,
@@ -63,13 +89,9 @@ describe('Epic 54 — useFormTelemetry adoption', () => {
         `at least ${MIN_SURFACE_COUNT} CRUD surfaces are instrumented ` +
             '(count can only grow)',
         () => {
-            const instrumented = EXPECTED_SURFACES.filter((rel) => {
-                const full = path.join(REPO_ROOT, rel);
-                if (!fs.existsSync(full)) return false;
-                return fs
-                    .readFileSync(full, 'utf-8')
-                    .includes('useFormTelemetry');
-            });
+            const instrumented = EXPECTED_SURFACES.filter((surface) =>
+                readSurface(surface).includes('useFormTelemetry'),
+            );
             expect(instrumented.length).toBeGreaterThanOrEqual(
                 MIN_SURFACE_COUNT,
             );

@@ -23,38 +23,78 @@ import * as path from 'path';
 
 const REPO_ROOT = path.resolve(__dirname, '../..');
 
-const FORM_FIELD_SURFACES = [
-    'src/app/t/[tenantSlug]/(app)/audits/cycles/page.tsx',
-    'src/app/t/[tenantSlug]/(app)/controls/ControlDetailSheet.tsx',
-    'src/app/t/[tenantSlug]/(app)/controls/NewControlModal.tsx',
-    'src/app/t/[tenantSlug]/(app)/evidence/NewEvidenceTextModal.tsx',
-    'src/app/t/[tenantSlug]/(app)/evidence/UploadEvidenceModal.tsx',
-    'src/app/t/[tenantSlug]/(app)/policies/new/page.tsx',
-    'src/app/t/[tenantSlug]/(app)/risks/NewRiskModal.tsx',
-    'src/app/t/[tenantSlug]/(app)/tasks/new/page.tsx',
-    'src/app/t/[tenantSlug]/(app)/vendors/new/page.tsx',
+// Modal-form P1 (2026-05-24) — policies/tasks/vendors create flows
+// were decomposed into page wrapper + extracted `_form/<Entity>Fields.tsx`.
+// FormField lives in the extracted fields component now. The
+// structural assertion below reads the SURFACE — a tuple of related
+// files — and resolves when ANY of them imports / uses the primitive.
+type FormSurface = { label: string; files: string[] };
+
+const FORM_FIELD_SURFACES: FormSurface[] = [
+    { label: 'audits/cycles/page.tsx', files: ['src/app/t/[tenantSlug]/(app)/audits/cycles/page.tsx'] },
+    { label: 'controls/ControlDetailSheet.tsx', files: ['src/app/t/[tenantSlug]/(app)/controls/ControlDetailSheet.tsx'] },
+    { label: 'controls/NewControlModal.tsx', files: ['src/app/t/[tenantSlug]/(app)/controls/NewControlModal.tsx'] },
+    { label: 'evidence/NewEvidenceTextModal.tsx', files: ['src/app/t/[tenantSlug]/(app)/evidence/NewEvidenceTextModal.tsx'] },
+    { label: 'evidence/UploadEvidenceModal.tsx', files: ['src/app/t/[tenantSlug]/(app)/evidence/UploadEvidenceModal.tsx'] },
+    {
+        label: 'policies/new (page + fields)',
+        files: [
+            'src/app/t/[tenantSlug]/(app)/policies/new/page.tsx',
+            'src/app/t/[tenantSlug]/(app)/policies/_form/NewPolicyFields.tsx',
+        ],
+    },
+    { label: 'risks/NewRiskModal.tsx', files: ['src/app/t/[tenantSlug]/(app)/risks/NewRiskModal.tsx'] },
+    {
+        label: 'tasks/new (page + fields)',
+        files: [
+            'src/app/t/[tenantSlug]/(app)/tasks/new/page.tsx',
+            'src/app/t/[tenantSlug]/(app)/tasks/_form/NewTaskFields.tsx',
+        ],
+    },
+    {
+        label: 'vendors/new (page + fields)',
+        files: [
+            'src/app/t/[tenantSlug]/(app)/vendors/new/page.tsx',
+            'src/app/t/[tenantSlug]/(app)/vendors/_form/NewVendorFields.tsx',
+        ],
+    },
 ];
 
-const FORM_ERROR_SURFACES = [
-    'src/app/t/[tenantSlug]/(app)/controls/NewControlModal.tsx',
+const FORM_ERROR_SURFACES: FormSurface[] = [
+    { label: 'controls/NewControlModal.tsx', files: ['src/app/t/[tenantSlug]/(app)/controls/NewControlModal.tsx'] },
     // UploadEvidenceModal renders a form-level upload-error banner
     // (`#upload-error`) rather than per-field validation errors, so
     // `<FormError>` is not the right primitive — the ratchet was stale
     // listing it here. Field-level error surfaces remain ratcheted below.
-    'src/app/t/[tenantSlug]/(app)/risks/NewRiskModal.tsx',
-    'src/app/t/[tenantSlug]/(app)/tasks/new/page.tsx',
+    { label: 'risks/NewRiskModal.tsx', files: ['src/app/t/[tenantSlug]/(app)/risks/NewRiskModal.tsx'] },
+    {
+        label: 'tasks/new (page + fields)',
+        files: [
+            'src/app/t/[tenantSlug]/(app)/tasks/new/page.tsx',
+            'src/app/t/[tenantSlug]/(app)/tasks/_form/NewTaskFields.tsx',
+        ],
+    },
 ];
+
+function readSurface(surface: FormSurface): string {
+    return surface.files
+        .map((f) => {
+            const full = path.join(REPO_ROOT, f);
+            if (!fs.existsSync(full)) return '';
+            return fs.readFileSync(full, 'utf-8');
+        })
+        .join('\n');
+}
 
 const MIN_FORM_FIELD = FORM_FIELD_SURFACES.length;
 const MIN_FORM_ERROR = FORM_ERROR_SURFACES.length;
 
 describe('Epic 55 — FormField adoption ratchet', () => {
     it.each(FORM_FIELD_SURFACES)(
-        '%s imports + uses <FormField>',
-        (rel) => {
-            const full = path.join(REPO_ROOT, rel);
-            expect(fs.existsSync(full)).toBe(true);
-            const src = fs.readFileSync(full, 'utf-8');
+        '$label imports + uses <FormField>',
+        (surface) => {
+            const src = readSurface(surface);
+            expect(src.length).toBeGreaterThan(0);
 
             expect(src).toMatch(
                 /from\s+['"]@\/components\/ui\/form-field['"]/,
@@ -66,13 +106,9 @@ describe('Epic 55 — FormField adoption ratchet', () => {
     it(
         `at least ${MIN_FORM_FIELD} surfaces carry <FormField> (count can only grow)`,
         () => {
-            const instrumented = FORM_FIELD_SURFACES.filter((rel) => {
-                const full = path.join(REPO_ROOT, rel);
-                if (!fs.existsSync(full)) return false;
-                return fs
-                    .readFileSync(full, 'utf-8')
-                    .includes('<FormField');
-            });
+            const instrumented = FORM_FIELD_SURFACES.filter((surface) =>
+                readSurface(surface).includes('<FormField'),
+            );
             expect(instrumented.length).toBeGreaterThanOrEqual(MIN_FORM_FIELD);
         },
     );
@@ -80,11 +116,10 @@ describe('Epic 55 — FormField adoption ratchet', () => {
 
 describe('Epic 55 — FormError adoption ratchet', () => {
     it.each(FORM_ERROR_SURFACES)(
-        '%s surfaces field-level errors via <FormError> OR <FormField error=…>',
-        (rel) => {
-            const full = path.join(REPO_ROOT, rel);
-            expect(fs.existsSync(full)).toBe(true);
-            const src = fs.readFileSync(full, 'utf-8');
+        '$label surfaces field-level errors via <FormError> OR <FormField error=…>',
+        (surface) => {
+            const src = readSurface(surface);
+            expect(src.length).toBeGreaterThan(0);
 
             // Two equally-valid surfaces:
             //   (a) Direct `<FormError>` import + JSX usage — the original
@@ -95,11 +130,6 @@ describe('Epic 55 — FormError adoption ratchet', () => {
             //       — the canonical Epic 64-FORM pattern with
             //       react-hook-form. FormField renders FormError
             //       internally when the `error` prop is set.
-            //
-            // The original ratchet only matched (a), which broke when
-            // NewControlModal migrated to RHF + FormField. Both patterns
-            // produce the same end-user error rendering; the rule should
-            // accept either.
             const usesDirectFormError =
                 /from\s+['"]@\/components\/ui\/form-error['"]/.test(src) &&
                 /<FormError\b/.test(src);
@@ -113,10 +143,8 @@ describe('Epic 55 — FormError adoption ratchet', () => {
     it(
         `at least ${MIN_FORM_ERROR} surfaces carry field-level error rendering (count can only grow)`,
         () => {
-            const instrumented = FORM_ERROR_SURFACES.filter((rel) => {
-                const full = path.join(REPO_ROOT, rel);
-                if (!fs.existsSync(full)) return false;
-                const src = fs.readFileSync(full, 'utf-8');
+            const instrumented = FORM_ERROR_SURFACES.filter((surface) => {
+                const src = readSurface(surface);
                 return (
                     src.includes('<FormError') ||
                     /<FormField[\s\S]*?\berror=/.test(src)

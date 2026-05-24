@@ -27,9 +27,18 @@ const QUERY_KEYS_SRC = read('src/lib/queryKeys.ts');
 const SHEET_SRC = read(
     'src/app/t/[tenantSlug]/(app)/controls/ControlDetailSheet.tsx',
 );
-const TASK_NEW_SRC = read(
-    'src/app/t/[tenantSlug]/(app)/tasks/new/page.tsx',
-);
+// Modal-form P1 (2026-05-24) — `tasks/new/page.tsx` was decomposed
+// into the page wrapper + `_form/useNewTaskForm.ts` +
+// `_form/NewTaskFields.tsx`. The Epic 55 assertions don't care WHICH
+// of those files carries an import / id / handler — they just lock
+// the migration shape. Concatenate the page + extracted modules so
+// the structural assertions resolve correctly post-extraction.
+const TASK_NEW_SRC =
+    read('src/app/t/[tenantSlug]/(app)/tasks/new/page.tsx') +
+    '\n' +
+    read('src/app/t/[tenantSlug]/(app)/tasks/_form/NewTaskFields.tsx') +
+    '\n' +
+    read('src/app/t/[tenantSlug]/(app)/tasks/_form/useNewTaskForm.ts');
 const TASK_DETAIL_SRC = read(
     'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx',
 );
@@ -236,8 +245,12 @@ describe('NewTaskPage — assignee UserCombobox', () => {
     });
 
     it('writes selected userId into form.assigneeUserId (null → empty string)', () => {
+        // Modal-form P1 — the legacy `update(...)` reducer call was
+        // generalised to the shared form-hook's `setField(...)`
+        // method. The semantic — `userId ?? ''` coercion on the
+        // assigneeUserId field — is what matters; either name is OK.
         expect(TASK_NEW_SRC).toMatch(
-            /update\(['"]assigneeUserId['"],\s*userId\s*\?\?\s*['"]['"]\)/,
+            /(?:update|setField)\(['"]assigneeUserId['"],\s*userId\s*\?\?\s*['"]['"]\)/,
         );
     });
 });
