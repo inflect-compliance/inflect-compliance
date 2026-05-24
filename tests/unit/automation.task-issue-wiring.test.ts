@@ -123,9 +123,11 @@ describe('Task + Issue usecase emission', () => {
     });
 
     test('setTaskStatus publishes TASK_STATUS_CHANGED with fromStatus→toStatus', async () => {
+        // S8 — IN_PROGRESS → CLOSED is now illegal under the work-
+        // item state machine; CLOSED must be reached via RESOLVED.
         (WorkItemRepository.getById as jest.Mock).mockResolvedValue({
             id: 'task-1',
-            status: 'IN_PROGRESS',
+            status: 'RESOLVED',
             type: 'TASK',
             controlId: null,
         });
@@ -143,9 +145,9 @@ describe('Task + Issue usecase emission', () => {
 
         expect(captured).toHaveLength(1);
         const evt = captured[0];
-        expect(evt.stableKey).toBe('task-1:IN_PROGRESS:CLOSED');
+        expect(evt.stableKey).toBe('task-1:RESOLVED:CLOSED');
         if (evt.event === 'TASK_STATUS_CHANGED') {
-            expect(evt.data.fromStatus).toBe('IN_PROGRESS');
+            expect(evt.data.fromStatus).toBe('RESOLVED');
             expect(evt.data.toStatus).toBe('CLOSED');
             expect(evt.data.resolution).toBe('fixed in rev 42');
         }
@@ -197,7 +199,10 @@ describe('Task + Issue usecase emission', () => {
             captured.push(e);
         });
 
-        await setIssueStatus(makeCtx(), 'issue-1', 'RESOLVED');
+        // S8 — RESOLVED is a terminal status that requires a non-
+        // empty resolution. OPEN → RESOLVED is the legal short-
+        // circuit transition ("fixed during triage").
+        await setIssueStatus(makeCtx(), 'issue-1', 'RESOLVED', 'backup restored');
 
         expect(captured).toHaveLength(1);
         const evt = captured[0];

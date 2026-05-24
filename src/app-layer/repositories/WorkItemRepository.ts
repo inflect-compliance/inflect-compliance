@@ -336,6 +336,29 @@ export class WorkItemRepository {
 
     // ─── Bulk ───
 
+    /**
+     * Audit Coherence S8 (2026-05-24) — fetch the current
+     * status of a known set of task ids in ONE query so the bulk
+     * status-change path can validate every transition before any
+     * row is written. Empty input returns []; ids missing from the
+     * result imply "not in tenant / soft-deleted" — the caller
+     * surfaces a notFound rather than silently skipping.
+     */
+    static async listByIds(db: PrismaTx, ctx: RequestContext, taskIds: string[]) {
+        if (taskIds.length === 0) return [];
+        // Bounded by request payload size (taskIds.length); the bulk
+        // endpoint enforces a max batch size upstream, so this is
+        // structurally bounded without a `take:` literal.
+        return db.task.findMany({ // guardrail-allow: unbounded
+            where: {
+                id: { in: taskIds },
+                tenantId: ctx.tenantId,
+                deletedAt: null,
+            },
+            select: { id: true, status: true },
+        });
+    }
+
     static async bulkAssign(db: PrismaTx, ctx: RequestContext, taskIds: string[], assigneeUserId: string | null) {
         return db.task.updateMany({
             where: { id: { in: taskIds }, tenantId: ctx.tenantId },

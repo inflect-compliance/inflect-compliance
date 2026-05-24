@@ -10,9 +10,15 @@ import { assertCanReadIssues, assertCanCreateIssue, assertCanUpdateIssue, assert
 import { logEvent } from '../events/audit';
 import { emitAutomationEvent } from '../automation';
 import { runInTenantContext } from '@/lib/db-context';
-import { notFound } from '@/lib/errors/types';
+import { notFound, badRequest } from '@/lib/errors/types';
 import { sanitizePlainText } from '@/lib/security/sanitize';
-import { TERMINAL_WORK_ITEM_STATUSES } from '../domain/work-item-status';
+import {
+    TERMINAL_WORK_ITEM_STATUSES,
+    checkWorkItemTransition,
+    formatTransitionError,
+    isTerminalStatus,
+} from '../domain/work-item-status';
+import { getSlaStatus } from '../services/sla';
 
 /** @deprecated Use TaskFilters */
 export type IssueFilters = TaskFilters;
@@ -29,7 +35,13 @@ export async function getIssue(ctx: RequestContext, issueId: string) {
     return runInTenantContext(ctx, async (db) => {
         const issue = await WorkItemRepository.getById(db, ctx, issueId);
         if (!issue) throw notFound('Issue not found');
-        return issue;
+        // Audit Coherence S8 (2026-05-24) — surface the derived SLA
+        // status. Pure function, no extra query; the frontend reads
+        // `sla.label` to render the breach pill.
+        return {
+            ...issue,
+            sla: getSlaStatus(issue.severity, issue.createdAt, issue.status),
+        };
     });
 }
 
@@ -110,6 +122,23 @@ export async function setIssueStatus(ctx: RequestContext, issueId: string, statu
         if (!existing) throw notFound('Issue not found');
         const fromStatus = existing.status;
 
+        // Audit Coherence S8 (2026-05-24) — same state-machine +
+        // resolution-required gates as the Task path. Issues and
+        // tasks share the WorkItem row shape; the validation lives
+        // in the shared domain module so both surfaces stay aligned.
+        const transitionErr = checkWorkItemTransition(fromStatus, status);
+        if (transitionErr) throw badRequest(formatTransitionError(transitionErr));
+
+        if (isTerminalStatus(status)) {
+            const trimmed = (resolution ?? '').trim();
+            if (!trimmed) {
+                throw badRequest(
+                    `A resolution is required when moving an issue to ${status}.`,
+                );
+            }
+            resolution = trimmed;
+        }
+
         const issue = await WorkItemRepository.setStatus(db, ctx, issueId, status, resolution);
         if (!issue) throw notFound('Issue not found');
         await logEvent(db, ctx, {
@@ -117,7 +146,14 @@ export async function setIssueStatus(ctx: RequestContext, issueId: string, statu
             entityType: 'Issue',
             entityId: issueId,
             details: `Status changed to ${status}`,
-            detailsJson: { category: 'status_change', entityName: 'Issue', fromStatus: null, toStatus: 'ISSUE_STATUS_CHANGED' },
+            // Audit Coherence S8 — write the real fromStatus + toStatus.
+            // Same hardcoded-null fix as the Task path.
+            detailsJson: {
+                category: 'status_change',
+                entityName: 'Issue',
+                fromStatus,
+                toStatus: status,
+            },
             metadata: { status, resolution },
         });
         await emitAutomationEvent(ctx, {
@@ -281,15 +317,53 @@ export async function bulkAssign(ctx: RequestContext, issueIds: string[], assign
 
 export async function bulkSetStatus(ctx: RequestContext, issueIds: string[], status: string, resolution?: string) {
     assertCanResolveIssue(ctx);
+
+    // Audit Coherence S8 (2026-05-24) — bulk path enforces the same
+    // gates as the single-issue path. Bulk operations are convenience,
+    // not an escape hatch.
+    if (isTerminalStatus(status)) {
+        const trimmed = (resolution ?? '').trim();
+        if (!trimmed) {
+            throw badRequest(
+                `A resolution is required when moving an issue to ${status}.`,
+            );
+        }
+        resolution = trimmed;
+    }
+
     return runInTenantContext(ctx, async (db) => {
+        // Pre-fetch every row so we can validate every transition
+        // BEFORE the bulk update lands. All-or-nothing.
+        const existingRows = await WorkItemRepository.listByIds(db, ctx, issueIds);
+        const existingMap = new Map(existingRows.map((r) => [r.id, r.status]));
+
+        for (const id of issueIds) {
+            const fromStatus = existingMap.get(id);
+            if (!fromStatus) {
+                throw notFound(`Issue ${id} not found`);
+            }
+            const err = checkWorkItemTransition(fromStatus, status);
+            if (err) {
+                throw badRequest(
+                    `Cannot bulk-transition issue ${id}: ${formatTransitionError(err)}`,
+                );
+            }
+        }
+
         const result = await WorkItemRepository.bulkSetStatus(db, ctx, issueIds, status, resolution);
         for (const id of issueIds) {
+            const fromStatus = existingMap.get(id) ?? null;
             await logEvent(db, ctx, {
                 action: 'ISSUE_STATUS_CHANGED',
                 entityType: 'Issue',
                 entityId: id,
                 details: `Bulk status changed to ${status}`,
-                detailsJson: { category: 'status_change', entityName: 'Issue', fromStatus: null, toStatus: 'ISSUE_STATUS_CHANGED' },
+                detailsJson: {
+                    category: 'status_change',
+                    entityName: 'Issue',
+                    fromStatus,
+                    toStatus: status,
+                },
                 metadata: { status, resolution, bulk: true },
             });
         }
@@ -402,7 +476,18 @@ export async function freezeBundle(ctx: RequestContext, bundleId: string) {
             entityType: 'Issue',
             entityId: bundle.issueId,
             details: `Evidence bundle "${bundle.name}" frozen — now immutable`,
-            detailsJson: { category: 'status_change', entityName: 'Issue', fromStatus: null, toStatus: 'BUNDLE_FROZEN' },
+            // Audit Coherence S8 (2026-05-24) — was tagged
+            // `status_change` with hardcoded null fromStatus, but
+            // bundle freeze is a one-shot entity_lifecycle event on
+            // the bundle (not a status transition on the issue).
+            // Re-categorising so SIEM filters on `status_change`
+            // see only real WorkItem transitions.
+            detailsJson: {
+                category: 'entity_lifecycle',
+                entityName: 'EvidenceBundle',
+                operation: 'frozen',
+                summary: 'BUNDLE_FROZEN',
+            },
             metadata: { bundleId: bundle.id },
         });
         return bundle;

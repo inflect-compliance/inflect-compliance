@@ -13,6 +13,12 @@ import { validateTaskMetadata } from '../schemas/json-columns.schemas';
 import { logger } from '@/lib/observability/logger';
 import { cachedListRead, bumpEntityCacheVersion } from '@/lib/cache/list-cache';
 import type { PrismaTx } from '@/lib/db-context';
+import {
+    checkWorkItemTransition,
+    formatTransitionError,
+    isTerminalStatus,
+} from '../domain/work-item-status';
+import { getSlaStatus } from '../services/sla';
 
 // ─── Type-Specific Validation ───
 
@@ -98,7 +104,15 @@ export async function getTask(ctx: RequestContext, taskId: string) {
     return runInTenantContext(ctx, async (db) => {
         const task = await WorkItemRepository.getById(db, ctx, taskId);
         if (!task) throw notFound('Task not found');
-        return task;
+        // Audit Coherence S8 (2026-05-24) — attach the derived SLA
+        // status alongside the raw row. The service is pure (severity
+        // + createdAt + currentStatus); no extra query, no schema
+        // column. Frontend reads `sla.label` to render the breach
+        // pill; auditors see triage vs resolve breach booleans.
+        return {
+            ...task,
+            sla: getSlaStatus(task.severity, task.createdAt, task.status),
+        };
     });
 }
 
@@ -226,6 +240,28 @@ export async function setTaskStatus(ctx: RequestContext, taskId: string, status:
         if (!existing) throw notFound('Task not found');
         const fromStatus = existing.status;
 
+        // Audit Coherence S8 (2026-05-24) — state-machine gate runs
+        // BEFORE the type-relevance check. Catches no-op + illegal
+        // shapes (e.g. CLOSED → OPEN re-open, CANCELED → IN_PROGRESS,
+        // OPEN → CLOSED skipping RESOLVED) so the only paths that
+        // reach the repository write are documented transitions.
+        const transitionErr = checkWorkItemTransition(fromStatus, status);
+        if (transitionErr) throw badRequest(formatTransitionError(transitionErr));
+
+        // Audit Coherence S8 — every terminal write requires a non-
+        // empty `resolution` text. The auditor reads it from the
+        // audit-log row + the task body; "closed without why" was
+        // a recurring SOC 2 review finding.
+        if (isTerminalStatus(status)) {
+            const trimmed = (resolution ?? '').trim();
+            if (!trimmed) {
+                throw badRequest(
+                    `A resolution is required when moving a task to ${status}.`,
+                );
+            }
+            resolution = trimmed;
+        }
+
         if (['RESOLVED', 'CLOSED'].includes(status)) {
             await validateTypeRelevance(db, ctx, taskId, existing.type as TaskType, existing.controlId);
         }
@@ -237,7 +273,16 @@ export async function setTaskStatus(ctx: RequestContext, taskId: string, status:
             entityType: 'Task',
             entityId: taskId,
             details: `Status changed to ${status}`,
-            detailsJson: { category: 'status_change', entityName: 'Task', fromStatus: null, toStatus: 'TASK_STATUS_CHANGED' },
+            // Audit Coherence S8 — write the REAL fromStatus + toStatus.
+            // Pre-S8 these were hardcoded to (null, 'TASK_STATUS_CHANGED')
+            // which left the audit row useless for "did this row pass
+            // through TRIAGED?" queries that auditors regularly run.
+            detailsJson: {
+                category: 'status_change',
+                entityName: 'Task',
+                fromStatus,
+                toStatus: status,
+            },
             metadata: { status, resolution },
         });
         await emitAutomationEvent(ctx, {
@@ -537,15 +582,57 @@ export async function bulkAssignTasks(ctx: RequestContext, taskIds: string[], as
 
 export async function bulkSetTaskStatus(ctx: RequestContext, taskIds: string[], status: string, resolution?: string) {
     assertCanWriteTasks(ctx);
+
+    // Audit Coherence S8 (2026-05-24) — bulk path enforces the same
+    // resolution + transition gates as the single-task path. Bulk
+    // operations are an admin convenience, not an escape hatch.
+    if (isTerminalStatus(status)) {
+        const trimmed = (resolution ?? '').trim();
+        if (!trimmed) {
+            throw badRequest(
+                `A resolution is required when moving a task to ${status}.`,
+            );
+        }
+        resolution = trimmed;
+    }
+
     const outcome = await runInTenantContext(ctx, async (db) => {
+        // Pre-fetch the current state of every requested task so we
+        // can (a) refuse the WHOLE batch if any row is on an illegal
+        // transition (no partial writes), and (b) emit a per-row
+        // audit entry with the REAL fromStatus instead of the prior
+        // hardcoded null.
+        const existingRows = await WorkItemRepository.listByIds(db, ctx, taskIds);
+        const existingMap = new Map(existingRows.map((r) => [r.id, r.status]));
+
+        // First pass — all-or-nothing transition validation.
+        for (const id of taskIds) {
+            const fromStatus = existingMap.get(id);
+            if (!fromStatus) {
+                throw notFound(`Task ${id} not found`);
+            }
+            const err = checkWorkItemTransition(fromStatus, status);
+            if (err) {
+                throw badRequest(
+                    `Cannot bulk-transition task ${id}: ${formatTransitionError(err)}`,
+                );
+            }
+        }
+
         const result = await WorkItemRepository.bulkSetStatus(db, ctx, taskIds, status, resolution);
         for (const id of taskIds) {
+            const fromStatus = existingMap.get(id) ?? null;
             await logEvent(db, ctx, {
                 action: 'TASK_STATUS_CHANGED',
                 entityType: 'Task',
                 entityId: id,
                 details: `Bulk status changed to ${status}`,
-                detailsJson: { category: 'status_change', entityName: 'Task', fromStatus: null, toStatus: 'TASK_STATUS_CHANGED' },
+                detailsJson: {
+                    category: 'status_change',
+                    entityName: 'Task',
+                    fromStatus,
+                    toStatus: status,
+                },
                 metadata: { status, resolution, bulk: true },
             });
         }

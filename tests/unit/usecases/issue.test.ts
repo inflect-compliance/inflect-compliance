@@ -144,19 +144,24 @@ describe('updateIssue', () => {
 describe('setIssueStatus — fromStatus capture', () => {
     it('passes fromStatus into emitAutomationEvent payload', async () => {
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
-        mockGetById.mockResolvedValueOnce({ id: 'i1', status: 'OPEN' } as never);
+        // S8 — RESOLVED→CLOSED is the canonical resolution-finalisation
+        // transition. The legacy fixture used OPEN→CLOSED, which is
+        // now illegal under WORK_ITEM_TRANSITIONS (you must go
+        // through RESOLVED first).
+        mockGetById.mockResolvedValueOnce({ id: 'i1', status: 'RESOLVED' } as never);
 
-        await setIssueStatus(makeRequestContext('EDITOR'), 'i1', 'CLOSED');
+        // S8 — terminal transitions require a non-empty resolution.
+        await setIssueStatus(makeRequestContext('EDITOR'), 'i1', 'CLOSED', 'archived');
 
         const call = mockEmitEvent.mock.calls.find(
             c => (c[1] as any).event === 'ISSUE_STATUS_CHANGED',
         );
         const payload = (call as any[])[1];
-        expect(payload.data.fromStatus).toBe('OPEN');
+        expect(payload.data.fromStatus).toBe('RESOLVED');
         expect(payload.data.toStatus).toBe('CLOSED');
         // Regression: same as the task.ts equivalent — capturing
         // fromStatus AFTER mutation collapses transitions to "X → X".
-        expect(payload.stableKey).toBe('i1:OPEN:CLOSED');
+        expect(payload.stableKey).toBe('i1:RESOLVED:CLOSED');
     });
 
     it('throws notFound when the existing row is missing', async () => {

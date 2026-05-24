@@ -44,6 +44,8 @@ jest.mock('@/app-layer/repositories/WorkItemRepository', () => ({
         bulkAssign: jest.fn(),
         bulkSetStatus: jest.fn(),
         bulkSetDueDate: jest.fn(),
+        // S8 — pre-fetch in bulkSetStatus path.
+        listByIds: jest.fn(),
         metrics: jest.fn(),
     },
     TaskLinkRepository: {
@@ -107,6 +109,7 @@ const mockCreate = WorkItemRepository.create as jest.MockedFunction<typeof WorkI
 const mockSetStatus = WorkItemRepository.setStatus as jest.MockedFunction<typeof WorkItemRepository.setStatus>;
 const mockAssign = WorkItemRepository.assign as jest.MockedFunction<typeof WorkItemRepository.assign>;
 const mockBulkSetStatus = WorkItemRepository.bulkSetStatus as jest.MockedFunction<typeof WorkItemRepository.bulkSetStatus>;
+const mockListByIds = WorkItemRepository.listByIds as jest.MockedFunction<typeof WorkItemRepository.listByIds>;
 const mockLinkList = TaskLinkRepository.listByTask as jest.MockedFunction<typeof TaskLinkRepository.listByTask>;
 const mockCommentAdd = TaskCommentRepository.add as jest.MockedFunction<typeof TaskCommentRepository.add>;
 const mockSanitize = sanitizePlainText as jest.MockedFunction<typeof sanitizePlainText>;
@@ -220,7 +223,10 @@ describe('setTaskStatus — fromStatus capture + validateTypeRelevance', () => {
         ] as never);
 
         await expect(
-            setTaskStatus(makeRequestContext('EDITOR'), 't1', 'RESOLVED'),
+            // S8 — resolution required on terminal transitions.
+            // Supply one so the type-relevance gate is the rejection
+            // path under test, not the resolution-required gate.
+            setTaskStatus(makeRequestContext('EDITOR'), 't1', 'RESOLVED', 'fix shipped'),
         ).rejects.toThrow(/AUDIT_FINDING tasks must have a controlId/);
         // Regression: a refactor that skipped validateTypeRelevance
         // would let an audit finding be marked "resolved" without
@@ -238,7 +244,7 @@ describe('setTaskStatus — fromStatus capture + validateTypeRelevance', () => {
         ] as never);
 
         await expect(
-            setTaskStatus(makeRequestContext('EDITOR'), 't1', 'RESOLVED'),
+            setTaskStatus(makeRequestContext('EDITOR'), 't1', 'RESOLVED', 'fix shipped'),
         ).resolves.toBeDefined();
     });
 });
@@ -292,12 +298,22 @@ describe('addTaskComment — Epic C.5 sanitisation', () => {
 describe('bulkSetTaskStatus', () => {
     it('emits one TASK_STATUS_CHANGED audit per id (not one summary row)', async () => {
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
+        // S8 — bulk path pre-fetches every row's current status so
+        // the all-or-nothing transition gate can run before the
+        // bulk update. Each id resolves to a legal RESOLVED→CLOSED.
+        mockListByIds.mockResolvedValueOnce([
+            { id: 't1', status: 'RESOLVED' },
+            { id: 't2', status: 'RESOLVED' },
+            { id: 't3', status: 'RESOLVED' },
+        ] as never);
         mockBulkSetStatus.mockResolvedValueOnce({ count: 3 } as never);
 
         await bulkSetTaskStatus(
             makeRequestContext('EDITOR'),
             ['t1', 't2', 't3'],
             'CLOSED',
+            // S8 — terminal transitions require a resolution.
+            'archived after Q1 review',
         );
 
         const calls = mockLog.mock.calls.filter(

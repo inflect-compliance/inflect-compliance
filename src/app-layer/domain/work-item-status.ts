@@ -72,3 +72,95 @@ export function isTerminalStatus(status: string): status is TerminalWorkItemStat
 export function isActiveStatus(status: string): status is ActiveWorkItemStatus {
     return (ACTIVE_WORK_ITEM_STATUSES as readonly string[]).includes(status);
 }
+
+// ─────────────────────────────────────────────────────────────────────
+// Audit Coherence S8 (2026-05-24) — explicit work-item state machine.
+//
+// Pre-S8, `setTaskStatus` / `setIssueStatus` accepted any string and
+// wrote it through to the row. That left a few illegal shapes
+// representable by the API: skipping OPEN entirely, re-opening a
+// CLOSED row, re-opening a CANCELED row, sending RESOLVED back to
+// OPEN. The lifecycle comment at the top of this file documented
+// the intended graph; this table makes it executable.
+//
+// `assertLegalTransition(from, to)` is the canonical guard — usecases
+// MUST call it before writing the new status. A `from === to` no-op
+// is rejected by the same gate (no audit row for "I'm sending the
+// same status I already had").
+//
+// Legal transitions captured below:
+//   OPEN → TRIAGED · IN_PROGRESS · BLOCKED · RESOLVED · CANCELED
+//          (RESOLVED short-circuit allows "fixed during triage")
+//   TRIAGED → IN_PROGRESS · BLOCKED · RESOLVED · CANCELED
+//   IN_PROGRESS → BLOCKED · RESOLVED · CANCELED · TRIAGED
+//                 (move back to TRIAGED is "needs re-scoping")
+//   BLOCKED → IN_PROGRESS · TRIAGED · CANCELED
+//   RESOLVED → CLOSED · IN_PROGRESS
+//              (re-open is allowed before close — common when QA
+//               or auditors reject the resolution)
+//   CLOSED → (terminal — no transitions out)
+//   CANCELED → (terminal — no transitions out)
+// ─────────────────────────────────────────────────────────────────────
+export const WORK_ITEM_TRANSITIONS: Record<
+    WorkItemStatusValue,
+    ReadonlySet<WorkItemStatusValue>
+> = {
+    OPEN: new Set(['TRIAGED', 'IN_PROGRESS', 'BLOCKED', 'RESOLVED', 'CANCELED']),
+    TRIAGED: new Set(['IN_PROGRESS', 'BLOCKED', 'RESOLVED', 'CANCELED']),
+    IN_PROGRESS: new Set(['BLOCKED', 'RESOLVED', 'CANCELED', 'TRIAGED']),
+    BLOCKED: new Set(['IN_PROGRESS', 'TRIAGED', 'CANCELED']),
+    RESOLVED: new Set(['CLOSED', 'IN_PROGRESS']),
+    CLOSED: new Set(),
+    CANCELED: new Set(),
+};
+
+export type WorkItemTransitionError =
+    | { kind: 'unknown_from'; from: string }
+    | { kind: 'unknown_to'; to: string }
+    | { kind: 'no_op'; status: string }
+    | { kind: 'illegal'; from: string; to: string };
+
+/**
+ * Pure-function transition check. Returns `null` on a legal
+ * transition, or a discriminated error variant the caller can
+ * forward to `badRequest()` with a precise message.
+ */
+export function checkWorkItemTransition(
+    from: string,
+    to: string,
+): WorkItemTransitionError | null {
+    if (!(from in WORK_ITEM_TRANSITIONS)) {
+        return { kind: 'unknown_from', from };
+    }
+    if (!(to in WORK_ITEM_TRANSITIONS)) {
+        return { kind: 'unknown_to', to };
+    }
+    if (from === to) {
+        return { kind: 'no_op', status: from };
+    }
+    const allowed = WORK_ITEM_TRANSITIONS[from as WorkItemStatusValue];
+    if (!allowed.has(to as WorkItemStatusValue)) {
+        return { kind: 'illegal', from, to };
+    }
+    return null;
+}
+
+/**
+ * Render a transition error into a human-readable message.
+ * Used by the usecase shim to keep the wording consistent across
+ * task + issue setStatus paths.
+ */
+export function formatTransitionError(
+    err: WorkItemTransitionError,
+): string {
+    switch (err.kind) {
+        case 'unknown_from':
+            return `Unknown current status "${err.from}"; cannot validate transition.`;
+        case 'unknown_to':
+            return `Unknown target status "${err.to}".`;
+        case 'no_op':
+            return `Status is already ${err.status}.`;
+        case 'illegal':
+            return `Illegal work-item transition: ${err.from} → ${err.to}.`;
+    }
+}
