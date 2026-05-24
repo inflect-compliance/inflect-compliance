@@ -382,7 +382,7 @@ export function FrameworksClient({
                             <strong>Today</strong> — the canonical path is to
                             import a catalogue framework (ISO27001, NIS2, …)
                             and then customise per requirement on the
-                            framework's <em>Customize</em> tab. Reorder
+                            framework&apos;s <em>Customize</em> tab. Reorder
                             requirements, link controls, and add per-tenant
                             metadata — every change is tenant-scoped.
                         </p>
