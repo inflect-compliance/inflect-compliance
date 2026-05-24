@@ -191,6 +191,31 @@ export async function updateEvidence(ctx: RequestContext, id: string, data: z.in
     return updated;
 }
 
+/**
+ * Audit Coherence S3 (2026-05-22) — explicit state-machine table.
+ *
+ * Pre-this-PR `reviewEvidence` accepted any `action` string against
+ * any current status; a `DRAFT → APPROVED` jump bypassed SUBMITTED.
+ *
+ * Author / submitter flow (EDITOR):
+ *   DRAFT        → SUBMITTED   (ready for review)
+ *   REJECTED     → SUBMITTED   (author revised; re-submit)
+ *   NEEDS_REVIEW → SUBMITTED   (owner re-submits stale evidence)
+ *
+ * Reviewer flow (ADMIN):
+ *   SUBMITTED → APPROVED
+ *   SUBMITTED → REJECTED
+ *
+ * Out-of-band:
+ *   APPROVED → NEEDS_REVIEW    (evidence-expiry cron, NOT this endpoint)
+ */
+const EVIDENCE_TRANSITIONS: Record<string, ReadonlySet<string>> = {
+    DRAFT: new Set(['SUBMITTED']),
+    REJECTED: new Set(['SUBMITTED']),
+    NEEDS_REVIEW: new Set(['SUBMITTED']),
+    SUBMITTED: new Set(['APPROVED', 'REJECTED']),
+};
+
 export async function reviewEvidence(ctx: RequestContext, id: string, data: { action: string; comment?: string | null }) {
     const { action, comment } = data;
 
@@ -206,25 +231,28 @@ export async function reviewEvidence(ctx: RequestContext, id: string, data: { ac
         const evidence = await EvidenceRepository.getById(db, ctx, id);
         if (!evidence) throw notFound('Evidence not found');
 
+        // Audit S3 — enforce the state machine BEFORE any write.
+        const allowed = EVIDENCE_TRANSITIONS[evidence.status as string];
+        if (!allowed || !allowed.has(action)) {
+            throw badRequest(
+                `Illegal evidence transition ${evidence.status} → ${action}. ` +
+                    `From ${evidence.status} the only legal next states are: ` +
+                    `${[...(allowed ?? [])].join(', ') || 'none'}.`,
+            );
+        }
+
         const newStatus = action as 'SUBMITTED' | 'APPROVED' | 'REJECTED';
 
         await EvidenceRepository.update(db, ctx, id, { status: newStatus });
         await EvidenceRepository.addReview(db, ctx, id, newStatus, comment);
 
-        // Create notification — prefer ownerUserId FK, fall back to legacy name lookup
+        // Audit S3 — notification routes via `ownerUserId` only. The
+        // legacy free-text `name`-based lookup retired here; rows
+        // missing `ownerUserId` simply don't notify (graceful degrade).
         if (newStatus === 'APPROVED' || newStatus === 'REJECTED') {
-            let ownerUser = evidence.ownerUserId
+            const ownerUser = evidence.ownerUserId
                 ? await db.user.findUnique({ where: { id: evidence.ownerUserId } })
                 : null;
-            // Fallback: legacy free-text name lookup (transitional) — use membership to scope by tenant
-            if (!ownerUser && evidence.owner) {
-                ownerUser = await db.user.findFirst({
-                    where: {
-                        name: evidence.owner,
-                        tenantMemberships: { some: { tenantId: ctx.tenantId, status: 'ACTIVE' } },
-                    },
-                });
-            }
             if (ownerUser) {
                 await db.notification.create({
                     data: {

@@ -250,11 +250,22 @@ enum FileRecordStatus {
   DELETED
 }
 
+/// Evidence lifecycle status.
+///
+///   DRAFT         — author is preparing the evidence.
+///   SUBMITTED     — ready for review by an admin.
+///   APPROVED      — admin accepted; counts toward audit readiness.
+///   REJECTED      — admin refused; author may revise and resubmit.
+///   NEEDS_REVIEW  — was APPROVED but the `nextReviewDate` has passed.
+///                   A daily cron auto-transitions stale APPROVED
+///                   rows here; the owner re-submits to re-enter
+///                   the review queue. Audit Coherence S3 (2026-05-22).
 enum EvidenceStatus {
   DRAFT
   SUBMITTED
   APPROVED
   REJECTED
+  NEEDS_REVIEW
 }
 
 enum RetentionPolicy {

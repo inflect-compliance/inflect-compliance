@@ -162,7 +162,21 @@ describe('reviewEvidence — separation of duty', () => {
     });
 
     it('ADMIN can APPROVE — emits STATUS_CHANGE audit with correct transition', async () => {
-        setupDbWithEvidence();
+        // Audit S3 (2026-05-22) — DRAFT → APPROVED is now illegal
+        // per the explicit state machine. Reviewers can only APPROVE
+        // a row that's already SUBMITTED. Fixture overridden for
+        // this case; the default `evidenceRow` (DRAFT) test the
+        // SUBMITTED flow below.
+        const fakeDb = {
+            user: { findUnique: jest.fn(), findFirst: jest.fn() },
+            notification: { create: jest.fn() },
+        };
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn(fakeDb as never));
+        mockGetById.mockResolvedValue({
+            ...evidenceRow,
+            status: 'SUBMITTED',
+        } as never);
+
         await reviewEvidence(makeRequestContext('ADMIN'), 'e1', {
             action: 'APPROVED',
             comment: 'looks good',
@@ -182,7 +196,7 @@ describe('reviewEvidence — separation of duty', () => {
                 entityType: 'Evidence',
                 entityId: 'e1',
                 detailsJson: expect.objectContaining({
-                    fromStatus: 'DRAFT',
+                    fromStatus: 'SUBMITTED',
                     toStatus: 'APPROVED',
                 }),
             }),

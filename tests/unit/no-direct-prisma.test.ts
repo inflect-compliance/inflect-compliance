@@ -148,6 +148,15 @@ describe('CI Guard: No direct prisma in tenant-scoped code', () => {
         // verifier and src/lib/errors/route-exemptions.ts for the
         // route-level anti-enumeration shape.
         'vendor-assessment-response.ts',
+        // Audit S3 (2026-05-22) — daily cron that sweeps APPROVED
+        // evidence past its `nextReviewDate` to NEEDS_REVIEW. Runs
+        // either tenant-scoped (one tenant) OR sweep-all (all tenants
+        // in one query). The sweep-all mode can't fit
+        // `runInTenantContext`'s single-tenant shape; the global
+        // prisma + tenantId-optional updateMany is the right call.
+        // Pure write-only transition (no business data read), bounded
+        // by the WHERE clause.
+        'evidence-stale-review-sweep.ts',
     ];
 
     const usecases = readFilesInDir(path.join(SRC_ROOT, 'app-layer/usecases'));
