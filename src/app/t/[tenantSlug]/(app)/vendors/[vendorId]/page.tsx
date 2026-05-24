@@ -15,6 +15,10 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { InlineEmptyState } from '@/components/ui/inline-empty-state';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
+import {
+    EntityPicker,
+    type EntityPickerKind,
+} from '@/components/ui/entity-picker';
 import { useToastWithUndo } from '@/components/ui/hooks';
 import { normaliseHref } from '@/lib/security/safe-url';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -602,8 +606,24 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                 <Combobox hideSearch id="link-type" selected={VENDOR_LINK_TYPE_OPTIONS.find(o => o.value === linkForm.entityType) ?? null} setSelected={(opt) => setLinkForm(p => ({ ...p, entityType: opt?.value ?? p.entityType }))} options={VENDOR_LINK_TYPE_OPTIONS} matchTriggerWidth />
                             </div>
                             <div>
-                                <label className="block text-sm text-content-muted mb-1">Entity ID</label>
-                                <input className="input w-48" value={linkForm.entityId} onChange={e => setLinkForm(p => ({ ...p, entityId: e.target.value }))} id="link-entity-id" placeholder="Paste ID" />
+                                <label className="block text-sm text-content-muted mb-1">Entity</label>
+                                {/* PR-D — entity picker replaces the
+                                    legacy "Paste ID" input. The
+                                    `Type` Combobox above drives the
+                                    candidate set; selecting writes
+                                    the cuid into linkForm.entityId
+                                    so the existing submit handler is
+                                    unchanged. */}
+                                <EntityPicker
+                                    tenantSlug={params.tenantSlug}
+                                    entityType={linkForm.entityType as EntityPickerKind}
+                                    value={linkForm.entityId}
+                                    onChange={(id) => setLinkForm((p) => ({ ...p, entityId: id }))}
+                                    id="link-entity-id"
+                                    testId="vendor-link-entity-picker"
+                                    placeholder="Select entity"
+                                    className="w-48"
+                                />
                             </div>
                             <div>
                                 <label className="block text-sm text-content-muted mb-1">Relation</label>
@@ -694,9 +714,24 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                     {canWrite && (
                         <div className={cn(cardVariants({ density: 'compact' }), 'flex items-end gap-compact')}>
                             <div>
-                                <label className="block text-sm text-content-muted mb-1">Subprocessor Vendor ID</label>
-                                <input className="input w-48" value={subForm.subprocessorVendorId}
-                                    onChange={e => setSubForm(p => ({ ...p, subprocessorVendorId: e.target.value }))} id="sub-vendor-id" placeholder="Paste vendor ID" />
+                                <label className="block text-sm text-content-muted mb-1">Subprocessor</label>
+                                {/* PR-D — vendor picker replaces the
+                                    legacy "Paste vendor ID" input.
+                                    Fetches the tenant's vendor list
+                                    so users see vendor names, not
+                                    cuids. */}
+                                <EntityPicker
+                                    tenantSlug={params.tenantSlug}
+                                    entityType="VENDOR"
+                                    value={subForm.subprocessorVendorId}
+                                    onChange={(id) =>
+                                        setSubForm((p) => ({ ...p, subprocessorVendorId: id }))
+                                    }
+                                    id="sub-vendor-id"
+                                    testId="vendor-subprocessor-picker"
+                                    placeholder="Select vendor"
+                                    className="w-48"
+                                />
                             </div>
                             <div>
                                 <label className="block text-sm text-content-muted mb-1">Purpose</label>

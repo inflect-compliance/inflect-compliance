@@ -20,12 +20,76 @@ import { loginAndGetTenant, gotoAndVerify, safeGoto, selectComboboxOption } from
 const READER_USER = { email: 'viewer@acme.com', password: 'password123' };
 
 /**
+ * PR-D — seed an Asset via the tenant API so the EntityPicker
+ * in the new-task modal has a real candidate to pick.
+ *
+ * Pre-PR-D the `#link-entity-id` slot accepted any free-text
+ * string, so the E2E hard-coded `'test-asset-id'`. Post-PR-D
+ * the slot is a typeahead picker — users (and tests) MUST pick
+ * a real entity.
+ */
+async function seedAsset(page: Page, slug: string, name: string): Promise<void> {
+    const res = await page.request.post(`/api/t/${slug}/assets`, {
+        headers: { 'Content-Type': 'application/json' },
+        data: {
+            name,
+            type: 'OTHER',
+            classification: 'INTERNAL',
+            criticality: 'MEDIUM',
+        },
+    });
+    if (!res.ok()) {
+        throw new Error(
+            `[issues.spec] seedAsset failed: ${res.status()} ${await res.text()}`,
+        );
+    }
+}
+
+/**
+ * PR-D — seed a Control so the EntityPicker on the task detail
+ * page's "add link" flow has a candidate to pick. Same rationale
+ * as `seedAsset`. Returns the control's cuid — needed because the
+ * legacy `<TaskLinksTable>` renders the raw `entityId` cuid
+ * (not the resolved name), so the post-add assertion must check
+ * the cuid, not the human-friendly name.
+ */
+async function seedControl(
+    page: Page,
+    slug: string,
+    name: string,
+): Promise<string> {
+    const res = await page.request.post(`/api/t/${slug}/controls`, {
+        headers: { 'Content-Type': 'application/json' },
+        data: {
+            name,
+            code: `E2E-${name.slice(0, 8)}`,
+            status: 'NOT_STARTED',
+            isCustom: true,
+        },
+    });
+    if (!res.ok()) {
+        throw new Error(
+            `[issues.spec] seedControl failed: ${res.status()} ${await res.text()}`,
+        );
+    }
+    const body = (await res.json()) as { id: string };
+    return body.id;
+}
+
+/**
  * Create an INCIDENT issue on the isolated tenant and land on its
  * detail page. Returns the issue title for later text-locator use.
+ *
+ * INCIDENT requires an asset or control link — PR-D shipped the
+ * EntityPicker that drives `#link-entity-id`, so the helper
+ * pre-seeds an Asset and then picks it via `selectComboboxOption`.
  */
 async function createIssue(page: Page, slug: string): Promise<string> {
     const uid = `${Date.now().toString(36)}-${randomUUID().slice(0, 8)}`;
     const title = `E2E Issue ${uid}`;
+    const assetName = `E2E Asset ${uid}`;
+    await seedAsset(page, slug, assetName);
+
     await gotoAndVerify(page, `/t/${slug}/tasks/new`, '#task-title-input');
 
     await page.fill('#task-title-input', title);
@@ -34,9 +98,11 @@ async function createIssue(page: Page, slug: string): Promise<string> {
     await selectComboboxOption(page, 'task-severity-select', 'High');
     await selectComboboxOption(page, 'task-priority-select', /^P1\b/);
 
-    // INCIDENT requires an asset or control link.
+    // INCIDENT requires an asset or control link. PR-D replaced the
+    // legacy free-text `#link-entity-id` input with the
+    // EntityPicker; pick the seeded asset by name.
     await selectComboboxOption(page, 'link-entity-type', 'Asset');
-    await page.fill('#link-entity-id', 'test-asset-id');
+    await selectComboboxOption(page, 'link-entity-id', assetName);
     await page.click('#add-link-btn');
     await page.waitForSelector('#pending-links-list', { timeout: 3000 });
 
@@ -61,6 +127,11 @@ test.describe('Issue Management', () => {
     test('create a new issue and see detail', async ({ authedPage, isolatedTenant }) => {
         const uid = Date.now().toString(36);
         const title = `E2E Issue ${uid}`;
+        // PR-D — seed an Asset so the EntityPicker has a candidate
+        // to pick. See `seedAsset` + `createIssue` rationale.
+        const assetName = `E2E Asset ${uid}`;
+        await seedAsset(authedPage, isolatedTenant.tenantSlug, assetName);
+
         await gotoAndVerify(
             authedPage,
             `/t/${isolatedTenant.tenantSlug}/tasks/new`,
@@ -74,7 +145,7 @@ test.describe('Issue Management', () => {
         await selectComboboxOption(authedPage, 'task-priority-select', /^P1\b/);
 
         await selectComboboxOption(authedPage, 'link-entity-type', 'Asset');
-        await authedPage.fill('#link-entity-id', 'test-asset-id');
+        await selectComboboxOption(authedPage, 'link-entity-id', assetName);
         await authedPage.click('#add-link-btn');
         await authedPage.waitForSelector('#pending-links-list', { timeout: 3000 });
 
@@ -143,22 +214,45 @@ test.describe('Issue Management', () => {
     test('add link to issue', async ({ authedPage, isolatedTenant }) => {
         await createIssue(authedPage, isolatedTenant.tenantSlug);
 
+        // PR-D — seed a Control so the EntityPicker on the task
+        // detail-page add-link form has a candidate to pick.
+        // Capture the cuid so the post-add assertion can check
+        // it directly (TaskLinksTable shows entityId, not name).
+        const uid = `${Date.now().toString(36)}-${randomUUID().slice(0, 8)}`;
+        const controlName = `E2E Control ${uid}`;
+        const controlId = await seedControl(
+            authedPage,
+            isolatedTenant.tenantSlug,
+            controlName,
+        );
+
         await authedPage.click('#tab-links');
         await authedPage.waitForLoadState('networkidle').catch(() => {});
 
         await authedPage.click('#add-link-btn');
         await authedPage.waitForSelector('#link-entity-type', { timeout: 5000 });
         await selectComboboxOption(authedPage, 'link-entity-type', 'CONTROL');
-        await authedPage.fill('#link-entity-id', 'test-control-id');
+        // PR-D — pick the seeded control via the EntityPicker.
+        // The picker renders controls as `${code}: ${name}`, so
+        // a substring regex against the name suffix is the right
+        // match shape (the seedControl helper sets code = `E2E-...`).
+        await selectComboboxOption(
+            authedPage,
+            'link-entity-id',
+            new RegExp(controlName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+        );
         await authedPage.click('#submit-link-btn');
         await authedPage.waitForLoadState('networkidle').catch(() => {});
 
         await expect(
             authedPage.locator('[data-testid="task-links-table"]'),
         ).toContainText('CONTROL', { timeout: 5000 });
+        // PR-D — TaskLinksTable renders the raw `entityId` (cuid),
+        // not the resolved entity name; assert against the seeded
+        // control's id rather than its display name.
         await expect(
             authedPage.locator('[data-testid="task-links-table"]'),
-        ).toContainText('test-control-id');
+        ).toContainText(controlId);
     });
 
     test('add comment to issue', async ({ authedPage, isolatedTenant }) => {

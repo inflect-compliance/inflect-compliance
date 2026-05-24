@@ -93,8 +93,14 @@ const BASELINE_PLUS_LITERAL_SITES = new Set<string>([
     // baseline honest.
     'src/app/t/[tenantSlug]/(app)/policies/[policyId]/page.tsx:452',
     'src/app/t/[tenantSlug]/(app)/policies/[policyId]/page.tsx:753',
-    'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:475',
-    'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:503',
+    // PR-D shifted these legacy `'+ Link'` / `'+ Comment'` string
+    // literals (the ones the regex actually catches — JSX text
+    // doesn't match because it has whitespace between `>` and `+`)
+    // by 20 lines when the EntityPicker import block + the new JSX
+    // expanded the task-link form. Line numbers refreshed; the
+    // literals themselves are unchanged staged debt.
+    'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:495',
+    'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:523',
     'src/app/t/[tenantSlug]/(app)/tests/runs/[runId]/page.tsx:399',
     'src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx:369',
     'src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx:393',

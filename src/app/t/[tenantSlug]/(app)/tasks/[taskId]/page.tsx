@@ -8,6 +8,10 @@ import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
 import { DataTable, createColumns } from '@/components/ui/table';
+import {
+    EntityPicker,
+    type EntityPickerKind,
+} from '@/components/ui/entity-picker';
 import { useToastWithUndo } from '@/components/ui/hooks';
 import { SkeletonLine } from '@/components/ui/skeleton';
 import { InlineEmptyState } from '@/components/ui/inline-empty-state';
@@ -468,7 +472,23 @@ export default function TaskDetailPage() {
                         <form onSubmit={addLink} className={cn(cardVariants({ density: 'compact' }), 'space-y-compact')}>
                             <div className="grid grid-cols-3 gap-compact">
                                 <Combobox hideSearch id="link-entity-type" selected={ENTITY_TYPE_CB_OPTIONS.find(o => o.value === linkEntityType) ?? null} setSelected={(opt) => setLinkEntityType(opt?.value ?? linkEntityType)} options={ENTITY_TYPE_CB_OPTIONS} matchTriggerWidth />
-                                <input type="text" className="input" placeholder="Entity ID *" value={linkEntityId} onChange={e => setLinkEntityId(e.target.value)} required id="link-entity-id" />
+                                {/* PR-D — entity picker replaces the
+                                    legacy "Paste ID" `<input>`. The
+                                    type Combobox to the left drives
+                                    which candidate set the picker
+                                    fetches; selecting from the list
+                                    writes the cuid into linkEntityId
+                                    so the existing addLink handler
+                                    is unchanged. */}
+                                <EntityPicker
+                                    tenantSlug={tenantSlug}
+                                    entityType={linkEntityType as EntityPickerKind}
+                                    value={linkEntityId}
+                                    onChange={setLinkEntityId}
+                                    id="link-entity-id"
+                                    testId="task-link-entity-picker"
+                                    placeholder="Select entity"
+                                />
                                 <Combobox hideSearch id="link-relation" selected={RELATION_CB_OPTIONS.find(o => o.value === linkRelation) ?? null} setSelected={(opt) => setLinkRelation(opt?.value ?? linkRelation)} options={RELATION_CB_OPTIONS} matchTriggerWidth />
                             </div>
                             <Button type="submit" variant="primary" disabled={savingLink} id="submit-link-btn">

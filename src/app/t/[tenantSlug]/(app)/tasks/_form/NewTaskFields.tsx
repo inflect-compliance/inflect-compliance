@@ -21,6 +21,10 @@ import {
     toYMD,
 } from '@/components/ui/date-picker/date-utils';
 import { UserCombobox } from '@/components/ui/user-combobox';
+import {
+    EntityPicker,
+    type EntityPickerKind,
+} from '@/components/ui/entity-picker';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import type { NewTaskFormFields, NewTaskFormReturn } from './useNewTaskForm';
@@ -295,14 +299,21 @@ export function NewTaskFields({
                             caret
                         />
                     </FormField>
-                    <FormField label="Entity ID" className="flex-1">
-                        <Input
-                            id="link-entity-id"
-                            type="text"
-                            className="text-sm"
-                            placeholder="Paste ID"
+                    <FormField label="Entity" className="flex-1">
+                        {/* PR-D — entity picker replaces the legacy
+                            "Paste ID" Input. Driven by the sibling
+                            entity-type Combobox above; the picker
+                            writes the cuid into `form.linkEntityId`
+                            so the addPendingLink handler stays
+                            unchanged. */}
+                        <EntityPicker
+                            tenantSlug={tenantSlug}
+                            entityType={form.linkEntityType as EntityPickerKind}
                             value={form.linkEntityId}
-                            onChange={(e) => form.setLinkEntityId(e.target.value)}
+                            onChange={form.setLinkEntityId}
+                            id="link-entity-id"
+                            testId="new-task-link-entity-picker"
+                            placeholder="Select entity"
                         />
                     </FormField>
                     <Button
