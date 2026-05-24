@@ -427,37 +427,11 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                             )}
                         </div>
                     )}
-                    <div className={cn(cardVariants({ density: 'none' }), 'overflow-x-auto')}>
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="border-b border-border-default text-left text-xs uppercase text-content-muted">
-                                    <th className="p-3">Template</th>
-                                    <th className="p-3">Status</th>
-                                    <th className="p-3">Score</th>
-                                    <th className="p-3">Risk Rating</th>
-                                    <th className="p-3">Started</th>
-                                    <th className="p-3">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {assessments.map((a: any) => (
-                                    <tr key={a.id} className="border-b border-border-subtle">
-                                        <td className="p-3">{a.template?.name || '—'}</td>
-                                        <td className="p-3"><StatusBadge variant={ASSESSMENT_STATUS_BADGE[a.status]}>{a.status}</StatusBadge></td>
-                                        <td className="p-3">{a.score != null ? a.score.toFixed(1) : '—'}</td>
-                                        <td className="p-3">{a.riskRating ? <StatusBadge variant={CRIT_BADGE[a.riskRating]}>{a.riskRating}</StatusBadge> : '—'}</td>
-                                        <td className="p-3 text-content-muted">{formatDate(a.startedAt)}</td>
-                                        <td className="p-3">
-                                            <Link href={tenantHref(`/vendors/${params.vendorId}/assessment/${a.id}`)} className="text-content-info hover:underline text-xs" id={`open-assessment-${a.id}`}>
-                                                Open →
-                                            </Link>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {assessments.length === 0 && <tr><td colSpan={6} className="text-center text-content-subtle py-8">No assessments</td></tr>}
-                            </tbody>
-                        </table>
-                    </div>
+                    <VendorAssessmentsTable
+                        assessments={assessments}
+                        vendorId={params.vendorId}
+                        tenantHref={tenantHref}
+                    />
                 </div>
             )}
 
@@ -467,7 +441,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                     {canWrite && (
                         <div className="flex justify-end">
                             <Button variant="primary" onClick={() => setShowLinkForm(!showLinkForm)} id="add-link-btn">
-                                {showLinkForm ? 'Cancel' : '+ Link Entity'}
+                                {showLinkForm ? 'Cancel' : 'Link Entity'}
                             </Button>
                         </div>
                     )}
@@ -588,31 +562,19 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                             }}>Add</Button>
                         </div>
                     )}
-                    <div className={cn(cardVariants({ density: 'none' }), 'overflow-x-auto')}>
-                        <table className="w-full text-sm">
-                            <thead><tr className="border-b border-border-default text-left text-xs uppercase text-content-muted">
-                                <th className="p-3">Subprocessor</th><th className="p-3">Country</th>
-                                <th className="p-3">Criticality</th><th className="p-3">Risk</th>
-                                <th className="p-3">Purpose</th>
-                                {canWrite && <th className="p-3"></th>}
-                            </tr></thead>
-                            <tbody>
-                                {subs.map((s: any) => (
-                                    <tr key={s.id} className="border-b border-border-subtle">
-                                        <td className="p-3 font-medium">{s.subprocessor?.name || s.subprocessorVendorId}</td>
-                                        <td className="p-3 text-content-muted">{s.subprocessor?.country || s.country || '—'}</td>
-                                        <td className="p-3"><StatusBadge variant={CRIT_BADGE[s.subprocessor?.criticality] || 'neutral'}>{s.subprocessor?.criticality || '—'}</StatusBadge></td>
-                                        <td className="p-3">{s.subprocessor?.inherentRisk ? <StatusBadge variant={CRIT_BADGE[s.subprocessor.inherentRisk]}>{s.subprocessor.inherentRisk}</StatusBadge> : '—'}</td>
-                                        <td className="p-3 text-content-muted text-xs">{s.purpose || '—'}</td>
-                                        {canWrite && <td className="p-3"><button className="text-content-error text-xs" onClick={async () => {
-                                            await fetch(apiUrl(`/vendors/${params.vendorId}/subprocessors?relationId=${s.id}`), { method: 'DELETE' }); fetchSubs();
-                                        }}>Remove</button></td>}
-                                    </tr>
-                                ))}
-                                {subs.length === 0 && <tr><td colSpan={6} className="text-center text-content-subtle py-8">No subprocessors</td></tr>}
-                            </tbody>
-                        </table>
-                    </div>
+                    <VendorSubprocessorsTable
+                        subs={subs}
+                        canWrite={canWrite}
+                        onRemove={async (relationId: string) => {
+                            await fetch(
+                                apiUrl(
+                                    `/vendors/${params.vendorId}/subprocessors?relationId=${relationId}`,
+                                ),
+                                { method: 'DELETE' },
+                            );
+                            fetchSubs();
+                        }}
+                    />
                 </div>
             )}
         </EntityDetailLayout>
@@ -720,6 +682,188 @@ function VendorDocsTable({
             emptyState="No documents"
             resourceName={(p) => (p ? 'documents' : 'document')}
             data-testid="vendor-docs-table"
+        />
+    );
+}
+
+// ─── Assessments sub-table (R10-PR3 follow-up) ──────────────────────
+// Inline assessment list: Template / Status / Score / Risk / Started
+// + open-link action. The "Open →" cell stays a plain Link (no
+// per-row write affordance), so this is the cleanest of the four
+// migrations — purely a primitive swap, no behaviour change.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function VendorAssessmentsTable({ assessments, vendorId, tenantHref }: { assessments: any[]; vendorId: string; tenantHref: (path: string) => string }) {
+    const columns = useMemo(
+        () =>
+            createColumns<any>([   // eslint-disable-line @typescript-eslint/no-explicit-any
+                {
+                    id: 'template',
+                    header: 'Template',
+                    cell: ({ row }) => row.original.template?.name || '—',
+                },
+                {
+                    id: 'status',
+                    header: 'Status',
+                    cell: ({ row }) => (
+                        <StatusBadge variant={ASSESSMENT_STATUS_BADGE[row.original.status]}>
+                            {row.original.status}
+                        </StatusBadge>
+                    ),
+                },
+                {
+                    id: 'score',
+                    header: 'Score',
+                    cell: ({ row }) =>
+                        row.original.score != null ? row.original.score.toFixed(1) : '—',
+                },
+                {
+                    id: 'risk',
+                    header: 'Risk Rating',
+                    cell: ({ row }) =>
+                        row.original.riskRating ? (
+                            <StatusBadge variant={CRIT_BADGE[row.original.riskRating]}>
+                                {row.original.riskRating}
+                            </StatusBadge>
+                        ) : (
+                            '—'
+                        ),
+                },
+                {
+                    id: 'started',
+                    header: 'Started',
+                    cell: ({ row }) => (
+                        <span className="text-content-muted">
+                            {formatDate(row.original.startedAt)}
+                        </span>
+                    ),
+                },
+                {
+                    id: 'action',
+                    header: 'Action',
+                    cell: ({ row }) => (
+                        <Link
+                            href={tenantHref(`/vendors/${vendorId}/assessment/${row.original.id}`)}
+                            className="text-content-info hover:underline text-xs"
+                            id={`open-assessment-${row.original.id}`}
+                        >
+                            Open →
+                        </Link>
+                    ),
+                },
+            ]),
+        [vendorId, tenantHref],
+    );
+    return (
+        <DataTable
+            data={assessments}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            getRowId={(a: any) => a.id}
+            columns={columns}
+            selectionEnabled={false}
+            emptyState={
+                <InlineEmptyState
+                    title="No assessments"
+                    description="Start a new questionnaire to assess this vendor."
+                />
+            }
+        />
+    );
+}
+
+// ─── Subprocessors sub-table (R10-PR3 follow-up) ────────────────────
+// Tracks the vendor's nested subprocessors with per-row Remove
+// (canWrite-gated). Same shape as the R11-PR8 task-links template:
+// Actions column produced via the gated-spread idiom.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function VendorSubprocessorsTable({ subs, canWrite, onRemove }: { subs: any[]; canWrite: boolean; onRemove: (relationId: string) => void | Promise<void> }) {
+    const columns = useMemo(
+        () =>
+            createColumns<any>([   // eslint-disable-line @typescript-eslint/no-explicit-any
+                {
+                    id: 'name',
+                    header: 'Subprocessor',
+                    cell: ({ row }) => (
+                        <span className="font-medium">
+                            {row.original.subprocessor?.name || row.original.subprocessorVendorId}
+                        </span>
+                    ),
+                },
+                {
+                    id: 'country',
+                    header: 'Country',
+                    cell: ({ row }) => (
+                        <span className="text-content-muted">
+                            {row.original.subprocessor?.country || row.original.country || '—'}
+                        </span>
+                    ),
+                },
+                {
+                    id: 'crit',
+                    header: 'Criticality',
+                    cell: ({ row }) => (
+                        <StatusBadge
+                            variant={
+                                CRIT_BADGE[row.original.subprocessor?.criticality] || 'neutral'
+                            }
+                        >
+                            {row.original.subprocessor?.criticality || '—'}
+                        </StatusBadge>
+                    ),
+                },
+                {
+                    id: 'risk',
+                    header: 'Risk',
+                    cell: ({ row }) =>
+                        row.original.subprocessor?.inherentRisk ? (
+                            <StatusBadge variant={CRIT_BADGE[row.original.subprocessor.inherentRisk]}>
+                                {row.original.subprocessor.inherentRisk}
+                            </StatusBadge>
+                        ) : (
+                            '—'
+                        ),
+                },
+                {
+                    id: 'purpose',
+                    header: 'Purpose',
+                    cell: ({ row }) => (
+                        <span className="text-content-muted text-xs">
+                            {row.original.purpose || '—'}
+                        </span>
+                    ),
+                },
+                ...(canWrite
+                    ? [
+                          {
+                              id: 'actions',
+                              header: '',
+                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                              cell: ({ row }: { row: { original: any } }) => (
+                                  <button
+                                      className="text-content-error text-xs"
+                                      onClick={() => onRemove(row.original.id)}
+                                  >
+                                      Remove
+                                  </button>
+                              ),
+                          },
+                      ]
+                    : []),
+            ]),
+        [canWrite, onRemove],
+    );
+    return (
+        <DataTable
+            data={subs}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            getRowId={(s: any) => s.id}
+            columns={columns}
+            selectionEnabled={false}
+            emptyState={
+                <InlineEmptyState
+                    title="No subprocessors"
+                    description="Add a subprocessor to track downstream data-processing relationships."
+                />
+            }
         />
     );
 }

@@ -66,31 +66,54 @@ describe('Control detail query — evidence completeness', () => {
 // ─── Structural: frontend evidence tab renders both sources ───
 
 describe('Control evidence tab — unified display', () => {
-    const pagePath = require('path').resolve(
+    // R10-PR3 follow-up — the evidence-tab rendering moved from
+    // `page.tsx` into the extracted `_tabs/EvidenceSubTable.tsx`
+    // (raw `<table>` → `<DataTable>` migration; the inline helper
+    // would have blown the page-size ratchet, so it lives in its
+    // own file). The structural assertions still hold but they now
+    // need to match in EITHER location. We concatenate both file
+    // contents and search the joined string, so a future re-shuffle
+    // (e.g. inlining the helper back during a tab refactor) doesn't
+    // re-break the test.
+    const path = require('path');
+    const fs = require('fs');
+    const PAGE_PATH = path.resolve(
         __dirname, '../../src/app/t/[tenantSlug]/(app)/controls/[controlId]/page.tsx'
     );
-    const pageContent = require('fs').readFileSync(pagePath, 'utf-8');
+    const SUBTABLE_PATH = path.resolve(
+        __dirname, '../../src/app/t/[tenantSlug]/(app)/controls/[controlId]/_tabs/EvidenceSubTable.tsx'
+    );
+    const pageContent = fs.readFileSync(PAGE_PATH, 'utf-8');
+    const subtableContent = fs.existsSync(SUBTABLE_PATH)
+        ? fs.readFileSync(SUBTABLE_PATH, 'utf-8')
+        : '';
+    const evidenceTabContent = pageContent + '\n' + subtableContent;
 
     // #102 item 1 — the Evidence tab is tab-lazy: it fetches its own
     // `{ links, evidence }` payload via `evidenceSWR` instead of
     // reading the arrays off the eager page-data control.
     test('evidence tab fetches its links + evidence payload', () => {
-        expect(pageContent).toContain('evidenceSWR.data?.links');
-        expect(pageContent).toContain('evidenceSWR.data?.evidence');
+        // The SWR fetch lives in page.tsx (page-level state); the
+        // sub-table receives it via `data=`.
+        expect(pageContent).toContain('evidenceSWR.data');
+        // The unified rendering (`data?.links` + `data?.evidence`)
+        // lives in the extracted EvidenceSubTable.
+        expect(evidenceTabContent).toMatch(/data\?\.links/);
+        expect(evidenceTabContent).toMatch(/data\?\.evidence/);
     });
 
     test('evidence tab renders direct evidence records', () => {
-        expect(pageContent).toContain('directEvidence');
+        expect(evidenceTabContent).toContain('directEvidence');
     });
 
     test('evidence tab deduplicates by fileRecordId', () => {
-        expect(pageContent).toContain('linkedFileIds');
-        expect(pageContent).toContain('fileRecordId');
+        expect(evidenceTabContent).toContain('linkedFileIds');
+        expect(evidenceTabContent).toContain('fileRecordId');
     });
 
     test('evidence tab count includes both sources', () => {
         // The Evidence badge sums the link + direct-evidence counts
-        // off the page-data `_count`.
+        // off the page-data `_count` — still in page.tsx.
         expect(pageContent).toMatch(/_count\?\.evidenceLinks[\s\S]*?_count\?\.evidence/);
     });
 });

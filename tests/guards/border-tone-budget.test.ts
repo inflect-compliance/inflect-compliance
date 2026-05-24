@@ -89,10 +89,16 @@ const ROOT = path.resolve(__dirname, '../..');
  * trigger which composes a <Button>), so three form controls read
  * with one focus + rest vocabulary.
  *
+ * R10-PR3 follow-up (2026-05-24) lowered the budget from 117 → 115
+ * by migrating four raw `<table>` sub-tables to `<DataTable>`. The
+ * removed `<thead><tr className="border-b border-border-default">`
+ * markup is replaced by DataTable's tokenised chrome which uses
+ * `border-border-subtle` as the default separator tone.
+ *
  * Future PRs continue to ratchet down toward the rough 4:1
  * subtle-to-default target ratio.
  */
-const BORDER_DEFAULT_BUDGET = 117;
+const BORDER_DEFAULT_BUDGET = 115;
 
 function countMatches(re: RegExp): number {
     let total = 0;

@@ -15,6 +15,7 @@ import { Heading, textLinkVariants } from '@/components/ui/typography';
 import { CardHeader } from '@/components/ui/card-header';
 import { EditControlModal } from './_modals/EditControlModal';
 import { ControlMappingsTab } from './_tabs/ControlMappingsTab';
+import { EvidenceSubTable } from './_tabs/EvidenceSubTable';
 import { MetaStrip } from '@/components/ui/meta-strip';
 import { CONTROL_STATUS_VARIANT } from '@/app-layer/domain/entity-status-mapping';
 // Inline pencil icon to avoid lucide-react barrel import issue with Next.js 14
@@ -1257,76 +1258,20 @@ export default function ControlDetailPage() {
                         </form>
                     )}
                     <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
-                        {evidenceSWR.isLoading && !evidenceSWR.data ? (
-                            <div className="p-6">
-                                <SkeletonCard lines={3} />
-                            </div>
-                        ) : evidenceSWR.error ? (
+                        {evidenceSWR.error ? (
                             <InlineEmptyState
                                 title="Couldn't load evidence"
                                 description="Something went wrong fetching this control's evidence. Reload the page to try again."
                             />
-                        ) : (() => {
-                            const links = evidenceSWR.data?.links ?? [];
-                            const evidenceRows = evidenceSWR.data?.evidence ?? [];
-                            const linkedFileIds = new Set(links.map((l) => l.fileId).filter(Boolean));
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            const directEvidence = evidenceRows.filter((e: any) => !e.fileRecordId || !linkedFileIds.has(e.fileRecordId));
-                            const hasLinks = links.length > 0;
-                            const hasEvidence = directEvidence.length > 0;
-                            if (!hasLinks && !hasEvidence) {
-                                return (
-                                    <div id="no-evidence">
-                                        <InlineEmptyState
-                                            title="No evidence linked"
-                                            description="Link existing evidence or upload new files to satisfy this control."
-                                        />
-                                    </div>
-                                );
-                            }
-                            return (
-                                <table className="data-table" id="evidence-table">
-                                    <thead>
-                                        <tr><th>Type</th><th>Title / URL</th><th>Status</th><th>Date</th>{permissions.canWrite && <th>Actions</th>}</tr>
-                                    </thead>
-                                    <tbody>
-                                        {links.map((el) => (
-                                            <tr key={`link-${el.id}`}>
-                                                <td><StatusBadge variant={el.kind === 'FILE' ? 'success' : 'info'}>{el.kind}</StatusBadge></td>
-                                                <td className="text-sm">
-                                                    {el.url ? <a href={el.url} target="_blank" rel="noopener noreferrer" className={textLinkVariants({ tone: 'link' })}>{el.url}</a> : (el.note || '—')}
-                                                </td>
-                                                <td className="text-xs text-content-muted">{el.createdBy?.name || '—'}</td>
-                                                <td className="text-xs text-content-muted">{el.createdAt ? formatDate(el.createdAt) : '—'}</td>
-                                                {permissions.canWrite && (
-                                                    <td>
-                                                        <button className="text-content-error text-xs hover:text-content-error" onClick={() => unlinkEvidence(el.id)} id={`unlink-${el.id}`}>
-                                                            × Remove
-                                                        </button>
-                                                    </td>
-                                                )}
-                                            </tr>
-                                        ))}
-                                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                        {directEvidence.map((ev: any) => (
-                                            <tr key={`ev-${ev.id}`}>
-                                                <td><StatusBadge variant={ev.type === 'FILE' ? 'success' : ev.type === 'TEXT' ? 'neutral' : 'info'}>{ev.type}</StatusBadge></td>
-                                                <td className="text-sm">
-                                                    <Link href={tenantHref(`/evidence`)} className={textLinkVariants({ tone: 'link' })}>{ev.title}</Link>
-                                                </td>
-                                                <td>
-                                                    <StatusBadge variant={ev.status === 'APPROVED' ? 'success' : ev.status === 'REJECTED' ? 'error' : ev.status === 'SUBMITTED' ? 'info' : 'neutral'}>
-                                                        {ev.status}
-                                                    </StatusBadge>
-                                                </td>
-                                                <td className="text-xs text-content-muted">{ev.createdAt ? formatDate(ev.createdAt) : '—'}</td>
-                                                {permissions.canWrite && <td />}
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            );
-                        })()}
+                        ) : (
+                            <EvidenceSubTable
+                                data={evidenceSWR.data}
+                                loading={evidenceSWR.isLoading && !evidenceSWR.data}
+                                canWrite={permissions.canWrite}
+                                onUnlink={unlinkEvidence}
+                                tenantHref={tenantHref}
+                            />
+                        )}
                     </div>
                 </div>
             )}
@@ -1400,3 +1345,8 @@ export default function ControlDetailPage() {
         </EntityDetailLayout>
     );
 }
+
+// Evidence sub-table is extracted to `_tabs/EvidenceSubTable.tsx`
+// per the page-size ratchet (R10-PR3 follow-up).
+
+// Evidence sub-table extracted; see _tabs/EvidenceSubTable.tsx.

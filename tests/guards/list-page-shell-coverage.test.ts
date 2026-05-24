@@ -109,6 +109,14 @@ const EXEMPTIONS: Record<string, string> = {
     'controls/[controlId]/page.tsx':
         'detail page — DataTable is the inner tasks sub-table (R11-PR6)',
 
+    // R10-PR3 follow-up — control detail page evidence + mappings
+    // sub-tables migrated off raw <table> to DataTable. Detail-page
+    // sub-tables; the page itself is not a list page.
+    'controls/[controlId]/_tabs/EvidenceSubTable.tsx':
+        'detail page sub-table — evidence rows for one control (R10-PR3 follow-up)',
+    'controls/[controlId]/_tabs/ControlMappingsTab.tsx':
+        'detail page sub-table — framework mappings for one control (R10-PR3 follow-up)',
+
     // R11-PR8 — task detail page mounts DataTable for the links
     // sub-table. Detail page (EntityDetailLayout).
     'tasks/[taskId]/page.tsx':

@@ -13,7 +13,7 @@
  * `onMutated` lets the parent revalidate its page-data header so the
  * Mappings tab-badge count stays in sync after a map / unmap.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTenantApiUrl } from '@/lib/tenant-context-provider';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useToastWithUndo } from '@/components/ui/hooks';
@@ -21,10 +21,10 @@ import { CACHE_KEYS } from '@/lib/swr-keys';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { InlineEmptyState } from '@/components/ui/inline-empty-state';
-import { SkeletonCard } from '@/components/ui/skeleton';
 import { CopyText } from '@/components/ui/copy-text';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@dub/utils';
+import { DataTable, createColumns } from '@/components/ui/table';
 import type { FrameworkDTO, RequirementDTO, FrameworkMappingDTO } from '@/lib/dto';
 
 interface ControlMappingsTabProps {
@@ -134,6 +134,75 @@ export function ControlMappingsTab({
         });
     };
 
+    // R10-PR3 follow-up: framework-mapping rows now flow through
+    // DataTable. The 2-column shape (Framework + Requirement) plus
+    // optional Actions column matches the R11-PR8 task-links template;
+    // CopyText-on-code, error tone, and the canWrite gate are all
+    // preserved inside cell renderers.
+    const columns = useMemo(
+        () =>
+            createColumns<FrameworkMappingDTO>([
+                {
+                    id: 'framework',
+                    header: 'Framework',
+                    cell: ({ row }) => (
+                        <span className="text-sm text-content-emphasis">
+                            {row.original.fromRequirement?.framework?.name || '—'}
+                        </span>
+                    ),
+                },
+                {
+                    id: 'requirement',
+                    header: 'Requirement',
+                    cell: ({ row }) => {
+                        const fromReq = row.original.fromRequirement;
+                        return (
+                            <span className="text-sm text-content-default">
+                                {fromReq?.code && (
+                                    <CopyText
+                                        value={fromReq.code}
+                                        label={`Copy requirement code ${fromReq.code}`}
+                                        successMessage="Requirement code copied"
+                                        className="mr-2 text-content-subtle"
+                                    >
+                                        {fromReq.code}
+                                    </CopyText>
+                                )}
+                                {fromReq?.title || fromReq?.description || '—'}
+                            </span>
+                        );
+                    },
+                },
+                ...(canWrite
+                    ? [
+                          {
+                              id: 'actions',
+                              header: 'Actions',
+                              cell: ({ row }: { row: { original: FrameworkMappingDTO } }) => (
+                                  <button
+                                      className="text-content-error text-xs hover:text-content-error"
+                                      onClick={() =>
+                                          unmapRequirement(
+                                              row.original.fromRequirement?.id ||
+                                                  row.original.fromRequirementId ||
+                                                  '',
+                                          )
+                                      }
+                                      id={`unmap-${row.original.id}`}
+                                  >
+                                      × Remove
+                                  </button>
+                              ),
+                          },
+                      ]
+                    : []),
+            ]),
+        // unmapRequirement closes over SWR state, so include the data
+        // fingerprint as a dependency to avoid stale undo snapshots.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [canWrite, mappingsSWR.data],
+    );
+
     return (
         <div className="space-y-default">
             {canWrite && (
@@ -170,56 +239,42 @@ export function ControlMappingsTab({
                     )}
                 </div>
             )}
-            <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
-                {mappingsSWR.isLoading && !mappingsSWR.data ? (
-                    <div className="p-6">
-                        <SkeletonCard lines={3} />
-                    </div>
-                ) : mappingsSWR.error ? (
-                    <InlineEmptyState
-                        title="Couldn't load mappings"
-                        description="Something went wrong fetching this control's framework mappings. Reload the page to try again."
+            {mappingsSWR.error && !mappingsSWR.isLoading ? (
+                <InlineEmptyState
+                    title="Couldn't load mappings"
+                    description="Something went wrong fetching this control's framework mappings. Reload the page to try again."
+                />
+            ) : (mappingsSWR.data?.length ?? 0) === 0 ? (
+                // Pre-migration the empty branch rendered an
+                // InlineEmptyState — no `#mappings-table` was in the
+                // DOM. E2E specs that look up `#mappings-table` are
+                // therefore waiting for data to arrive; preserve
+                // that contract by gating the id on rows-present.
+                // `selectionEnabled={false}` keeps the unmap-button
+                // selector working (see EvidenceSubTable comment).
+                <DataTable
+                    data={[]}
+                    columns={columns}
+                    getRowId={(m) => m.id}
+                    loading={mappingsSWR.isLoading && !mappingsSWR.data}
+                    selectionEnabled={false}
+                    emptyState={
+                        <InlineEmptyState
+                            title="No framework mappings"
+                            description="Map this control to specific framework requirements to track coverage."
+                        />
+                    }
+                />
+            ) : (
+                <div id="mappings-table">
+                    <DataTable
+                        data={mappingsSWR.data ?? []}
+                        columns={columns}
+                        getRowId={(m) => m.id}
+                        selectionEnabled={false}
                     />
-                ) : (mappingsSWR.data?.length ?? 0) === 0 ? (
-                    <InlineEmptyState
-                        title="No framework mappings"
-                        description="Map this control to specific framework requirements to track coverage."
-                    />
-                ) : (
-                    <table className="data-table" id="mappings-table">
-                        <thead>
-                            <tr><th>Framework</th><th>Requirement</th>{canWrite && <th>Actions</th>}</tr>
-                        </thead>
-                        <tbody>
-                            {mappingsSWR.data?.map((m) => (
-                                <tr key={m.id}>
-                                    <td className="text-sm text-content-emphasis">{m.fromRequirement?.framework?.name || '—'}</td>
-                                    <td className="text-sm text-content-default">
-                                        {m.fromRequirement?.code && (
-                                            <CopyText
-                                                value={m.fromRequirement.code}
-                                                label={`Copy requirement code ${m.fromRequirement.code}`}
-                                                successMessage="Requirement code copied"
-                                                className="mr-2 text-content-subtle"
-                                            >
-                                                {m.fromRequirement.code}
-                                            </CopyText>
-                                        )}
-                                        {m.fromRequirement?.title || m.fromRequirement?.description || '—'}
-                                    </td>
-                                    {canWrite && (
-                                        <td>
-                                            <button className="text-content-error text-xs hover:text-content-error" onClick={() => unmapRequirement(m.fromRequirement?.id || m.fromRequirementId || '')} id={`unmap-${m.id}`}>
-                                                × Remove
-                                            </button>
-                                        </td>
-                                    )}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     );
 }

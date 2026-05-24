@@ -64,20 +64,11 @@ const EXEMPTIONS: Record<string, string> = {
         '(a) cross-tab matrix — Resource × Action editor',
 
     // ─── (b) Detail-page sub-tables ──────────────────────────────────
-    // Control detail page still has 2 raw <table>s (evidence,
-    // mappings) after R11-PR6 migrated the tasks sub-table to
-    // DataTable. The remaining two are tightly coupled to per-row
-    // inline-edit / delete actions specific to those tabs; future
-    // R11 follow-up may convert them.
-    'controls/[controlId]/page.tsx':
-        '(b) detail-page sub-table (evidence) — tasks migrated R11-PR6, evidence pending',
-    'controls/[controlId]/_tabs/ControlMappingsTab.tsx':
-        '(b) detail-page sub-table (mappings) — extracted from page.tsx in #102 item 1, migration pending',
-
-    // Vendor detail page — documents migrated to DataTable in
-    // R11-PR7. Assessments + risk sub-tables remain as exemptions.
-    'vendors/[vendorId]/page.tsx':
-        '(b) detail-page sub-tables (assessments / risks) — documents migrated R11-PR7',
+    // (Previously exempt: controls/page.tsx evidence,
+    // ControlMappingsTab mappings, vendors/page.tsx assessments +
+    // subprocessors. All migrated to <DataTable> in the R10-PR3
+    // follow-up PR — no longer exempt; the file references in the
+    // sibling test would now offend if not removed.)
 
     // ─── (c) Print / PDF-export layouts ──────────────────────────────
     // SoA (Statement of Applicability) report — interactive UI
