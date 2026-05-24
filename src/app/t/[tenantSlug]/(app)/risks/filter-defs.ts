@@ -6,7 +6,7 @@
  * (`"min|max"`) that splits into `scoreMin` / `scoreMax` on the API boundary.
  *
  *   q            → free-text search (`useFilterContext`'s search slot)
- *   status       → RiskStatus (OPEN | MITIGATING | ACCEPTED | CLOSED)
+ *   status       → RiskStatus (OPEN | MITIGATING | MITIGATED | ACCEPTED | CLOSED)
  *   category     → free-form string (options derived from loaded rows)
  *   ownerUserId  → entity-reference (options derived from loaded rows)
  *   score        → range token; server consumes scoreMin + scoreMax
@@ -32,6 +32,12 @@ import { CircleDot, Tag, Activity, UserCircle2 } from 'lucide-react';
 export const RISK_STATUS_LABELS = {
     OPEN: 'Open',
     MITIGATING: 'Mitigating',
+    // Audit Coherence S1 — distinct from MITIGATING (active control
+    // implementation in progress) and ACCEPTED (residual explicitly
+    // signed-off). MITIGATED means the planned controls are in place
+    // and the residual score has been computed but no explicit
+    // acceptance call has been made yet.
+    MITIGATED: 'Mitigated',
     ACCEPTED: 'Accepted',
     CLOSED: 'Closed',
 } as const;

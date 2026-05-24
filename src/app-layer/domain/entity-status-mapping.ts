@@ -25,6 +25,10 @@ import type { StatusBadgeVariant } from '@/components/ui/status-badge';
 export const RISK_STATUS_VARIANT: Record<string, StatusBadgeVariant> = {
     OPEN: 'warning',
     MITIGATING: 'info',
+    // Audit Coherence S1 — controls in place, residual score
+    // computed, awaiting explicit acceptance call. Distinct from
+    // MITIGATING (work in progress) and ACCEPTED (signed off).
+    MITIGATED: 'success',
     ACCEPTED: 'neutral',
     CLOSED: 'success',
 };

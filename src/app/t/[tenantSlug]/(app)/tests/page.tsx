@@ -46,6 +46,15 @@ const FREQ_LABELS: Record<string, string> = {
 const RESULT_BADGE: Record<string, StatusBadgeVariant> = {
     PASS: 'success', FAIL: 'error', INCONCLUSIVE: 'warning',
 };
+// Audit Coherence S2 — TestPlanStatus values: ACTIVE / PAUSED /
+// ARCHIVED. ARCHIVED is the terminal "retired control test" state
+// (preserved for historical audit, no new runs). Pre-S2 the UI
+// only knew about ACTIVE / PAUSED.
+const PLAN_STATUS_BADGE: Record<string, StatusBadgeVariant> = {
+    ACTIVE: 'success',
+    PAUSED: 'warning',
+    ARCHIVED: 'neutral',
+};
 
 export default function TestsRollupPage() {
     const apiUrl = useTenantApiUrl();
@@ -160,7 +169,7 @@ export default function TestsRollupPage() {
                                     {row.original.name}
                                 </Link>
                                 <div className="flex items-center gap-1 mt-0.5">
-                                    <StatusBadge variant={row.original.status === 'ACTIVE' ? 'success' : 'warning'} size="sm">
+                                    <StatusBadge variant={PLAN_STATUS_BADGE[row.original.status] ?? 'neutral'} size="sm">
                                         {row.original.status}
                                     </StatusBadge>
                                 </div>

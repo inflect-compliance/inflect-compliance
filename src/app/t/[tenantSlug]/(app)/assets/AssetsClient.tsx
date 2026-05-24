@@ -1,9 +1,9 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
 import { DataTable, createColumns, useColumnsDropdown } from '@/components/ui/table';
 import {
@@ -15,8 +15,6 @@ import { FilterToolbar } from '@/components/filters/FilterToolbar';
 import { ListPageShell } from '@/components/layout/ListPageShell';
 import { toApiSearchParams } from '@/lib/filters/url-sync';
 import { buildAssetFilters, ASSET_FILTER_KEYS } from './filter-defs';
-import { Combobox, ComboboxOption } from '@/components/ui/combobox';
-import { NumberStepper } from '@/components/ui/number-stepper';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
@@ -24,14 +22,10 @@ import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
-import { cardVariants } from '@/components/ui/card';
-import { cn } from '@dub/utils';
 import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
 import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
 import { Plus } from '@/components/ui/icons/nucleo';
-
-const ASSET_TYPES = ['INFORMATION', 'APPLICATION', 'SYSTEM', 'SERVICE', 'DATA_STORE', 'INFRASTRUCTURE', 'VENDOR', 'PROCESS', 'PEOPLE_PROCESS', 'OTHER'];
-const ASSET_TYPE_OPTIONS: ComboboxOption[] = ASSET_TYPES.map(t => ({ value: t, label: t.replace(/_/g, ' ') }));
+import { NewAssetModal } from './NewAssetModal';
 
 interface AssetsClientProps {
     initialAssets: any[];
@@ -78,13 +72,30 @@ export function AssetsClient(props: AssetsClientProps) {
 }
 
 function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permissions, translations: t }: AssetsClientProps) {
-    const [showForm, setShowForm] = useState(false);
-    const [form, setForm] = useState({ name: '', type: 'SYSTEM', classification: '', owner: '', location: '', confidentiality: 3, integrity: 3, availability: 3, dataResidency: '', retention: '' });
+    // Modal-form follow-up — create-asset modal mounted off the list,
+    // auto-opening on `?create=1` (the redirect target from
+    // `/assets/new`). Matches the canonical NewVendorModal wiring.
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    useEffect(() => {
+        if (searchParams?.get('create') === '1') {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setIsCreateOpen(true);
+            const next = new URLSearchParams(searchParams.toString());
+            next.delete('create');
+            const qs = next.toString();
+            router.replace(
+                `/t/${tenantSlug}/assets${qs ? `?${qs}` : ''}`,
+                { scroll: false },
+            );
+        }
+        // First-mount only.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const tenantHref = (path: string) => `/t/${tenantSlug}${path}`;
     const apiUrl = (path: string) => `/api/t/${tenantSlug}${path}`;
-    const router = useRouter();
-    const queryClient = useQueryClient();
 
     const filterCtx = useFilters();
     const { state, search, hasActive } = filterCtx;
@@ -168,24 +179,6 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
     const { activeKpiId: activeAssetKpi, toggle: toggleAssetKpi } =
         useKpiFilter(assetKpiDefs);
 
-    const createMutation = useMutation({
-        mutationFn: async (newAsset: any) => {
-            const res = await fetch(apiUrl('/assets'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newAsset) });
-            if (!res.ok) throw new Error('Failed to create asset');
-            return res.json();
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.assets.all(tenantSlug) });
-            setShowForm(false);
-            setForm({ name: '', type: 'SYSTEM', classification: '', owner: '', location: '', confidentiality: 3, integrity: 3, availability: 3, dataResidency: '', retention: '' });
-        }
-    });
-
-    const createAsset = (e: React.FormEvent) => {
-        e.preventDefault();
-        createMutation.mutate(form);
-    };
-
     // R10-PR7 — column-visibility gear.
     const assetColumnList = useMemo(
         () => [
@@ -261,7 +254,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                     </div>
                     <div className="flex gap-tight">
                         <Link href={tenantHref('/coverage')} className={buttonVariants({ variant: 'secondary' })}>Coverage</Link>
-                        <Button variant="primary" icon={<Plus />} onClick={() => setShowForm(!showForm)}>{t.addAsset}</Button>
+                        <Button variant="primary" icon={<Plus />} onClick={() => setIsCreateOpen(true)} id="new-asset-btn">{t.addAsset}</Button>
                     </div>
                 </div>
             </ListPageShell.Header>
@@ -306,61 +299,6 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                 />
             </ListPageShell.Filters>
 
-            {showForm && (
-                <form onSubmit={createAsset} className={cn(cardVariants(), 'space-y-default animate-fadeIn')}>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-default">
-                        <div><label className="input-label">{t.name} *</label><input className="input" required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
-                        <div><label className="input-label">{t.type}</label><Combobox hideSearch selected={ASSET_TYPE_OPTIONS.find(o => o.value === form.type) ?? null} setSelected={(opt) => setForm(f => ({ ...f, type: opt?.value ?? 'SYSTEM' }))} options={ASSET_TYPE_OPTIONS} matchTriggerWidth /></div>
-                        <div><label className="input-label">{t.classification}</label><input className="input" value={form.classification} onChange={e => setForm(f => ({ ...f, classification: e.target.value }))} placeholder={t.classificationPlaceholder} /></div>
-                        <div><label className="input-label">{t.owner}</label><input className="input" value={form.owner} onChange={e => setForm(f => ({ ...f, owner: e.target.value }))} /></div>
-                        <div><label className="input-label">{t.location}</label><input className="input" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} /></div>
-                        <div><label className="input-label">{t.dataResidency}</label><input className="input" value={form.dataResidency} onChange={e => setForm(f => ({ ...f, dataResidency: e.target.value }))} placeholder={t.residencyPlaceholder} /></div>
-                        {/* Epic 60 — NumberStepper size="sm" on the CIA triple.
-                            Replaces bare <input type=number> which had no
-                            accessible label, no keyboard +/- affordance, and
-                            variable rendering across browsers. min/max=1..5
-                            matches the ISO 27005 impact scale. */}
-                        <div>
-                            <label className="input-label" htmlFor="asset-confidentiality">{t.confidentiality}</label>
-                            <NumberStepper
-                                id="asset-confidentiality"
-                                size="sm"
-                                ariaLabel={t.confidentiality}
-                                min={1}
-                                max={5}
-                                value={form.confidentiality}
-                                onChange={(v) => setForm(f => ({ ...f, confidentiality: v }))}
-                            />
-                        </div>
-                        <div>
-                            <label className="input-label" htmlFor="asset-integrity">{t.integrity}</label>
-                            <NumberStepper
-                                id="asset-integrity"
-                                size="sm"
-                                ariaLabel={t.integrity}
-                                min={1}
-                                max={5}
-                                value={form.integrity}
-                                onChange={(v) => setForm(f => ({ ...f, integrity: v }))}
-                            />
-                        </div>
-                        <div>
-                            <label className="input-label" htmlFor="asset-availability">{t.availability}</label>
-                            <NumberStepper
-                                id="asset-availability"
-                                size="sm"
-                                ariaLabel={t.availability}
-                                min={1}
-                                max={5}
-                                value={form.availability}
-                                onChange={(v) => setForm(f => ({ ...f, availability: v }))}
-                            />
-                        </div>
-                    </div>
-                    <div className="flex gap-tight"><Button type="button" variant="secondary" onClick={() => setShowForm(false)}>{t.cancel}</Button><Button type="submit" variant="primary">{t.createAsset}</Button></div>
-                </form>
-            )}
-
             <ListPageShell.Body>
                 <DataTable
                     fillBody
@@ -392,7 +330,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                                     permissions.canWrite
                                         ? {
                                               label: 'Add asset',
-                                              onClick: () => setShowForm(true),
+                                              onClick: () => setIsCreateOpen(true),
                                           }
                                         : undefined
                                 }
@@ -404,6 +342,28 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                     className="hover:bg-bg-muted"
                 />
             </ListPageShell.Body>
+
+            <NewAssetModal
+                open={isCreateOpen}
+                setOpen={setIsCreateOpen}
+                tenantSlug={tenantSlug}
+                labels={{
+                    name: t.name,
+                    type: t.type,
+                    classification: t.classification,
+                    classificationPlaceholder: t.classificationPlaceholder,
+                    owner: t.owner,
+                    location: t.location,
+                    dataResidency: t.dataResidency,
+                    residencyPlaceholder: t.residencyPlaceholder,
+                    confidentiality: t.confidentiality,
+                    integrity: t.integrity,
+                    availability: t.availability,
+                    cancel: t.cancel,
+                    createAsset: t.createAsset,
+                    addAsset: t.addAsset,
+                }}
+            />
         </ListPageShell>
     );
 }

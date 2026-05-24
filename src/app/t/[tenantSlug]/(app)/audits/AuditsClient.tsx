@@ -1,7 +1,8 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import { CardHeader } from '@/components/ui/card-header';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@dub/utils';
 import { Plus } from '@/components/ui/icons/nucleo';
+import { NewAuditModal } from './NewAuditModal';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
@@ -56,8 +58,28 @@ interface AuditsClientProps {
  */
 export function AuditsClient({ initialAudits, tenantSlug, translations: t }: AuditsClientProps) {
     const [selected, setSelected] = useState<any>(null);
-    const [showForm, setShowForm] = useState(false);
-    const [form, setForm] = useState({ title: '', scope: '', auditors: '', generateChecklist: true });
+
+    // Modal-form follow-up — create-audit modal mounted off the list,
+    // auto-opening on `?create=1` (the redirect target from
+    // `/audits/new`). Mirrors NewVendorModal wiring.
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    useEffect(() => {
+        if (searchParams?.get('create') === '1') {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setIsCreateOpen(true);
+            const next = new URLSearchParams(searchParams.toString());
+            next.delete('create');
+            const qs = next.toString();
+            router.replace(
+                `/t/${tenantSlug}/audits${qs ? `?${qs}` : ''}`,
+                { scroll: false },
+            );
+        }
+        // First-mount only.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const apiUrl = (path: string) => `/api/t/${tenantSlug}${path}`;
     const queryClient = useQueryClient();
@@ -79,25 +101,6 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
     const loadAudit = async (id: string) => {
         const res = await fetch(apiUrl(`/audits/${id}`));
         setSelected(await res.json());
-    };
-
-    const createMutation = useMutation({
-        mutationFn: async (newAudit: any) => {
-            const res = await fetch(apiUrl('/audits'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newAudit) });
-            if (!res.ok) throw new Error('Failed to create audit');
-            return res.json();
-        },
-        onSuccess: (a) => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.audits.all(tenantSlug) });
-            setShowForm(false);
-            setForm({ title: '', scope: '', auditors: '', generateChecklist: true });
-            loadAudit(a.id);
-        }
-    });
-
-    const createAudit = (e: React.FormEvent) => {
-        e.preventDefault();
-        createMutation.mutate(form);
     };
 
     const updateChecklist = async (itemId: string, result: string, notes: string = '') => {
@@ -150,23 +153,13 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
                         >
                             Frameworks
                         </Link>
-                        <Button variant="primary" icon={<Plus />} onClick={() => setShowForm(!showForm)} id="new-audit-btn">{t.newAudit}</Button>
+                        <Button variant="primary" icon={<Plus />} onClick={() => setIsCreateOpen(true)} id="new-audit-btn">{t.newAudit}</Button>
                     </div>
                 }
             />
 
             <TruncationBanner truncated={truncated} />
 
-            {showForm && (
-                <form onSubmit={createAudit} className={cn(cardVariants(), 'space-y-default animate-fadeIn')} id="audit-form">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-default">
-                        <div><label className="input-label">{t.auditTitle} *</label><input className="input" required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} id="audit-title-input" /></div>
-                        <div><label className="input-label">{t.auditors}</label><input className="input" value={form.auditors} onChange={e => setForm(f => ({ ...f, auditors: e.target.value }))} /></div>
-                        <div className="sm:col-span-2"><label className="input-label">{t.scope}</label><textarea className="input" value={form.scope} onChange={e => setForm(f => ({ ...f, scope: e.target.value }))} id="audit-scope-input" /></div>
-                    </div>
-                    <div className="flex flex-wrap gap-tight"><Button type="button" variant="secondary" onClick={() => setShowForm(false)}>{t.cancel}</Button><Button type="submit" variant="primary" id="create-audit-btn">{t.createAudit}</Button></div>
-                </form>
-            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-default">
                 <div className="space-y-tight">
@@ -239,6 +232,21 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
                     )}
                 </div>
             </div>
+
+            <NewAuditModal
+                open={isCreateOpen}
+                setOpen={setIsCreateOpen}
+                tenantSlug={tenantSlug}
+                onCreated={(a) => loadAudit(a.id)}
+                labels={{
+                    auditTitle: t.auditTitle,
+                    auditors: t.auditors,
+                    scope: t.scope,
+                    cancel: t.cancel,
+                    createAudit: t.createAudit,
+                    newAudit: t.newAudit,
+                }}
+            />
         </>
     );
 }

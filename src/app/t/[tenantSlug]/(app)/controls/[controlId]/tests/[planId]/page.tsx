@@ -18,6 +18,7 @@ import { CardHeader } from '@/components/ui/card-header';
 import { KPIStat } from '@/components/ui/metric';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@dub/utils';
+import { Plus } from '@/components/ui/icons/nucleo';
 
 interface TestPlanDetail {
     id: string;
@@ -63,7 +64,20 @@ const RUN_STATUS_BADGE: Record<string, StatusBadgeVariant> = {
 };
 const FREQ_CB_OPTIONS: ComboboxOption[] = Object.entries(FREQ_LABELS).map(([v, l]) => ({ value: v, label: l }));
 const METHOD_OPTIONS: ComboboxOption[] = [{ value: 'MANUAL', label: 'Manual' }, { value: 'AUTOMATED', label: 'Automated' }];
-const PLAN_STATUS_OPTIONS: ComboboxOption[] = [{ value: 'ACTIVE', label: 'Active' }, { value: 'PAUSED', label: 'Paused' }];
+// Audit Coherence S2 — ARCHIVED is the terminal "retired control
+// test" state. Plans in ARCHIVED stay visible for historical audit
+// but no new runs can be created. Distinct from soft-delete which
+// removes the row from default queries entirely.
+const PLAN_STATUS_OPTIONS: ComboboxOption[] = [
+    { value: 'ACTIVE', label: 'Active' },
+    { value: 'PAUSED', label: 'Paused' },
+    { value: 'ARCHIVED', label: 'Archived' },
+];
+const PLAN_STATUS_BADGE_VARIANT: Record<string, StatusBadgeVariant> = {
+    ACTIVE: 'success',
+    PAUSED: 'warning',
+    ARCHIVED: 'neutral',
+};
 
 export default function TestPlanDetailPage() {
     const params = useParams();
@@ -165,7 +179,7 @@ export default function TestPlanDetailPage() {
                 <div>
                     <Heading level={1} id="test-plan-title">{plan.name}</Heading>
                     <div className="flex items-center gap-tight mt-1 flex-wrap">
-                        <StatusBadge variant={plan.status === 'ACTIVE' ? 'success' : 'warning'} id="test-plan-status">
+                        <StatusBadge variant={PLAN_STATUS_BADGE_VARIANT[plan.status] ?? 'neutral'} id="test-plan-status">
                             {plan.status}
                         </StatusBadge>
                         <span className="text-xs text-content-subtle">{FREQ_LABELS[plan.frequency] || plan.frequency}</span>
@@ -296,8 +310,8 @@ export default function TestPlanDetailPage() {
                 <div className="flex items-center justify-between mb-3">
                     <Heading level={3}>Test Run History</Heading>
                     {permissions.canWrite && plan.status === 'ACTIVE' && (
-                        <Button variant="primary" onClick={createRun} disabled={creatingRun}>
-                            {creatingRun ? '...' : '+ Run'}
+                        <Button variant="primary" icon={<Plus />} onClick={createRun} disabled={creatingRun}>
+                            {creatingRun ? 'Creating…' : 'New run'}
                         </Button>
                     )}
                 </div>

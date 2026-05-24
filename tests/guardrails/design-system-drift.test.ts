@@ -204,10 +204,18 @@ describe('New page token discipline', () => {
         //     new and not yet promoted to MIGRATED_PAGES. The
         //     promotion is a separate landing per the documented
         //     convention.
+        //   - 103 (+2): Modal-form follow-up — assets/new/page.tsx +
+        //     audits/new/page.tsx redirect shims for the create-flow
+        //     modal migrations. Each is a one-liner
+        //     `redirect(`/t/${tenantSlug}/<entity>?create=1`)` —
+        //     no UI classes at all, but Next requires a page.tsx at
+        //     the segment. Listed in the unmigrated tally only
+        //     because the surfaces are new and not yet promoted to
+        //     MIGRATED_PAGES; promotion is a separate landing.
         // Each increment names the epic + page + reason; promotion
         // to MIGRATED_PAGES is the path forward, never silent
         // floor-bumping.
-        expect(unmigrated.length).toBeLessThanOrEqual(101);
+        expect(unmigrated.length).toBeLessThanOrEqual(103);
     });
 
     it('migrated page count is at least 4', () => {

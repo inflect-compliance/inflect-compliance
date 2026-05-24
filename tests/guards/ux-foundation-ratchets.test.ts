@@ -100,9 +100,15 @@ describe('Epic 64 — window.confirm() ceiling', () => {
     // close until the user's choice resolves, a different control-
     // flow contract. Migrating to ConfirmDialog is a separate epic.
     //
+    // Modal-form follow-up (2026-05-24) bumped 15 → 17 — `NewAssetModal`
+    // and `NewAuditModal` closed the create-flow gaps the original P2
+    // missed (assets-create + audits-create were inline `showForm`
+    // patterns; the original P2 scoped only assets-EDIT). Same
+    // sync-close rationale as the four sites above.
+    //
     // To LOWER this number: migrate one or more remaining sites and
     // bump the constant down. Don't lower without a real migration.
-    const CONFIRM_CALL_CEILING = 15;
+    const CONFIRM_CALL_CEILING = 17;
 
     it(`has at most ${CONFIRM_CALL_CEILING} native-confirm call sites under the tenant app`, () => {
         const offenders: string[] = [];

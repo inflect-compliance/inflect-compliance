@@ -75,7 +75,17 @@ type Risk = {
     updatedAt: string;
 };
 
-const STATUS_VALUES = ['OPEN', 'MITIGATING', 'ACCEPTED', 'CLOSED'] as const;
+// Audit Coherence S1 — MITIGATED sits between MITIGATING and
+// ACCEPTED in the RiskStatus enum. The detail-page status combobox
+// must offer it; otherwise a reviewer who picks "Mitigated" in the
+// list filter cannot land on the corresponding detail-page value.
+const STATUS_VALUES = [
+    'OPEN',
+    'MITIGATING',
+    'MITIGATED',
+    'ACCEPTED',
+    'CLOSED',
+] as const;
 const STATUS_OPTIONS: ComboboxOption[] = STATUS_VALUES.map(s => ({ value: s, label: s }));
 const CATEGORIES = [
     'Technical', 'Operational', 'Compliance', 'Strategic',
