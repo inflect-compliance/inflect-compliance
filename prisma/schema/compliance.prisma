@@ -661,6 +661,11 @@ model Evidence {
   retentionDays     Int?
   retentionPolicy   RetentionPolicy           @default(NONE)
   retentionUntil    DateTime?
+  /// B8 follow-up — free-text folder label (e.g. "SOC2/2026" or
+  /// "Quarterly access reviews"). Mirrors the `VendorDocument.folder`
+  /// pattern. Nullable; null/empty maps to "no folder" in the UI.
+  /// Sanitised + trimmed at the usecase boundary.
+  folder            String?
   testEvidenceLinks ControlTestEvidenceLink[]
   // Epic G-3 — vendor questionnaire FILE_UPLOAD answers attach
   // their proof here.
@@ -688,6 +693,9 @@ model Evidence {
   @@index([tenantId, controlId])
   // GAP-perf — supports `type` filter (FILE|LINK|TEXT|SCREENSHOT).
   @@index([tenantId, type])
+  // B8 follow-up — supports folder filter + group-by reads. Same
+  // shape as VendorDocument's folder index.
+  @@index([tenantId, folder])
 }
 
 model FileRecord {

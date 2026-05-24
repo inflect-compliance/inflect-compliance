@@ -10,6 +10,12 @@ export interface EvidenceListFilters {
     /** EvidenceStatus: DRAFT | SUBMITTED | APPROVED | REJECTED */
     status?: string;
     controlId?: string;
+    /**
+     * B8 follow-up — folder filter. `__none__` is the sentinel for
+     * "evidence with NULL or empty folder"; any other value is an
+     * exact-match. Omitted ⇒ no filter.
+     */
+    folder?: string;
     q?: string;
     archived?: boolean;
     expiring?: boolean;
@@ -32,6 +38,9 @@ const evidenceListSelect = {
     type: true,
     status: true,
     owner: true,
+    // B8 follow-up — folder label is rendered as a column + drives
+    // the Folder filter's option set.
+    folder: true,
     isArchived: true,
     expiredAt: true,
     deletedAt: true,
@@ -103,6 +112,18 @@ export class EvidenceRepository {
         }
         if (filters?.controlId) {
             where.controlId = filters.controlId;
+        }
+        if (filters?.folder) {
+            // B8 follow-up — `__none__` matches rows with a NULL
+            // or empty-string folder; any other value is exact.
+            if (filters.folder === '__none__') {
+                where.OR = [
+                    { folder: null },
+                    { folder: '' },
+                ];
+            } else {
+                where.folder = filters.folder;
+            }
         }
         if (filters?.archived !== undefined) {
             where.isArchived = filters.archived;

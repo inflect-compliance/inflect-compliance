@@ -102,6 +102,9 @@ export async function createEvidence(
             fileName,
             fileSize,
             category: data.category,
+            // B8 follow-up — trim + null-coerce so empty input
+            // maps to "no folder" (the UI group-by keys on null).
+            folder: data.folder?.trim() || null,
             owner: data.owner,
             ownerUserId: data.ownerUserId || null,
 
@@ -161,6 +164,13 @@ export async function updateEvidence(ctx: RequestContext, id: string, data: z.in
             title: data.title,
             content: data.content,
             category: data.category,
+            // B8 follow-up — folder is editable post-create. The
+            // three-state contract is preserved (undefined = no
+            // change; null = clear; string = set).
+            folder:
+                data.folder === undefined
+                    ? undefined
+                    : (data.folder?.trim() || null),
             owner: data.owner,
             ownerUserId: data.ownerUserId,
 
@@ -429,6 +439,9 @@ export async function uploadEvidenceFile(
         title?: string;
         controlId?: string | null;
         category?: string | null;
+        /** B8 follow-up — folder applied to the newly-created
+         *  evidence row. Trimmed + null-coerced inside `create`. */
+        folder?: string | null;
         owner?: string | null;         // Legacy free-text
         ownerUserId?: string | null;   // Real user FK (preferred)
         reviewCycle?: string | null;
@@ -508,6 +521,8 @@ export async function uploadEvidenceFile(
             fileRecordId,
             controlId,
             category: metadata.category || undefined,
+            // B8 follow-up — same null-coercion as the TEXT path.
+            folder: metadata.folder?.trim() || null,
             owner: metadata.owner || undefined,
             ownerUserId: metadata.ownerUserId || null,
             reviewCycle: (metadata.reviewCycle || null) as ReviewCadence | null,

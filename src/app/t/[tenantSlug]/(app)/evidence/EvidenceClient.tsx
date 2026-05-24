@@ -209,6 +209,10 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
         description: string | null;
         ownerUserId: string | null;
         controlId: string | null;
+        // B8 follow-up — folder is editable in the modal; threaded
+        // through here so the modal seeds the input with the
+        // current value.
+        folder: string | null;
     } | null>(null);
 
     // Retention edit state
@@ -424,6 +428,11 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             { id: 'title', label: 'Title' },
             { id: 'type', label: 'Type' },
             { id: 'control', label: 'Control' },
+            // B8 follow-up — Folder column. Hidden by default
+            // (`defaultHidden: true` would be ideal but the dropdown
+            // primitive doesn't carry that yet) — the user reveals
+            // it via the gear once they start using folders.
+            { id: 'folder', label: 'Folder' },
             { id: 'retention', label: 'Retention' },
             { id: 'freshness', label: 'Freshness' },
             { id: 'status', label: 'Status' },
@@ -499,6 +508,24 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             cell: ({ getValue }: { getValue: () => string }) => (
                 <span className="text-xs text-content-muted">{getValue()}</span>
             ),
+        },
+        {
+            id: 'folder',
+            header: 'Folder',
+            // B8 follow-up \u2014 the Folder column matches the
+            // VendorDocsTable shape: empty/null = em-dash, otherwise
+            // a muted tag. Hidden by default if a tenant has zero
+            // foldered evidence \u2014 the column-visibility gear keeps
+            // it discoverable.
+            accessorFn: (ev: { folder?: string | null }) => ev.folder || '',
+            cell: ({ row }: { row: { original: { folder?: string | null } } }) =>
+                row.original.folder ? (
+                    <span className="text-xs text-content-muted">
+                        {row.original.folder}
+                    </span>
+                ) : (
+                    <span className="text-content-subtle">\u2014</span>
+                ),
         },
         {
             id: 'retention',
@@ -752,6 +779,26 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                 }}
             />
 
+            {/* B8 follow-up — shared folder-suggestions datalist.
+                The NewEvidenceTextModal + UploadEvidenceModal both
+                reference `list="evidence-folder-suggestions"` so
+                the user converges on a small named set of folders.
+                Mounting the datalist here means a single source of
+                truth derived from the currently-loaded evidence. */}
+            <datalist id="evidence-folder-suggestions">
+                {Array.from(
+                    new Set(
+                        (evidence as Array<{ folder?: string | null }>)
+                            .map((e) => (e.folder || '').trim())
+                            .filter(Boolean),
+                    ),
+                )
+                    .sort()
+                    .map((f) => (
+                        <option key={f} value={f} />
+                    ))}
+            </datalist>
+
             <ListPageShell.Filters className="space-y-section">
                 {/* R23-PR-E — KPI strip ABOVE the retention tabs +
                     filter toolbar block. Status-based KPIs sit on a
@@ -835,6 +882,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                         />
                         <EvidenceFilterToolbar
                             controls={controls}
+                            evidence={evidence}
                             columnsDropdown={
                                 viewMode === 'list' ? columnsDropdown : null
                             }
@@ -954,14 +1002,20 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
 
 function EvidenceFilterToolbar({
     controls,
+    evidence,
     columnsDropdown,
 }: {
     controls: unknown[];
+    evidence: ReadonlyArray<{ folder?: string | null }>;
     columnsDropdown?: React.ReactNode;
 }) {
     const filters: FilterType[] = useMemo(
-        () => buildEvidenceFilters(controls as Parameters<typeof buildEvidenceFilters>[0]),
-        [controls],
+        () =>
+            buildEvidenceFilters(
+                controls as Parameters<typeof buildEvidenceFilters>[0],
+                evidence,
+            ),
+        [controls, evidence],
     );
     return (
         <FilterToolbar

@@ -19,8 +19,12 @@ import { toApiSearchParams } from '../../src/lib/filters/url-sync';
 
 describe('Evidence filter config', () => {
     it('manages exactly the keys the API understands (+ status widening)', () => {
+        // B8 follow-up added `folder` to the Evidence filter set
+        // when evidence folders shipped. The API GET route +
+        // EvidenceListFilters + repository where-builder all honour
+        // `folder` end-to-end (see b8-followup-evidence-folders ratchet).
         expect([...EVIDENCE_FILTER_KEYS].sort()).toEqual(
-            ['controlId', 'status', 'type'].sort(),
+            ['controlId', 'folder', 'status', 'type'].sort(),
         );
     });
 

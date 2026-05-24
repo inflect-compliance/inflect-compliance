@@ -24,7 +24,7 @@ import {
     optionsFromEnum,
 } from '@/components/ui/filter/filter-definitions';
 import type { FilterOption } from '@/components/ui/filter/types';
-import { FileText, CircleDot, Link2 } from 'lucide-react';
+import { FileText, CircleDot, Link2, FolderOpen } from 'lucide-react';
 
 // ─── Static labels ──────────────────────────────────────────────────
 
@@ -71,6 +71,21 @@ const STATIC_DEFS = {
         shouldFilter: true,
         resetBehavior: 'clearable',
     },
+    // B8 follow-up — Folder filter. Options are derived at render
+    // time from the folders present in the currently-loaded
+    // evidence rows (plus a "No folder" pseudo-bucket when any
+    // unfoldered row exists). The `__none__` sentinel matches
+    // null/empty folders so legacy unfoldered evidence stays
+    // findable after rollout.
+    folder: {
+        label: 'Folder',
+        description: 'Organisational folder label.',
+        group: 'Attributes',
+        icon: FolderOpen,
+        options: null, // filled at render time from loaded evidence
+        shouldFilter: true,
+        resetBehavior: 'clearable',
+    },
 } satisfies Record<string, FilterDefInput>;
 
 export const evidenceFilterDefs = createTypedFilterDefs()(STATIC_DEFS);
@@ -109,11 +124,45 @@ export function controlOptionsFromControls(
     );
 }
 
+/**
+ * B8 follow-up — build the Folder filter's options from whatever
+ * is currently loaded. A `__none__` pseudo-option matches rows
+ * with a null/empty folder, so legacy unfoldered evidence stays
+ * findable after rollout.
+ */
+export interface EvidenceFolderLike {
+    folder?: string | null;
+}
+
+export function folderOptionsFromEvidence(
+    evidence: ReadonlyArray<EvidenceFolderLike>,
+): FilterOption[] {
+    const present = new Set<string>();
+    let hasUnfoldered = false;
+    for (const e of evidence) {
+        const f = (e.folder || '').trim();
+        if (f) present.add(f);
+        else hasUnfoldered = true;
+    }
+    const out: FilterOption[] = [];
+    if (hasUnfoldered) {
+        out.push({ value: '__none__', label: 'No folder' });
+    }
+    for (const f of Array.from(present).sort()) {
+        out.push({ value: f, label: f });
+    }
+    return out;
+}
+
 export function buildEvidenceFilters(
     controls: ReadonlyArray<ControlLike>,
+    evidence: ReadonlyArray<EvidenceFolderLike> = [],
 ) {
     const controlOpts = controlOptionsFromControls(controls);
-    return evidenceFilterDefs.filters.map((f) =>
-        f.key === 'controlId' ? { ...f, options: controlOpts } : f,
-    );
+    const folderOpts = folderOptionsFromEvidence(evidence);
+    return evidenceFilterDefs.filters.map((f) => {
+        if (f.key === 'controlId') return { ...f, options: controlOpts };
+        if (f.key === 'folder') return { ...f, options: folderOpts };
+        return f;
+    });
 }
