@@ -11,7 +11,7 @@
  * The legacy `/tasks/new` route is now a redirect → `/tasks?create=1`;
  * the list page (TasksClient) auto-opens this modal.
  */
-import { type Dispatch, type SetStateAction } from 'react';
+import { useCallback, type Dispatch, type SetStateAction } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
@@ -36,10 +36,27 @@ export function NewTaskModal({ open, setOpen }: NewTaskModalProps) {
         },
     });
 
-    const close = () => {
-        if (form.submitting) return;
-        setOpen(false);
-    };
+    // P3 — unsaved-changes guard. See NewPolicyModal for the pattern.
+    const guardedSetOpen = useCallback<Dispatch<SetStateAction<boolean>>>(
+        (next) => {
+            const wantClose =
+                typeof next === 'function' ? !next(true) : next === false;
+            if (wantClose) {
+                if (form.submitting) return;
+                if (
+                    form.isDirty &&
+                    !window.confirm(
+                        'Discard task? Any details you entered will be lost.',
+                    )
+                ) {
+                    return;
+                }
+            }
+            setOpen(next);
+        },
+        [form.submitting, form.isDirty, setOpen],
+    );
+    const close = () => guardedSetOpen(false);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -49,7 +66,7 @@ export function NewTaskModal({ open, setOpen }: NewTaskModalProps) {
     return (
         <Modal
             showModal={open}
-            setShowModal={setOpen}
+            setShowModal={guardedSetOpen}
             size="lg"
             title="New task"
             description="Create a new task to track."

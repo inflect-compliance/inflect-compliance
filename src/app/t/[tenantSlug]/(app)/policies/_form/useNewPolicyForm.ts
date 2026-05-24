@@ -46,6 +46,12 @@ export interface NewPolicyFormReturn {
     error: string | null;
     canSubmit: boolean;
     submit: () => Promise<void>;
+    /**
+     * True once the user has interacted with any field (set via
+     * `setField` or `selectTemplate`). Cleared on submit-success.
+     * Used by the modal wrapper to gate the unsaved-changes warning.
+     */
+    isDirty: boolean;
 }
 
 export interface UseNewPolicyFormOptions {
@@ -73,6 +79,7 @@ export function useNewPolicyForm({
     const [templates, setTemplates] = useState<PolicyTemplate[]>([]);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isDirty, setIsDirty] = useState(false);
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => {
@@ -96,6 +103,7 @@ export function useNewPolicyForm({
         value: NewPolicyFormFields[K],
     ) => {
         setFields((f) => ({ ...f, [key]: value }));
+        setIsDirty(true);
     };
 
     const selectTemplate = (tpl: PolicyTemplate) => {
@@ -105,6 +113,7 @@ export function useNewPolicyForm({
             title: f.title || tpl.title,
             category: tpl.category || '',
         }));
+        setIsDirty(true);
     };
 
     const canSubmit = fields.title.trim().length > 0 && !submitting;
@@ -151,6 +160,9 @@ export function useNewPolicyForm({
 
             const policy = await res.json();
             telemetry.trackSuccess({ policyId: policy.id });
+            // Clear dirty so the modal's unsaved-changes warning
+            // doesn't fire on the post-success close.
+            setIsDirty(false);
             onSuccess(policy);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
@@ -171,5 +183,6 @@ export function useNewPolicyForm({
         error,
         canSubmit,
         submit,
+        isDirty,
     };
 }

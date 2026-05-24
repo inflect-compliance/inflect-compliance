@@ -13,7 +13,7 @@
  * on success the modal closes and the parent's `onSaved` callback
  * applies the updated row to the detail-page state.
  */
-import { type Dispatch, type SetStateAction } from 'react';
+import { useCallback, type Dispatch, type SetStateAction } from 'react';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import {
@@ -47,10 +47,27 @@ export function EditAssetModal({
         },
     });
 
-    const close = () => {
-        if (form.submitting) return;
-        setOpen(false);
-    };
+    // P3 — unsaved-changes guard. See NewPolicyModal for the pattern.
+    const guardedSetOpen = useCallback<Dispatch<SetStateAction<boolean>>>(
+        (next) => {
+            const wantClose =
+                typeof next === 'function' ? !next(true) : next === false;
+            if (wantClose) {
+                if (form.submitting) return;
+                if (
+                    form.isDirty &&
+                    !window.confirm(
+                        'Discard changes? Any edits you made will be lost.',
+                    )
+                ) {
+                    return;
+                }
+            }
+            setOpen(next);
+        },
+        [form.submitting, form.isDirty, setOpen],
+    );
+    const close = () => guardedSetOpen(false);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -60,7 +77,7 @@ export function EditAssetModal({
     return (
         <Modal
             showModal={open}
-            setShowModal={setOpen}
+            setShowModal={guardedSetOpen}
             size="lg"
             title="Edit asset"
             description="Update the asset's metadata."

@@ -91,9 +91,18 @@ describe('Epic 64 — window.confirm() ceiling', () => {
     // ceiling stops a future PR from silently re-introducing one
     // without migrating to <ConfirmDialog> in the same diff.
     //
+    // Modal-form P3 (2026-05-24) bumped the ceiling 11 → 15 to absorb
+    // four new unsaved-changes guards (`NewPolicyModal`, `NewTaskModal`,
+    // `NewVendorModal`, `EditAssetModal`). Native `confirm()` is the
+    // right primitive here because the close handler must
+    // SYNCHRONOUSLY decide whether to surrender the modal — the
+    // async `<ConfirmDialog>` shape would require deferring the
+    // close until the user's choice resolves, a different control-
+    // flow contract. Migrating to ConfirmDialog is a separate epic.
+    //
     // To LOWER this number: migrate one or more remaining sites and
     // bump the constant down. Don't lower without a real migration.
-    const CONFIRM_CALL_CEILING = 11;
+    const CONFIRM_CALL_CEILING = 15;
 
     it(`has at most ${CONFIRM_CALL_CEILING} native-confirm call sites under the tenant app`, () => {
         const offenders: string[] = [];

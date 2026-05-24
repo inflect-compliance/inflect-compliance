@@ -3,7 +3,7 @@
 /**
  * NewVendorModal — modal-form P2 execution.
  */
-import { type Dispatch, type SetStateAction } from 'react';
+import { useCallback, type Dispatch, type SetStateAction } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTenantHref } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
@@ -27,10 +27,27 @@ export function NewVendorModal({ open, setOpen }: NewVendorModalProps) {
         },
     });
 
-    const close = () => {
-        if (form.submitting) return;
-        setOpen(false);
-    };
+    // P3 — unsaved-changes guard. See NewPolicyModal for the pattern.
+    const guardedSetOpen = useCallback<Dispatch<SetStateAction<boolean>>>(
+        (next) => {
+            const wantClose =
+                typeof next === 'function' ? !next(true) : next === false;
+            if (wantClose) {
+                if (form.submitting) return;
+                if (
+                    form.isDirty &&
+                    !window.confirm(
+                        'Discard vendor? Any details you entered will be lost.',
+                    )
+                ) {
+                    return;
+                }
+            }
+            setOpen(next);
+        },
+        [form.submitting, form.isDirty, setOpen],
+    );
+    const close = () => guardedSetOpen(false);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -40,7 +57,7 @@ export function NewVendorModal({ open, setOpen }: NewVendorModalProps) {
     return (
         <Modal
             showModal={open}
-            setShowModal={setOpen}
+            setShowModal={guardedSetOpen}
             size="lg"
             title="New vendor"
             description="Create a vendor to track third-party risk."
