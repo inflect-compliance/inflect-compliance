@@ -202,6 +202,13 @@ model Asset {
 model Risk {
   id              String              @id @default(cuid())
   tenantId        String
+  /// PR-B — generated per-tenant short key (RSK-1, RSK-2, …) so the
+  /// Risk list page can lead with a scannable identifier column.
+  /// Mints atomically via `RiskKeySequence.upsert` mirroring the
+  /// TaskKeySequence pattern. Nullable to keep historic rows
+  /// renderable; the create-path generates fresh values for every
+  /// new row.
+  key             String?
   title           String
   description     String?
   category        String?
@@ -282,6 +289,19 @@ model Risk {
   // `inherentScore desc`. Without this Postgres sorts the full
   // tenant result set per call.
   @@index([tenantId, inherentScore])
+  // PR-B — unique within a tenant so `RSK-1` can't collide. Allows
+  // `@@unique` on a nullable column (Postgres treats NULLs as
+  // distinct), so historic NULL rows don't clash with each other.
+  @@unique([tenantId, key])
+}
+
+/// Per-tenant monotonic counter for minting `RSK-N` risk keys.
+/// Mirrors `TaskKeySequence` — `upsert` with an atomic `increment`
+/// is race-free under concurrent imports and scales O(1) regardless
+/// of tenant size.
+model RiskKeySequence {
+  tenantId  String @id
+  lastValue Int    @default(0)
 }
 
 model RiskTemplate {

@@ -144,6 +144,37 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             {content}
           </div>
         )}
+        {/**
+         * PR-B — icon-balance ghost.
+         *
+         * When a button carries BOTH an icon AND a text label (the
+         * canonical Plus-icon Create pattern), the prior
+         * `justify-center` flex layout centred [icon][gap][text]
+         * as one unit, which placed the TEXT right of the button's
+         * geometric centre by half the icon+gap width. Visible
+         * symptom: a Plus-Create button read off-centre.
+         *
+         * A `visibility: hidden` ghost mirroring the icon sits at
+         * the trailing edge so the flex group becomes
+         * [icon][gap][text][gap][ghost] — symmetric around the
+         * text. The icon stays visible at the leading edge; the
+         * text now sits at the button's geometric centre. Ghost is
+         * `aria-hidden` and `pointer-events-none` so it never
+         * participates in the accessibility tree or hit-testing.
+         *
+         * Suppressed when a `shortcut` is present (the shortcut
+         * kbd carries its own trailing weight) or no `content`
+         * (icon-only buttons don't need balancing).
+         */}
+        {icon && !loading && content && !shortcut && !right && (
+          <span
+            aria-hidden="true"
+            className="invisible pointer-events-none"
+            data-icon-balance-ghost
+          >
+            {icon}
+          </span>
+        )}
         {shortcut && (
           <kbd
             className={cn(

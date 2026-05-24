@@ -58,6 +58,8 @@ import { Plus } from '@/components/ui/icons/nucleo';
 
 interface RiskListItem {
     id: string;
+    /** PR-B — RSK-N short identifier. Nullable for historic rows. */
+    key?: string | null;
     title: string;
     threat: string;
     likelihood: number;
@@ -356,6 +358,23 @@ function RisksPageInner({
 
     // ── Column Definitions ──
     const riskTableColumns = useMemo(() => createColumns<RiskListItem>([
+        {
+            // PR-B — Code column (RSK-N). The Risk list now opens
+            // with the scannable per-tenant key, matching the
+            // Controls/Tasks convention. Historic rows render an
+            // em-dash; new rows mint a key in the create-path.
+            id: 'code',
+            header: 'Code',
+            accessorFn: (r) => r.key || '',
+            cell: ({ row }) =>
+                row.original.key ? (
+                    <span className="font-mono text-xs text-content-muted tabular-nums">
+                        {row.original.key}
+                    </span>
+                ) : (
+                    <span className="text-content-subtle">—</span>
+                ),
+        },
         {
             accessorKey: 'title',
             header: t.riskTitle,

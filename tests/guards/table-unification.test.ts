@@ -143,9 +143,9 @@ const FIRST_COLUMN_TABLES: FirstColumnEntry[] = [
     },
     {
         file: "src/app/t/[tenantSlug]/(app)/risks/RisksClient.tsx",
-        firstColumnId: "title",
+        firstColumnId: "code",
         adopted: true,
-        note: "Risks list — Risks have no separate code field (schema); title is the canonical identifier and is already column 0.",
+        note: "Risks list — PR-B added `Risk.key` (`RSK-N`) generated atomically from `RiskKeySequence`; column 0 is now the canonical Code key, with title in the column immediately after.",
     },
     {
         file: "src/app/t/[tenantSlug]/(app)/frameworks/FrameworksClient.tsx",

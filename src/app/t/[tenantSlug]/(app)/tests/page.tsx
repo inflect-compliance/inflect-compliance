@@ -162,18 +162,34 @@ export default function TestsRollupPage() {
                 {(() => {
                 const planColumns = createColumns<TestPlanSummary>([
                     {
-                        id: 'plan', header: 'Plan', accessorKey: 'name',
+                        // PR-B — Name column. Pre-PR-B this column
+                        // also rendered a stacked Status badge under
+                        // the link; that made the row taller than
+                        // any other list page AND made the table
+                        // hard to scan. Status is now its own column
+                        // immediately to the right (see below).
+                        id: 'name', header: 'Name', accessorKey: 'name',
                         cell: ({ row }) => (
-                            <div>
-                                <Link href={tenantHref(`/controls/${row.original.control.id}/tests/${row.original.id}`)} className="text-content-emphasis font-medium hover:text-[var(--brand-default)] transition">
-                                    {row.original.name}
-                                </Link>
-                                <div className="flex items-center gap-1 mt-0.5">
-                                    <StatusBadge variant={PLAN_STATUS_BADGE[row.original.status] ?? 'neutral'} size="sm">
-                                        {row.original.status}
-                                    </StatusBadge>
-                                </div>
-                            </div>
+                            <Link
+                                href={tenantHref(`/controls/${row.original.control.id}/tests/${row.original.id}`)}
+                                className="text-content-emphasis font-medium hover:text-[var(--brand-default)] transition"
+                            >
+                                {row.original.name}
+                            </Link>
+                        ),
+                    },
+                    {
+                        // PR-B — Status as its own column, positioned
+                        // immediately after Name to match the layout
+                        // every other list page uses (Controls,
+                        // Risks, Evidence — Status is always its own
+                        // cell, never folded into the title cell).
+                        id: 'status', header: 'Status',
+                        accessorKey: 'status',
+                        cell: ({ row }) => (
+                            <StatusBadge variant={PLAN_STATUS_BADGE[row.original.status] ?? 'neutral'} size="sm">
+                                {row.original.status}
+                            </StatusBadge>
                         ),
                     },
                     {

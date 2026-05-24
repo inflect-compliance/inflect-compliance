@@ -27,6 +27,8 @@ export interface RiskListParams {
 // + scoring fields enumerated below.
 const riskListSelect = {
     id: true,
+    // PR-B — RSK-N short identifier surfaced as the Code column.
+    key: true,
     title: true,
     threat: true,
     likelihood: true,
@@ -134,9 +136,26 @@ export class RiskRepository {
      */
     static async create(db: PrismaTx, ctx: RequestContext, data: Omit<Prisma.RiskUncheckedCreateInput, 'tenantId'>) {
         return traceRepository('risk.create', ctx, async () => {
+            // PR-B — mint a per-tenant `RSK-N` key from an atomic
+            // counter. Mirrors `WorkItemRepository.create` / the
+            // `TaskKeySequence` pattern: the upsert compiles to a
+            // native `INSERT … ON CONFLICT DO UPDATE`, so the
+            // increment is race-free under concurrent imports.
+            // Callers that supply their own `key` (the migration
+            // backfill path) win — we only mint when none is set.
+            let key = (data as { key?: string | null }).key ?? null;
+            if (!key) {
+                const seq = await db.riskKeySequence.upsert({
+                    where: { tenantId: ctx.tenantId },
+                    create: { tenantId: ctx.tenantId, lastValue: 1 },
+                    update: { lastValue: { increment: 1 } },
+                });
+                key = `RSK-${seq.lastValue}`;
+            }
             return db.risk.create({
                 data: {
                     ...data,
+                    key,
                     tenantId: ctx.tenantId,
                 },
             });
