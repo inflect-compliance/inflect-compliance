@@ -96,17 +96,38 @@ describe('computeReadiness — gate + framework dispatch', () => {
         ).rejects.toThrow(/Audit cycle not found/);
     });
 
-    it('throws notFound for a cycle with an unsupported framework key', async () => {
-        mockRunInTx.mockImplementationOnce(async () =>
-            ({ id: 'c1', frameworkKey: 'NOT-A-FRAMEWORK' }) as never,
-        );
+    it('routes unknown frameworks through computeGenericReadiness (Audit S5)', async () => {
+        // Audit S5 (2026-05-22) — unknown framework no longer throws
+        // notFound; it falls through to the generic 3-dimension
+        // scoring model (coverage + evidence + issues). The test
+        // now asserts the call resolves (rather than the legacy
+        // rejection); deep-shape assertions for the GENERIC fallback
+        // sit in the integration suite + the structural ratchet at
+        // tests/guardrails/audit-s5-readiness-scoring.test.ts.
+        //
+        // Mock chain: cycle read + GENERIC scoring's framework read
+        // + downstream queries + readiness snapshot create + log
+        // emit. The base mock plumbs them all through the same
+        // tenant-context callback, so we just supply minimal
+        // returns to let the function complete.
+        mockRunInTx.mockImplementation(async (_ctx, fn) => {
+            return fn({
+                auditCycle: { findFirst: jest.fn().mockResolvedValue({ id: 'c1', frameworkKey: 'NOT-A-FRAMEWORK' }) },
+                tenant: { findUnique: jest.fn().mockResolvedValue(null) },
+                framework: { findFirst: jest.fn().mockResolvedValue(null) },
+                frameworkRequirement: { findMany: jest.fn().mockResolvedValue([]) },
+                controlRequirementLink: { findMany: jest.fn().mockResolvedValue([]) },
+                control: { findMany: jest.fn().mockResolvedValue([]) },
+                evidence: { findMany: jest.fn().mockResolvedValue([]) },
+                task: { count: jest.fn().mockResolvedValue(0) },
+                readinessSnapshot: { create: jest.fn().mockResolvedValue({}) },
+            } as never);
+        });
 
-        await expect(
-            computeReadiness(makeRequestContext('ADMIN'), 'c1'),
-        ).rejects.toThrow(/No readiness model/);
-        // Regression: silent fall-through (returning a default 0%
-        // score) would make a typo'd framework look like a
-        // catastrophic compliance failure on the dashboard.
+        const result = await computeReadiness(makeRequestContext('ADMIN'), 'c1');
+        expect(result.frameworkKey).toBe('NOT-A-FRAMEWORK');
+        expect(result.score).toBeGreaterThanOrEqual(0);
+        expect(result.score).toBeLessThanOrEqual(100);
     });
 });
 
@@ -231,6 +252,10 @@ describe('CSV export — RFC 4180 escaping + audit emit', () => {
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({ task: { findMany: jest.fn().mockResolvedValue([]) } } as never),
         );
+        // Audit S5 — readinessSnapshot.create best-effort write.
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({ readinessSnapshot: { create: jest.fn().mockResolvedValue({}) } } as never),
+        );
         // computeReadiness internal logEvent
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
         // exportUnmappedCsv's logEvent
@@ -276,6 +301,10 @@ describe('CSV export — RFC 4180 escaping + audit emit', () => {
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({ task: { findMany: jest.fn().mockResolvedValue([]) } } as never),
         );
+        // Audit S5 — readinessSnapshot.create best-effort write.
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({ readinessSnapshot: { create: jest.fn().mockResolvedValue({}) } } as never),
+        );
         // computeReadiness internal log
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
         // exportControlGapsCsv log
@@ -309,6 +338,10 @@ describe('exportReadinessJson — audit emit', () => {
         );
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({ task: { findMany: jest.fn().mockResolvedValue([]) } } as never),
+        );
+        // Audit S5 — readinessSnapshot.create best-effort write.
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({ readinessSnapshot: { create: jest.fn().mockResolvedValue({}) } } as never),
         );
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn({} as never));

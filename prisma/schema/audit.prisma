@@ -170,6 +170,7 @@ model AuditCycle {
   createdBy        User             @relation(fields: [createdByUserId], references: [id])
   tenant           Tenant           @relation(fields: [tenantId], references: [id])
   packs            AuditPack[]
+  readinessSnapshots ReadinessSnapshot[]
 
   @@index([tenantId, frameworkKey, status])
   @@index([tenantId, deletedAt])
@@ -270,4 +271,43 @@ model AuditorPackAccess {
   @@index([tenantId])
   @@index([tenantId, auditPackId])
   @@index([tenantId, auditorId])
+}
+
+/// Persisted time-series snapshot of a readiness computation
+/// (Audit Coherence S5, 2026-05-22). Every `computeReadiness` call
+/// writes one row so auditors can see the trend over time
+/// ("readiness improved from 62% → 84% over 6 months").
+///
+/// Pre-this-model, readiness was a point-in-time computation only;
+/// historic scores existed only inside audit packs (a heavy
+/// artefact, not a chartable time series). This model gives the
+/// dashboard a cheap source for the readiness-over-time chart.
+model ReadinessSnapshot {
+  id                 String   @id @default(cuid())
+  tenantId           String
+  /// Which framework was scored. Free string so custom frameworks
+  /// (handled by the GENERIC fallback in `audit-readiness-scoring.ts`)
+  /// can persist their key here too.
+  frameworkKey       String
+  /// Audit cycle the snapshot was computed for. NULL when computed
+  /// outside a cycle (a tenant-admin "current state" pull).
+  auditCycleId       String?
+  /// 0-100 weighted score (rounded to integer to match the API).
+  score              Int
+  /// Full ReadinessBreakdown payload as written by the scoring
+  /// engine. Read-side joins this for the trend chart's tooltips.
+  breakdownJson      Json
+  /// Count of gaps at snapshot time — surfaces in the chart's
+  /// per-point tooltip without re-loading the breakdown.
+  gapCount           Int      @default(0)
+  computedAt         DateTime @default(now())
+  /// Caller — NULL for cron-driven sweeps (none today; reserved).
+  computedByUserId   String?
+
+  tenant             Tenant     @relation(fields: [tenantId], references: [id])
+  auditCycle         AuditCycle? @relation(fields: [auditCycleId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, frameworkKey, computedAt])
+  @@index([tenantId, auditCycleId])
 }

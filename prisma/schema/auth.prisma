@@ -78,6 +78,16 @@ model Tenant {
   /// this at the storage layer so a rotation bug cannot silently
   /// produce identical values in both columns.
   previousEncryptedDek              String?
+  /// Per-tenant override of the audit-readiness scoring weights.
+  /// NULL means use the hardcoded defaults
+  /// (ISO27001 / NIS2 / GENERIC) shipped with the platform. Shape
+  /// is `{ ISO27001?: { coverage, implementation, evidence, tasks, issues },
+  ///       NIS2?: { coverage, evidence, policies, issues },
+  ///       GENERIC?: { coverage, evidence, issues } }`. Each
+  /// inner object's weights must sum to 1.0; values outside [0,1]
+  /// or sums > 1.0 are rejected at the usecase layer.
+  /// Audit Coherence S5 (2026-05-22).
+  readinessWeightsJson              Json?
   createdAt                         DateTime                           @default(now())
   updatedAt                         DateTime                           @updatedAt
   assets                            Asset[]
@@ -87,6 +97,7 @@ model Tenant {
   auditLogs                         AuditLog[]
   auditPacks                        AuditPack[]
   auditPackItems                    AuditPackItem[]
+  readinessSnapshots                ReadinessSnapshot[]
   auditPackShares                   AuditPackShare[]
   auditorAccounts                   AuditorAccount[]
   billingAccount                    BillingAccount?

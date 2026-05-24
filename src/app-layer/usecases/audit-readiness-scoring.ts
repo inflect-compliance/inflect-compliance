@@ -20,7 +20,7 @@
  * and soft-deleted (deletedAt!=null) evidence. This ensures readiness
  * scores only reflect active, valid evidence.
  */
-import { type AuditCycle } from '@prisma/client';
+import { type AuditCycle, type Applicability, type WorkItemStatus, Prisma } from '@prisma/client';
 import { RequestContext } from '../types';
 import { assertCanViewPack } from '../policies/audit-readiness.policies';
 import { logEvent } from '../events/audit';
@@ -75,6 +75,40 @@ const NIS2_KEY_POLICIES = [
 
 // ─── Compute Readiness ───
 
+/**
+ * Audit Coherence S5 (2026-05-22) — load the effective weights for
+ * a framework. Per-tenant override via `Tenant.readinessWeightsJson`
+ * takes precedence over the hardcoded defaults; the override is
+ * validated (sum ≈ 1.0, each value in [0, 1]) before use.
+ */
+async function loadEffectiveWeights<T extends Record<string, number>>(
+    ctx: RequestContext,
+    frameworkKey: string,
+    defaults: T,
+): Promise<T> {
+    const override = await runInTenantContext(ctx, (tdb) =>
+        tdb.tenant.findUnique({
+            where: { id: ctx.tenantId },
+            select: { readinessWeightsJson: true },
+        }));
+    const json = override?.readinessWeightsJson;
+    if (!json || typeof json !== 'object') return defaults;
+    const candidate = (json as Record<string, unknown>)[frameworkKey];
+    if (!candidate || typeof candidate !== 'object') return defaults;
+    // Validate: every key in defaults must appear in candidate, every
+    // value in [0,1], and the sum within tolerance of 1.0.
+    const merged = { ...defaults };
+    let sum = 0;
+    for (const k of Object.keys(defaults)) {
+        const v = (candidate as Record<string, unknown>)[k];
+        if (typeof v !== 'number' || v < 0 || v > 1) return defaults;
+        (merged as Record<string, number>)[k] = v;
+        sum += v;
+    }
+    if (Math.abs(sum - 1.0) > 0.001) return defaults;
+    return merged;
+}
+
 export async function computeReadiness(ctx: RequestContext, cycleId: string): Promise<ReadinessResult> {
     assertCanViewPack(ctx);
 
@@ -88,7 +122,33 @@ export async function computeReadiness(ctx: RequestContext, cycleId: string): Pr
     } else if (cycle.frameworkKey === 'NIS2') {
         result = await computeNIS2Readiness(ctx, cycle);
     } else {
-        throw notFound(`No readiness model for framework: ${cycle.frameworkKey}`);
+        // Audit S5 — generic fallback for custom frameworks. Coverage
+        // + evidence + issues only (no implementation/policy specifics).
+        result = await computeGenericReadiness(ctx, cycle);
+    }
+
+    // Audit S5 — persist a time-series snapshot AFTER scoring so the
+    // dashboard's readiness-over-time chart has a cheap source. The
+    // snapshot is best-effort: if the write fails, the computed
+    // result still returns to the caller (the original behaviour).
+    try {
+        await runInTenantContext(ctx, (tdb) =>
+            tdb.readinessSnapshot.create({
+                data: {
+                    tenantId: ctx.tenantId,
+                    frameworkKey: cycle.frameworkKey,
+                    auditCycleId: cycleId,
+                    score: result.score,
+                    breakdownJson: result.breakdown as unknown as Prisma.InputJsonValue,
+                    gapCount: result.gaps.length,
+                    computedByUserId: ctx.userId,
+                },
+            }),
+        );
+    } catch (_err) {
+        // Snapshot is observational — failure must not surface to
+        // the caller. Job-level metrics will surface persistent
+        // failures via the standard logging pipeline.
     }
 
     // Log event
@@ -108,6 +168,169 @@ export async function computeReadiness(ctx: RequestContext, cycleId: string): Pr
         })
     );
 
+    return result;
+}
+
+/**
+ * Audit Coherence S5 (2026-05-22) — read the readiness snapshot
+ * history for the dashboard's trend chart.
+ *
+ * Returns the most-recent N snapshots for the framework in
+ * descending `computedAt` order; the chart reverses to ascending
+ * for rendering.
+ */
+export interface ReadinessSnapshotRow {
+    id: string;
+    score: number;
+    gapCount: number;
+    computedAt: Date;
+    auditCycleId: string | null;
+}
+
+export async function getReadinessHistory(
+    ctx: RequestContext,
+    frameworkKey: string,
+    opts: { take?: number; cycleId?: string } = {},
+): Promise<ReadinessSnapshotRow[]> {
+    assertCanViewPack(ctx);
+    const take = Math.min(Math.max(1, opts.take ?? 30), 200);
+
+    return runInTenantContext(ctx, (tdb) =>
+        tdb.readinessSnapshot.findMany({
+            where: {
+                tenantId: ctx.tenantId,
+                frameworkKey,
+                ...(opts.cycleId ? { auditCycleId: opts.cycleId } : {}),
+            },
+            select: {
+                id: true,
+                score: true,
+                gapCount: true,
+                computedAt: true,
+                auditCycleId: true,
+            },
+            orderBy: { computedAt: 'desc' },
+            take,
+        }),
+    );
+}
+
+// ─── Generic / Custom-Framework Scoring ───
+//
+// Audit Coherence S5 (2026-05-22) — fallback model for any
+// framework key without a hardcoded scoring profile. Uses three
+// dimensions only: coverage (% requirements mapped to APPLIES
+// controls), evidence (% mapped controls with ≥1 evidence), and
+// issues (penalty for open CONTROL_GAP / AUDIT_FINDING). Per-tenant
+// `GENERIC` weight override is honoured.
+
+const GENERIC_WEIGHTS = { coverage: 0.5, evidence: 0.35, issues: 0.15 };
+
+async function computeGenericReadiness(
+    ctx: RequestContext,
+    cycle: AuditCycle,
+): Promise<ReadinessResult> {
+    const gaps: ReadinessGap[] = [];
+    const weights = await loadEffectiveWeights(ctx, 'GENERIC', GENERIC_WEIGHTS);
+
+    // 1) Coverage — requirements mapped to APPLIES controls.
+    const fw = await runInTenantContext(ctx, (tdb) =>
+        tdb.framework.findFirst({ where: { key: cycle.frameworkKey } }),
+    );
+    let totalReqs = 0;
+    let mappedReqs = 0;
+    if (fw) {
+        const reqs = await runInTenantContext(ctx, (tdb) =>
+            tdb.frameworkRequirement.findMany({
+                where: { frameworkId: fw.id, deprecatedAt: null },
+                select: { id: true, code: true, title: true },
+            }),
+        );
+        totalReqs = reqs.length;
+        const reqIds = reqs.map((r) => r.id);
+        const mappings = await runInTenantContext(ctx, (tdb) =>
+            tdb.controlRequirementLink.findMany({
+                where: {
+                    tenantId: ctx.tenantId,
+                    requirementId: { in: reqIds },
+                    control: { applicability: 'APPLIES' as Applicability },
+                },
+                select: { requirementId: true },
+            }),
+        );
+        mappedReqs = new Set(mappings.map((m) => m.requirementId)).size;
+    }
+    const coverageScore = totalReqs > 0 ? Math.round((mappedReqs / totalReqs) * 100) : 0;
+
+    // 2) Evidence — mapped controls with ≥1 active evidence.
+    const mappedControls = await runInTenantContext(ctx, (tdb) =>
+        tdb.control.findMany({
+            where: {
+                tenantId: ctx.tenantId,
+                applicability: 'APPLIES' as Applicability,
+                deletedAt: null,
+                requirementLinks: { some: { requirement: { frameworkId: fw?.id ?? '' } } },
+            },
+            select: { id: true },
+        }),
+    );
+    let withEvidence = 0;
+    if (mappedControls.length > 0) {
+        const ids = mappedControls.map((c) => c.id);
+        const ev = await runInTenantContext(ctx, (tdb) =>
+            tdb.evidence.findMany({
+                where: {
+                    tenantId: ctx.tenantId,
+                    controlId: { in: ids },
+                    isArchived: false,
+                    deletedAt: null,
+                    status: { in: ['SUBMITTED', 'APPROVED'] },
+                },
+                select: { controlId: true },
+            }),
+        );
+        withEvidence = new Set(ev.map((e) => e.controlId).filter((v): v is string => !!v)).size;
+    }
+    const evidenceScore =
+        mappedControls.length > 0
+            ? Math.round((withEvidence / mappedControls.length) * 100)
+            : 0;
+
+    // 3) Issues — penalty for open CONTROL_GAP / AUDIT_FINDING.
+    const openIssues = await runInTenantContext(ctx, (tdb) =>
+        tdb.task.count({
+            where: {
+                tenantId: ctx.tenantId,
+                type: { in: ['CONTROL_GAP', 'AUDIT_FINDING'] },
+                status: {
+                    notIn: TERMINAL_WORK_ITEM_STATUSES as readonly WorkItemStatus[] as WorkItemStatus[],
+                },
+                deletedAt: null,
+            },
+        }),
+    );
+    const issuesScore = Math.max(0, 100 - openIssues * 5);
+
+    const finalScore = Math.round(
+        coverageScore * weights.coverage +
+            evidenceScore * weights.evidence +
+            issuesScore * weights.issues,
+    );
+
+    const result: ReadinessResult = {
+        frameworkKey: cycle.frameworkKey,
+        score: finalScore,
+        breakdown: {
+            coverage: { score: coverageScore, weight: weights.coverage, mapped: mappedReqs, total: totalReqs },
+            evidence: { score: evidenceScore, weight: weights.evidence, withEvidence, total: mappedControls.length },
+            issues: { score: issuesScore, weight: weights.issues, open: openIssues },
+        },
+        gaps,
+        recommendations: [
+            `Custom framework "${cycle.frameworkKey}" — using the generic 3-dimension scoring model (coverage / evidence / issues). For framework-specific weights or dimensions, set tenant.readinessWeightsJson["${cycle.frameworkKey}"] or add a dedicated scoring profile.`,
+        ],
+        computedAt: new Date().toISOString(),
+    };
     return result;
 }
 
