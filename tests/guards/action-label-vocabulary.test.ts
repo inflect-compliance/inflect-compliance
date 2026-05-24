@@ -86,8 +86,13 @@ const BASELINE_PLUS_LITERAL_SITES = new Set<string>([
     'src/app/t/[tenantSlug]/(app)/audits/cycles/page.tsx:219',
     'src/app/t/[tenantSlug]/(app)/audits/readiness/page.tsx:155',
     'src/app/t/[tenantSlug]/(app)/controls/[controlId]/tests/[planId]/page.tsx:300',
-    'src/app/t/[tenantSlug]/(app)/policies/[policyId]/page.tsx:439',
-    'src/app/t/[tenantSlug]/(app)/policies/[policyId]/page.tsx:740',
+    // B9 — line numbers shifted by 13 when the Export PDF anchor
+    // landed in the page-header actions slot. The `+ Version`
+    // labels themselves are unchanged staged debt (see baseline
+    // comment); refreshing the anchor positions keeps the
+    // baseline honest.
+    'src/app/t/[tenantSlug]/(app)/policies/[policyId]/page.tsx:452',
+    'src/app/t/[tenantSlug]/(app)/policies/[policyId]/page.tsx:753',
     'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:475',
     'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:503',
     'src/app/t/[tenantSlug]/(app)/tests/runs/[runId]/page.tsx:399',

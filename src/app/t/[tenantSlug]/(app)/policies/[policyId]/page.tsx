@@ -427,6 +427,19 @@ export default function PolicyDetailPage() {
             }
             actions={
                 <>
+                    {/* B9 — Export PDF. Uses a plain anchor so the
+                        browser handles the download natively; the
+                        route streams a `Content-Disposition:
+                        attachment` PDF carrying cover + TOC + body
+                        + classification chrome. */}
+                    <a
+                        href={apiUrl(`/policies/${policyId}/export`)}
+                        id="export-policy-pdf-btn"
+                        data-testid="export-policy-pdf-btn"
+                        className={buttonVariants({ variant: 'secondary', size: 'sm' })}
+                    >
+                        Export PDF
+                    </a>
                     {canWrite && policy.status !== 'ARCHIVED' && (
                         <button onClick={() => {
                             setTab('editor');
