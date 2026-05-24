@@ -15,7 +15,6 @@ import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-c
 import dynamic from 'next/dynamic';
 import LinkedTasksPanel from '@/components/LinkedTasksPanel';
 import { CopyText } from '@/components/ui/copy-text';
-import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { type StatusBadgeVariant } from '@/components/ui/status-badge';
@@ -25,6 +24,8 @@ import { MetaStrip } from '@/components/ui/meta-strip';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@dub/utils';
+import { useEditAssetForm } from '../_form/useEditAssetForm';
+import { EditAssetFields } from '../_form/EditAssetFields';
 
 const TraceabilityPanel = dynamic(() => import('@/components/TraceabilityPanel'), {
     loading: () => <SkeletonCard lines={3} />,
@@ -42,8 +43,33 @@ export default function AssetDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [editing, setEditing] = useState(false);
-    const [saving, setSaving] = useState(false);
-    const [form, setForm] = useState<any>({});
+    // Modal-form P1 — the edit form lives in the shared
+    // `useEditAssetForm` hook + `<EditAssetFields>` markup. The detail
+    // page still owns the editing flag (a P2 follow-up swaps the inline
+    // block for `<EditAssetModal>`); for now the same hook drives the
+    // inline experience unchanged.
+    const editForm = useEditAssetForm({
+        assetId,
+        initial: asset
+            ? {
+                  name: asset.name || '',
+                  type: asset.type || 'SYSTEM',
+                  classification: asset.classification || '',
+                  owner: asset.owner || '',
+                  location: asset.location || '',
+                  criticality: asset.criticality || '',
+                  status: asset.status || 'ACTIVE',
+                  externalRef: asset.externalRef || '',
+                  confidentiality: asset.confidentiality ?? 3,
+                  integrity: asset.integrity ?? 3,
+                  availability: asset.availability ?? 3,
+              }
+            : {},
+        onSuccess: (updated) => {
+            setAsset(updated);
+            setEditing(false);
+        },
+    });
 
     const fetchAsset = useCallback(async () => {
         setLoading(true);
@@ -62,48 +88,14 @@ export default function AssetDetailPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { fetchAsset(); }, [fetchAsset]);
 
+    // P1: form state + save handler now live in `useEditAssetForm`.
+    // The `editing` flag below toggles the panel; clicking Edit opens
+    // the field cluster, Cancel collapses it.
     const startEdit = () => {
         if (!asset) return;
-        setForm({
-            name: asset.name || '',
-            type: asset.type || 'SYSTEM',
-            classification: asset.classification || '',
-            owner: asset.owner || '',
-            location: asset.location || '',
-            criticality: asset.criticality || '',
-            status: asset.status || 'ACTIVE',
-            externalRef: asset.externalRef || '',
-            confidentiality: asset.confidentiality ?? 3,
-            integrity: asset.integrity ?? 3,
-            availability: asset.availability ?? 3,
-        });
         setEditing(true);
     };
 
-    const handleSave = async () => {
-        setSaving(true);
-        try {
-            const res = await fetch(apiUrl(`/assets/${assetId}`), {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(form),
-            });
-            if (!res.ok) throw new Error(`Failed to save (${res.status})`);
-            const data = await res.json();
-            setAsset(data);
-            setEditing(false);
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const TYPES = ['INFORMATION', 'APPLICATION', 'SYSTEM', 'SERVICE', 'DATA_STORE', 'INFRASTRUCTURE', 'VENDOR', 'PROCESS', 'PEOPLE_PROCESS', 'OTHER'];
-    const TYPE_OPTIONS: ComboboxOption[] = TYPES.map(t => ({ value: t, label: t.replace(/_/g, ' ') }));
-    const CRITICALITIES = ['LOW', 'MEDIUM', 'HIGH'];
-    const CRIT_OPTIONS: ComboboxOption[] = CRITICALITIES.map(c => ({ value: c, label: c }));
-    const STATUS_OPTIONS: ComboboxOption[] = [{ value: 'ACTIVE', label: 'Active' }, { value: 'RETIRED', label: 'Retired' }];
     const critColor = (c: string): StatusBadgeVariant => c === 'HIGH' ? 'error' : c === 'MEDIUM' ? 'warning' : 'success';
 
     const breadcrumbs = [
@@ -183,19 +175,27 @@ export default function AssetDetailPage() {
             <div className={cn(cardVariants(), 'space-y-default')} id="asset-detail">
                 {editing ? (
                     <>
-                        <div className="grid grid-cols-2 gap-default">
-                            <div><label className="input-label">Name *</label><input className="input" value={form.name} onChange={e => setForm((f: any) => ({ ...f, name: e.target.value }))} /></div>
-                            <div><label className="input-label">Type</label><Combobox hideSearch selected={TYPE_OPTIONS.find(o => o.value === form.type) ?? null} setSelected={(opt) => setForm((f: any) => ({ ...f, type: opt?.value ?? 'SYSTEM' }))} options={TYPE_OPTIONS} matchTriggerWidth /></div>
-                            <div><label className="input-label">Criticality</label><Combobox hideSearch selected={CRIT_OPTIONS.find(o => o.value === form.criticality) ?? null} setSelected={(opt) => setForm((f: any) => ({ ...f, criticality: opt?.value || null }))} options={CRIT_OPTIONS} placeholder="—" matchTriggerWidth /></div>
-                            <div><label className="input-label">Status</label><Combobox hideSearch selected={STATUS_OPTIONS.find(o => o.value === form.status) ?? null} setSelected={(opt) => setForm((f: any) => ({ ...f, status: opt?.value ?? 'ACTIVE' }))} options={STATUS_OPTIONS} matchTriggerWidth /></div>
-                            <div><label className="input-label">Owner</label><input className="input" value={form.owner} onChange={e => setForm((f: any) => ({ ...f, owner: e.target.value }))} /></div>
-                            <div><label className="input-label">External Ref</label><input className="input" value={form.externalRef} onChange={e => setForm((f: any) => ({ ...f, externalRef: e.target.value }))} /></div>
-                            <div><label className="input-label">Classification</label><input className="input" value={form.classification} onChange={e => setForm((f: any) => ({ ...f, classification: e.target.value }))} /></div>
-                            <div><label className="input-label">Location</label><input className="input" value={form.location} onChange={e => setForm((f: any) => ({ ...f, location: e.target.value }))} /></div>
-                        </div>
+                        <EditAssetFields form={editForm} />
+                        {editForm.error && (
+                            <div className="text-xs text-content-error">
+                                {editForm.error}
+                            </div>
+                        )}
                         <div className="flex gap-compact pt-2">
-                            <Button variant="primary" onClick={handleSave} disabled={saving} id="save-asset-btn">{saving ? 'Saving…' : 'Save'}</Button>
-                            <Button variant="secondary" onClick={() => setEditing(false)}>Cancel</Button>
+                            <Button
+                                variant="primary"
+                                onClick={() => void editForm.submit()}
+                                disabled={!editForm.canSubmit}
+                                id="save-asset-btn"
+                            >
+                                {editForm.submitting ? 'Saving…' : 'Save'}
+                            </Button>
+                            <Button
+                                variant="secondary"
+                                onClick={() => setEditing(false)}
+                            >
+                                Cancel
+                            </Button>
                         </div>
                     </>
                 ) : (

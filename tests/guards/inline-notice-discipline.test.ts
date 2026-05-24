@@ -110,7 +110,12 @@ const EXEMPT_FILES = new Set<string>([
     // to render a subtler shade than InlineNotice's full tint —
     // intentional. Long-term: extend FormError to accept a `tone`
     // prop instead of the className override; out of PR-10 scope.
-    "src/app/t/[tenantSlug]/(app)/tasks/new/page.tsx",
+    //
+    // Modal-form P1 (2026-05-24) — the field cluster was extracted
+    // from `tasks/new/page.tsx` into `tasks/_form/NewTaskFields.tsx`
+    // so the future modal can compose the same markup. The warning-
+    // tone FormError moved with the fields; the exemption follows.
+    "src/app/t/[tenantSlug]/(app)/tasks/_form/NewTaskFields.tsx",
 ]);
 
 // Match `bg-bg-{variant}` co-occurring with `border-border-{variant}`
