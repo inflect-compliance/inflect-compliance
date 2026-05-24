@@ -35,16 +35,18 @@ const EXPECTED_SURFACES: TelemetrySurface[] = [
     { label: 'evidence/UploadEvidenceModal.tsx', files: ['src/app/t/[tenantSlug]/(app)/evidence/UploadEvidenceModal.tsx'] },
     { label: 'evidence/NewEvidenceTextModal.tsx', files: ['src/app/t/[tenantSlug]/(app)/evidence/NewEvidenceTextModal.tsx'] },
     {
-        label: 'tasks/new (page + hook)',
+        label: 'tasks/new (shim + modal + hook)',
         files: [
             'src/app/t/[tenantSlug]/(app)/tasks/new/page.tsx',
+            'src/app/t/[tenantSlug]/(app)/tasks/NewTaskModal.tsx',
             'src/app/t/[tenantSlug]/(app)/tasks/_form/useNewTaskForm.ts',
         ],
     },
     {
-        label: 'policies/new (page + hook)',
+        label: 'policies/new (shim + modal + hook)',
         files: [
             'src/app/t/[tenantSlug]/(app)/policies/new/page.tsx',
+            'src/app/t/[tenantSlug]/(app)/policies/NewPolicyModal.tsx',
             'src/app/t/[tenantSlug]/(app)/policies/_form/useNewPolicyForm.ts',
         ],
     },

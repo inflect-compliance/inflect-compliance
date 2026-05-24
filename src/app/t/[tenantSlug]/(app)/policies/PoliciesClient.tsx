@@ -2,9 +2,12 @@
 /* eslint-disable react-hooks/exhaustive-deps -- Various useEffect/useMemo dep arrays in this file deliberately omit identity-unstable callbacks (handlers recreated each render) or use selector functions whose change-detection happens elsewhere. Adding the deps would either trigger unnecessary re-runs OR cause infinite render loops; the proper structural fix is to wrap parent-level callbacks in useCallback. Tracked as follow-up. */
 /* eslint-disable @typescript-eslint/no-explicit-any -- Server payload is loosely typed at the page boundary; per-cell TanStack column callbacks need a per-row narrowing pass to remove the `any`s, tracked as follow-up. */
 import { TimestampTooltip } from '@/components/ui/timestamp-tooltip';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { NewPolicyModal } from './NewPolicyModal';
+import { Button } from '@/components/ui/button';
+import { Plus } from '@/components/ui/icons/nucleo';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import type { CappedList } from '@/lib/list-backfill-cap';
@@ -94,6 +97,32 @@ function PoliciesPageInner({
     // Null on SSR + first client render so the "Overdue" badge doesn't
     // flip between server- and client-side `new Date()` values.
     const hydratedNow = useHydratedNow();
+
+    // Modal-form P2 — create-policy modal auto-opens on `?create=1`
+    // (the redirect target from `/policies/new`). `?template=1`
+    // additionally puts the modal in template-picker mode (the
+    // legacy `?template=1` deep-link on `/policies/new` is forwarded
+    // by the redirect shim).
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [createTemplateMode, setCreateTemplateMode] = useState(false);
+    const searchParams = useSearchParams();
+    useEffect(() => {
+        if (searchParams?.get('create') === '1') {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setIsCreateOpen(true);
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setCreateTemplateMode(searchParams.get('template') === '1');
+            const next = new URLSearchParams(searchParams.toString());
+            next.delete('create');
+            next.delete('template');
+            const qs = next.toString();
+            router.replace(
+                `/t/${tenantSlug}/policies${qs ? `?${qs}` : ''}`,
+                { scroll: false },
+            );
+        }
+        // First-mount only.
+    }, []);
 
     const filterCtx = useFilters();
     const { state, search, hasActive } = filterCtx;
@@ -394,13 +423,17 @@ function PoliciesPageInner({
                         >
                             From Template
                         </Link>
-                        <Link
-                            href={tenantHref('/policies/new')}
-                            className={buttonVariants({ variant: 'primary' })}
+                        <Button
+                            variant="primary"
+                            icon={<Plus />}
+                            onClick={() => {
+                                setCreateTemplateMode(false);
+                                setIsCreateOpen(true);
+                            }}
                             id="new-policy-btn"
                         >
-                            + Policy
-                        </Link>
+                            Create Policy
+                        </Button>
                     </>
                 ) : null,
             }}
@@ -473,6 +506,14 @@ function PoliciesPageInner({
                 'data-testid': 'policies-table',
                 className: 'hover:bg-bg-muted',
             }}
-        />
+        >
+            {permissions.canWrite && (
+                <NewPolicyModal
+                    open={isCreateOpen}
+                    setOpen={setIsCreateOpen}
+                    isTemplateMode={createTemplateMode}
+                />
+            )}
+        </EntityListPage>
     );
 }

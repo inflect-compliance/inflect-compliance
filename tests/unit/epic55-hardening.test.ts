@@ -32,11 +32,15 @@ const CLAUSES_SRC = read(
 const POLICIES_NEW_SRC =
     read('src/app/t/[tenantSlug]/(app)/policies/new/page.tsx') +
     '\n' +
+    read('src/app/t/[tenantSlug]/(app)/policies/NewPolicyModal.tsx') +
+    '\n' +
     read('src/app/t/[tenantSlug]/(app)/policies/_form/NewPolicyFields.tsx') +
     '\n' +
     read('src/app/t/[tenantSlug]/(app)/policies/_form/useNewPolicyForm.ts');
 const TASKS_NEW_SRC =
     read('src/app/t/[tenantSlug]/(app)/tasks/new/page.tsx') +
+    '\n' +
+    read('src/app/t/[tenantSlug]/(app)/tasks/NewTaskModal.tsx') +
     '\n' +
     read('src/app/t/[tenantSlug]/(app)/tasks/_form/NewTaskFields.tsx') +
     '\n' +

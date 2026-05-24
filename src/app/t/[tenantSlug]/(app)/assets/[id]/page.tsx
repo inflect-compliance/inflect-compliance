@@ -24,8 +24,7 @@ import { MetaStrip } from '@/components/ui/meta-strip';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@dub/utils';
-import { useEditAssetForm } from '../_form/useEditAssetForm';
-import { EditAssetFields } from '../_form/EditAssetFields';
+import { EditAssetModal } from '../EditAssetModal';
 
 const TraceabilityPanel = dynamic(() => import('@/components/TraceabilityPanel'), {
     loading: () => <SkeletonCard lines={3} />,
@@ -42,34 +41,27 @@ export default function AssetDetailPage() {
     const [asset, setAsset] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    // Modal-form P2 — the inline-edit panel is replaced by an
+    // EditAssetModal launched from the detail header. The page URL
+    // stays canonical; modal state is purely overlay. Seeding values
+    // are computed from the currently-loaded `asset` row at modal
+    // open time.
     const [editing, setEditing] = useState(false);
-    // Modal-form P1 — the edit form lives in the shared
-    // `useEditAssetForm` hook + `<EditAssetFields>` markup. The detail
-    // page still owns the editing flag (a P2 follow-up swaps the inline
-    // block for `<EditAssetModal>`); for now the same hook drives the
-    // inline experience unchanged.
-    const editForm = useEditAssetForm({
-        assetId,
-        initial: asset
-            ? {
-                  name: asset.name || '',
-                  type: asset.type || 'SYSTEM',
-                  classification: asset.classification || '',
-                  owner: asset.owner || '',
-                  location: asset.location || '',
-                  criticality: asset.criticality || '',
-                  status: asset.status || 'ACTIVE',
-                  externalRef: asset.externalRef || '',
-                  confidentiality: asset.confidentiality ?? 3,
-                  integrity: asset.integrity ?? 3,
-                  availability: asset.availability ?? 3,
-              }
-            : {},
-        onSuccess: (updated) => {
-            setAsset(updated);
-            setEditing(false);
-        },
-    });
+    const editInitial = asset
+        ? {
+              name: asset.name || '',
+              type: asset.type || 'SYSTEM',
+              classification: asset.classification || '',
+              owner: asset.owner || '',
+              location: asset.location || '',
+              criticality: asset.criticality || '',
+              status: asset.status || 'ACTIVE',
+              externalRef: asset.externalRef || '',
+              confidentiality: asset.confidentiality ?? 3,
+              integrity: asset.integrity ?? 3,
+              availability: asset.availability ?? 3,
+          }
+        : {};
 
     const fetchAsset = useCallback(async () => {
         setLoading(true);
@@ -87,14 +79,6 @@ export default function AssetDetailPage() {
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { fetchAsset(); }, [fetchAsset]);
-
-    // P1: form state + save handler now live in `useEditAssetForm`.
-    // The `editing` flag below toggles the panel; clicking Edit opens
-    // the field cluster, Cancel collapses it.
-    const startEdit = () => {
-        if (!asset) return;
-        setEditing(true);
-    };
 
     const critColor = (c: string): StatusBadgeVariant => c === 'HIGH' ? 'error' : c === 'MEDIUM' ? 'warning' : 'success';
 
@@ -161,45 +145,30 @@ export default function AssetDetailPage() {
                 />
             }
             actions={
-                permissions.canWrite && !editing && (
+                permissions.canWrite && (
                     <>
                         <Link href={tenantHref(`/risks/ai?assetId=${assetId}`)} className={buttonVariants({ variant: 'secondary' })} id="suggest-risks-btn">Suggest Risks</Link>
-                        <Button variant="secondary" onClick={startEdit} id="edit-asset-btn">Edit</Button>
+                        <Button variant="secondary" onClick={() => setEditing(true)} id="edit-asset-btn">Edit</Button>
                     </>
                 )
             }
         >
             {error && <div className={cn(cardVariants({ density: 'compact' }), 'border-border-error text-content-error text-sm')}>{error}</div>}
 
-            {/* Detail card */}
+            {/* Edit modal — modal-form P2. */}
+            {permissions.canWrite && (
+                <EditAssetModal
+                    open={editing}
+                    setOpen={setEditing}
+                    assetId={assetId}
+                    initial={editInitial}
+                    onSaved={(updated) => setAsset(updated)}
+                />
+            )}
+
+            {/* Detail card — read-only view; edits flow through EditAssetModal. */}
             <div className={cn(cardVariants(), 'space-y-default')} id="asset-detail">
-                {editing ? (
-                    <>
-                        <EditAssetFields form={editForm} />
-                        {editForm.error && (
-                            <div className="text-xs text-content-error">
-                                {editForm.error}
-                            </div>
-                        )}
-                        <div className="flex gap-compact pt-2">
-                            <Button
-                                variant="primary"
-                                onClick={() => void editForm.submit()}
-                                disabled={!editForm.canSubmit}
-                                id="save-asset-btn"
-                            >
-                                {editForm.submitting ? 'Saving…' : 'Save'}
-                            </Button>
-                            <Button
-                                variant="secondary"
-                                onClick={() => setEditing(false)}
-                            >
-                                Cancel
-                            </Button>
-                        </div>
-                    </>
-                ) : (
-                    <>
+                <>
                         {asset.classification && <div><Eyebrow>Classification</Eyebrow><p className="text-sm">{asset.classification}</p></div>}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
                             <div><Eyebrow>Owner</Eyebrow><p className="text-sm">{asset.owner || '—'}</p></div>
@@ -237,7 +206,6 @@ export default function AssetDetailPage() {
                             <div><Eyebrow>Updated</Eyebrow><p className="text-sm text-content-muted">{formatDate(asset.updatedAt)}</p></div>
                         </div>
                     </>
-                )}
             </div>
 
             {/* Linked Tasks */}

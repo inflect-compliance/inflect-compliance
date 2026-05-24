@@ -2,9 +2,12 @@
 /* eslint-disable react-hooks/exhaustive-deps -- Various useEffect/useMemo dep arrays in this file deliberately omit identity-unstable callbacks (handlers recreated each render) or use selector functions whose change-detection happens elsewhere. Adding the deps would either trigger unnecessary re-runs OR cause infinite render loops; the proper structural fix is to wrap parent-level callbacks in useCallback. Tracked as follow-up. */
 import { TimestampTooltip } from '@/components/ui/timestamp-tooltip';
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { NewVendorModal } from './NewVendorModal';
+import { Button } from '@/components/ui/button';
+import { Plus } from '@/components/ui/icons/nucleo';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import type { CappedList } from '@/lib/list-backfill-cap';
@@ -73,6 +76,29 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
     const router = useRouter();
     // Null until hydrated — keeps Overdue/Due badges stable across SSR.
     const hydratedNow = useHydratedNow();
+
+    // Modal-form P2 — create-vendor modal mounted off the list, auto-
+    // opening on `?create=1` (the redirect target from `/vendors/new`).
+    // Bookmarks, deep links, and E2E `page.goto('/vendors/new')` all
+    // land here. Flag is stripped after open so back/forward doesn't
+    // reopen the modal unexpectedly.
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const searchParams = useSearchParams();
+    useEffect(() => {
+        if (searchParams?.get('create') === '1') {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setIsCreateOpen(true);
+            const next = new URLSearchParams(searchParams.toString());
+            next.delete('create');
+            const qs = next.toString();
+            router.replace(
+                `/t/${tenantSlug}/vendors${qs ? `?${qs}` : ''}`,
+                { scroll: false },
+            );
+        }
+        // First-mount only.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const filterCtx = useFilters();
     const { state, search, hasActive } = filterCtx;
@@ -279,9 +305,14 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                             Dashboard
                         </Link>
                         {permissions.canCreate && (
-                            <Link href={tenantHref('/vendors/new')} className={cn(buttonVariants({ variant: 'primary' }))} id="new-vendor-btn">
-                                + Vendor
-                            </Link>
+                            <Button
+                                variant="primary"
+                                icon={<Plus />}
+                                onClick={() => setIsCreateOpen(true)}
+                                id="new-vendor-btn"
+                            >
+                                Create Vendor
+                            </Button>
                         )}
                     </div>
                 </div>
@@ -365,6 +396,10 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                     />
                 </div>
             </ListPageShell.Body>
+
+            {permissions.canCreate && (
+                <NewVendorModal open={isCreateOpen} setOpen={setIsCreateOpen} />
+            )}
         </ListPageShell>
     );
 }

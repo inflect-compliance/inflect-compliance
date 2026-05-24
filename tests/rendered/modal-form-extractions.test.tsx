@@ -49,7 +49,9 @@ const EXTRACTIONS: Extraction[] = [
             'canSubmit',
             'submit',
         ],
-        pageWrapperPath: 'policies/new/page.tsx',
+        // Modal-form P2 — `/new` routes are redirect shims now;
+        // the hook + fields are composed by the modal wrapper.
+        pageWrapperPath: 'policies/NewPolicyModal.tsx',
     },
     {
         name: 'tasks (create)',
@@ -69,7 +71,7 @@ const EXTRACTIONS: Extraction[] = [
             'validationMessage',
             'submit',
         ],
-        pageWrapperPath: 'tasks/new/page.tsx',
+        pageWrapperPath: 'tasks/NewTaskModal.tsx',
     },
     {
         name: 'vendors (create)',
@@ -85,7 +87,7 @@ const EXTRACTIONS: Extraction[] = [
             'canSubmit',
             'submit',
         ],
-        pageWrapperPath: 'vendors/new/page.tsx',
+        pageWrapperPath: 'vendors/NewVendorModal.tsx',
     },
     {
         name: 'assets (edit)',
@@ -101,7 +103,9 @@ const EXTRACTIONS: Extraction[] = [
             'canSubmit',
             'submit',
         ],
-        pageWrapperPath: 'assets/[id]/page.tsx',
+        // Modal-form P2 — the asset detail page launches EditAssetModal
+        // from its header; the modal composes the hook + fields.
+        pageWrapperPath: 'assets/EditAssetModal.tsx',
     },
 ];
 
@@ -156,6 +160,110 @@ describe.each(EXTRACTIONS)('modal-form extraction — $name', (extraction) => {
         // Heuristic — bare `setTitle`/`setName`/`setForm` calls in the
         // page wrapper indicate the old inline form survived.
         expect(src).not.toMatch(/\bsetForm\(/);
+    });
+});
+
+// ─── P2 — modal wrappers + redirect shims ───────────────────────────
+
+describe('modal-form P2 — modal wrappers exist', () => {
+    const MODALS = [
+        {
+            label: 'NewPolicyModal',
+            file: 'src/app/t/[tenantSlug]/(app)/policies/NewPolicyModal.tsx',
+        },
+        {
+            label: 'NewTaskModal',
+            file: 'src/app/t/[tenantSlug]/(app)/tasks/NewTaskModal.tsx',
+        },
+        {
+            label: 'NewVendorModal',
+            file: 'src/app/t/[tenantSlug]/(app)/vendors/NewVendorModal.tsx',
+        },
+        {
+            label: 'EditAssetModal',
+            file: 'src/app/t/[tenantSlug]/(app)/assets/EditAssetModal.tsx',
+        },
+    ];
+
+    it.each(MODALS)('$label exists and mounts <Modal>', (m) => {
+        const full = path.join(ROOT, m.file);
+        expect(fs.existsSync(full)).toBe(true);
+        const src = fs.readFileSync(full, 'utf8');
+        // Composes the canonical Modal.Form shell (matches the
+        // NewRiskModal Epic 54 precedent).
+        expect(src).toMatch(/<Modal\b/);
+        expect(src).toMatch(/Modal\.Form\b/);
+        expect(src).toMatch(/Modal\.Actions\b/);
+        // Mounts the P1 hook + fields (the seam).
+        expect(src).toMatch(/use[A-Z]\w*Form\(/);
+        expect(src).toMatch(/<[A-Z]\w*Fields\b/);
+    });
+});
+
+describe('modal-form P2 — /new routes are redirect shims', () => {
+    const REDIRECTS = [
+        {
+            label: 'policies/new',
+            file: 'src/app/t/[tenantSlug]/(app)/policies/new/page.tsx',
+            target: '/policies?',
+        },
+        {
+            label: 'tasks/new',
+            file: 'src/app/t/[tenantSlug]/(app)/tasks/new/page.tsx',
+            target: '/tasks?create=1',
+        },
+        {
+            label: 'vendors/new',
+            file: 'src/app/t/[tenantSlug]/(app)/vendors/new/page.tsx',
+            target: '/vendors?create=1',
+        },
+    ];
+
+    it.each(REDIRECTS)('$label → ?create=1 shim', (r) => {
+        const full = path.join(ROOT, r.file);
+        expect(fs.existsSync(full)).toBe(true);
+        const src = fs.readFileSync(full, 'utf8');
+        expect(src).toMatch(/redirect\(/);
+        expect(src).toContain(r.target);
+        // The shim must NOT mount any form primitives — that's the
+        // tell-tale that it's still a full page instead of a redirect.
+        expect(src).not.toMatch(/<FormField\b/);
+        expect(src).not.toMatch(/useState\b/);
+    });
+});
+
+describe('modal-form P2 — list clients open the modal on ?create=1', () => {
+    const CLIENTS = [
+        {
+            label: 'PoliciesClient',
+            file: 'src/app/t/[tenantSlug]/(app)/policies/PoliciesClient.tsx',
+            modal: 'NewPolicyModal',
+        },
+        {
+            label: 'TasksClient',
+            file: 'src/app/t/[tenantSlug]/(app)/tasks/TasksClient.tsx',
+            modal: 'NewTaskModal',
+        },
+        {
+            label: 'VendorsClient',
+            file: 'src/app/t/[tenantSlug]/(app)/vendors/VendorsClient.tsx',
+            modal: 'NewVendorModal',
+        },
+    ];
+
+    it.each(CLIENTS)('$label mounts $modal + auto-opens on ?create=1', (c) => {
+        const full = path.join(ROOT, c.file);
+        expect(fs.existsSync(full)).toBe(true);
+        const src = fs.readFileSync(full, 'utf8');
+        // Mounts the modal.
+        expect(src).toContain(c.modal);
+        expect(src).toMatch(new RegExp(`<${c.modal}\\b`));
+        // Reads the `?create=1` flag.
+        expect(src).toMatch(/useSearchParams\b/);
+        expect(src).toMatch(/searchParams.*create.*===.*1/s);
+        // Strips the flag after open (router.replace with the flag deleted).
+        expect(src).toMatch(/router\.replace\(/);
+        expect(src).toMatch(/next\.delete\(['"]create['"]\)/);
     });
 });
 

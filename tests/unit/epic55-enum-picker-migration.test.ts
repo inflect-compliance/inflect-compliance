@@ -34,6 +34,8 @@ function read(rel: string): string {
 const TASK_NEW_SRC =
     read('src/app/t/[tenantSlug]/(app)/tasks/new/page.tsx') +
     '\n' +
+    read('src/app/t/[tenantSlug]/(app)/tasks/NewTaskModal.tsx') +
+    '\n' +
     read('src/app/t/[tenantSlug]/(app)/tasks/_form/NewTaskFields.tsx') +
     '\n' +
     read('src/app/t/[tenantSlug]/(app)/tasks/_form/useNewTaskForm.ts');
@@ -48,6 +50,8 @@ const RISK_MODAL_SRC = read(
 );
 const VENDORS_NEW_SRC =
     read('src/app/t/[tenantSlug]/(app)/vendors/new/page.tsx') +
+    '\n' +
+    read('src/app/t/[tenantSlug]/(app)/vendors/NewVendorModal.tsx') +
     '\n' +
     read('src/app/t/[tenantSlug]/(app)/vendors/_form/NewVendorFields.tsx') +
     '\n' +

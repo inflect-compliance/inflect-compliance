@@ -109,7 +109,15 @@ function countVariant(content: string, variant: string): number {
 // `border-tone-budget.test.ts` (R5-PR10) — one-way down (or up,
 // for ratios).
 const MIN_SECONDARY_TO_PRIMARY_RATIO = 0.9;
-const MAX_PRIMARY_COUNT = 113; // one-headroom over today's 112
+// Modal-form P2 (2026-05-24) — bumped 113 → 115 to absorb the
+// three new modal-launch primary CTAs ("Create Policy" / "Create
+// Task" / "Create Vendor" on the respective list pages). Each
+// replaces a secondary Link → so the net change is +1 primary per
+// site; 3 sites = +3, but two were partially offset elsewhere by
+// the form-extraction cleanup that demoted some Save buttons.
+// Measured post-merge count = 114; ceiling at 115 keeps one slot of
+// headroom matching the previous policy.
+const MAX_PRIMARY_COUNT = 115;
 
 describe("primary:secondary ratio direction", () => {
     const counts = (() => {

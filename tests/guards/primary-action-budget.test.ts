@@ -94,6 +94,10 @@ const PRIMARY_BUDGET: Record<string, number> = {
     "src/app/t/[tenantSlug]/(app)/audits/cycles/page.tsx": 2,
     "src/app/t/[tenantSlug]/(app)/audits/AuditsClient.tsx": 2,
     "src/app/t/[tenantSlug]/(app)/assets/AssetsClient.tsx": 2,
+    // Modal-form P2 — page-header "Create Task" + bulk-action-toolbar
+    // "Apply" submit. Two genuinely separate visual regions; the
+    // bulk toolbar only mounts when rows are selected.
+    "src/app/t/[tenantSlug]/(app)/tasks/TasksClient.tsx": 2,
     "src/app/t/[tenantSlug]/(app)/admin/scim/page.tsx": 2,
     "src/app/t/[tenantSlug]/(app)/admin/roles/page.tsx": 2,
     "src/app/t/[tenantSlug]/(app)/admin/risk-matrix/RiskMatrixAdminClient.tsx": 2,

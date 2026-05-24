@@ -37,24 +37,27 @@ const FORM_FIELD_SURFACES: FormSurface[] = [
     { label: 'evidence/NewEvidenceTextModal.tsx', files: ['src/app/t/[tenantSlug]/(app)/evidence/NewEvidenceTextModal.tsx'] },
     { label: 'evidence/UploadEvidenceModal.tsx', files: ['src/app/t/[tenantSlug]/(app)/evidence/UploadEvidenceModal.tsx'] },
     {
-        label: 'policies/new (page + fields)',
+        label: 'policies/new (shim + modal + fields)',
         files: [
             'src/app/t/[tenantSlug]/(app)/policies/new/page.tsx',
+            'src/app/t/[tenantSlug]/(app)/policies/NewPolicyModal.tsx',
             'src/app/t/[tenantSlug]/(app)/policies/_form/NewPolicyFields.tsx',
         ],
     },
     { label: 'risks/NewRiskModal.tsx', files: ['src/app/t/[tenantSlug]/(app)/risks/NewRiskModal.tsx'] },
     {
-        label: 'tasks/new (page + fields)',
+        label: 'tasks/new (shim + modal + fields)',
         files: [
             'src/app/t/[tenantSlug]/(app)/tasks/new/page.tsx',
+            'src/app/t/[tenantSlug]/(app)/tasks/NewTaskModal.tsx',
             'src/app/t/[tenantSlug]/(app)/tasks/_form/NewTaskFields.tsx',
         ],
     },
     {
-        label: 'vendors/new (page + fields)',
+        label: 'vendors/new (shim + modal + fields)',
         files: [
             'src/app/t/[tenantSlug]/(app)/vendors/new/page.tsx',
+            'src/app/t/[tenantSlug]/(app)/vendors/NewVendorModal.tsx',
             'src/app/t/[tenantSlug]/(app)/vendors/_form/NewVendorFields.tsx',
         ],
     },
@@ -68,9 +71,10 @@ const FORM_ERROR_SURFACES: FormSurface[] = [
     // listing it here. Field-level error surfaces remain ratcheted below.
     { label: 'risks/NewRiskModal.tsx', files: ['src/app/t/[tenantSlug]/(app)/risks/NewRiskModal.tsx'] },
     {
-        label: 'tasks/new (page + fields)',
+        label: 'tasks/new (shim + modal + fields)',
         files: [
             'src/app/t/[tenantSlug]/(app)/tasks/new/page.tsx',
+            'src/app/t/[tenantSlug]/(app)/tasks/NewTaskModal.tsx',
             'src/app/t/[tenantSlug]/(app)/tasks/_form/NewTaskFields.tsx',
         ],
     },

@@ -28,13 +28,16 @@ const SHEET_SRC = read(
     'src/app/t/[tenantSlug]/(app)/controls/ControlDetailSheet.tsx',
 );
 // Modal-form P1 (2026-05-24) — `tasks/new/page.tsx` was decomposed
-// into the page wrapper + `_form/useNewTaskForm.ts` +
-// `_form/NewTaskFields.tsx`. The Epic 55 assertions don't care WHICH
-// of those files carries an import / id / handler — they just lock
-// the migration shape. Concatenate the page + extracted modules so
-// the structural assertions resolve correctly post-extraction.
+// into page wrapper + `_form/useNewTaskForm.ts` + `_form/NewTaskFields.tsx`.
+// Modal-form P2 (2026-05-24) — `tasks/new/page.tsx` further became
+// a redirect shim → `/tasks?create=1`; the modal wrapper
+// `NewTaskModal.tsx` now consumes the hook + fields. The Epic 55
+// assertions don't care WHICH file carries an import / id / handler;
+// they just lock the migration shape. Concatenate every related file.
 const TASK_NEW_SRC =
     read('src/app/t/[tenantSlug]/(app)/tasks/new/page.tsx') +
+    '\n' +
+    read('src/app/t/[tenantSlug]/(app)/tasks/NewTaskModal.tsx') +
     '\n' +
     read('src/app/t/[tenantSlug]/(app)/tasks/_form/NewTaskFields.tsx') +
     '\n' +

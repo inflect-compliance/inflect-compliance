@@ -7,7 +7,9 @@
 /* eslint-disable react-hooks/exhaustive-deps -- Various useMemo dep arrays in this file deliberately omit identity-unstable callbacks (handlers/derived arrays recreated each render). The proper structural fix is wrapping parent-level callbacks in useCallback. Tracked as follow-up; existing per-line eslint-disable-next-line markers preserved. */
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Plus } from '@/components/ui/icons/nucleo';
+import { NewTaskModal } from './NewTaskModal';
 import { AppIcon } from '@/components/icons/AppIcon';
 import { useSWRConfig } from 'swr';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
@@ -124,6 +126,27 @@ function TasksPageInner({
     const [hydrated, setHydrated] = useState(false);
     // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { setHydrated(true); }, []);
+
+    // Modal-form P2 — create-task modal auto-opens on `?create=1`
+    // (the redirect target from `/tasks/new`). Flag stripped after
+    // open so back/forward doesn't reopen the modal.
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const searchParams = useSearchParams();
+    useEffect(() => {
+        if (searchParams?.get('create') === '1') {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setIsCreateOpen(true);
+            const next = new URLSearchParams(searchParams.toString());
+            next.delete('create');
+            const qs = next.toString();
+            router.replace(
+                `/t/${tenantSlug}/tasks${qs ? `?${qs}` : ''}`,
+                { scroll: false },
+            );
+        }
+        // First-mount only.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Null until after hydration — time-dependent UI (overdue/SLA
     // badges) reads this so SSR and first-client render match exactly.
@@ -469,9 +492,14 @@ function TasksPageInner({
                     <div className="flex gap-tight">
                         <Link href={tenantHref('/tasks/dashboard')} className={buttonVariants({ variant: 'secondary', className: 'inline-flex items-center gap-tight' })} id="dashboard-btn"><AppIcon name="dashboard" size={16} /> Dashboard</Link>
                         {appPermissions.tasks.create && (
-                            <Link href={tenantHref('/tasks/new')} className={buttonVariants({ variant: 'primary' })} id="new-task-btn">
-                                + Task
-                            </Link>
+                            <Button
+                                variant="primary"
+                                icon={<Plus />}
+                                onClick={() => setIsCreateOpen(true)}
+                                id="new-task-btn"
+                            >
+                                Create Task
+                            </Button>
                         )}
                     </div>
                 </div>
@@ -620,6 +648,10 @@ function TasksPageInner({
                     className="hover:bg-bg-muted"
                 />
             </ListPageShell.Body>
+
+            {appPermissions.tasks.create && (
+                <NewTaskModal open={isCreateOpen} setOpen={setIsCreateOpen} />
+            )}
         </ListPageShell>
     );
 }
