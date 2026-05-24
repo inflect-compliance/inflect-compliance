@@ -36,6 +36,8 @@ import {
 } from '@/components/ui/filter';
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
 import { ListPageShell } from '@/components/layout/ListPageShell';
+import { TableLoadMoreFooter } from '@/components/ui/table-load-more-footer';
+import { useThresholdLoadMore } from '@/components/ui/hooks';
 import { AsidePanel } from '@/components/ui/aside-panel';
 import { AiAssistRail } from '@/components/ui/ai-assist-rail';
 import { Sparkle3 } from '@/components/ui/icons/nucleo/sparkle3';
@@ -232,9 +234,55 @@ function RisksPageInner({
             : undefined,
     });
 
-    const risks = risksQuery.data?.rows ?? [];
+    const rawRisks = risksQuery.data?.rows ?? [];
     const truncated = risksQuery.data?.truncated ?? false;
     const loading = risksQuery.isLoading && !risksQuery.data;
+
+    // ─── PR-1: org-parity sortable headers ───
+    const [sortBy, setSortBy] = useState<string | undefined>(undefined);
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | undefined>(
+        undefined,
+    );
+    const risks = useMemo(() => {
+        if (!sortBy) return rawRisks;
+        const accessor = (r: RiskListItem): string | number => {
+            switch (sortBy) {
+                case 'title':
+                    return r.title || '';
+                case 'asset':
+                    return r.asset?.name || '';
+                case 'threat':
+                    return r.threat || '';
+                case 'inherentScore':
+                    return r.inherentScore || 0;
+                case 'treatment':
+                    return r.treatment || '';
+                case 'status':
+                    return r.status || '';
+                default:
+                    return '';
+            }
+        };
+        const dir = sortOrder === 'asc' ? 1 : -1;
+        return [...rawRisks].sort((a, b) => {
+            const av = accessor(a);
+            const bv = accessor(b);
+            if (av === bv) return 0;
+            return av > bv ? dir : -dir;
+        });
+    }, [rawRisks, sortBy, sortOrder]);
+    const sortableRiskColumns = useMemo(
+        () => ['title', 'asset', 'threat', 'inherentScore', 'treatment', 'status'],
+        [],
+    );
+
+    // ─── PR-1: org-parity progressive disclosure ───
+    const {
+        visibleRows: visibleRisks,
+        totalCount: totalRisksCount,
+        hasMore: hasMoreRisks,
+        loadMore: loadMoreRisks,
+    } = useThresholdLoadMore(risks);
 
     // ─── Column visibility (Epic 52 / R10-PR6) ───
     // Pagination removed in favour of internal scroll inside the
@@ -646,10 +694,20 @@ function RisksPageInner({
                 ) : (
                     <DataTable<RiskListItem>
                         fillBody
-                        data={risks}
+                        data={visibleRisks}
                         columns={riskTableColumns}
                         loading={loading}
                         getRowId={(r) => r.id}
+                        sortableColumns={sortableRiskColumns}
+                        sortBy={sortBy}
+                        sortOrder={sortOrder}
+                        onSortChange={({
+                            sortBy: nextBy,
+                            sortOrder: nextOrder,
+                        }) => {
+                            setSortBy(nextBy);
+                            setSortOrder(nextOrder);
+                        }}
                         onRowClick={(row) => router.push(tenantHref(`/risks/${row.original.id}`))}
                         emptyState={
                             hasActive ? (
@@ -683,6 +741,15 @@ function RisksPageInner({
                         className="hover:bg-bg-muted"
                     />
                 )}
+                {/* PR-1 — org-parity load-more footer. */}
+                <TableLoadMoreFooter
+                    hasMore={hasMoreRisks}
+                    visibleCount={visibleRisks.length}
+                    totalCount={totalRisksCount}
+                    onLoadMore={loadMoreRisks}
+                    resourceName="risks"
+                    testId="tenant-risks-load-more"
+                />
             </ListPageShell.Body>
 
             {permissions.canWrite && (

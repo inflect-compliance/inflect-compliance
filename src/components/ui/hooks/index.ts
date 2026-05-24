@@ -74,6 +74,20 @@ export {
     type UseCursorPaginationResult,
 } from "./use-cursor-pagination";
 
+// ─── Threshold load-more (PR-1) ───────────────────────────────────────
+//
+// Sibling of `useCursorPagination` — same `hasMore` + `loadMore`
+// vocabulary, but slices an in-memory row list to a configurable
+// threshold instead of fetching the next server cursor. Used by
+// tenant tables that already have the full row set in memory and
+// just want progressive disclosure for performance + scannability.
+export {
+    useThresholdLoadMore,
+    DEFAULT_LOAD_MORE_THRESHOLD,
+    type UseThresholdLoadMoreOptions,
+    type UseThresholdLoadMoreResult,
+} from "./use-threshold-load-more";
+
 // ─── Celebration (Epic 62) ────────────────────────────────────────────
 export {
     useCelebration,

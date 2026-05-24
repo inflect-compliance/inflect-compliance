@@ -40,6 +40,8 @@ import {
     LeftAccordionRail,
     type LeftAccordionRailSection,
 } from '@/components/ui/left-accordion-rail';
+import { TableLoadMoreFooter } from '@/components/ui/table-load-more-footer';
+import { useThresholdLoadMore } from '@/components/ui/hooks';
 import { AsidePanel } from '@/components/ui/aside-panel';
 import { SelectionSummaryPanel } from '@/components/ui/selection-summary-panel';
 import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
@@ -242,9 +244,65 @@ function ControlsPageInner({
         staleTime: 30_000,
     });
 
-    const controls = controlsQuery.data?.rows ?? [];
+    const rawControls = controlsQuery.data?.rows ?? [];
     const truncated = controlsQuery.data?.truncated ?? false;
     const loading = controlsQuery.isLoading && !controlsQuery.data;
+
+    // ─── PR-1: org-parity sortable headers ───
+    // Client-side sort over the loaded controls. The server returns
+    // by its canonical order (annexId/code asc); when the user
+    // clicks a sortable header the page re-orders the in-memory
+    // slice without a refetch. `sortBy` + `sortOrder` flow into
+    // the shared table primitive as the sortableColumns surface.
+    const [sortBy, setSortBy] = useState<string | undefined>(undefined);
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | undefined>(
+        undefined,
+    );
+    const controls = useMemo(() => {
+        if (!sortBy) return rawControls;
+        const accessor = (c: ControlListItem): string | number => {
+            switch (sortBy) {
+                case 'code':
+                    return (c.code || c.annexId || '').toString();
+                case 'name':
+                    return (c.name || '').toString();
+                case 'status':
+                    return (c.status || '').toString();
+                case 'category':
+                    return (c.category || '').toString();
+                case 'frequency':
+                    return (c.frequency || '').toString();
+                case 'owner':
+                    return (c.owner?.name || c.owner?.email || '').toString();
+                default:
+                    return '';
+            }
+        };
+        const dir = sortOrder === 'asc' ? 1 : -1;
+        return [...rawControls].sort((a, b) => {
+            const av = accessor(a);
+            const bv = accessor(b);
+            if (av === bv) return 0;
+            return av > bv ? dir : -dir;
+        });
+    }, [rawControls, sortBy, sortOrder]);
+    const sortableColumns = useMemo(
+        () => ['code', 'name', 'status', 'category', 'frequency', 'owner'],
+        [],
+    );
+
+    // ─── PR-1: org-parity progressive disclosure ───
+    // Above the threshold (50 rows), render the first slice and
+    // expose a "Load more …" button. Below the threshold, the table
+    // renders all rows immediately. The hook owns the window size;
+    // resetting happens on a fresh mount only (re-filtering keeps
+    // the window so a narrowed result stays fully visible).
+    const {
+        visibleRows: visibleControls,
+        totalCount: totalControlsCount,
+        hasMore: hasMoreControls,
+        loadMore: loadMoreControls,
+    } = useThresholdLoadMore(controls);
 
     // ─── Filter defs with runtime-derived owner/category options ───
     const liveFilterDefs: FilterType[] = useMemo(
@@ -773,6 +831,21 @@ function ControlsPageInner({
             aside={selectionAside}
             leftRail={orientationRail}
             banner={<TruncationBanner truncated={truncated} />}
+            // PR-1 — org-parity load-more footer. Renders below the
+            // DataTable inside the same body card; gated on
+            // `hasMore` inside the primitive so it stays hidden when
+            // every row is already visible (≤ threshold or after a
+            // narrowing filter).
+            tableFooter={
+                <TableLoadMoreFooter
+                    hasMore={hasMoreControls}
+                    visibleCount={visibleControls.length}
+                    totalCount={totalControlsCount}
+                    onLoadMore={loadMoreControls}
+                    resourceName="controls"
+                    testId="tenant-controls-load-more"
+                />
+            }
             header={{
                 breadcrumbs: [
                     // Was `tenantHref('/')` — that resolves to `/t/<slug>/`
@@ -871,10 +944,24 @@ function ControlsPageInner({
                 toolbarActions: columnsDropdown,
             }}
             table={{
-                data: controls,
+                // PR-1 — sliced data via useThresholdLoadMore so the
+                // table never paints more than the windowed rows at
+                // once. The footer (see `tableFooter` below) handles
+                // progressive disclosure.
+                data: visibleControls,
                 columns: controlColumns,
                 loading,
                 getRowId: getControlRowId,
+                // PR-1 — sortable headers, matching the org-level
+                // tables (with up/down arrow indicators baked into
+                // the shared table primitive).
+                sortableColumns,
+                sortBy,
+                sortOrder,
+                onSortChange: ({ sortBy: nextBy, sortOrder: nextOrder }) => {
+                    setSortBy(nextBy);
+                    setSortOrder(nextOrder);
+                },
                 // Epic 68 — Controls page is the canonical opt-out
                 // for auto-virtualization. Per product directive the
                 // existing card scrolling on Controls stays as it is;
