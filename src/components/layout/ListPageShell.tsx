@@ -63,6 +63,17 @@ export interface ListPageShellBodyProps extends ListPageShellProps {
      * untouched.
      */
     aside?: ReactNode;
+    /**
+     * B7 — optional left orientation rail. Pass a
+     * `<LeftAccordionRail>` here. The body becomes a three-column
+     * flex row at `xl`+ : left rail (~240px) · main content
+     * (`flex-1`, table) · optional aside. Below `xl` the rail
+     * stacks above the main content. The rail sits OUTSIDE the
+     * table card's natural border via `gap-section` separation —
+     * the layout reads as "rail · table · rail", not "rail
+     * embedded INSIDE table".
+     */
+    leftRail?: ReactNode;
 }
 
 function ListPageShellRoot({ children, className }: ListPageShellProps) {
@@ -99,20 +110,20 @@ function ListPageShellFilters({ children, className }: ListPageShellProps) {
     );
 }
 
-function ListPageShellBody({ children, className, aside }: ListPageShellBodyProps) {
-    // No aside — the prior single-column body, unchanged. The
-    // `data-list-page-body` marker stays on this div: DataTable's
-    // whole-row clip useEffect walks up to find it and uses ITS
-    // clientHeight as the viewport allocation (since the card itself
-    // no longer has flex-1, its own clientHeight == content height,
-    // not available height).
-    if (!aside) {
+function ListPageShellBody({
+    children,
+    className,
+    aside,
+    leftRail,
+}: ListPageShellBodyProps) {
+    // No aside, no left rail — the prior single-column body,
+    // unchanged. The `data-list-page-body` marker stays on this
+    // div: DataTable's whole-row clip useEffect walks up to find
+    // it and uses ITS clientHeight as the viewport allocation.
+    if (!aside && !leftRail) {
         return (
             <div
                 className={cn(
-                    // Mobile: natural height. Desktop: fill remaining
-                    // space, hide own overflow so the inner DataTable
-                    // owns the scroll context.
                     'md:flex-1 md:min-h-0 md:flex md:flex-col md:overflow-hidden',
                     className,
                 )}
@@ -123,17 +134,27 @@ function ListPageShellBody({ children, className, aside }: ListPageShellBodyProp
         );
     }
 
-    // Aside present (Phase 2) — a flex row at `xl`+ : main column
-    // (flex-1) + aside column. Below `xl` it stacks (main, then aside).
-    // The OUTER row claims the height from ListPageShell; the MAIN
-    // column keeps the `data-list-page-body` marker because its
-    // clientHeight is the table's real height budget — the aside is a
-    // sibling, not an ancestor, so the table measurement is unchanged
-    // by the rail. The aside sits OUTSIDE the table's scroll context,
-    // so it stays put while the table body scrolls (co-resident, the
-    // whole point of the rail).
+    // One or both rails — a flex row at `xl`+ : optional left
+    // rail, main column (flex-1), optional aside. Below `xl` the
+    // rails stack (rail first, main second, aside third).
+    //
+    // `gap-section` between the columns is intentional — the rails
+    // sit OUTSIDE the table card's natural border with a generous
+    // breathing space; pre-B7 the gap was `gap-default` which made
+    // the rail read "embedded into the table area". The left rail
+    // is `xl:self-start` so it tracks the top of the body, not the
+    // table's full height.
     return (
-        <div className="md:flex-1 md:min-h-0 md:flex md:flex-col xl:flex-row md:overflow-hidden gap-default">
+        <div className="md:flex-1 md:min-h-0 md:flex md:flex-col xl:flex-row md:overflow-hidden gap-section">
+            {leftRail && (
+                <aside
+                    className="flex-shrink-0 xl:self-start"
+                    aria-label="Orientation"
+                    data-testid="list-page-left-rail"
+                >
+                    {leftRail}
+                </aside>
+            )}
             <div
                 className={cn(
                     'md:flex-1 md:min-h-0 md:flex md:flex-col md:overflow-hidden xl:min-w-0',
@@ -143,13 +164,15 @@ function ListPageShellBody({ children, className, aside }: ListPageShellBodyProp
             >
                 {children}
             </div>
-            <aside
-                className="flex-shrink-0 xl:self-start"
-                aria-label="Context"
-                data-testid="list-page-aside"
-            >
-                {aside}
-            </aside>
+            {aside && (
+                <aside
+                    className="flex-shrink-0 xl:self-start"
+                    aria-label="Context"
+                    data-testid="list-page-aside"
+                >
+                    {aside}
+                </aside>
+            )}
         </div>
     );
 }

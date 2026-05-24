@@ -216,6 +216,15 @@ export interface EntityListPageProps<TRow> {
      * selected). Omit it and the page is single-column as before.
      */
     aside?: ReactNode;
+    /**
+     * B7 — optional left orientation rail. Pass a
+     * `<LeftAccordionRail>` (or anything that fits a docked
+     * left-column shape). The shell renders it OUTSIDE the table
+     * card's natural border with a `gap-section` separation —
+     * the rail reads as a sibling, not embedded chrome. Below
+     * `xl` it stacks above the table.
+     */
+    leftRail?: ReactNode;
     /** Forwarded to the outer ListPageShell. */
     className?: string;
 }
@@ -223,7 +232,7 @@ export interface EntityListPageProps<TRow> {
 // ─── Component ──────────────────────────────────────────────────
 
 export function EntityListPage<TRow>(props: EntityListPageProps<TRow>) {
-    const { header, filters, table, banner, kpis, aside, children, className } =
+    const { header, filters, table, banner, kpis, aside, leftRail, children, className } =
         props;
 
     return (
@@ -264,7 +273,7 @@ export function EntityListPage<TRow>(props: EntityListPageProps<TRow>) {
                 </ListPageShell.Filters>
             )}
 
-            <ListPageShell.Body aside={aside}>
+            <ListPageShell.Body aside={aside} leftRail={leftRail}>
                 {banner}
                 <DataTable<TRow>
                     fillBody={table.fillBody ?? true}
