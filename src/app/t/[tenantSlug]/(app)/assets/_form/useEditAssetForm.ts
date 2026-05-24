@@ -41,6 +41,7 @@ export interface EditAssetFormReturn {
     error: string | null;
     canSubmit: boolean;
     submit: () => Promise<void>;
+    isDirty: boolean;
 }
 
 export interface UseEditAssetFormOptions {
@@ -77,12 +78,14 @@ export function useEditAssetForm({
     }));
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isDirty, setIsDirty] = useState(false);
 
     const setField = <K extends keyof EditAssetFormFields>(
         key: K,
         value: EditAssetFormFields[K],
     ) => {
         setFields((f) => ({ ...f, [key]: value }));
+        setIsDirty(true);
     };
 
     const canSubmit = fields.name.trim().length > 0 && !submitting;
@@ -98,6 +101,7 @@ export function useEditAssetForm({
             });
             if (!res.ok) throw new Error(`Failed to save (${res.status})`);
             const updated = await res.json();
+            setIsDirty(false);
             onSuccess(updated);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
@@ -114,5 +118,6 @@ export function useEditAssetForm({
         error,
         canSubmit,
         submit,
+        isDirty,
     };
 }

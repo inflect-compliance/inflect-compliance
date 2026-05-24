@@ -12,7 +12,7 @@
  * `/policies?create=1`; the list page (PoliciesClient) reads the flag
  * on mount and opens this modal.
  */
-import { type Dispatch, type SetStateAction } from 'react';
+import { useCallback, type Dispatch, type SetStateAction } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTenantHref } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
@@ -43,10 +43,30 @@ export function NewPolicyModal({
         },
     });
 
-    const close = () => {
-        if (form.submitting) return;
-        setOpen(false);
-    };
+    // P3 — unsaved-changes warning. Every close path (Cancel button,
+    // X, Escape, outside click) routes through `guardedSetOpen` —
+    // Radix's `onOpenChange` (wired via `setShowModal`) fires the same
+    // setter, so the warning catches all of them uniformly.
+    const guardedSetOpen = useCallback<Dispatch<SetStateAction<boolean>>>(
+        (next) => {
+            const wantClose =
+                typeof next === 'function' ? !next(true) : next === false;
+            if (wantClose) {
+                if (form.submitting) return;
+                if (
+                    form.isDirty &&
+                    !window.confirm(
+                        'Discard policy? Any details you entered will be lost.',
+                    )
+                ) {
+                    return;
+                }
+            }
+            setOpen(next);
+        },
+        [form.submitting, form.isDirty, setOpen],
+    );
+    const close = () => guardedSetOpen(false);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -56,7 +76,7 @@ export function NewPolicyModal({
     return (
         <Modal
             showModal={open}
-            setShowModal={setOpen}
+            setShowModal={guardedSetOpen}
             size="lg"
             title={isTemplateMode ? 'New policy from template' : 'New policy'}
             description={

@@ -37,6 +37,7 @@ export interface NewVendorFormReturn {
     error: string | null;
     canSubmit: boolean;
     submit: () => Promise<void>;
+    isDirty: boolean;
 }
 
 export interface UseNewVendorFormOptions {
@@ -65,12 +66,14 @@ export function useNewVendorForm({
     });
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isDirty, setIsDirty] = useState(false);
 
     const setField = <K extends keyof NewVendorFormFields>(
         key: K,
         value: NewVendorFormFields[K],
     ) => {
         setFields((f) => ({ ...f, [key]: value }));
+        setIsDirty(true);
     };
 
     const canSubmit = fields.name.trim().length > 0 && !submitting;
@@ -103,6 +106,7 @@ export function useNewVendorForm({
             });
             if (res.ok) {
                 const vendor = await res.json();
+                setIsDirty(false);
                 onSuccess(vendor);
             } else {
                 const err = await res.json().catch(() => ({}));
@@ -120,5 +124,6 @@ export function useNewVendorForm({
         error,
         canSubmit,
         submit,
+        isDirty,
     };
 }

@@ -69,6 +69,12 @@ export interface NewTaskFormReturn {
      */
     validationMessage: string;
     submit: () => Promise<void>;
+    /**
+     * True once the user has interacted with any field or staged a
+     * pending link. Cleared on submit-success. Used by the modal
+     * wrapper to gate the unsaved-changes warning.
+     */
+    isDirty: boolean;
 }
 
 export interface UseNewTaskFormOptions {
@@ -99,12 +105,14 @@ export function useNewTaskForm({
     const [linkEntityId, setLinkEntityId] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isDirty, setIsDirty] = useState(false);
 
     const setField = <K extends keyof NewTaskFormFields>(
         key: K,
         value: NewTaskFormFields[K],
     ) => {
         setFields((f) => ({ ...f, [key]: value }));
+        setIsDirty(true);
     };
 
     const addPendingLink = () => {
@@ -114,6 +122,7 @@ export function useNewTaskForm({
             { entityType: linkEntityType, entityId: linkEntityId.trim() },
         ]);
         setLinkEntityId('');
+        setIsDirty(true);
     };
     const removePendingLink = (idx: number) => {
         setPendingLinks((prev) => prev.filter((_, i) => i !== idx));
@@ -214,6 +223,7 @@ export function useNewTaskForm({
             }
 
             telemetry.trackSuccess({ taskId: task.id });
+            setIsDirty(false);
             onSuccess(task);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
@@ -239,5 +249,6 @@ export function useNewTaskForm({
         canSubmit,
         validationMessage,
         submit,
+        isDirty,
     };
 }
