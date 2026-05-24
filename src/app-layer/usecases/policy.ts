@@ -469,7 +469,38 @@ export async function decidePolicyApproval(ctx: RequestContext, approvalId: stri
 
 // ─── Publish / Archive ───
 
-export async function publishPolicy(ctx: RequestContext, policyId: string, versionId: string) {
+/**
+ * Audit Coherence S4 (2026-05-22) — `publishPolicy` previously
+ * accepted any policy regardless of status (an admin could publish a
+ * DRAFT, bypassing the approval workflow entirely). The audit
+ * recommended either blocking non-APPROVED publishes outright OR
+ * audit-logging the bypass. This implementation does BOTH:
+ *
+ *   - DEFAULT: refuses to publish unless `policy.status === 'APPROVED'`.
+ *   - BYPASS: passing `bypassApprovalReason` allows publishing from
+ *     any pre-PUBLISHED status, but the bypass + the reason are
+ *     captured in a dedicated audit row (`POLICY_PUBLISH_BYPASS`).
+ *
+ * The bypass exists because real-world emergencies (hot-fix to a
+ * security policy mid-incident) shouldn't be entirely blocked, but
+ * they MUST be auditable + justified.
+ */
+export interface PublishPolicyOptions {
+    /**
+     * If set, allows publishing a policy that isn't APPROVED. The
+     * reason is captured verbatim in the bypass audit row and
+     * surfaces in the policy's audit history for review. Empty /
+     * whitespace-only reasons are rejected.
+     */
+    bypassApprovalReason?: string;
+}
+
+export async function publishPolicy(
+    ctx: RequestContext,
+    policyId: string,
+    versionId: string,
+    options: PublishPolicyOptions = {},
+) {
     assertCanAdmin(ctx);
 
     return runInTenantContext(ctx, async (db) => {
@@ -482,9 +513,43 @@ export async function publishPolicy(ctx: RequestContext, policyId: string, versi
             throw badRequest('Version does not belong to this policy');
         }
 
+        // Audit S4 — approval gate. Default refuses non-APPROVED;
+        // `bypassApprovalReason` opens the door but logs the bypass.
+        const isApproved = policy.status === 'APPROVED';
+        const bypassReason = options.bypassApprovalReason?.trim() ?? '';
+        if (!isApproved && bypassReason.length === 0) {
+            throw badRequest(
+                `Policy ${policyId} is ${policy.status}; cannot publish without going through APPROVED. ` +
+                    `If this is an emergency override, supply bypassApprovalReason to record the bypass.`,
+            );
+        }
+
         // Set as current version and publish
         await PolicyRepository.setCurrentVersion(db, ctx, policyId, versionId);
         await PolicyRepository.updateStatus(db, ctx, policyId, 'PUBLISHED');
+
+        // If we got here via the bypass path, emit the dedicated
+        // audit row BEFORE the POLICY_PUBLISHED event so the timeline
+        // reads "bypass first, then publish".
+        if (!isApproved) {
+            await logEvent(db, ctx, {
+                action: 'POLICY_PUBLISH_BYPASS',
+                entityType: 'Policy',
+                entityId: policyId,
+                details: `Bypassed APPROVED gate to publish from ${policy.status}: ${bypassReason}`,
+                detailsJson: {
+                    category: 'status_change',
+                    entityName: 'Policy',
+                    fromStatus: policy.status,
+                    summary: `Approval gate bypassed (was ${policy.status})`,
+                    after: {
+                        bypassReason,
+                        versionId,
+                        versionNumber: version.versionNumber,
+                    },
+                },
+            });
+        }
 
         await logEvent(db, ctx, {
             action: 'POLICY_PUBLISHED',

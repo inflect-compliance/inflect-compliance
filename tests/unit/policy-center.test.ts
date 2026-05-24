@@ -42,6 +42,8 @@ jest.mock('@/lib/db-context', () => ({
 jest.mock('@/app-layer/events/audit', () => ({
     logEvent: jest.fn(),
 }));
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { logEvent: mockLogEvent } = require('@/app-layer/events/audit');
 
 // Mock repositories
 const mockPolicyRepo = {
@@ -176,7 +178,7 @@ describe('Policy Authorization Matrix', () => {
     });
 
     describe('publishPolicy — ADMIN only', () => {
-        it('ADMIN can publish', async () => {
+        it('ADMIN can publish an APPROVED policy', async () => {
             mockPolicyRepo.getById.mockResolvedValue({ id: 'p1', status: 'APPROVED' });
             mockVersionRepo.getById.mockResolvedValue({ id: 'v1', policyId: 'p1', versionNumber: 1 });
             await expect(
@@ -188,6 +190,49 @@ describe('Policy Authorization Matrix', () => {
             await expect(
                 usecases.publishPolicy(mockCtx(role), 'p1', 'v1')
             ).rejects.toThrow(AppError);
+        });
+
+        // Audit S4 (2026-05-22) — the approval gate.
+        it.each(['DRAFT', 'IN_REVIEW', 'REJECTED'])(
+            'refuses %s status without bypassApprovalReason',
+            async (status) => {
+                mockPolicyRepo.getById.mockResolvedValue({ id: 'p1', status });
+                mockVersionRepo.getById.mockResolvedValue({ id: 'v1', policyId: 'p1', versionNumber: 1 });
+                await expect(
+                    usecases.publishPolicy(mockCtx('ADMIN'), 'p1', 'v1')
+                ).rejects.toThrow(/cannot publish/i);
+            },
+        );
+
+        it('allows non-APPROVED publish with bypassApprovalReason + emits POLICY_PUBLISH_BYPASS audit', async () => {
+            mockPolicyRepo.getById.mockResolvedValue({ id: 'p1', status: 'DRAFT' });
+            mockVersionRepo.getById.mockResolvedValue({ id: 'v1', policyId: 'p1', versionNumber: 1 });
+            await expect(
+                usecases.publishPolicy(mockCtx('ADMIN'), 'p1', 'v1', {
+                    bypassApprovalReason: 'Emergency hot-fix for active incident #IR-42',
+                })
+            ).resolves.toBeDefined();
+            // The bypass audit row fires BEFORE POLICY_PUBLISHED in the same call.
+            const actions = (mockLogEvent.mock.calls as any[]).map((c) => c[2].action);
+            expect(actions).toContain('POLICY_PUBLISH_BYPASS');
+            expect(actions).toContain('POLICY_PUBLISHED');
+            const bypassEvent = (mockLogEvent.mock.calls as any[])
+                .map((c) => c[2])
+                .find((e) => e.action === 'POLICY_PUBLISH_BYPASS');
+            expect(bypassEvent.detailsJson.after.bypassReason).toBe(
+                'Emergency hot-fix for active incident #IR-42',
+            );
+            expect(bypassEvent.detailsJson.fromStatus).toBe('DRAFT');
+        });
+
+        it('rejects whitespace-only bypassApprovalReason as if missing', async () => {
+            mockPolicyRepo.getById.mockResolvedValue({ id: 'p1', status: 'DRAFT' });
+            mockVersionRepo.getById.mockResolvedValue({ id: 'v1', policyId: 'p1', versionNumber: 1 });
+            await expect(
+                usecases.publishPolicy(mockCtx('ADMIN'), 'p1', 'v1', {
+                    bypassApprovalReason: '   ',
+                })
+            ).rejects.toThrow(/cannot publish/i);
         });
     });
 
