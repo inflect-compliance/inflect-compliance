@@ -237,6 +237,12 @@ export function EvidenceSubTable({
     //   • DataTable mounts a real `<table>` inside the wrapper, so
     //     `#evidence-table tbody tr` descent still works for
     //     row-count / row-click assertions.
+    // `selectionEnabled={false}` is load-bearing — DataTable defaults
+    // selection to ON, which adds a leading checkbox `<button>` to
+    // every row. That would make `#evidence-table tbody tr button`
+    // (used by `control-evidence.spec.ts` to find the unlink button)
+    // match the checkbox first instead of the unlink. Selection
+    // would be useless on a detail sub-table anyway — no batch ops.
     if (rows.length === 0) {
         return (
             <DataTable
@@ -244,6 +250,7 @@ export function EvidenceSubTable({
                 columns={columns}
                 getRowId={(r) => r.rowKey}
                 loading={loading}
+                selectionEnabled={false}
                 emptyState={
                     <div id="no-evidence">
                         <InlineEmptyState
@@ -262,6 +269,7 @@ export function EvidenceSubTable({
                 columns={columns}
                 getRowId={(r) => r.rowKey}
                 loading={loading}
+                selectionEnabled={false}
             />
         </div>
     );

@@ -759,6 +759,7 @@ function VendorAssessmentsTable({ assessments, vendorId, tenantHref }: { assessm
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             getRowId={(a: any) => a.id}
             columns={columns}
+            selectionEnabled={false}
             emptyState={
                 <InlineEmptyState
                     title="No assessments"
@@ -856,6 +857,7 @@ function VendorSubprocessorsTable({ subs, canWrite, onRemove }: { subs: any[]; c
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             getRowId={(s: any) => s.id}
             columns={columns}
+            selectionEnabled={false}
             emptyState={
                 <InlineEmptyState
                     title="No subprocessors"

@@ -250,11 +250,14 @@ export function ControlMappingsTab({
                 // DOM. E2E specs that look up `#mappings-table` are
                 // therefore waiting for data to arrive; preserve
                 // that contract by gating the id on rows-present.
+                // `selectionEnabled={false}` keeps the unmap-button
+                // selector working (see EvidenceSubTable comment).
                 <DataTable
                     data={[]}
                     columns={columns}
                     getRowId={(m) => m.id}
                     loading={mappingsSWR.isLoading && !mappingsSWR.data}
+                    selectionEnabled={false}
                     emptyState={
                         <InlineEmptyState
                             title="No framework mappings"
@@ -268,6 +271,7 @@ export function ControlMappingsTab({
                         data={mappingsSWR.data ?? []}
                         columns={columns}
                         getRowId={(m) => m.id}
+                        selectionEnabled={false}
                     />
                 </div>
             )}
