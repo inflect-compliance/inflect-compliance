@@ -32,6 +32,8 @@ export interface EditEvidenceModalProps {
         description: string | null;
         ownerUserId: string | null;
         controlId: string | null;
+        /** B8 follow-up — current folder label (null = unfoldered). */
+        folder?: string | null;
     } | null;
     onSaved?: () => void;
 }
@@ -48,6 +50,8 @@ export function EditEvidenceModal({
     const [description, setDescription] = useState('');
     const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
     const [controlId, setControlId] = useState('');
+    // B8 follow-up — folder is editable post-create.
+    const [folder, setFolder] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isDirty, setIsDirty] = useState(false);
@@ -61,6 +65,7 @@ export function EditEvidenceModal({
             setDescription(initial.description ?? '');
             setOwnerUserId(initial.ownerUserId);
             setControlId(initial.controlId ?? '');
+            setFolder(initial.folder ?? '');
             setSubmitting(false);
             setError(null);
             setIsDirty(false);
@@ -82,6 +87,10 @@ export function EditEvidenceModal({
                     description: description || null,
                     ownerUserId: ownerUserId || null,
                     controlId: controlId || null,
+                    // B8 follow-up — empty string clears the folder
+                    // (the usecase null-coerces); a non-empty value
+                    // sets it. `undefined` would skip the update.
+                    folder: folder.trim() || null,
                 }),
             });
             if (!res.ok) {
@@ -201,6 +210,21 @@ export function EditEvidenceModal({
                                 />
                             </FormField>
                         </div>
+                        {/* B8 follow-up — folder is editable post-
+                            create. Clearing the field re-files the
+                            evidence as unfoldered. */}
+                        <FormField label="Folder">
+                            <Input
+                                id="edit-evidence-folder-input"
+                                data-testid="edit-evidence-folder-input"
+                                value={folder}
+                                onChange={(e) => {
+                                    setFolder(e.target.value);
+                                    markDirty();
+                                }}
+                                placeholder="e.g. SOC2/2026 — clear to unfile"
+                            />
+                        </FormField>
                     </fieldset>
                 </Modal.Body>
                 <Modal.Actions>

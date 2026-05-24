@@ -76,6 +76,9 @@ export function NewEvidenceTextModal({
         content: '',
         controlId: '',
         category: '',
+        // B8 follow-up — free-text folder label. Datalist below
+        // seeds it with values already in use on existing evidence.
+        folder: '',
         owner: '',
     });
     const [error, setError] = useState('');
@@ -88,6 +91,7 @@ export function NewEvidenceTextModal({
             content: '',
             controlId: '',
             category: '',
+            folder: '',
             owner: '',
         });
         setError('');
@@ -282,6 +286,32 @@ export function NewEvidenceTextModal({
                                     autoComplete="off"
                                 />
                             </div>
+                        </div>
+                        {/* B8 follow-up — Folder. Free text with a
+                            datalist that suggests folders already
+                            in use on the loaded evidence so users
+                            converge on a small named set without
+                            being forced into one. */}
+                        <div>
+                            <label
+                                className="mb-1 block text-sm text-content-default"
+                                htmlFor="text-evidence-folder-input"
+                            >
+                                Folder <span className="text-content-subtle font-normal">(optional)</span>
+                            </label>
+                            <input
+                                id="text-evidence-folder-input"
+                                data-testid="text-evidence-folder-input"
+                                type="text"
+                                className="input w-full"
+                                placeholder="e.g. SOC2/2026 or Quarterly access reviews"
+                                list="evidence-folder-suggestions"
+                                value={form.folder}
+                                onChange={(e) =>
+                                    update('folder', e.target.value)
+                                }
+                                autoComplete="off"
+                            />
                         </div>
                         <div>
                             <label

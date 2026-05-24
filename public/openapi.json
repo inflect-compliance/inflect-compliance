@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Inflect Compliance API",
-    "version": "1.375.0",
+    "version": "1.377.0",
     "description": "Multi-tenant compliance-management API. The schema layer in `src/lib/schemas/index.ts` (request bodies) and `src/lib/dto/*.dto.ts` (response shapes) is the single source of truth — this document is generated from those Zod schemas via `npm run openapi:generate`.",
     "license": {
       "name": "Proprietary"
@@ -1651,6 +1651,13 @@
               "null"
             ]
           },
+          "folder": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 120
+          },
           "owner": {
             "type": [
               "string",
@@ -2031,6 +2038,13 @@
               "string",
               "null"
             ]
+          },
+          "folder": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 120
           },
           "owner": {
             "type": [

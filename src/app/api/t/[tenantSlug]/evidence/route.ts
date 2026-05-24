@@ -19,6 +19,10 @@ const EvidenceQuerySchema = z.object({
     q: z.string().optional().transform(normalizeQ),
     archived: z.enum(['true', 'false']).optional(),
     expiring: z.enum(['true', 'false']).optional(),
+    // B8 follow-up — Folder filter. `__none__` is the sentinel
+    // matching null/empty folder values; any other value is an
+    // exact-match. Optional everywhere — omitted ⇒ no filter.
+    folder: z.string().optional(),
     includeDeleted: z.enum(['true', 'false']).optional(),
 }).strip();
 
@@ -37,6 +41,7 @@ export const GET = withApiErrorHandling(async (req: NextRequest, { params: param
         type: query.type,
         status: query.status,
         controlId: query.controlId,
+        folder: query.folder,
         q: query.q,
         archived: query.archived === 'true' ? true : query.archived === 'false' ? false : undefined,
         expiring: query.expiring === 'true',

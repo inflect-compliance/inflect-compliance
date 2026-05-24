@@ -287,6 +287,10 @@ const _CreateEvidenceBase = z.object({
     fileName: z.string().optional().nullable(),
     fileSize: z.coerce.number().optional().nullable(),
     category: z.string().optional().nullable(),
+    // B8 follow-up — free-text folder label, capped at 120 chars to
+    // match VendorDocument.folder. Sanitised + null-coerced at the
+    // usecase boundary.
+    folder: z.string().max(120).optional().nullable(),
     owner: z.string().optional().nullable(),          // Legacy free-text
     ownerUserId: z.string().optional().nullable(),    // Real user reference (preferred)
     reviewCycle: z.string().optional().nullable(),
@@ -305,6 +309,9 @@ export const UpdateEvidenceSchema = z.object({
     title: z.string().min(1).optional(),
     content: z.string().optional(),
     category: z.string().optional().nullable(),
+    // B8 follow-up — folder is editable post-create so a tenant
+    // can re-organise their evidence library after the fact.
+    folder: z.string().max(120).optional().nullable(),
     owner: z.string().optional().nullable(),          // Legacy free-text
     ownerUserId: z.string().optional().nullable(),    // Real user reference (preferred)
     reviewCycle: z.string().optional().nullable(),

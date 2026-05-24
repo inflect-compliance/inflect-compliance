@@ -49,6 +49,8 @@ export interface EvidenceDetailSheetProps {
         description: string | null;
         ownerUserId: string | null;
         controlId: string | null;
+        /** B8 follow-up — current folder, threaded to the edit modal. */
+        folder: string | null;
     }) => void;
     /** Existing parent review pipeline — re-uses the optimistic mutation. */
     onReview: (id: string, action: 'SUBMITTED' | 'APPROVED' | 'REJECTED') => void;
@@ -210,6 +212,18 @@ export function EvidenceDetailSheet({
                                             description: evidence.description,
                                             ownerUserId: evidence.ownerUserId,
                                             controlId: evidence.controlId,
+                                            // B8 follow-up — the
+                                            // detail sheet fetches a
+                                            // fresh evidence row;
+                                            // forward its current
+                                            // folder so the edit
+                                            // modal opens already
+                                            // populated.
+                                            folder: (
+                                                evidence as {
+                                                    folder?: string | null;
+                                                }
+                                            ).folder ?? null,
                                         })
                                     }
                                     id="evidence-sheet-edit-btn"

@@ -27,6 +27,9 @@ export const POST = withApiErrorHandling(async (req: NextRequest, { params: para
         title: formData.get('title') as string | undefined,
         controlId: formData.get('controlId') as string | null,
         category: formData.get('category') as string | null,
+        // B8 follow-up — folder rides with the upload form so a
+        // batch upload writes the same folder onto every row.
+        folder: formData.get('folder') as string | null,
         owner: formData.get('owner') as string | null,
         reviewCycle: formData.get('reviewCycle') as string | null,
         nextReviewDate: formData.get('nextReviewDate') as string | null,

@@ -122,6 +122,10 @@ export function UploadEvidenceModal({
 
     const [title, setTitle] = useState('');
     const [controlId, setControlId] = useState('');
+    // B8 follow-up — free-text folder label applied to every file
+    // in the upload batch. Datalist below seeds it with values
+    // already in use on existing evidence.
+    const [folder, setFolder] = useState('');
     const [retentionUntil, setRetentionUntil] = useState('');
     const [error, setError] = useState('');
     const [queuedCount, setQueuedCount] = useState(0);
@@ -179,6 +183,8 @@ export function UploadEvidenceModal({
         file: File;
         applyTitle: boolean;
         controlId: string;
+        /** B8 follow-up — folder label applied to every uploaded file. */
+        folder: string;
         retentionUntil: string;
         onProgress: (percent: number | null) => void;
         signal: AbortSignal;
@@ -196,6 +202,9 @@ export function UploadEvidenceModal({
             // titles would all land on the same string otherwise).
             if (applyTitle && title) formData.append('title', title);
             if (vars.controlId) formData.append('controlId', vars.controlId);
+            // B8 follow-up — folder rides every uploaded row in the
+            // batch. The /uploads route forwards it to createEvidence.
+            if (vars.folder) formData.append('folder', vars.folder.trim());
 
             const uploaded = await uploadWithProgress<{ id?: string }>(
                 apiUrl('/evidence/uploads'),
@@ -272,6 +281,7 @@ export function UploadEvidenceModal({
                     file,
                     applyTitle,
                     controlId,
+                    folder,
                     retentionUntil,
                     onProgress: ctx.onProgress,
                     signal: ctx.signal,
@@ -314,6 +324,7 @@ export function UploadEvidenceModal({
         [
             mutation,
             controlId,
+            folder,
             retentionUntil,
             telemetry,
             swrMutate,
@@ -527,6 +538,26 @@ export function UploadEvidenceModal({
                                 forceDropdown
                                 buttonProps={{ className: 'w-full' }}
                                 caret
+                            />
+                        </FormField>
+
+                        {/* B8 follow-up — Folder. Applies to every
+                            file in the batch; datalist seeds it
+                            from existing evidence folders. */}
+                        <FormField
+                            label="Folder"
+                            description="Optional — group this upload with related evidence."
+                        >
+                            <input
+                                id="upload-evidence-folder-input"
+                                data-testid="upload-evidence-folder-input"
+                                type="text"
+                                className="input w-full"
+                                placeholder="e.g. SOC2/2026"
+                                list="evidence-folder-suggestions"
+                                value={folder}
+                                onChange={(e) => setFolder(e.target.value)}
+                                autoComplete="off"
                             />
                         </FormField>
                     </fieldset>
