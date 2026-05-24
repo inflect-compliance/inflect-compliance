@@ -2,6 +2,20 @@
 module.exports = {
     content: ['./src/**/*.{js,ts,jsx,tsx,mdx}'],
     theme: {
+        // B7 — large-monitor responsiveness. Tailwind's default
+        // breakpoints stop at `2xl` (1536px); a 4K screen has no
+        // dedicated step. The new `3xl` (1792px) unblocks the
+        // page-content width on QHD/4K monitors per the AppShell
+        // shell — pre-B7 the page sat at 1280px max with vast
+        // empty margins on the wider hardware.
+        screens: {
+            sm: '640px',
+            md: '768px',
+            lg: '1024px',
+            xl: '1280px',
+            '2xl': '1536px',
+            '3xl': '1792px',
+        },
         extend: {
             colors: {
                 // ── Existing brand palette (unchanged) ──

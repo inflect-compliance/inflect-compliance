@@ -198,7 +198,17 @@ export function AppShell({
                     div's overflow-y-auto ends up scrolling instead
                     of the table card scrolling internally — which is
                     the exact regression we're fixing. */}
-                <div className="p-4 md:p-6 max-w-7xl mx-auto md:flex md:flex-col md:flex-1 md:min-h-0 md:overflow-y-auto md:w-full">
+                {/* B7 — large-monitor responsiveness. Pre-B7 the
+                    content container was capped at `max-w-7xl`
+                    (1280px); on 1440p and 4K screens the page sat
+                    in a narrow column with vast empty margins. The
+                    cap now climbs at 2xl to 1536px and unblocks
+                    entirely beyond. `mx-auto` keeps the column
+                    centred at every step. Readable content (detail
+                    pages, modals) is clamped separately by their
+                    own shell so prose still tops out at a sane
+                    measure. */}
+                <div className="p-4 md:p-6 max-w-7xl 2xl:max-w-screen-2xl 3xl:max-w-none mx-auto md:flex md:flex-col md:flex-1 md:min-h-0 md:overflow-y-auto md:w-full">
                     {children}
                 </div>
                 </BreadcrumbsProvider>

@@ -36,6 +36,10 @@ import {
     type FilterType,
 } from '@/components/ui/filter';
 import { EntityListPage } from '@/components/layout/EntityListPage';
+import {
+    LeftAccordionRail,
+    type LeftAccordionRailSection,
+} from '@/components/ui/left-accordion-rail';
 import { AsidePanel } from '@/components/ui/aside-panel';
 import { SelectionSummaryPanel } from '@/components/ui/selection-summary-panel';
 import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
@@ -638,10 +642,136 @@ function ControlsPageInner({
             </AsidePanel>
         ) : undefined;
 
+    // B7 — left orientation rail. Each accordion section groups
+    // the controls list by a different axis (status / category).
+    // Clicking a value sets the corresponding filter via the
+    // existing `filterCtx`; the table re-fetches via the standard
+    // URL-sync. Sections are collapsed by default — the rail
+    // stays quiet until the user actively engages it.
+    const statusCounts = useMemo(() => {
+        const map = new Map<string, number>();
+        for (const c of controls) {
+            const k = (c as { status?: string }).status ?? 'NOT_STARTED';
+            map.set(k, (map.get(k) ?? 0) + 1);
+        }
+        return map;
+    }, [controls]);
+    const categoryCounts = useMemo(() => {
+        const map = new Map<string, number>();
+        for (const c of controls) {
+            const k = (c as { category?: string | null }).category ?? '';
+            if (!k) continue;
+            map.set(k, (map.get(k) ?? 0) + 1);
+        }
+        return map;
+    }, [controls]);
+
+    const orientationSections: LeftAccordionRailSection[] = useMemo(() => {
+        const out: LeftAccordionRailSection[] = [];
+        const railRowClass =
+            'flex w-full items-center justify-between gap-tight rounded-md px-2 py-1 text-left text-xs text-content-default hover:bg-bg-muted/50 focus-visible:outline-none focus-visible:bg-bg-muted';
+
+        // Status section — every value the enum permits, sorted
+        // by visible count desc so the populated buckets land
+        // first.
+        const statusEntries = Object.entries(CONTROL_STATUS_LABELS).map(
+            ([value, label]) => ({
+                value,
+                label,
+                count: statusCounts.get(value) ?? 0,
+            }),
+        );
+        statusEntries.sort((a, b) => b.count - a.count);
+        out.push({
+            id: 'status',
+            label: 'Status',
+            // guardrail-ignore — local UI count of populated rail buckets
+            count: statusEntries.filter((e) => e.count > 0).length,
+            content: (
+                <ul className="flex flex-col gap-0.5" role="list">
+                    {statusEntries.map((e) => (
+                        <li key={e.value}>
+                            <button
+                                type="button"
+                                className={railRowClass}
+                                data-rail-section-value={`status:${e.value}`}
+                                onClick={() => filterCtx.set('status', e.value)}
+                            >
+                                <span className="truncate">{e.label}</span>
+                                <span className="text-content-subtle tabular-nums">
+                                    {e.count}
+                                </span>
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            ),
+        });
+
+        // Category section — derived from loaded data (no enum
+        // import). Only renders the values present in the current
+        // snapshot of controls.
+        const categoryEntries = Array.from(categoryCounts.entries()).sort(
+            (a, b) => b[1] - a[1],
+        );
+        if (categoryEntries.length > 0) {
+            out.push({
+                id: 'category',
+                label: 'Category',
+                count: categoryEntries.length,
+                content: (
+                    <ul className="flex flex-col gap-0.5" role="list">
+                        {categoryEntries.map(([cat, n]) => (
+                            <li key={cat}>
+                                <button
+                                    type="button"
+                                    className={railRowClass}
+                                    data-rail-section-value={`category:${cat}`}
+                                    onClick={() => filterCtx.set('category', cat)}
+                                >
+                                    <span className="truncate">{cat}</span>
+                                    <span className="text-content-subtle tabular-nums">{n}</span>
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                ),
+            });
+        }
+
+        // Reset section — a one-click way to clear all rail-set
+        // filters, paired with the rail's quiet shape.
+        out.push({
+            id: 'reset',
+            label: 'Reset',
+            content: (
+                <button
+                    type="button"
+                    className={railRowClass}
+                    data-rail-section-value="reset"
+                    onClick={() => filterCtx.clearAll()}
+                >
+                    Clear all filters
+                </button>
+            ),
+        });
+
+        return out;
+    }, [statusCounts, categoryCounts, filterCtx]);
+
+    const orientationRail = (
+        <LeftAccordionRail
+            id="controls-orientation-rail"
+            title="Browse by"
+            sections={orientationSections}
+        />
+    );
+
     return (
         <EntityListPage<ControlListItem>
             className="animate-fadeIn gap-section"
             aside={selectionAside}
+            leftRail={orientationRail}
             banner={<TruncationBanner truncated={truncated} />}
             header={{
                 breadcrumbs: [
