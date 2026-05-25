@@ -23,7 +23,6 @@ import { useState } from "react";
 import { Button } from "../button";
 import { Popover } from "../popover";
 import { ScrollContainer } from "../scroll-container";
-import { Tooltip } from "../tooltip";
 
 // ── Types ───────────────────────────────────────────────────────────
 
@@ -145,21 +144,27 @@ export function EditColumnsButton<T>({
       }
       align="end"
     >
-      <Tooltip content={title}>
-        {/* R24-PR-E — icon-button shape locked (8px slim radius). */}
-        <Button
-          type="button"
-          className={cn(
-            "size-8 shrink-0 whitespace-nowrap rounded-[8px] p-0",
-            someHidden && "ring-[var(--brand-default)]/30 ring-1",
-            className,
-          )}
-          variant="secondary"
-          icon={<Settings className="h-4 w-4 shrink-0" />}
-          aria-label={title}
-          data-testid="edit-columns-button"
-        />
-      </Tooltip>
+      {/* Edit columns trigger.
+          Tooltip is intentionally NOT wrapping this button — same
+          rationale as columns-dropdown.tsx: nesting `<Tooltip>`
+          inside `<Popover.Trigger asChild>` swallows the parent's
+          injected props (onClick / aria-expanded / data-state)
+          and leaves the trigger functionally dead. `title`
+          provides the native hover hint; `aria-label` provides
+          the screen-reader name. */}
+      <Button
+        type="button"
+        className={cn(
+          "size-8 shrink-0 whitespace-nowrap rounded-[8px] p-0",
+          someHidden && "ring-[var(--brand-default)]/30 ring-1",
+          className,
+        )}
+        variant="secondary"
+        icon={<Settings className="h-4 w-4 shrink-0" />}
+        title={title}
+        aria-label={title}
+        data-testid="edit-columns-button"
+      />
     </Popover>
   );
 }

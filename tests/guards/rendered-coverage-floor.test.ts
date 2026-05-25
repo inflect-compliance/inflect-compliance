@@ -35,7 +35,11 @@ const ROOT = path.resolve(__dirname, '../..');
  *   • 2026-05-22 — Roadmap-7 P4: established at the post-roadmap-4
  *     population (126 rendered / 36 E2E / 5 registered primitives).
  */
-const RENDERED_TEST_FLOOR = 126;
+// Bumped 126 → 135 by the edit-columns gear-fix repro test +
+// other recent additions across the parity roadmap PRs. The
+// upward ratchet locks the gains; further additions raise this
+// floor in the same PR.
+const RENDERED_TEST_FLOOR = 135;
 const E2E_SPEC_FLOOR = 36;
 const REGISTRY_FLOOR = 5;
 

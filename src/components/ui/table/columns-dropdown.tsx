@@ -36,7 +36,6 @@ import type { VisibilityState } from "@tanstack/react-table";
 import { Button } from "../button";
 import { Popover } from "../popover";
 import { ScrollContainer } from "../scroll-container";
-import { Tooltip } from "../tooltip";
 import { cn } from "./table-utils";
 
 export interface ColumnsDropdownColumn {
@@ -176,30 +175,29 @@ export function ColumnsDropdown({
                 </ScrollContainer>
             }
         >
-            <Tooltip content="Edit columns">
-                {/* R24-PR-E — icon-button shape locked. Square 36×36
-                    (`size-9 p-0`) + the slim 8px radius the rest of
-                    the chrome family wears (R24-PR-C). The historic
-                    `rounded-lg` here was a 12px outlier — the gear
-                    sat next to the filter dropdown (which inherited
-                    the cva 8px) and the size disagreement read as
-                    "two different button systems" in toolbars. The
-                    `aria-pressed` cue + brand-tinted ring on the
-                    "some hidden" state stays. */}
-                <Button
-                    type="button"
-                    className={cn(
-                        "size-9 shrink-0 whitespace-nowrap rounded-[8px] p-0",
-                        someHidden && "ring-1 ring-[var(--brand-default)]/30",
-                        className,
-                    )}
-                    variant="secondary"
-                    icon={<Settings className="h-4 w-4 shrink-0" />}
-                    aria-label="Edit columns"
-                    data-testid="edit-columns-button"
-                    id={id}
-                />
-            </Tooltip>
+            {/* Edit columns trigger.
+                Tooltip is intentionally NOT wrapping this button —
+                the prior `<Tooltip><Button/></Tooltip>` composition
+                swallowed Radix `Popover.Trigger.asChild`'s injected
+                props (onClick / aria-expanded / aria-haspopup / data-state),
+                leaving the gear visually present but functionally
+                dead. That was the "Edit columns button doesn't
+                open" bug. `title` provides the native hover hint;
+                `aria-label` provides the screen-reader name. */}
+            <Button
+                type="button"
+                className={cn(
+                    "size-9 shrink-0 whitespace-nowrap rounded-[8px] p-0",
+                    someHidden && "ring-1 ring-[var(--brand-default)]/30",
+                    className,
+                )}
+                variant="secondary"
+                icon={<Settings className="h-4 w-4 shrink-0" />}
+                title="Edit columns"
+                aria-label="Edit columns"
+                data-testid="edit-columns-button"
+                id={id}
+            />
         </Popover>
     );
 }
