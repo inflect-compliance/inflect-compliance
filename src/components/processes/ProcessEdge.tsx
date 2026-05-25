@@ -144,6 +144,7 @@ function ProcessEdgeImpl(props: EdgeProps) {
         targetPosition,
         selected,
         data,
+        label,
     } = props;
 
     const [edgePath, labelX, labelY] = getBezierPath({
@@ -228,6 +229,33 @@ function ProcessEdgeImpl(props: EdgeProps) {
                         data-control-on-edge="true"
                     >
                         <ControlOnEdge label={control.label} />
+                    </div>
+                </EdgeLabelRenderer>
+            )}
+            {!control && typeof label === "string" && label.length > 0 && (
+                // R31 Bundle 7 (PR 5 minimum viable) — chip-styled
+                // edge label. Pre-R31, the inspector's edge-label
+                // edit set `edge.label` but xyflow's default text
+                // render for bezier edges renders nothing without
+                // a custom mount. This pulls a token-driven chip
+                // at the midpoint so labels stay readable when
+                // edges overlap (raw text on a dense graph is
+                // unreadable). If a control already occupies the
+                // midpoint, the label suppresses — the control is
+                // the more semantic anchor.
+                <EdgeLabelRenderer>
+                    <div
+                        style={{
+                            position: "absolute",
+                            transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+                            pointerEvents: "all",
+                        }}
+                        className="nodrag nopan"
+                        data-edge-label-chip="true"
+                    >
+                        <span className="inline-flex items-center rounded-[4px] border border-canvas-border bg-canvas-frame px-1.5 py-0.5 text-[10px] text-content-muted">
+                            {label}
+                        </span>
                     </div>
                 </EdgeLabelRenderer>
             )}
