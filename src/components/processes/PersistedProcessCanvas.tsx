@@ -87,6 +87,7 @@ import {
 } from "@/lib/processes/use-canvas-history";
 import { useCanvasAutosave } from "@/lib/processes/use-canvas-autosave";
 import { useCanvasChangeEmitter } from "@/lib/processes/canvas-change-events";
+import { CanvasEmphasisProvider } from "@/lib/processes/canvas-emphasis-context";
 import {
     alignNodes,
     distributeNodes,
@@ -264,6 +265,34 @@ function Inner({
         .filter((n) => n.selected)
         .map((n) => n.id);
     const selectionCount = selectedNodeIds.length;
+
+    // R32-PR5 — emphasis neighbourhood. When a node OR an edge is
+    // selected, the rest of the graph dims out so the eye reads
+    // "what touches what" at a glance. The neighbourhood is:
+    //   • Selected node — its id + every node reachable via one
+    //     edge hop in EITHER direction.
+    //   • Selected edge — both endpoint node ids.
+    //   • Nothing — null (renderers render normally).
+    //
+    // The set is the SOURCE of truth for the dimming render —
+    // threaded through the canvas-emphasis context so the
+    // ProcessTypedNode + ProcessEdge renderers can read it
+    // without prop-drilling. Computed inline here (small graph
+    // sizes; a linear edge scan is cheap).
+    const emphasisIds: ReadonlySet<string> | null = (() => {
+        if (selectedNode) {
+            const ids = new Set<string>([selectedNode.id]);
+            for (const e of edges) {
+                if (e.source === selectedNode.id) ids.add(e.target);
+                if (e.target === selectedNode.id) ids.add(e.source);
+            }
+            return ids;
+        }
+        if (selectedEdge) {
+            return new Set<string>([selectedEdge.source, selectedEdge.target]);
+        }
+        return null;
+    })();
 
     // R28 — history snapshot helper. Captures the live graph
     // shape as a CanvasSnapshot. Called from places that mutate
@@ -1373,6 +1402,11 @@ function Inner({
     ];
 
     return (
+        // R32-PR5 — emphasis provider. The whole canvas subtree
+        // reads `useCanvasEmphasis()` so the typed-node + edge
+        // renderers can dim themselves out when they fall
+        // outside the selected node's one-hop neighbourhood.
+        <CanvasEmphasisProvider emphasisIds={emphasisIds}>
         <div className="flex h-full w-full flex-col" data-process-canvas="true">
             <CanvasCommandPalette groups={commandGroups} />
             {/* R31 Bundle 3 (PR 1) — the document bar. Pre-R31 this
@@ -1945,6 +1979,7 @@ function Inner({
                 />
             </div>
         </div>
+        </CanvasEmphasisProvider>
     );
 }
 

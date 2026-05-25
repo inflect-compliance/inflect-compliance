@@ -41,6 +41,7 @@ import {
 } from "@xyflow/react";
 import { ShieldCheck, ShieldPlus, Spline } from "lucide-react";
 import { memo, useCallback, type CSSProperties } from "react";
+import { useCanvasEmphasis } from "@/lib/processes/canvas-emphasis-context";
 
 /** The three connection variants. Minimal, meaningful, curated. */
 export type ProcessEdgeVariant = "flow" | "conditional" | "reference";
@@ -136,6 +137,8 @@ function strokeFor(
 function ProcessEdgeImpl(props: EdgeProps) {
     const {
         id,
+        source,
+        target,
         sourceX,
         sourceY,
         targetX,
@@ -205,6 +208,23 @@ function ProcessEdgeImpl(props: EdgeProps) {
         );
     }, [id, setEdges]);
 
+    // R32-PR5 — emphasis dimming for edges. The edge is in the
+    // active neighbourhood iff BOTH endpoints are in the
+    // selected node's one-hop set (or it's the selected edge
+    // itself, in which case xyflow's own `selected` lifts it).
+    // Outside the neighbourhood → drop opacity to ~30% so the
+    // dimming reads even on the lightest variant (`reference`
+    // is dotted and easily lost).
+    const { emphasisIds } = useCanvasEmphasis();
+    const edgeDimmed =
+        emphasisIds !== null &&
+        !selected &&
+        (!emphasisIds.has(source) || !emphasisIds.has(target));
+    const baseStyle = strokeFor(variant, selected === true, isPreview);
+    const edgeStyle: CSSProperties = edgeDimmed
+        ? { ...baseStyle, opacity: 0.3 }
+        : baseStyle;
+
     return (
         <>
             <BaseEdge
@@ -212,8 +232,9 @@ function ProcessEdgeImpl(props: EdgeProps) {
                 path={edgePath}
                 // Token-backed stroke — quiet `--canvas-edge` at rest,
                 // brand-lifted on selection / preview. Solid / dashed
-                // / dotted is the variant's signature.
-                style={strokeFor(variant, selected === true, isPreview)}
+                // / dotted is the variant's signature. R32-PR5
+                // composes the emphasis-dim opacity on top.
+                style={edgeStyle}
             />
             {control && (
                 // EdgeLabelRenderer pulls the overlay OUT of the SVG

@@ -38,6 +38,10 @@ import {
     isProcessNodeKind,
     type ProcessNodeKind,
 } from "./node-taxonomy";
+import {
+    classifyForEmphasis,
+    useCanvasEmphasis,
+} from "@/lib/processes/canvas-emphasis-context";
 
 /** Per-instance footprint. Three discrete steps — not free resize. */
 export type ProcessNodeSize = "sm" | "md" | "lg";
@@ -99,7 +103,7 @@ const HANDLE_CLASS =
 const SELECTED_CHROME =
     "border-[color:var(--brand-default)] ring-2 ring-[color:var(--brand-default)]/40 bg-bg-elevated";
 
-function ProcessTypedNodeImpl({ data, selected }: NodeProps) {
+function ProcessTypedNodeImpl({ id, data, selected }: NodeProps) {
     const nodeData = data as ProcessTypedNodeData;
     const kind: ProcessNodeKind = isProcessNodeKind(nodeData.kind)
         ? nodeData.kind
@@ -113,6 +117,17 @@ function ProcessTypedNodeImpl({ data, selected }: NodeProps) {
     const accentBorder = NODE_ACCENT_BORDER[meta.accent];
     const iconTone = NODE_ACCENT_ICON_TONE[meta.accent];
     const label = nodeData.label || meta.defaultLabel;
+
+    // R32-PR5 — emphasis dimming. When the canvas has a selection,
+    // every node outside the one-hop neighbourhood drops to ~50%
+    // opacity so the eye reads "what's connected to what" at a
+    // glance. Nodes inside the neighbourhood render at full
+    // opacity (`'emphasised'`); nodes with no active selection
+    // render normally (`'normal'`).
+    const { emphasisIds } = useCanvasEmphasis();
+    const emphasisClass = classifyForEmphasis(id, emphasisIds);
+    const emphasisStyle =
+        emphasisClass === "dimmed" ? "opacity-50" : "";
 
     // ── Group (R30) — translucent labelled container ─────────────────
     // The group's wrapper takes its full size from xyflow's `style`
@@ -129,10 +144,12 @@ function ProcessTypedNodeImpl({ data, selected }: NodeProps) {
                     selected
                         ? "border-[color:var(--brand-default)] bg-bg-elevated/40"
                         : "border-border-subtle bg-canvas-node-muted/30 hover:border-border-emphasis",
+                    emphasisStyle,
                 )}
                 data-process-node="true"
                 data-process-node-kind={kind}
                 data-process-node-size={size}
+                data-process-node-emphasis={emphasisClass}
                 data-selected={selected ? "true" : "false"}
             >
                 {/* Title sticker — anchored to the top-left so the
@@ -200,10 +217,12 @@ function ProcessTypedNodeImpl({ data, selected }: NodeProps) {
                 selected
                     ? SELECTED_CHROME
                     : `${accentBorder} hover:border-border-emphasis`,
+                emphasisStyle,
             )}
             data-process-node="true"
             data-process-node-kind={kind}
             data-process-node-size={size}
+            data-process-node-emphasis={emphasisClass}
             data-selected={selected ? "true" : "false"}
         >
             {cornerSticker && (
