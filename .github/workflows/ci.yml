@@ -262,13 +262,13 @@ jobs:
   coverage:
     name: "Coverage (≥60%)"
     runs-on: ubuntu-latest
-    # 25-minute budget. The non-instrumented Test job consistently
-    # runs ~14m40s as the suite size grows; the coverage-instrumented
-    # variant has been hitting the previous 15-minute ceiling on
-    # PRs that touch many files (v2-PR-1 cancelled twice at 14m16s).
-    # Bumping to 25 leaves clear headroom without rewarding test
-    # bloat — revisit if the gate ever runs >18 min.
-    timeout-minutes: 25
+    # 35-minute budget. R30 (group nodes) cancelled at 25m16s on
+    # #716 even with the prior 25-min ceiling — the coverage-
+    # instrumented variant has grown slower as the suite size +
+    # branch count climbed past ~7,800 tests. Bumping to 35 leaves
+    # ~10 min of headroom over the actual 25-min run; revisit if
+    # the gate ever runs >30 min.
+    timeout-minutes: 35
 
     env:
       DATABASE_URL: postgresql://ci:ci_password@localhost:5432/ci_testdb?schema=public
