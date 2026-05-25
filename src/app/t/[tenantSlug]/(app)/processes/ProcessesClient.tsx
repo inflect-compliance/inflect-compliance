@@ -29,8 +29,9 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
-import { Heading } from "@/components/ui/typography";
-import { PageBreadcrumbs } from "@/components/layout/PageBreadcrumbs";
+// R31 Bundle 3 — page-level Heading + PageBreadcrumbs retired. The
+// document bar inside the canvas now carries the breadcrumbs +
+// document title inline (Figma-style).
 
 // xyflow uses browser-only APIs on mount (ResizeObserver,
 // getBoundingClientRect). The `ssr:false` boundary lives at this
@@ -68,8 +69,6 @@ export function ProcessesClient({
     tenantSlug,
     initialProcesses,
 }: ProcessesClientProps) {
-    const tenantHref = (path: string) => `/t/${tenantSlug}${path}`;
-
     // The full list is owned here so a save can refresh the
     // selected map's metadata (version, updatedAt) without a full
     // page reload. Selection itself drives the canvas's load
@@ -82,22 +81,17 @@ export function ProcessesClient({
     );
 
     return (
+        // R31 Bundle 3 (PR 1) — Page header retired. Pre-R31 the
+        // page above the canvas carried a CRUD-page header
+        // (breadcrumbs + a level-1 page title + a description
+        // sentence) — three bands of chrome before the working
+        // surface. A canvas tool announces itself THROUGH the
+        // canvas itself; the document bar inside
+        // PersistedProcessCanvas now carries the breadcrumbs +
+        // document title inline, Figma-style. The header slot
+        // stays available for future canvas-mode chrome (Design /
+        // Run mode toggle, etc.) but is intentionally empty today.
         <WorkspaceShell className="animate-fadeIn">
-            <WorkspaceShell.Header>
-                <PageBreadcrumbs
-                    items={[
-                        { label: "Dashboard", href: tenantHref("/dashboard") },
-                        { label: "Processes" },
-                    ]}
-                    className="mb-1"
-                />
-                <Heading level={1}>Processes</Heading>
-                <p className="text-sm text-content-muted mt-1">
-                    Map business and IT processes. Place controls on the
-                    connections between steps.
-                </p>
-            </WorkspaceShell.Header>
-
             {/* The workspace frame — an elevated panel that contains
                 the chrome (toolbar + palette) and the recessed canvas
                 plane. It reads as raised purely through tone — the

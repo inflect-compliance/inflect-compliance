@@ -91,16 +91,21 @@ describe("R25-PR-A — Processes route + shell + nav", () => {
             expect(src).not.toMatch(/<ListPageShell\b/);
         });
 
-        it("client renders the Header + Body slots", () => {
-            // Toolbar is optional on the shell API; the Processes
-            // page consumer in PR-B chose to nest the palette inside
-            // the canvas component (a more cohesive single-surface
-            // approach). The Header + Body slots stay required —
-            // every workspace page needs the title strip + the
-            // canvas surface.
+        it("client renders the Body slot (Header retired in R31)", () => {
+            // R31 Bundle 3 (PR 1 — document bar) — the Processes page
+            // retired its `<WorkspaceShell.Header>` body. A canvas
+            // tool announces itself THROUGH the canvas: the document
+            // bar inside `<PersistedProcessCanvas>` now carries the
+            // breadcrumbs + document title inline (Figma-style). The
+            // Header SLOT remains available in the primitive for
+            // future canvas-mode chrome (Design / Run toggle); this
+            // page just doesn't mount it. The Body slot stays
+            // required — the canvas surface itself.
             const src = read(CLIENT_PATH);
-            expect(src).toMatch(/<WorkspaceShell\.Header\b/);
             expect(src).toMatch(/<WorkspaceShell\.Body\b/);
+            // Guard against a regression that re-introduces the
+            // CRUD-page chrome above the canvas.
+            expect(src).not.toMatch(/<WorkspaceShell\.Header\b/);
         });
     });
 

@@ -1216,13 +1216,44 @@ function Inner({
 
     return (
         <div className="flex h-full w-full flex-col" data-process-canvas="true">
-            {/* Chrome zone — row 1 of 2: process metadata + document
-                actions. Transparent so it inherits the frame surface;
-                a hairline divides it from the palette row below. */}
+            {/* R31 Bundle 3 (PR 1) — the document bar. Pre-R31 this
+                row carried the document selector + name + actions
+                ONLY; the page above it carried a separate breadcrumb
+                + Heading + description block (three bands of chrome
+                before the canvas). The page block is now gone — the
+                breadcrumbs + tenant-rooted document identity live
+                inline here, Figma-style. One bar above the canvas. */}
             <div
                 className="flex items-center gap-default border-b border-canvas-border px-default py-2.5"
                 data-persisted-canvas-toolbar="true"
+                data-canvas-document-bar="true"
             >
+                {/* Inline breadcrumb — the editor's own identity,
+                    not a separate page header. Sits left of the
+                    process selector so the path reads
+                    Dashboard › Processes › <selector with current
+                    map's name>. */}
+                <nav
+                    className="flex items-center gap-1 text-[11px] text-content-subtle"
+                    aria-label="Breadcrumb"
+                    data-canvas-document-breadcrumb="true"
+                >
+                    <a
+                        href={`/t/${tenantSlug}/dashboard`}
+                        className="rounded-[4px] px-1 text-content-muted hover:bg-bg-muted hover:text-content-emphasis focus-visible:outline-none focus-visible:bg-bg-muted"
+                    >
+                        Dashboard
+                    </a>
+                    <span aria-hidden="true" className="text-content-subtle">
+                        ›
+                    </span>
+                    <span className="px-1 font-medium text-content-emphasis">
+                        Processes
+                    </span>
+                    <span aria-hidden="true" className="text-content-subtle">
+                        ›
+                    </span>
+                </nav>
                 <select
                     value={activeId ?? ""}
                     onChange={(e) =>

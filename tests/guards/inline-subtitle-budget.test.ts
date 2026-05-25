@@ -45,8 +45,15 @@ const EXEMPT_FILE_PATTERNS: RegExp[] = [
  * FindingsClient); the budget tracks that floor + the remaining
  * 33 sites awaiting future PageHeader migration. Each subsequent
  * PageHeader migration PR decrements this number.
+ *
+ * R31 Bundle 3 (PR 1 — document bar) — adjusted 37 → 36. The
+ * Processes page retired its `<Heading> + description paragraph`
+ * block above the canvas; the description that sat at
+ * `<p className="text-sm text-content-muted mt-1">…</p>` was one
+ * of the budgeted sites. The supersession is documented in
+ * `tests/guards/r31-document-bar.test.ts`.
  */
-const INLINE_SUBTITLE_BUDGET = 37;
+const INLINE_SUBTITLE_BUDGET = 36;
 
 function isExempt(rel: string): boolean {
     const segments = rel.split(path.sep);
