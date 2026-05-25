@@ -19,6 +19,25 @@ import { toHaveNoViolations } from 'jest-axe';
 
 expect.extend(toHaveNoViolations);
 
+// R32-task-64 — flag the jsdom project as a React-act environment.
+//
+// React 19's `act()` runtime reads `globalThis.IS_REACT_ACT_ENVIRONMENT`;
+// when unset, every async state update that lands AFTER an
+// `await act(...)` block resolves emits
+// "The current testing environment is not configured to support act(...)".
+// In multi-suite parallel jest runs this surfaces as a flake
+// (`tests/rendered/org-drilldown-load-more.test.tsx`) — the warning
+// is escalated to a failure when worker memory pressure makes the
+// microtask queue drain land outside the act window.
+//
+// Setting the flag opts the jsdom project into act semantics for
+// every rendered test, the same way React Testing Library
+// configures `vitest` / `mocha` runners. No-op for non-React-19
+// runtimes. Has to run BEFORE any test file imports React, which
+// `setupFilesAfterEnv` (this file) guarantees.
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
+    true;
+
 afterEach(() => {
     cleanup();
 });
