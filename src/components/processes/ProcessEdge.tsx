@@ -104,10 +104,17 @@ function strokeFor(
     selected: boolean,
     isPreview: boolean,
 ): CSSProperties {
+    // R32-PR11 — explicit stroke-width hierarchy.
+    //   • Preview:  1.5 (dashed, brand-tinted — "in flight")
+    //   • Rest:     1.5 (canvas-edge tone)
+    //   • Selected: 2.5 (brand tone, ~67% thicker than rest)
+    // Pre-R32 the rest/selected gap was 1.75 vs 2.25 — too
+    // subtle to read on a dense graph. The new hierarchy is
+    // never reversed: rest < preview ≈ rest < selected.
     if (isPreview) {
         return {
             stroke: "var(--brand-default)",
-            strokeWidth: 2,
+            strokeWidth: 1.5,
             strokeDasharray: "6 4",
         };
     }
@@ -115,14 +122,14 @@ function strokeFor(
     if (variant === "conditional") {
         return {
             stroke,
-            strokeWidth: selected ? 2.25 : 1.75,
+            strokeWidth: selected ? 2.5 : 1.5,
             strokeDasharray: "7 5",
         };
     }
     if (variant === "reference") {
         return {
             stroke,
-            strokeWidth: selected ? 2 : 1.5,
+            strokeWidth: selected ? 2.25 : 1.25,
             strokeDasharray: "1 6",
             strokeLinecap: "round",
         };
@@ -130,7 +137,7 @@ function strokeFor(
     // flow — solid.
     return {
         stroke,
-        strokeWidth: selected ? 2.25 : 1.75,
+        strokeWidth: selected ? 2.5 : 1.5,
     };
 }
 

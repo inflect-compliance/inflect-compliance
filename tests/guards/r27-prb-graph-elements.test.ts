@@ -66,7 +66,13 @@ describe("R27-PR-B — node shape language (R31-superseded for decision)", () =>
     });
 
     it("keeps the brand selected ring (R25 selection vocabulary)", () => {
-        expect(NODE).toMatch(/ring-2\s+ring-\[color:var\(--brand-default\)\]/);
+        // R32-PR11 inserted `ring-offset-2 ring-offset-canvas-
+        // surface` between `ring-2` and the brand colour for
+        // Apple-style emphasis breathing space. Anchor on both
+        // pieces independently — they share a line but with
+        // arbitrary content between them.
+        expect(NODE).toMatch(/ring-2\b/);
+        expect(NODE).toMatch(/ring-\[color:var\(--brand-default\)\]/);
         expect(NODE).toMatch(/bg-bg-elevated/);
     });
 

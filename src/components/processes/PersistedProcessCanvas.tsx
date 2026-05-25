@@ -1837,7 +1837,14 @@ function CanvasEmpty({
             data-canvas-empty="true"
         >
             <div className="flex max-w-[320px] flex-col items-center gap-default text-center">
-                <p className="text-sm font-medium text-content-emphasis">
+                {/* R32-PR11 — empty-state typography voice elevated.
+                    Pre-R32 the lead line whispered (`text-sm`); a
+                    premium tool anchors the eye with `text-base` so
+                    the voice reads with the authority of a design
+                    surface. The secondary paragraph stays quiet
+                    (`text-xs text-content-muted`) so the weight
+                    hierarchy is explicit. */}
+                <p className="text-base font-medium text-content-emphasis">
                     Map a business or IT process.
                 </p>
                 <p className="text-xs text-content-muted">

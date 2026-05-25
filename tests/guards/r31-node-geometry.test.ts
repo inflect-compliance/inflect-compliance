@@ -98,8 +98,11 @@ describe("R31 (Bundle 2) — node geometry", () => {
             // — the chassis className must contain the magic
             // sequence "relative border transition-colors". A
             // file-wide search is cheaper than walking from any
-            // particular `data-process-node` site.
-            expect(src).toMatch(/"relative border transition-colors"/);
+            // particular `data-process-node` site. R32-PR11
+            // prepended `group ` so the handle dots can use
+            // `group-hover:*` — match the substring rather than
+            // the full quoted literal.
+            expect(src).toMatch(/group relative border transition-colors/);
         });
     });
 });

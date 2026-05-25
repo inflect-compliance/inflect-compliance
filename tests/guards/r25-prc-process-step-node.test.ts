@@ -93,9 +93,13 @@ describe("R25-PR-C — ProcessStepNode", () => {
 
         it("brand ring + tinted surface on selected", () => {
             // Matches R23 <KpiFilterCard> selected affordance:
-            // brand-default ring + bg-bg-elevated tint. Drift here
-            // forks the selection vocabulary across surfaces.
-            expect(src).toMatch(/ring-2\s+ring-\[color:var\(--brand-default\)\]/);
+            // brand-default ring + bg-bg-elevated tint. R32-PR11
+            // inserted `ring-offset-2 ring-offset-canvas-surface`
+            // between `ring-2` and the brand colour for Apple's
+            // emphasis breathing space — anchor the two halves
+            // independently.
+            expect(src).toMatch(/ring-2\b/);
+            expect(src).toMatch(/ring-\[color:var\(--brand-default\)\]/);
             expect(src).toMatch(/bg-bg-elevated/);
         });
     });

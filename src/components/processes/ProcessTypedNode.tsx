@@ -97,11 +97,22 @@ export interface ProcessTypedNodeData {
     [key: string]: unknown;
 }
 
+// R32-PR11 — handle dots invisible at rest. Pre-R31 every node
+// rendered four brand-outlined 8×8px dots at all times; on a
+// dense canvas they read as visual noise. The `opacity-0` rest
+// state lifts to full opacity only when the parent
+// `.react-flow__node` is hovered. The group-hover variant is
+// targeted via the chassis's `group` className (added below).
 const HANDLE_CLASS =
-    "!h-2 !w-2 !border-2 !border-[color:var(--brand-default)] !bg-bg-default";
+    "!h-2 !w-2 !border-2 !border-[color:var(--brand-default)] !bg-bg-default !opacity-0 group-hover:!opacity-100 transition-opacity";
 
+// R32-PR11 — selected ring offset. `ring-offset-2 ring-offset-
+// canvas-surface` gives the brand ring breathing space against
+// the node border (Apple's emphasis pattern). Pre-R32 the ring
+// overlapped the border, making the selected state read as a
+// thick stroke instead of a deliberate emphasis halo.
 const SELECTED_CHROME =
-    "border-[color:var(--brand-default)] ring-2 ring-[color:var(--brand-default)]/40 bg-bg-elevated";
+    "border-[color:var(--brand-default)] ring-2 ring-offset-2 ring-offset-canvas-surface ring-[color:var(--brand-default)]/40 bg-bg-elevated";
 
 function ProcessTypedNodeImpl({ id, data, selected }: NodeProps) {
     const nodeData = data as ProcessTypedNodeData;
@@ -179,7 +190,13 @@ function ProcessTypedNodeImpl({ id, data, selected }: NodeProps) {
     // ── Rect + note ──────────────────────────────────────────────────
     const isNote = meta.shape === "note";
     const sizeClasses = isNote ? NOTE_SIZE[size] : RECT_SIZE[size];
-    const radiusClass = isNote ? "rounded-[6px]" : "rounded-[10px]";
+    // R32-PR11 — radius unification. Pre-R32 rect nodes used 10px
+    // while group containers used 12px and chips/notes 6px — three
+    // values for two semantic roles. The verdict's lock: cards
+    // (rect chassis) at 8px, chips/notes at 6px. Group containers
+    // stay at 12px (one notch larger for the "I hold other things"
+    // container reading).
+    const radiusClass = isNote ? "rounded-[6px]" : "rounded-[8px]";
 
     // R26-PR-D / R27 — surface tone varies by semantic category so
     // the eye reads flow vs context vs note at a glance. Solid,
@@ -210,7 +227,10 @@ function ProcessTypedNodeImpl({ id, data, selected }: NodeProps) {
     return (
         <div
             className={cn(
-                "relative border transition-colors",
+                // R32-PR11 — `group` enables group-hover:* on the
+                // handle dots so they appear only when the user
+                // hovers this node.
+                "group relative border transition-colors",
                 sizeClasses,
                 radiusClass,
                 surfaceClasses,

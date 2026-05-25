@@ -152,7 +152,7 @@ export function ProcessInspector({
                         {kindMeta.label}
                     </span>
                 )}
-                <label className="flex flex-col gap-1">
+                <label className="flex flex-col gap-tight">
                 <span className="text-[10px] uppercase tracking-wide text-content-muted">
                     Label
                 </span>
@@ -170,7 +170,7 @@ export function ProcessInspector({
                     data-testid="inspector-label-input"
                 />
             </label>
-            <label className="flex flex-col gap-1">
+            <label className="flex flex-col gap-tight">
                 <span className="text-[10px] uppercase tracking-wide text-content-muted">
                     Subtitle
                 </span>
@@ -189,7 +189,7 @@ export function ProcessInspector({
                     data-testid="inspector-subtitle-input"
                 />
             </label>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-tight">
                 <span className="text-[10px] uppercase tracking-wide text-content-muted">
                     Size
                 </span>
@@ -261,7 +261,7 @@ function EdgeInspectorBody({
                 <span className="text-[10px] uppercase tracking-wide text-content-subtle">
                     Connection
                 </span>
-                <label className="flex flex-col gap-1">
+                <label className="flex flex-col gap-tight">
                 <span className="text-[10px] uppercase tracking-wide text-content-muted">
                     Label
                 </span>
@@ -280,7 +280,7 @@ function EdgeInspectorBody({
                     data-testid="inspector-edge-label-input"
                 />
             </label>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-tight">
                 <span className="text-[10px] uppercase tracking-wide text-content-muted">
                     Variant
                 </span>
