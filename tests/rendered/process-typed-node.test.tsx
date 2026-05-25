@@ -75,6 +75,16 @@ describe('ProcessTypedNode — per-kind chrome', () => {
                     expect(cls).toMatch(/rounded-\[6px\]/);
                     // Note shape carries the subtle background tint.
                     expect(cls).toMatch(/bg-bg-subtle/);
+                } else if (meta.category === 'group') {
+                    // R30 — the group container takes its size from
+                    // xyflow's `style` (set when the group is
+                    // created), not the per-size selectors. The
+                    // wrapper sits at h-full + w-full + a 12px
+                    // radius + dashed border so the eye reads
+                    // "container", not "card".
+                    expect(cls).toMatch(/h-full/);
+                    expect(cls).toMatch(/w-full/);
+                    expect(cls).toMatch(/border-dashed/);
                 } else {
                     expect(cls).toMatch(/min-w-\[180px\]/);
                 }

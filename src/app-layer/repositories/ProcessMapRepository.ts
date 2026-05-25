@@ -59,6 +59,7 @@ export interface ProcessMapWithGraph {
         subtitle: string | null;
         posX: number;
         posY: number;
+        parentNodeKey: string | null;
         dataJson: unknown;
     }>;
     edges: Array<{
@@ -126,6 +127,7 @@ export class ProcessMapRepository {
                         subtitle: true,
                         posX: true,
                         posY: true,
+                        parentNodeKey: true,
                         dataJson: true,
                     },
                 },
@@ -240,6 +242,25 @@ export class ProcessMapRepository {
                 );
             }
         }
+        // R30 — parent-reference integrity. A `parentNodeKey` must
+        // point to another node in the SAME save payload. Self-
+        // references are rejected. Nested groups (a group whose
+        // parent is itself a group) are allowed today — xyflow
+        // supports the recursion and the save shape is otherwise
+        // identical.
+        for (const n of input.nodes) {
+            if (n.parentNodeKey == null) continue;
+            if (n.parentNodeKey === n.nodeKey) {
+                throw new Error(
+                    `Node ${n.nodeKey} references itself as parentNodeKey`,
+                );
+            }
+            if (!nodeKeys.has(n.parentNodeKey)) {
+                throw new Error(
+                    `Node ${n.nodeKey} references unknown parentNodeKey ${n.parentNodeKey}`,
+                );
+            }
+        }
 
         const existing = await db.processMap.findFirst({
             where: { id, tenantId: ctx.tenantId, deletedAt: null },
@@ -277,6 +298,7 @@ export class ProcessMapRepository {
                     subtitle: n.subtitle ?? null,
                     posX: n.posX,
                     posY: n.posY,
+                    parentNodeKey: n.parentNodeKey ?? null,
                     dataJson:
                         n.dataJson === undefined
                             ? Prisma.JsonNull

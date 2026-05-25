@@ -50,6 +50,13 @@ const CANONICAL_KINDS = [
     "asset",
     "external",
     "annotation",
+    // R30 (2026-05-25) — eighth canonical kind. A translucent
+    // labelled container. Persistence rides the new
+    // `ProcessNode.parentNodeKey` column (children reference the
+    // group's `nodeKey`); xyflow's `parentId` is the runtime
+    // mirror. The ratchet at `r30-group-nodes.test.ts` locks the
+    // schema migration + renderer branch + canvas wiring.
+    "group",
 ] as const;
 
 describe("R26-PR-B — node taxonomy", () => {

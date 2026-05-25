@@ -118,6 +118,45 @@ function ProcessTypedNodeImpl({ data, selected }: NodeProps) {
     const iconTone = NODE_ACCENT_ICON_TONE[meta.accent];
     const label = nodeData.label || meta.defaultLabel;
 
+    // ── Group (R30) — translucent labelled container ─────────────────
+    // The group's wrapper takes its full size from xyflow's `style`
+    // (set when the group is created). Children whose `parentId`
+    // matches the group's id render INSIDE this wrapper via
+    // xyflow's nested-positioning. The dashed border + low-opacity
+    // fill keep the group readable as "context container", not as
+    // a process step competing for the eye.
+    if (meta.category === "group") {
+        return (
+            <div
+                className={cn(
+                    "relative h-full w-full rounded-[12px] border-2 border-dashed transition-colors",
+                    selected
+                        ? "border-[color:var(--brand-default)] bg-bg-elevated/40"
+                        : "border-border-subtle bg-canvas-node-muted/30 hover:border-border-emphasis",
+                )}
+                data-process-node="true"
+                data-process-node-kind={kind}
+                data-process-node-size={size}
+                data-selected={selected ? "true" : "false"}
+            >
+                {/* Title sticker — anchored to the top-left so the
+                    label never overlaps a child's content. */}
+                <div className="absolute left-2 top-2 inline-flex items-center gap-tight rounded-[6px] border border-canvas-border bg-canvas-frame px-2 py-0.5 text-[11px] font-semibold text-content-emphasis">
+                    <Icon
+                        className={cn("h-3 w-3", iconTone)}
+                        aria-hidden="true"
+                    />
+                    <span className="truncate max-w-trunc-default">{label}</span>
+                </div>
+                {nodeData.subtitle && (
+                    <div className="absolute right-2 top-2 truncate text-[10px] uppercase tracking-wide text-content-subtle">
+                        {nodeData.subtitle}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
     // ── Diamond (decision) — a real diamond, not a small rect ────────
     if (meta.shape === "diamond") {
         return (

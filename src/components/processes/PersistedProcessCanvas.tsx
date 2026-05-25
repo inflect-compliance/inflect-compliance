@@ -122,9 +122,43 @@ const EDGE_TYPES: EdgeTypes = {
 // slot; edge variant persists in the `ProcessEdge.edgeKind` column.
 // Both already round-trip end to end — no schema migration needed.
 
-function nodeDataJson(n: Node): { size: string } | null {
+function nodeDataJson(n: Node): {
+    size?: string;
+    width?: number;
+    height?: number;
+} | null {
     const size = (n.data as { size?: unknown } | undefined)?.size;
-    return isProcessNodeSize(size) ? { size } : null;
+    // R30 — group nodes persist their explicit width / height
+    // alongside the rest of `dataJson`. Reading from `data` and
+    // `style` covers both freshly-created groups (whose width/
+    // height start in `style`) and round-tripped groups (whose
+    // width/height landed in `data` on rehydration).
+    const styleW = (n.style as { width?: unknown } | undefined)?.width;
+    const styleH = (n.style as { height?: unknown } | undefined)?.height;
+    const dataW = (n.data as { width?: unknown } | undefined)?.width;
+    const dataH = (n.data as { height?: unknown } | undefined)?.height;
+    const width =
+        typeof styleW === "number"
+            ? styleW
+            : typeof dataW === "number"
+              ? dataW
+              : null;
+    const height =
+        typeof styleH === "number"
+            ? styleH
+            : typeof dataH === "number"
+              ? dataH
+              : null;
+    const out: { size?: string; width?: number; height?: number } = {};
+    if (isProcessNodeSize(size)) out.size = size;
+    if (width != null) out.width = width;
+    if (height != null) out.height = height;
+    return Object.keys(out).length === 0 ? null : out;
+}
+
+function nodeParent(n: Node): string | null {
+    const p = (n as { parentId?: unknown }).parentId;
+    return typeof p === "string" && p.length > 0 ? p : null;
 }
 
 function edgeKindOf(e: Edge): string {
@@ -263,6 +297,7 @@ function Inner({
                         subtitle: string | null;
                         posX: number;
                         posY: number;
+                        parentNodeKey: string | null;
                         dataJson: unknown;
                     }>;
                     edges: Array<{
@@ -286,17 +321,48 @@ function Inner({
                     const size = (
                         n.dataJson as { size?: unknown } | null | undefined
                     )?.size;
+                    // R30 — group nodes carry their explicit width /
+                    // height in `dataJson.width` + `dataJson.height`;
+                    // xyflow uses these via `style` to size the
+                    // container. Fall back to sensible defaults so
+                    // a hand-edited row still renders.
+                    const json = n.dataJson as
+                        | { width?: unknown; height?: unknown }
+                        | null
+                        | undefined;
+                    const isGroup = kind === "group";
+                    const w = typeof json?.width === "number" ? json.width : 280;
+                    const h = typeof json?.height === "number" ? json.height : 160;
                     return {
                         id: n.nodeKey,
                         type: kind,
                         position: { x: n.posX, y: n.posY },
+                        // R30 — round-trip parentNodeKey into xyflow's
+                        // `parentId`. The node KEY IS the xyflow id in
+                        // our model so no translation needed.
+                        ...(n.parentNodeKey
+                            ? { parentId: n.parentNodeKey, extent: "parent" as const }
+                            : {}),
+                        ...(isGroup ? { style: { width: w, height: h } } : {}),
                         data: {
                             label: n.label,
                             kind,
                             ...(n.subtitle ? { subtitle: n.subtitle } : {}),
                             ...(isProcessNodeSize(size) ? { size } : {}),
+                            ...(isGroup ? { width: w, height: h } : {}),
                         },
                     };
+                });
+                // R30 — xyflow requires PARENT nodes to render BEFORE
+                // their children in the nodes array. Reorder so every
+                // group lands before its descendants; otherwise xyflow
+                // logs a warning + the child positions read as absolute.
+                rehydratedNodes.sort((a, b) => {
+                    const aParent = (a as { parentId?: string }).parentId;
+                    const bParent = (b as { parentId?: string }).parentId;
+                    if (!aParent && bParent) return -1;
+                    if (aParent && !bParent) return 1;
+                    return 0;
                 });
                 const rehydratedEdges: Edge[] = data.edges.map((e) => ({
                     id: e.edgeKey,
@@ -373,6 +439,7 @@ function Inner({
                         subtitle: dataSubtitle,
                         posX: n.position.x,
                         posY: n.position.y,
+                        parentNodeKey: nodeParent(n),
                         dataJson: nodeDataJson(n),
                     };
                 }),
@@ -614,7 +681,8 @@ function Inner({
                                     : null,
                             posX: n.position.x,
                             posY: n.position.y,
-                            dataJson: nodeDataJson(n),
+                            parentNodeKey: nodeParent(n),
+                        dataJson: nodeDataJson(n),
                         })),
                         edges: edges.map((e, idx) => ({
                             edgeKey: e.id || `edge-${idx + 1}`,
@@ -902,6 +970,118 @@ function Inner({
     // selection-aware change pipeline; this is the explicit
     // toolbar affordance so the action is discoverable when ≥2
     // are selected.
+    // R30 — Group selected. Creates a fresh group container sized
+    // to encompass the selection's bounding box (with padding); each
+    // selected node becomes the group's child. xyflow expects child
+    // positions to be RELATIVE to the parent, so we shift each
+    // child's position by (parent.x, parent.y).
+    const handleGroupSelected = useCallback(() => {
+        if (selectionCount < 2) return;
+        const ids = new Set(selectedNodeIds);
+        const targets = nodes.filter((n) => ids.has(n.id));
+        // Refuse to group nodes that already belong to a group —
+        // nested grouping is allowed by xyflow but the UX work to
+        // make nested-group resize feel right is out of R30 scope.
+        if (targets.some((n) => nodeParent(n) != null)) return;
+        if (targets.some((n) => (n.data as { kind?: unknown })?.kind === "group")) return;
+
+        // Compute bounding box. Conservative w/h fallbacks match
+        // canvas-alignment.ts (180×72 for unmeasured steps).
+        const FALLBACK_W = 180;
+        const FALLBACK_H = 72;
+        const boxes = targets.map((n) => {
+            const m = n.measured as { width?: number; height?: number } | undefined;
+            return {
+                x: n.position.x,
+                y: n.position.y,
+                w: m?.width ?? n.width ?? FALLBACK_W,
+                h: m?.height ?? n.height ?? FALLBACK_H,
+            };
+        });
+        const PADDING = 32;
+        const HEADER = 24;
+        const minX = Math.min(...boxes.map((b) => b.x)) - PADDING;
+        const minY = Math.min(...boxes.map((b) => b.y)) - PADDING - HEADER;
+        const maxX = Math.max(...boxes.map((b) => b.x + b.w)) + PADDING;
+        const maxY = Math.max(...boxes.map((b) => b.y + b.h)) + PADDING;
+        const groupId = `group-${Date.now()}`;
+        const groupNode: Node = {
+            id: groupId,
+            type: "group",
+            position: { x: minX, y: minY },
+            style: { width: maxX - minX, height: maxY - minY },
+            data: {
+                label: "Group",
+                kind: "group",
+                width: maxX - minX,
+                height: maxY - minY,
+            },
+        };
+
+        history.push({ nodes, edges });
+        // Group node MUST come first in the array so xyflow renders
+        // it BEFORE its children (parent-before-child is the canonical
+        // xyflow requirement).
+        setNodes((nds) => {
+            const reparented = nds.map((n) => {
+                if (!ids.has(n.id)) return n;
+                return {
+                    ...n,
+                    parentId: groupId,
+                    extent: "parent" as const,
+                    // xyflow expects child positions to be RELATIVE
+                    // to the parent when parentId is set.
+                    position: {
+                        x: n.position.x - minX,
+                        y: n.position.y - minY,
+                    },
+                };
+            });
+            return [groupNode, ...reparented];
+        });
+        autosave.markDirty();
+        changeEmitter.emit("node.add", { nodeIds: [groupId] });
+        changeEmitter.emit("node.update", { nodeIds: Array.from(ids) });
+    }, [
+        selectionCount,
+        selectedNodeIds,
+        nodes,
+        edges,
+        history,
+        autosave,
+        changeEmitter,
+    ]);
+
+    // R30 — Ungroup. Pops every child out of a selected group node:
+    // adds the group's position back to each child's relative
+    // position (making them absolute again), then removes the
+    // group itself. Only fires when exactly one group is selected.
+    const handleUngroup = useCallback(() => {
+        if (!selectedNode) return;
+        const kind = (selectedNode.data as { kind?: unknown })?.kind;
+        if (kind !== "group") return;
+        const groupId = selectedNode.id;
+        const gx = selectedNode.position.x;
+        const gy = selectedNode.position.y;
+        history.push({ nodes, edges });
+        setNodes((nds) => {
+            const lifted = nds
+                .filter((n) => n.id !== groupId)
+                .map((n) => {
+                    if (nodeParent(n) !== groupId) return n;
+                    return {
+                        ...n,
+                        position: { x: n.position.x + gx, y: n.position.y + gy },
+                        parentId: undefined,
+                        extent: undefined,
+                    };
+                });
+            return lifted;
+        });
+        autosave.markDirty();
+        changeEmitter.emit("node.remove", { nodeIds: [groupId] });
+    }, [selectedNode, nodes, edges, history, autosave, changeEmitter]);
+
     const handleBulkDelete = useCallback(() => {
         if (selectionCount === 0) return;
         const ids = new Set(selectedNodeIds);
@@ -1208,6 +1388,33 @@ function Inner({
                 drops. The alignment + distribute buttons stay
                 inside one slim strip rather than spawning a
                 second permanent row of chrome. */}
+            {/* R30 — single-group strip. Mounts when exactly one
+                node is selected AND that node is a group; gives
+                the user a one-click way to dissolve the group
+                without trawling into a context menu. Pairs with
+                the multi-select Group action below. */}
+            {selectionCount === 1 &&
+                selectedNode != null &&
+                (selectedNode.data as { kind?: unknown })?.kind === "group" && (
+                    <div
+                        className="flex flex-wrap items-center gap-tight border-b border-canvas-border bg-canvas-frame px-default py-2 text-[11px]"
+                        data-single-group-toolbar="true"
+                    >
+                        <span className="mr-1 font-semibold uppercase tracking-wider text-content-subtle">
+                            Group selected
+                        </span>
+                        <button
+                            type="button"
+                            className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-0.5 text-content-muted hover:border-border-emphasis hover:text-content-emphasis"
+                            onClick={handleUngroup}
+                            data-testid="ungroup-btn"
+                            aria-label="Ungroup"
+                            title="Ungroup"
+                        >
+                            Ungroup
+                        </button>
+                    </div>
+                )}
             {selectionCount >= 2 && (
                 <div
                     className="flex flex-wrap items-center gap-tight border-b border-canvas-border bg-canvas-frame px-default py-2 text-[11px]"
@@ -1311,6 +1518,29 @@ function Inner({
                             </button>
                         </>
                     )}
+                    <span className="mx-1 text-content-subtle">·</span>
+                    {/* R30 — Group selected. Refuses to nest groups
+                        or to fold a node that already lives inside a
+                        group; disabled state mirrors that gate so
+                        the affordance is honest. */}
+                    <button
+                        type="button"
+                        className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-0.5 text-content-muted hover:border-border-emphasis hover:text-content-emphasis disabled:opacity-50"
+                        onClick={handleGroupSelected}
+                        data-testid="group-selected-btn"
+                        aria-label="Group selected nodes"
+                        title="Group selected"
+                        disabled={nodes
+                            .filter((n) => selectedNodeIds.includes(n.id))
+                            .some(
+                                (n) =>
+                                    nodeParent(n) != null ||
+                                    (n.data as { kind?: unknown })?.kind ===
+                                        "group",
+                            )}
+                    >
+                        Group
+                    </button>
                     <span className="mx-1 text-content-subtle">·</span>
                     <button
                         type="button"

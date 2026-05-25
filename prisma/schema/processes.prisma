@@ -89,6 +89,19 @@ model ProcessNode {
   subtitle     String?
   posX         Float
   posY         Float
+  // R30 — optional parent reference for the "group" kind. References
+  // the parent's per-map `nodeKey` (the frontend-stable id), NOT the
+  // row's cuid `id`. The rest of the graph (ProcessEdge.sourceKey /
+  // targetKey) already references node KEYS — keeping `parentNodeKey`
+  // on the same kind lets the frontend round-trip xyflow's `parentId`
+  // (which references the xyflow node id, which IS our nodeKey)
+  // without translation.
+  //
+  // No FK constraint: the parent must exist in the SAME processMap
+  // row-set; `replaceGraph` validates this structurally. Migration
+  // adds a partial index on `(processMapId, parentNodeKey)` for the
+  // "find all children of this group" query.
+  parentNodeKey String?
   // Forward-compatible per-type payload. PR-B uses this to carry
   // typed metadata for richer node kinds (control owner, risk
   // severity, asset criticality) without further migrations.

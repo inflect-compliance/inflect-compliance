@@ -46,6 +46,11 @@ export const ProcessNodeInputSchema = z.object({
     subtitle: z.string().max(200).optional().nullable(),
     posX: z.number().finite(),
     posY: z.number().finite(),
+    // R30 — optional parent group reference. References another node's
+    // `nodeKey` in the same map. The structural validator on the repo
+    // layer rejects unknown `parentNodeKey` values; a self-reference
+    // (parentNodeKey === own nodeKey) is rejected explicitly.
+    parentNodeKey: z.string().max(128).optional().nullable(),
     dataJson: z.unknown().optional().nullable(),
 });
 export type ProcessNodeInput = z.infer<typeof ProcessNodeInputSchema>;

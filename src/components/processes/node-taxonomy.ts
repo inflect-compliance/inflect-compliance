@@ -78,6 +78,7 @@ import {
     ShieldCheck,
     AlertTriangle,
     StickyNote,
+    Group as GroupIcon,
 } from 'lucide-react';
 
 export type ProcessNodeKind =
@@ -87,7 +88,8 @@ export type ProcessNodeKind =
     | 'risk'
     | 'asset'
     | 'external'
-    | 'annotation';
+    | 'annotation'
+    | 'group';
 
 /**
  * Visual-language accents. Each maps to an IC semantic colour
@@ -129,7 +131,7 @@ export type NodeShape = 'rect' | 'diamond' | 'note';
  * category is the SECOND-order distinction the eye picks up
  * without needing to read every label.
  */
-export type NodeCategory = 'flow' | 'context' | 'note';
+export type NodeCategory = 'flow' | 'context' | 'note' | 'group';
 
 export interface NodeTypeMeta {
     /** Canonical kind id (persisted in `ProcessNode.nodeType`). */
@@ -243,6 +245,27 @@ export const NODE_TAXONOMY: Record<ProcessNodeKind, NodeTypeMeta> = {
         hasHandles: false,
         defaultLabel: 'Note',
     },
+    group: {
+        id: 'group',
+        label: 'Group',
+        description:
+            'A labelled container that bundles steps under one heading.',
+        icon: GroupIcon,
+        accent: 'subtle',
+        shape: 'rect',
+        // R30 — `group` is a new category that the typed-node
+        // renderer uses to opt into the translucent container
+        // treatment (larger default size, lower opacity, dashed
+        // border, brand-coloured label strip). xyflow honours
+        // parent/child layout when child nodes carry `parentId`
+        // pointing at the group; the persistence layer carries
+        // `parentNodeKey` for the round-trip.
+        category: 'group',
+        // Groups don't carry edges. Connections flow into / out of
+        // children inside the group, not the group itself.
+        hasHandles: false,
+        defaultLabel: 'Group',
+    },
 };
 
 /**
@@ -268,6 +291,7 @@ export const NODE_TAXONOMY_ORDER: ProcessNodeKind[] = [
     'risk',
     'asset',
     'external',
+    'group',
     'annotation',
 ];
 
