@@ -36,13 +36,12 @@ import {
     type FilterType,
 } from '@/components/ui/filter';
 import { EntityListPage } from '@/components/layout/EntityListPage';
-import {
-    LeftAccordionRail,
-    type LeftAccordionRailSection,
-} from '@/components/ui/left-accordion-rail';
 import { TableLoadMoreFooter } from '@/components/ui/table-load-more-footer';
 import { useThresholdLoadMore } from '@/components/ui/hooks';
 import { AsidePanel } from '@/components/ui/aside-panel';
+import { AiAssistRail } from '@/components/ui/ai-assist-rail';
+import { Sparkle3 } from '@/components/ui/icons/nucleo/sparkle3';
+import { Eyebrow } from '@/components/ui/typography';
 import { SelectionSummaryPanel } from '@/components/ui/selection-summary-panel';
 import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
 import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
@@ -368,6 +367,11 @@ function ControlsPageInner({
         () => [
             { id: 'code', label: 'Code' },
             { id: 'name', label: 'Title' },
+            // ISO 27001 Annex A theme (Organizational / People /
+            // Physical / Technological) — stored on `Control.category`,
+            // surfaced as "Type" so the scannable column name matches
+            // the orientation rail's "Type" filter section.
+            { id: 'type', label: 'Type' },
             { id: 'status', label: 'Status' },
             { id: 'applicability', label: 'Applicability' },
             { id: 'owner', label: 'Owner' },
@@ -516,6 +520,28 @@ function ControlsPageInner({
                     {row.original.name}
                 </TableTitleCell>
             ),
+        },
+        {
+            // ISO 27001 Annex A theme (e.g. Organizational, People,
+            // Physical, Technological). Sourced from `Control.category`
+            // — the field is free-form but framework imports + the
+            // Annex A seeder write only those four canonical values.
+            // Custom controls created without a category render `—`.
+            id: 'type',
+            header: 'Type',
+            accessorFn: (c) => c.category || '',
+            cell: ({ getValue }) => {
+                const v = getValue<string>();
+                if (!v) {
+                    return <span className="text-xs text-content-subtle">—</span>;
+                }
+                return (
+                    // Default variant + default `subtle` tone (R9-PR11)
+                    // — neutral bg + muted text, quieter than the
+                    // status pill so the eye anchors on Status first.
+                    <StatusBadge>{v}</StatusBadge>
+                );
+            },
         },
         {
             accessorKey: 'status',
@@ -700,12 +726,11 @@ function ControlsPageInner({
             </AsidePanel>
         ) : undefined;
 
-    // B7 — left orientation rail. Each accordion section groups
-    // the controls list by a different axis (status / category).
-    // Clicking a value sets the corresponding filter via the
-    // existing `filterCtx`; the table re-fetches via the standard
-    // URL-sync. Sections are collapsed by default — the rail
-    // stays quiet until the user actively engages it.
+    // Orientation rail — Risks-parity. Was a left-accordion rail
+    // on the LEFT (B7); now an <AsidePanel> on the RIGHT, matching
+    // the chrome of Risks' AI-Assist rail. Three sections — Status,
+    // Type (Annex theme), Owner — each clickable to filter via
+    // `filterCtx`; the table re-fetches via the standard URL-sync.
     const statusCounts = useMemo(() => {
         const map = new Map<string, number>();
         for (const c of controls) {
@@ -714,7 +739,10 @@ function ControlsPageInner({
         }
         return map;
     }, [controls]);
-    const categoryCounts = useMemo(() => {
+    const typeCounts = useMemo(() => {
+        // Annex A theme stored on `Control.category`; rendered as
+        // "Type" in the column + the rail to match the user's
+        // mental model.
         const map = new Map<string, number>();
         for (const c of controls) {
             const k = (c as { category?: string | null }).category ?? '';
@@ -723,86 +751,125 @@ function ControlsPageInner({
         }
         return map;
     }, [controls]);
+    const ownerCounts = useMemo(() => {
+        // Owner buckets — keyed by user id so filterCtx writes
+        // `ownerUserId` correctly. We carry the display label
+        // alongside so the rail row reads as a name, not a cuid.
+        const map = new Map<string, { label: string; count: number }>();
+        for (const c of controls) {
+            const o = c.owner;
+            if (!o) continue;
+            const label = o.name ?? o.email ?? o.id;
+            const prev = map.get(o.id);
+            map.set(o.id, { label, count: (prev?.count ?? 0) + 1 });
+        }
+        return map;
+    }, [controls]);
 
-    const orientationSections: LeftAccordionRailSection[] = useMemo(() => {
-        const out: LeftAccordionRailSection[] = [];
-        const railRowClass =
-            'flex w-full items-center justify-between gap-tight rounded-md px-2 py-1 text-left text-xs text-content-default hover:bg-bg-muted/50 focus-visible:outline-none focus-visible:bg-bg-muted';
+    const railRowClass =
+        'flex w-full items-center justify-between gap-tight rounded-md px-2 py-1 text-left text-xs text-content-default hover:bg-bg-muted/50 focus-visible:outline-none focus-visible:bg-bg-muted';
+    // Section labels inside the aside use the canonical <Eyebrow>
+    // (uppercase, tracked, muted) — keeps the heading-primitive
+    // ratchet honest while reading like a labelled group. The
+    // AsidePanel header carries the panel-level heading; each
+    // section here is a labelled group inside it.
+    const railHeadingClass = 'px-2';
 
-        // Status section — every value the enum permits, sorted
-        // by visible count desc so the populated buckets land
-        // first.
-        const statusEntries = Object.entries(CONTROL_STATUS_LABELS).map(
-            ([value, label]) => ({
-                value,
-                label,
-                count: statusCounts.get(value) ?? 0,
-            }),
-        );
-        statusEntries.sort((a, b) => b.count - a.count);
-        out.push({
-            id: 'status',
-            label: 'Status',
-            // guardrail-ignore — local UI count of populated rail buckets
-            count: statusEntries.filter((e) => e.count > 0).length,
-            content: (
-                <ul className="flex flex-col gap-0.5" role="list">
-                    {statusEntries.map((e) => (
-                        <li key={e.value}>
-                            <button
-                                type="button"
-                                className={railRowClass}
-                                data-rail-section-value={`status:${e.value}`}
-                                onClick={() => filterCtx.set('status', e.value)}
-                            >
-                                <span className="truncate">{e.label}</span>
-                                <span className="text-content-subtle tabular-nums">
-                                    {e.count}
-                                </span>
-                            </button>
-                        </li>
-                    ))}
-                </ul>
-            ),
-        });
+    const statusEntries = Object.entries(CONTROL_STATUS_LABELS)
+        .map(([value, label]) => ({
+            value,
+            label,
+            count: statusCounts.get(value) ?? 0,
+        }))
+        .sort((a, b) => b.count - a.count);
+    const typeEntries = Array.from(typeCounts.entries()).sort(
+        (a, b) => b[1] - a[1],
+    );
+    const ownerEntries = Array.from(ownerCounts.entries()).sort(
+        (a, b) => b[1].count - a[1].count,
+    );
 
-        // Category section — derived from loaded data (no enum
-        // import). Only renders the values present in the current
-        // snapshot of controls.
-        const categoryEntries = Array.from(categoryCounts.entries()).sort(
-            (a, b) => b[1] - a[1],
-        );
-        if (categoryEntries.length > 0) {
-            out.push({
-                id: 'category',
-                label: 'Category',
-                count: categoryEntries.length,
-                content: (
+    const browseAside = (
+        <AsidePanel
+            title="Browse"
+            surfaceKey="controls-list-browse"
+            icon={<AppIcon name="controls" size={16} />}
+        >
+            <div
+                className="space-y-default"
+                data-testid="controls-browse-aside"
+            >
+                <section aria-label="Filter by status">
+                    <Eyebrow className={railHeadingClass}>Status</Eyebrow>
                     <ul className="flex flex-col gap-0.5" role="list">
-                        {categoryEntries.map(([cat, n]) => (
-                            <li key={cat}>
+                        {statusEntries.map((e) => (
+                            <li key={e.value}>
                                 <button
                                     type="button"
                                     className={railRowClass}
-                                    data-rail-section-value={`category:${cat}`}
-                                    onClick={() => filterCtx.set('category', cat)}
+                                    data-rail-section-value={`status:${e.value}`}
+                                    onClick={() => filterCtx.set('status', e.value)}
                                 >
-                                    <span className="truncate">{cat}</span>
-                                    <span className="text-content-subtle tabular-nums">{n}</span>
+                                    <span className="truncate">{e.label}</span>
+                                    <span className="text-content-subtle tabular-nums">
+                                        {e.count}
+                                    </span>
                                 </button>
                             </li>
                         ))}
                     </ul>
-                ),
-            });
-        }
+                </section>
 
-        // Reset section — a one-click way to clear all rail-set
-        // filters, paired with the rail's quiet shape.
-        out.push({
-            id: 'reset',
-            label: 'Reset',
-            content: (
+                {typeEntries.length > 0 && (
+                    <section aria-label="Filter by type">
+                        <Eyebrow className={railHeadingClass}>Type</Eyebrow>
+                        <ul className="flex flex-col gap-0.5" role="list">
+                            {typeEntries.map(([cat, n]) => (
+                                <li key={cat}>
+                                    <button
+                                        type="button"
+                                        className={railRowClass}
+                                        data-rail-section-value={`type:${cat}`}
+                                        onClick={() => filterCtx.set('category', cat)}
+                                    >
+                                        <span className="truncate">{cat}</span>
+                                        <span className="text-content-subtle tabular-nums">
+                                            {n}
+                                        </span>
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
+                )}
+
+                {ownerEntries.length > 0 && (
+                    <section aria-label="Filter by owner">
+                        <Eyebrow className={railHeadingClass}>Owner</Eyebrow>
+                        <ul className="flex flex-col gap-0.5" role="list">
+                            {ownerEntries.map(([uid, info]) => (
+                                <li key={uid}>
+                                    <button
+                                        type="button"
+                                        className={railRowClass}
+                                        data-rail-section-value={`owner:${uid}`}
+                                        onClick={() =>
+                                            filterCtx.set('ownerUserId', uid)
+                                        }
+                                    >
+                                        <span className="truncate">
+                                            {info.label}
+                                        </span>
+                                        <span className="text-content-subtle tabular-nums">
+                                            {info.count}
+                                        </span>
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
+                )}
+
                 <button
                     type="button"
                     className={railRowClass}
@@ -811,30 +878,41 @@ function ControlsPageInner({
                 >
                     Clear all filters
                 </button>
-            ),
-        });
+            </div>
+        </AsidePanel>
+    );
 
-        return out;
-    }, [statusCounts, categoryCounts, filterCtx]);
+    // AI Assist — mirror of Risks' co-pilot rail. Quiet (44px spine)
+    // by default; the same `<AiAssistRail>` content + `/risks/ai`
+    // destination as the Risks page so the panel reads as one
+    // shared co-pilot across registers, not a stub.
+    const aiAssistAside = appPermissions.controls.edit ? (
+        <AsidePanel
+            title="AI Assist"
+            surfaceKey="controls-list-ai"
+            defaultCollapsed
+            icon={<Sparkle3 className="h-4 w-4" />}
+        >
+            <AiAssistRail aiHref={tenantHref('/risks/ai')} />
+        </AsidePanel>
+    ) : null;
 
-    const orientationRail = (
-        <LeftAccordionRail
-            id="controls-orientation-rail"
-            title="Browse by"
-            sections={orientationSections}
-            // PR-C — foldable. Each user-tenant keeps its own
-            // fold preference in `localStorage`. Folds down to a
-            // 28px spine; click the chevron on the spine to
-            // re-expand.
-            persistKey="inflect:rail-folded:controls"
-        />
+    // Compose the aside slot — selection summary first (only
+    // appears on multi-row selection), then the always-on browse
+    // rail, then the AI assist co-pilot. They stack vertically
+    // inside the docked third column.
+    const composedAside = (
+        <div className="flex flex-col gap-default">
+            {selectionAside}
+            {browseAside}
+            {aiAssistAside}
+        </div>
     );
 
     return (
         <EntityListPage<ControlListItem>
             className="animate-fadeIn gap-section"
-            aside={selectionAside}
-            leftRail={orientationRail}
+            aside={composedAside}
             banner={<TruncationBanner truncated={truncated} />}
             // PR-1 — org-parity load-more footer. Renders below the
             // DataTable inside the same body card; gated on

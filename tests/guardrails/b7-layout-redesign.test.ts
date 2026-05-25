@@ -90,33 +90,112 @@ describe('B7 — layout redesign', () => {
         });
     });
 
-    describe('Controls list mounts the LeftAccordionRail', () => {
+    describe('Controls list mounts a Risks-parity browse aside (was LeftAccordionRail)', () => {
+        // 2026-05-25 — the controls orientation rail moved from a
+        // <LeftAccordionRail> on the LEFT (the original B7 wiring)
+        // to an <AsidePanel> on the RIGHT, matching the chrome of
+        // Risks' AI-assist rail. Status / Type / Owner sections all
+        // live inside the new aside; the table-side `Type` column
+        // surfaces the same `Control.category` value the rail
+        // filters on. The B7 primitive still exists in the codebase
+        // and is verified above — this `describe` only re-anchors
+        // the Controls page contract.
         const src = read(
             'src/app/t/[tenantSlug]/(app)/controls/ControlsClient.tsx',
         );
 
-        it('imports the primitive', () => {
-            expect(src).toMatch(/import \{[\s\S]{0,200}LeftAccordionRail/);
+        it('mounts an AsidePanel browse rail (NOT a LeftAccordionRail)', () => {
+            expect(src).toMatch(/<AsidePanel\b[\s\S]{0,200}title="Browse"/);
+            // The legacy left-rail wiring is gone — the import +
+            // the JSX must both disappear so a future "move it back
+            // left" PR fails this ratchet loudly.
+            expect(src).not.toMatch(/import \{[\s\S]{0,200}LeftAccordionRail/);
+            expect(src).not.toMatch(/leftRail=\{orientationRail\}/);
+            expect(src).not.toMatch(/<LeftAccordionRail\b/);
         });
 
-        it('threads orientationRail to EntityListPage.leftRail', () => {
-            expect(src).toMatch(/leftRail=\{orientationRail\}/);
-            expect(src).toMatch(/<LeftAccordionRail\b/);
+        it('threads a composed aside (selection + browse + ai) to EntityListPage', () => {
+            // The aside slot now receives a composed React node that
+            // stacks selection-summary + browse + AI-assist panels.
+            expect(src).toMatch(/aside=\{composedAside\}/);
         });
 
-        it('sections include at least Status + Category orientation', () => {
-            // Status is enum-driven (always renders); Category
-            // is data-derived (only renders when the snapshot has
-            // categories) — both wiring branches must be in code.
-            expect(src).toMatch(/id:\s*['"]status['"]/);
-            expect(src).toMatch(/label:\s*['"]Status['"]/);
-            expect(src).toMatch(/id:\s*['"]category['"]/);
-            expect(src).toMatch(/label:\s*['"]Category['"]/);
+        it('browse sections include Status, Type, AND Owner', () => {
+            // Status is enum-driven (always renders); Type +
+            // Owner are data-derived (only render when the snapshot
+            // has values). All three wiring branches must be in the
+            // source so a future "drop one" PR fails CI. The source
+            // shape is `data-rail-section-value={`status:${id}`}` —
+            // the regex anchors on the prefix string inside the
+            // template literal.
+            expect(src).toMatch(/data-rail-section-value=\{`status:/);
+            expect(src).toMatch(/data-rail-section-value=\{`type:/);
+            expect(src).toMatch(/data-rail-section-value=\{`owner:/);
         });
 
         it('clicking a rail value routes through filterCtx.set', () => {
+            // Type → `category` (the Annex theme is stored on
+            // `Control.category` even though the UI label is
+            // "Type"). Owner → `ownerUserId`.
             expect(src).toMatch(/filterCtx\.set\(['"]status['"]/);
             expect(src).toMatch(/filterCtx\.set\(['"]category['"]/);
+            expect(src).toMatch(/filterCtx\.set\(['"]ownerUserId['"]/);
+        });
+    });
+
+    describe('Controls AI Assist co-pilot rail (Risks-parity)', () => {
+        const src = read(
+            'src/app/t/[tenantSlug]/(app)/controls/ControlsClient.tsx',
+        );
+
+        it('mounts AiAssistRail inside an AsidePanel titled "AI Assist"', () => {
+            // Mirror of the Risks list rail. Same primitive
+            // (`<AiAssistRail>`), same chrome (`<AsidePanel>`),
+            // same destination (`/risks/ai`) so the panel reads as
+            // ONE shared co-pilot across registers — not a stub.
+            expect(src).toMatch(/<AsidePanel\b[\s\S]{0,200}title="AI Assist"/);
+            expect(src).toMatch(/<AiAssistRail\b/);
+            expect(src).toMatch(/aiHref=\{tenantHref\(['"]\/risks\/ai['"]\)\}/);
+        });
+
+        it('defaults to collapsed-to-spine (44px)', () => {
+            // The co-pilot is a secondary rail; it should not
+            // claim 320px unprompted. Matches the Risks contract.
+            expect(src).toMatch(
+                /<AsidePanel\b[\s\S]{0,200}title="AI Assist"[\s\S]{0,400}defaultCollapsed/,
+            );
+        });
+    });
+
+    describe('Controls table — `Type` column (Annex theme)', () => {
+        const src = read(
+            'src/app/t/[tenantSlug]/(app)/controls/ControlsClient.tsx',
+        );
+
+        it('column-visibility list includes Type before Status', () => {
+            // Anchor on the assetColumnList-style block — the Type
+            // entry must appear before the Status entry so the
+            // default-visible column order reads Code · Title · Type
+            // · Status.
+            const start = src.indexOf('const controlColumnList');
+            expect(start).toBeGreaterThan(0);
+            const slice = src.slice(start, start + 1200);
+            const typeIdx = slice.indexOf("id: 'type'");
+            const statusIdx = slice.indexOf("id: 'status'");
+            expect(typeIdx).toBeGreaterThan(0);
+            expect(statusIdx).toBeGreaterThan(typeIdx);
+        });
+
+        it('column def renders Control.category under the header "Type"', () => {
+            // `accessorFn: (c) => c.category || ''` + header
+            // "Type" — the data field stays `category` (matches
+            // the schema + filter-defs), the UI label is "Type"
+            // so it lines up with the rail section + the user
+            // mental model.
+            expect(src).toMatch(
+                /id:\s*['"]type['"][\s\S]{0,200}header:\s*['"]Type['"]/,
+            );
+            expect(src).toMatch(/accessorFn:\s*\(c\)\s*=>\s*c\.category/);
         });
     });
 });

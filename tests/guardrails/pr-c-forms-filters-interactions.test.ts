@@ -47,10 +47,13 @@ describe('PR-C — forms, filters & interactions', () => {
     });
 
     describe('LeftAccordionRail foldable behaviour', () => {
+        // 2026-05-25 — the Controls list retired its LeftAccordionRail
+        // wiring; the orientation rail moved into an <AsidePanel> on
+        // the right (verified by `b7-layout-redesign.test.ts`). The
+        // primitive itself still exists in the codebase, so the
+        // shape-of-the-primitive assertions below stay — only the
+        // Controls page-threading assertion was removed.
         const src = read('src/components/ui/left-accordion-rail.tsx');
-        const controls = read(
-            'src/app/t/[tenantSlug]/(app)/controls/ControlsClient.tsx',
-        );
 
         it('primitive declares persistKey + defaultFolded props', () => {
             expect(src).toMatch(/persistKey\?:\s*string/);
@@ -73,12 +76,6 @@ describe('PR-C — forms, filters & interactions', () => {
                 /window\.localStorage\.setItem\(persistKey/,
             );
             expect(src).toMatch(/typeof window === 'undefined'/);
-        });
-
-        it('Controls page threads a persistKey', () => {
-            expect(controls).toMatch(
-                /persistKey="inflect:rail-folded:controls"/,
-            );
         });
     });
 
