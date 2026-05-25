@@ -38,8 +38,25 @@ export async function createControl(ctx: RequestContext, data: {
     await assertWithinLimit(ctx, 'control');
 
     const created = await runInTenantContext(ctx, async (db) => {
+        // Mint a per-tenant `CTL-N` code for custom-control creates
+        // that don't supply their own code. Mirrors
+        // `assetKeySequence` / `riskKeySequence` — the upsert
+        // compiles to a native `INSERT … ON CONFLICT DO UPDATE`,
+        // race-free under concurrent imports. Framework-installed
+        // controls always carry their own `code` / `annexId` from
+        // the catalogue and bypass this branch.
+        const isCustom = data.isCustom ?? true;
+        let code = data.code || null;
+        if (!code && isCustom) {
+            const seq = await db.controlKeySequence.upsert({
+                where: { tenantId: ctx.tenantId },
+                create: { tenantId: ctx.tenantId, lastValue: 1 },
+                update: { lastValue: { increment: 1 } },
+            });
+            code = `CTL-${seq.lastValue}`;
+        }
         const control = await ControlRepository.create(db, ctx, {
-            code: data.code || null,
+            code,
             annexId: data.annexId || null,
             name: data.name,
             description: data.description || null,
@@ -51,7 +68,7 @@ export async function createControl(ctx: RequestContext, data: {
             createdByUserId: ctx.userId,
             evidenceSource: (data.evidenceSource as 'MANUAL') || null,
             automationKey: data.automationKey || null,
-            isCustom: data.isCustom ?? true,
+            isCustom,
         });
 
         await logEvent(db, ctx, {

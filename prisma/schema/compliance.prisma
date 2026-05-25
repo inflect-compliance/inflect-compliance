@@ -162,6 +162,13 @@ model TaskWatcher {
 model Asset {
   id                  String               @id @default(cuid())
   tenantId            String
+  /// Generated per-tenant short key (`AST-1`, `AST-2`, …) so the
+  /// Assets list page can lead with a scannable Code column.
+  /// Mints atomically via `AssetKeySequence.upsert` (same race-
+  /// free pattern Task / Risk use). Nullable to keep historic
+  /// rows renderable; the create-path generates a key for every
+  /// new row.
+  key                 String?
   name                String
   type                AssetType
   classification      String?
@@ -197,6 +204,17 @@ model Asset {
   @@index([tenantId, criticality])
   @@index([tenantId, status])
   @@index([tenantId, deletedAt])
+  /// Unique within a tenant — `AST-N` collisions are race-free
+  /// via the AssetKeySequence counter.
+  @@unique([tenantId, key])
+}
+
+/// Per-tenant monotonic counter for minting `AST-N` asset keys.
+/// Mirrors `TaskKeySequence` / `RiskKeySequence` — `upsert` with
+/// an atomic `increment` is race-free under concurrent imports.
+model AssetKeySequence {
+  tenantId  String @id
+  lastValue Int    @default(0)
 }
 
 model Risk {
@@ -300,6 +318,16 @@ model Risk {
 /// is race-free under concurrent imports and scales O(1) regardless
 /// of tenant size.
 model RiskKeySequence {
+  tenantId  String @id
+  lastValue Int    @default(0)
+}
+
+/// Per-tenant monotonic counter for minting `CTL-N` custom-control
+/// keys (the framework-installed controls keep their canonical
+/// annexId / supplied code). Only the `createControl` path that
+/// lacks an explicit code consumes this sequence; framework imports
+/// supply their own code/annexId and bypass the counter entirely.
+model ControlKeySequence {
   tenantId  String @id
   lastValue Int    @default(0)
 }

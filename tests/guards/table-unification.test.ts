@@ -158,9 +158,9 @@ const FIRST_COLUMN_TABLES: FirstColumnEntry[] = [
     // the canonical scannable identifier (name, title, or code).
     {
         file: "src/app/t/[tenantSlug]/(app)/assets/AssetsClient.tsx",
-        firstColumnId: "name",
+        firstColumnId: "code",
         adopted: true,
-        note: "Assets list — name is the canonical scannable identifier (e.g. 'Customer DB'). Assets have no separate code field; type/classification are filters, not identifiers.",
+        note: "Assets list — per-tenant `AST-N` code minted via AssetKeySequence is the canonical identifier (Risk/Controls parity); Name comes second.",
     },
     {
         file: "src/app/t/[tenantSlug]/(app)/evidence/EvidenceClient.tsx",

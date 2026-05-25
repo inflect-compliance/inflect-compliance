@@ -76,9 +76,26 @@ export class AssetRepository {
     }
 
     static async create(db: PrismaTx, ctx: RequestContext, data: Omit<Prisma.AssetUncheckedCreateInput, 'tenantId'>) {
+        // Mint a per-tenant `AST-N` key from an atomic counter.
+        // Mirrors `RiskRepository.create` / the TaskKeySequence
+        // pattern — the upsert compiles to a native
+        // `INSERT … ON CONFLICT DO UPDATE`, race-free under
+        // concurrent imports. Callers that supply their own `key`
+        // (the migration backfill path / future imports) win — we
+        // only mint when none is set.
+        let key = (data as { key?: string | null }).key ?? null;
+        if (!key) {
+            const seq = await db.assetKeySequence.upsert({
+                where: { tenantId: ctx.tenantId },
+                create: { tenantId: ctx.tenantId, lastValue: 1 },
+                update: { lastValue: { increment: 1 } },
+            });
+            key = `AST-${seq.lastValue}`;
+        }
         return db.asset.create({
             data: {
                 ...data,
+                key,
                 tenantId: ctx.tenantId,
             },
         });

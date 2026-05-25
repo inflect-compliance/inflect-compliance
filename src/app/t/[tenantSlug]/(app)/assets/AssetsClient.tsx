@@ -182,6 +182,10 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
     // R10-PR7 — column-visibility gear.
     const assetColumnList = useMemo(
         () => [
+            // First-column rule (Risk/Controls parity) — the
+            // per-tenant `AST-N` Code leads, so the list scans by
+            // canonical identifier first and Name second.
+            { id: 'code', label: 'Code' },
             { id: 'name', label: 'Name' },
             { id: 'type', label: 'Type' },
             { id: 'classification', label: 'Classification' },
@@ -201,6 +205,26 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
     });
 
     const assetColumns = useMemo(() => createColumns<any>([
+        {
+            // First-column convention — `AST-N` Code leads. Mono +
+            // tabular-nums so the digits align column-wise; muted
+            // tone keeps the canonical-id signal quiet while the
+            // Name cell carries the click affordance.
+            id: 'code',
+            header: 'Code',
+            // Args are inferred from the column generic — leaving
+            // explicit annotations off keeps the type-narrowness
+            // ratchet honest.
+            accessorFn: (a) => a.key ?? null,
+            cell: ({ getValue }) => {
+                const k = getValue();
+                return (
+                    <span className="font-mono text-xs text-content-muted tabular-nums">
+                        {k ?? '—'}
+                    </span>
+                );
+            },
+        },
         {
             accessorKey: 'name',
             header: t.name,
