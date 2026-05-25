@@ -79,8 +79,15 @@ import {
     isProcessEdgeVariant,
 } from "./ProcessEdge";
 import { useProximityAutoBind } from "@/lib/processes/use-proximity-auto-bind";
+import {
+    useCanvasHistory,
+    type CanvasSnapshot,
+} from "@/lib/processes/use-canvas-history";
+import { useCanvasAutosave } from "@/lib/processes/use-canvas-autosave";
+import { useKeyboardShortcut } from "@/lib/hooks/use-keyboard-shortcut";
 import { ProcessInspector } from "./ProcessInspector";
 import { CanvasHelpStrip } from "./CanvasHelpStrip";
+import type { ProcessEdgeVariant } from "./ProcessEdge";
 import type { ProcessMapSummary } from "@/app/t/[tenantSlug]/(app)/processes/ProcessesClient";
 
 /**
@@ -160,13 +167,44 @@ function Inner({
     // name so the user can edit it in place without every keystroke
     // bouncing through the parent state.
     const [editedName, setEditedName] = useState<string>("");
+    // R28 — snap-to-grid toggle. xyflow's native snapToGrid +
+    // snapGrid props are wired below; the toggle persists per
+    // tenant in localStorage so authors keep their preference.
+    const [snapEnabled, setSnapEnabled] = useState<boolean>(() => {
+        if (typeof window === "undefined") return true;
+        const v = window.localStorage.getItem("inflect:processes:snap");
+        return v === null ? true : v === "1";
+    });
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        window.localStorage.setItem(
+            "inflect:processes:snap",
+            snapEnabled ? "1" : "0",
+        );
+    }, [snapEnabled]);
     const { screenToFlowPosition } = useReactFlow();
+    // R28 — undo/redo history. Snapshots are pushed AFTER each
+    // substantive edit (create/delete/move-stop/inspector-commit/
+    // variant-cycle); keyboard binds Cmd+Z / Cmd+Shift+Z.
+    const history = useCanvasHistory();
 
     // R26-PR-E — selected-node tracking for the inspector. xyflow
     // owns selection state internally; we mirror it via the change
     // handler so the inspector can read the selected node's data
     // synchronously.
     const selectedNode = nodes.find((n) => n.selected) ?? null;
+    // R28 — same idea for the edge inspector. The inspector
+    // gives precedence to node over edge if both are mounted; we
+    // only mirror the edge slot here so the consumer can decide.
+    const selectedEdge = edges.find((e) => e.selected) ?? null;
+
+    // R28 — history snapshot helper. Captures the live graph
+    // shape as a CanvasSnapshot. Called from places that mutate
+    // the graph: drop, delete, inspector commit, variant cycle.
+    const snapshotNow = useCallback(
+        (): CanvasSnapshot => ({ nodes, edges }),
+        [nodes, edges],
+    );
 
     // Sync the editedName mirror to the active process name when
     // selection or rename-from-elsewhere changes.
@@ -364,6 +402,24 @@ function Inner({
             setSaving(false);
         }
     }, [activeId, nodes, edges, tenantSlug, processes, onProcessesChange]);
+
+    // ─── R28 — Autosave. Debounced 3s after the last edit. ────────
+    // `markDirty()` fires from the change handlers below; the save
+    // callback delegates to `handleSave` so the existing PUT path
+    // is reused (no second serialisation surface to drift).
+    const autosave = useCanvasAutosave({
+        enabled: Boolean(activeId) && !loading,
+        save: handleSave,
+    });
+    // Clear autosave dirty whenever rehydration completes — the
+    // load sequence calls setNodes/setEdges which would normally
+    // mark dirty; markClean keeps the post-load state idle.
+    useEffect(() => {
+        if (!loading) autosave.markClean();
+        // markClean is stable enough (memoised in the hook); we
+        // depend on `loading` only so the cleanup fires once per
+        // load cycle.
+    }, [loading, activeId, autosave]);
 
     // ─── Inspector: patch selected node ───────────────────────────
 
@@ -620,24 +676,174 @@ function Inner({
     }, [tenantSlug, processes, onProcessesChange, onActiveIdChange]);
 
     // ─── Canvas plumbing (xyflow change handlers + drop) ───────────
+    //
+    // R28 — change classification. xyflow's NodeChange / EdgeChange
+    // unions carry both substantive edits (add, remove, position-
+    // commit) AND transient flicker (selection, dimensions,
+    // position-during-drag). We mark dirty + push history only on
+    // the substantive subset so autosave doesn't fire on every
+    // selection click and undo doesn't bury a real undo point
+    // under twenty drag-tick entries.
+    const isSubstantiveNodeChange = (c: NodeChange): boolean => {
+        switch (c.type) {
+            case "add":
+            case "remove":
+                return true;
+            case "position":
+                // `dragging: false` marks the commit (mouse-up).
+                // Intermediate drag ticks have `dragging: true`
+                // and shouldn't push history.
+                return c.dragging === false;
+            default:
+                return false;
+        }
+    };
+    const isSubstantiveEdgeChange = (c: EdgeChange): boolean => {
+        return c.type === "add" || c.type === "remove";
+    };
 
     const onNodesChange = useCallback<OnNodesChange>(
-        (changes: NodeChange[]) =>
-            setNodes((nds) => applyNodeChanges(changes, nds)),
-        [],
+        (changes: NodeChange[]) => {
+            const substantive = changes.some(isSubstantiveNodeChange);
+            if (substantive) {
+                // Snapshot the PRE-change state so undo restores
+                // exactly what was there before this edit.
+                history.push({ nodes, edges });
+                autosave.markDirty();
+            }
+            setNodes((nds) => applyNodeChanges(changes, nds));
+        },
+        [nodes, edges, history, autosave],
     );
     const onEdgesChange = useCallback<OnEdgesChange>(
-        (changes: EdgeChange[]) =>
-            setEdges((eds) => applyEdgeChanges(changes, eds)),
-        [],
+        (changes: EdgeChange[]) => {
+            const substantive = changes.some(isSubstantiveEdgeChange);
+            if (substantive) {
+                history.push({ nodes, edges });
+                autosave.markDirty();
+            }
+            setEdges((eds) => applyEdgeChanges(changes, eds));
+        },
+        [nodes, edges, history, autosave],
     );
     const onConnect = useCallback<OnConnect>(
-        (c: Connection) =>
+        (c: Connection) => {
+            history.push({ nodes, edges });
+            autosave.markDirty();
             setEdges((eds) =>
                 addEdge({ ...c, type: PROCESS_EDGE_TYPE, id: `edge-${Date.now()}` }, eds),
-            ),
-        [],
+            );
+        },
+        [nodes, edges, history, autosave],
     );
+
+    // R28 — connection validity predicate. Three reject conditions:
+    //   1. Self-loop (source === target) — never meaningful in a
+    //      process map; the user has misclicked.
+    //   2. Duplicate (an edge already exists for this directed
+    //      pair) — auto-bind has the same guard; the manual
+    //      connect path needs it for parity.
+    //   3. Annotation participation — annotations are documentary,
+    //      not part of the flow (their kind already declares
+    //      `hasHandles: false`, but if a future variant ever
+    //      slipped through, the explicit reject keeps the graph
+    //      semantics intact).
+    const isValidConnection = useCallback(
+        (c: Connection | Edge) => {
+            const src = "source" in c ? c.source : null;
+            const tgt = "target" in c ? c.target : null;
+            if (!src || !tgt) return false;
+            if (src === tgt) return false;
+            if (
+                edges.some(
+                    (e) => e.source === src && e.target === tgt,
+                )
+            ) {
+                return false;
+            }
+            const srcNode = nodes.find((n) => n.id === src);
+            const tgtNode = nodes.find((n) => n.id === tgt);
+            const srcKind = (srcNode?.data as { kind?: unknown })?.kind;
+            const tgtKind = (tgtNode?.data as { kind?: unknown })?.kind;
+            if (srcKind === "annotation" || tgtKind === "annotation") {
+                return false;
+            }
+            return true;
+        },
+        [nodes, edges],
+    );
+
+    // R28 — edge inspector commit. Patches the edge's label (top-
+    // level on xyflow) + `data.variant`. Pushes history + marks
+    // dirty so the change survives undo and triggers autosave.
+    const handleEdgeUpdate = useCallback(
+        (
+            edgeId: string,
+            patch: { label?: string | null; variant?: ProcessEdgeVariant },
+        ) => {
+            history.push({ nodes, edges });
+            autosave.markDirty();
+            setEdges((eds) =>
+                eds.map((e) => {
+                    if (e.id !== edgeId) return e;
+                    const next: Edge = { ...e };
+                    if (patch.label !== undefined) {
+                        // null = "clear the label"; xyflow accepts
+                        // undefined or the absence of the field
+                        // for an unlabelled edge.
+                        if (patch.label === null) {
+                            delete (next as { label?: unknown }).label;
+                        } else {
+                            next.label = patch.label;
+                        }
+                    }
+                    if (patch.variant !== undefined) {
+                        const prevData = (e.data ?? {}) as Record<
+                            string,
+                            unknown
+                        >;
+                        next.data = { ...prevData, variant: patch.variant };
+                    }
+                    return next;
+                }),
+            );
+        },
+        [nodes, edges, history, autosave],
+    );
+
+    // R28 — undo / redo. The hook stack stores PRE-change
+    // snapshots; on undo we stash the LIVE state into the redo
+    // stack so redo can restore it. Cmd+Z = undo, Cmd+Shift+Z =
+    // redo (the editor-standard).
+    const handleUndo = useCallback(() => {
+        const prev = history.undo();
+        if (!prev) return;
+        history.pushRedo({ nodes, edges });
+        setNodes(prev.nodes);
+        setEdges(prev.edges);
+        autosave.markDirty();
+    }, [history, nodes, edges, autosave]);
+    const handleRedo = useCallback(() => {
+        const next = history.redo();
+        if (!next) return;
+        history.push({ nodes, edges });
+        setNodes(next.nodes);
+        setEdges(next.edges);
+        autosave.markDirty();
+    }, [history, nodes, edges, autosave]);
+
+    useKeyboardShortcut("mod+z", handleUndo, {
+        description: "Undo last canvas edit",
+        enabled: Boolean(activeId),
+    });
+    useKeyboardShortcut("mod+shift+z", handleRedo, {
+        description: "Redo last undone edit",
+        enabled: Boolean(activeId),
+    });
+    useKeyboardShortcut("mod+s", () => void handleSave(), {
+        description: "Save the current process map",
+        enabled: Boolean(activeId),
+    });
 
     // R26-PR-C — proximity auto-bind. When the user drags a node
     // close enough to another, surface a candidate edge; on
@@ -799,12 +1005,88 @@ function Inner({
                     </Button>
                 )}
                 <div className="ml-auto flex items-center gap-default">
+                    {/* R28 — undo / redo. Pure icon buttons live
+                        in the toolbar's right-side cluster so the
+                        keyboard-bind discovery (`Cmd+Z` / `Cmd+Shift+Z`)
+                        is mirrored visually. Disabled states drop
+                        out via the history hook's flags. */}
+                    {activeId && (
+                        <>
+                            <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={handleUndo}
+                                disabled={!history.canUndo || saving || loading}
+                                aria-label="Undo"
+                                title="Undo (Cmd/Ctrl+Z)"
+                                data-testid="canvas-undo-btn"
+                            >
+                                Undo
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={handleRedo}
+                                disabled={!history.canRedo || saving || loading}
+                                aria-label="Redo"
+                                title="Redo (Cmd/Ctrl+Shift+Z)"
+                                data-testid="canvas-redo-btn"
+                            >
+                                Redo
+                            </Button>
+                            {/* Snap-to-grid toggle. Persists per
+                                tenant in localStorage; reads as a
+                                soft pill so it stays calm next to
+                                the action buttons. */}
+                            <button
+                                type="button"
+                                onClick={() => setSnapEnabled((v) => !v)}
+                                className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-1 text-[11px] font-medium text-content-muted hover:border-border-emphasis hover:text-content-emphasis aria-pressed:border-border-emphasis aria-pressed:bg-canvas-node aria-pressed:text-content-emphasis"
+                                aria-pressed={snapEnabled}
+                                aria-label="Snap to grid"
+                                title="Snap to grid"
+                                data-testid="canvas-snap-toggle"
+                            >
+                                Snap
+                            </button>
+                        </>
+                    )}
                     {error && (
                         <span
                             className="text-xs text-content-error"
                             role="alert"
                         >
                             {error}
+                        </span>
+                    )}
+                    {/* R28 — autosave status. Quietly reports the
+                        debounce state; vanishes when idle so the
+                        toolbar isn't carrying constant chrome. */}
+                    {autosave.status === "pending" && (
+                        <span
+                            className="text-[11px] text-content-subtle"
+                            data-testid="autosave-status"
+                            data-autosave-status="pending"
+                        >
+                            Unsaved
+                        </span>
+                    )}
+                    {autosave.status === "saving" && (
+                        <span
+                            className="text-[11px] text-content-subtle"
+                            data-testid="autosave-status"
+                            data-autosave-status="saving"
+                        >
+                            Saving…
+                        </span>
+                    )}
+                    {autosave.status === "saved" && (
+                        <span
+                            className="text-[11px] text-content-success"
+                            data-testid="autosave-status"
+                            data-autosave-status="saved"
+                        >
+                            Saved
                         </span>
                     )}
                     {loadedMap && (
@@ -883,6 +1165,18 @@ function Inner({
                         onConnect={onConnect}
                         onNodeDrag={proximity.onNodeDrag}
                         onNodeDragStop={proximity.onNodeDragStop}
+                        // R28 — connection validity. Rejects self-
+                        // loops, duplicate directed pairs, and any
+                        // edge touching an annotation node.
+                        isValidConnection={isValidConnection}
+                        // R28 — snap to grid. Toggled by the
+                        // toolbar control; persisted per tenant in
+                        // localStorage. 16px grid is one Background
+                        // dot step ÷ 1.5 — fine enough to feel
+                        // precise, loose enough that snapping is
+                        // visible.
+                        snapToGrid={snapEnabled}
+                        snapGrid={[16, 16]}
                         fitView
                         proOptions={{ hideAttribution: true }}
                         aria-label="Process canvas"
@@ -896,10 +1190,14 @@ function Inner({
                     </ReactFlow>
                 </div>
                 {/* R26-PR-E inspector — mounts when a node is
-                    selected; hides cleanly otherwise. */}
+                    selected; hides cleanly otherwise. R28 extends
+                    it to edges: an edge selection mounts the same
+                    panel with label + variant fields. */}
                 <ProcessInspector
                     node={selectedNode}
+                    edge={selectedEdge}
                     onUpdate={handleInspectorUpdate}
+                    onEdgeUpdate={handleEdgeUpdate}
                 />
             </div>
         </div>
