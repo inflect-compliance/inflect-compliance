@@ -84,6 +84,13 @@ import {
     type CanvasSnapshot,
 } from "@/lib/processes/use-canvas-history";
 import { useCanvasAutosave } from "@/lib/processes/use-canvas-autosave";
+import { useCanvasChangeEmitter } from "@/lib/processes/canvas-change-events";
+import {
+    alignNodes,
+    distributeNodes,
+    type AlignmentAxis,
+    type DistributeAxis,
+} from "@/lib/processes/canvas-alignment";
 import { useKeyboardShortcut } from "@/lib/hooks/use-keyboard-shortcut";
 import { ProcessInspector } from "./ProcessInspector";
 import { CanvasHelpStrip } from "./CanvasHelpStrip";
@@ -187,6 +194,11 @@ function Inner({
     // substantive edit (create/delete/move-stop/inspector-commit/
     // variant-cycle); keyboard binds Cmd+Z / Cmd+Shift+Z.
     const history = useCanvasHistory();
+    // R29 — typed change-event emitter. Today only the autosave
+    // path "subscribes" (indirectly, via markDirty); the hook is
+    // the seam future collab / awareness layers plug into. See
+    // canvas-change-events.ts for the wire-contract rationale.
+    const changeEmitter = useCanvasChangeEmitter();
 
     // R26-PR-E — selected-node tracking for the inspector. xyflow
     // owns selection state internally; we mirror it via the change
@@ -197,6 +209,14 @@ function Inner({
     // gives precedence to node over edge if both are mounted; we
     // only mirror the edge slot here so the consumer can decide.
     const selectedEdge = edges.find((e) => e.selected) ?? null;
+    // R29 — multi-select bookkeeping. The alignment + distribute
+    // toolbar surfaces only when ≥2 nodes are selected (≥3 for
+    // distribute). Memoising the id set keeps the toolbar's
+    // disabled-state checks O(1).
+    const selectedNodeIds = nodes
+        .filter((n) => n.selected)
+        .map((n) => n.id);
+    const selectionCount = selectedNodeIds.length;
 
     // R28 — history snapshot helper. Captures the live graph
     // shape as a CanvasSnapshot. Called from places that mutate
@@ -832,6 +852,81 @@ function Inner({
         autosave.markDirty();
     }, [history, nodes, edges, autosave]);
 
+    // R29 — multi-select alignment + distribute. Pure functions
+    // in canvas-alignment.ts compute the new positions; here we
+    // push history + mark dirty + emit a typed move event.
+    const handleAlign = useCallback(
+        (axis: AlignmentAxis) => {
+            if (selectionCount < 2) return;
+            const ids = new Set(selectedNodeIds);
+            history.push({ nodes, edges });
+            setNodes((nds) => alignNodes(nds, ids, axis));
+            autosave.markDirty();
+            changeEmitter.emit("node.move", {
+                nodeIds: Array.from(ids),
+            });
+        },
+        [
+            selectionCount,
+            selectedNodeIds,
+            nodes,
+            edges,
+            history,
+            autosave,
+            changeEmitter,
+        ],
+    );
+    const handleDistribute = useCallback(
+        (axis: DistributeAxis) => {
+            if (selectionCount < 3) return;
+            const ids = new Set(selectedNodeIds);
+            history.push({ nodes, edges });
+            setNodes((nds) => distributeNodes(nds, ids, axis));
+            autosave.markDirty();
+            changeEmitter.emit("node.move", {
+                nodeIds: Array.from(ids),
+            });
+        },
+        [
+            selectionCount,
+            selectedNodeIds,
+            nodes,
+            edges,
+            history,
+            autosave,
+            changeEmitter,
+        ],
+    );
+
+    // R29 — bulk delete. Delete key already works via xyflow's
+    // selection-aware change pipeline; this is the explicit
+    // toolbar affordance so the action is discoverable when ≥2
+    // are selected.
+    const handleBulkDelete = useCallback(() => {
+        if (selectionCount === 0) return;
+        const ids = new Set(selectedNodeIds);
+        history.push({ nodes, edges });
+        setNodes((nds) => nds.filter((n) => !ids.has(n.id)));
+        // Also strip edges that reference any of the removed
+        // nodes — xyflow does this on Delete key but the manual
+        // path needs the same cleanup.
+        setEdges((eds) =>
+            eds.filter((e) => !ids.has(e.source) && !ids.has(e.target)),
+        );
+        autosave.markDirty();
+        changeEmitter.emit("node.remove", {
+            nodeIds: Array.from(ids),
+        });
+    }, [
+        selectionCount,
+        selectedNodeIds,
+        nodes,
+        edges,
+        history,
+        autosave,
+        changeEmitter,
+    ]);
+
     useKeyboardShortcut("mod+z", handleUndo, {
         description: "Undo last canvas edit",
         enabled: Boolean(activeId),
@@ -1107,6 +1202,128 @@ function Inner({
             </div>
 
             <ProcessPalette />
+            {/* R29 — multi-select toolbar. Renders only when ≥2
+                nodes are selected; vanishes back to the natural
+                palette + help-strip layout when the selection
+                drops. The alignment + distribute buttons stay
+                inside one slim strip rather than spawning a
+                second permanent row of chrome. */}
+            {selectionCount >= 2 && (
+                <div
+                    className="flex flex-wrap items-center gap-tight border-b border-canvas-border bg-canvas-frame px-default py-2 text-[11px]"
+                    data-multi-select-toolbar="true"
+                    data-selection-count={selectionCount}
+                >
+                    <span
+                        className="mr-1 font-semibold uppercase tracking-wider text-content-subtle"
+                        aria-label={`${selectionCount} nodes selected`}
+                    >
+                        {selectionCount} selected
+                    </span>
+                    <span className="mr-1 text-content-subtle">·</span>
+                    <span className="text-content-muted">Align</span>
+                    <button
+                        type="button"
+                        className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-0.5 text-content-muted hover:border-border-emphasis hover:text-content-emphasis"
+                        onClick={() => handleAlign("left")}
+                        data-testid="align-left-btn"
+                        aria-label="Align left"
+                        title="Align left"
+                    >
+                        L
+                    </button>
+                    <button
+                        type="button"
+                        className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-0.5 text-content-muted hover:border-border-emphasis hover:text-content-emphasis"
+                        onClick={() => handleAlign("center-x")}
+                        data-testid="align-center-x-btn"
+                        aria-label="Align centre horizontally"
+                        title="Align centre horizontally"
+                    >
+                        C
+                    </button>
+                    <button
+                        type="button"
+                        className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-0.5 text-content-muted hover:border-border-emphasis hover:text-content-emphasis"
+                        onClick={() => handleAlign("right")}
+                        data-testid="align-right-btn"
+                        aria-label="Align right"
+                        title="Align right"
+                    >
+                        R
+                    </button>
+                    <span className="mx-1 text-content-subtle">·</span>
+                    <button
+                        type="button"
+                        className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-0.5 text-content-muted hover:border-border-emphasis hover:text-content-emphasis"
+                        onClick={() => handleAlign("top")}
+                        data-testid="align-top-btn"
+                        aria-label="Align top"
+                        title="Align top"
+                    >
+                        T
+                    </button>
+                    <button
+                        type="button"
+                        className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-0.5 text-content-muted hover:border-border-emphasis hover:text-content-emphasis"
+                        onClick={() => handleAlign("center-y")}
+                        data-testid="align-center-y-btn"
+                        aria-label="Align centre vertically"
+                        title="Align centre vertically"
+                    >
+                        M
+                    </button>
+                    <button
+                        type="button"
+                        className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-0.5 text-content-muted hover:border-border-emphasis hover:text-content-emphasis"
+                        onClick={() => handleAlign("bottom")}
+                        data-testid="align-bottom-btn"
+                        aria-label="Align bottom"
+                        title="Align bottom"
+                    >
+                        B
+                    </button>
+                    {selectionCount >= 3 && (
+                        <>
+                            <span className="mx-1 text-content-subtle">·</span>
+                            <span className="text-content-muted">
+                                Distribute
+                            </span>
+                            <button
+                                type="button"
+                                className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-0.5 text-content-muted hover:border-border-emphasis hover:text-content-emphasis"
+                                onClick={() => handleDistribute("horizontal")}
+                                data-testid="distribute-h-btn"
+                                aria-label="Distribute horizontally"
+                                title="Distribute horizontally"
+                            >
+                                H
+                            </button>
+                            <button
+                                type="button"
+                                className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-0.5 text-content-muted hover:border-border-emphasis hover:text-content-emphasis"
+                                onClick={() => handleDistribute("vertical")}
+                                data-testid="distribute-v-btn"
+                                aria-label="Distribute vertically"
+                                title="Distribute vertically"
+                            >
+                                V
+                            </button>
+                        </>
+                    )}
+                    <span className="mx-1 text-content-subtle">·</span>
+                    <button
+                        type="button"
+                        className="rounded-[6px] border border-canvas-border bg-canvas-surface px-2 py-0.5 text-content-error hover:border-border-error hover:bg-bg-error"
+                        onClick={handleBulkDelete}
+                        data-testid="bulk-delete-btn"
+                        aria-label={`Delete ${selectionCount} selected nodes`}
+                        title="Delete selected (Del)"
+                    >
+                        Delete
+                    </button>
+                </div>
+            )}
             <CanvasHelpStrip
                 nodeCount={nodes.length}
                 edgeCount={edges.length}
@@ -1177,6 +1394,15 @@ function Inner({
                         // visible.
                         snapToGrid={snapEnabled}
                         snapGrid={[16, 16]}
+                        // R29 — only paint nodes within the
+                        // viewport. xyflow's culling pass; pairs
+                        // with the existing `memo()` on the
+                        // ProcessTypedNode renderer so off-screen
+                        // nodes neither mount nor re-render on
+                        // every viewport tick. Keeps medium-large
+                        // graphs (200+ nodes) interactive on the
+                        // canvas.
+                        onlyRenderVisibleElements
                         fitView
                         proOptions={{ hideAttribution: true }}
                         aria-label="Process canvas"
