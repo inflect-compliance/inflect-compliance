@@ -156,13 +156,19 @@ describe("R32-PR10 — canvas decomposition (document bar)", () => {
             //   - 2200 → 2225 (P5-PR-A visibility fix) — mount
             //     the version-history sidebar component that
             //     shipped without a render site. ~16 lines.
+            //   - 2225 → 2300 (Epic P5-PR-B) — diff/restore wire-
+            //     up: diff state, buildLiveSnapshot projection
+            //     helper, CanvasDiffOverlay mount, sidebar
+            //     callbacks. ~62 lines. Helper kept inline because
+            //     it reuses the file-local nodeDataJson / nodeParent
+            //     / edgeKindOf trio that already live here.
             // Future P6 follow-ups follow the same helper-module-
             // per-feature pattern.
             const src = read(
                 "src/components/processes/PersistedProcessCanvas.tsx",
             );
             const lines = src.split("\n").length;
-            expect(lines).toBeLessThan(2225);
+            expect(lines).toBeLessThan(2300);
         });
     });
 });

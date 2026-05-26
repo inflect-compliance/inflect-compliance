@@ -103,6 +103,8 @@ import {
 } from "@/lib/processes/canvas-clipboard";
 import { ProcessInspector } from "./ProcessInspector";
 import { CanvasHistorySidebar } from "./CanvasHistorySidebar";
+import { CanvasDiffOverlay } from "./CanvasDiffOverlay";
+import type { DiffGraphSnapshot } from "@/lib/processes/canvas-diff";
 import {
     CanvasCommandPalette,
     type CanvasCommandGroup,
@@ -212,6 +214,55 @@ function edgeKindOf(e: Edge): string {
     return isProcessEdgeVariant(v) ? v : "flow";
 }
 
+/**
+ * Epic P5-PR-B — project the live xyflow graph into a
+ * `DiffGraphSnapshot` so it can be diffed against a fetched
+ * snapshot. Mirrors the projection used by `saveGraph` so the
+ * identity + position + data fields line up exactly.
+ *
+ * Deliberately NOT memoised here — call sites memo per their own
+ * dependency shape.
+ */
+function buildLiveSnapshot(nodes: Node[], edges: Edge[]): DiffGraphSnapshot {
+    return {
+        nodes: nodes.map((n, idx) => {
+            const kind: ProcessNodeKind = isProcessNodeKind(n.type)
+                ? n.type
+                : PROCESS_STEP_NODE_TYPE;
+            const meta = NODE_TAXONOMY[kind];
+            const dataLabel =
+                n.data &&
+                typeof (n.data as { label?: unknown }).label === "string"
+                    ? (n.data as { label: string }).label
+                    : meta.defaultLabel;
+            const dataSubtitle =
+                n.data &&
+                typeof (n.data as { subtitle?: unknown }).subtitle ===
+                    "string"
+                    ? (n.data as { subtitle: string }).subtitle
+                    : null;
+            return {
+                nodeKey: n.id || `node-${idx + 1}`,
+                nodeType: kind,
+                label: dataLabel,
+                subtitle: dataSubtitle,
+                posX: n.position.x,
+                posY: n.position.y,
+                parentNodeKey: nodeParent(n),
+                dataJson: nodeDataJson(n) as unknown,
+            };
+        }),
+        edges: edges.map((e, idx) => ({
+            edgeKey: e.id || `edge-${idx + 1}`,
+            sourceKey: e.source,
+            targetKey: e.target,
+            edgeKind: edgeKindOf(e),
+            labelOverride: typeof e.label === "string" ? e.label : null,
+            dataJson: (e.data ?? null) as unknown,
+        })),
+    };
+}
+
 interface PersistedProcessCanvasProps {
     tenantSlug: string;
     processes: ProcessMapSummary[];
@@ -253,6 +304,13 @@ function Inner({
     // Epic P1 — bumped by the STALE_DATA Reload toast to re-trigger
     // the load effect without flickering through activeId=null.
     const [reloadCounter, setReloadCounter] = useState(0);
+    // Epic P5-PR-B — when set, mounts CanvasDiffOverlay against the
+    // current canvas state. The sidebar's "Diff" button sets this;
+    // "Close" on the overlay resets it. Restore success bumps
+    // `reloadCounter` so the new post-restore graph loads.
+    const [diffAgainstVersion, setDiffAgainstVersion] = useState<number | null>(
+        null,
+    );
     const toast = useToast();
     // Epic P3-PR-A — ref to the [data-process-canvas] wrapper so
     // the export menu can walk down to xyflow's viewport child.
@@ -2138,12 +2196,32 @@ function Inner({
                     alongside the inspector; the AsidePanel primitive
                     handles collapse-to-spine + the `?aside` deep-
                     link so the user can toggle between Inspector
-                    and Version history without re-mounting either. */}
+                    and Version history without re-mounting either.
+                    Epic P5-PR-B wires Diff + Restore callbacks. */}
                 {activeId && (
                     <CanvasHistorySidebar
                         tenantSlug={tenantSlug}
                         mapId={activeId}
                         currentVersion={loadedMap?.version ?? null}
+                        onDiffRequest={setDiffAgainstVersion}
+                        onRestored={() => setReloadCounter((c) => c + 1)}
+                    />
+                )}
+                {/* Epic P5-PR-B — Diff overlay. Renders only when a
+                    snapshot version is selected; fetches that
+                    snapshot's graphJson and runs computeCanvasDiff
+                    against the live canvas state. */}
+                {activeId && diffAgainstVersion != null && loadedMap && (
+                    <CanvasDiffOverlay
+                        open={diffAgainstVersion != null}
+                        onOpenChange={(next) =>
+                            setDiffAgainstVersion(next ? diffAgainstVersion : null)
+                        }
+                        tenantSlug={tenantSlug}
+                        mapId={activeId}
+                        targetVersion={diffAgainstVersion}
+                        currentVersion={loadedMap.version}
+                        currentSnapshot={buildLiveSnapshot(nodes, edges)}
                     />
                 )}
             </div>
