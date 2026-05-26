@@ -9,7 +9,6 @@ import { SkeletonCard } from '@/components/ui/skeleton';
 import { InlineEmptyState } from '@/components/ui/inline-empty-state';
 import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import Link from 'next/link';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading, textLinkVariants } from '@/components/ui/typography';
 import { CardHeader } from '@/components/ui/card-header';

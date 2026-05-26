@@ -13,7 +13,7 @@
  * to the real helper at the source level.
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { CanvasExportMenu } from '@/components/processes/CanvasExportMenu';
 
 // Stub the export helpers so we can assert they're called without

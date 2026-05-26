@@ -81,10 +81,7 @@ import {
     isProcessEdgeVariant,
 } from "./ProcessEdge";
 import { useProximityAutoBind } from "@/lib/processes/use-proximity-auto-bind";
-import {
-    useCanvasHistory,
-    type CanvasSnapshot,
-} from "@/lib/processes/use-canvas-history";
+import { useCanvasHistory } from "@/lib/processes/use-canvas-history";
 import { useCanvasAutosave } from "@/lib/processes/use-canvas-autosave";
 import { useCanvasChangeEmitter } from "@/lib/processes/canvas-change-events";
 import { CanvasEmphasisProvider } from "@/lib/processes/canvas-emphasis-context";
@@ -333,14 +330,6 @@ function Inner({
         }
         return null;
     })();
-
-    // R28 — history snapshot helper. Captures the live graph
-    // shape as a CanvasSnapshot. Called from places that mutate
-    // the graph: drop, delete, inspector commit, variant cycle.
-    const snapshotNow = useCallback(
-        (): CanvasSnapshot => ({ nodes, edges }),
-        [nodes, edges],
-    );
 
     // Sync the editedName mirror to the active process name when
     // selection or rename-from-elsewhere changes.

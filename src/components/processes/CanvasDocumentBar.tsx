@@ -34,7 +34,6 @@
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
-import { Tooltip } from "@/components/ui/tooltip";
 import type { ProcessMapSummary } from "@/app/t/[tenantSlug]/(app)/processes/ProcessesClient";
 
 import type { AutosaveStatus } from "@/lib/processes/use-canvas-autosave";

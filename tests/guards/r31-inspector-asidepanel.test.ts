@@ -65,12 +65,16 @@ describe("R31 (Bundle 5) — inspector AsidePanel parity", () => {
         // their targets.
         for (const marker of [
             "data-process-inspector",
-            "data-inspector-mode=\"edge\"",
+            'data-inspector-mode="edge"',
             "inspector-label-input",
             "inspector-subtitle-input",
             "inspector-edge-label-input",
         ]) {
-            expect(src).toMatch(new RegExp(marker.replace(/"/g, '"')));
+            // CodeQL `js/identity-replacement` flagged the prior
+            // `.replace(/"/g, '"')` as a no-op (replace with self).
+            // `"` isn't a regex metachar — feed the marker straight
+            // to `new RegExp(...)`.
+            expect(src).toMatch(new RegExp(marker));
         }
     });
 

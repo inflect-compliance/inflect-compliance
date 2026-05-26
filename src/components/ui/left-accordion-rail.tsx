@@ -252,18 +252,12 @@ export function LeftAccordionRail({
                     <ChevronLeft className="h-3 w-3" aria-hidden="true" />
                 </button>
             </div>
-            {/* Legacy title-only row preserved for tests reading
-                the bare span — suppressed when the new header row
-                above is rendered. Future cleanup once consumers
-                migrate off any test that asserts on the legacy
-                shape. */}
-            {false && title && (
-                <div className="border-b border-border-subtle px-3 py-2">
-                    <span className="text-xs font-semibold uppercase tracking-widest text-content-subtle">
-                        {title}
-                    </span>
-                </div>
-            )}
+            {/* Legacy title-only row was retired by the header
+                row above (which carries both the title and the
+                collapse button in one strip). Removed in
+                #745-followup; CodeQL flagged the prior
+                `false && ...` dead branch via
+                `js/trivial-conditional`. */}
             <ul className="flex flex-col" role="list">
                 {sections.map((section, idx) => {
                     const isOpen = openIds.has(section.id);

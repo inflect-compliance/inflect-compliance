@@ -17,7 +17,7 @@
  *   fetch fires, the response shapes, the click commits.
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { ProcessInspector } from '@/components/processes/ProcessInspector';
 import { __resetTenantControlsCacheForTests } from '@/lib/processes/use-tenant-controls';
 
