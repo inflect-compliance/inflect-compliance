@@ -108,6 +108,21 @@ export async function saveProcessMap(
     });
 }
 
+/**
+ * Epic P2-PR-C — reverse lookup. Returns the process maps + edges
+ * referencing a given control. Read-only; surfaces "Where is this
+ * control used?" on the Control detail page.
+ */
+export async function listMapsUsingControl(
+    ctx: RequestContext,
+    controlId: string,
+) {
+    assertCanRead(ctx);
+    return runInTenantContext(ctx, (db) =>
+        ProcessMapRepository.listMapsByControl(db, ctx, controlId),
+    );
+}
+
 export async function deleteProcessMap(ctx: RequestContext, id: string) {
     assertCanWrite(ctx);
 

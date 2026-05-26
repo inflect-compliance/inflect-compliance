@@ -445,4 +445,58 @@ export class ProcessMapRepository {
         });
         return res.count > 0;
     }
+
+    /**
+     * Epic P2-PR-C — reverse lookup: process maps referencing a
+     * given control. Returns one row per (map, edge) pairing —
+     * usually one edge per map, but the schema allows a control
+     * to gate multiple edges within the same map.
+     *
+     * Uses the `@@index([tenantId, controlId])` on ProcessEdgeControl
+     * for the seek; bounded by the small process-map graph sizes
+     * (dozens of edges per map) so no take cap is needed.
+     */
+    static async listMapsByControl(
+        db: PrismaTx,
+        ctx: RequestContext,
+        controlId: string,
+    ): Promise<
+        Array<{
+            mapId: string;
+            mapName: string;
+            mapStatus: string;
+            edgeKey: string;
+            edgeLabel: string | null;
+        }>
+    > {
+        // P2-PR-C reverse lookup: bounded by edges referencing one control (typically <10); leading `@@index([tenantId, controlId])` gates the seek.
+        const rows = await db.processEdgeControl.findMany({ // guardrail-allow: unbounded
+            where: { tenantId: ctx.tenantId, controlId },
+            select: {
+                edge: {
+                    select: {
+                        edgeKey: true,
+                        labelOverride: true,
+                        processMap: {
+                            select: {
+                                id: true,
+                                name: true,
+                                status: true,
+                                deletedAt: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+        return rows
+            .filter((r) => r.edge.processMap.deletedAt === null)
+            .map((r) => ({
+                mapId: r.edge.processMap.id,
+                mapName: r.edge.processMap.name,
+                mapStatus: r.edge.processMap.status,
+                edgeKey: r.edge.edgeKey,
+                edgeLabel: r.edge.labelOverride,
+            }));
+    }
 }

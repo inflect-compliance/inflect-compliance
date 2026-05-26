@@ -14,6 +14,7 @@ import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-bad
 import { Heading, textLinkVariants } from '@/components/ui/typography';
 import { CardHeader } from '@/components/ui/card-header';
 import { EditControlModal } from './_modals/EditControlModal';
+import { ControlReverseLookupModal } from '@/components/controls/ControlReverseLookupModal';
 import { ControlMappingsTab } from './_tabs/ControlMappingsTab';
 import { EvidenceSubTable } from './_tabs/EvidenceSubTable';
 import { MetaStrip } from '@/components/ui/meta-strip';
@@ -210,6 +211,9 @@ export default function ControlDetailPage() {
     const [appChoice, setAppChoice] = useState('APPLICABLE');
     const [appJustification, setAppJustification] = useState('');
     const [savingApp, setSavingApp] = useState(false);
+    // Epic P2-PR-C — reverse-lookup modal. "Where is this control
+    // used in process maps?" — opens from a header button.
+    const [reverseLookupOpen, setReverseLookupOpen] = useState(false);
 
     // Task creation
     const [showTaskForm, setShowTaskForm] = useState(false);
@@ -869,29 +873,43 @@ export default function ControlDetailPage() {
     );
 
     // ── Header actions (right side) ──
-    const headerActions = permissions.canWrite ? (
+    const headerActions = (
         <>
-            <Combobox
-                hideSearch
-                id="control-status-select"
-                selected={STATUS_CB_OPTIONS.find(o => o.value === control.status) ?? null}
-                setSelected={(opt) => { if (opt) changeStatus(opt.value); }}
-                options={STATUS_CB_OPTIONS}
-                disabled={changingStatus}
-                placeholder="Status"
-                matchTriggerWidth
-                buttonProps={{ className: 'w-40 text-sm' }}
-            />
-            <Button variant="secondary" onClick={() => { setAppChoice(control.applicability); setAppJustification(control.applicabilityJustification || ''); setShowApplicability(!showApplicability); }} id="toggle-applicability-btn">
-                Applicability
+            {/* Epic P2-PR-C — Where used in process maps. Visible to
+                all viewers (readers + auditors need it most). */}
+            <Button
+                variant="secondary"
+                onClick={() => setReverseLookupOpen(true)}
+                id="control-where-used-btn"
+                data-testid="control-where-used-btn"
+            >
+                Where used
             </Button>
-            {control.applicability !== 'NOT_APPLICABLE' && (
-                <Button variant="primary" onClick={handleMarkTestCompleted} disabled={markingTest} id="mark-test-completed-btn">
-                    {markingTest ? '...' : 'Mark Test Completed'}
-                </Button>
+            {permissions.canWrite && (
+                <>
+                    <Combobox
+                        hideSearch
+                        id="control-status-select"
+                        selected={STATUS_CB_OPTIONS.find(o => o.value === control.status) ?? null}
+                        setSelected={(opt) => { if (opt) changeStatus(opt.value); }}
+                        options={STATUS_CB_OPTIONS}
+                        disabled={changingStatus}
+                        placeholder="Status"
+                        matchTriggerWidth
+                        buttonProps={{ className: 'w-40 text-sm' }}
+                    />
+                    <Button variant="secondary" onClick={() => { setAppChoice(control.applicability); setAppJustification(control.applicabilityJustification || ''); setShowApplicability(!showApplicability); }} id="toggle-applicability-btn">
+                        Applicability
+                    </Button>
+                    {control.applicability !== 'NOT_APPLICABLE' && (
+                        <Button variant="primary" onClick={handleMarkTestCompleted} disabled={markingTest} id="mark-test-completed-btn">
+                            {markingTest ? '...' : 'Mark Test Completed'}
+                        </Button>
+                    )}
+                </>
             )}
         </>
-    ) : null;
+    );
 
     return (
         <EntityDetailLayout
@@ -1119,6 +1137,14 @@ export default function ControlDetailPage() {
                 frequencyOptions={FREQ_CB_OPTIONS}
                 onCancel={handleEditCancel}
                 onSubmit={handleEditSave}
+            />
+
+            {/* Epic P2-PR-C — Where used (process maps) modal */}
+            <ControlReverseLookupModal
+                controlId={control.id}
+                tenantSlug={tenantSlug}
+                open={reverseLookupOpen}
+                onOpenChange={setReverseLookupOpen}
             />
 
             {/* Success toast */}

@@ -413,6 +413,8 @@ const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
         'listPending filters by tenantId + status only (the [tenantId, policyId] / [tenantId, policyVersionId] composites are FK reverse-lookup indexes) — Layers A/B cover its query shapes; no curated composite index needed today.',
     PolicyVersion:
         'fetched per policy via a leading-indexed FK; Layers A/B cover its query shapes; no curated composite index needed today.',
+    ProcessEdgeControl:
+        'Epic P2-PR-C reverse-lookup: filtered by (tenantId, controlId) which is the model\'s leading `@@index([tenantId, controlId])`. Result set bounded by the number of edges referencing one control (typically <10) — Layer A already covers it.',
     ProcessMap:
         'filtered only by tenantId plus leading-indexed FK / status columns — Layers A/B cover its query shapes; no curated composite index needed today.',
     ReadinessSnapshot:
