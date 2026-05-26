@@ -155,7 +155,7 @@ export function ControlReverseLookupModal({
                         >
                             No process maps reference this control yet.
                             Open a process map and pick this control from
-                            an edge's "Linked control" picker.
+                            an edge&apos;s &ldquo;Linked control&rdquo; picker.
                         </p>
                     )}
                     {!loading && !error && groups.length > 0 && (
