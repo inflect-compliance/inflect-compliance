@@ -227,4 +227,31 @@ describe("Epic P5-PR-A — process map snapshots + version-history sidebar", () 
             );
         });
     });
+
+    describe("PersistedProcessCanvas — mounts the sidebar (visibility fix)", () => {
+        const src = read(
+            "src/components/processes/PersistedProcessCanvas.tsx",
+        );
+
+        it("imports the sidebar component", () => {
+            expect(src).toMatch(
+                /import\s*\{\s*CanvasHistorySidebar\s*\}\s*from\s*["']\.\/CanvasHistorySidebar["']/,
+            );
+        });
+
+        it("renders <CanvasHistorySidebar> when a map is active", () => {
+            // The pre-fix P5-PR-A shipped the component but never
+            // mounted it — the version-history feature was
+            // invisible to users. This anchor locks the wire so
+            // a future refactor can't silently drop it again.
+            expect(src).toMatch(
+                /\{\s*activeId\s*&&\s*\(?\s*<CanvasHistorySidebar/,
+            );
+            expect(src).toMatch(/tenantSlug=\{tenantSlug\}/);
+            expect(src).toMatch(/mapId=\{activeId\}/);
+            expect(src).toMatch(
+                /currentVersion=\{loadedMap\?\.version\s*\?\?\s*null\}/,
+            );
+        });
+    });
 });

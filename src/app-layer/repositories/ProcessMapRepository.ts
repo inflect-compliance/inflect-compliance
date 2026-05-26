@@ -514,6 +514,48 @@ export class ProcessMapRepository {
         }));
     }
 
+    /**
+     * Epic P5-PR-B — fetch a single snapshot's full graphJson for
+     * the "View version N" overlay + visual diff. Capped read; one
+     * row by `(processMapId, version)` unique. Returns null when
+     * the version isn't found.
+     */
+    static async getSnapshotByVersion(
+        db: PrismaTx,
+        ctx: RequestContext,
+        mapId: string,
+        version: number,
+    ): Promise<{
+        id: string;
+        version: number;
+        graphJson: unknown;
+        createdAt: Date;
+        createdByName: string | null;
+    } | null> {
+        const row = await db.processMapSnapshot.findFirst({
+            where: {
+                tenantId: ctx.tenantId,
+                processMapId: mapId,
+                version,
+            },
+            select: {
+                id: true,
+                version: true,
+                graphJson: true,
+                createdAt: true,
+                createdBy: { select: { name: true } },
+            },
+        });
+        if (!row) return null;
+        return {
+            id: row.id,
+            version: row.version,
+            graphJson: row.graphJson,
+            createdAt: row.createdAt,
+            createdByName: row.createdBy?.name ?? null,
+        };
+    }
+
     static async softDelete(
         db: PrismaTx,
         ctx: RequestContext,

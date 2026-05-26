@@ -137,6 +137,85 @@ export async function listProcessMapSnapshots(
     );
 }
 
+/**
+ * Epic P5-PR-B — fetch one snapshot's full graphJson by version.
+ * Powers "View version N" + visual diff.
+ */
+export async function getProcessMapSnapshot(
+    ctx: RequestContext,
+    mapId: string,
+    version: number,
+) {
+    assertCanRead(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const snapshot = await ProcessMapRepository.getSnapshotByVersion(
+            db,
+            ctx,
+            mapId,
+            version,
+        );
+        if (!snapshot) throw notFound('Snapshot not found');
+        return snapshot;
+    });
+}
+
+/**
+ * Epic P5-PR-B — restore a process map to an earlier snapshot.
+ * Routes through `replaceGraph` so the restored state becomes its
+ * own new snapshot (no history is lost — a "vN restored from vM"
+ * row appears in the timeline). `expectedVersion` is forwarded
+ * so the P1 optimistic-concurrency check still gates the write.
+ */
+export async function restoreProcessMapSnapshot(
+    ctx: RequestContext,
+    mapId: string,
+    targetVersion: number,
+    expectedVersion: number,
+) {
+    assertCanWrite(ctx);
+
+    return runInTenantContext(ctx, async (db) => {
+        const snapshot = await ProcessMapRepository.getSnapshotByVersion(
+            db,
+            ctx,
+            mapId,
+            targetVersion,
+        );
+        if (!snapshot) throw notFound('Snapshot not found');
+
+        const json = snapshot.graphJson as {
+            nodes?: SaveProcessMapInput['nodes'];
+            edges?: SaveProcessMapInput['edges'];
+        };
+        const map = await ProcessMapRepository.replaceGraph(db, ctx, mapId, {
+            nodes: json.nodes ?? [],
+            edges: json.edges ?? [],
+            expectedVersion,
+        });
+        if (!map) throw notFound('Process map not found');
+
+        await logEvent(db, ctx, {
+            action: 'UPDATE',
+            entityType: 'ProcessMap',
+            entityId: mapId,
+            details: `Restored process map ${map.name} from v${targetVersion}`,
+            detailsJson: {
+                category: 'entity_lifecycle',
+                entityName: 'ProcessMap',
+                operation: 'restored',
+                summary: `Restored from v${targetVersion}`,
+                after: {
+                    name: map.name,
+                    version: map.version,
+                    restoredFromVersion: targetVersion,
+                },
+            },
+        });
+
+        return map;
+    });
+}
+
 export async function deleteProcessMap(ctx: RequestContext, id: string) {
     assertCanWrite(ctx);
 

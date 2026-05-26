@@ -1,28 +1,29 @@
 "use client";
 
 /**
- * Epic P5-PR-A — Canvas version-history sidebar.
+ * Epic P5-PR-A + P5-PR-B — Canvas version-history sidebar.
  *
  * Lists every committed snapshot of the active process map,
  * descending by version. Each row carries the version number, a
- * relative timestamp, and the author's display name. P5-PR-B will
- * extend the row affordance with "View this version" + "Diff
- * against current" actions.
+ * relative timestamp, the author's display name, AND (P5-PR-B)
+ * "Diff" + "Restore" action buttons.
+ *
+ *   - **Diff** fires `onDiffRequest(version)` which the canvas
+ *     uses to mount a read-only overlay comparing the snapshot
+ *     to the current state via `computeCanvasDiff`.
+ *   - **Restore** POSTs the snapshot's graphJson back through
+ *     `replaceGraph` (preserving history — the restored state
+ *     becomes its own new snapshot).
  *
  * Mount: inside the page tree, opt-in via the canonical
- * `<AsidePanel>` primitive so it inherits the same collapse +
- * resize + deep-link affordances Risks/Controls/Inspector use.
- *
- * Fetch shape: a small SWR-style fetch with re-load on activeId
- * change. The list is bounded (cap 200 in the repo) and refresh-
- * able by closing+reopening the panel; P5-PR-B will wire it to
- * the canvas's save event so the latest snapshot appears
- * automatically.
+ * `<AsidePanel>` primitive.
  */
 
 import { useEffect, useState } from "react";
 import { AsidePanel } from "@/components/ui/aside-panel";
+import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/icons/loading-spinner";
+import { useToast } from "@/components/ui/hooks";
 import { formatDateTime } from "@/lib/format-date";
 
 interface SnapshotRow {
@@ -36,13 +37,65 @@ export function CanvasHistorySidebar({
     tenantSlug,
     mapId,
     currentVersion,
+    onDiffRequest,
+    onRestored,
 }: {
     tenantSlug: string;
     /** Active process map id; null when nothing is loaded. */
     mapId: string | null;
     /** Server's current version — flags the "current" snapshot. */
     currentVersion?: number | null;
+    /**
+     * Epic P5-PR-B — Diff action callback. Fires with the target
+     * version when the user clicks "Diff"; the canvas mounts the
+     * read-only overlay.
+     */
+    onDiffRequest?: (version: number) => void;
+    /**
+     * Epic P5-PR-B — Restore success callback. Fires AFTER the
+     * server commits the restore so the canvas can re-fetch +
+     * re-render at the new post-restore version.
+     */
+    onRestored?: () => void;
 }) {
+    const toast = useToast();
+    const [restoringVersion, setRestoringVersion] = useState<number | null>(
+        null,
+    );
+
+    const handleRestore = async (targetVersion: number) => {
+        if (!mapId || currentVersion == null) return;
+        if (
+            typeof window !== "undefined" &&
+            !window.confirm(
+                `Restore to v${targetVersion}? The current state will be preserved as part of the history.`,
+            )
+        ) {
+            return;
+        }
+        setRestoringVersion(targetVersion);
+        try {
+            const res = await fetch(
+                `/api/t/${tenantSlug}/processes/${mapId}/snapshots/${targetVersion}/restore`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ expectedVersion: currentVersion }),
+                },
+            );
+            if (!res.ok) {
+                throw new Error(`Restore failed (${res.status})`);
+            }
+            toast.success(`Restored to v${targetVersion}.`);
+            onRestored?.();
+        } catch (err) {
+            toast.error(
+                err instanceof Error ? err.message : "Restore failed",
+            );
+        } finally {
+            setRestoringVersion(null);
+        }
+    };
     const [rows, setRows] = useState<SnapshotRow[] | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -149,6 +202,41 @@ export function CanvasHistorySidebar({
                                             ? ` · ${r.createdByName}`
                                             : ""}
                                     </span>
+                                    {/* Epic P5-PR-B — action buttons.
+                                        Diff: mounts the overlay vs current.
+                                        Restore: writes the snapshot's
+                                        graphJson back via replaceGraph. */}
+                                    {!isCurrent && (
+                                        <div className="mt-1 flex items-center gap-tight">
+                                            <Button
+                                                variant="secondary"
+                                                size="xs"
+                                                onClick={() =>
+                                                    onDiffRequest?.(r.version)
+                                                }
+                                                disabled={!onDiffRequest}
+                                                data-testid="canvas-history-diff"
+                                            >
+                                                Diff
+                                            </Button>
+                                            <Button
+                                                variant="secondary"
+                                                size="xs"
+                                                onClick={() =>
+                                                    void handleRestore(r.version)
+                                                }
+                                                disabled={
+                                                    restoringVersion !== null ||
+                                                    currentVersion == null
+                                                }
+                                                data-testid="canvas-history-restore"
+                                            >
+                                                {restoringVersion === r.version
+                                                    ? "Restoring…"
+                                                    : "Restore"}
+                                            </Button>
+                                        </div>
+                                    )}
                                 </li>
                             );
                         })}
