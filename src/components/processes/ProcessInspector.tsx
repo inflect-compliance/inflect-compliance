@@ -31,10 +31,15 @@
  *     as "is anything happening?"
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Edge, Node } from "@xyflow/react";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 import { AsidePanel } from "@/components/ui/aside-panel";
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
+import {
+    formatControlLabel,
+    useTenantControls,
+} from "@/lib/processes/use-tenant-controls";
 import { NODE_TAXONOMY, isProcessNodeKind } from "./node-taxonomy";
 import {
     DEFAULT_NODE_SIZE,
@@ -48,6 +53,21 @@ import {
     type ProcessEdgeVariant,
 } from "./ProcessEdge";
 
+/**
+ * Epic P2-PR-A — shape of an edge-attached control reference.
+ * One per edge today (the inspector picks ONE); the underlying
+ * `ProcessEdgeControl` table supports multiple per edge for future
+ * "two controls gate this edge" use cases.
+ */
+export interface EdgeControlRef {
+    /** Stable per-edge identifier — survives saves + reloads. */
+    controlKey: string;
+    /** Human label rendered on the in-canvas pill. */
+    label: string;
+    /** Optional FK to a tenant Control. Null = unbound label. */
+    controlId: string | null;
+}
+
 export interface ProcessInspectorProps {
     /** Selected node, or null when nothing is selected. */
     node: Node | null;
@@ -58,6 +78,14 @@ export interface ProcessInspectorProps {
      * time — node wins if both are set).
      */
     edge?: Edge | null;
+    /**
+     * Tenant slug — Epic P2-PR-A — used by the edge inspector to
+     * fetch the tenant's Controls list for the picker. Optional:
+     * the node-mode panel doesn't need it, and absence in edge mode
+     * gracefully hides the picker (rendered tests + storybook
+     * stages without the canvas surrounding context keep working).
+     */
+    tenantSlug?: string;
     /**
      * Called when the user commits a label / subtitle change.
      * The canvas writes the change back into its nodes state.
@@ -71,18 +99,25 @@ export interface ProcessInspectorProps {
         },
     ) => void;
     /**
-     * R28 — commit an edge edit. The canvas applies the patch to
-     * the edge's `label` (top-level on xyflow) + `data.variant`.
+     * R28 + Epic P2-PR-A — commit an edge edit. The canvas applies
+     * the patch to the edge's `label` (top-level on xyflow) +
+     * `data.variant` + `data.controls` (P2-PR-A — linked tenant
+     * Control).
      */
     onEdgeUpdate?: (
         edgeId: string,
-        patch: { label?: string | null; variant?: ProcessEdgeVariant },
+        patch: {
+            label?: string | null;
+            variant?: ProcessEdgeVariant;
+            controls?: EdgeControlRef[];
+        },
     ) => void;
 }
 
 export function ProcessInspector({
     node,
     edge = null,
+    tenantSlug,
     onUpdate,
     onEdgeUpdate,
 }: ProcessInspectorProps) {
@@ -106,7 +141,13 @@ export function ProcessInspector({
     // canvas only mirrors one slot at a time but the guard here
     // keeps the rendering deterministic regardless of order.
     if (!node && edge) {
-        return <EdgeInspectorBody edge={edge} onEdgeUpdate={onEdgeUpdate} />;
+        return (
+            <EdgeInspectorBody
+                edge={edge}
+                tenantSlug={tenantSlug}
+                onEdgeUpdate={onEdgeUpdate}
+            />
+        );
     }
 
     if (!node) {
@@ -215,13 +256,15 @@ export function ProcessInspector({
     );
 }
 
-// ─── R28 — Edge inspector body ─────────────────────────────────────
+// ─── R28 + Epic P2-PR-A — Edge inspector body ──────────────────────
 
 function EdgeInspectorBody({
     edge,
+    tenantSlug,
     onEdgeUpdate,
 }: {
     edge: Edge;
+    tenantSlug?: string;
     onEdgeUpdate?: ProcessInspectorProps["onEdgeUpdate"];
 }) {
     const variantRaw = (edge.data as { variant?: unknown } | undefined)
@@ -236,6 +279,54 @@ function EdgeInspectorBody({
     useEffect(() => {
         setLabel(typeof edge.label === "string" ? edge.label : "");
     }, [edge.id, edge.label]);
+
+    // Epic P2-PR-A — controls attached to this edge. PR-A allows
+    // ONE per edge in the inspector; the underlying ProcessEdgeControl
+    // table supports many for future "two controls gate this edge"
+    // shapes.
+    const existingControls = readEdgeControls(edge);
+    const selectedControl = existingControls[0] ?? null;
+    // Passing the empty string short-circuits the hook to a no-op
+    // ({ options: [], loading: false }); the picker block below
+    // also gates on `tenantSlug` so absence cleanly hides the
+    // affordance.
+    const { options: tenantControls, loading: controlsLoading } =
+        useTenantControls(tenantSlug ?? "");
+
+    const controlOptions = useMemo<ComboboxOption[]>(
+        () =>
+            tenantControls.map((c) => ({
+                value: c.id,
+                label: formatControlLabel(c),
+            })),
+        [tenantControls],
+    );
+    const selectedControlOption = useMemo<ComboboxOption | null>(() => {
+        if (!selectedControl?.controlId) return null;
+        return (
+            controlOptions.find((o) => o.value === selectedControl.controlId) ??
+            null
+        );
+    }, [controlOptions, selectedControl]);
+
+    const commitLinkedControl = (option: ComboboxOption | null) => {
+        if (!onEdgeUpdate) return;
+        if (option === null) {
+            // Clear: drop every control attached to this edge.
+            onEdgeUpdate(edge.id, { controls: [] });
+            return;
+        }
+        const ref = tenantControls.find((c) => c.id === option.value);
+        if (!ref) return;
+        const next: EdgeControlRef = {
+            controlKey:
+                selectedControl?.controlKey ??
+                `ctrl-${edge.id}-${Date.now().toString(36)}`,
+            controlId: ref.id,
+            label: formatControlLabel(ref),
+        };
+        onEdgeUpdate(edge.id, { controls: [next] });
+    };
 
     const commit = () => {
         if (!onEdgeUpdate) return;
@@ -302,10 +393,69 @@ function EdgeInspectorBody({
                     {EDGE_VARIANT_META[variant].description}
                 </span>
             </div>
+            {/* Epic P2-PR-A — Linked control picker. Mounts a tenant-
+                wide Controls combobox so the user can attach a real
+                compliance control to this edge. The selection writes
+                ProcessEdgeControl rows on the next save; the canvas
+                already round-trips the controls on load. */}
+            <div
+                className="flex flex-col gap-tight"
+                data-testid="inspector-edge-control-picker"
+            >
+                <span className="text-[10px] uppercase tracking-wide text-content-muted">
+                    Linked control
+                </span>
+                <Combobox
+                    selected={selectedControlOption}
+                    setSelected={commitLinkedControl}
+                    options={controlOptions}
+                    disabled={controlsLoading || tenantControls.length === 0}
+                    aria-label="Linked control"
+                    placeholder={
+                        controlsLoading
+                            ? "Loading controls…"
+                            : tenantControls.length === 0
+                              ? "No controls yet"
+                              : "Pick a control…"
+                    }
+                />
+                <span className="text-[10px] text-content-subtle">
+                    Auditors see the chosen control as a shield pill on
+                    the connection.
+                </span>
+            </div>
                 <p className="text-[10px] text-content-subtle">
                     Click off the field or press Enter to save the edit.
                 </p>
             </div>
         </AsidePanel>
     );
+}
+
+/**
+ * Epic P2-PR-A — read the typed control list off an edge's `data`.
+ * Tolerant of pre-P2 edges whose data omits the controls array.
+ */
+function readEdgeControls(edge: Edge): EdgeControlRef[] {
+    const raw = (edge.data as { controls?: unknown } | undefined)?.controls;
+    if (!Array.isArray(raw)) return [];
+    return raw
+        .map((r) => {
+            const row = r as {
+                controlKey?: unknown;
+                label?: unknown;
+                controlId?: unknown;
+            };
+            if (typeof row.controlKey !== "string") return null;
+            return {
+                controlKey: row.controlKey,
+                label:
+                    typeof row.label === "string" ? row.label : row.controlKey,
+                controlId:
+                    typeof row.controlId === "string"
+                        ? row.controlId
+                        : null,
+            } satisfies EdgeControlRef;
+        })
+        .filter((r): r is EdgeControlRef => r !== null);
 }
