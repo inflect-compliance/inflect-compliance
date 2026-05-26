@@ -185,6 +185,110 @@ export async function exportCanvasAsSvg(
     return dataUrl;
 }
 
+// ─── Epic P3-PR-B — PDF + Evidence attachment ──────────────────────
+
+export interface CanvasExportServerRouteOptions extends CanvasExportOptions {
+    /** Tenant slug + map id for the server-side endpoints. */
+    tenantSlug: string;
+    mapId: string;
+}
+
+/**
+ * Render the canvas as a PNG (in-memory, no download), then POST
+ * the base64 bytes to the server's PDF endpoint. The endpoint
+ * wraps the image in a branded PDF using pdfkit (mirrors audit-
+ * pack format). The PDF download fires immediately.
+ */
+export async function exportCanvasAsPdf(
+    opts: CanvasExportServerRouteOptions,
+): Promise<void> {
+    const viewportEl = resolveViewportEl(opts.canvasEl);
+    if (!viewportEl) {
+        throw new Error("Canvas viewport not found");
+    }
+    const { width, height, transform } = exportTransform(opts.nodes);
+    const pngDataUrl = await toPng(viewportEl, {
+        backgroundColor: resolveBackground(),
+        width,
+        height,
+        pixelRatio: opts.pixelRatio,
+        style: {
+            width: `${width}px`,
+            height: `${height}px`,
+            transform: `translate(${transform[0]}px, ${transform[1]}px) scale(${transform[2]})`,
+        },
+    });
+    const res = await fetch(
+        `/api/t/${opts.tenantSlug}/processes/${opts.mapId}/export-pdf`,
+        {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pngDataUrl }),
+        },
+    );
+    if (!res.ok) {
+        throw new Error(`PDF export failed (${res.status})`);
+    }
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    try {
+        downloadDataUrl(blobUrl, safeFilename(opts.mapName, "pdf"));
+    } finally {
+        // The browser holds the blob until the download starts;
+        // revoke shortly after so we don't leak the blob URL.
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    }
+}
+
+/**
+ * Render the canvas as a PNG, then upload it through the canonical
+ * Evidence file-upload endpoint. Surfaces consistently in the
+ * Evidence list + audit-pack picker.
+ */
+export async function attachCanvasPngToEvidence(
+    opts: CanvasExportServerRouteOptions,
+): Promise<{ evidenceId: string }> {
+    const viewportEl = resolveViewportEl(opts.canvasEl);
+    if (!viewportEl) {
+        throw new Error("Canvas viewport not found");
+    }
+    const { width, height, transform } = exportTransform(opts.nodes);
+    const pngDataUrl = await toPng(viewportEl, {
+        backgroundColor: resolveBackground(),
+        width,
+        height,
+        pixelRatio: opts.pixelRatio,
+        style: {
+            width: `${width}px`,
+            height: `${height}px`,
+            transform: `translate(${transform[0]}px, ${transform[1]}px) scale(${transform[2]})`,
+        },
+    });
+    // Convert dataURL → Blob → File (the multipart endpoint wants
+    // a File). dataURL is `data:image/png;base64,...`.
+    const base64 = pngDataUrl.slice("data:image/png;base64,".length);
+    const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+    const blob = new Blob([bytes], { type: "image/png" });
+    const filename = safeFilename(opts.mapName, "png");
+    const file = new File([blob], filename, { type: "image/png" });
+
+    const form = new FormData();
+    form.append("file", file);
+    form.append("title", `${opts.mapName} — Process Map`);
+    form.append("category", "PROCESS_MAP");
+
+    const res = await fetch(
+        `/api/t/${opts.tenantSlug}/evidence/uploads`,
+        { method: "POST", body: form },
+    );
+    if (!res.ok) {
+        throw new Error(`Evidence upload failed (${res.status})`);
+    }
+    const body = (await res.json()) as { id?: string; evidenceId?: string };
+    const evidenceId = body.id ?? body.evidenceId ?? "";
+    return { evidenceId };
+}
+
 // Test-only exports — keep the seams visible so the rendered test
 // can stub the helpers without poking at module internals.
 export const __INTERNAL = {

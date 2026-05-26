@@ -32,6 +32,8 @@ import { Popover } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/hooks";
 import {
+    attachCanvasPngToEvidence,
+    exportCanvasAsPdf,
     exportCanvasAsPng,
     exportCanvasAsSvg,
 } from "@/lib/processes/canvas-export";
@@ -40,6 +42,8 @@ export function CanvasExportMenu({
     canvasEl,
     nodes,
     mapName,
+    tenantSlug,
+    mapId,
     disabled,
 }: {
     /**
@@ -53,6 +57,13 @@ export function CanvasExportMenu({
     nodes: Node[];
     /** Display name of the active process map. */
     mapName: string;
+    /**
+     * Tenant slug + map id — used by the PDF + Evidence helpers
+     * (P3-PR-B) to call the server-side routes. Optional: if
+     * omitted, only PNG + SVG show in the menu (P3-PR-A scope).
+     */
+    tenantSlug?: string;
+    mapId?: string;
     /** External disable signal (saving / no active map / etc.). */
     disabled?: boolean;
 }) {
@@ -61,14 +72,39 @@ export function CanvasExportMenu({
     const toast = useToast();
 
     const run = useCallback(
-        async (kind: "png" | "svg") => {
+        async (kind: "png" | "svg" | "pdf" | "evidence") => {
             if (!canvasEl) return;
             setBusy(true);
             try {
                 if (kind === "png") {
                     await exportCanvasAsPng({ canvasEl, nodes, mapName });
-                } else {
+                } else if (kind === "svg") {
                     await exportCanvasAsSvg({ canvasEl, nodes, mapName });
+                } else if (kind === "pdf") {
+                    if (!tenantSlug || !mapId) {
+                        throw new Error("PDF export needs tenantSlug + mapId");
+                    }
+                    await exportCanvasAsPdf({
+                        canvasEl,
+                        nodes,
+                        mapName,
+                        tenantSlug,
+                        mapId,
+                    });
+                } else if (kind === "evidence") {
+                    if (!tenantSlug || !mapId) {
+                        throw new Error(
+                            "Evidence attachment needs tenantSlug + mapId",
+                        );
+                    }
+                    await attachCanvasPngToEvidence({
+                        canvasEl,
+                        nodes,
+                        mapName,
+                        tenantSlug,
+                        mapId,
+                    });
+                    toast.success("Process map attached to Evidence.");
                 }
                 setOpen(false);
             } catch (err) {
@@ -81,8 +117,10 @@ export function CanvasExportMenu({
                 setBusy(false);
             }
         },
-        [canvasEl, nodes, mapName, toast],
+        [canvasEl, nodes, mapName, tenantSlug, mapId, toast],
     );
+
+    const showServerItems = Boolean(tenantSlug && mapId);
 
     return (
         <Popover
@@ -105,6 +143,25 @@ export function CanvasExportMenu({
                     >
                         Export as SVG
                     </Popover.Item>
+                    {showServerItems && (
+                        <>
+                            <Popover.Separator />
+                            <Popover.Item
+                                data-testid="canvas-export-pdf"
+                                onClick={() => void run("pdf")}
+                                disabled={busy}
+                            >
+                                Export as PDF
+                            </Popover.Item>
+                            <Popover.Item
+                                data-testid="canvas-export-evidence"
+                                onClick={() => void run("evidence")}
+                                disabled={busy}
+                            >
+                                Attach to Evidence
+                            </Popover.Item>
+                        </>
+                    )}
                 </Popover.Menu>
             }
         >
