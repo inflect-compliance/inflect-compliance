@@ -94,6 +94,10 @@ import {
     type AlignmentAxis,
     type DistributeAxis,
 } from "@/lib/processes/canvas-alignment";
+import {
+    computeAutoLayout,
+    type AutoLayoutDirection,
+} from "@/lib/processes/canvas-auto-layout";
 import { useKeyboardShortcut } from "@/lib/hooks/use-keyboard-shortcut";
 import { ProcessInspector } from "./ProcessInspector";
 import {
@@ -1059,6 +1063,27 @@ function Inner({
             changeEmitter,
         ],
     );
+    // Epic P4-PR-A — Auto-layout (dagre). Pushes the current
+    // layout to history so undo restores the hand-placed positions.
+    const handleAutoLayout = useCallback(
+        (direction: AutoLayoutDirection) => {
+            if (nodes.length === 0) return;
+            history.push({ nodes, edges });
+            const { positions } = computeAutoLayout(nodes, edges, direction);
+            setNodes((nds) =>
+                nds.map((n) =>
+                    positions[n.id]
+                        ? { ...n, position: positions[n.id] }
+                        : n,
+                ),
+            );
+            autosave.markDirty();
+            changeEmitter.emit("node.move", {
+                nodeIds: Object.keys(positions),
+            });
+        },
+        [nodes, edges, history, autosave, changeEmitter],
+    );
     const handleDistribute = useCallback(
         (axis: DistributeAxis) => {
             if (selectionCount < 3) return;
@@ -1369,6 +1394,26 @@ function Inner({
                     description: "Start an empty process map",
                     disabled: creating,
                     onSelect: handleNew,
+                },
+            ],
+        },
+        {
+            // Epic P4-PR-A — dagre auto-layout.
+            heading: "Layout",
+            commands: [
+                {
+                    id: "arrange-lr",
+                    label: "Arrange left-to-right",
+                    description: "Auto-layout the canvas with a left-to-right flow",
+                    disabled: nodes.length === 0 || saving || loading,
+                    onSelect: () => handleAutoLayout("LR"),
+                },
+                {
+                    id: "arrange-tb",
+                    label: "Arrange top-to-bottom",
+                    description: "Auto-layout the canvas with a top-to-bottom flow",
+                    disabled: nodes.length === 0 || saving || loading,
+                    onSelect: () => handleAutoLayout("TB"),
                 },
             ],
         },

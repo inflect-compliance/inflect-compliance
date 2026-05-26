@@ -137,7 +137,7 @@ describe("R32-PR10 — canvas decomposition (document bar)", () => {
             //
             // The cap moves with each absorbed feature; bumps
             // come paired with a written justification rather than
-            // silently floating. Current cap: 1975. Bumps:
+            // silently floating. Current cap: 2000. Bumps:
             //   - 1900 → 1925 (Epic P1 + P2-PR-A) — concurrency
             //     check + edge control picker; both extracted
             //     their substantive surface into helper modules,
@@ -149,20 +149,24 @@ describe("R32-PR10 — canvas decomposition (document bar)", () => {
             //     the canvas only owns the dataJson load/save
             //     projection.
             //   - 1950 → 1975 (Epic P3-PR-A) — PNG/SVG export
-            //     menu wiring. The export logic itself lives in
-            //     a sibling module (`src/lib/processes/canvas-
-            //     export.ts`) + a thin component
-            //     (`CanvasExportMenu`); the canvas only adds a
-            //     `useRef` for the wrapper element + threads the
-            //     menu into the document bar's `exportSlot`.
-            // Future Epics (P4 dagre, P5 snapshots) each follow
+            //     menu wiring. Export logic in `canvas-export.ts`
+            //     + thin `CanvasExportMenu` component; canvas
+            //     only adds a `useRef` + ref attribute + the
+            //     export slot pass-through.
+            //   - 1975 → 2025 (Epic P4-PR-A) — dagre auto-layout.
+            //     Compute lives in `canvas-auto-layout.ts`; the
+            //     canvas adds a `handleAutoLayout` handler + a
+            //     "Layout" command group (LR / TB). Post-rebase
+            //     onto P3-PR-A's export-menu wiring, the
+            //     combined surface lands at ≈2008 lines.
+            // Future Epics (P5 snapshots, P6 deferred) each follow
             // the same pattern: one helper module per feature
             // surface, the canvas wires it via a single call.
             const src = read(
                 "src/components/processes/PersistedProcessCanvas.tsx",
             );
             const lines = src.split("\n").length;
-            expect(lines).toBeLessThan(1975);
+            expect(lines).toBeLessThan(2025);
         });
     });
 });
