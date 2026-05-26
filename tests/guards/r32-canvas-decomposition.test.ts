@@ -171,13 +171,20 @@ describe("R32-PR10 — canvas decomposition (document bar)", () => {
             //     scope (locked by p-polish-a ratchet) so the
             //     strings stay findable; the rest is inline canvas
             //     wiring that can't reasonably extract.
+            //   - 2375 → 2450 (PR-C ELK force-layout) — async
+            //     handleAutoLayoutForce callback + 2 command-
+            //     palette entries (full canvas + selection-only).
+            //     ~41 net lines. The helper itself (elkjs dynamic
+            //     import + force-algorithm options) sits in
+            //     canvas-auto-layout.ts to keep the bundle impact
+            //     off the canvas's static chunk.
             // Future P6 follow-ups follow the same helper-module-
             // per-feature pattern.
             const src = read(
                 "src/components/processes/PersistedProcessCanvas.tsx",
             );
             const lines = src.split("\n").length;
-            expect(lines).toBeLessThan(2375);
+            expect(lines).toBeLessThan(2450);
         });
     });
 });
