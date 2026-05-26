@@ -149,17 +149,19 @@ describe("R32-PR10 — canvas decomposition (document bar)", () => {
             //   - 2025 → 2150 (Epic P4-PR-B) — clipboard handlers
             //     (Cmd+C/V/D) + Tab-to-create + connection-
             //     rejection state + rejected-node className
-            //     projection. ~120 lines for three keyboard
-            //     features; the clipboard logic itself lives in
-            //     `canvas-clipboard.ts` so the canvas only owns
-            //     the wire-up.
-            // Future Epics (P5 snapshots, P6 deferred) follow the
-            // same helper-module-per-feature pattern.
+            //     projection.
+            //   - 2150 → 2200 (Epic P6-PR-A) — sub-flow drill-
+            //     down hook + filter + breadcrumb + the
+            //     onNodeDoubleClick wire. Combined with all
+            //     earlier features the canvas sits at ≈2180
+            //     post-rebase.
+            // Future Epics (P6-PR-B touch + P6-PR-C collab)
+            // follow the same helper-module-per-feature pattern.
             const src = read(
                 "src/components/processes/PersistedProcessCanvas.tsx",
             );
             const lines = src.split("\n").length;
-            expect(lines).toBeLessThan(2150);
+            expect(lines).toBeLessThan(2200);
         });
     });
 });

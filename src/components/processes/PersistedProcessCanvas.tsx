@@ -110,6 +110,12 @@ import {
     type CanvasCommandGroup,
 } from "./CanvasCommandPalette";
 import { CanvasDocumentBar } from "./CanvasDocumentBar";
+import { CanvasDrillBreadcrumb } from "./CanvasDrillBreadcrumb";
+import { useCanvasDrillStack } from "@/lib/processes/use-canvas-drill-stack";
+import {
+    buildDrillBreadcrumbs,
+    filterByDrillScope,
+} from "@/lib/processes/canvas-drill-filter";
 import { CanvasExportMenu } from "./CanvasExportMenu";
 import { Tooltip } from "@/components/ui/tooltip";
 // R31 — CanvasHelpStrip retired. The "tips" strip occupied a
@@ -258,6 +264,8 @@ function Inner({
     // breakpoint so the globals.css media-query rule can fold
     // the vertical palette into a horizontal scroll strip.
     const { isMobile } = useMediaQuery();
+    // Epic P6-PR-A — sub-flow drill-down navigation stack.
+    const drill = useCanvasDrillStack();
     // R26-PR-E — inline name editing. Mirrors the active process's
     // name so the user can edit it in place without every keystroke
     // bouncing through the parent state.
@@ -1698,6 +1706,23 @@ function Inner({
                 }
             />
 
+            {/* Epic P6-PR-A — drill-down breadcrumb. Hidden at
+                root; shown when the user double-clicks into a
+                group. Each crumb jumps directly to that depth. */}
+            <CanvasDrillBreadcrumb
+                trail={buildDrillBreadcrumbs(drill.stack, nodes)}
+                onJump={(depth) => {
+                    if (depth === 0) drill.reset();
+                    else {
+                        // Pop until the desired depth (which is
+                        // stack.length === depth, not depth - 1
+                        // because trail[0] is the root row).
+                        const popsNeeded = drill.stack.length - depth;
+                        for (let i = 0; i < popsNeeded; i++) drill.exit();
+                    }
+                }}
+            />
+
             {/* R31 Bundle 4 (PR 2) — the ProcessPalette moved
                 from a HORIZONTAL strip across the top of the
                 canvas into the VERTICAL left rail below. The
@@ -1952,25 +1977,35 @@ function Inner({
                     />
                     <ReactFlow
                         key={activeId ?? "no-map"}
-                        // Epic P4-PR-B — project the rejected-source
-                        // marker as an extra className on the
-                        // matching node so the CSS rule
-                        // `.react-flow__node.canvas-rejected` fires.
-                        // The state clears after 600ms via the
-                        // effect above; React re-derives this list
-                        // each render.
-                        nodes={
-                            rejectedSource
-                                ? nodes.map((n) =>
-                                      n.id === rejectedSource
-                                          ? {
-                                                ...n,
-                                                className: `${n.className ?? ""} canvas-rejected`.trim(),
-                                            }
-                                          : n,
-                                  )
-                                : nodes
-                        }
+                        // Two composed projections on the nodes prop:
+                        // 1. Epic P6-PR-A — drill-scoped filter:
+                        //    at root (currentGroupId === null) the
+                        //    full graph; inside a group, just that
+                        //    group's children.
+                        // 2. Epic P4-PR-B — rejected-source marker:
+                        //    if a connection attempt just failed,
+                        //    tag the source node's className with
+                        //    `canvas-rejected` so the CSS shake
+                        //    rule fires. Clears after 600ms.
+                        nodes={(() => {
+                            const baseNodes = drill.currentGroupId
+                                ? filterByDrillScope(
+                                      nodes,
+                                      edges,
+                                      drill.currentGroupId,
+                                  ).visibleNodes
+                                : nodes;
+                            if (!rejectedSource) return baseNodes;
+                            return baseNodes.map((n) =>
+                                n.id === rejectedSource
+                                    ? {
+                                          ...n,
+                                          className:
+                                              `${n.className ?? ""} canvas-rejected`.trim(),
+                                      }
+                                    : n,
+                            );
+                        })()}
                         // Synthesise a transient preview edge when
                         // the proximity hook has a live candidate.
                         // ProcessEdge reads `data.isPreview` and
@@ -1978,19 +2013,27 @@ function Inner({
                         // path strips the reserved id before
                         // persisting.
                         edges={
-                            proximity.candidate
-                                ? [
-                                      ...edges,
-                                      {
-                                          id: PROXIMITY_PREVIEW_ID,
-                                          source: proximity.candidate.source,
-                                          target: proximity.candidate.target,
-                                          type: PROCESS_EDGE_TYPE,
-                                          data: { isPreview: true },
-                                          animated: true,
-                                      },
-                                  ]
-                                : edges
+                            (() => {
+                                const baseEdges = drill.currentGroupId
+                                    ? filterByDrillScope(
+                                          nodes,
+                                          edges,
+                                          drill.currentGroupId,
+                                      ).visibleEdges
+                                    : edges;
+                                if (!proximity.candidate) return baseEdges;
+                                return [
+                                    ...baseEdges,
+                                    {
+                                        id: PROXIMITY_PREVIEW_ID,
+                                        source: proximity.candidate.source,
+                                        target: proximity.candidate.target,
+                                        type: PROCESS_EDGE_TYPE,
+                                        data: { isPreview: true },
+                                        animated: true,
+                                    },
+                                ];
+                            })()
                         }
                         nodeTypes={NODE_TYPES}
                         edgeTypes={EDGE_TYPES}
@@ -1999,6 +2042,15 @@ function Inner({
                         onConnect={onConnect}
                         onNodeDrag={proximity.onNodeDrag}
                         onNodeDragStop={proximity.onNodeDragStop}
+                        // Epic P6-PR-A — double-click a group to
+                        // drill into it. Other kinds ignore the
+                        // event (no semantic action defined yet).
+                        onNodeDoubleClick={(_, node) => {
+                            const kind = (
+                                node.data as { kind?: unknown } | undefined
+                            )?.kind;
+                            if (kind === "group") drill.enter(node.id);
+                        }}
                         // R28 — connection validity. Rejects self-
                         // loops, duplicate directed pairs, and any
                         // edge touching an annotation node.
