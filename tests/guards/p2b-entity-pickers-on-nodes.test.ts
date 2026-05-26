@@ -31,8 +31,11 @@ describe("Epic P2-PR-B — entity pickers on nodes", () => {
         const src = read("src/lib/processes/use-tenant-risks.ts");
 
         it("exports the hook with the canonical signature", () => {
+            // PR-D polish added an optional second arg
+            // (`options?: { pollMs?: number }`) for periodic
+            // revalidation. The first param + return type stay put.
             expect(src).toMatch(
-                /export function useTenantRisks\(tenantSlug:\s*string\):\s*TenantRisksState/,
+                /export function useTenantRisks\(\s*tenantSlug:\s*string,\s*options\?:\s*UseTenantRisksOptions,?\s*\):\s*TenantRisksState/,
             );
         });
 
@@ -61,8 +64,10 @@ describe("Epic P2-PR-B — entity pickers on nodes", () => {
         const src = read("src/lib/processes/use-tenant-assets.ts");
 
         it("exports the hook + a formatAssetLabel helper", () => {
+            // PR-D polish added the optional second arg
+            // (`options?: { pollMs?: number }`).
             expect(src).toMatch(
-                /export function useTenantAssets\(tenantSlug:\s*string\):\s*TenantAssetsState/,
+                /export function useTenantAssets\(\s*tenantSlug:\s*string,\s*options\?:\s*UseTenantAssetsOptions,?\s*\):\s*TenantAssetsState/,
             );
             expect(src).toMatch(/export function formatAssetLabel/);
         });
@@ -91,8 +96,12 @@ describe("Epic P2-PR-B — entity pickers on nodes", () => {
         const src = read("src/components/processes/ProcessInspector.tsx");
 
         it("imports both sibling hooks", () => {
+            // PR-D polish landed the `findTenantRisk` helper
+            // alongside `useTenantRisks`; the regex now accepts
+            // either a single-import OR a multi-import form so a
+            // future rename doesn't lock the import shape too tight.
             expect(src).toMatch(
-                /import\s*\{\s*useTenantRisks\s*\}\s*from\s*["']@\/lib\/processes\/use-tenant-risks["']/,
+                /import\s*\{[\s\S]{0,200}useTenantRisks[\s\S]{0,200}\}\s*from\s*["']@\/lib\/processes\/use-tenant-risks["']/,
             );
             expect(src).toMatch(
                 /import\s*\{[\s\S]{0,200}useTenantAssets[\s\S]{0,200}\}\s*from\s*["']@\/lib\/processes\/use-tenant-assets["']/,
