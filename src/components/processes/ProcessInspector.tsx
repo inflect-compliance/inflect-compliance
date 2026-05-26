@@ -37,14 +37,49 @@ import { ToggleGroup } from "@/components/ui/toggle-group";
 import { AsidePanel } from "@/components/ui/aside-panel";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import {
+    findTenantControl,
     formatControlLabel,
     useTenantControls,
 } from "@/lib/processes/use-tenant-controls";
-import { useTenantRisks } from "@/lib/processes/use-tenant-risks";
 import {
+    findTenantRisk,
+    useTenantRisks,
+} from "@/lib/processes/use-tenant-risks";
+import {
+    findTenantAsset,
     formatAssetLabel,
     useTenantAssets,
 } from "@/lib/processes/use-tenant-assets";
+
+/**
+ * PR-D polish — refresh cadence for linked-entity status. 30s
+ * balances "live enough that an admin changing a control's status
+ * in another tab reflects on the canvas" against API hammering.
+ */
+const ENTITY_STATUS_POLL_MS = 30_000;
+
+/**
+ * PR-D polish — map a linked-entity `status` value to a tone class
+ * for the chip. The chip is informational, not interactive — the
+ * tones lean on the existing semantic-bg-* token suite.
+ *
+ * Unknown / missing statuses get the neutral `subtle` tone (no
+ * special colour) — never blank, never wrong.
+ */
+function entityStatusTone(status: string | null | undefined): string {
+    if (!status) return "bg-bg-subtle text-content-muted";
+    const s = status.toUpperCase();
+    if (s === "DONE" || s === "MITIGATED" || s === "ACTIVE") {
+        return "bg-bg-success/40 text-content-success";
+    }
+    if (s === "IN_PROGRESS" || s === "OPEN") {
+        return "bg-bg-info/40 text-content-info";
+    }
+    if (s === "BLOCKED" || s === "REJECTED" || s === "DECOMMISSIONED") {
+        return "bg-bg-error/40 text-content-error";
+    }
+    return "bg-bg-subtle text-content-muted";
+}
 import { NODE_TAXONOMY, isProcessNodeKind } from "./node-taxonomy";
 import {
     DEFAULT_NODE_SIZE,
@@ -308,10 +343,15 @@ function NodeLinkedEntityPicker({
     // Three hooks unconditionally — React rules of hooks. Each
     // short-circuits to a no-op when the slug is the empty string,
     // and we discard the unused responses below.
+    //
+    // PR-D polish — periodic revalidation so a status change made
+    // elsewhere reflects on the canvas without a reload. The cache
+    // is shared module-scoped, so the 30s poll runs once per
+    // tenant even with three concurrent hook mounts.
     const slug = tenantSlug ?? "";
-    const controls = useTenantControls(slug);
-    const risks = useTenantRisks(slug);
-    const assets = useTenantAssets(slug);
+    const controls = useTenantControls(slug, { pollMs: ENTITY_STATUS_POLL_MS });
+    const risks = useTenantRisks(slug, { pollMs: ENTITY_STATUS_POLL_MS });
+    const assets = useTenantAssets(slug, { pollMs: ENTITY_STATUS_POLL_MS });
 
     if (nodeKind !== "control" && nodeKind !== "risk" && nodeKind !== "asset") {
         return null;
@@ -352,15 +392,37 @@ function NodeLinkedEntityPicker({
         ? active.options.find((o) => o.value === selectedId) ?? null
         : null;
 
+    // PR-D polish — live status chip for the currently-selected
+    // entity. Reads from the same hook state the picker reads;
+    // the 30s polling cadence above keeps the value live.
+    const liveStatus =
+        nodeKind === "control"
+            ? findTenantControl(controls, selectedId)?.status ?? null
+            : nodeKind === "risk"
+              ? findTenantRisk(risks, selectedId)?.status ?? null
+              : findTenantAsset(assets, selectedId)?.status ?? null;
+
     return (
         <div
             className="flex flex-col gap-tight"
             data-testid="inspector-node-entity-picker"
             data-entity-kind={nodeKind}
         >
-            <span className="text-[10px] uppercase tracking-wide text-content-muted">
-                {active.label}
-            </span>
+            <div className="flex items-center justify-between gap-tight">
+                <span className="text-[10px] uppercase tracking-wide text-content-muted">
+                    {active.label}
+                </span>
+                {liveStatus && (
+                    <span
+                        className={`rounded-[4px] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${entityStatusTone(liveStatus)}`}
+                        data-testid="inspector-node-entity-status"
+                        data-status={liveStatus}
+                        title={`Current status: ${liveStatus}`}
+                    >
+                        {liveStatus}
+                    </span>
+                )}
+            </div>
             <Combobox
                 selected={selectedOption}
                 setSelected={(option) =>
