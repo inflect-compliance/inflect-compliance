@@ -113,6 +113,7 @@ import type { ProcessEdgeVariant } from "./ProcessEdge";
 import type { ProcessMapSummary } from "@/app/t/[tenantSlug]/(app)/processes/ProcessesClient";
 import { useToast } from "@/components/ui/hooks";
 import { surfaceVersionConflict } from "@/lib/processes/version-conflict-toast";
+import { edgeControlsForSave } from "@/lib/processes/edge-controls";
 
 /**
  * Reserved edge id for the in-flight proximity preview. The
@@ -355,6 +356,8 @@ function Inner({
                         targetKey: string;
                         edgeKind: string;
                         labelOverride: string | null;
+                        // Epic P2-PR-A — controls round-trip on the edge.
+                        controls?: Array<{ controlKey: string; label: string; controlId: string | null; dataJson: unknown }>;
                     }>;
                 };
                 if (cancelled) return;
@@ -418,11 +421,12 @@ function Inner({
                     source: e.sourceKey,
                     target: e.targetKey,
                     type: PROCESS_EDGE_TYPE,
-                    // R27-PR-B — edge variant rides in `edgeKind`.
+                    // R27-PR-B — variant rides in edgeKind. P2-PR-A — controls in data.controls.
                     data: {
-                        variant: isProcessEdgeVariant(e.edgeKind)
-                            ? e.edgeKind
-                            : "flow",
+                        variant: isProcessEdgeVariant(e.edgeKind) ? e.edgeKind : "flow",
+                        ...(Array.isArray(e.controls) && e.controls.length > 0
+                            ? { controls: e.controls.map((c) => ({ controlKey: c.controlKey, label: c.label, controlId: c.controlId })) }
+                            : {}),
                     },
                     ...(e.labelOverride ? { label: e.labelOverride } : {}),
                 }));
@@ -501,7 +505,7 @@ function Inner({
                     edgeKind: edgeKindOf(e),
                     labelOverride:
                         typeof e.label === "string" ? e.label : null,
-                    controls: [],
+                    controls: edgeControlsForSave(e),
                 })),
                 // Epic P1 — version we last loaded/saved; server
                 // refuses on mismatch (409 / STALE_DATA).
@@ -657,7 +661,7 @@ function Inner({
                     edgeKind: edgeKindOf(e),
                     labelOverride:
                         typeof e.label === "string" ? e.label : null,
-                    controls: [],
+                    controls: edgeControlsForSave(e),
                 })),
             };
             const res = await fetch(
@@ -756,7 +760,7 @@ function Inner({
                             edgeKind: edgeKindOf(e),
                             labelOverride:
                                 typeof e.label === "string" ? e.label : null,
-                            controls: [],
+                            controls: edgeControlsForSave(e),
                         })),
                     }),
                 },
@@ -932,7 +936,12 @@ function Inner({
     const handleEdgeUpdate = useCallback(
         (
             edgeId: string,
-            patch: { label?: string | null; variant?: ProcessEdgeVariant },
+            patch: {
+                label?: string | null;
+                variant?: ProcessEdgeVariant;
+                // Epic P2-PR-A — Linked-control picker patch.
+                controls?: Array<{ controlKey: string; label: string; controlId: string | null }>;
+            },
         ) => {
             history.push({ nodes, edges });
             autosave.markDirty();
@@ -956,6 +965,16 @@ function Inner({
                             unknown
                         >;
                         next.data = { ...prevData, variant: patch.variant };
+                    }
+                    if (patch.controls !== undefined) {
+                        const prevData = (next.data ?? e.data ?? {}) as Record<
+                            string,
+                            unknown
+                        >;
+                        next.data = {
+                            ...prevData,
+                            controls: patch.controls,
+                        };
                     }
                     return next;
                 }),
@@ -1847,6 +1866,7 @@ function Inner({
                 <ProcessInspector
                     node={selectedNode}
                     edge={selectedEdge}
+                    tenantSlug={tenantSlug}
                     onUpdate={handleInspectorUpdate}
                     onEdgeUpdate={handleEdgeUpdate}
                 />
