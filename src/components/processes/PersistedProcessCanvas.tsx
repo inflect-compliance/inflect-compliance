@@ -94,6 +94,7 @@ import {
 } from "@/lib/processes/canvas-alignment";
 import {
     computeAutoLayout,
+    computeForceLayout,
     type AutoLayoutDirection,
 } from "@/lib/processes/canvas-auto-layout";
 import { useKeyboardShortcut } from "@/lib/hooks/use-keyboard-shortcut";
@@ -1213,6 +1214,44 @@ function Inner({
             changeEmitter,
         ],
     );
+    // PR-C polish — Force-directed (organic) layout via elkjs.
+    // Async because elkjs returns a Promise; the await happens
+    // BEFORE the setNodes call so xyflow only sees one transition
+    // (no flicker via partial state). The `selectionIds`
+    // parameter (optional) routes through the same nodeIdsFilter
+    // contract `handleAutoLayoutSelection` uses for dagre.
+    const handleAutoLayoutForce = useCallback(
+        async (selectionOnly: boolean) => {
+            if (nodes.length === 0) return;
+            const filter = selectionOnly ? new Set(selectedNodeIds) : undefined;
+            if (selectionOnly && (filter?.size ?? 0) < 2) return;
+            history.push({ nodes, edges });
+            const { positions } = await computeForceLayout(
+                nodes,
+                edges,
+                filter,
+            );
+            setNodes((nds) =>
+                nds.map((n) =>
+                    positions[n.id]
+                        ? { ...n, position: positions[n.id] }
+                        : n,
+                ),
+            );
+            autosave.markDirty();
+            changeEmitter.emit("node.move", {
+                nodeIds: Object.keys(positions),
+            });
+        },
+        [
+            nodes,
+            edges,
+            selectedNodeIds,
+            history,
+            autosave,
+            changeEmitter,
+        ],
+    );
     const handleDistribute = useCallback(
         (axis: DistributeAxis) => {
             if (selectionCount < 3) return;
@@ -1658,6 +1697,26 @@ function Inner({
                         "Auto-layout only the selected nodes — top-to-bottom",
                     disabled: selectionCount < 2 || saving || loading,
                     onSelect: () => handleAutoLayoutSelection("TB"),
+                },
+                // PR-C polish — Force-directed (organic) layout
+                // for graphs without a clear hierarchical flow.
+                // elkjs is loaded on demand (the ~600KB bundle is
+                // dynamically imported by `computeForceLayout`).
+                {
+                    id: "arrange-force",
+                    label: "Force-directed layout (organic)",
+                    description:
+                        "Auto-layout the canvas as an organic spring-simulated graph",
+                    disabled: nodes.length === 0 || saving || loading,
+                    onSelect: () => void handleAutoLayoutForce(false),
+                },
+                {
+                    id: "arrange-force-selection",
+                    label: "Force-directed layout (selection)",
+                    description:
+                        "Apply force-directed layout to only the selected nodes",
+                    disabled: selectionCount < 2 || saving || loading,
+                    onSelect: () => void handleAutoLayoutForce(true),
                 },
             ],
         },

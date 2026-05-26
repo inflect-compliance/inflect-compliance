@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Epic P4-PR-A — Canvas auto-layout via dagre.
+ * Epic P4-PR-A + PR-C polish — Canvas auto-layout via dagre + elkjs.
  *
  * Closes the brief's #1 🟠 "Auto-Layout Engine" gap. Pre-P4
  * authors had to manually position every node; a 20-node map
@@ -10,17 +10,20 @@
  * ship: pick a direction, click "Arrange", every node snaps to a
  * hierarchical layout in one move.
  *
- * Why dagre:
- *   - It's xyflow's official auto-layout recommendation (their
- *     own examples use it).
- *   - Pure JS, no native deps, ~50KB gzip.
- *   - Hierarchical layouts (LR + TB) cover ≥90% of compliance
- *     process maps. Force-directed (organic) lives in elkjs — a
- *     follow-up if user demand emerges.
+ * Two engines, one module:
+ *   - **dagre** (`computeAutoLayout`) — hierarchical (LR / TB).
+ *     The default; covers ≥90% of compliance maps where a
+ *     directional flow ("intake → review → approve") is the
+ *     mental model.
+ *   - **elkjs** (`computeForceLayout`) — force-directed (organic).
+ *     PR-C polish add. Covers the long tail: cycles, undirected
+ *     dependency webs, maps with no clear start node. Async-only
+ *     (elkjs returns a Promise), dynamically imported so the
+ *     ~600KB bundle only ships when the user invokes it.
  *
  * Why a helper not a hook:
- *   - The function is stateless — takes nodes + edges + opts,
- *     returns the new positions. The canvas owns "push history,
+ *   - The functions are stateless — take nodes + edges + opts,
+ *     return new positions. The canvas owns "push history,
  *     setNodes, markDirty"; this module just answers "where do
  *     the nodes go?".
  *   - Easier to unit-test (no React render).
@@ -133,37 +136,154 @@ export function computeAutoLayout(
         };
     }
 
-    // When laying out a SUBSET, translate the result so the
-    // selection's centroid matches its pre-layout centroid.
-    // Without this, dagre would dump the subset near (0, 0),
-    // wildly off from where the user expects to see it.
-    if (nodeIdsFilter && participatingIds.size > 0) {
-        const before = { x: 0, y: 0, count: 0 };
-        const after = { x: 0, y: 0, count: 0 };
-        for (const node of nodes) {
-            if (!participatingIds.has(node.id)) continue;
-            before.x += node.position.x;
-            before.y += node.position.y;
-            before.count += 1;
+    return finaliseSubsetPositions(
+        positions,
+        nodes,
+        participatingIds,
+        nodeIdsFilter,
+    );
+}
+
+/**
+ * Re-centre the laid-out subset so its post-layout centroid lands
+ * on top of its pre-layout centroid. Used by both `computeAutoLayout`
+ * (dagre) and `computeForceLayout` (elkjs) when a `nodeIdsFilter`
+ * is supplied — without this, both algorithms would dump the subset
+ * near (0, 0), wildly off from where the user expects to see it.
+ *
+ * No-op when `nodeIdsFilter` is absent (full-canvas layouts always
+ * land near origin by design).
+ */
+function finaliseSubsetPositions(
+    positions: Record<string, { x: number; y: number }>,
+    nodes: Node[],
+    participatingIds: ReadonlySet<string>,
+    nodeIdsFilter: ReadonlySet<string> | undefined,
+): AutoLayoutResult {
+    if (!nodeIdsFilter || participatingIds.size === 0) {
+        return { positions };
+    }
+    const before = { x: 0, y: 0, count: 0 };
+    const after = { x: 0, y: 0, count: 0 };
+    for (const node of nodes) {
+        if (!participatingIds.has(node.id)) continue;
+        before.x += node.position.x;
+        before.y += node.position.y;
+        before.count += 1;
+    }
+    for (const id of participatingIds) {
+        const p = positions[id];
+        if (!p) continue;
+        after.x += p.x;
+        after.y += p.y;
+        after.count += 1;
+    }
+    if (before.count > 0 && after.count > 0) {
+        const dx = before.x / before.count - after.x / after.count;
+        const dy = before.y / before.count - after.y / after.count;
+        for (const id of Object.keys(positions)) {
+            positions[id] = {
+                x: positions[id].x + dx,
+                y: positions[id].y + dy,
+            };
         }
-        for (const id of participatingIds) {
-            const p = positions[id];
-            if (!p) continue;
-            after.x += p.x;
-            after.y += p.y;
-            after.count += 1;
-        }
-        if (before.count > 0 && after.count > 0) {
-            const dx = before.x / before.count - after.x / after.count;
-            const dy = before.y / before.count - after.y / after.count;
-            for (const id of Object.keys(positions)) {
-                positions[id] = {
-                    x: positions[id].x + dx,
-                    y: positions[id].y + dy,
-                };
-            }
+    }
+    return { positions };
+}
+
+/**
+ * PR-C polish — Force-directed layout via elkjs (Eclipse Layout
+ * Kernel, JS port). The function shape mirrors `computeAutoLayout`
+ * with one critical difference: it's ASYNC. elkjs runs its layout
+ * engine in a promise; the caller awaits the result before
+ * applying positions.
+ *
+ * elkjs is dynamically imported so the ~600KB bundle ships only
+ * when the user actually triggers force-layout — keeps the canvas's
+ * initial bundle slim.
+ *
+ * Coords: elkjs returns top-left positions natively (no centre-
+ * to-top-left conversion needed like dagre).
+ *
+ * `nodeIdsFilter` (optional) works the same way as the dagre
+ * variant: subset-only with centroid preservation.
+ */
+export async function computeForceLayout(
+    nodes: Node[],
+    edges: Edge[],
+    nodeIdsFilter?: ReadonlySet<string>,
+): Promise<AutoLayoutResult> {
+    const { default: ELK } = await import("elkjs/lib/elk.bundled.js");
+    const elk = new ELK();
+
+    const participatingIds = new Set<string>();
+    const elkChildren: Array<{ id: string; width: number; height: number }> =
+        [];
+    for (const node of nodes) {
+        const kind = (node.data as { kind?: unknown } | undefined)?.kind;
+        if (kind === "annotation") continue;
+        if (nodeIdsFilter && !nodeIdsFilter.has(node.id)) continue;
+        const measuredW =
+            (node as { width?: number | null }).width ??
+            ((node.style as { width?: unknown } | undefined)?.width as number);
+        const measuredH =
+            (node as { height?: number | null }).height ??
+            ((node.style as { height?: unknown } | undefined)?.height as number);
+        const isGroup = kind === "group";
+        const w =
+            typeof measuredW === "number" && Number.isFinite(measuredW)
+                ? measuredW
+                : isGroup
+                  ? GROUP_NODE_WIDTH
+                  : DEFAULT_NODE_WIDTH;
+        const h =
+            typeof measuredH === "number" && Number.isFinite(measuredH)
+                ? measuredH
+                : isGroup
+                  ? GROUP_NODE_HEIGHT
+                  : DEFAULT_NODE_HEIGHT;
+        elkChildren.push({ id: node.id, width: w, height: h });
+        participatingIds.add(node.id);
+    }
+
+    const elkEdges = edges
+        .filter(
+            (e) =>
+                participatingIds.has(e.source) &&
+                participatingIds.has(e.target),
+        )
+        .map((e) => ({
+            id: e.id,
+            sources: [e.source],
+            targets: [e.target],
+        }));
+
+    const result = await elk.layout({
+        id: "root",
+        layoutOptions: {
+            // ELK's force algorithm — physical-spring simulation.
+            // 300 iterations is the documented sweet spot: enough
+            // for the graph to settle, cheap enough to feel
+            // interactive at the canvas's bounded sizes.
+            "elk.algorithm": "force",
+            "elk.force.iterations": "300",
+            "elk.spacing.nodeNode": "60",
+        },
+        children: elkChildren,
+        edges: elkEdges,
+    });
+
+    const positions: Record<string, { x: number; y: number }> = {};
+    for (const child of result.children ?? []) {
+        if (typeof child.x === "number" && typeof child.y === "number") {
+            positions[child.id] = { x: child.x, y: child.y };
         }
     }
 
-    return { positions };
+    return finaliseSubsetPositions(
+        positions,
+        nodes,
+        participatingIds,
+        nodeIdsFilter,
+    );
 }
