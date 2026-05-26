@@ -38,7 +38,6 @@ import {
     Background,
     BackgroundVariant,
     Controls,
-    MiniMap,
     ReactFlow,
     ReactFlowProvider,
     addEdge,
@@ -1787,44 +1786,35 @@ function Inner({
                             style={{ opacity: snapEnabled ? 0.4 : 0 }}
                         />
                         {/* R31 Bundle 6 (PR 7) — orientation aids.
-                            Pre-R31 the canvas shipped with no minimap
-                            + no zoom UI: on a large process map the
-                            user couldn't tell where they were, how
-                            much there was, or how to get back. Every
-                            canvas tool that has shipped in the last
-                            15 years has these. xyflow's primitives
-                            are the canonical answer; we wrap them
-                            with token-driven surfaces so the overlays
-                            match the canvas frame language. */}
+                            Pre-R31 the canvas shipped with no zoom UI:
+                            on a large process map the user couldn't
+                            tell how to get back. Every canvas tool
+                            that has shipped in the last 15 years has
+                            +/-/fit controls.
+
+                            xyflow's `<Controls>` primitive is the
+                            canonical answer; we wrap it with a
+                            token-driven surface so the overlay matches
+                            the canvas frame language. The original
+                            R31 Bundle 6 PR also shipped a minimap
+                            in the bottom-right; user feedback
+                            (2026-05-26) found it added clutter on the
+                            canvas surface without earning the
+                            corner-real-estate — removed.
+
+                            Zoom-button icon + surface colours come
+                            from `globals.css` `[data-process-canvas]`
+                            overrides that wire xyflow's
+                            `--xy-controls-button-*` cascade through
+                            to the canvas-frame token suite, so the
+                            buttons read on both light and dark
+                            themes. */}
                         <Controls
                             position="bottom-left"
                             showInteractive={false}
                             className="!bg-canvas-frame/90 !border !border-canvas-border !rounded-[8px] !shadow-canvas-node backdrop-blur"
                             data-testid="canvas-zoom-controls"
                             aria-label="Zoom controls"
-                        />
-                        <MiniMap
-                            position="bottom-right"
-                            pannable
-                            zoomable
-                            ariaLabel="Process canvas minimap"
-                            className="!bg-canvas-frame/90 !border !border-canvas-border !rounded-[8px] backdrop-blur"
-                            data-testid="canvas-minimap"
-                            // The minimap node colour reads the
-                            // node's category via data-attribute so
-                            // the small representation carries the
-                            // same visual hierarchy as the canvas.
-                            nodeColor={(n) => {
-                                const kind = (n.data as { kind?: unknown })
-                                    ?.kind;
-                                if (kind === "group")
-                                    return "var(--canvas-node-muted)";
-                                if (kind === "annotation")
-                                    return "var(--bg-subtle)";
-                                return "var(--canvas-node)";
-                            }}
-                            nodeStrokeColor="var(--border-default)"
-                            maskColor="rgba(0,0,0,0.18)"
                         />
                     </ReactFlow>
                 </div>

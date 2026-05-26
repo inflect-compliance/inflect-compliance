@@ -1,27 +1,32 @@
 /**
- * R31 (Bundle 6) — Minimap + zoom controls (PR 7 of the roadmap).
+ * R31 (Bundle 6) — Zoom controls (PR 7 of the roadmap).
  *
- * Pre-R31 the canvas shipped without a minimap, without a zoom UI,
- * without a "fit to canvas" affordance. On a large process map the
- * user couldn't tell where they were, how much there was, or how
- * to get back. Every canvas tool that has shipped in the last 15
- * years has these. R31 wires xyflow's `<MiniMap>` + `<Controls>`
- * primitives as overlays inside the canvas plane (not new chrome
- * strips above) and tones them to match the canvas frame.
+ * Pre-R31 the canvas shipped without a zoom UI: on a large process
+ * map the user couldn't get back to the origin. Every canvas tool
+ * that has shipped in the last 15 years has +/- / fit controls.
+ * R31 wired xyflow's `<Controls>` primitive as an overlay inside
+ * the canvas plane (not a new chrome strip above) and toned it to
+ * match the canvas frame.
  *
  *   • Bottom-left zoom strip — `<Controls position="bottom-left"
  *     showInteractive={false} />`. The `showInteractive` flag is
  *     OFF deliberately: the "lock interaction" toggle xyflow ships
  *     by default is for graph viewers, not authoring canvases.
- *   • Bottom-right minimap — `<MiniMap position="bottom-right"
- *     pannable zoomable />`. The `nodeColor` callback reads each
- *     node's category so the miniature retains the canvas's
- *     visual hierarchy.
  *
- * Both overlays surface-match the document bar + AsidePanel
+ * The overlay surface-matches the document bar + AsidePanel
  * primitives — `bg-canvas-frame/90`, hairline border,
- * rounded-[8px], backdrop-blur — so they read as part of one
- * coherent chrome language.
+ * rounded-[8px], backdrop-blur — so it reads as part of one
+ * coherent chrome language. The +/- glyph + button surface colours
+ * are themed via a `globals.css` rule that wires xyflow's
+ * `--xy-controls-button-*` cascade to the canvas-frame token suite
+ * (xyflow's built-in `.dark` class flip never fires on our trees
+ * since we theme via `[data-theme]` on `<html>` instead).
+ *
+ * Minimap intentionally absent — the original R31 Bundle 6 also
+ * shipped a `<MiniMap>` in the bottom-right; user feedback
+ * (2026-05-26) found it added clutter on the canvas surface
+ * without earning the corner real-estate. Removed at the same
+ * time as the dark-theme zoom-button fix.
  */
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -29,19 +34,35 @@ import * as path from "node:path";
 const ROOT = path.resolve(__dirname, "../..");
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), "utf8");
 
-describe("R31 (Bundle 6) — minimap + zoom", () => {
+describe("R31 (Bundle 6) — zoom controls", () => {
     const src = read("src/components/processes/PersistedProcessCanvas.tsx");
 
-    it("imports xyflow's MiniMap + Controls primitives", () => {
-        // Both must come from `@xyflow/react`; the imports drive
-        // the render branch below. Order-independent — assert
-        // each anchor on its own + co-location inside one import.
+    it("imports xyflow's Controls primitive", () => {
+        // The Controls import drives the render branch below.
         const importMatch = src.match(
             /import\s*\{[\s\S]{0,2000}\}\s*from\s*["']@xyflow\/react["']/,
         );
         expect(importMatch).not.toBeNull();
-        expect(importMatch![0]).toMatch(/\bMiniMap\b/);
         expect(importMatch![0]).toMatch(/\bControls\b/);
+    });
+
+    it("does NOT import the MiniMap primitive (removed 2026-05-26)", () => {
+        // The MiniMap was removed in fix/processes-drop-minimap-darken-zoom.
+        // A future "bring it back" PR has to make the case in writing
+        // — the import addition trips this ratchet first.
+        const importMatch = src.match(
+            /import\s*\{[\s\S]{0,2000}\}\s*from\s*["']@xyflow\/react["']/,
+        );
+        expect(importMatch).not.toBeNull();
+        expect(importMatch![0]).not.toMatch(/\bMiniMap\b/);
+    });
+
+    it("does NOT mount the MiniMap JSX (removed 2026-05-26)", () => {
+        // Belt-and-braces: the absence of the import is the structural
+        // guarantee, but a renamed re-export could sneak around it. The
+        // JSX-tag absence catches that.
+        expect(src).not.toMatch(/<MiniMap\b/);
+        expect(src).not.toMatch(/data-testid="canvas-minimap"/);
     });
 
     it("mounts the zoom strip at the bottom-left of the canvas plane", () => {
@@ -62,25 +83,7 @@ describe("R31 (Bundle 6) — minimap + zoom", () => {
         );
     });
 
-    it("mounts the minimap at the bottom-right of the canvas plane", () => {
-        expect(src).toMatch(/<MiniMap\b[\s\S]{0,400}position="bottom-right"/);
-        // The minimap is pannable + zoomable so the user can use
-        // it as a navigation surface, not just a wayfinder.
-        expect(src).toMatch(/<MiniMap\b[\s\S]{0,400}pannable/);
-        expect(src).toMatch(/<MiniMap\b[\s\S]{0,400}zoomable/);
-        expect(src).toMatch(/data-testid="canvas-minimap"/);
-    });
-
-    it("the minimap colours nodes by category (mirrors canvas hierarchy)", () => {
-        // `nodeColor={(n) => …}` reads `data.kind` and returns a
-        // token-backed colour. The miniature shouldn't be a
-        // colour-by-id rainbow; it should rhyme with the canvas.
-        expect(src).toMatch(
-            /<MiniMap\b[\s\S]{0,800}nodeColor=\{[\s\S]{0,400}data as[\s\S]{0,200}kind/,
-        );
-    });
-
-    it("both overlays surface-match the canvas chrome language", () => {
+    it("the zoom strip surface-matches the canvas chrome language", () => {
         // bg-canvas-frame/90 + border-canvas-border + rounded-[8px]
         // + backdrop-blur — same set the document bar + AsidePanel
         // use elsewhere in the canvas. The overlay vocabulary is
@@ -89,13 +92,51 @@ describe("R31 (Bundle 6) — minimap + zoom", () => {
             /<Controls\b[\s\S]{0,500}rounded-\[8px\]/,
         );
         expect(src).toMatch(
-            /<MiniMap\b[\s\S]{0,500}rounded-\[8px\]/,
-        );
-        expect(src).toMatch(
             /<Controls\b[\s\S]{0,500}backdrop-blur/,
         );
-        expect(src).toMatch(
-            /<MiniMap\b[\s\S]{0,500}backdrop-blur/,
-        );
+    });
+
+    describe("dark-theme +/- button readability (globals.css wire-up)", () => {
+        const css = read("src/app/globals.css");
+
+        it("scopes the wire-up to the Processes canvas", () => {
+            // The rule lives under `[data-process-canvas="true"]
+            // .react-flow__controls` so the GraphExplorer's xyflow
+            // tree (different surface vocabulary) is untouched.
+            expect(css).toMatch(
+                /\[data-process-canvas="true"\]\s+\.react-flow__controls\s*\{/,
+            );
+        });
+
+        it("maps xyflow's control-button cascade onto canvas tokens", () => {
+            // Each of the five custom properties xyflow consults
+            // for the button surface + glyph + border must be
+            // mapped to a `--canvas-*` / `--content-*` token. The
+            // canvas tokens already flip with the user's `[data-
+            // theme]`, so the buttons follow the theme for free.
+            //
+            // Locked together to catch a "fix one but forget the
+            // hover" partial revert.
+            const rule = css.match(
+                /\[data-process-canvas="true"\]\s+\.react-flow__controls\s*\{[^}]+\}/,
+            );
+            expect(rule).not.toBeNull();
+            const body = rule![0];
+            expect(body).toMatch(
+                /--xy-controls-button-background-color:\s*var\(--canvas-frame\)/,
+            );
+            expect(body).toMatch(
+                /--xy-controls-button-background-color-hover:\s*var\(--canvas-node\)/,
+            );
+            expect(body).toMatch(
+                /--xy-controls-button-color:\s*var\(--content-default\)/,
+            );
+            expect(body).toMatch(
+                /--xy-controls-button-color-hover:\s*var\(--content-default\)/,
+            );
+            expect(body).toMatch(
+                /--xy-controls-button-border-color:\s*var\(--canvas-border\)/,
+            );
+        });
     });
 });

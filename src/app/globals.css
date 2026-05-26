@@ -318,3 +318,25 @@ textarea.input { @apply resize-y min-h-[80px]; }
 [data-process-canvas="true"] .react-flow__edge:hover .react-flow__edge-path {
   filter: brightness(1.35);
 }
+
+/* ─── Processes canvas — zoom-control theme wire-up ──────────────────
+ * xyflow ships its `<Controls>` zoom buttons with hard-coded light
+ * surface tokens (`--xy-controls-button-background-color-default:
+ * #fefefe`, etc.) and only flips them when the wrapping `.react-flow`
+ * element carries the `.dark` class. We never set that class — our
+ * dark / light themes flip via `[data-theme]` on <html> and emit
+ * canvas-specific tokens at the `--canvas-*` layer.
+ *
+ * Without this rule the +/- buttons render with white surfaces +
+ * dark glyphs on the dark theme, so the surface clashes against the
+ * `bg-canvas-frame/90` parent override on the Controls wrapper.
+ *
+ * Mapping each xyflow control-button token to its canvas-frame
+ * counterpart fixes both directions of the cascade. */
+[data-process-canvas="true"] .react-flow__controls {
+  --xy-controls-button-background-color: var(--canvas-frame);
+  --xy-controls-button-background-color-hover: var(--canvas-node);
+  --xy-controls-button-color: var(--content-default);
+  --xy-controls-button-color-hover: var(--content-default);
+  --xy-controls-button-border-color: var(--canvas-border);
+}
