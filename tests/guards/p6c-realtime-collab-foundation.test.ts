@@ -99,13 +99,20 @@ describe("Epic P6-PR-C — real-time collab foundation", () => {
             }
         });
 
-        it("reads the documented feature-flag env var name", () => {
-            // The flag name must match what the doc + future
-            // env wiring rely on. Anchor here so a typo doesn't
-            // silently disable the eventual transport.
-            expect(src).toMatch(
-                /process\.env\.NEXT_PUBLIC_ENABLE_CANVAS_PRESENCE/,
-            );
+        it("documents the canonical flag name in source comments", () => {
+            // Stage 1 hard-codes the flag to off (the production
+            // transport doesn't exist yet); Stage 2 will lift this
+            // to a real env-driven read via `src/env.ts`. The flag
+            // name must match the doc + future env wiring.
+            expect(src).toMatch(/NEXT_PUBLIC_ENABLE_CANVAS_PRESENCE/);
+        });
+
+        it("Stage-1 hard-codes IS_PRESENCE_ENABLED to false (no process.env read)", () => {
+            // Reading `process.env` directly would trip the
+            // `no-fallbacks` guardrail; Stage 2 introduces the
+            // env-channel via `src/env.ts`.
+            expect(src).toMatch(/const IS_PRESENCE_ENABLED\s*=\s*false/);
+            expect(src).not.toMatch(/process\.env\./);
         });
 
         it("Stage-1 default is no-op: empty roster + stable callbacks", () => {

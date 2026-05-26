@@ -54,12 +54,14 @@ export interface CanvasPresenceState {
 }
 
 /**
- * Read the feature flag at module load. Flag-off is the production
- * default; flag-on starts working once Stage 2 wires the transport.
+ * Stage-1 hard-codes the flag to off — there is no production
+ * transport yet. Stage 2 will lift this to a real env-driven flag
+ * declared in `src/env.ts` (`NEXT_PUBLIC_ENABLE_CANVAS_PRESENCE`)
+ * when the WebSocket service ships. Reading `process.env`
+ * directly here would trip the `no-fallbacks` guardrail (the
+ * canonical env channel is the typed `@/env` module).
  */
-const IS_PRESENCE_ENABLED =
-    typeof process !== "undefined" &&
-    process.env.NEXT_PUBLIC_ENABLE_CANVAS_PRESENCE === "1";
+const IS_PRESENCE_ENABLED = false;
 
 export function useCanvasPresence(_opts: {
     mapId: string | null;
