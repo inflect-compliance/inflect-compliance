@@ -28,7 +28,8 @@ export interface BareRouteExemption {
         | 'csp_report_sink'
         | 'external_webhook'
         | 'scim_2_0'
-        | 'staging_fixture';
+        | 'staging_fixture'
+        | 'sse_stream';
     /** Why this route does not use `withApiErrorHandling`. */
     reason: string;
 }
@@ -269,5 +270,29 @@ export const BARE_ROUTE_EXEMPTIONS: ReadonlyArray<BareRouteExemption> = [
             'Staging seed endpoint. NODE_ENV=production → 403; ' +
             'STAGING_SEED_TOKEN gate; bespoke success body shape ' +
             'consumed by E2E scripts.',
+    },
+
+    // ─── SSE streaming endpoints ───
+    //
+    // Server-Sent Events routes return a long-lived
+    // `text/event-stream` ReadableStream — not a one-shot JSON
+    // response. `withApiErrorHandling` is built around the
+    // assumption that the handler returns a single JSON body it
+    // can replace with the `ApiErrorResponse` shape on throw; it
+    // can't wrap a streaming response without breaking the wire
+    // format clients consume via `new EventSource(...)`. The auth
+    // guard at the top of the handler (`getLegacyCtx`) throws
+    // before the stream is constructed, surfacing as a standard
+    // 401 — beyond that the stream's own per-chunk error handling
+    // closes the connection cleanly via the abort signal.
+    {
+        file: 'notifications/stream/route.ts',
+        category: 'sse_stream',
+        reason:
+            'SSE notification stream (PR-C 2026-05-27). Long-lived ' +
+            'text/event-stream ReadableStream — cannot be wrapped by ' +
+            'withApiErrorHandling without breaking the EventSource ' +
+            'wire format. Auth via getLegacyCtx pre-stream; per-chunk ' +
+            'errors close the channel via req.signal abort.',
     },
 ];
