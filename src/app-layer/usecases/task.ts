@@ -5,6 +5,7 @@ import { logEvent } from '../events/audit';
 import { emitAutomationEvent } from '../automation';
 import { enqueueEmail } from '../notifications/enqueue';
 import { createTaskDueNotification } from '../notifications/task-due';
+import { createAssignmentNotification } from '../notifications/assignment';
 import { runInTenantContext } from '@/lib/db-context';
 import { env } from '@/env';
 import { notFound, badRequest } from '@/lib/errors/types';
@@ -188,6 +189,12 @@ export async function createTask(ctx: RequestContext, input: {
     // and due within a reminder window. Runs AFTER the task
     // transaction commits — see `emitTaskDueNotification`.
     await emitTaskDueNotification(ctx, result);
+    // PR-A 2026-05-27 — also fire the in-app TASK_ASSIGNED bell.
+    // Pre-PR-A, only the email path ran on create-with-assignee, so
+    // the bell stayed silent until the task entered a due-window.
+    if (result.assigneeUserId) {
+        await emitTaskAssignedNotification(ctx, result);
+    }
     await bumpEntityCacheVersion(ctx, 'task');
     return result;
 }
@@ -328,6 +335,14 @@ export async function assignTask(ctx: RequestContext, taskId: string, assigneeUs
     // In-app TASK_DUE notification for the new assignee if the task
     // is due within a reminder window — after the commit.
     await emitTaskDueNotification(ctx, result);
+    // PR-A 2026-05-27 — in-app TASK_ASSIGNED bell notification.
+    // Mirrors the email path that's already wired in
+    // `enqueueTaskAssignedNotification` above; this one routes the
+    // alert to the notification bell so the assignee sees it
+    // without waiting for the daily digest.
+    if (result.assigneeUserId) {
+        await emitTaskAssignedNotification(ctx, result);
+    }
     await bumpEntityCacheVersion(ctx, 'task');
     return result;
 }
@@ -432,6 +447,56 @@ async function emitTaskDueNotification(
         );
     } catch (err) {
         logger.warn('failed to create task-due notification', {
+            component: 'notifications',
+            taskId: task.id,
+            error: err instanceof Error ? err.message : String(err),
+        });
+    }
+}
+
+/**
+ * PR-A 2026-05-27 — in-app `TASK_ASSIGNED` bell notification.
+ *
+ * Pre-PR-A only the email path fired (`enqueueTaskAssignedNotification`
+ * → `NotificationOutbox`), so the assignee saw the alert in their
+ * inbox but never on the notification bell. This sibling routes the
+ * same trigger into the `Notification` table.
+ *
+ * Same fire-and-forget posture as `emitTaskDueNotification`:
+ *   - Runs AFTER the task transaction commits.
+ *   - Its own short `runInTenantContext` — a notification write
+ *     must never roll back the task.
+ *   - `createAssignmentNotification` is idempotent via the
+ *     `(tenantId, TASK_ASSIGNED, taskId, userId, date)` dedupeKey
+ *     so a rapid sequence of assign-toggles within one day
+ *     collapses to a single bell entry.
+ */
+async function emitTaskAssignedNotification(
+    ctx: RequestContext,
+    task: {
+        id: string;
+        tenantId: string;
+        title: string;
+        key: string | null;
+        assigneeUserId: string | null;
+    },
+): Promise<void> {
+    if (!task.assigneeUserId || !ctx.tenantSlug) return;
+    const tenantSlug = ctx.tenantSlug;
+    const assigneeUserId = task.assigneeUserId;
+    try {
+        await runInTenantContext(ctx, (db) =>
+            createAssignmentNotification(db, 'TASK_ASSIGNED', {
+                tenantId: task.tenantId,
+                assigneeUserId,
+                entityId: task.id,
+                entityLabel: task.title,
+                entityKey: task.key,
+                tenantSlug,
+            }),
+        );
+    } catch (err) {
+        logger.warn('failed to create task-assigned notification', {
             component: 'notifications',
             taskId: task.id,
             error: err instanceof Error ? err.message : String(err),
