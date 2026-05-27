@@ -13,6 +13,7 @@ import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-bad
 import { Heading, textLinkVariants } from '@/components/ui/typography';
 import { CardHeader } from '@/components/ui/card-header';
 import { EditControlModal } from './_modals/EditControlModal';
+import { NewControlTaskModal } from './_modals/NewControlTaskModal';
 import { ControlReverseLookupModal } from '@/components/controls/ControlReverseLookupModal';
 import { ControlMappingsTab } from './_tabs/ControlMappingsTab';
 import { EvidenceSubTable } from './_tabs/EvidenceSubTable';
@@ -34,12 +35,6 @@ import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { Tooltip } from '@/components/ui/tooltip';
 import { CopyText } from '@/components/ui/copy-text';
 import { ProgressBar } from '@/components/ui/progress-bar';
-import { DatePicker } from '@/components/ui/date-picker/date-picker';
-import {
-    parseYMD,
-    startOfUtcDay,
-    toYMD,
-} from '@/components/ui/date-picker/date-utils';
 import dynamic from 'next/dynamic';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 import { cardVariants } from '@/components/ui/card';
@@ -1157,34 +1152,39 @@ export default function ControlDetailPage() {
                 <div className="space-y-default">
                     {permissions.canWrite && (
                         <div className="flex justify-end">
-                            <Button variant="primary" onClick={() => setShowTaskForm(!showTaskForm)} id="create-task-btn">
+                            {/* The create-task affordance opens
+                                <NewControlTaskModal> instead of
+                                toggling an inline form. Matches the
+                                canonical modal-create pattern (see
+                                docs/modal-sheet-strategy.md). */}
+                            <Button
+                                variant="primary"
+                                onClick={() => setShowTaskForm(true)}
+                                id="create-task-btn"
+                            >
                                 + Task
                             </Button>
                         </div>
                     )}
-                    {showTaskForm && permissions.canWrite && (
-                        <form onSubmit={createTask} className={cn(cardVariants({ density: 'compact' }), 'space-y-compact')}>
-                            <input type="text" className="input w-full" placeholder="Task title *" value={taskTitle} onChange={e => setTaskTitle(e.target.value)} required id="task-title-input" />
-                            <textarea className="input w-full" rows={2} placeholder="Description (optional)" value={taskDesc} onChange={e => setTaskDesc(e.target.value)} id="task-desc-input" />
-                            {/* Epic 58 — shared DatePicker. `taskDue`
-                                keeps its YMD-string shape. */}
-                            <DatePicker
-                                id="task-due-input"
-                                className="w-full"
-                                placeholder="Due date"
-                                clearable
-                                align="start"
-                                value={parseYMD(taskDue)}
-                                onChange={(next) => setTaskDue(toYMD(next) ?? '')}
-                                disabledDays={{
-                                    before: startOfUtcDay(new Date()),
-                                }}
-                                aria-label="Task due date"
-                            />
-                            <Button type="submit" variant="primary" disabled={savingTask} id="submit-task-btn">
-                                {savingTask ? 'Creating...' : 'Create'}
-                            </Button>
-                        </form>
+                    {permissions.canWrite && (
+                        <NewControlTaskModal
+                            open={showTaskForm}
+                            setOpen={setShowTaskForm}
+                            title={taskTitle}
+                            setTitle={setTaskTitle}
+                            description={taskDesc}
+                            setDescription={setTaskDesc}
+                            dueAt={taskDue}
+                            setDueAt={setTaskDue}
+                            saving={savingTask}
+                            onSubmit={createTask}
+                            onCancel={() => {
+                                setShowTaskForm(false);
+                                setTaskTitle('');
+                                setTaskDesc('');
+                                setTaskDue('');
+                            }}
+                        />
                     )}
                     {tasksSWR.isLoading && !tasksSWR.data ? (
                         <SkeletonCard lines={4} />
