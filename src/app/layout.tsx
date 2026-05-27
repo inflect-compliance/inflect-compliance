@@ -63,8 +63,37 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     cryptographically random).
                 */}
                 {nonce && (
+                    /*
+                        2026-05-27 — `suppressHydrationWarning` is
+                        LOAD-BEARING. Browsers strip the `nonce`
+                        attribute from DOM elements AFTER CSP
+                        processing (HTML spec — `nonce` is a one-
+                        time secret that must never be readable
+                        from JavaScript). React's hydration then
+                        compares the SSR-emitted `nonce="…"` to the
+                        client-visible `nonce=""` and emits a noisy
+                        console error: "tree hydrated but some
+                        attributes didn't match. This won't be
+                        patched up."
+                        Hydration itself succeeds (the bridge sets
+                        `__webpack_nonce__` before any chunk
+                        loads), but headless QA tools that abort on
+                        the first console error misinterpret this
+                        as a hard hydration failure — see the
+                        2026-05-25 QA pass that marked Sidebar /
+                        Forms / Mobile sections as BLOCKED due to
+                        "JS hydration failure".
+                        `suppressHydrationWarning` is the canonical
+                        React fix (https://react.dev/link/
+                        hydration-mismatch). It tells React: "this
+                        attribute will legitimately differ between
+                        server and client — don't warn." Zero CSP
+                        change; nonce stays applied for browser
+                        enforcement.
+                    */
                     <script
                         nonce={nonce}
+                        suppressHydrationWarning
                         dangerouslySetInnerHTML={{
                             __html: `window.__webpack_nonce__=${JSON.stringify(nonce)};globalThis.__webpack_nonce__=${JSON.stringify(nonce)};`,
                         }}
