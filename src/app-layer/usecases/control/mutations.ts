@@ -12,6 +12,8 @@ import { restoreEntity, purgeEntity } from '../soft-delete-operations';
 import { assertCanAdmin } from '../../policies/common';
 import { bumpEntityCacheVersion } from '@/lib/cache/list-cache';
 import { assertWithinLimit } from '@/lib/billing/entitlements';
+import { createAssignmentNotification } from '../../notifications/assignment';
+import { logger } from '@/lib/observability/logger';
 
 // ─── Create / Update ───
 
@@ -220,6 +222,39 @@ export async function setControlOwner(ctx: RequestContext, id: string, ownerUser
         return control;
     });
     await bumpEntityCacheVersion(ctx, 'control');
+
+    // PR-A 2026-05-27 — in-app CONTROL_ASSIGNED bell notification
+    // for the new owner. Pre-PR-A the ownership transfer wrote
+    // only an audit row; the new owner had no in-product alert.
+    //
+    // Runs AFTER the parent transaction commits, in its own short
+    // `runInTenantContext` — a notification write must never roll
+    // back the ownership change. Idempotent via the
+    // `(tenantId, CONTROL_ASSIGNED, controlId, userId, date)`
+    // dedupeKey so rapid re-assigns within one day collapse to a
+    // single bell entry. Fire-and-forget — logged + swallowed on
+    // failure, never surfaces to the caller.
+    if (ownerUserId && ctx.tenantSlug) {
+        const tenantSlug = ctx.tenantSlug;
+        try {
+            await runInTenantContext(ctx, (db) =>
+                createAssignmentNotification(db, 'CONTROL_ASSIGNED', {
+                    tenantId: ctx.tenantId,
+                    assigneeUserId: ownerUserId,
+                    entityId: id,
+                    entityLabel: result.name ?? '(untitled)',
+                    entityKey: result.code ?? null,
+                    tenantSlug,
+                }),
+            );
+        } catch (err) {
+            logger.warn('failed to create control-assigned notification', {
+                component: 'notifications',
+                controlId: id,
+                error: err instanceof Error ? err.message : String(err),
+            });
+        }
+    }
     return result;
 }
 

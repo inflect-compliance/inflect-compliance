@@ -437,6 +437,11 @@ enum NotificationType {
   FINDING_ASSIGNED
   FINDING_VERIFIED
   TASK_ASSIGNED
+  // 2026-05-27 — fired by `setControlOwner` (mutations.ts) when
+  // ownership transfers. Mirrors the TASK_ASSIGNED contract:
+  // one in-app notification per (control, new owner, day) pair,
+  // routed to the bell. Email + SSE follow the same dedup.
+  CONTROL_ASSIGNED
   // Fired by the `task-due-notification` job at 08:00 UTC. One
   // notification per task at each of three reminder windows — one
   // week before, one day before, and on the calendar day the
