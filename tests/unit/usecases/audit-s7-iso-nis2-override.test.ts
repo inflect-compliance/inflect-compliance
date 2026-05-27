@@ -43,20 +43,24 @@ const mockRunInTx = runInTenantContext as jest.MockedFunction<
 >;
 
 function makeRequestContext(): RequestContext {
+    // Test mock: the shape diverges from the production
+    // RequestContext (role enum, permission-set shape), so the
+    // double-cast through `unknown` is required by tsconfig's
+    // strict overlap check.
     return {
         tenantId: "tenant-1",
         userId: "user-1",
-        role: "ADMIN" as never,
-        permissions: ["audit.read", "audit.view_pack"] as never,
+        role: "ADMIN",
+        permissions: ["audit.read", "audit.view_pack"],
         appPermissions: {
             policies: { read: true, write: true, delete: true, admin: true },
             controls: { read: true, write: true, delete: true, admin: true },
             risks: { read: true, write: true, delete: true, admin: true },
             evidence: { read: true, write: true, delete: true, admin: true },
-            audits: { read: true, write: true, delete: true, admin: true, view_pack: true } as never,
-            settings: { read: true, write: true } as never,
-        } as never,
-    } as RequestContext;
+            audits: { read: true, write: true, delete: true, admin: true, view_pack: true },
+            settings: { read: true, write: true },
+        },
+    } as unknown as RequestContext;
 }
 
 beforeEach(() => {
@@ -134,7 +138,7 @@ describe("Audit S7 — computeISO27001Readiness honours the override", () => {
 
         // The breakdown's `weight` fields must equal the override, not
         // the hardcoded defaults.
-        const b = result.breakdown as Record<string, { weight: number }>;
+        const b = result.breakdown as unknown as Record<string, { weight: number }>;
         expect(b.coverage.weight).toBe(0.5);
         expect(b.implementation.weight).toBe(0.1);
         expect(b.evidence.weight).toBe(0.3);
@@ -201,7 +205,7 @@ describe("Audit S7 — computeISO27001Readiness honours the override", () => {
         );
 
         const result = await computeReadiness(makeRequestContext(), "c1");
-        const b = result.breakdown as Record<string, { weight: number }>;
+        const b = result.breakdown as unknown as Record<string, { weight: number }>;
 
         // Falls back to the hardcoded defaults.
         expect(b.coverage.weight).toBe(ISO_WEIGHTS.coverage);
@@ -271,7 +275,7 @@ describe("Audit S7 — computeNIS2Readiness honours the override", () => {
         );
 
         const result = await computeReadiness(makeRequestContext(), "c1");
-        const b = result.breakdown as Record<string, { weight: number }>;
+        const b = result.breakdown as unknown as Record<string, { weight: number }>;
 
         expect(b.coverage.weight).toBe(0.5);
         expect(b.evidence.weight).toBe(0.2);
