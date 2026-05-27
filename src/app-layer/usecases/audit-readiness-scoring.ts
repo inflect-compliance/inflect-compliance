@@ -339,6 +339,16 @@ async function computeGenericReadiness(
 async function computeISO27001Readiness(ctx: RequestContext, cycle: AuditCycle): Promise<ReadinessResult> {
     const gaps: ReadinessGap[] = [];
 
+    // Audit S7 — route through the per-tenant weight override seam.
+    // Pre-S7 this function read `ISO_WEIGHTS` directly, so the
+    // helper added during Audit S5 only applied to GENERIC frameworks
+    // — the Tenant.readinessWeightsJson override was silently
+    // ignored for ISO27001 + NIS2. Wiring the load through the
+    // helper means the operator-facing override surface (which
+    // already accepts framework-keyed weights) finally applies
+    // uniformly.
+    const weights = await loadEffectiveWeights(ctx, 'ISO27001', ISO_WEIGHTS);
+
     // 1) Requirement coverage
     const fw = await runInTenantContext(ctx, (tdb) => tdb.framework.findFirst({ where: { key: 'ISO27001' } }));
     let totalReqs = 0;
@@ -440,24 +450,25 @@ async function computeISO27001Readiness(ctx: RequestContext, cycle: AuditCycle):
         title: i.title, details: `Severity: ${i.severity}`, entityId: i.id,
     }));
 
-    // Weighted score
+    // Weighted score — Audit S7 reads `weights` instead of the
+    // raw `ISO_WEIGHTS` constant so a per-tenant override applies.
     const score = Math.round(
-        coverageScore * ISO_WEIGHTS.coverage +
-        implScore * ISO_WEIGHTS.implementation +
-        evidenceScore * ISO_WEIGHTS.evidence +
-        taskScore * ISO_WEIGHTS.tasks +
-        issueScore * ISO_WEIGHTS.issues
+        coverageScore * weights.coverage +
+        implScore * weights.implementation +
+        evidenceScore * weights.evidence +
+        taskScore * weights.tasks +
+        issueScore * weights.issues
     );
 
     return {
         frameworkKey: 'ISO27001',
         score: Math.min(100, Math.max(0, score)),
         breakdown: {
-            coverage: { score: Math.round(coverageScore), weight: ISO_WEIGHTS.coverage, mapped: mappedReqs, total: totalReqs },
-            implementation: { score: Math.round(implScore), weight: ISO_WEIGHTS.implementation, implemented: implementedControls, total: totalControls },
-            evidence: { score: Math.round(evidenceScore), weight: ISO_WEIGHTS.evidence, withEvidence, total: totalControls },
-            tasks: { score: Math.round(taskScore), weight: ISO_WEIGHTS.tasks, overdue: overdueCount },
-            issues: { score: Math.round(issueScore), weight: ISO_WEIGHTS.issues, open: issueCount },
+            coverage: { score: Math.round(coverageScore), weight: weights.coverage, mapped: mappedReqs, total: totalReqs },
+            implementation: { score: Math.round(implScore), weight: weights.implementation, implemented: implementedControls, total: totalControls },
+            evidence: { score: Math.round(evidenceScore), weight: weights.evidence, withEvidence, total: totalControls },
+            tasks: { score: Math.round(taskScore), weight: weights.tasks, overdue: overdueCount },
+            issues: { score: Math.round(issueScore), weight: weights.issues, open: issueCount },
         },
         gaps,
         recommendations: generateISO27001Recommendations(coverageScore, implScore, evidenceScore, overdueCount, issueCount),
@@ -469,6 +480,11 @@ async function computeISO27001Readiness(ctx: RequestContext, cycle: AuditCycle):
 
 async function computeNIS2Readiness(ctx: RequestContext, cycle: AuditCycle): Promise<ReadinessResult> {
     const gaps: ReadinessGap[] = [];
+
+    // Audit S7 — see the matching comment in computeISO27001Readiness
+    // for the rationale. The per-tenant override seam now applies to
+    // NIS2 as well as ISO27001 and GENERIC.
+    const weights = await loadEffectiveWeights(ctx, 'NIS2', NIS2_WEIGHTS);
 
     // 1) Requirement coverage
     const fw = await runInTenantContext(ctx, (tdb) => tdb.framework.findFirst({ where: { key: 'NIS2' } }));
@@ -580,20 +596,20 @@ async function computeNIS2Readiness(ctx: RequestContext, cycle: AuditCycle): Pro
     }));
 
     const score = Math.round(
-        coverageScore * NIS2_WEIGHTS.coverage +
-        evidenceScore * NIS2_WEIGHTS.evidence +
-        policyScore * NIS2_WEIGHTS.policies +
-        issueScore * NIS2_WEIGHTS.issues
+        coverageScore * weights.coverage +
+        evidenceScore * weights.evidence +
+        policyScore * weights.policies +
+        issueScore * weights.issues
     );
 
     return {
         frameworkKey: 'NIS2',
         score: Math.min(100, Math.max(0, score)),
         breakdown: {
-            coverage: { score: Math.round(coverageScore), weight: NIS2_WEIGHTS.coverage, mapped: mappedReqs, total: totalReqs },
-            evidence: { score: Math.round(evidenceScore), weight: NIS2_WEIGHTS.evidence, withEvidence, total: totalControls },
-            policies: { score: Math.round(policyScore), weight: NIS2_WEIGHTS.policies, found: foundPolicies, expected: expectedPolicies },
-            issues: { score: Math.round(issueScore), weight: NIS2_WEIGHTS.issues, open: issueCount },
+            coverage: { score: Math.round(coverageScore), weight: weights.coverage, mapped: mappedReqs, total: totalReqs },
+            evidence: { score: Math.round(evidenceScore), weight: weights.evidence, withEvidence, total: totalControls },
+            policies: { score: Math.round(policyScore), weight: weights.policies, found: foundPolicies, expected: expectedPolicies },
+            issues: { score: Math.round(issueScore), weight: weights.issues, open: issueCount },
         },
         gaps,
         recommendations: generateNIS2Recommendations(coverageScore, evidenceScore, policyScore, issueCount),

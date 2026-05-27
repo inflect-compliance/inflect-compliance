@@ -142,7 +142,18 @@ describe('computeReadiness — evidence query excludes archived/deleted', () => 
         mockRunInTx.mockImplementationOnce(async () =>
             ({ id: 'c1', frameworkKey: 'ISO27001' }) as never,
         );
-        // 2. framework lookup
+        // 2. loadEffectiveWeights — Audit S7 added this lookup
+        //    at the top of computeISO27001Readiness (mirrored in
+        //    NIS2 + GENERIC). The mock returns no override so the
+        //    function falls back to the hardcoded defaults.
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({
+                tenant: {
+                    findUnique: jest.fn().mockResolvedValue(null),
+                },
+            } as never),
+        );
+        // 3. framework lookup
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({
                 framework: { findFirst: jest.fn().mockResolvedValue({ id: 'fw-iso' }) },
@@ -230,6 +241,14 @@ describe('CSV export — RFC 4180 escaping + audit emit', () => {
         mockRunInTx.mockImplementationOnce(async () =>
             ({ id: 'c1', frameworkKey: 'ISO27001' }) as never,
         );
+        // Audit S7 — loadEffectiveWeights tenant lookup.
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({
+                tenant: {
+                    findUnique: jest.fn().mockResolvedValue(null),
+                },
+            } as never),
+        );
         // Framework lookup — null disables coverage path
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({
@@ -279,6 +298,14 @@ describe('CSV export — RFC 4180 escaping + audit emit', () => {
         mockRunInTx.mockImplementationOnce(async () =>
             ({ id: 'c1', frameworkKey: 'NIS2' }) as never,
         );
+        // Audit S7 — loadEffectiveWeights tenant lookup (NIS2).
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({
+                tenant: {
+                    findUnique: jest.fn().mockResolvedValue(null),
+                },
+            } as never),
+        );
         // Framework lookup — null
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({
@@ -321,6 +348,14 @@ describe('exportReadinessJson — audit emit', () => {
         // Same chain as exportUnmappedCsv ISO path.
         mockRunInTx.mockImplementationOnce(async () =>
             ({ id: 'c1', frameworkKey: 'ISO27001' }) as never,
+        );
+        // Audit S7 — loadEffectiveWeights tenant lookup.
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({
+                tenant: {
+                    findUnique: jest.fn().mockResolvedValue(null),
+                },
+            } as never),
         );
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({
