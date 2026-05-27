@@ -42,6 +42,7 @@ import { Bell, CheckCheck } from 'lucide-react';
 import { Popover } from '@/components/ui/popover';
 import { EmptyState } from '@/components/ui/empty-state';
 import { formatDateCompact } from '@/lib/format-date';
+import { env } from '@/env';
 import { NAV_BAR_SLOT_PRESS } from './nav-bar';
 
 // ─── Types ─────────────────────────────────────────────────────────
@@ -173,9 +174,7 @@ export function NotificationsBell() {
         // never lets the page settle. Flip when the client integration
         // has been manually verified end-to-end (browser → bell →
         // event arriving inside <1s).
-        const sseEnabled =
-            typeof process !== 'undefined' &&
-            process.env.NEXT_PUBLIC_NOTIFICATIONS_SSE === '1';
+        const sseEnabled = env.NEXT_PUBLIC_NOTIFICATIONS_SSE === '1';
         if (sseEnabled && typeof EventSource !== 'undefined') {
             try {
                 es = new EventSource('/api/notifications/stream', {

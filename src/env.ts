@@ -253,7 +253,12 @@ export const env = createEnv({
      * `NEXT_PUBLIC_`.
      */
     client: {
-        // Example: NEXT_PUBLIC_CLIENT_VAR: z.string(),
+        // PR-C 2026-05-27 — opt-in flag for the SSE notification
+        // bell. Off by default (the bell stays on REST polling)
+        // until the client integration is verified end-to-end in
+        // a real browser. Server-side stream is wired regardless;
+        // flipping this to '1' is the only step to engage SSE.
+        NEXT_PUBLIC_NOTIFICATIONS_SSE: z.enum(['0', '1']).optional(),
     },
 
     /**
@@ -327,6 +332,8 @@ export const env = createEnv({
         PLATFORM_ADMIN_API_KEY: process.env.PLATFORM_ADMIN_API_KEY,
         PLATFORM_ADMIN_API_KEY_PREVIOUS: process.env.PLATFORM_ADMIN_API_KEY_PREVIOUS,
         NOTIFICATIONS_TZ: process.env.NOTIFICATIONS_TZ,
+
+        NEXT_PUBLIC_NOTIFICATIONS_SSE: process.env.NEXT_PUBLIC_NOTIFICATIONS_SSE,
     },
     /**
      * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation.

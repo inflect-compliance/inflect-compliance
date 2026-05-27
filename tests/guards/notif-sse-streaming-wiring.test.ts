@@ -143,9 +143,16 @@ describe('PR-C SSE notification streaming wiring', () => {
             // `networkidle` aren't blocked by a long-lived stream.
             // Flip the env var when client integration has been
             // manually verified end-to-end.
+            //
+            // The flag MUST be read via the validated `@/env` module
+            // (zod schema in `src/env.ts`), NOT raw `process.env.X` —
+            // the `no-fallbacks` ratchet bans raw access.
             const s = read(PATH_BELL);
             expect(s).toMatch(
-                /process\.env\.NEXT_PUBLIC_NOTIFICATIONS_SSE === ['"]1['"]/,
+                /env\.NEXT_PUBLIC_NOTIFICATIONS_SSE === ['"]1['"]/,
+            );
+            expect(s).toMatch(
+                /import\s*\{[\s\S]{0,80}env[\s\S]{0,80}\}\s*from\s+['"]@\/env['"]/,
             );
         });
 
