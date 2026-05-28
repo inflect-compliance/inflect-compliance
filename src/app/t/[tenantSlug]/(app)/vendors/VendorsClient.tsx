@@ -311,7 +311,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                                 onClick={() => setIsCreateOpen(true)}
                                 id="new-vendor-btn"
                             >
-                                Create Vendor
+                                Vendor
                             </Button>
                         )}
                     </div>

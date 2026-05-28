@@ -432,7 +432,7 @@ function PoliciesPageInner({
                             }}
                             id="new-policy-btn"
                         >
-                            Create Policy
+                            Policy
                         </Button>
                     </>
                 ) : null,

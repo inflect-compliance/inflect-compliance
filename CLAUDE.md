@@ -840,21 +840,40 @@ stands for that PR only — not as a precedent.
   Forward enforcement at `tests/guards/border-tone-budget.test.ts`
   (budget ratchet that locks the current count and only ratchets
   down).
-- **Action button vocabulary** (PR-5): three verbs, one per intent.
-  Pick the one that matches what the click actually does. Never lead a
-  label with `+ ` — the icon belongs to the button's `icon` slot, not
-  the text.
-    - **`Create {Entity}`** — minting a new top-level entity (`Create
-      Risk`, `Create Asset`, `Create Audit`). Use this for the
-      primary action on a list page's header and for "+ New" replacements.
-    - **`Add {Entity}`** — inserting a child / attaching to a parent
-      (`Add Document` on the vendor detail page, `Add Comment` on a
-      task). The thing being added doesn't exist independently — it's
-      tied to the open entity.
-    - **`Link {Entity}`** — cross-entity association (`Link Risk`,
-      `Link Control`, `Link Asset` on the traceability panel). The
-      thing already exists; you're connecting it.
-  Forward enforcement at `tests/guards/action-label-vocabulary.test.ts`.
+- **Action button vocabulary** (revised 2026-05-28). The label on a
+  primary "create" header button is JUST the entity noun. The `+`
+  glyph rides the `icon` slot — never as text. So an entity list page's
+  header trigger reads:
+
+  ```tsx
+  <Button variant="primary" icon={<Plus />} onClick={…}>Risk</Button>
+  ```
+
+  not `+ Risk` (in text) and not `Create Risk` / `New Risk` / `Add Risk`
+  (verb-prefixed). The verb is dead weight once the Plus glyph is doing
+  the work, and the Button primitive's icon-balance ghost optically
+  centres `[+] Risk` as one symmetric unit.
+
+  Caveats — where verbs still belong:
+    - **Modal/dialog confirm buttons** keep their verbed form
+      (`Create risk`, `Add document`, `Save policy`) — confirmation
+      surfaces need to declare the action, not just the subject.
+    - **Detail-page "+ child entity" affordances** that attach to an
+      open parent ("Add Document" on vendor detail, "Add Comment" on
+      a task) follow this same icon-slot rule, but if you keep a verb
+      it's `Add {Entity}` (the child-attachment register).
+    - **Traceability / cross-entity association** uses
+      `Link {Entity}` (`Link Risk`, `Link Control`) — the verb
+      changes the meaning (associating, not creating).
+
+  Forward enforcement:
+    - `tests/guards/action-label-vocabulary.test.ts` — bans literal
+      `+ Word` text in JSX/source.
+    - `tests/guards/action-button-canonical-entity-label.test.ts` —
+      asserts the canonical entity-page header buttons render
+      `icon={<Plus />}` + bare noun, AND that the header-action
+      i18n keys (`addAsset`, `addRisk`, `addEvidence`, `newAudit`,
+      `newFinding`) hold just the noun, not a verb-prefixed string.
 - **Destructive-action vocabulary** (Roadmap-4 PR-9): every
   `<ConfirmDialog tone="danger">` confirmLabel MUST start with one of
   the canonical verbs below. Pick the one that matches the actual

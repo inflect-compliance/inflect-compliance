@@ -498,7 +498,7 @@ function TasksPageInner({
                                 onClick={() => setIsCreateOpen(true)}
                                 id="new-task-btn"
                             >
-                                Create Task
+                                Task
                             </Button>
                         )}
                     </div>

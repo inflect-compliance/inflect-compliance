@@ -20,6 +20,7 @@ import { NewControlModal } from './NewControlModal';
 import { ControlDetailSheet } from './ControlDetailSheet';
 import { queryKeys } from '@/lib/queryKeys';
 import { AppIcon } from '@/components/icons/AppIcon';
+import { Plus } from '@/components/ui/icons/nucleo';
 import { Paperclip, CheckCircle2, AlertTriangle, X } from 'lucide-react';
 import {
     createColumns,
@@ -978,10 +979,11 @@ function ControlsPageInner({
                                 </Link>
                                 <Button
                                     variant="primary"
+                                    icon={<Plus />}
                                     id="new-control-btn"
                                     onClick={() => setIsCreateOpen(true)}
                                 >
-                                    + Control
+                                    Control
                                 </Button>
                             </>
                         )}
