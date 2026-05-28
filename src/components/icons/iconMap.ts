@@ -43,6 +43,7 @@ import {
     Shield,
     ShieldCheck,
     TestTube,
+    UserCheck,
     XCircle,
     type LucideIcon,
 } from 'lucide-react';
@@ -92,6 +93,7 @@ export type AppIconName =
     | 'tasks'
     | 'templates'
     | 'tests'
+    | 'userCheck'
     | 'versions'
     | 'warning';
 
@@ -140,6 +142,7 @@ export const ICON_MAP: Record<AppIconName, LucideIcon> = {
     tasks: CheckCircle2,
     templates: ClipboardList,
     tests: TestTube,
+    userCheck: UserCheck,
     versions: GitBranch,
     warning: AlertTriangle,
 };

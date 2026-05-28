@@ -18,6 +18,7 @@ import { Heading } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { cardVariants } from '@/components/ui/card';
+import { AppIcon } from '@/components/icons/AppIcon';
 import { cn } from '@dub/utils';
 
 interface TestPlanSummary {
@@ -118,9 +119,18 @@ export default function TestsRollupPage() {
                         <p className="text-sm text-content-muted mt-1">Test plans and recent results across all controls</p>
                     </div>
                     <div className="flex gap-tight">
-                        <Link href={tenantHref('/tests/due')} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>Due Queue</Link>
-                        <Link href={tenantHref('/tests/dashboard')} className={buttonVariants({ variant: 'ghost', size: 'sm' })}>Dashboard</Link>
-                        <Link href={tenantHref('/findings')} className={buttonVariants({ variant: 'ghost', size: 'sm' })} id="findings-link-btn">Findings</Link>
+                        <Link href={tenantHref('/tests/due')} className={buttonVariants({ variant: 'secondary', size: 'sm' })} id="tests-due-btn">
+                            <AppIcon name="clock" size={14} /> Due Queue
+                        </Link>
+                        <Link href={tenantHref('/tests/dashboard')} className={buttonVariants({ variant: 'secondary', size: 'sm' })} id="tests-dashboard-btn">
+                            <AppIcon name="dashboard" size={14} /> Dashboard
+                        </Link>
+                        <Link href={tenantHref('/findings')} className={buttonVariants({ variant: 'secondary', size: 'sm' })} id="findings-link-btn">
+                            <AppIcon name="fileWarning" size={14} /> Findings
+                        </Link>
+                        <Link href={tenantHref('/access-reviews')} className={buttonVariants({ variant: 'secondary', size: 'sm' })} id="tests-uar-btn">
+                            <AppIcon name="userCheck" size={14} /> UAR
+                        </Link>
                     </div>
                 </div>
             </ListPageShell.Header>
