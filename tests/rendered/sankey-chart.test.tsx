@@ -143,17 +143,21 @@ describe('SankeyChart — rendered behaviour', () => {
     it('renders node names + counts at a legible font size', () => {
         const { container } = render(<SankeyChart graph={flowGraph()} />);
         const node = container.querySelector('[data-sankey-node-id="r1"]')!;
-        const texts = Array.from(node.querySelectorAll('text'));
-        expect(texts.length).toBeGreaterThanOrEqual(2); // label + count
+        // Name + count are now ONE <text> with the count in a <tspan>
+        // (so they can't collide). Both carry a font-size.
+        const parts = Array.from(node.querySelectorAll('text, tspan'));
+        expect(parts.length).toBeGreaterThanOrEqual(2); // name + count tspan
 
-        // Every label/count must be ≥ 11px so names + amounts read
-        // (regression guard for the unreadable 9-10px Sankey labels).
-        for (const t of texts) {
-            const size = Number(t.getAttribute('font-size'));
+        // Every name/count is ≥ 11px so names + amounts read (regression
+        // guard for the unreadable 9-10px Sankey labels).
+        const sizes = parts.map((t) => Number(t.getAttribute('font-size')));
+        for (const size of sizes) {
             expect(size).toBeGreaterThanOrEqual(11);
         }
         // The name itself is the larger of the two.
-        const sizes = texts.map((t) => Number(t.getAttribute('font-size')));
         expect(Math.max(...sizes)).toBeGreaterThanOrEqual(12);
+        // The count lives inside the name's text run (single layout) so
+        // the browser spaces it — no hand-computed offset to collide.
+        expect(node.querySelector('text > tspan')).not.toBeNull();
     });
 });

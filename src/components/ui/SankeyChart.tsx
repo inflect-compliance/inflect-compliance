@@ -253,7 +253,10 @@ export function SankeyChart({
             <div
                 data-sankey-scroll="true"
                 className="overflow-auto"
-                style={{ maxHeight: '76vh' }}
+                // `scrollbar-gutter: stable` reserves the scrollbar's
+                // track so it never overlays the right-hand (control)
+                // column when the canvas is taller than the viewport.
+                style={{ maxHeight: '76vh', scrollbarGutter: 'stable' }}
             >
                 <svg
                     role="img"
@@ -402,14 +405,16 @@ function SankeyNodeRect({
             style={{ cursor: node.href ? 'pointer' : 'default' }}
         >
             {node.href ? <Link href={node.href}>{rect}</Link> : rect}
+            {/* Name + count in ONE text run so the count is laid out by
+                the browser after the name with a fixed `dx` gap — they
+                can never collide (the old hand-computed offset did).
+                12px brighter name + 11px tabular-nums count; both tint
+                when the node is active. */}
             <text
                 x={labelOnRight ? node.x - 6 : node.x + node.width + 6}
                 y={node.y + node.height / 2}
                 dy="0.32em"
                 textAnchor={labelOnRight ? 'end' : 'start'}
-                // Readability: brighter `content-default` (was muted),
-                // larger 12px, and a semibold weight when active so the
-                // name actually reads against the bars.
                 className={cn(
                     'fill-content-default',
                     highlighted && 'fill-content-emphasis font-semibold',
@@ -418,27 +423,16 @@ function SankeyNodeRect({
                 pointerEvents="none"
             >
                 {truncate(node.label, 28)}
-            </text>
-            {/* R21-PR-B inline value annotation. Tabular-nums so
-                weights line up across rows; brand-default tint when
-                the node is highlighted or pinned to draw the eye. */}
-            <text
-                x={
-                    labelOnRight
-                        ? node.x - 6 - measureLabel(node.label, 28) * 7
-                        : node.x + node.width + 6 + measureLabel(node.label, 28) * 7
-                }
-                y={node.y + node.height / 2}
-                dy="0.32em"
-                textAnchor={labelOnRight ? 'end' : 'start'}
-                className={cn(
-                    'fill-content-muted font-mono tabular-nums',
-                    highlighted && 'fill-[var(--brand-default)]',
-                )}
-                fontSize={11}
-                pointerEvents="none"
-            >
-                {node.weight}
+                <tspan
+                    dx={8}
+                    className={cn(
+                        'fill-content-muted font-mono tabular-nums',
+                        highlighted && 'fill-[var(--brand-default)]',
+                    )}
+                    fontSize={11}
+                >
+                    {node.weight}
+                </tspan>
             </text>
         </g>
     );
@@ -446,16 +440,6 @@ function SankeyNodeRect({
 
 function truncate(s: string, max: number): string {
     return s.length <= max ? s : s.slice(0, max - 1) + '…';
-}
-
-/**
- * Rough character-count measurement for the inline value-annotation
- * offset. The value is placed just past the label; ~7px per char at
- * fontSize 12 is a hair generous but reads correctly across
- * variable-width fonts (closer than letting the value collide).
- */
-function measureLabel(label: string, max: number): number {
-    return Math.min(label.length, max);
 }
 
 /**

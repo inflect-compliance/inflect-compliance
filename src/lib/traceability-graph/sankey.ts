@@ -265,13 +265,13 @@ export interface SankeyLayout {
 }
 
 const NODE_WIDTH = 16;
-const NODE_GAP = 10;
-// Readability floor: every node bar is at least tall enough that its
-// label (12px) sits on its own row without colliding with neighbours.
-// With fit-to-content sizing the canvas simply grows to fit, so a
-// taller floor never clips — it just makes a busy column scrollable
-// at a legible size.
-const NODE_MIN_HEIGHT = 18;
+// Row pitch = bar height + gap. Readability comes from PITCH, not bar
+// thickness, so keep the bars slim (8px floor, as before — a fat floor
+// read as chunky) and get label breathing room from a generous gap.
+// 8 + 14 = 22px pitch comfortably clears the 12px name labels. With
+// fit-to-content sizing the canvas grows to fit, so this never clips.
+const NODE_GAP = 14;
+const NODE_MIN_HEIGHT = 8;
 const COLUMN_PADDING_TOP = 32;
 const COLUMN_PADDING_BOTTOM = 16;
 
@@ -285,7 +285,12 @@ export function computeSankeyLayout(
         100,
     );
 
-    // Column x-positions: evenly spaced.
+    // Column x-positions: evenly spaced. The leftmost column sits at
+    // x=0 so its labels render to the RIGHT (inward); the rightmost at
+    // width-NODE_WIDTH with labels to the LEFT. (The scroll container's
+    // `scrollbar-gutter: stable` keeps the right column clear of the
+    // scrollbar — no inset needed, which would flip the asset column's
+    // label side and clip it.)
     const colCount = dataset.columns.length;
     const colXs: number[] = [];
     if (colCount === 1) {

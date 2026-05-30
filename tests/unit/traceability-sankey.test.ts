@@ -180,7 +180,10 @@ describe('computeSankeyLayout — column positions', () => {
         expect(lay.columns).toHaveLength(3);
         const xs = lay.columns.map((c) => c.x);
         expect(new Set(xs).size).toBe(3); // all distinct
+        // Leftmost column sits at x=0 so its labels render inward
+        // (right of the bar) instead of clipping off the left edge.
         expect(xs[0]).toBe(0);
+        expect(xs[1]).toBeGreaterThan(xs[0]);
         expect(xs[2]).toBeGreaterThan(xs[1]);
     });
 
