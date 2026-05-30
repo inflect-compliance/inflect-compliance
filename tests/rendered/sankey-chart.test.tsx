@@ -139,4 +139,21 @@ describe('SankeyChart — rendered behaviour', () => {
         fireEvent.click(toggle);
         expect(root).not.toHaveAttribute('data-sankey-fit');
     });
+
+    it('renders node names + counts at a legible font size', () => {
+        const { container } = render(<SankeyChart graph={flowGraph()} />);
+        const node = container.querySelector('[data-sankey-node-id="r1"]')!;
+        const texts = Array.from(node.querySelectorAll('text'));
+        expect(texts.length).toBeGreaterThanOrEqual(2); // label + count
+
+        // Every label/count must be ≥ 11px so names + amounts read
+        // (regression guard for the unreadable 9-10px Sankey labels).
+        for (const t of texts) {
+            const size = Number(t.getAttribute('font-size'));
+            expect(size).toBeGreaterThanOrEqual(11);
+        }
+        // The name itself is the larger of the two.
+        const sizes = texts.map((t) => Number(t.getAttribute('font-size')));
+        expect(Math.max(...sizes)).toBeGreaterThanOrEqual(12);
+    });
 });

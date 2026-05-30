@@ -144,12 +144,12 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    # 25-minute budget. Mirrors the bump applied to the Coverage gate
-    # in v2-PR-1 — the unit + integration suite has been hitting the
-    # previous 15-minute ceiling on PRs that touch many primitives
-    # (v2-PR-8 cancelled at 15m16s). Both jobs run effectively the
-    # same suite; keeping their budgets aligned.
-    timeout-minutes: 25
+    # 35-minute budget. The unit + integration + guards + contracts
+    # suite now runs ~24-25m on its own, so the prior 25m ceiling left
+    # no headroom — it cancelled at ~25m on back-to-back runs (#770,
+    # #774) even though every test passed. Bumped to 35m so normal
+    # runtime variance no longer trips the job timeout.
+    timeout-minutes: 35
 
     env:
       DATABASE_URL: postgresql://ci:ci_password@localhost:5432/ci_testdb?schema=public

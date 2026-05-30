@@ -403,15 +403,21 @@ function SankeyNodeRect({
         >
             {node.href ? <Link href={node.href}>{rect}</Link> : rect}
             <text
-                x={labelOnRight ? node.x - 4 : node.x + node.width + 4}
+                x={labelOnRight ? node.x - 6 : node.x + node.width + 6}
                 y={node.y + node.height / 2}
                 dy="0.32em"
                 textAnchor={labelOnRight ? 'end' : 'start'}
-                className="fill-content-muted"
-                fontSize={10}
+                // Readability: brighter `content-default` (was muted),
+                // larger 12px, and a semibold weight when active so the
+                // name actually reads against the bars.
+                className={cn(
+                    'fill-content-default',
+                    highlighted && 'fill-content-emphasis font-semibold',
+                )}
+                fontSize={12}
                 pointerEvents="none"
             >
-                {truncate(node.label, 24)}
+                {truncate(node.label, 28)}
             </text>
             {/* R21-PR-B inline value annotation. Tabular-nums so
                 weights line up across rows; brand-default tint when
@@ -419,17 +425,17 @@ function SankeyNodeRect({
             <text
                 x={
                     labelOnRight
-                        ? node.x - 4 - measureLabel(node.label, 24) * 5.5
-                        : node.x + node.width + 4 + measureLabel(node.label, 24) * 5.5
+                        ? node.x - 6 - measureLabel(node.label, 28) * 7
+                        : node.x + node.width + 6 + measureLabel(node.label, 28) * 7
                 }
                 y={node.y + node.height / 2}
                 dy="0.32em"
                 textAnchor={labelOnRight ? 'end' : 'start'}
                 className={cn(
-                    'fill-content-subtle font-mono tabular-nums',
+                    'fill-content-muted font-mono tabular-nums',
                     highlighted && 'fill-[var(--brand-default)]',
                 )}
-                fontSize={9}
+                fontSize={11}
                 pointerEvents="none"
             >
                 {node.weight}
@@ -444,8 +450,8 @@ function truncate(s: string, max: number): string {
 
 /**
  * Rough character-count measurement for the inline value-annotation
- * offset. The value is placed just past the label; 5.5px per char
- * at fontSize 10 is a hair generous but reads correctly across
+ * offset. The value is placed just past the label; ~7px per char at
+ * fontSize 12 is a hair generous but reads correctly across
  * variable-width fonts (closer than letting the value collide).
  */
 function measureLabel(label: string, max: number): number {

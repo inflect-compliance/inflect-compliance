@@ -242,8 +242,8 @@ describe('computeSankeyLayout — node sizing', () => {
     });
 
     it('grows the canvas height to fit a busy column (fit-to-content, no clip)', () => {
-        // 40 assets all flowing into one risk. At the 8px node floor +
-        // 8px gaps the column stacks well past a 480px canvas; the
+        // 40 assets all flowing into one risk. At the per-node min
+        // height + gaps the column stacks well past a 480px canvas; the
         // layout must report a height tall enough to contain it so the
         // SVG viewBox does not silently clip the lower nodes.
         const assets = Array.from({ length: 40 }, (_, i) => n(`a${i}`, 'asset'));
