@@ -2,26 +2,29 @@
  * Filter-scoped page search — live box required, bare inputs banned.
  *
  * History: Roadmap-14 PR-7 retired the per-page FilterToolbar search
- * input in favour of ⌘K. That was REVERSED (2026-05-30) on the user
- * directive: "when typing in the filter, search content should appear
- * as you type, no need to press enter — valid for all pages with a
- * filter above the table." List pages now carry a LIVE filter-scoped
- * search box again.
+ * input in favour of ⌘K. That was REVERSED (2026-05-30): "search
+ * content should appear as you type, no need to press enter — valid
+ * for all pages with a filter above the table." A first pass added a
+ * standalone search bar; the user then directed that the search live
+ * INSIDE the filter bar itself, not in a separate bar. So the search
+ * now happens within the Filter dropdown.
  *
  * The two canonical search affordances:
  *
  *   • `<FilterToolbar searchPlaceholder="...">` — per-page filter-
- *     scoped LIVE search (debounced, no Enter). Lives WITH the rest
- *     of the page's filters, wired through the FilterProvider state.
- *     REQUIRED on every standard list page (see
- *     LIST_PAGES_REQUIRE_SEARCH).
+ *     scoped LIVE search that lives INSIDE the Filter dropdown: opening
+ *     the Filter popover and typing in its top input filters the table
+ *     (debounced, no Enter). `searchPlaceholder` is the opt-in that
+ *     turns the dropdown's top input into the content search; it is
+ *     REQUIRED on every standard list page (LIST_PAGES_REQUIRE_SEARCH).
+ *     There is NO separate search bar.
  *
  *   • The global command palette (⌘K) — cross-page navigation +
  *     search. Triggered via `<SearchAnchor>` in the top-bar.
  *
- * The bare-`<input>` ban below survives the reversal: page-level
- * search must go through the FilterToolbar primitive, never a
- * hand-rolled `<input type="search">`.
+ * The bare-`<input>` ban below stands: page-level search must go
+ * through the FilterToolbar primitive, never a hand-rolled
+ * `<input type="search">`.
  *
  * What this ratchet bans:
  *
@@ -166,7 +169,7 @@ describe('Live filter-scoped search on list pages', () => {
         }
         if (missing.length > 0) {
             throw new Error(
-                `${missing.length} list page(s) are missing a FilterToolbar \`searchPlaceholder\` live-search box. Each list page must wire \`searchId\` + \`searchPlaceholder\` so typing filters the table live. Missing:\n${missing.map((m) => `  ${m}`).join('\n')}`,
+                `${missing.length} list page(s) are missing a FilterToolbar \`searchPlaceholder\`. Each list page must wire \`searchId\` + \`searchPlaceholder\` so the Filter dropdown's top input becomes a live content search (typing filters the table). Missing:\n${missing.map((m) => `  ${m}`).join('\n')}`,
             );
         }
         expect(missing).toEqual([]);

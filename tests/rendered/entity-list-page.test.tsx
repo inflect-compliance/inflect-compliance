@@ -165,8 +165,13 @@ describe('EntityListPage — filters', () => {
                 />
             </FilterShell>,
         );
-        // The FilterToolbar's search input gets the configured id.
-        expect(document.getElementById('sample-search')).not.toBeNull();
+        // The FilterToolbar renders its filter trigger. Search lives
+        // INSIDE this dropdown (no standalone bar) — the configured
+        // search input only mounts once the popover is opened.
+        expect(
+            document.querySelector('[data-filter-trigger]'),
+        ).not.toBeNull();
+        expect(document.getElementById('sample-search')).toBeNull();
     });
 
     it('omits FilterToolbar entirely when filters prop is not supplied', () => {
@@ -182,8 +187,8 @@ describe('EntityListPage — filters', () => {
                 />
             </FilterShell>,
         );
-        // No search input was rendered.
-        expect(document.querySelector('[id$="-search"]')).toBeNull();
+        // No filter toolbar at all.
+        expect(document.querySelector('[data-filter-trigger]')).toBeNull();
     });
 });
 

@@ -20,14 +20,15 @@
  * the pattern).
  *
  * Keyboard / a11y: the shared FilterSelect carries the `f` shortcut, Escape
- * cascade, and keyboard-driven option navigation. The search input uses
- * `type="search"` so browsers expose a clear affordance. Search is LIVE —
- * the draft propagates to the committed query on a short debounce so the
- * table filters as you type (no Enter required); Enter / blur still commit
- * immediately for users who expect them.
+ * cascade, and keyboard-driven option navigation. Free-text search lives
+ * INSIDE the filter dropdown — there is no separate search bar. When a page
+ * passes `searchPlaceholder`, the Filter popover's top input becomes a LIVE
+ * content search (typing filters the table on a short debounce, no Enter)
+ * and the filter categories stay listed below it. Pages without
+ * `searchPlaceholder` keep the classic category-only picker.
  */
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import {
     Filter as FilterUI,
     filterStateToActiveFilters,
@@ -134,21 +135,26 @@ export function FilterToolbar({
     const ctx = useFilters();
     const { remove, removeAll, clearAll, search, setSearch, state } = ctx;
 
-    // Local draft keeps typing instant; the committed `search` (which
-    // drives the URL + data fetch) is updated on a short debounce so the
-    // table filters live without firing a request on every keystroke.
-    const [draft, setDraft] = useState(search);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    useEffect(() => setDraft(search), [search]);
+    // Live content search lives INSIDE the filter dropdown — typing in the
+    // Filter popover's top input filters the table on a ~250ms debounce
+    // (no Enter, no separate search bar). Only wired when the page opts in
+    // via `searchPlaceholder`.
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const handleSearchChange = useCallback(
+        (value: string) => {
+            if (debounceRef.current) clearTimeout(debounceRef.current);
+            debounceRef.current = setTimeout(() => setSearch(value), 250);
+        },
+        [setSearch],
+    );
+    useEffect(
+        () => () => {
+            if (debounceRef.current) clearTimeout(debounceRef.current);
+        },
+        [],
+    );
 
-    // Live search: propagate the draft to the committed query ~250ms after
-    // the last keystroke. Enter / blur bypass the debounce and commit now.
-    useEffect(() => {
-        if (draft === search) return;
-        const id = setTimeout(() => setSearch(draft), 250);
-        return () => clearTimeout(id);
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on `draft`; `setSearch`/`search` re-running the timer would reset it mid-type.
-    }, [draft]);
+    const searchEnabled = Boolean(searchPlaceholder);
 
     const activeFilters: ActiveFilter[] = useMemo(
         () => filterStateToActiveFilters(state),
@@ -158,29 +164,16 @@ export function FilterToolbar({
     return (
         <div className={`flex flex-wrap items-start gap-compact${className ? ` ${className}` : ''}`}>
             <div className="flex flex-wrap items-center gap-tight">
-                {searchPlaceholder && (
-                    <input
-                        id={searchId}
-                        type="search"
-                        className="input w-full sm:w-64 text-sm"
-                        placeholder={searchPlaceholder}
-                        value={draft}
-                        onChange={(e) => setDraft(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                setSearch(draft);
-                            }
-                        }}
-                        onBlur={() => { if (draft !== search) setSearch(draft); }}
-                    />
-                )}
                 <FilterUI.Select
                     filters={filters}
                     activeFilters={activeFilters}
                     onSelect={(key, value) => dispatchOnSelect(filters, ctx, String(key), value as string | string[])}
                     onRemove={(key, value) => remove(String(key), String(value))}
                     onRemoveFilter={(key) => removeAll(String(key))}
+                    searchId={searchEnabled ? searchId : undefined}
+                    searchPlaceholder={searchEnabled ? searchPlaceholder : undefined}
+                    searchValue={searchEnabled ? search : undefined}
+                    onSearchChange={searchEnabled ? handleSearchChange : undefined}
                     className="h-9"
                 >
                     {triggerLabel ?? 'Filter'}
