@@ -265,8 +265,13 @@ export interface SankeyLayout {
 }
 
 const NODE_WIDTH = 16;
-const NODE_GAP = 8;
-const NODE_MIN_HEIGHT = 8;
+const NODE_GAP = 10;
+// Readability floor: every node bar is at least tall enough that its
+// label (12px) sits on its own row without colliding with neighbours.
+// With fit-to-content sizing the canvas simply grows to fit, so a
+// taller floor never clips — it just makes a busy column scrollable
+// at a legible size.
+const NODE_MIN_HEIGHT = 18;
 const COLUMN_PADDING_TOP = 32;
 const COLUMN_PADDING_BOTTOM = 16;
 
