@@ -167,7 +167,7 @@ export default function LinkedTasksPanel({
                                     {task.key}
                                 </span>
                             )}
-                            <span className="flex-1 text-white truncate">
+                            <span className="flex-1 text-content-emphasis truncate">
                                 {task.title}
                             </span>
                             <StatusBadge
