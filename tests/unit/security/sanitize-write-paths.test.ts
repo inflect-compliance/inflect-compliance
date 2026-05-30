@@ -47,6 +47,10 @@ const mockFindingGetById = jest.fn();
 
 const mockRiskCreate = jest.fn();
 const mockRiskUpdate = jest.fn();
+// updateRisk reads the prior owner via getById before writing (to fire
+// the assignment notification only on an actual change). Returns
+// undefined by default → previousOwnerId resolves to null.
+const mockRiskGetById = jest.fn();
 const mockRiskTemplateGet = jest.fn();
 const mockTenantFindUnique = jest.fn();
 
@@ -104,6 +108,7 @@ jest.mock('@/app-layer/repositories/RiskRepository', () => ({
     RiskRepository: {
         create: (...a: unknown[]) => mockRiskCreate(...a),
         update: (...a: unknown[]) => mockRiskUpdate(...a),
+        getById: (...a: unknown[]) => mockRiskGetById(...a),
     },
 }));
 
