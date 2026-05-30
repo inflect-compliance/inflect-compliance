@@ -89,11 +89,12 @@ describe('SankeyChart — rendered behaviour', () => {
         expect(screen.getByRole('img', { name: /traceability flow/i })).toBeInTheDocument();
     });
 
-    it('renders a legend entry for each node kind present in the graph', () => {
+    it('renders the plain column header for each tier present (restored pre-#536 look)', () => {
         render(<SankeyChart graph={flowGraph()} />);
-        expect(screen.getByText('Asset')).toBeInTheDocument();
-        expect(screen.getByText('Risk')).toBeInTheDocument();
-        expect(screen.getByText('Control')).toBeInTheDocument();
+        // The column header uses the dataset's plural column labels.
+        expect(screen.getByText('Assets')).toBeInTheDocument();
+        expect(screen.getByText('Risks')).toBeInTheDocument();
+        expect(screen.getByText('Controls')).toBeInTheDocument();
     });
 
     it('pins a node on click and unpins it on a second click', () => {

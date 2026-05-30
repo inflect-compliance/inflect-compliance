@@ -1,69 +1,38 @@
 'use client';
 
 /**
- * Roadmap-21 PR-B — Sankey rebuild on the R16 chart-token family.
+ * Cross-tier traceability Sankey (assets → risks → controls).
  *
- * Why this rebuild. The Epic 47.3 SVG Sankey shipped with hard-
- * coded hex colours per kind (amber-300 / rose-300 / sky-300 / …).
- * Useful at the time, but it left the Sankey speaking a different
- * colour vocabulary from every other chart on the dashboard. R16
- * established the `--chart-series-{1..6}-start/-end` token family
- * + `<ChartLinearGradient>` defs as the canonical chart-fill
- * mechanism; the donut, line, radar, gantt, and (now) heatmaps
- * all share it. R21 PR-B brings the Sankey in.
+ * 2026-05-30 — restored the pre-#536 visual design on user request:
+ * the R21-PR-B rebuild had swapped the flat per-kind colours for
+ * washed `<ChartLinearGradient>` fills + a swatch legend, which read
+ * as lower-contrast and harder to scan. This version brings back the
+ * flat, high-contrast look:
  *
- * What changes from the Epic 47.3 baseline:
+ *   1. Each kind paints as ONE flat colour (`kindColor`) — still via
+ *      the R16 `--chart-series-{N}-start` tokens, so it remains
+ *      theme-aware (flips dark↔light), but solid rather than a
+ *      gradient. No raw hex; no separate colour vocabulary.
  *
- *   1. KIND_SERIES maps each `TraceabilityNodeKind` to a chart-
- *      series index. Preserves the visual identity (amber/rose/
- *      cyan/green/violet) while routing through the token system
- *      so dark/light theme switches and any future token tuning
- *      flow automatically.
+ *   2. A plain column header (kind label + node count + a small flat
+ *      swatch) replaces the gradient `<ChartLegend>`.
  *
- *   2. Links and nodes paint via `url(#gradient-id)` referencing
- *      `<ChartLinearGradient>` defs at the top of the SVG. The
- *      link stroke gradient runs horizontally (135° equivalent
- *      via `direction="horizontal"`), giving each flow a felt
- *      "movement" direction.
+ *   3. Retained from PR-B (orthogonal to the colour revert): the
+ *      hover-pop (highlighted links thicken + brighten, others dim),
+ *      click-isolate (click a node to PIN the highlight, ESC/empty-
+ *      canvas-click to unpin), and the inline `node.weight`
+ *      annotation next to each label.
  *
- *   3. Hover-pop: hovered links lift to a higher stroke-width and
- *      reset their opacity. Non-hovered links dim to 0.05 (was
- *      already there, retained). The hovered-node's INBOUND and
- *      OUTBOUND links both stay lit.
- *
- *   4. Click-isolate: clicking a node PINS the highlight state
- *      so the user can read connections without hover-tracking.
- *      Clicking the same node again (or anywhere else) unpins.
- *      ESC also unpins for keyboard users.
- *
- *   5. `<ChartLegend variant="series">` (R21-PR-A primitive)
- *      replaces the bare-text column header. The legend swatches
- *      paint with the same gradient defs the nodes use, so the
- *      legend is visually CONTINUOUS with the chart — not two
- *      separate colour vocabularies that happen to match.
- *
- *   6. Node values surface inline. The Epic 47.3 layout already
- *      exposed `node.weight`; PR-B promotes it from a tooltip
- *      `<title>` to a small inline annotation next to the label.
- *
- * Out of scope for PR-B (deliberate):
- *   - The layout helper (`computeSankeyLayout`) is unchanged.
- *     R21 PR-D's funnel work and PR-C's heatmap work both leave
- *     their layout helpers untouched; the contract is "redesign
- *     the surface, not the geometry".
- *   - No new dependencies. d3-sankey is still rejected on bundle
- *     grounds (see the Epic 47.3 doc-block).
+ * The layout helper (`computeSankeyLayout`) is unchanged here — the
+ * fit-to-content sizing + readability work lands in follow-up PRs.
+ * No new dependencies (d3-sankey still rejected on bundle grounds).
  */
 
 import { useCallback, useMemo, useState } from 'react';
 import { cn } from '@dub/utils';
 import Link from 'next/link';
 import { cardVariants } from '@/components/ui/card';
-import {
-    ChartLegend,
-    ChartLinearGradient,
-    type ChartSeriesIndex,
-} from '@/components/ui/charts';
+import { type ChartSeriesIndex } from '@/components/ui/charts';
 import { useKeyboardShortcut } from '@/lib/hooks/use-keyboard-shortcut';
 import {
     type LaidOutLink,
@@ -119,6 +88,15 @@ const KIND_LABEL: Record<TraceabilityNodeKind, string> = {
     policy: 'Policy',
 };
 
+// Flat per-kind fill. Restores the pre-#536 look: each kind reads as
+// one distinct, high-contrast colour rather than a washed gradient.
+// Implemented with the R16 chart-series tokens (the `-start` stop is
+// the brighter hue) so it still flips dark↔light with the theme — no
+// raw hex, no theme regression.
+function kindColor(kind: TraceabilityNodeKind): string {
+    return `var(--chart-series-${KIND_SERIES[kind]}-start)`;
+}
+
 // ─── Component ─────────────────────────────────────────────────────────
 
 const DEFAULT_WIDTH = 960;
@@ -172,14 +150,6 @@ export function SankeyChart({
         [],
     );
 
-    // Which kinds appear in this graph? Drives both the legend +
-    // the `<defs>` block (we only emit gradients we actually use).
-    const presentKinds = useMemo<TraceabilityNodeKind[]>(() => {
-        const set = new Set<TraceabilityNodeKind>();
-        for (const node of layout.nodes) set.add(node.kind);
-        return Array.from(set);
-    }, [layout.nodes]);
-
     // Empty / no-flow states get a clear message.
     if (dataset.nodes.length === 0) {
         return (
@@ -229,18 +199,34 @@ export function SankeyChart({
                 className,
             )}
         >
-            {/* R21-PR-B: ChartLegend variant=series replaces the
-                Epic 47.3 inline column-text header. The dots paint
-                via the same chart-series gradient defs the nodes
-                consume; legend ↔ chart visually continuous. */}
-            <ChartLegend
-                variant="series"
-                className="mb-2 px-2"
-                series={presentKinds.map((kind) => ({
-                    name: KIND_LABEL[kind],
-                    index: KIND_SERIES[kind],
-                }))}
-            />
+            {/* Plain column header (restored pre-#536): each column's
+                kind label + node count, with a small flat colour swatch
+                matching the bars. Reads as a quiet caption, not a
+                separate colour vocabulary. */}
+            <div
+                data-sankey-legend="true"
+                className="mb-2 grid gap-tight px-2"
+                style={{
+                    gridTemplateColumns: `repeat(${layout.columns.length}, minmax(0, 1fr))`,
+                }}
+            >
+                {layout.columns.map((c) => (
+                    <div
+                        key={c.kind}
+                        className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-content-subtle"
+                    >
+                        <span
+                            aria-hidden
+                            className="inline-block size-2.5 shrink-0 rounded-[2px]"
+                            style={{ backgroundColor: kindColor(c.kind) }}
+                        />
+                        <span className="truncate">{c.label}</span>
+                        <span className="text-content-muted tabular-nums">
+                            ({c.count})
+                        </span>
+                    </div>
+                ))}
+            </div>
 
             <svg
                 role="img"
@@ -255,24 +241,11 @@ export function SankeyChart({
                     }
                 }}
             >
-                {/* R16 chart-series gradients — one def per kind in use. */}
-                <defs>
-                    {presentKinds.map((kind) => (
-                        <ChartLinearGradient
-                            key={kind}
-                            id={`${id}-${kind}-gradient`}
-                            series={KIND_SERIES[kind]}
-                            direction="horizontal"
-                        />
-                    ))}
-                </defs>
-
                 {/* Links painted first so node bars sit on top. */}
                 <g data-sankey-layer="links">
                     {layout.links.map((link) => (
                         <SankeyLinkPath
                             key={link.id}
-                            chartId={id}
                             link={link}
                             isHighlighted={
                                 activeId !== null &&
@@ -291,7 +264,6 @@ export function SankeyChart({
                     {layout.nodes.map((node) => (
                         <SankeyNodeRect
                             key={node.id}
-                            chartId={id}
                             node={node}
                             highlighted={activeId === node.id}
                             pinned={pinnedId === node.id}
@@ -309,22 +281,17 @@ export function SankeyChart({
 // ─── Sub-components ────────────────────────────────────────────────────
 
 function SankeyLinkPath({
-    chartId,
     link,
     isHighlighted,
     isDimmed,
 }: {
-    chartId: string;
     link: LaidOutLink;
     isHighlighted: boolean;
     isDimmed: boolean;
 }) {
-    const gradientId = `${chartId}-${link.sourceKind}-gradient`;
-    // R21-PR-B hover-pop: highlighted links thicken slightly + lift
-    // to higher opacity. Dimmed links drop to 0.05 (Epic 47.3
-    // behaviour preserved). The stroke-width pop is a felt
-    // emphasis without disturbing the layout — same vocabulary
-    // R16 chart hover-pop uses.
+    // Hover-pop: highlighted links thicken slightly + lift to higher
+    // opacity; dimmed links drop to 0.05. Flat per-kind stroke colour
+    // (the source tier's colour) rather than a gradient.
     const strokeWidth = isHighlighted ? link.strokeWidth * 1.5 : link.strokeWidth;
     const opacity = isDimmed ? 0.05 : isHighlighted ? 0.7 : 0.3;
     return (
@@ -332,7 +299,7 @@ function SankeyLinkPath({
             d={link.pathD}
             data-sankey-link-id={link.id}
             data-sankey-relation={link.relation}
-            stroke={`url(#${gradientId})`}
+            stroke={kindColor(link.sourceKind)}
             strokeWidth={strokeWidth}
             fill="none"
             opacity={opacity}
@@ -349,7 +316,6 @@ function SankeyLinkPath({
 }
 
 function SankeyNodeRect({
-    chartId,
     node,
     highlighted,
     pinned,
@@ -357,7 +323,6 @@ function SankeyNodeRect({
     onLeave,
     onClick,
 }: {
-    chartId: string;
     node: LaidOutNode;
     highlighted: boolean;
     pinned: boolean;
@@ -365,7 +330,6 @@ function SankeyNodeRect({
     onLeave: () => void;
     onClick: () => void;
 }) {
-    const gradientId = `${chartId}-${node.kind}-gradient`;
     const labelOnRight = node.x > 0;
     const opacity = highlighted ? 1 : 0.85;
     const rect = (
@@ -374,7 +338,7 @@ function SankeyNodeRect({
             y={node.y}
             width={node.width}
             height={node.height}
-            fill={`url(#${gradientId})`}
+            fill={kindColor(node.kind)}
             opacity={opacity}
             rx={2}
             // R21-PR-B: pinned ring + label-side weight annotation.
