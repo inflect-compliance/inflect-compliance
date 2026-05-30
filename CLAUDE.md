@@ -900,10 +900,13 @@ stands for that PR only — not as a precedent.
   actively wrong. Forward enforcement at
   `tests/guards/search-placeholder-vocabulary.test.ts`. The same
   format applies to i18n `searchPlaceholder` values in `messages/`.
-  Every standard list page MUST wire `searchId` + `searchPlaceholder`
-  so the live filter-scoped box is present (the R14-PR7 kill sweep was
-  reversed 2026-05-30); the box's presence is locked by
-  `tests/guards/r14-no-page-searchbars.test.ts`.
+  Free-text search lives **inside the Filter dropdown**, NOT in a
+  separate search bar: passing `searchPlaceholder` turns the Filter
+  popover's top input into a live content search (the categories stay
+  listed below it). Every standard list page MUST wire `searchId` +
+  `searchPlaceholder` (the R14-PR7 kill sweep was reversed 2026-05-30,
+  then the search was moved into the filter bar per user directive);
+  presence is locked by `tests/guards/r14-no-page-searchbars.test.ts`.
 
 ## Implementation notes
 

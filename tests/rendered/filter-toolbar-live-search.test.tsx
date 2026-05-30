@@ -1,13 +1,13 @@
 /**
- * `<FilterToolbar>` live-search rendered tests.
+ * `<FilterToolbar>` in-dropdown live-search rendered tests.
  *
- * Locks the 2026-05-30 behaviour change: the filter-scoped search box
- * is LIVE. Typing commits the query to the FilterProvider on a short
- * debounce (table filters as you type, no Enter required); Enter still
- * commits immediately for users who reach for it.
+ * Locks the 2026-05-30 behaviour: there is NO separate search bar. The
+ * free-text search lives INSIDE the Filter dropdown — opening the Filter
+ * popover and typing in its top input filters the table on a short
+ * debounce (commits to the FilterProvider query), no Enter required.
  */
 
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import * as React from 'react';
 
 // FilterToolbar transitively uses Next router hooks via the filter
@@ -65,44 +65,44 @@ function Shell() {
     );
 }
 
-describe('FilterToolbar — live search', () => {
-    beforeEach(() => jest.useFakeTimers());
-    afterEach(() => {
-        act(() => {
-            jest.runOnlyPendingTimers();
-        });
-        jest.useRealTimers();
+describe('FilterToolbar — search inside the filter dropdown', () => {
+    it('renders NO standalone search bar in the toolbar', () => {
+        const { container } = render(<Shell />);
+        // The separate search input is gone — search happens within the
+        // filter dropdown, which is closed by default.
+        expect(container.querySelector('input[type="search"]')).toBeNull();
+        expect(document.getElementById('probe-search')).toBeNull();
     });
 
-    it('commits the typed query after the debounce — no Enter needed', () => {
+    it('typing in the open filter dropdown live-searches the table (no Enter)', async () => {
         render(<Shell />);
-        const input = document.getElementById(
-            'probe-search',
-        ) as HTMLInputElement;
-        expect(input).not.toBeNull();
         expect(screen.getByTestId('committed-search').textContent).toBe('');
 
+        // Open the Filter dropdown.
+        const trigger = document.querySelector(
+            '[data-filter-trigger]',
+        ) as HTMLElement;
+        expect(trigger).not.toBeNull();
+        fireEvent.click(trigger);
+
+        // The content-search input now lives inside the popover, under the
+        // configured search id.
+        await waitFor(() => {
+            expect(
+                document.querySelector('#probe-search input'),
+            ).not.toBeNull();
+        });
+        const input = document.querySelector(
+            '#probe-search input',
+        ) as HTMLInputElement;
+
+        // Typing propagates to the committed query on the debounce — no
+        // Enter press.
         fireEvent.change(input, { target: { value: 'iso' } });
-        // Still debounced — the committed query has not changed yet.
-        expect(screen.getByTestId('committed-search').textContent).toBe('');
-
-        act(() => {
-            jest.advanceTimersByTime(300);
+        await waitFor(() => {
+            expect(screen.getByTestId('committed-search').textContent).toBe(
+                'iso',
+            );
         });
-        // Now the live query has propagated without any Enter press.
-        expect(screen.getByTestId('committed-search').textContent).toBe('iso');
-    });
-
-    it('commits immediately on Enter, bypassing the debounce', () => {
-        render(<Shell />);
-        const input = document.getElementById(
-            'probe-search',
-        ) as HTMLInputElement;
-
-        fireEvent.change(input, { target: { value: 'soc2' } });
-        fireEvent.keyDown(input, { key: 'Enter' });
-
-        // Committed without advancing the debounce timer.
-        expect(screen.getByTestId('committed-search').textContent).toBe('soc2');
     });
 });

@@ -53,6 +53,18 @@ type FilterSelectProps = {
   activeFilters?: ActiveFilterInput[];
   askAI?: boolean;
   isAdvancedFilter?: boolean;
+  /**
+   * When set, the top-level search input becomes a LIVE content search
+   * (its text is forwarded via `onSearchChange`, seeded from `searchValue`,
+   * and the filter categories stay listed below it) instead of a
+   * category-narrowing box. This is the seam FilterToolbar uses so a page's
+   * free-text search lives inside the filter dropdown — no separate bar.
+   */
+  searchPlaceholder?: string;
+  /** Committed content query — seeds + re-syncs the top-level search input. */
+  searchValue?: string;
+  /** DOM id for the top-level search input (content-search mode). */
+  searchId?: string;
   children?: ReactNode;
   emptyState?: ReactNode | Record<string, ReactNode>;
   className?: string;
@@ -69,11 +81,22 @@ export function FilterSelect({
   activeFilters,
   askAI,
   isAdvancedFilter = false,
+  searchPlaceholder,
+  searchValue,
+  searchId,
   children,
   emptyState,
   className,
 }: FilterSelectProps) {
   const { isMobile } = useMediaQuery();
+
+  // Content-search mode: the top-level input is a live free-text search
+  // (its text drives the table query) rather than a category-narrowing box.
+  const contentSearch = Boolean(searchPlaceholder);
+  const searchValueRef = useRef(searchValue ?? "");
+  useEffect(() => {
+    searchValueRef.current = searchValue ?? "";
+  }, [searchValue]);
 
   // Track main list container/dimensions to maintain size for loading spinner
   const listContainer = useRef<HTMLDivElement>(null);
@@ -96,15 +119,21 @@ export function FilterSelect({
     description: "Open filters",
   });
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(
+    contentSearch ? (searchValue ?? "") : "",
+  );
   const [selectedFilterKey, setSelectedFilterKey] = useState<
     Filter["key"] | null
   >(null);
 
+  // Returning to the top level (or closing the popover) restores the search
+  // box to the committed content query rather than clearing it — so a live
+  // content search survives close/reopen instead of being wiped. In the
+  // classic category-only mode it clears to empty as before.
   const reset = useCallback(() => {
-    setSearch("");
+    setSearch(contentSearch ? searchValueRef.current : "");
     setSelectedFilterKey(null);
-  }, []);
+  }, [contentSearch]);
 
   const goBackOrClose = useCallback(() => {
     selectedFilterKey ? reset() : setIsOpen(false);
@@ -173,9 +202,12 @@ export function FilterSelect({
     [selectedFilter, isOptionSelected, onSelect, onRemove, isAdvancedFilter],
   );
 
+  // Only the TOP-LEVEL search is the content query. When a filter category
+  // is selected the input narrows that filter's options and must NOT touch
+  // the table query — so guard on `selectedFilterKey`.
   useEffect(() => {
-    onSearchChange?.(search);
-  }, [search]);
+    if (!selectedFilterKey) onSearchChange?.(search);
+  }, [search, selectedFilterKey]);
 
   useEffect(() => {
     onSelectedFilterChange?.(selectedFilterKey);
@@ -256,12 +288,23 @@ export function FilterSelect({
             <Command
               loop
               shouldFilter={
-                !selectedFilter || selectedFilter.shouldFilter !== false
+                selectedFilter
+                  ? selectedFilter.shouldFilter !== false
+                  : // Top-level content search filters the TABLE, not the
+                    // category list — keep every category visible.
+                    !contentSearch
               }
             >
-              <div className="flex items-center overflow-hidden rounded-t-lg border-b border-border-subtle">
+              <div
+                id={!selectedFilter && contentSearch ? searchId : undefined}
+                className="flex items-center overflow-hidden rounded-t-lg border-b border-border-subtle"
+              >
                 <CommandInput
-                  placeholder={`${selectedFilter?.label || "Filter"}...`}
+                  placeholder={
+                    !selectedFilter && contentSearch
+                      ? searchPlaceholder
+                      : `${selectedFilter?.label || "Filter"}...`
+                  }
                   value={search}
                   onValueChange={setSearch}
                   onKeyDown={(e) => {
@@ -410,9 +453,14 @@ export function FilterSelect({
         <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-left text-content-emphasis">
           {children ?? "Filter"}
         </span>
-        {activeFilters?.length ? (
+        {(activeFilters?.length ?? 0) +
+        (contentSearch && searchValue ? 1 : 0) ? (
+          // Count an active content search alongside structured filters so
+          // the badge signals "something is filtering" even when the search
+          // text lives inside the (closed) dropdown.
           <div className="flex size-4 shrink-0 items-center justify-center rounded-full bg-brand-emphasis text-[0.625rem] text-content-inverted">
-            {activeFilters.length}
+            {(activeFilters?.length ?? 0) +
+              (contentSearch && searchValue ? 1 : 0)}
           </div>
         ) : (
           <>
