@@ -41,7 +41,11 @@ export interface AssignmentTarget {
     tenantSlug: string;
 }
 
-export type AssignmentNotificationKind = 'TASK_ASSIGNED' | 'CONTROL_ASSIGNED';
+export type AssignmentNotificationKind =
+    | 'TASK_ASSIGNED'
+    | 'CONTROL_ASSIGNED'
+    | 'RISK_ASSIGNED'
+    | 'ASSET_ASSIGNED';
 
 interface AssignmentCopy {
     title: string;
@@ -59,6 +63,16 @@ const COPY: Record<AssignmentNotificationKind, AssignmentCopy> = {
         title: 'You were assigned a control',
         body: (label) => `${label} is now yours.`,
         linkPath: (slug, id) => `/t/${slug}/controls/${id}`,
+    },
+    RISK_ASSIGNED: {
+        title: 'You were assigned a risk',
+        body: (label) => `${label} is now yours.`,
+        linkPath: (slug, id) => `/t/${slug}/risks/${id}`,
+    },
+    ASSET_ASSIGNED: {
+        title: 'You were assigned an asset',
+        body: (label) => `${label} is now yours.`,
+        linkPath: (slug, id) => `/t/${slug}/assets/${id}`,
     },
 };
 

@@ -63,18 +63,58 @@ describe('PR-A notification-assignment alert wiring', () => {
                 /ALTER TYPE "NotificationType" ADD VALUE IF NOT EXISTS 'CONTROL_ASSIGNED'/,
             );
         });
+
+        it('NotificationType enum includes RISK_ASSIGNED + ASSET_ASSIGNED', () => {
+            const enums = read('prisma/schema/enums.prisma');
+            const block = enums.slice(
+                enums.indexOf('enum NotificationType'),
+                enums.indexOf('enum EmailNotificationType'),
+            );
+            expect(block).toMatch(/RISK_ASSIGNED/);
+            expect(block).toMatch(/ASSET_ASSIGNED/);
+        });
+
+        it('migration exists adding RISK_ASSIGNED + ASSET_ASSIGNED', () => {
+            const migrationDir = path.join(
+                ROOT,
+                'prisma/migrations/20260530120000_notif_risk_asset_assigned',
+            );
+            expect(existsSync(migrationDir)).toBe(true);
+            const sql = readFileSync(
+                path.join(migrationDir, 'migration.sql'),
+                'utf-8',
+            );
+            expect(sql).toMatch(
+                /ALTER TYPE "NotificationType" ADD VALUE IF NOT EXISTS 'RISK_ASSIGNED'/,
+            );
+            expect(sql).toMatch(
+                /ALTER TYPE "NotificationType" ADD VALUE IF NOT EXISTS 'ASSET_ASSIGNED'/,
+            );
+        });
     });
 
     describe('2. Assignment notifications module', () => {
         const src = () =>
             read('src/app-layer/notifications/assignment.ts');
 
-        it('exports createAssignmentNotification + the two-value KIND union', () => {
+        it('exports createAssignmentNotification + the four-value KIND union', () => {
             const s = src();
             expect(s).toMatch(/export async function createAssignmentNotification/);
-            expect(s).toMatch(
-                /export type AssignmentNotificationKind\s*=\s*['"]TASK_ASSIGNED['"]\s*\|\s*['"]CONTROL_ASSIGNED['"]/,
-            );
+            // 2026-05-30 — union widened to cover risk + asset
+            // assignment alongside task + control. Assert all four are
+            // present (order-independent) so a future drop trips CI.
+            for (const kind of [
+                'TASK_ASSIGNED',
+                'CONTROL_ASSIGNED',
+                'RISK_ASSIGNED',
+                'ASSET_ASSIGNED',
+            ]) {
+                expect(s).toMatch(
+                    new RegExp(`AssignmentNotificationKind[\\s\\S]{0,200}${kind}`),
+                );
+                // Each kind also needs a COPY entry (title/body/link).
+                expect(s).toMatch(new RegExp(`${kind}:\\s*\\{`));
+            }
         });
 
         it('uses createMany with skipDuplicates (NOT raw create — P2002 would poison the tx)', () => {
@@ -205,6 +245,54 @@ describe('PR-A notification-assignment alert wiring', () => {
             const end = s.indexOf('// ─── Cadence', start);
             const body = s.slice(start, end);
             expect(body).toMatch(/if \(ownerUserId && ctx\.tenantSlug\)/);
+        });
+    });
+
+    describe('5. risk.ts + asset.ts wire RISK/ASSET_ASSIGNED on owner change', () => {
+        it('updateRisk imports + emits RISK_ASSIGNED only on an actual change', () => {
+            const s = read('src/app-layer/usecases/risk.ts');
+            expect(s).toMatch(
+                /import\s*\{\s*createAssignmentNotification\s*\}\s*from\s*['"]\.\.\/notifications\/assignment['"]/,
+            );
+            expect(s).toMatch(
+                /createAssignmentNotification\(\s*db,\s*['"]RISK_ASSIGNED['"]/,
+            );
+            // Guard: fire only when the new owner differs from the
+            // previous one AND is non-null (no spam on unrelated edits
+            // / unassign).
+            expect(s).toMatch(
+                /newOwnerId && newOwnerId !== previousOwnerId && ctx\.tenantSlug/,
+            );
+        });
+
+        it('updateAsset imports + emits ASSET_ASSIGNED only on an actual change', () => {
+            const s = read('src/app-layer/usecases/asset.ts');
+            expect(s).toMatch(
+                /import\s*\{\s*createAssignmentNotification\s*\}\s*from\s*['"]\.\.\/notifications\/assignment['"]/,
+            );
+            expect(s).toMatch(
+                /createAssignmentNotification\(\s*db,\s*['"]ASSET_ASSIGNED['"]/,
+            );
+            expect(s).toMatch(
+                /newOwnerId && newOwnerId !== previousOwnerId && ctx\.tenantSlug/,
+            );
+        });
+
+        it('UpdateRiskSchema + UpdateAssetSchema accept ownerUserId', () => {
+            const s = read('src/lib/schemas/index.ts');
+            // Both update schemas must carry ownerUserId or the PUT
+            // would strip the "Assigned to" value before it reaches
+            // the usecase.
+            const riskBlock = s.slice(
+                s.indexOf('export const UpdateRiskSchema'),
+                s.indexOf('export const LinkRiskControlSchema'),
+            );
+            expect(riskBlock).toMatch(/ownerUserId:/);
+            const assetBlock = s.slice(
+                s.indexOf('export const UpdateAssetSchema'),
+                s.indexOf('// ─── Risks ───'),
+            );
+            expect(assetBlock).toMatch(/ownerUserId:/);
         });
     });
 });

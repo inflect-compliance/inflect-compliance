@@ -22,6 +22,8 @@ export interface EditAssetFormFields {
     type: string;
     classification: string;
     owner: string;
+    /** "Assigned to" — real user reference (User.id), '' = unassigned. */
+    ownerUserId: string;
     location: string;
     criticality: string;
     status: string;
@@ -56,6 +58,7 @@ const DEFAULTS: EditAssetFormFields = {
     type: 'SYSTEM',
     classification: '',
     owner: '',
+    ownerUserId: '',
     location: '',
     criticality: '',
     status: 'ACTIVE',

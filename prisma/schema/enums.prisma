@@ -442,6 +442,11 @@ enum NotificationType {
   // one in-app notification per (control, new owner, day) pair,
   // routed to the bell. Email + SSE follow the same dedup.
   CONTROL_ASSIGNED
+  // 2026-05-30 — fired by `updateRisk` / `updateAsset` when the
+  // `ownerUserId` ("Assigned to") changes. Same one-per-(entity,
+  // owner, day) bell contract as CONTROL_ASSIGNED.
+  RISK_ASSIGNED
+  ASSET_ASSIGNED
   // Fired by the `task-due-notification` job at 08:00 UTC. One
   // notification per task at each of three reminder windows — one
   // week before, one day before, and on the calendar day the

@@ -9,6 +9,7 @@
  * live in `useEditAssetForm`.
  */
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { UserCombobox } from '@/components/ui/user-combobox';
 import type { EditAssetFormReturn } from './useEditAssetForm';
 
 const TYPES = [
@@ -37,7 +38,13 @@ const STATUS_OPTIONS: ComboboxOption[] = [
     { value: 'RETIRED', label: 'Retired' },
 ];
 
-export function EditAssetFields({ form }: { form: EditAssetFormReturn }) {
+export function EditAssetFields({
+    form,
+    tenantSlug,
+}: {
+    form: EditAssetFormReturn;
+    tenantSlug: string;
+}) {
     return (
         <div className="grid grid-cols-2 gap-default">
             <div>
@@ -97,7 +104,21 @@ export function EditAssetFields({ form }: { form: EditAssetFormReturn }) {
                 />
             </div>
             <div>
-                <label className="input-label">Owner</label>
+                <label className="input-label">Assigned to</label>
+                <UserCombobox
+                    tenantSlug={tenantSlug}
+                    selectedId={form.fields.ownerUserId || null}
+                    onChange={(userId) =>
+                        form.setField('ownerUserId', userId ?? '')
+                    }
+                    forceDropdown
+                    matchTriggerWidth
+                    id="asset-assignee"
+                    placeholder="Unassigned"
+                />
+            </div>
+            <div>
+                <label className="input-label">Owner (label)</label>
                 <input
                     className="input"
                     value={form.fields.owner}

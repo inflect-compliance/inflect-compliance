@@ -41,6 +41,7 @@ import { Button } from '@/components/ui/button';
 import { Pen2 } from '@/components/ui/icons/nucleo';
 import { Tooltip } from '@/components/ui/tooltip';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
+import { UserCombobox, useTenantMembers } from '@/components/ui/user-combobox';
 import { DatePicker } from '@/components/ui/date-picker/date-picker';
 import {
     parseYMD,
@@ -120,6 +121,7 @@ export default function RiskDetailPage() {
     const apiUrl = useTenantApiUrl();
     const href = useTenantHref();
     const canWrite = tenant.permissions.canWrite;
+    const { data: riskMembers } = useTenantMembers(tenant.tenantSlug);
 
     const [risk, setRisk] = useState<Risk | null>(null);
     const [loading, setLoading] = useState(true);
@@ -180,6 +182,7 @@ export default function RiskDetailPage() {
             likelihood: risk.likelihood,
             impact: risk.impact,
             treatmentOwner: risk.treatmentOwner ?? '',
+            ownerUserId: risk.ownerUserId ?? '',
             treatment: risk.treatment ?? '',
             treatmentNotes: risk.treatmentNotes ?? '',
             nextReviewAt: risk.nextReviewAt ? risk.nextReviewAt.split('T')[0] : '',
@@ -199,6 +202,7 @@ export default function RiskDetailPage() {
                 likelihood: editForm.likelihood,
                 impact: editForm.impact,
                 treatmentOwner: editForm.treatmentOwner || null,
+                ownerUserId: editForm.ownerUserId || null,
                 treatment: editForm.treatment || null,
                 treatmentNotes: editForm.treatmentNotes || null,
             };
@@ -310,6 +314,21 @@ export default function RiskDetailPage() {
                                   {
                                       label: 'Owner',
                                       value: risk.treatmentOwner,
+                                  } as const,
+                              ]
+                            : []),
+                        ...(risk.ownerUserId
+                            ? [
+                                  {
+                                      label: 'Assigned to',
+                                      value:
+                                          riskMembers?.find(
+                                              (m) => m.id === risk.ownerUserId,
+                                          )?.name ??
+                                          riskMembers?.find(
+                                              (m) => m.id === risk.ownerUserId,
+                                          )?.email ??
+                                          'Assigned',
                                   } as const,
                               ]
                             : []),
@@ -475,6 +494,19 @@ export default function RiskDetailPage() {
                             <div>
                                 <label className="input-label">Treatment Owner</label>
                                 <input className="input" value={editForm.treatmentOwner ?? ''} onChange={set('treatmentOwner')} />
+                            </div>
+                            <div>
+                                <label className="input-label">Assigned to</label>
+                                <UserCombobox
+                                    tenantSlug={tenant.tenantSlug}
+                                    selectedId={editForm.ownerUserId || null}
+                                    onChange={(userId) =>
+                                        setEditForm((f) => ({ ...f, ownerUserId: userId ?? '' }))
+                                    }
+                                    matchTriggerWidth
+                                    id="risk-assignee"
+                                    placeholder="Unassigned"
+                                />
                             </div>
                         </div>
                         <div className="grid grid-cols-3 gap-default">

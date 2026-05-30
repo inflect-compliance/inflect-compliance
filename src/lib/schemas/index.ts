@@ -42,6 +42,7 @@ export const UpdateAssetSchema = z.object({
     type: z.string().min(1).optional(),
     classification: z.string().optional(),
     owner: z.string().optional(),
+    ownerUserId: z.string().optional().nullable(),    // Real user reference — "Assigned to"
     location: z.string().optional(),
     confidentiality: z.coerce.number().int().min(1).max(5).optional(),
     integrity: z.coerce.number().int().min(1).max(5).optional(),
@@ -79,6 +80,7 @@ export const UpdateRiskSchema = z.object({
     treatment: z.string().optional().nullable(),
     treatmentOwner: z.string().optional().nullable(),
     treatmentNotes: z.string().optional().nullable(),
+    ownerUserId: z.string().optional().nullable(),    // Real user reference — "Assigned to"
     targetDate: z.string().optional().nullable(),
 }).strip().openapi('RiskUpdateRequest', {
     description: 'Partial update for a risk. All fields optional.',

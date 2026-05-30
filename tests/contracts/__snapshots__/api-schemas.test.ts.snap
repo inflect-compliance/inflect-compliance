@@ -324,6 +324,12 @@ exports[`API contract — per-schema snapshots schema: AssetUpdateRequest 1`] = 
     "owner": {
       "type": "string"
     },
+    "ownerUserId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "location": {
       "type": "string"
     },
@@ -3364,6 +3370,12 @@ exports[`API contract — per-schema snapshots schema: RiskUpdateRequest 1`] = `
       ]
     },
     "treatmentNotes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "ownerUserId": {
       "type": [
         "string",
         "null"

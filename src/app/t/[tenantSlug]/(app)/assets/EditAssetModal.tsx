@@ -16,6 +16,7 @@
 import { useCallback, type Dispatch, type SetStateAction } from 'react';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
+import { useTenantContext } from '@/lib/tenant-context-provider';
 import {
     useEditAssetForm,
     type EditAssetFormFields,
@@ -38,6 +39,7 @@ export function EditAssetModal({
     initial,
     onSaved,
 }: EditAssetModalProps) {
+    const { tenantSlug } = useTenantContext();
     const form = useEditAssetForm({
         assetId,
         initial,
@@ -102,7 +104,7 @@ export function EditAssetModal({
                         disabled={form.submitting}
                         className="m-0 p-0 border-0 space-y-default"
                     >
-                        <EditAssetFields form={form} />
+                        <EditAssetFields form={form} tenantSlug={tenantSlug} />
                     </fieldset>
                 </Modal.Body>
                 <Modal.Actions>

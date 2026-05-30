@@ -8,6 +8,8 @@ import { calculateRiskScore } from '@/lib/risk-scoring';
 import { runInTenantContext } from '@/lib/db-context';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { cachedListRead, bumpEntityCacheVersion } from '@/lib/cache/list-cache';
+import { createAssignmentNotification } from '../notifications/assignment';
+import { logger } from '@/lib/observability';
 import type { TreatmentDecision, RiskStatus } from '@prisma/client';
 
 // Epic D.2 — sanitise optional free-text on UPDATE without disturbing
@@ -266,13 +268,18 @@ export async function updateRisk(ctx: RequestContext, id: string, data: {
 }) {
     assertCanWrite(ctx);
 
-    const updated = await runInTenantContext(ctx, async (db) => {
+    const { risk: updated, previousOwnerId } = await runInTenantContext(ctx, async (db) => {
         // Tenant lookup is global (Tenant table has no RLS)
         const tenant = await db.tenant.findUnique({ where: { id: ctx.tenantId } });
         const maxScale = tenant?.maxRiskScale || 5;
         const inherentScore = data.likelihood && data.impact
             ? calculateRiskScore(data.likelihood, data.impact, maxScale)
             : undefined;
+
+        // Capture the prior owner so the assignment notification only
+        // fires on an actual change (not on every unrelated risk edit).
+        const before = await RiskRepository.getById(db, ctx, id);
+        const previousOwnerId = before?.ownerUserId ?? null;
 
         const risk = await RiskRepository.update(db, ctx, id, {
             // Epic D.2 — sanitise on update only when the field is
@@ -289,6 +296,12 @@ export async function updateRisk(ctx: RequestContext, id: string, data: {
             treatment: data.treatment as TreatmentDecision | undefined,
             treatmentOwner: sanitizeOptional(data.treatmentOwner),
             treatmentNotes: sanitizeOptional(data.treatmentNotes),
+            // "Assigned to" — undefined leaves it untouched; '' or null
+            // clears (an empty string would be an invalid FK).
+            ownerUserId:
+                data.ownerUserId === undefined
+                    ? undefined
+                    : data.ownerUserId || null,
             targetDate: data.targetDate ? new Date(data.targetDate) : undefined,
             nextReviewAt: data.nextReviewAt ? new Date(data.nextReviewAt) : undefined,
             inherentScore,
@@ -307,9 +320,36 @@ export async function updateRisk(ctx: RequestContext, id: string, data: {
             detailsJson: { category: 'custom', event: 'update' },
         });
 
-        return risk;
+        return { risk, previousOwnerId };
     });
     await bumpEntityCacheVersion(ctx, 'risk');
+
+    // In-app RISK_ASSIGNED bell notification for the new owner — only
+    // when the assignee actually changed to a real user. Mirrors the
+    // control-owner pattern: after-commit, own short transaction,
+    // fire-and-forget, day-granular dedupe. See setControlOwner.
+    const newOwnerId = updated.ownerUserId ?? null;
+    if (newOwnerId && newOwnerId !== previousOwnerId && ctx.tenantSlug) {
+        const tenantSlug = ctx.tenantSlug;
+        try {
+            await runInTenantContext(ctx, (db) =>
+                createAssignmentNotification(db, 'RISK_ASSIGNED', {
+                    tenantId: ctx.tenantId,
+                    assigneeUserId: newOwnerId,
+                    entityId: id,
+                    entityLabel: updated.title ?? '(untitled)',
+                    entityKey: updated.key ?? null,
+                    tenantSlug,
+                }),
+            );
+        } catch (err) {
+            logger.warn('failed to create risk-assigned notification', {
+                component: 'notifications',
+                riskId: id,
+                error: err instanceof Error ? err.message : String(err),
+            });
+        }
+    }
     return updated;
 }
 

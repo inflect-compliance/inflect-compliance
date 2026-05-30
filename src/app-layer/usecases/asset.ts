@@ -4,6 +4,8 @@ import { assertCanRead, assertCanWrite, assertCanAdmin } from '../policies/commo
 import { logEvent } from '../events/audit';
 import { notFound } from '@/lib/errors/types';
 import { runInTenantContext } from '@/lib/db-context';
+import { createAssignmentNotification } from '../notifications/assignment';
+import { logger } from '@/lib/observability';
 
 export async function listAssets(ctx: RequestContext, filters?: AssetFilters) {
     assertCanRead(ctx);
@@ -70,12 +72,23 @@ export async function createAsset(ctx: RequestContext, data: any) {
 export async function updateAsset(ctx: RequestContext, id: string, data: any) {
     assertCanWrite(ctx);
 
-    return runInTenantContext(ctx, async (db) => {
+    const { asset: updated, previousOwnerId } = await runInTenantContext(ctx, async (db) => {
+        // Capture the prior assignee so the notification only fires on
+        // an actual change, not on every unrelated asset edit.
+        const before = await AssetRepository.getById(db, ctx, id);
+        const previousOwnerId = before?.ownerUserId ?? null;
+
         const asset = await AssetRepository.update(db, ctx, id, {
             name: data.name,
             type: data.type,
             classification: data.classification,
             owner: data.owner,
+            // "Assigned to" — undefined leaves it untouched; '' or null
+            // clears (an empty string would be an invalid FK).
+            ownerUserId:
+                data.ownerUserId === undefined
+                    ? undefined
+                    : data.ownerUserId || null,
             location: data.location,
             confidentiality: data.confidentiality,
             integrity: data.integrity,
@@ -103,8 +116,36 @@ export async function updateAsset(ctx: RequestContext, id: string, data: any) {
             },
         });
 
-        return asset;
+        return { asset, previousOwnerId };
     });
+
+    // In-app ASSET_ASSIGNED bell notification for the new owner — only
+    // when the assignee actually changed to a real user. After-commit,
+    // own short transaction, fire-and-forget, day-granular dedupe.
+    const newOwnerId = updated.ownerUserId ?? null;
+    if (newOwnerId && newOwnerId !== previousOwnerId && ctx.tenantSlug) {
+        const tenantSlug = ctx.tenantSlug;
+        try {
+            await runInTenantContext(ctx, (db) =>
+                createAssignmentNotification(db, 'ASSET_ASSIGNED', {
+                    tenantId: ctx.tenantId,
+                    assigneeUserId: newOwnerId,
+                    entityId: id,
+                    entityLabel: updated.name ?? '(untitled)',
+                    entityKey: null,
+                    tenantSlug,
+                }),
+            );
+        } catch (err) {
+            logger.warn('failed to create asset-assigned notification', {
+                component: 'notifications',
+                assetId: id,
+                error: err instanceof Error ? err.message : String(err),
+            });
+        }
+    }
+
+    return updated;
 }
 
 export async function deleteAsset(ctx: RequestContext, id: string) {

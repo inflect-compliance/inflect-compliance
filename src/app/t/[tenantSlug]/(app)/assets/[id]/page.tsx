@@ -11,6 +11,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
+import { useTenantMembers } from '@/components/ui/user-combobox';
 import dynamic from 'next/dynamic';
 import LinkedTasksPanel from '@/components/LinkedTasksPanel';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -37,12 +38,21 @@ export default function AssetDetailPage() {
     const params = useParams();
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
-    const { permissions } = useTenantContext();
+    const { permissions, tenantSlug } = useTenantContext();
     const assetId = params.id as string;
 
     const [asset, setAsset] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+
+    // Resolve the "Assigned to" user's display name from the tenant
+    // roster so the read view can show a name, not a raw id.
+    const { data: members } = useTenantMembers(tenantSlug);
+    const assigneeName = asset?.ownerUserId
+        ? (members?.find((m) => m.id === asset.ownerUserId)?.name ??
+           members?.find((m) => m.id === asset.ownerUserId)?.email ??
+           'Assigned')
+        : null;
 
     // B6 +1 — canonical 7-tab strip on every detail page. Same shape
     // as Controls / Risks: Overview holds the existing asset body;
@@ -79,6 +89,7 @@ export default function AssetDetailPage() {
               type: asset.type || 'SYSTEM',
               classification: asset.classification || '',
               owner: asset.owner || '',
+              ownerUserId: asset.ownerUserId || '',
               location: asset.location || '',
               criticality: asset.criticality || '',
               status: asset.status || 'ACTIVE',
@@ -283,6 +294,7 @@ export default function AssetDetailPage() {
                 <>
                         {asset.classification && <div><Eyebrow>Classification</Eyebrow><p className="text-sm">{asset.classification}</p></div>}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
+                            <div><Eyebrow>Assigned to</Eyebrow><p className="text-sm">{assigneeName || '—'}</p></div>
                             <div><Eyebrow>Owner</Eyebrow><p className="text-sm">{asset.owner || '—'}</p></div>
                             <div><Eyebrow>Location</Eyebrow><p className="text-sm">{asset.location || '—'}</p></div>
                             <div>

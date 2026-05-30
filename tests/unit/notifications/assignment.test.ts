@@ -131,6 +131,30 @@ describe('createAssignmentNotification', () => {
         expect(row.linkUrl).toBe('/t/acme/controls/ctrl-X');
     });
 
+    it('writes type=RISK_ASSIGNED with the tenant-scoped /risks deep link', async () => {
+        createManyMock.mockResolvedValueOnce({ count: 1 });
+        await createAssignmentNotification(
+            db as never,
+            'RISK_ASSIGNED',
+            makeTarget({ entityId: 'risk-X', tenantSlug: 'acme' }),
+        );
+        const row = createManyMock.mock.calls[0][0].data[0];
+        expect(row.type).toBe('RISK_ASSIGNED');
+        expect(row.linkUrl).toBe('/t/acme/risks/risk-X');
+    });
+
+    it('writes type=ASSET_ASSIGNED with the tenant-scoped /assets deep link', async () => {
+        createManyMock.mockResolvedValueOnce({ count: 1 });
+        await createAssignmentNotification(
+            db as never,
+            'ASSET_ASSIGNED',
+            makeTarget({ entityId: 'asset-X', tenantSlug: 'acme' }),
+        );
+        const row = createManyMock.mock.calls[0][0].data[0];
+        expect(row.type).toBe('ASSET_ASSIGNED');
+        expect(row.linkUrl).toBe('/t/acme/assets/asset-X');
+    });
+
     it('routes the notification to the assignee user (NOT the actor)', async () => {
         // The recipient of an assignment alert is the NEW assignee,
         // never the actor who made the change — locked here so a
