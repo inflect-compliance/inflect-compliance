@@ -1,30 +1,23 @@
 /**
- * R21-PR-B — Sankey rebuild ratchet.
+ * Sankey design ratchet.
  *
- * The Epic 47.3 SankeyChart shipped with hard-coded hex colours per
- * kind. R21 PR-B routes the Sankey through the R16 chart-series
- * token family + R21 PR-A's `<ChartLegend>` primitive, so the
- * Sankey speaks the same colour vocabulary as every other chart
- * on the dashboard.
+ * History: Epic 47.3 shipped flat hex per-kind colours; R21-PR-B
+ * (#536) swapped them for washed `<ChartLinearGradient>` fills + a
+ * gradient `<ChartLegend>`. That was reverted (2026-05-30, user
+ * request) back to the flat high-contrast look — but kept theme-aware
+ * via the R16 `--chart-series-{N}-start` tokens (solid, not gradient,
+ * and NOT raw hex). This ratchet locks the restored design:
  *
- * Six invariants this ratchet locks:
- *
- *   1. The KIND_SERIES mapping exists and routes each
- *      TraceabilityNodeKind to a ChartSeriesIndex.
- *
- *   2. ChartLinearGradient defs are rendered for every kind that
- *      appears (one def per kind, via `presentKinds`).
- *
- *   3. Link strokes paint via `url(#${chartId}-${kind}-gradient)`
- *      — not via hex colours.
- *
- *   4. Node rects paint via the same gradient ids — not hex.
- *
- *   5. The Epic 47.3 inline column-text legend is replaced by
- *      `<ChartLegend variant="series">` from R21-PR-A.
- *
- *   6. Click-isolate state: pinnedId pins the highlight, ESC
- *      unpins, click-outside (on the empty SVG canvas) unpins.
+ *   1. KIND_SERIES maps each kind to a chart-series index, consumed by
+ *      a `kindColor()` helper that returns a solid `--chart-series-N`
+ *      token (theme-aware, no raw hex).
+ *   2. Node + link fills use that flat token colour — NOT `url(#…)`
+ *      gradients, and the gradient `<ChartLinearGradient>`/`<defs>`
+ *      machinery + the swatch `<ChartLegend>` are gone.
+ *   3. A plain column header (kind label + count) replaces the
+ *      gradient legend.
+ *   4. Retained from PR-B: click-isolate (pin/ESC/empty-canvas-unpin),
+ *      hover-pop, inline weight annotation.
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -34,17 +27,20 @@ const SANKEY = fs.readFileSync(
     path.join(ROOT, 'src/components/ui/SankeyChart.tsx'),
     'utf8',
 );
+const STRIPPED = SANKEY.replace(/\/\*[\s\S]*?\*\//g, '').replace(
+    /\/\/[^\n]*/g,
+    '',
+);
 
-describe('R21-PR-B — Sankey rebuild on chart-series tokens', () => {
-    describe('KIND_SERIES kind→series-index mapping', () => {
-        it('the mapping const exists', () => {
+describe('Sankey — flat theme-token design (restored, theme-aware)', () => {
+    describe('KIND_SERIES → flat chart-series token colour', () => {
+        it('the KIND_SERIES mapping const exists', () => {
             expect(SANKEY).toMatch(
                 /const\s+KIND_SERIES:\s*Record<TraceabilityNodeKind,\s*ChartSeriesIndex>/,
             );
         });
 
-        it('maps every kind to a chart-series index', () => {
-            // All five kinds present + assigned to a valid 1-6 series.
+        it('maps every kind to a 1-6 chart-series index', () => {
             for (const kind of [
                 'asset',
                 'risk',
@@ -52,128 +48,85 @@ describe('R21-PR-B — Sankey rebuild on chart-series tokens', () => {
                 'requirement',
                 'policy',
             ]) {
-                expect(SANKEY).toMatch(
-                    new RegExp(`${kind}:\\s*[1-6]`),
-                );
+                expect(SANKEY).toMatch(new RegExp(`${kind}:\\s*[1-6]`));
             }
         });
 
-        it('imports ChartLinearGradient + ChartSeriesIndex from the charts barrel', () => {
-            expect(SANKEY).toMatch(
-                /from\s+['"]@\/components\/ui\/charts['"]/,
+        it('kindColor() returns a solid --chart-series token (theme-aware, not hex)', () => {
+            expect(STRIPPED).toMatch(/function kindColor\(/);
+            expect(STRIPPED).toMatch(
+                /var\(--chart-series-\$\{KIND_SERIES\[kind\]\}-(?:start|end)\)/,
             );
-            expect(SANKEY).toMatch(/ChartLinearGradient/);
-            expect(SANKEY).toMatch(/ChartSeriesIndex/);
         });
     });
 
-    describe('SVG <defs> gradients via R16 ChartLinearGradient', () => {
-        it('renders gradients for every kind present in the layout', () => {
-            // presentKinds is the load-bearing derivation —
-            // walks the layout and emits ONE def per kind in use.
-            // We assert the structural pattern, not the exact loop.
-            expect(SANKEY).toMatch(/presentKinds\.map\(/);
-            expect(SANKEY).toMatch(
-                /<ChartLinearGradient[\s\S]*?series=\{KIND_SERIES\[kind\]\}/,
-            );
+    describe('flat fills, NOT gradients', () => {
+        it('node rects + link strokes paint via kindColor(), not url(#…)', () => {
+            expect(STRIPPED).toMatch(/fill=\{kindColor\(node\.kind\)\}/);
+            expect(STRIPPED).toMatch(/stroke=\{kindColor\(link\.sourceKind\)\}/);
+            expect(STRIPPED).not.toMatch(/url\(#/);
         });
 
-        it('uses horizontal direction so flows read as moving left→right', () => {
-            expect(SANKEY).toMatch(/direction="horizontal"/);
-        });
-    });
-
-    describe('link + node fills use url(#...) gradients, not hex', () => {
-        it('link strokes paint via url(#${chartId}-${kind}-gradient)', () => {
-            // The link's sourceKind drives the gradient choice; one
-            // gradient per kind keeps the SVG defs count bounded.
-            expect(SANKEY).toMatch(
-                /stroke=\{`url\(#\$\{gradientId\}\)`\}/,
-            );
-            expect(SANKEY).toMatch(
-                /gradientId\s*=\s*`\$\{chartId\}-\$\{link\.sourceKind\}-gradient`/,
-            );
-        });
-
-        it('node rects paint via the same gradient id family', () => {
-            expect(SANKEY).toMatch(
-                /fill=\{`url\(#\$\{gradientId\}\)`\}/,
-            );
+        it('the gradient machinery (ChartLinearGradient / <defs>) is gone', () => {
+            expect(STRIPPED).not.toMatch(/ChartLinearGradient/);
+            expect(STRIPPED).not.toMatch(/<defs>/);
         });
 
         it('no hardcoded hex colour palette per kind', () => {
-            // The Epic 47.3 KIND_COLOR record carried five hex
-            // values. R21 PR-B replaces it with KIND_SERIES indices.
-            // Stripping comments so the doc-block's historical
-            // reference to the old palette doesn't count.
-            const stripped = SANKEY.replace(/\/\*[\s\S]*?\*\//g, '')
-                .replace(/\/\/[^\n]*/g, '');
-            expect(stripped).not.toMatch(/KIND_COLOR/);
-            // Specifically — no inline hex palette in the render
-            // path. (KIND_LABEL is fine; it's text.)
-            expect(stripped).not.toMatch(
-                /asset:\s*['"]#fcd34d['"]/,
-            );
+            expect(STRIPPED).not.toMatch(/KIND_COLOR/);
+            expect(STRIPPED).not.toMatch(/#[0-9a-fA-F]{6}/);
         });
     });
 
-    describe('R21-PR-A ChartLegend replaces the inline column header', () => {
-        it('renders <ChartLegend variant="series">', () => {
-            expect(SANKEY).toMatch(/<ChartLegend/);
-            expect(SANKEY).toMatch(/variant="series"/);
+    describe('plain column header replaces the gradient ChartLegend', () => {
+        it('renders a data-sankey-legend column header over layout.columns', () => {
+            expect(STRIPPED).not.toMatch(/<ChartLegend/);
+            expect(SANKEY).toMatch(/data-sankey-legend="true"/);
+            expect(SANKEY).toMatch(/layout\.columns\.map\(/);
         });
 
-        it('legend swatches use the same KIND_SERIES indices as the nodes', () => {
-            expect(SANKEY).toMatch(
-                /name:\s*KIND_LABEL\[kind\][\s\S]*?index:\s*KIND_SERIES\[kind\]/,
-            );
+        it('shows each column kind label + node count', () => {
+            expect(SANKEY).toMatch(/\{c\.label\}/);
+            expect(SANKEY).toMatch(/\(\{c\.count\}\)/);
         });
     });
 
-    describe('click-isolate state + ESC unpin', () => {
+    describe('retained interactions: click-isolate + hover-pop + inline weight', () => {
         it('carries a pinnedId state separate from hoveredId', () => {
-            expect(SANKEY).toMatch(/useState<string \| null>\(null\)/);
             expect(SANKEY).toMatch(/pinnedId/);
             expect(SANKEY).toMatch(/hoveredId/);
-            expect(SANKEY).toMatch(/activeId\s*=\s*hoveredId\s*\?\?\s*pinnedId/);
+            expect(SANKEY).toMatch(
+                /activeId\s*=\s*hoveredId\s*\?\?\s*pinnedId/,
+            );
         });
 
         it('clicking a node toggles its pinnedId', () => {
-            expect(SANKEY).toMatch(/setPinnedId\(\(prev\)\s*=>\s*\(prev === nodeId \? null : nodeId\)\)/);
+            expect(SANKEY).toMatch(
+                /setPinnedId\(\(prev\)\s*=>\s*\(prev === nodeId \? null : nodeId\)\)/,
+            );
         });
 
-        it('ESC key unpins via the shared useKeyboardShortcut registry', () => {
-            // Wired through the canonical shortcut hook (the
-            // project's keyboard-shortcut-conventions guardrail
-            // bans raw window.addEventListener bindings).
+        it('ESC unpins via the shared useKeyboardShortcut registry', () => {
             expect(SANKEY).toMatch(/useKeyboardShortcut/);
             expect(SANKEY).toMatch(/['"]Escape['"]/);
             expect(SANKEY).toMatch(/setPinnedId\(null\)/);
         });
 
         it('clicking the empty SVG canvas unpins', () => {
-            // The Epic 47.3 hover-only behaviour leaves no way to
-            // dismiss a sticky highlight. PR-B adds the
-            // empty-canvas-click escape hatch.
-            expect(SANKEY).toMatch(
-                /e\.target\s*===\s*e\.currentTarget/,
-            );
+            expect(SANKEY).toMatch(/e\.target\s*===\s*e\.currentTarget/);
         });
 
         it('emits data-sankey-pinned-id for E2E hooks', () => {
             expect(SANKEY).toMatch(/data-sankey-pinned-id/);
         });
-    });
 
-    describe('Hover-pop + inline value annotation', () => {
         it('highlighted links thicken via strokeWidth × 1.5', () => {
-            expect(SANKEY).toMatch(/isHighlighted\s*\?\s*link\.strokeWidth\s*\*\s*1\.5/);
+            expect(SANKEY).toMatch(
+                /isHighlighted\s*\?\s*link\.strokeWidth\s*\*\s*1\.5/,
+            );
         });
 
         it('inline weight annotation renders next to the label', () => {
-            // The Epic 47.3 weight only surfaced in a <title>
-            // tooltip. PR-B promotes it to a visible tabular-nums
-            // count next to the label.
             expect(SANKEY).toMatch(/font-mono tabular-nums/);
             expect(SANKEY).toMatch(/\{node\.weight\}/);
         });
