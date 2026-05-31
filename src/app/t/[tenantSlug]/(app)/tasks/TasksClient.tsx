@@ -557,7 +557,7 @@ function TasksPageInner({
                         options={BULK_ACTION_OPTIONS}
                         placeholder="Choose action..."
                         matchTriggerWidth
-                        buttonProps={{ className: 'w-full sm:w-40 text-sm' }}
+                        buttonProps={{ className: 'w-full sm:w-auto text-sm' }}
                     />
                     {bulkAction === 'assign' && (
                         <input className="input w-full sm:w-48 text-sm" placeholder="User ID (blank = unassign)" value={bulkValue} onChange={e => setBulkValue(e.target.value)} id="bulk-value-input" />
@@ -571,7 +571,7 @@ function TasksPageInner({
                             options={STATUS_CB_OPTIONS}
                             placeholder="Select status..."
                             matchTriggerWidth
-                            buttonProps={{ className: 'w-full sm:w-40 text-sm' }}
+                            buttonProps={{ className: 'w-full sm:w-auto text-sm' }}
                         />
                     )}
                     {bulkAction === 'due' && (

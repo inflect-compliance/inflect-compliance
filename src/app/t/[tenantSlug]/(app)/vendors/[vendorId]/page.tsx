@@ -421,8 +421,6 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                 setSelected={(opt) => setDocTypeFilter(opt?.value ?? '')}
                                 options={DOC_TYPE_FILTER_OPTIONS}
                                 placeholder="All types"
-                                matchTriggerWidth
-                                buttonProps={{ className: 'w-40' }}
                             />
                             {/* B8 — Folder filter. Options are derived
                                 from the loaded docs (each unique
@@ -453,8 +451,6 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                         setSelected={(opt) => setDocFolderFilter(opt?.value ?? '')}
                                         options={folderOptions}
                                         placeholder="All folders"
-                                        matchTriggerWidth
-                                        buttonProps={{ className: 'w-44' }}
                                     />
                                 );
                             })()}

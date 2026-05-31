@@ -369,8 +369,7 @@ export default function RiskDetailPage() {
                             setSelected={(opt) => { if (opt) handleStatusChange(opt.value); }}
                             options={STATUS_OPTIONS}
                             placeholder="Status"
-                            matchTriggerWidth
-                            buttonProps={{ className: 'w-36 text-sm' }}
+                            buttonProps={{ className: 'text-sm' }}
                         />
                     </>
                 )

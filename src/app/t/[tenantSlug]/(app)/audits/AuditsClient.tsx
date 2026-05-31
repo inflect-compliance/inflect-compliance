@@ -214,7 +214,7 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
                                                 selected={resultOptions.find(o => o.value === item.result) ?? null}
                                                 setSelected={(opt) => opt && updateChecklist(item.id, opt.value)}
                                                 matchTriggerWidth
-                                                buttonProps={{ className: 'w-full sm:w-32 text-xs' }}
+                                                buttonProps={{ className: 'w-full sm:w-auto text-xs' }}
                                                 aria-label={`Result for ${item.prompt}`}
                                                 caret
                                             />

@@ -99,8 +99,8 @@ const BASELINE_PLUS_LITERAL_SITES = new Set<string>([
     // by 20 lines when the EntityPicker import block + the new JSX
     // expanded the task-link form. Line numbers refreshed; the
     // literals themselves are unchanged staged debt.
-    'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:495',
-    'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:523',
+    'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:494',
+    'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:522',
     'src/app/t/[tenantSlug]/(app)/tests/runs/[runId]/page.tsx:399',
     'src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx:369',
     'src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx:393',

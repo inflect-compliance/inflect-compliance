@@ -342,8 +342,7 @@ export default function TaskDetailPage() {
                         options={TASK_STATUS_CB_OPTIONS}
                         disabled={changingStatus}
                         placeholder="Status"
-                        matchTriggerWidth
-                        buttonProps={{ className: 'w-40 text-sm' }}
+                        buttonProps={{ className: 'text-sm' }}
                     />
                 )
             }
