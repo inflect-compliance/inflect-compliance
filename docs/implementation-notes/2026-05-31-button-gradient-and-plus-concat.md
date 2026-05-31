@@ -21,10 +21,22 @@ the same-day clean-fill/centering fix:
 2. **Concatenate the Plus: `+Asset`, not `+ Asset`.** CLAUDE.md
    mandates the `+` ride the `icon` slot (never as label text), so the
    concatenation is done visually: each create button's `<Plus />`
-   carries `-mr-2.5` (−10px), which absorbs the 8px icon↔label gap plus
-   the lucide glyph's internal padding so the `+` sits flush to the
-   noun. The label stays the i18n noun; the canonical icon-slot
-   pattern is preserved.
+   carries `-ml-0.5 -mr-2.5`. The `-mr-2.5` (−10px) absorbs the 8px
+   icon↔label gap plus the lucide glyph's internal padding so the `+`
+   sits flush to the noun. The label stays the i18n noun; the canonical
+   icon-slot pattern is preserved.
+
+   **Centering correction (follow-up).** The first cut used `-mr-2.5`
+   alone. An asymmetric negative margin on the LEADING item offsets
+   flex centering: it shrinks the *measured* line width on one side
+   only, so `justify-center` recentres a narrower box and the visual
+   ink shifts toward the un-shrunk side — `+Asset` ended up ~2.5px
+   right of centre (measured against a screenshot harness). Adding a
+   small symmetric counter-pull on the left (`-ml-0.5`, −2px) brings
+   the offset to ≈+0.5px (Asset) / 0px (Control) — centred — while the
+   `-mr-2.5` keeps the `+` flush. Lesson: to tighten a leading icon to
+   its label without breaking centring, the left and right negative
+   margins must roughly balance; a one-sided `-mr` always offsets.
 
 ## Files
 

@@ -623,7 +623,7 @@ function RisksPageInner({
                                 </Link>
                                 <Button
                                     variant="primary"
-                                    icon={<Plus className="-mr-2.5" />}
+                                    icon={<Plus className="-ml-0.5 -mr-2.5" />}
                                     onClick={() => setIsCreateOpen(true)}
                                     id="new-risk-btn"
                                 >
