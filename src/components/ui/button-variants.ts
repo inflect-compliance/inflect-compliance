@@ -201,6 +201,30 @@ const glassOnHover = [
  * (`carbonSurface` / `carbonOnHover`) it carries.
  */
 const carbonStates = [
+  // 2026-05-31 CENTERING BUGFIX — the `::before` depth overlay MUST be
+  // taken out of flow. The `before:*` utilities below make Tailwind
+  // emit a `::before` with `content:""`; without explicit positioning
+  // that pseudo defaults to `position:static`, so it becomes a 0-width
+  // IN-FLOW flex item. With the button's `gap` (8px at md), that empty
+  // pseudo consumes a gap slot and pushes the label ~4px right of
+  // centre on EVERY solid/glass button (primary/secondary/destructive)
+  // — the recurring "text not centered" report. `glassOnHover`
+  // (transparent variants) already positioned its `::before`; the R24
+  // `glassSurface` swap dropped it for the solid variants. Anchoring it
+  // here in the shared base guarantees every variant's overlay is an
+  // absolute, click-transparent layer that never participates in the
+  // flex line. `inset-0` + `rounded-[inherit]` track the button shape.
+  "before:content-[''] before:absolute before:inset-0 before:rounded-[inherit] before:pointer-events-none",
+  // Same defence for the `::after` finish layer (iridescent edge /
+  // aura). `iridescentEdge` positions its own `::after` absolute, but
+  // `auraNeutral` (secondary's only `::after` recipe) used `after:*`
+  // utilities WITHOUT positioning — so secondary's `::after` was a
+  // static in-flow flex item on the TRAILING edge, pushing its label
+  // ~4px LEFT of centre (the mirror of the `::before` bug). Anchoring
+  // `after:absolute` in the base guarantees the finish layer is never
+  // a flex item on any variant. Recipes that paint it (iridescent rim,
+  // aura shadow) set the same values, so tailwind-merge dedupes.
+  "after:content-[''] after:absolute after:inset-0 after:rounded-[inherit] after:pointer-events-none",
   "before:transition-opacity before:duration-150",
   "motion-reduce:before:transition-none",
   "active:before:opacity-70",

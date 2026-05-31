@@ -79,6 +79,29 @@ describe('Button label centering', () => {
             // every label.
             expect(src).toMatch(/shortcut\s*&&\s*"flex-1 text-left"/);
         });
+
+        it('the ::before AND ::after pseudo-overlays are positioned absolute in the cva base', () => {
+            // 2026-05-31 root cause of the persistent "text not centred"
+            // report: Tailwind auto-adds `content:""` to a pseudo as soon
+            // as ANY `before:`/`after:` utility is used. Without explicit
+            // positioning that pseudo is `position:static` → an in-flow
+            // 0-width FLEX ITEM. Combined with the button's `gap`, a
+            // static ::before pushes the label right (+~4px), a static
+            // ::after pushes it left — on solid/glass variants where the
+            // surface recipe didn't position its own pseudo. The cva base
+            // (`carbonStates`) MUST anchor both pseudos absolute so they
+            // never join the flex line. This is the load-bearing centring
+            // invariant — do not remove without re-proving centring in a
+            // real build (jsdom can't catch it; it only shows under the
+            // compiled Tailwind cascade).
+            const variants = read('src/components/ui/button-variants.ts');
+            const base = variants.slice(
+                variants.indexOf('const carbonStates'),
+                variants.indexOf('];', variants.indexOf('const carbonStates')),
+            );
+            expect(base).toMatch(/before:content-\[''\][\s\S]*before:absolute[\s\S]*before:inset-0/);
+            expect(base).toMatch(/after:content-\[''\][\s\S]*after:absolute[\s\S]*after:inset-0/);
+        });
     });
 
     describe('2. No <Button> call site overrides the centred layout', () => {
