@@ -25,7 +25,6 @@ import { Button } from '@/components/ui/button';
 import { CalendarHeatmap } from '@/components/ui/CalendarHeatmap';
 import { CalendarMonth } from '@/components/ui/CalendarMonth';
 import { GanttTimeline } from '@/components/ui/GanttTimeline';
-import { EmptyState } from '@/components/ui/empty-state';
 import { ToggleGroup } from '@/components/ui/toggle-group';
 import { queryKeys } from '@/lib/queryKeys';
 import { formatDate } from '@/lib/format-date';
@@ -250,13 +249,12 @@ export function CalendarClient({
             {/* Body — view switch */}
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-section">
                 <div className={cardVariants({ density: 'compact' })}>
-                    {events.length === 0 && !calQuery.isLoading ? (
-                        <EmptyState
-                            variant="no-records"
-                            title="No deadlines in this range"
-                            description="Once you have evidence to renew, policies to review, vendor renewals, or audit cycles, they'll show up here."
-                        />
-                    ) : view === 'heatmap' ? (
+                    {/* The calendar/heatmap/timeline always renders — even
+                        with zero events — so an empty month still shows its
+                        full grid (no "No deadlines in this range" takeover).
+                        Each view handles the empty case itself (empty cells /
+                        empty heatmap / the timeline's own empty message). */}
+                    {view === 'heatmap' ? (
                         <CalendarHeatmap
                             events={events}
                             from={range.from}
