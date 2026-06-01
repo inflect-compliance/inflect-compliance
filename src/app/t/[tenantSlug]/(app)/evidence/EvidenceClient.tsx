@@ -225,17 +225,50 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     // function-form `mutate()` matches by absolute URL prefix —
     // every key under `/api/t/{slug}/evidence` (with or without
     // query string) gets a background refetch.
-    const invalidateEvidence = useCallback(() => {
-        const evidenceUrlPrefix = apiUrl(CACHE_KEYS.evidence.list());
-        return swrMutate(
-            (key) =>
+    // Matches every cached evidence-list filter variant (the base URL
+    // and any `?…` query-string sibling).
+    const evidenceKeyMatcher = useCallback(
+        (key: unknown): key is string => {
+            const prefix = apiUrl(CACHE_KEYS.evidence.list());
+            return (
                 typeof key === 'string' &&
-                (key === evidenceUrlPrefix ||
-                    key.startsWith(`${evidenceUrlPrefix}?`)),
-            undefined,
-            { revalidate: true },
-        );
-    }, [apiUrl, swrMutate]);
+                (key === prefix || key.startsWith(`${prefix}?`))
+            );
+        },
+        [apiUrl],
+    );
+
+    const invalidateEvidence = useCallback(
+        () => swrMutate(evidenceKeyMatcher, undefined, { revalidate: true }),
+        [swrMutate, evidenceKeyMatcher],
+    );
+
+    // Optimistically flip `isArchived` on the matching row across every
+    // cached list variant, WITHOUT revalidating — so the row reacts
+    // (e.g. drops out of the Active tab) the instant the button is
+    // clicked, independent of refetch timing.
+    const optimisticSetArchived = useCallback(
+        (id: string, isArchived: boolean) =>
+            swrMutate(
+                evidenceKeyMatcher,
+                (
+                    current?: {
+                        rows?: Record<string, unknown>[];
+                        truncated?: boolean;
+                    },
+                ) =>
+                    current
+                        ? {
+                              ...current,
+                              rows: (current.rows ?? []).map((r) =>
+                                  r.id === id ? { ...r, isArchived } : r,
+                              ),
+                          }
+                        : current,
+                { revalidate: false },
+            ),
+        [swrMutate, evidenceKeyMatcher],
+    );
 
     // ─── Mutation: review workflow (Epic 69 — useTenantMutation) ───
     //
@@ -286,25 +319,37 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
 
     // ─── Retention actions ─────────────────────────────────────────
 
-    const archiveEvidence = async (id: string) => {
-        const res = await fetch(apiUrl(`/evidence/${id}/archive`), { method: 'POST' });
-        if (!res.ok) {
-            const err = await res.json().catch(() => null);
-            alert(err?.error?.message || 'Failed to archive evidence');
-            return;
+    // Shared archive/unarchive runner. Optimistically flips the row,
+    // POSTs, then revalidates from the server on either outcome. The
+    // try/catch is load-bearing: the row buttons call this from a
+    // non-awaited `onClick`, so a thrown fetch (offline / blocked /
+    // network) would otherwise reject silently and the click would
+    // appear to "do nothing". Any failure now rolls back + alerts.
+    const setArchived = async (id: string, isArchived: boolean) => {
+        const verb = isArchived ? 'archive' : 'unarchive';
+        await optimisticSetArchived(id, isArchived);
+        try {
+            const res = await fetch(apiUrl(`/evidence/${id}/${verb}`), {
+                method: 'POST',
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => null);
+                throw new Error(
+                    err?.error?.message ||
+                        `Failed to ${verb} evidence (${res.status})`,
+                );
+            }
+            await invalidateEvidence();
+        } catch (e) {
+            // eslint-disable-next-line no-console
+            console.error(`evidence ${verb} failed`, e);
+            await invalidateEvidence(); // roll back to server truth
+            alert(e instanceof Error ? e.message : `Failed to ${verb} evidence`);
         }
-        invalidateEvidence();
     };
 
-    const unarchiveEvidence = async (id: string) => {
-        const res = await fetch(apiUrl(`/evidence/${id}/unarchive`), { method: 'POST' });
-        if (!res.ok) {
-            const err = await res.json().catch(() => null);
-            alert(err?.error?.message || 'Failed to unarchive evidence');
-            return;
-        }
-        invalidateEvidence();
-    };
+    const archiveEvidence = (id: string) => setArchived(id, true);
+    const unarchiveEvidence = (id: string) => setArchived(id, false);
 
     const saveRetention = async (id: string) => {
         await fetch(apiUrl(`/evidence/${id}/retention`), {
