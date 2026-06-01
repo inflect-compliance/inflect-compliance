@@ -22,6 +22,16 @@ import {
     type RichTextContentType,
 } from '@/components/ui/RichTextEditor';
 
+// TipTap 3.24+ (ProseMirror) calls `document.elementFromPoint` while
+// mounting the editor view; jsdom has no layout engine and lacks it.
+// Stub it for THIS file only — a GLOBAL stub (in setup.ts) trips
+// axe-core's obscured-element checks and produces false a11y
+// violations in the modal/combobox suites. jsdom environments are
+// per-file, so this assignment doesn't leak to other suites.
+beforeAll(() => {
+    Document.prototype.elementFromPoint = () => null;
+});
+
 interface HarnessProps {
     initial?: string;
     initialType?: RichTextContentType;
