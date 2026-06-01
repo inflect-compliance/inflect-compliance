@@ -18,7 +18,7 @@
  *
  * @module app-layer/jobs/queue
  */
-import { Queue, type JobsOptions } from 'bullmq';
+import { Queue, type JobsOptions, type ConnectionOptions } from 'bullmq';
 import { createRedisClient } from '@/lib/redis';
 import { QUEUE_NAME, JOB_DEFAULTS, type JobName, type JobPayload } from './types';
 import { logger } from '@/lib/observability/logger';
@@ -41,7 +41,12 @@ export function getQueue(): Queue {
         const connection = createRedisClient();
 
         globalForQueue.__bullmq_queue = new Queue(QUEUE_NAME, {
-            connection,
+            // `connection` is an ioredis@5.11 instance; bullmq bundles
+            // its own (exact-pinned) ioredis@5.10 types, so the two
+            // `Redis` type copies diverge on the `Connector` property
+            // even though the runtime API is identical and bullmq uses
+            // the instance we pass. Cast across the duplicate-type gap.
+            connection: connection as ConnectionOptions,
             defaultJobOptions: {
                 attempts: 3,
                 backoff: { type: 'exponential', delay: 5000 },
