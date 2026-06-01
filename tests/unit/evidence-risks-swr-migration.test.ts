@@ -106,11 +106,16 @@ describe('EvidenceClient — Epic 69 SWR migration', () => {
         // The filter-aware cache key model means a mutation has to
         // invalidate ALL `/api/t/{slug}/evidence?…` entries to
         // refresh the expiring/archived tabs + active filter views.
-        // The pattern: `swrMutate((key) => key.startsWith(prefix), …)`.
+        // The matcher is a function-form prefix matcher — either inline
+        // (`swrMutate((key) => key.startsWith(prefix), …)`) or a named
+        // callback (`evidenceKeyMatcher`) reused by invalidate +
+        // optimistic updates.
         const src = read(EVIDENCE_CLIENT);
         expect(src).toContain('swrMutate');
-        // Must use the function-form matcher, not a single-key mutate.
-        expect(src).toMatch(/swrMutate\(\s*\(key\)/);
+        // Function-form matcher (named or inline), NOT a single-key mutate…
+        expect(src).toMatch(/swrMutate\(\s*(\(key|evidenceKeyMatcher\b)/);
+        // …and it matches by URL prefix so every `?…` variant refreshes.
+        expect(src).toMatch(/\.startsWith\(/);
     });
 
     it('does NOT use TanStack React Query', () => {
