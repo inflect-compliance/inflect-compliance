@@ -341,8 +341,6 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             }
             await invalidateEvidence();
         } catch (e) {
-            // eslint-disable-next-line no-console
-            console.error(`evidence ${verb} failed`, e);
             await invalidateEvidence(); // roll back to server truth
             alert(e instanceof Error ? e.message : `Failed to ${verb} evidence`);
         }
