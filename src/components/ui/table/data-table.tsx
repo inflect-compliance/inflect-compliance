@@ -154,15 +154,20 @@ export interface DataTableProps<T> {
   // ── Column resizing (B2) ──
 
   /**
-   * Enable user-controlled column resizing. When `true`, every column
-   * carries a drag handle on its right edge; the table switches to
-   * `table-layout: fixed` and respects per-column `size` / `minSize`
-   * / `maxSize` hints in the column definitions.
+   * User-controlled column resizing. **On by default** for the
+   * non-virtualized table: every column carries a drag handle on its
+   * right edge and the user can adjust widths with the mouse.
    *
-   * Off by default to keep the existing tables visually stable —
-   * pages opt in explicitly. Sub-tables that nest inside a detail
-   * card should usually stay opted out (the parent card already
-   * clamps width).
+   * Widths are NOT uniform — on mount the table renders one
+   * auto-layout frame, measures each column's content width, seeds
+   * those widths, then switches to `table-layout: fixed` (see the
+   * measure-then-fix block in `table.tsx`). The result is visually
+   * identical to the old auto-sized table plus drag handles.
+   *
+   * Resizing is force-disabled for virtualized tables (the grid
+   * renderer reads `getSize()` directly with no measure step, so it
+   * would collapse to a uniform width). Pass `enableColumnResizing={false}`
+   * to opt a specific table out entirely.
    */
   enableColumnResizing?: boolean;
 
@@ -293,6 +298,7 @@ export function DataTable<T>({
   virtualize,
   virtualRowHeight,
   virtualHeight,
+  enableColumnResizing = true,
 }: DataTableProps<T>) {
   // Compose the viewport-fill classes onto the existing className /
   // scrollWrapperClassName slots. Tailwind's `md:` prefixes mean
@@ -335,6 +341,21 @@ export function DataTable<T>({
   const effectiveOnRowSelectionChange = onRowSelectionChange ?? (hasBatchActions ? (() => {}) : undefined);
   const effectiveSelectedRows = selectedRows ?? (hasBatchActions && !hasExplicitSelection ? internalSelection : undefined);
   const effectiveSelectionControls = selectionControls ?? (hasBatchActions ? renderBatchActions(batchActions!) : undefined);
+  // Column resizing lives on the non-virtualized <Table> only — its
+  // measure-then-fix step seeds each column's content width before
+  // switching to fixed layout. VirtualTable reads getSize() straight
+  // into its grid template with no measure step, so handing it the
+  // resizing defaults would collapse every column to the uniform
+  // default width. Compute the virtualization decision up-front (the
+  // resolver is a pure, hoisted function) and gate resizing on it.
+  const willVirtualizeEarly =
+    decideVirtualization(virtualize, data.length) &&
+    data.length > 0 &&
+    !error &&
+    !loading &&
+    !(!!pagination && !!onPaginationChange && rowCount !== undefined);
+  const resizingEnabled = enableColumnResizing && !willVirtualizeEarly;
+
   // Build the useTable props, handling the pagination discriminated union
   const tableProps = pagination && onPaginationChange && rowCount !== undefined
     ? {
@@ -359,6 +380,7 @@ export function DataTable<T>({
         pagination,
         onPaginationChange,
         rowCount,
+        enableColumnResizing: resizingEnabled,
         containerClassName: filledContainerClassName,
         scrollWrapperClassName: filledScrollWrapperClassName,
       }
@@ -381,6 +403,7 @@ export function DataTable<T>({
         selectionEnabled,
         columnVisibility,
         onColumnVisibilityChange,
+        enableColumnResizing: resizingEnabled,
         containerClassName: filledContainerClassName,
         scrollWrapperClassName: filledScrollWrapperClassName,
       };
@@ -409,15 +432,7 @@ export function DataTable<T>({
   //   - error / empty / loading rendering paths still need <Table>
   //     today — when no rows exist there's nothing to virtualize, so
   //     <Table>'s richer empty/error chrome is the correct surface.
-  const wantsPagination =
-    !!pagination && !!onPaginationChange && rowCount !== undefined;
-  const hasRows = data.length > 0 && !error && !loading;
-  const virtualizationDecision = decideVirtualization(
-    virtualize,
-    data.length,
-  );
-  const useVirtual =
-    virtualizationDecision && hasRows && !wantsPagination;
+  const useVirtual = willVirtualizeEarly;
 
   if (useVirtual) {
     return (
