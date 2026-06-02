@@ -25,6 +25,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { env } from '@/env';
 import { withApiErrorHandling } from '@/lib/errors/api';
+import { resolvePublicOrigin } from '@/lib/http/request-origin';
 
 // Epic E — wrapped for x-request-id + standardized error contract.
 // The redirect itself is the success contract (any AppError thrown
@@ -36,7 +37,7 @@ export const GET = withApiErrorHandling(async (
     const { token } = await ctx.params;
 
     const response = NextResponse.redirect(
-        new URL('/login', req.nextUrl.origin),
+        new URL('/login', resolvePublicOrigin(req)),
     );
 
     response.cookies.set('inflect_invite_token', token, {

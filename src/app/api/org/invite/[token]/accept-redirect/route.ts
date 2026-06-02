@@ -22,6 +22,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
+import { resolvePublicOrigin } from '@/lib/http/request-origin';
 import { redeemOrgInvite } from '@/app-layer/usecases/org-invites';
 import { INVITE_REDEEM_LIMIT } from '@/lib/security/rate-limit';
 import {
@@ -44,10 +45,11 @@ async function handle(
     }
 
     const { token } = await routeArgs.params;
+    const origin = resolvePublicOrigin(req);
     const session = await auth();
 
     if (!session?.user?.id || !session.user.email) {
-        const loginUrl = new URL('/login', req.nextUrl.origin);
+        const loginUrl = new URL('/login', origin);
         loginUrl.searchParams.set('callbackUrl', req.nextUrl.pathname);
         return NextResponse.redirect(loginUrl);
     }
@@ -59,10 +61,10 @@ async function handle(
             userEmail: session.user.email,
             requestId: req.headers.get('x-request-id') ?? undefined,
         });
-        const dashUrl = new URL(`/org/${result.organizationSlug}`, req.nextUrl.origin);
+        const dashUrl = new URL(`/org/${result.organizationSlug}`, origin);
         return NextResponse.redirect(dashUrl, 303);
     } catch (err) {
-        const inviteUrl = new URL(`/invite/org/${token}`, req.nextUrl.origin);
+        const inviteUrl = new URL(`/invite/org/${token}`, origin);
         const isAppError =
             typeof err === 'object' &&
             err !== null &&
