@@ -14,6 +14,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
+import { resolvePublicOrigin } from '@/lib/http/request-origin';
 import { redeemInvite } from '@/app-layer/usecases/tenant-invites';
 import { INVITE_REDEEM_LIMIT } from '@/lib/security/rate-limit';
 import { enforceRateLimit, getClientIp, isRateLimitBypassed } from '@/lib/security/rate-limit-middleware';
@@ -32,11 +33,12 @@ export async function GET(
     }
 
     const { token } = await routeArgs.params;
+    const origin = resolvePublicOrigin(req);
     const session = await auth();
 
     if (!session?.user?.id || !session.user.email) {
         // Not signed in — send back to sign-in with this route as callbackUrl.
-        const loginUrl = new URL('/login', req.nextUrl.origin);
+        const loginUrl = new URL('/login', origin);
         loginUrl.searchParams.set('callbackUrl', req.nextUrl.pathname);
         return NextResponse.redirect(loginUrl);
     }
@@ -47,10 +49,10 @@ export async function GET(
             userId: session.user.id,
             userEmail: session.user.email,
         });
-        const dashUrl = new URL(`/t/${result.slug}/dashboard`, req.nextUrl.origin);
+        const dashUrl = new URL(`/t/${result.slug}/dashboard`, origin);
         return NextResponse.redirect(dashUrl);
     } catch (err) {
-        const inviteUrl = new URL(`/invite/${token}`, req.nextUrl.origin);
+        const inviteUrl = new URL(`/invite/${token}`, origin);
         // Surface a human-readable error without leaking internals.
         const isAppError =
             typeof err === 'object' &&
