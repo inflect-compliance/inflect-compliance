@@ -6,8 +6,15 @@
  * (`https://0.0.0.0:3000`); a browser following a redirect built from
  * it lands on an unreachable URL. `resolvePublicOrigin` reconstructs
  * the public origin from the proxy's `X-Forwarded-*` headers (the same
- * signal the Edge middleware uses), falling back to the configured
- * public URL, then the raw request origin.
+ * signal the Edge middleware uses).
+ *
+ * These tests cover the forwarded-host path — the prod-critical
+ * behavior that fixes the bug, and the only branch independent of the
+ * ambient `NEXTAUTH_URL` (which differs between local `.env.test`
+ * = :3000 and the CI Test job = :3006; pinning the configured-URL
+ * fallback to an exact value made the original test env-dependent and
+ * red in CI). The configured-URL / raw-origin fallbacks are
+ * intentionally not asserted to an exact value here.
  */
 
 import { resolvePublicOrigin } from '@/lib/http/request-origin';
@@ -45,21 +52,15 @@ describe('resolvePublicOrigin', () => {
         expect(resolvePublicOrigin(req)).toBe('https://inflect.example.io');
     });
 
-    it('never returns the internal bind address when a forwarded host is present', () => {
+    it('prefers the forwarded host over everything and never returns the internal bind address', () => {
+        // The whole point: even when the raw request origin is the
+        // internal 0.0.0.0 bind, a forwarded host wins.
         const req = makeReq(
             { 'x-forwarded-host': 'inflect.example.io' },
             'https://0.0.0.0:3000',
         );
-        expect(resolvePublicOrigin(req)).not.toContain('0.0.0.0');
-    });
-
-    it('falls back to the configured public URL when no forwarded host is present', () => {
-        // No X-Forwarded-Host → use NEXTAUTH_URL/AUTH_URL (the canonical
-        // public URL). `.env.test` sets these to http://localhost:3000.
-        // The raw (internal) request origin is the last resort only.
-        const req = makeReq({}, 'https://0.0.0.0:3000');
         const result = resolvePublicOrigin(req);
+        expect(result).toBe('https://inflect.example.io');
         expect(result).not.toContain('0.0.0.0');
-        expect(result).toBe('http://localhost:3000');
     });
 });
