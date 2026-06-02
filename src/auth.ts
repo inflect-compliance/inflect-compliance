@@ -161,6 +161,17 @@ const providers: NextAuthOptions['providers'] = [
         },
     }),
     AzureAD({
+        // Pin the provider id to `microsoft-entra-id`. The v4 package
+        // `next-auth/providers/azure-ad` defaults its id to `azure-ad`,
+        // but the rest of the app keys off `microsoft-entra-id` — the
+        // login button (`signIn('microsoft-entra-id')`), the
+        // token-refresh switch in `src/lib/auth/refresh.ts`, and the
+        // security-event method union. Without this override the
+        // Microsoft button hits an unregistered provider and the
+        // refresh path never matches. Callback URL is therefore
+        // `/api/auth/callback/microsoft-entra-id`.
+        id: 'microsoft-entra-id',
+        name: 'Microsoft',
         clientId: env.MICROSOFT_CLIENT_ID,
         clientSecret: env.MICROSOFT_CLIENT_SECRET,
         tenantId: env.MICROSOFT_TENANT_ID,
