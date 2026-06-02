@@ -30,6 +30,7 @@
  */
 
 import type { NextAuthOptions, Session } from 'next-auth';
+import type { JWT } from 'next-auth/jwt';
 import { getServerSession } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import Google from 'next-auth/providers/google';
@@ -136,6 +137,95 @@ declare module 'next-auth/jwt' {
         userSessionId?: string;
         /** Soft-error flag — surfaces `RefreshTokenError` / `SessionRevoked` / `MfaDependencyFailure`. */
         error?: string;
+    }
+}
+
+/**
+ * Load the user's tenant + org membership claims into the JWT from the
+ * database.
+ *
+ * Runs at sign-in AND on an explicit `useSession().update()`
+ * (trigger === 'update'). The Edge tenant-access gate authorizes slugs
+ * straight from these claims with NO DB hit, so a membership the user
+ * gains AFTER sign-in — a freshly-created tenant, an accepted invite,
+ * org auto-provisioning — is invisible to the gate until these claims
+ * are refreshed. Without the update-trigger refresh the only way to
+ * pick up a new membership is a full re-login. This is the single
+ * source of truth for those claims; the sign-in path and the
+ * update-trigger path both call it so they can never drift.
+ *
+ * `fallbackUserId` is consulted only when the email→User lookup misses
+ * (a defensive sign-in edge case before the adapter commits the row);
+ * on an update the user always exists so the lookup succeeds.
+ */
+async function applyMembershipClaims(
+    token: JWT,
+    fallbackUserId?: string,
+): Promise<void> {
+    const dbUser = await prisma.user.findUnique({
+        where: { emailHash: hashForLookup(token.email!) },
+        include: {
+            tenantMemberships: {
+                where: { status: 'ACTIVE' },
+                orderBy: { createdAt: 'asc' },
+                include: { tenant: { select: { slug: true, id: true } } },
+            },
+            orgMemberships: {
+                orderBy: { createdAt: 'asc' },
+                include: { organization: { select: { slug: true, id: true } } },
+            },
+        },
+    });
+
+    if (dbUser) {
+        token.userId = dbUser.id;
+        token.sessionVersion = dbUser.sessionVersion;
+
+        // Active tenant memberships, capped at MAX_JWT_MEMBERSHIPS so the
+        // cookie stays bounded; `membershipsTruncated` flags the rare
+        // over-cap case for the middleware gate.
+        token.memberships = dbUser.tenantMemberships
+            .slice(0, MAX_JWT_MEMBERSHIPS)
+            .map((m) => ({
+                slug: m.tenant.slug,
+                role: m.role,
+                tenantId: m.tenantId,
+            }));
+        token.membershipsTruncated =
+            dbUser.tenantMemberships.length > MAX_JWT_MEMBERSHIPS;
+
+        // Same pattern (and cap) for the org layer so the middleware can
+        // gate `/org/:slug/*` with no DB hit.
+        token.orgMemberships = dbUser.orgMemberships
+            .slice(0, MAX_JWT_MEMBERSHIPS)
+            .map((m) => ({
+                slug: m.organization.slug,
+                role: m.role,
+                organizationId: m.organizationId,
+            }));
+        token.orgMembershipsTruncated =
+            dbUser.orgMemberships.length > MAX_JWT_MEMBERSHIPS;
+
+        // Backward-compat: keep tenantId/tenantSlug/role as the "primary"
+        // membership (oldest by createdAt).
+        const primary = token.memberships[0];
+        if (primary) {
+            token.tenantId = primary.tenantId;
+            token.tenantSlug = primary.slug;
+            token.role = primary.role;
+        } else {
+            token.tenantId = null;
+            token.tenantSlug = null;
+            token.role = 'READER';
+        }
+    } else {
+        token.userId = fallbackUserId ?? token.userId;
+        token.role = 'READER';
+        token.sessionVersion = 0;
+        token.memberships = [];
+        token.orgMemberships = [];
+        token.membershipsTruncated = false;
+        token.orgMembershipsTruncated = false;
     }
 }
 
@@ -389,83 +479,10 @@ export const authOptions: NextAuthOptions = {
          * token refresh, and gate MFA + sessionVersion + Epic C.3
          * session tracking.
          */
-        async jwt({ token, user, account }) {
+        async jwt({ token, user, account, trigger }) {
             // Initial sign in.
             if (account && user) {
-                const dbUser = await prisma.user.findUnique({
-                    where: { emailHash: hashForLookup(token.email!) },
-                    include: {
-                        tenantMemberships: {
-                            where: { status: 'ACTIVE' },
-                            orderBy: { createdAt: 'asc' },
-                            include: {
-                                tenant: { select: { slug: true, id: true } },
-                            },
-                        },
-                        orgMemberships: {
-                            orderBy: { createdAt: 'asc' },
-                            include: {
-                                organization: {
-                                    select: { slug: true, id: true },
-                                },
-                            },
-                        },
-                    },
-                });
-
-                if (dbUser) {
-                    token.userId = dbUser.id;
-                    token.sessionVersion = dbUser.sessionVersion;
-
-                    // Store the user's active memberships so the Edge
-                    // middleware can authorize any slug they belong to
-                    // with no DB hit. Capped at MAX_JWT_MEMBERSHIPS so the
-                    // cookie stays bounded; `membershipsTruncated` flags
-                    // the rare over-cap case for the middleware gate.
-                    token.memberships = dbUser.tenantMemberships
-                        .slice(0, MAX_JWT_MEMBERSHIPS)
-                        .map((m) => ({
-                            slug: m.tenant.slug,
-                            role: m.role,
-                            tenantId: m.tenantId,
-                        }));
-                    token.membershipsTruncated =
-                        dbUser.tenantMemberships.length > MAX_JWT_MEMBERSHIPS;
-
-                    // GAP O4-1: same pattern (and same cap) for the
-                    // org-layer memberships so the middleware can gate
-                    // `/org/:slug/*` with no DB hit.
-                    token.orgMemberships = dbUser.orgMemberships
-                        .slice(0, MAX_JWT_MEMBERSHIPS)
-                        .map((m) => ({
-                            slug: m.organization.slug,
-                            role: m.role,
-                            organizationId: m.organizationId,
-                        }));
-                    token.orgMembershipsTruncated =
-                        dbUser.orgMemberships.length > MAX_JWT_MEMBERSHIPS;
-
-                    // Backward-compat: keep tenantId/tenantSlug/role as the
-                    // "primary" membership (oldest by createdAt).
-                    const primary = token.memberships[0];
-                    if (primary) {
-                        token.tenantId = primary.tenantId;
-                        token.tenantSlug = primary.slug;
-                        token.role = primary.role;
-                    } else {
-                        token.tenantId = null;
-                        token.tenantSlug = null;
-                        token.role = 'READER';
-                    }
-                } else {
-                    token.userId = user.id;
-                    token.role = 'READER';
-                    token.sessionVersion = 0;
-                    token.memberships = [];
-                    token.orgMemberships = [];
-                    token.membershipsTruncated = false;
-                    token.orgMembershipsTruncated = false;
-                }
+                await applyMembershipClaims(token, user.id);
 
                 if (account.provider !== 'credentials') {
                     token.provider = account.provider;
@@ -531,6 +548,16 @@ export const authOptions: NextAuthOptions = {
             }
 
             // ── Subsequent requests ──
+
+            // Explicit client-side session refresh (`useSession().update()`).
+            // Re-reads the membership claims so a tenant the user gained
+            // after sign-in — e.g. one they just created (OWNER) or were
+            // invited / auto-provisioned into — becomes visible to the Edge
+            // gate immediately, with no full re-login. Falls through to the
+            // session-revocation + OAuth-refresh checks below.
+            if (trigger === 'update' && token.email) {
+                await applyMembershipClaims(token);
+            }
 
             // Epic C.3 — verify session row still exists + isn't revoked.
             if (typeof token.userSessionId === 'string' && token.userSessionId) {
