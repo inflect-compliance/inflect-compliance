@@ -100,9 +100,14 @@ test.describe('Controls Center', () => {
             authedPage.click('#create-task-btn'),
         ]);
 
-        // The new task shows in the control's linked-tasks list.
+        // The new task shows in the control's linked-tasks table.
+        // (The Tasks tab is now a DataTable matching the Tasks page —
+        // rows no longer carry a per-row `linked-task-<id>` id, so
+        // assert on the row text within the table itself.)
         await expect(
-            authedPage.locator('[id^="linked-task-"]').filter({ hasText: title }),
+            authedPage
+                .locator('[data-testid="linked-tasks-table"]')
+                .getByText(title),
         ).toBeVisible({ timeout: 15000 });
 
         // ...and in the global Tasks list (it's a real Task row now,
