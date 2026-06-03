@@ -248,11 +248,6 @@ export default function DashboardClient({
                 delta={coverageDelta}
                 deltaPolarity="up-good"
                 deltaLabel="vs prev"
-                action={{
-                    label: t('viewAllClauses'),
-                    href: href('/clauses'),
-                    'data-testid': 'hero-action-clauses',
-                }}
                 data-testid="dashboard-hero"
             />
 
@@ -302,14 +297,6 @@ export default function DashboardClient({
                                       format: '%',
                                   }
                                 : undefined
-                        }
-                        footer={
-                            <Link
-                                href={href('/clauses')}
-                                className="text-[var(--brand-emphasis)] hover:text-[var(--brand-muted)]"
-                            >
-                                {t('viewAllClauses')}
-                            </Link>
                         }
                     />
                 </ChartFocusWrapper>
