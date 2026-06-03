@@ -173,7 +173,9 @@ describe('getDefaultTenantForUser', () => {
         expect(result!.tenantId).toBe('tenant-1');
         expect(result!.tenant.name).toBe('Acme Corp');
         expect(mockPrisma.tenantMembership.findFirst).toHaveBeenCalledWith({
-            where: { userId: 'user-1' },
+            // Excludes soft-deleted (org-removed) tenants — never default
+            // a user into a removed workspace.
+            where: { userId: 'user-1', tenant: { deletedAt: null } },
             orderBy: { createdAt: 'asc' },
             include: { tenant: true },
         });
