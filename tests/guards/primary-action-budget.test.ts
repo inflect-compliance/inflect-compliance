@@ -74,7 +74,10 @@ const PRIMARY_BUDGET: Record<string, number> = {
 
     // 3-primary tier — page CTA + inline form + 1 contextual region
     "src/app/t/[tenantSlug]/(app)/tests/runs/[runId]/page.tsx": 3,
-    "src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx": 3,
+    // 3 page-level primaries + 1 for the close-resolution Modal's
+    // confirm CTA (a distinct modal region added when terminal status
+    // changes started prompting for a resolution note).
+    "src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx": 4,
     "src/app/t/[tenantSlug]/(app)/risks/ai/page.tsx": 3,
     "src/app/t/[tenantSlug]/(app)/controls/[controlId]/tests/[planId]/page.tsx": 3,
     "src/app/t/[tenantSlug]/(app)/admin/members/page.tsx": 3,

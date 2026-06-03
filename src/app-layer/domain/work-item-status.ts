@@ -105,10 +105,14 @@ export const WORK_ITEM_TRANSITIONS: Record<
     WorkItemStatusValue,
     ReadonlySet<WorkItemStatusValue>
 > = {
-    OPEN: new Set(['TRIAGED', 'IN_PROGRESS', 'BLOCKED', 'RESOLVED', 'CANCELED']),
-    TRIAGED: new Set(['IN_PROGRESS', 'BLOCKED', 'RESOLVED', 'CANCELED']),
-    IN_PROGRESS: new Set(['BLOCKED', 'RESOLVED', 'CANCELED', 'TRIAGED']),
-    BLOCKED: new Set(['IN_PROGRESS', 'TRIAGED', 'CANCELED']),
+    // CLOSED is now reachable directly from every active status. The
+    // UI retired RESOLVED as a redundant intermediate (it stays in the
+    // enum + the graph for legacy RESOLVED rows, which can still
+    // advance to CLOSED), so an active task closes in one step.
+    OPEN: new Set(['TRIAGED', 'IN_PROGRESS', 'BLOCKED', 'RESOLVED', 'CLOSED', 'CANCELED']),
+    TRIAGED: new Set(['IN_PROGRESS', 'BLOCKED', 'RESOLVED', 'CLOSED', 'CANCELED']),
+    IN_PROGRESS: new Set(['BLOCKED', 'RESOLVED', 'CLOSED', 'CANCELED', 'TRIAGED']),
+    BLOCKED: new Set(['IN_PROGRESS', 'TRIAGED', 'CLOSED', 'CANCELED']),
     RESOLVED: new Set(['CLOSED', 'IN_PROGRESS']),
     CLOSED: new Set(),
     CANCELED: new Set(),
