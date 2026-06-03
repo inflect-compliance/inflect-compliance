@@ -5,6 +5,7 @@
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,10 +15,6 @@ import {
 import { DataTable, createColumns } from '@/components/ui/table';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
 import { TimestampTooltip } from '@/components/ui/timestamp-tooltip';
-// Clicking a task row opens the SAME right-side edit Sheet the Tasks
-// page uses — inspect + edit a task without leaving the control /
-// asset / risk detail page (mirrors the controls-table detail Sheet).
-import { TaskDetailSheet } from '@/app/t/[tenantSlug]/(app)/tasks/TaskDetailSheet';
 // The canonical task-create modal (the SAME one the Tasks page "+ Task"
 // button opens). Reused here so a task created from a control / asset /
 // risk detail page is identical to a standalone task — full fields, and
@@ -82,21 +79,10 @@ export default function LinkedTasksPanel({
     tenantHref,
     canWrite = false,
 }: LinkedTasksPanelProps) {
+    const router = useRouter();
     const [tasks, setTasks] = useState<LinkedTask[]>([]);
     const [loading, setLoading] = useState(true);
     const [creating, setCreating] = useState(false);
-    // Clicking a row opens the task in the right-side edit Sheet.
-    const [sheetTaskId, setSheetTaskId] = useState<string | null>(null);
-
-    // `apiBase` is `apiUrl('')` → `/api/t/<slug>/`. Derive the bits the
-    // TaskDetailSheet needs from it (no extra props at the call sites).
-    const apiBaseTrimmed = apiBase.replace(/\/+$/, '');
-    const apiUrl = useCallback(
-        (path: string) =>
-            `${apiBaseTrimmed}${path.startsWith('/') ? path : `/${path}`}`,
-        [apiBaseTrimmed],
-    );
-    const tenantSlug = apiBase.match(/\/t\/([^/]+)/)?.[1] ?? '';
 
     const loadTasks = useCallback(async () => {
         setLoading(true);
@@ -144,14 +130,15 @@ export default function LinkedTasksPanel({
                     id: 'title',
                     header: 'Title',
                     accessorFn: (t) => t.title,
-                    // disableTruncate → the title column sizes to its
-                    // content (fits the longest task name) instead of
-                    // ellipsis-truncating. No `href`: the title renders
-                    // as a span so a click anywhere on the row opens the
-                    // edit Sheet (the row's onRowClick), uniformly.
-                    meta: { disableTruncate: true },
+                    // Title is a link to the task detail page — same UX
+                    // as the global Tasks table. Normal truncation so a
+                    // long name can't overrun the next column.
                     cell: ({ row }) => (
-                        <TableTitleCell>{row.original.title}</TableTitleCell>
+                        <TableTitleCell
+                            href={tenantHref(`/tasks/${row.original.id}`)}
+                        >
+                            {row.original.title}
+                        </TableTitleCell>
                     ),
                 },
                 {
@@ -212,7 +199,7 @@ export default function LinkedTasksPanel({
                     ),
                 },
             ]),
-        [],
+        [tenantHref],
     );
 
     return (
@@ -249,25 +236,15 @@ export default function LinkedTasksPanel({
                 columns={columns}
                 getRowId={(t) => t.id}
                 loading={loading}
-                // Selection is intentionally off here: a row click opens
-                // the task in the right-side edit Sheet (the control-
-                // table detail-Sheet pattern), so single-click is the
-                // inspect/edit gesture rather than a multi-select toggle.
-                selectionEnabled={false}
-                onRowClick={(row) => setSheetTaskId(row.original.id)}
+                // Same UX as the global Tasks table: row select +
+                // navigate to the full task detail page on click.
+                selectionEnabled={canWrite}
+                onRowClick={(row) =>
+                    router.push(tenantHref(`/tasks/${row.original.id}`))
+                }
                 resourceName={(plural) => (plural ? 'tasks' : 'task')}
                 emptyState="No linked tasks"
                 data-testid="linked-tasks-table"
-            />
-
-            <TaskDetailSheet
-                taskId={sheetTaskId}
-                setTaskId={setSheetTaskId}
-                tenantSlug={tenantSlug}
-                apiUrl={apiUrl}
-                tenantHref={tenantHref}
-                canWrite={canWrite}
-                onSaved={() => void loadTasks()}
             />
         </div>
     );

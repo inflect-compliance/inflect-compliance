@@ -262,7 +262,7 @@ export default function TaskDetailPage() {
 
     const tabs: { key: Tab; label: string; count?: number }[] = [
         { key: 'overview', label: 'Overview' },
-        { key: 'links', label: 'Links', count: task._count?.links ?? links.length },
+        { key: 'links', label: 'Evidence', count: task._count?.links ?? links.length },
         { key: 'comments', label: 'Comments', count: task._count?.comments ?? comments.length },
         { key: 'activity', label: 'Activity' },
     ];

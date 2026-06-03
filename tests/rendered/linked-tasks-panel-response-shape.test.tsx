@@ -33,8 +33,8 @@ jest.mock('next/navigation', () => ({
     useParams: () => ({ tenantSlug: 'acme' }),
 }));
 
-// EditTaskModal (mounted when canWrite) reads the tenant API base +
-// slug from the provider. Stub them so the modal mounts under jsdom.
+// NewTaskModal (statically imported by the panel) pulls tenant-context
+// hooks at module load — stub them so the import resolves under jsdom.
 jest.mock('@/lib/tenant-context-provider', () => ({
     useTenantApiUrl:
         () => (path: string) =>
@@ -122,11 +122,9 @@ describe('LinkedTasksPanel — response-shape resilience', () => {
         });
     });
 
-    // The per-row edit pencil was removed — a row click now opens the
-    // task in the right-side <TaskDetailSheet> instead. Lock that the
-    // pencil is gone and the title renders as plain text (not a
-    // navigating <a>), so the whole row is the click target.
-    it('has no per-row edit pencil — the title is plain text, row click opens the sheet', async () => {
+    // Same UX as the global Tasks table: the title is a LINK to the
+    // task detail page (no right-side edit Sheet, no per-row pencil).
+    it('renders the title as a link to the task detail page', async () => {
         mountFetchWith({
             rows: [
                 {
@@ -149,12 +147,14 @@ describe('LinkedTasksPanel — response-shape resilience', () => {
             />,
         );
         const titleEl = await screen.findByText('Clickable task');
-        // No pencil column, and the title is NOT a link.
+        // The pencil + the right-side sheet are gone; the title is a
+        // navigating link to /tasks/{id} (matches the Tasks page).
         expect(
             screen.queryByTestId('linked-task-quick-edit-task-9'),
         ).not.toBeInTheDocument();
-        expect(titleEl.closest('a')).toBeNull();
-        // Sanity: the row is rendered in the table.
+        const link = titleEl.closest('a');
+        expect(link).not.toBeNull();
+        expect(link).toHaveAttribute('href', '/t/acme/tasks/task-9');
         expect(container.querySelector('[data-testid="linked-tasks-table"]')).not.toBeNull();
     });
 });
