@@ -118,12 +118,28 @@ export class WorkItemRepository {
             });
         }
         if (filters.linkedEntityType && filters.linkedEntityId) {
-            where.links = {
-                some: {
-                    entityType: filters.linkedEntityType as TaskLinkEntityType,
-                    entityId: filters.linkedEntityId,
+            const viaLink: Prisma.TaskWhereInput = {
+                links: {
+                    some: {
+                        entityType: filters.linkedEntityType as TaskLinkEntityType,
+                        entityId: filters.linkedEntityId,
+                    },
                 },
             };
+            if (filters.linkedEntityType === 'CONTROL') {
+                // A task is linked to a control via EITHER the generic
+                // TaskLink OR the direct `Task.controlId` FK. The latter
+                // is what pack install and the task-create form set, and
+                // it's what the task's OWN view shows as its linked
+                // control — so the control's Tasks tab must mirror it.
+                // Without this, pack-installed tasks (controlId set, no
+                // TaskLink row) never appear in the control's Tasks tab.
+                and.push({
+                    OR: [viaLink, { controlId: filters.linkedEntityId }],
+                });
+            } else {
+                and.push(viaLink);
+            }
         }
 
         if (and.length) where.AND = and;
