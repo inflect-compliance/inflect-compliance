@@ -854,11 +854,19 @@ export function Table<T>({
               style={{
                 width: "100%",
                 tableLayout: applyFixedLayout ? "fixed" : "auto",
-                minWidth: applyFixedLayout
-                  ? table
-                      .getVisibleLeafColumns()
-                      .reduce((acc, column) => acc + column.getSize(), 0)
-                  : "100%",
+                // Always clamp the table to its container width. Fixed
+                // layout previously set `minWidth = Σ column sizes`,
+                // which on a table whose seeded/resized column widths
+                // summed wider than the viewport forced a horizontal
+                // scrollbar on the wrapper — visible on most tables.
+                // Pinning minWidth to 100% keeps the table inside the
+                // card: columns redistribute within the visible width
+                // (fixed layout still honours each column's relative
+                // width, and the resize handles still work — dragging
+                // re-proportions columns instead of growing the table
+                // off-screen). Cell content truncates per the
+                // per-cell `truncate`, so nothing overflows sideways.
+                minWidth: "100%",
               }}
             >
               <thead className="relative">
