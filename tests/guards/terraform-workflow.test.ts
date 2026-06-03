@@ -144,7 +144,10 @@ describe('OI-1 part 4 — Plan-on-PR + comment visibility', () => {
 
     it('plan output is posted to the PR via github-script with a sticky marker', () => {
         const text = fs.readFileSync(WORKFLOW, 'utf-8');
-        expect(text).toMatch(/actions\/github-script@v7/);
+        // Version-agnostic: the contract is "uses actions/github-script
+        // to post the plan", not a specific major. Pinning @v7 made this
+        // guard fight every Dependabot bump (it broke the v7→v9 bump).
+        expect(text).toMatch(/actions\/github-script@v\d+/);
         // Sticky marker per env so two plan comments don't overwrite each other
         expect(text).toMatch(/<!-- terraform-plan:\$\{env\} -->/);
         // Find-and-update or create
