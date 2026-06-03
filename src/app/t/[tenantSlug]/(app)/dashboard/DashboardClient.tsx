@@ -54,7 +54,6 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
     ShieldCheck,
@@ -314,6 +313,40 @@ export default function DashboardClient({
                 <ComplianceAlerts exec={exec} t={t} />
             </div>
 
+            {/* ─── Task Status + Policy Status ─── */}
+            {/* The Tasks + Policies KPI tiles focus these donuts (they
+                no longer navigate away). Same donut chassis as Risk
+                Distribution so the chart row reads as one unified set. */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-default">
+                <StatusDonutSection
+                    id="task-status"
+                    donutId="task-status-donut"
+                    kpiKey="tasks"
+                    title="Task Status"
+                    centerSub="Tasks"
+                    segments={[
+                        { label: 'Open', value: exec.taskSummary.open, color: '#3b82f6' },
+                        { label: 'In Progress', value: exec.taskSummary.inProgress, color: '#f59e0b' },
+                        { label: 'Blocked', value: exec.taskSummary.blocked, color: '#dc2626' },
+                        { label: 'Resolved', value: exec.taskSummary.resolved, color: '#22c55e' },
+                    ]}
+                />
+                <StatusDonutSection
+                    id="policy-status"
+                    donutId="policy-status-donut"
+                    kpiKey="policies"
+                    title="Policy Status"
+                    centerSub="Policies"
+                    segments={[
+                        { label: 'Draft', value: exec.policySummary.draft, color: '#94a3b8' },
+                        { label: 'In Review', value: exec.policySummary.inReview, color: '#f59e0b' },
+                        { label: 'Approved', value: exec.policySummary.approved, color: '#3b82f6' },
+                        { label: 'Published', value: exec.policySummary.published, color: '#22c55e' },
+                        { label: 'Archived', value: exec.policySummary.archived, color: '#64748b' },
+                    ]}
+                />
+            </div>
+
             {/* ─── Risk Heatmap + Evidence Expiry ─── */}
             {/* B1 — heatmap subscribes to risks KPI; expiry calendar
                 subscribes to evidence KPI. Pre-B1 these were not in
@@ -440,25 +473,20 @@ function ChartFocusWrapper({
 // toggles the dashboard's selectedKpi. PR-8+ will subscribe the
 // charts to the same focus to filter their data.
 
-// B1 — KPIs that have a corresponding chart on the dashboard. A
-// click on one of these focuses the chart (donut, trend card, or
-// matrix); a click on a KPI OUTSIDE this set has no chart to light
-// up — entering the "dim everything except none" state is what made
-// the earlier behaviour feel broken ("I clicked tasks and nothing
-// happened, everything just dimmed"). Those KPIs now navigate to
-// the entity list page instead, which is the user's likely intent.
+// Every KPI tile now has a corresponding chart on the dashboard, so a
+// click ALWAYS focuses that chart (donut, trend card, or matrix) —
+// never navigates. The earlier B1 workaround navigated tasks/policies
+// to their list page because they had no chart to light up; they now
+// own the Task-status and Policy-status donuts below, so the whole
+// grid behaves consistently (click = focus, no surprise navigation).
 const CHART_BOUND_KPIS: ReadonlySet<DashboardKpiKey> = new Set([
     'coverage',
     'risks',
     'evidence',
     'findings',
+    'tasks',
+    'policies',
 ]);
-
-// Per-KPI nav target for the non-chart-bound subset.
-const KPI_NAV_HREF: Partial<Record<DashboardKpiKey, string>> = {
-    tasks: '/tasks',
-    policies: '/policies',
-};
 
 function InteractiveKpiGrid({
     exec,
@@ -470,18 +498,9 @@ function InteractiveKpiGrid({
     t: (key: string, opts?: any) => string;
 }) {
     const { selectedKpi, toggleSelectedKpi } = useDashboardChartFilter();
-    const router = useRouter();
-    const href = useTenantHref();
     const isSelected = (kpi: DashboardKpiKey) => selectedKpi === kpi;
-    const click = (kpi: DashboardKpiKey) => () => {
-        if (CHART_BOUND_KPIS.has(kpi)) {
-            toggleSelectedKpi(kpi);
-            return;
-        }
-        // Non-chart-bound KPI — navigate to the entity list page.
-        const dest = KPI_NAV_HREF[kpi];
-        if (dest) router.push(href(dest));
-    };
+    // Every tile is chart-bound now: a click focuses its chart.
+    const click = (kpi: DashboardKpiKey) => () => toggleSelectedKpi(kpi);
 
     return (
         <div
@@ -652,6 +671,97 @@ function RiskDistributionSection({
                             {riskByStatus.open} / {riskByStatus.mitigating}
                         </span>
                     </div>
+                </div>
+            </div>
+        </Card>
+    );
+}
+
+// ─── Generic status-breakdown donut box ──────────────────────────────
+//
+// The Tasks + Policies KPI tiles used to navigate to their list page
+// because they had no chart to focus. They now own a status-breakdown
+// donut built on this section, identical in chassis to the Risk
+// Distribution box (focus ring + dim + "Focused" badge + donut + a
+// per-status legend with counts) so the chart row reads as one unified
+// set of boxes. `kpiKey` ties the box to its KPI tile's focus state.
+
+interface DonutStatusSegment {
+    label: string;
+    value: number;
+    /** Hex used for BOTH the donut arc and the legend dot. */
+    color: string;
+}
+
+function StatusDonutSection({
+    id,
+    donutId,
+    kpiKey,
+    title,
+    centerSub,
+    segments,
+}: {
+    id: string;
+    donutId: string;
+    kpiKey: DashboardKpiKey;
+    title: string;
+    centerSub: string;
+    segments: DonutStatusSegment[];
+}) {
+    const { selectedKpi } = useDashboardChartFilter();
+    const isFocused = selectedKpi === kpiKey;
+    const isDimmed = selectedKpi !== null && !isFocused;
+    const total = segments.reduce((sum, s) => sum + s.value, 0);
+    return (
+        <Card
+            id={id}
+            data-chart-focus={isFocused ? 'true' : undefined}
+            data-chart-dimmed={isDimmed ? 'true' : undefined}
+            data-chart-focus-key={kpiKey}
+            className={cn(
+                'h-full flex flex-col transition-opacity duration-200 ease-out',
+                isFocused && 'ring-2 ring-brand-default ring-offset-2 ring-offset-bg-page',
+                isDimmed && 'opacity-60',
+            )}
+        >
+            <Heading level={3} className="mb-3">
+                {title}
+                {isFocused && (
+                    <span
+                        className="ml-2 inline-flex items-center rounded-full bg-brand-subtle px-2 py-0.5 text-xs font-medium text-brand-emphasis"
+                        data-chart-focus-badge
+                    >
+                        Focused
+                    </span>
+                )}
+            </Heading>
+            <div className="grid grid-cols-2 gap-default items-center">
+                <DonutChart
+                    id={donutId}
+                    segments={segments}
+                    size={130}
+                    centerLabel={String(total)}
+                    centerSub={centerSub}
+                    showLegend={false}
+                />
+                <div className="space-y-tight">
+                    {segments.map((item) => (
+                        <div
+                            key={item.label}
+                            className="flex items-center justify-between text-xs"
+                        >
+                            <div className="flex items-center gap-1.5">
+                                <span
+                                    className="w-2 h-2 rounded-full shrink-0"
+                                    style={{ backgroundColor: item.color }}
+                                />
+                                <span className="text-content-muted">{item.label}</span>
+                            </div>
+                            <span className="text-content-default font-medium tabular-nums">
+                                {item.value}
+                            </span>
+                        </div>
+                    ))}
                 </div>
             </div>
         </Card>

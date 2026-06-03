@@ -140,10 +140,18 @@ describe('B1 — bug-fix bundle', () => {
             expect(src).toMatch(/['"]findings['"]/);
         });
 
-        it('non-chart-bound KPIs navigate to their list page', () => {
-            expect(src).toMatch(/KPI_NAV_HREF:.*Partial<Record<DashboardKpiKey,\s*string>>/);
-            expect(src).toMatch(/tasks:\s*['"]\/tasks['"]/);
-            expect(src).toMatch(/policies:\s*['"]\/policies['"]/);
+        it('tasks + policies are now chart-bound (own a donut) — no navigation', () => {
+            // Superseded the original B1 workaround: tasks/policies used
+            // to navigate to their list page because they had no chart to
+            // focus. They now own the Task-status / Policy-status donuts,
+            // so EVERY KPI tile focuses a chart and none navigates.
+            expect(src).toMatch(/['"]tasks['"]/);
+            expect(src).toMatch(/['"]policies['"]/);
+            // The nav map is gone; a click only toggles chart focus.
+            expect(src).not.toMatch(/KPI_NAV_HREF/);
+            // Each KPI's donut box is bound to its key.
+            expect(src).toMatch(/<StatusDonutSection[\s\S]*?kpiKey="tasks"/);
+            expect(src).toMatch(/<StatusDonutSection[\s\S]*?kpiKey="policies"/);
         });
 
         it('all four chart-bound trend cards are wrapped in ChartFocusWrapper', () => {
