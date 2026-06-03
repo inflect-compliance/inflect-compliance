@@ -59,6 +59,7 @@ import {
     chartSheenId,
 } from '@/components/ui/charts/chart-gloss';
 import {
+    CHART_HOVER_POP_DISTANCE,
     useChartFlow,
     useChartHoverPop,
     useChartSheen,
@@ -214,7 +215,15 @@ export default function DonutChart({
 
     const total = segments.reduce((sum, s) => sum + s.value, 0);
     const center = size / 2;
-    const outerRadius = (size - 2) / 2;
+    // Reserve breathing room INSIDE the viewBox for the hover-pop, the
+    // same way the MiniAreaChart bottom padding reserves room for the
+    // curve overshoot (#753). On hover the active segment translates
+    // radially outward by `CHART_HOVER_POP_DISTANCE` (4px); with the
+    // old `(size-2)/2` radius the popped arc's outer edge landed
+    // `size/2 + 3` from centre and got clipped at the SVG edge. Pull
+    // the resting outer radius in by the pop distance (+1px stroke
+    // buffer) so the popped edge stays just inside the viewBox.
+    const outerRadius = size / 2 - CHART_HOVER_POP_DISTANCE - 1;
     const innerRadius = outerRadius - strokeWidth;
 
     // R16 hotfix (2026-05-13) — visx `<Pie>` + d3-shape's pie
