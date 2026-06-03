@@ -63,7 +63,7 @@ export function SoAPrintView({ report, tenantName }: SoAPrintViewProps) {
                 <table className="w-full text-sm mb-8">
                     <tbody>
                         <tr><td className="py-1 pr-4 font-semibold text-content-default w-48">Organization</td><td className="py-1">{tenantName}</td></tr>
-                        <tr><td className="py-1 pr-4 font-semibold text-content-default">Framework</td><td className="py-1">ISO/IEC 27001:2022</td></tr>
+                        <tr><td className="py-1 pr-4 font-semibold text-content-default">Framework</td><td className="py-1">{report.frameworkName}</td></tr>
                         <tr><td className="py-1 pr-4 font-semibold text-content-default">Generated</td><td className="py-1">{generatedDate}</td></tr>
                         <tr><td className="py-1 pr-4 font-semibold text-content-default">Total Controls</td><td className="py-1">{summary.total}</td></tr>
                     </tbody>
