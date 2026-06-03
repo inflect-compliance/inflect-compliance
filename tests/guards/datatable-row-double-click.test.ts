@@ -1,23 +1,24 @@
 /**
- * R13-PR2 — row-click semantics lock.
+ * R13-PR2 — row-click semantics lock (revised 2026-06-03).
  *
- * The DataTable primitive opens a row on DOUBLE click, never on
- * single click. Rationale: the select column (R12-PR1) is now
- * default-on, so single click should remain available for
- * row-selection workflows (checkbox + shift-click). Double-click is
- * the unambiguous "open detail" gesture and matches the way users
- * already interact with file managers, mail clients, and most
- * spreadsheet-style tables.
+ * Selection-aware row activation across all three row paths in the
+ * DataTable primitive:
  *
- * This guard locks the wiring on both row paths inside
- * `src/components/ui/table/table.tsx`:
+ *   - When `selectionEnabled` (the default): single click owns
+ *     SELECTION (checkbox + shift-click) and `onRowClick` fires on
+ *     DOUBLE click — the unambiguous "open detail" gesture.
+ *   - When selection is OFF (e.g. the control Tasks tab, which opens
+ *     a task in the right-side Sheet): there's no selection to
+ *     compete with, so `onRowClick` fires on SINGLE click.
  *
- *   1. The memoized `ResizableTableRow` (column-resizing on).
- *   2. The inline non-resizable `<tr>` (default).
+ * Three paths inside the primitive:
+ *   1. `ResizableTableRow` in `table.tsx` (column-resizing on).
+ *   2. The inline non-resizable `<tr>` in `table.tsx` (default).
+ *   3. The virtualized row in `virtual-table-body.tsx`.
  *
- * Both must wire `onRowClick` to `onDoubleClick`, and NEITHER may
- * wire `onRowClick` to a bare `onClick={` handler — that pattern
- * was the old single-click contract.
+ * All three must: gate the double-click `onRowClick` on
+ * `selectionEnabled && onRowClick`, AND wire `onRowClick` to single
+ * click only in the selection-OFF branch.
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -29,25 +30,37 @@ const TABLE_TSX = read('src/components/ui/table/table.tsx');
 const VIRTUAL_TSX = read('src/components/ui/table/virtual-table-body.tsx');
 
 describe('DataTable — row-click semantics (R13-PR2)', () => {
-    it('wires onRowClick to onDoubleClick in all three row paths', () => {
+    it('fires onRowClick on double-click only while selection owns single-click', () => {
         // table.tsx — resizable + non-resizable branches (2 matches).
         const tableMatches = TABLE_TSX.match(
-            /onDoubleClick=\{\s*\n\s*onRowClick\s*\n\s*\?\s*\(e\)\s*=>/g,
+            /onDoubleClick=\{\s*\n(?:\s*\/\/[^\n]*\n)*\s*selectionEnabled\s*&&\s*onRowClick\s*\n\s*\?\s*\(e\)\s*=>/g,
         );
         expect(tableMatches).not.toBeNull();
         expect(tableMatches!.length).toBeGreaterThanOrEqual(2);
 
         // virtual-table-body.tsx — virtualized branch (1 match).
         const virtualMatches = VIRTUAL_TSX.match(
-            /onDoubleClick=\{\s*\n\s*onRowClick\s*\n\s*\?\s*\(e\)\s*=>/g,
+            /onDoubleClick=\{\s*\n(?:\s*\/\/[^\n]*\n)*\s*selectionEnabled\s*&&\s*onRowClick\s*\n\s*\?\s*\(e\)\s*=>/g,
         );
         expect(virtualMatches).not.toBeNull();
         expect(virtualMatches!.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('never wires onRowClick to a bare onClick handler', () => {
-        // The old contract was `onClick={ onRowClick ? (e) => ...`.
-        // Any reappearance of that shape regresses the round.
+    it('fires onRowClick on single-click only when selection is off (all three paths)', () => {
+        // The single-click row action lives in the `: onRowClick ?`
+        // ELSE branch of the `selectionEnabled ? … : …` onClick — never
+        // as a top-level `onClick={ onRowClick ? … }` (that was the old
+        // unconditional single-click contract that fought selection).
+        const elseBranch =
+            /:\s*\n?\s*\/\/[^\n]*\n(?:\s*\/\/[^\n]*\n)*\s*onRowClick\s*\n?\s*\?\s*\(e\)\s*=>/g;
+        const tableElse = TABLE_TSX.match(elseBranch);
+        expect(tableElse).not.toBeNull();
+        expect(tableElse!.length).toBeGreaterThanOrEqual(2);
+        const virtualElse = VIRTUAL_TSX.match(elseBranch);
+        expect(virtualElse).not.toBeNull();
+        expect(virtualElse!.length).toBeGreaterThanOrEqual(1);
+
+        // The OLD top-level single-click contract must never return.
         for (const src of [TABLE_TSX, VIRTUAL_TSX]) {
             expect(src).not.toMatch(
                 /onClick=\{\s*\n\s*onRowClick\s*\n\s*\?\s*\(e\)\s*=>/,

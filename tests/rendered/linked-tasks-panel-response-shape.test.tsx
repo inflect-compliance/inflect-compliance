@@ -122,16 +122,16 @@ describe('LinkedTasksPanel — response-shape resilience', () => {
         });
     });
 
-    // Phase 2 — per-row edit affordance. The pencil opens the task in
-    // <EditTaskModal>. entityType "risk" (lowercase) is non-canonical,
-    // so the create modal stays unmounted — this isolates the edit
-    // button. Gated on canWrite.
-    it('renders a per-row edit pencil when canWrite is set', async () => {
+    // The per-row edit pencil was removed — a row click now opens the
+    // task in the right-side <TaskDetailSheet> instead. Lock that the
+    // pencil is gone and the title renders as plain text (not a
+    // navigating <a>), so the whole row is the click target.
+    it('has no per-row edit pencil — the title is plain text, row click opens the sheet', async () => {
         mountFetchWith({
             rows: [
                 {
                     id: 'task-9',
-                    title: 'Editable task',
+                    title: 'Clickable task',
                     status: 'OPEN',
                     severity: 'LOW',
                     key: 'TSK-9',
@@ -139,7 +139,7 @@ describe('LinkedTasksPanel — response-shape resilience', () => {
             ],
             truncated: false,
         });
-        render(
+        const { container } = render(
             <LinkedTasksPanel
                 apiBase="/api/t/acme"
                 entityType="risk"
@@ -148,36 +148,13 @@ describe('LinkedTasksPanel — response-shape resilience', () => {
                 canWrite
             />,
         );
-        expect(await screen.findByText('Editable task')).toBeInTheDocument();
+        const titleEl = await screen.findByText('Clickable task');
+        // No pencil column, and the title is NOT a link.
         expect(
-            screen.getByTestId('linked-task-quick-edit-task-9'),
-        ).toBeInTheDocument();
-    });
-
-    it('hides the edit pencil for read-only viewers (no canWrite)', async () => {
-        mountFetchWith({
-            rows: [
-                {
-                    id: 'task-10',
-                    title: 'Read-only task',
-                    status: 'OPEN',
-                    severity: 'LOW',
-                    key: 'TSK-10',
-                },
-            ],
-            truncated: false,
-        });
-        render(
-            <LinkedTasksPanel
-                apiBase="/api/t/acme"
-                entityType="risk"
-                entityId="r-1"
-                tenantHref={tenantHref}
-            />,
-        );
-        expect(await screen.findByText('Read-only task')).toBeInTheDocument();
-        expect(
-            screen.queryByTestId('linked-task-quick-edit-task-10'),
+            screen.queryByTestId('linked-task-quick-edit-task-9'),
         ).not.toBeInTheDocument();
+        expect(titleEl.closest('a')).toBeNull();
+        // Sanity: the row is rendered in the table.
+        expect(container.querySelector('[data-testid="linked-tasks-table"]')).not.toBeNull();
     });
 });

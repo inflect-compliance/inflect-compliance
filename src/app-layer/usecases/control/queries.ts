@@ -29,9 +29,28 @@ export async function listControls(
             ? { ...(filters ?? {}), _take: options.take }
             : (filters ?? {}),
         loader: () =>
-            runInTenantContext(ctx, (db) =>
-                ControlRepository.list(db, ctx, filters, options),
-            ),
+            runInTenantContext(ctx, async (db) => {
+                const controls = await ControlRepository.list(
+                    db,
+                    ctx,
+                    filters,
+                    options,
+                );
+                // Attach the unified linked-task counts (TaskLink CONTROL
+                // link OR the controlId FK) so the list-page Tasks column
+                // matches the control's Tasks tab — the legacy
+                // `_count.controlTasks` read 0/0 for unified tasks.
+                const counts = await WorkItemRepository.countLinkedToControls(
+                    db,
+                    ctx,
+                    controls.map((c) => c.id),
+                );
+                return controls.map((c) => ({
+                    ...c,
+                    taskTotal: counts.get(c.id)?.total ?? 0,
+                    taskDone: counts.get(c.id)?.done ?? 0,
+                }));
+            }),
     });
 }
 

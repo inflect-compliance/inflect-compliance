@@ -93,6 +93,15 @@ interface ControlListItem {
     owner: { id: string; name: string | null; email: string | null } | null;
     _count?: { controlTasks?: number; evidenceLinks?: number };
     controlTasks?: Array<{ status: string }>;
+    /**
+     * Unified linked-task counts (TaskLink CONTROL link OR the
+     * `controlId` FK), supplied by `listControls`. The Tasks column
+     * reads these — the legacy `_count.controlTasks` / `controlTasks[]`
+     * counted the old ControlTask relation and read 0/0 for unified
+     * tasks.
+     */
+    taskTotal?: number;
+    taskDone?: number;
 }
 
 interface ControlsClientProps {
@@ -494,9 +503,16 @@ function ControlsPageInner({
     // ─── Helpers ───
 
     const taskStats = useCallback((c: ControlListItem) => {
-        const total = c._count?.controlTasks ?? 0;
-        // guardrail-ignore: aggregating the row's own controlTasks array.
-        const done = c.controlTasks?.filter(t => t.status === 'DONE').length ?? 0;
+        // Unified linked-task counts from `listControls` (TaskLink
+        // CONTROL link OR the controlId FK). Falls back to the legacy
+        // ControlTask relation only if the new fields are absent (older
+        // cached payload), so the column never regresses to a crash.
+        const total = c.taskTotal ?? c._count?.controlTasks ?? 0;
+        const done =
+            c.taskDone ??
+            // guardrail-ignore: legacy fallback over the row's own array.
+            c.controlTasks?.filter((t) => t.status === 'DONE').length ??
+            0;
         return { total, done };
     }, []);
 

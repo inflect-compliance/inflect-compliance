@@ -104,3 +104,46 @@ describe('WorkItemRepository.countLinkedToControl', () => {
         );
     });
 });
+
+describe('WorkItemRepository.countLinkedToControls (batched)', () => {
+    it('dedupes a task linked via BOTH the FK and a TaskLink, per control', async () => {
+        const taskFindMany = jest.fn().mockResolvedValue([
+            // ctrl-1: two direct-FK tasks (one RESOLVED → done)
+            { id: 't1', controlId: 'ctrl-1', status: 'OPEN' },
+            { id: 't2', controlId: 'ctrl-1', status: 'RESOLVED' },
+        ]);
+        const taskLinkFindMany = jest.fn().mockResolvedValue([
+            // t2 ALSO linked via TaskLink to ctrl-1 → must count once
+            { entityId: 'ctrl-1', taskId: 't2', task: { status: 'RESOLVED' } },
+            // t3 linked to ctrl-2 via TaskLink only (CLOSED → done)
+            { entityId: 'ctrl-2', taskId: 't3', task: { status: 'CLOSED' } },
+        ]);
+        const db = {
+            task: { findMany: taskFindMany },
+            taskLink: { findMany: taskLinkFindMany },
+        } as never;
+
+        const result = await WorkItemRepository.countLinkedToControls(db, ctx, [
+            'ctrl-1',
+            'ctrl-2',
+        ]);
+
+        // ctrl-1: t1 + t2 (t2 not double-counted) → total 2, done 1.
+        expect(result.get('ctrl-1')).toEqual({ total: 2, done: 1 });
+        // ctrl-2: t3 → total 1, done 1.
+        expect(result.get('ctrl-2')).toEqual({ total: 1, done: 1 });
+    });
+
+    it('returns an empty map for no control ids (no queries)', async () => {
+        const taskFindMany = jest.fn();
+        const taskLinkFindMany = jest.fn();
+        const db = {
+            task: { findMany: taskFindMany },
+            taskLink: { findMany: taskLinkFindMany },
+        } as never;
+        const result = await WorkItemRepository.countLinkedToControls(db, ctx, []);
+        expect(result.size).toBe(0);
+        expect(taskFindMany).not.toHaveBeenCalled();
+        expect(taskLinkFindMany).not.toHaveBeenCalled();
+    });
+});

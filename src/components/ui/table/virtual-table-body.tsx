@@ -223,10 +223,17 @@ function VirtualRow<T>({
                           if (isClickOnInteractiveChild(e)) return;
                           row.toggleSelected();
                       }
-                    : undefined
+                    : // Selection off → single click runs the row action
+                      // (mirrors ResizableTableRow in table.tsx).
+                      onRowClick
+                      ? (e) => {
+                            if (isClickOnInteractiveChild(e)) return;
+                            onRowClick(row, e);
+                        }
+                      : undefined
             }
             onDoubleClick={
-                onRowClick
+                selectionEnabled && onRowClick
                     ? (e) => {
                           if (isClickOnInteractiveChild(e)) return;
                           onRowClick(row, e);

@@ -72,7 +72,10 @@ jest.mock('@/lib/db-context', () => {
 // getControlHeader now derives the Tasks-tab badge + progress from the
 // unified-task count (matching LinkedTasksPanel) via this repo method.
 jest.mock('@/app-layer/repositories/WorkItemRepository', () => ({
-    WorkItemRepository: { countLinkedToControl: jest.fn() },
+    WorkItemRepository: {
+        countLinkedToControl: jest.fn(),
+        countLinkedToControls: jest.fn(),
+    },
 }));
 
 import {
@@ -100,6 +103,7 @@ beforeEach(() => {
         tenantDb.controlTask.count, tenantDb.controlTask.groupBy, tenantDb.controlTask.findMany,
         tenantDb.auditLog.findMany,
         WorkItemRepository.countLinkedToControl as jest.Mock,
+        WorkItemRepository.countLinkedToControls as jest.Mock,
         assertCanReadControls as jest.Mock,
         assertCanAdmin as jest.Mock,
     ].forEach((m: any) => m.mockReset && m.mockReset());
@@ -107,10 +111,15 @@ beforeEach(() => {
     (assertCanAdmin as jest.Mock).mockImplementation(() => policyCalls.push('admin'));
 });
 
-// We also need `tenantDb.controlTask.count` to be addressable inside
-// getControlHeader (the doneControlTasks count). Add it dynamically.
+// `controlTask.count` (getControlHeader's legacy done count, unused
+// now) + `countLinkedToControls` (listControls' unified per-control
+// counts) need addressable defaults so the cache passthrough tests
+// don't NPE on the merge.
 beforeEach(() => {
     tenantDb.controlTask.count.mockResolvedValue(0);
+    (WorkItemRepository.countLinkedToControls as jest.Mock).mockResolvedValue(
+        new Map(),
+    );
 });
 
 const ctx = makeRequestContext('ADMIN');
@@ -125,10 +134,27 @@ describe('listControls', () => {
         expect(policyCalls).toEqual(['read']);
     });
 
-    it('threads filters through to the repo loader', async () => {
-        (ControlRepository.list as jest.Mock).mockResolvedValueOnce([{ id: 'c-1' }]);
+    it('threads filters through + merges unified per-control task counts', async () => {
+        (ControlRepository.list as jest.Mock).mockResolvedValueOnce([
+            { id: 'c-1' },
+            { id: 'c-2' },
+        ]);
+        (
+            WorkItemRepository.countLinkedToControls as jest.Mock
+        ).mockResolvedValueOnce(
+            new Map([['c-1', { total: 4, done: 1 }]]),
+        );
         const result = await listControls(ctx, { q: 'test' }, { take: 50 });
-        expect(result).toEqual([{ id: 'c-1' }]);
+        // c-1 gets its unified counts; c-2 (absent from the map) → 0/0.
+        expect(result).toEqual([
+            { id: 'c-1', taskTotal: 4, taskDone: 1 },
+            { id: 'c-2', taskTotal: 0, taskDone: 0 },
+        ]);
+        expect(WorkItemRepository.countLinkedToControls).toHaveBeenCalledWith(
+            tenantDb,
+            ctx,
+            ['c-1', 'c-2'],
+        );
     });
 });
 
