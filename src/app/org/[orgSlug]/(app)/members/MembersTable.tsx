@@ -814,6 +814,8 @@ function InviteMemberModal({ orgSlug, open, onClose, onSuccess }: InviteMemberMo
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [issuedUrl, setIssuedUrl] = useState<string | null>(null);
+    const [emailSent, setEmailSent] = useState(false);
+    const [issuedEmail, setIssuedEmail] = useState('');
 
     const reset = () => {
         setEmail('');
@@ -821,6 +823,8 @@ function InviteMemberModal({ orgSlug, open, onClose, onSuccess }: InviteMemberMo
         setError(null);
         setSubmitting(false);
         setIssuedUrl(null);
+        setEmailSent(false);
+        setIssuedEmail('');
     };
 
     const close = () => {
@@ -856,13 +860,20 @@ function InviteMemberModal({ orgSlug, open, onClose, onSuccess }: InviteMemberMo
                 setSubmitting(false);
                 return;
             }
-            const body = (await res.json()) as { url?: string };
-            // The acceptance URL is shown to the admin so they can copy
-            // it into an out-of-band email/Slack message. The TenantInvite
-            // path follows the same pattern — caller-driven distribution.
+            const body = (await res.json()) as {
+                url?: string;
+                emailSent?: boolean;
+                invite?: { email?: string };
+            };
+            // The recipient is emailed the acceptance link directly
+            // (emailSent). The URL is still surfaced as a copy-paste
+            // fallback — useful if email delivery is unconfigured or the
+            // admin wants to share it out-of-band too.
             const origin =
                 typeof window !== 'undefined' ? window.location.origin : '';
             setIssuedUrl(body.url ? origin + body.url : null);
+            setEmailSent(body.emailSent === true);
+            setIssuedEmail(body.invite?.email ?? trimmed);
             setSubmitting(false);
         } catch (err) {
             setError(
@@ -879,14 +890,39 @@ function InviteMemberModal({ orgSlug, open, onClose, onSuccess }: InviteMemberMo
     return (
         <Modal showModal={open} setShowModal={(o) => (o ? null : close())}>
             <Modal.Header
-                title={issued ? 'Invite created' : 'Invite by email'}
+                title={
+                    issued
+                        ? emailSent
+                            ? 'Invitation sent'
+                            : 'Invite created'
+                        : 'Invite by email'
+                }
             />
             <Modal.Body>
                 {issued ? (
                     <div className="space-y-compact text-sm" data-testid="org-invite-issued">
-                        <p className="text-content-default">
-                            Send the recipient this acceptance link. The invite
-                            expires in 7 days and is single-use.
+                        {emailSent ? (
+                            <p className="text-content-default" data-testid="org-invite-emailed">
+                                Invitation emailed to{' '}
+                                <span className="font-medium text-content-emphasis">
+                                    {issuedEmail}
+                                </span>
+                                . The link expires in 7 days and is single-use.
+                            </p>
+                        ) : (
+                            <p className="text-content-default">
+                                The invite was created but the email could not be
+                                sent — share this acceptance link with{' '}
+                                <span className="font-medium text-content-emphasis">
+                                    {issuedEmail}
+                                </span>{' '}
+                                directly. It expires in 7 days and is single-use.
+                            </p>
+                        )}
+                        <p className="text-xs text-content-muted">
+                            {emailSent
+                                ? 'You can also copy the link below to share it another way.'
+                                : 'Copy the link below.'}
                         </p>
                         <div className="rounded-lg border border-border-subtle bg-bg-subtle p-3 break-all font-mono text-xs">
                             {issuedUrl}
