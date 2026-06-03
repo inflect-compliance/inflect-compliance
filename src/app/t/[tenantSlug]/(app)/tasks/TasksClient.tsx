@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { NewTaskModal } from './NewTaskModal';
-import { EditTaskModal } from './EditTaskModal';
+import { TaskDetailSheet } from './TaskDetailSheet';
 import { AppIcon } from '@/components/icons/AppIcon';
 import { useSWRConfig } from 'swr';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
@@ -132,11 +132,10 @@ function TasksPageInner({
     // (the redirect target from `/tasks/new`). Flag stripped after
     // open so back/forward doesn't reopen the modal.
     const [isCreateOpen, setIsCreateOpen] = useState(false);
-    // Phase 2 — row-level edit modal. Mirrors the controls-table
-    // quick-edit affordance: the pencil opens the task in a modal
-    // rather than routing to the detail page.
+    // Row-level edit affordance. Mirrors the controls-table quick-edit
+    // pencil: it opens the task in the right-side <TaskDetailSheet>
+    // (non-null id = open) rather than routing to the detail page.
     const [editTaskId, setEditTaskId] = useState<string | null>(null);
-    const [isEditOpen, setIsEditOpen] = useState(false);
     const searchParams = useSearchParams();
     useEffect(() => {
         if (searchParams?.get('create') === '1') {
@@ -492,7 +491,6 @@ function TasksPageInner({
                         onClick={(e) => {
                             e.stopPropagation();
                             setEditTaskId(row.original.id);
-                            setIsEditOpen(true);
                         }}
                     >
                         <AppIcon name="edit" size={14} />
@@ -688,10 +686,13 @@ function TasksPageInner({
                 <NewTaskModal open={isCreateOpen} setOpen={setIsCreateOpen} />
             )}
             {appPermissions.tasks.edit && (
-                <EditTaskModal
-                    open={isEditOpen}
-                    setOpen={setIsEditOpen}
+                <TaskDetailSheet
                     taskId={editTaskId}
+                    setTaskId={setEditTaskId}
+                    tenantSlug={tenantSlug}
+                    apiUrl={apiUrl}
+                    tenantHref={tenantHref}
+                    canWrite={appPermissions.tasks.edit}
                     onSaved={() => void invalidateAllTasks()}
                 />
             )}

@@ -95,6 +95,73 @@ export class WorkItemRepository {
         return { total, done };
     }
 
+    /**
+     * Batched version of `countLinkedToControl` for the controls LIST.
+     * Returns a `controlId → { total, done }` map using the SAME
+     * linkage rule (TaskLink with entityType=CONTROL OR the direct
+     * `Task.controlId` FK), deduped by task id so a task linked BOTH
+     * ways counts once. Two indexed queries — NOT an N+1 over controls
+     * — so the list-page Tasks column reflects the real linked-task
+     * count instead of the legacy `ControlTask` relation (which read
+     * 0/0 for unified tasks).
+     */
+    static async countLinkedToControls(
+        db: PrismaTx,
+        ctx: RequestContext,
+        controlIds: string[],
+    ): Promise<Map<string, { total: number; done: number }>> {
+        const result = new Map<string, { total: number; done: number }>();
+        if (controlIds.length === 0) return result;
+
+        // controlId → (taskId → status). The inner map dedupes a task
+        // that is linked to the same control via both paths.
+        const perControl = new Map<string, Map<string, string>>();
+        const add = (controlId: string, taskId: string, status: string) => {
+            let m = perControl.get(controlId);
+            if (!m) {
+                m = new Map();
+                perControl.set(controlId, m);
+            }
+            m.set(taskId, status);
+        };
+
+        // Direct FK. Bounded by controlIds; counting needs every match.
+        const direct = await db.task.findMany({ // guardrail-allow: unbounded -- aggregate count, bounded by the controlIds set
+            where: { tenantId: ctx.tenantId, controlId: { in: controlIds } },
+            select: { id: true, controlId: true, status: true },
+        });
+        for (const t of direct) {
+            if (t.controlId) add(t.controlId, t.id, t.status);
+        }
+
+        // Generic TaskLink path (the control-tab create flow links via
+        // TaskLink, not the FK). Indexed by [tenantId, entityType, entityId].
+        const links = await db.taskLink.findMany({ // guardrail-allow: unbounded -- aggregate count, bounded by the controlIds set
+            where: {
+                tenantId: ctx.tenantId,
+                entityType: 'CONTROL' as TaskLinkEntityType,
+                entityId: { in: controlIds },
+            },
+            select: {
+                entityId: true,
+                taskId: true,
+                task: { select: { status: true } },
+            },
+        });
+        for (const l of links) {
+            add(l.entityId, l.taskId, l.task.status);
+        }
+
+        for (const [controlId, taskMap] of perControl) {
+            let done = 0;
+            for (const status of taskMap.values()) {
+                if (status === 'RESOLVED' || status === 'CLOSED') done++;
+            }
+            result.set(controlId, { total: taskMap.size, done });
+        }
+        return result;
+    }
+
     static async listPaginated(db: PrismaTx, ctx: RequestContext, params: TaskListParams): Promise<PaginatedResponse<unknown>> {
         const limit = clampLimit(params.limit);
         const where = WorkItemRepository._buildWhere(ctx, params.filters);

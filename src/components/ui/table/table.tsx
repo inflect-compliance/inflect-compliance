@@ -492,10 +492,23 @@ const ResizableTableRow = memo(
                 if (isClickOnInteractiveChild(e)) return;
                 row.toggleSelected();
               }
-            : undefined
+            : // No selection to compete with → a single click runs the
+              // row action directly (e.g. the Tasks tab opens the task
+              // edit Sheet on click). When selection IS on, the row
+              // action stays on double-click (handler below) so single-
+              // click can own selection.
+              onRowClick
+              ? (e) => {
+                  if (isClickOnInteractiveChild(e)) return;
+                  onRowClick(row, e);
+                }
+              : undefined
         }
         onDoubleClick={
-          onRowClick
+          // Only when selection owns the single click does the row
+          // action need a double-click. With selection off it already
+          // fires on single click above.
+          selectionEnabled && onRowClick
             ? (e) => {
                 if (isClickOnInteractiveChild(e)) return;
                 onRowClick(row, e);
@@ -1083,10 +1096,17 @@ export function Table<T>({
                               if (isClickOnInteractiveChild(e)) return;
                               row.toggleSelected();
                             }
-                          : undefined
+                          : // Selection off → single click runs the row
+                            // action (mirrors ResizableTableRow above).
+                            onRowClick
+                            ? (e) => {
+                                if (isClickOnInteractiveChild(e)) return;
+                                onRowClick(row, e);
+                              }
+                            : undefined
                       }
                       onDoubleClick={
-                        onRowClick
+                        selectionEnabled && onRowClick
                           ? (e) => {
                               if (isClickOnInteractiveChild(e)) return;
                               onRowClick(row, e);

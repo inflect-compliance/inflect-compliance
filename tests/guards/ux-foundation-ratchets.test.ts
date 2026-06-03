@@ -106,12 +106,14 @@ describe('Epic 64 — window.confirm() ceiling', () => {
     // patterns; the original P2 scoped only assets-EDIT). Same
     // sync-close rationale as the four sites above.
     //
-    // Tasks-tab Phase 2 (2026-06-03) bumped 17 → 18 — `EditTaskModal`
-    // (the row-level edit surface opened from the Tasks list + every
-    // control/asset/risk Tasks tab) carries the SAME unsaved-changes
-    // discard guard as `NewTaskModal`: a synchronous `window.confirm`
-    // on close so a mis-click can't silently drop typed edits. Same
-    // sync-close rationale as the sites above.
+    // Tasks-tab Phase 2 (2026-06-03) bumped 17 → 18 for the row-level
+    // task edit surface (opened from the Tasks list + every
+    // control/asset/risk Tasks tab). That surface is now
+    // `<TaskDetailSheet>` (a right-side Sheet that replaced the earlier
+    // EditTaskModal); it carries the SAME unsaved-changes discard guard
+    // as `NewTaskModal` — a synchronous `window.confirm` on close so a
+    // mis-click can't silently drop typed edits. The modal→sheet swap
+    // leaves the count unchanged (one confirm out, one in).
     //
     // To LOWER this number: migrate one or more remaining sites and
     // bump the constant down. Don't lower without a real migration.
