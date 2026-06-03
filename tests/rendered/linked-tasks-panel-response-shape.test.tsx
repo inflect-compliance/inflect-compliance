@@ -13,6 +13,26 @@
  */
 import * as React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
+
+// The Tasks tab is now a <DataTable> whose row-click navigates via
+// the Next app-router. LinkedTasksPanel also statically imports
+// NewTaskModal, which pulls router hooks at module load. Mock
+// next/navigation so the import resolves and useRouter() doesn't trip
+// the "expected app router to be mounted" invariant under jsdom.
+jest.mock('next/navigation', () => ({
+    useRouter: () => ({
+        push: jest.fn(),
+        replace: jest.fn(),
+        back: jest.fn(),
+        forward: jest.fn(),
+        refresh: jest.fn(),
+        prefetch: jest.fn(),
+    }),
+    usePathname: () => '/t/acme/risks/r-1',
+    useSearchParams: () => new URLSearchParams(),
+    useParams: () => ({ tenantSlug: 'acme' }),
+}));
+
 import LinkedTasksPanel from '@/components/LinkedTasksPanel';
 
 const tenantHref = (p: string) => `/t/acme${p}`;
