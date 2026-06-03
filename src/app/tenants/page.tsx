@@ -30,7 +30,12 @@ export default async function TenantsPage() {
 
     // Complete, authoritative membership list — see the file header.
     const rows = await prisma.tenantMembership.findMany({
-        where: { userId: session.user.id, status: 'ACTIVE' },
+        // Exclude soft-deleted (org-removed) tenants from the picker.
+        where: {
+            userId: session.user.id,
+            status: 'ACTIVE',
+            tenant: { deletedAt: null },
+        },
         orderBy: { createdAt: 'asc' },
         include: { tenant: { select: { slug: true } } },
     });

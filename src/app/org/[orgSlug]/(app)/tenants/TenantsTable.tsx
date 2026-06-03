@@ -2,13 +2,18 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { Building2, Plus } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Building2, Plus, Trash2 } from 'lucide-react';
 
 import { ListPageShell } from '@/components/layout/ListPageShell';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { TableEmptyState } from '@/components/ui/table';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { buttonVariants } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Modal } from '@/components/ui/modal';
+import { Input } from '@/components/ui/input';
+import { FormField } from '@/components/ui/form-field';
+import { InlineNotice } from '@/components/ui/inline-notice';
 import { useOrgPermissions } from '@/lib/org-context-provider';
 import type { TenantHealthRow, RagBadge } from '@/app-layer/schemas/portfolio';
 import { Heading } from '@/components/ui/typography';
@@ -39,8 +44,64 @@ function RagPill({ rag }: { rag: RagBadge | null }) {
 
 export function TenantsTable({ rows, orgSlug }: Props) {
     const perms = useOrgPermissions();
+    const router = useRouter();
     const [sortBy, setSortBy] = useState<string>('rag');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+    // Remove-tenant flow — a typed-confirmation modal (the sanctioned
+    // pattern for top-level entity deletion; NOT the undo-toast). The
+    // tenant is soft-deleted server-side: it disappears from this list
+    // and becomes inaccessible, but its data is retained.
+    const [deleteTarget, setDeleteTarget] = useState<TenantHealthRow | null>(
+        null,
+    );
+    const [confirmText, setConfirmText] = useState('');
+    const [deleting, setDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
+
+    const closeDelete = () => {
+        setDeleteTarget(null);
+        setConfirmText('');
+        setDeleting(false);
+        setDeleteError(null);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteTarget) return;
+        setDeleting(true);
+        setDeleteError(null);
+        try {
+            const res = await fetch(
+                `/api/org/${orgSlug}/tenants/${deleteTarget.tenantId}`,
+                { method: 'DELETE', credentials: 'same-origin' },
+            );
+            if (!res.ok) {
+                let message = `Failed to remove tenant (${res.status}).`;
+                try {
+                    const body = (await res.json()) as {
+                        error?: { message?: string };
+                    };
+                    if (body?.error?.message) message = body.error.message;
+                } catch {
+                    /* not JSON */
+                }
+                setDeleteError(message);
+                setDeleting(false);
+                return;
+            }
+            closeDelete();
+            // The deleted tenant is now filtered out of the portfolio
+            // query — re-render the server component to drop the row.
+            router.refresh();
+        } catch (err) {
+            setDeleteError(
+                err instanceof Error
+                    ? err.message
+                    : 'Unexpected error removing tenant.',
+            );
+            setDeleting(false);
+        }
+    };
 
     const sorted = useMemo(() => {
         const copy = [...rows];
@@ -135,8 +196,30 @@ export function TenantsTable({ rows, orgSlug }: Props) {
                         </span>
                     ),
                 },
+                ...(perms.canManageTenants
+                    ? [
+                          {
+                              id: 'actions',
+                              header: '',
+                              cell: ({ row }: { row: { original: TenantHealthRow } }) => (
+                                  <div className="flex justify-end">
+                                      <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          className="text-content-error"
+                                          icon={<Trash2 className="size-3.5" aria-hidden="true" />}
+                                          onClick={() => setDeleteTarget(row.original)}
+                                          data-testid={`org-tenant-delete-${row.original.slug}`}
+                                          text="Remove"
+                                      />
+                                  </div>
+                              ),
+                          },
+                      ]
+                    : []),
             ]),
-        [],
+        [perms.canManageTenants],
     );
 
     return (
@@ -194,6 +277,71 @@ export function TenantsTable({ rows, orgSlug }: Props) {
                     data-testid="org-tenants-table"
                 />
             </ListPageShell.Body>
+
+            {/* Typed-confirmation modal — top-level entity deletion uses
+                this (not the undo-toast). Requires typing the tenant slug
+                so a misclick can't remove a workspace. */}
+            <Modal
+                showModal={deleteTarget !== null}
+                setShowModal={(o) => (o ? null : closeDelete())}
+            >
+                <Modal.Header title="Remove tenant" />
+                <Modal.Body>
+                    {deleteTarget && (
+                        <div className="space-y-default" data-testid="org-tenant-delete-modal">
+                            <p className="text-sm text-content-default">
+                                This removes{' '}
+                                <span className="font-medium text-content-emphasis">
+                                    {deleteTarget.name}
+                                </span>{' '}
+                                from the organization. Its members lose access
+                                immediately and it disappears from the portfolio.
+                                The workspace data is retained (not erased), so it
+                                can be restored by an administrator.
+                            </p>
+                            <FormField
+                                label={`Type "${deleteTarget.slug}" to confirm`}
+                                required
+                            >
+                                <Input
+                                    value={confirmText}
+                                    onChange={(e) => setConfirmText(e.target.value)}
+                                    autoComplete="off"
+                                    autoFocus
+                                    placeholder={deleteTarget.slug}
+                                    data-testid="org-tenant-delete-confirm-input"
+                                />
+                            </FormField>
+                            {deleteError && (
+                                <InlineNotice variant="error" icon={null}>
+                                    {deleteError}
+                                </InlineNotice>
+                            )}
+                        </div>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={closeDelete}
+                        text="Cancel"
+                    />
+                    <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        loading={deleting}
+                        disabled={
+                            deleting || confirmText.trim() !== deleteTarget?.slug
+                        }
+                        onClick={confirmDelete}
+                        data-testid="org-tenant-delete-confirm"
+                        text="Delete tenant"
+                    />
+                </Modal.Footer>
+            </Modal>
         </ListPageShell>
     );
 }

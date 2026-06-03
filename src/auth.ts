@@ -166,7 +166,9 @@ async function applyMembershipClaims(
         where: { emailHash: hashForLookup(token.email!) },
         include: {
             tenantMemberships: {
-                where: { status: 'ACTIVE' },
+                // Exclude soft-deleted (org-removed) tenants so they
+                // never enter the JWT fast-path / tenant switcher.
+                where: { status: 'ACTIVE', tenant: { deletedAt: null } },
                 orderBy: { createdAt: 'asc' },
                 include: { tenant: { select: { slug: true, id: true } } },
             },

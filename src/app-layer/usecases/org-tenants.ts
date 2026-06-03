@@ -27,7 +27,7 @@ import { Prisma } from '@prisma/client';
 import prisma from '@/lib/prisma';
 import { generateAndWrapDek } from '@/lib/security/tenant-keys';
 import { provisionAllOrgAdminsToTenant } from './org-provisioning';
-import { ConflictError } from '@/lib/errors/types';
+import { ConflictError, notFound } from '@/lib/errors/types';
 import type { OrgContext } from '@/app-layer/types';
 import { logger } from '@/lib/observability/logger';
 
@@ -146,4 +146,54 @@ export async function createTenantUnderOrg(
         tenant: { id: tenantId, name: tenantName, slug: tenantSlug },
         provisionedAdmins,
     };
+}
+
+/**
+ * Soft-delete ("remove") a tenant from the org admin panel.
+ *
+ * Sets `Tenant.deletedAt`, which the tenant resolver (getTenantContext →
+ * 404), the portfolio + org tenant listings, the tenant picker, and the
+ * JWT membership claims all filter on — so the tenant becomes
+ * inaccessible immediately, everywhere, while its data is retained for
+ * compliance and a possible restore. A hard purge (wiping the tenant's
+ * rows) is a separate, deliberate operation and is NOT done here.
+ *
+ * Org-scoped: only a tenant that belongs to THIS org (and isn't already
+ * removed) can be deleted — a foreign / unknown id is a `notFound`, so
+ * an org admin can never reach across into another org's tenant.
+ *
+ * The caller MUST have passed the `canManageTenants` permission check at
+ * the route layer.
+ */
+export async function deleteTenantUnderOrg(
+    ctx: OrgContext,
+    tenantId: string,
+): Promise<{ tenant: { id: string; slug: string; name: string } }> {
+    const tenant = await prisma.tenant.findFirst({
+        where: {
+            id: tenantId,
+            organizationId: ctx.organizationId,
+            deletedAt: null,
+        },
+        select: { id: true, slug: true, name: true },
+    });
+    if (!tenant) {
+        throw notFound('Tenant not found in this organization');
+    }
+
+    await prisma.tenant.update({
+        where: { id: tenant.id },
+        data: { deletedAt: new Date() },
+    });
+
+    logger.info('org-tenants.deleted', {
+        component: 'org-tenants',
+        organizationId: ctx.organizationId,
+        tenantId: tenant.id,
+        slug: tenant.slug,
+        deletedByUserId: ctx.userId,
+        requestId: ctx.requestId,
+    });
+
+    return { tenant };
 }

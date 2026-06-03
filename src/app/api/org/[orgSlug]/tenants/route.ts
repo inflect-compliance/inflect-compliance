@@ -55,7 +55,8 @@ export const GET = withApiErrorHandling(
         const ctx = await getOrgCtx((await routeCtx.params), req);
 
         const tenants = await prisma.tenant.findMany({
-            where: { organizationId: ctx.organizationId },
+            // Exclude soft-deleted (org-removed) tenants.
+            where: { organizationId: ctx.organizationId, deletedAt: null },
             select: {
                 id: true,
                 slug: true,

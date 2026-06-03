@@ -46,6 +46,13 @@ model Tenant {
   exclusions                        String?
   reminderDaysBefore                Int                                @default(14)
   maxRiskScale                      Int                                @default(5)
+  /// Soft-delete (org admin panel "remove tenant"). When set, the
+  /// tenant is filtered out of tenant resolution (getTenantContext →
+  /// 404), the org portfolio list, the tenant picker, and the JWT
+  /// membership claims — making it inaccessible — while the underlying
+  /// data is retained for compliance + possible restore. A hard purge
+  /// is a separate, deliberate operation.
+  deletedAt                         DateTime?
   /// Epic B.2 — wrapped per-tenant Data Encryption Key.
   /// Shape: the existing `encryptField()` envelope (`v1:base64(...)`),
   /// wrapping a 32-byte random DEK. See `src/lib/security/tenant-keys.ts`.

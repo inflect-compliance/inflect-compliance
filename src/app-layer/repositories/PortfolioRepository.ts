@@ -67,7 +67,9 @@ export class PortfolioRepository {
     static async getOrgTenantIds(orgId: string): Promise<OrgTenantMeta[]> {
         return runInGlobalContext(async (db) => {
             const tenants = await db.tenant.findMany({
-                where: { organizationId: orgId },
+                // Hide soft-deleted (org-removed) tenants from the
+                // portfolio + the org tenants table.
+                where: { organizationId: orgId, deletedAt: null },
                 select: { id: true, slug: true, name: true },
                 orderBy: { name: 'asc' },
             });

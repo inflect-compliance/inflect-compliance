@@ -76,6 +76,16 @@ export async function resolveTenantContext(
         throw notFound('Tenant not found');
     }
 
+    // Soft-deleted (removed from the org admin panel) tenants are
+    // inaccessible. This is the single authoritative gate — every /t and
+    // /api/t request resolves through here — so denying it once makes a
+    // removed tenant unreachable everywhere, regardless of stale JWT
+    // claims or cached listings. Same anti-enumeration shape as
+    // "not found".
+    if (tenant.deletedAt) {
+        throw notFound('Tenant not found');
+    }
+
     const membership = await prisma.tenantMembership.findUnique({
         where: {
             tenantId_userId: {
@@ -129,7 +139,9 @@ export async function getDefaultTenantForUser(
     userId: string
 ): Promise<(TenantMembership & { tenant: Tenant }) | null> {
     return prisma.tenantMembership.findFirst({
-        where: { userId },
+        // Skip memberships whose tenant was soft-deleted — never default
+        // a user into a removed tenant.
+        where: { userId, tenant: { deletedAt: null } },
         orderBy: { createdAt: 'asc' },
         include: { tenant: true },
     });
