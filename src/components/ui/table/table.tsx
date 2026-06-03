@@ -383,9 +383,16 @@ export function useTable<T extends any>(
     rowCount,
     columns: tableColumns,
     defaultColumn: {
-      minSize: enableColumnResizing ? 120 : 0,
-      size: enableColumnResizing ? 120 : 0,
-      maxSize: enableColumnResizing ? 300 : undefined,
+      // When resizing is on, the <Table> render seeds every column's
+      // measured content width into the sizing state on mount
+      // (measure-then-fix), so this `size` is only a transient
+      // placeholder for the one pre-measure frame. `minSize` is the
+      // floor a user can drag a column down to; no `maxSize` cap so
+      // the seed never clips a genuinely wide column and drags stay
+      // unconstrained.
+      minSize: enableColumnResizing ? 64 : 0,
+      size: enableColumnResizing ? 150 : 0,
+      maxSize: undefined,
       enableResizing: enableColumnResizing,
       ...defaultColumn,
     },
@@ -632,6 +639,59 @@ export function Table<T>({
   )?.id;
   const scrollWrapperRef = useRef<HTMLDivElement>(null);
 
+  // ── Column resizing: measure-then-fix ──
+  //
+  // `table-layout: fixed` (required for precise drag-resize) needs an
+  // explicit width per column, but a uniform default width would
+  // squish every table. So on mount we render ONE auto-layout frame
+  // (no per-column widths → the browser sizes each column to its
+  // content), measure the laid-out header widths, seed them into
+  // TanStack's column-sizing state, then flip to fixed layout. The
+  // result is visually identical to the non-resizable table, but
+  // every column now carries a drag handle and a concrete width the
+  // user can adjust.
+  //
+  // `sizingFrozen` gates the layout mode. `measuredColumnKey` tracks
+  // which visible-column set we last measured — when columns are
+  // shown/hidden the set changes and we re-measure (dropping back to
+  // auto for one frame first). A user drag updates TanStack's sizing
+  // state directly and leaves the key untouched, so resizes persist.
+  const tableElRef = useRef<HTMLTableElement>(null);
+  const [sizingFrozen, setSizingFrozen] = useState(false);
+  const measuredColumnKey = useRef<string | null>(null);
+  const visibleColumnKey = visibleColumns.map((c) => c.id).join("|");
+  const applyFixedLayout = enableColumnResizing && sizingFrozen;
+
+  useLayoutEffect(() => {
+    if (!enableColumnResizing) return;
+    if (measuredColumnKey.current === visibleColumnKey) return;
+    const tableEl = tableElRef.current;
+    if (!tableEl) return;
+    // Column set changed while frozen — drop to auto layout for one
+    // frame so the next pass measures true content widths, not the
+    // currently-pinned fixed widths.
+    if (sizingFrozen) {
+      setSizingFrozen(false);
+      return;
+    }
+    const headerCells = tableEl.querySelectorAll<HTMLTableCellElement>(
+      "thead th[data-column-id]",
+    );
+    if (!headerCells.length) return;
+    const sizing: Record<string, number> = {};
+    headerCells.forEach((th) => {
+      const id = th.dataset.columnId;
+      // Utility columns (select / row-menu / chevron) keep their
+      // explicit column-def widths — skip them so the measured value
+      // doesn't override the fixed affordance width.
+      if (!id || FIXED_UTILITY_COLUMN_IDS.has(id)) return;
+      sizing[id] = Math.round(th.getBoundingClientRect().width);
+    });
+    measuredColumnKey.current = visibleColumnKey;
+    table.setColumnSizing((prev) => ({ ...prev, ...sizing }));
+    setSizingFrozen(true);
+  }, [enableColumnResizing, visibleColumnKey, sizingFrozen, table]);
+
   // Whole-row clip — clamp the scroll wrapper to a multiple of the
   // row height so the bottom of the card never cuts a row in half.
   // Without this, the card height is whatever the flex chain
@@ -773,6 +833,7 @@ export function Table<T>({
             }
           >
             <table
+              ref={tableElRef}
               className={cn(
                 [
                   "group/table w-full border-separate border-spacing-0 transition-[border-spacing,margin-top]",
@@ -792,8 +853,8 @@ export function Table<T>({
               )}
               style={{
                 width: "100%",
-                tableLayout: enableColumnResizing ? "fixed" : "auto",
-                minWidth: enableColumnResizing
+                tableLayout: applyFixedLayout ? "fixed" : "auto",
+                minWidth: applyFixedLayout
                   ? table
                       .getVisibleLeafColumns()
                       .reduce((acc, column) => acc + column.getSize(), 0)
@@ -816,6 +877,7 @@ export function Table<T>({
                         <th
                           key={header.id}
                           colSpan={header.colSpan}
+                          data-column-id={header.column.id}
                           className={cn(
                             tableCellClassName(
                               header.column.id,
@@ -849,7 +911,7 @@ export function Table<T>({
                                   header.column.id,
                                   header.getSize(),
                                 )
-                              : enableColumnResizing
+                              : applyFixedLayout
                                 ? header.getSize()
                                 : undefined,
                             ...getCommonPinningStyles(header.column),
@@ -949,7 +1011,7 @@ export function Table<T>({
                     typeof rowProps === "function" ? rowProps(row) : rowProps;
                   const { className, ...rest } = props || {};
 
-                  return enableColumnResizing ? (
+                  return applyFixedLayout ? (
                     <ResizableTableRow
                       key={`${row.id}-${table
                         .getVisibleLeafColumns()

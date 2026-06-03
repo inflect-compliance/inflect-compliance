@@ -43,7 +43,7 @@ export type TooltipAlign = "start" | "center" | "end";
  */
 export function TooltipProvider({
     children,
-    delayDuration = 250,
+    delayDuration = 1000,
     skipDelayDuration = 300,
 }: {
     children: ReactNode;
@@ -121,7 +121,31 @@ export const Tooltip = forwardRef<HTMLButtonElement, TooltipProps>(function Tool
             delayDuration={delayDuration}
             disableHoverableContent={disableHoverableContent}
         >
-            <TooltipPrimitive.Trigger ref={ref} asChild>
+            <TooltipPrimitive.Trigger
+                ref={ref}
+                asChild
+                // Hover-or-keyboard, never auto. Radix opens the tooltip on
+                // ANY focus, so when a popover/dialog auto-focuses its first
+                // control (e.g. the calendar's prev-month arrow, or the theme
+                // toggle on a freshly-opened menu) the tooltip pops without
+                // the user hovering. We gate Radix's focus-open on
+                // `:focus-visible`: keyboard focus still opens it (the a11y
+                // affordance), but programmatic / pointer focus does not.
+                // React's SyntheticEvent.preventDefault() sets
+                // `defaultPrevented` unconditionally, and Radix wires this via
+                // `composeEventHandlers(props.onFocus, openOnFocus)` which
+                // skips its handler when the event is default-prevented.
+                onFocus={(e) => {
+                    try {
+                        if (!e.currentTarget.matches(":focus-visible")) {
+                            e.preventDefault();
+                        }
+                    } catch {
+                        // `:focus-visible` unsupported (e.g. jsdom) — leave the
+                        // default keyboard-a11y behaviour intact.
+                    }
+                }}
+            >
                 {children}
             </TooltipPrimitive.Trigger>
             <TooltipPrimitive.Portal>
