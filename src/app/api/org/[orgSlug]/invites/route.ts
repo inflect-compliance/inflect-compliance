@@ -20,10 +20,17 @@ import {
     listPendingOrgInvites,
 } from '@/app-layer/usecases/org-invites';
 import { forbidden } from '@/lib/errors/types';
+import { resolvePublicOrigin } from '@/lib/http/request-origin';
+import { sendInviteEmail } from '@/lib/email/invite-email';
 
 interface RouteContext {
     params: Promise<{ orgSlug: string }>;
 }
+
+const ORG_ROLE_LABEL: Record<string, string> = {
+    ORG_ADMIN: 'Org admin',
+    ORG_READER: 'Org reader',
+};
 
 const CreateOrgInviteInput = z.object({
     email: z.string().email('Valid email required'),
@@ -44,6 +51,20 @@ export const POST = withApiErrorHandling(
                 email: body.email,
                 role: body.role,
             });
+
+            // Email the acceptance link to the recipient. Best-effort:
+            // the invite is already committed, so a mailer failure never
+            // fails creation — the `url` below is the copy-paste fallback
+            // and `emailSent` tells the admin whether it went out.
+            const { sent } = await sendInviteEmail({
+                to: result.invite.email,
+                acceptUrl: resolvePublicOrigin(req) + result.url,
+                kind: 'organization',
+                spaceName: ctx.orgSlug,
+                roleLabel: ORG_ROLE_LABEL[body.role] ?? body.role,
+                expiresAt: result.invite.expiresAt,
+            });
+
             return NextResponse.json(
                 {
                     invite: {
@@ -54,6 +75,7 @@ export const POST = withApiErrorHandling(
                         createdAt: result.invite.createdAt.toISOString(),
                     },
                     url: result.url,
+                    emailSent: sent,
                 },
                 { status: 201 },
             );

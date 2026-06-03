@@ -15,11 +15,21 @@ import { enforceRateLimit, getClientIp } from '@/lib/security/rate-limit-middlew
 import { isRateLimitBypassed } from '@/lib/security/rate-limit-middleware';
 import { z } from 'zod';
 import { jsonResponse } from '@/lib/api-response';
+import { resolvePublicOrigin } from '@/lib/http/request-origin';
+import { sendInviteEmail } from '@/lib/email/invite-email';
 
 const CreateInviteSchema = z.object({
     email: z.string().email('Valid email required'),
     role: z.enum(['OWNER', 'ADMIN', 'EDITOR', 'AUDITOR', 'READER']),
 });
+
+const TENANT_ROLE_LABEL: Record<string, string> = {
+    OWNER: 'Owner',
+    ADMIN: 'Admin',
+    EDITOR: 'Editor',
+    AUDITOR: 'Auditor',
+    READER: 'Reader',
+};
 
 export const GET = withApiErrorHandling(
     requirePermission('admin.members', async (_req: NextRequest, _routeArgs, ctx) => {
@@ -46,6 +56,23 @@ export const POST = withApiErrorHandling(
         const body = await req.json();
         const input = CreateInviteSchema.parse(body);
         const result = await createInviteToken(ctx, input);
-        return jsonResponse({ invite: result.invite, url: result.url }, { status: 201 });
+
+        // Email the acceptance link to the recipient. Best-effort: the
+        // invite is already committed, so a mailer failure never fails
+        // creation — `url` is the copy-paste fallback and `emailSent`
+        // tells the admin whether it went out.
+        const { sent } = await sendInviteEmail({
+            to: result.invite.email,
+            acceptUrl: resolvePublicOrigin(req) + result.url,
+            kind: 'workspace',
+            spaceName: ctx.tenantSlug ?? 'your workspace',
+            roleLabel: TENANT_ROLE_LABEL[input.role] ?? input.role,
+            expiresAt: result.invite.expiresAt,
+        });
+
+        return jsonResponse(
+            { invite: result.invite, url: result.url, emailSent: sent },
+            { status: 201 },
+        );
     }),
 );
