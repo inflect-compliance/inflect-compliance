@@ -118,7 +118,12 @@ log.info({ queueName: QUEUE_NAME, redisUrl: REDIS_URL.replace(/\/\/.*@/, '//***@
     const { prisma } = await import('../src/lib/prisma');
     installAutomationBusDispatcher();
     installRlsTripwire(prisma);
-    log.info('automation bus dispatcher + RLS tripwire installed');
+    // Swap the mailer to SMTP when configured — the worker runs the
+    // notification outbox + digests, which send email. Without this the
+    // worker stays on the console sink and those emails never deliver.
+    const { initMailerFromEnv } = await import('../src/lib/mailer');
+    initMailerFromEnv();
+    log.info('automation bus dispatcher + RLS tripwire + mailer installed');
 })();
 
 const connection = createWorkerConnection();

@@ -71,6 +71,11 @@ export async function register() {
 
         const { initTelemetry } = await import('@/lib/observability/instrumentation');
         const { initSentry } = await import('@/lib/observability/sentry');
+        // Swap the mailer to SMTP when SMTP_HOST is configured. Without
+        // this the mailer stays on the dev console sink and NO email
+        // (verification, password reset, notifications, invites) is ever
+        // delivered in production. No-op (console sink) when SMTP is unset.
+        const { initMailerFromEnv } = await import('@/lib/mailer');
         const { installAutomationBusDispatcher } = await import(
             '@/app-layer/automation/bus-bootstrap'
         );
@@ -79,6 +84,7 @@ export async function register() {
         const { installShutdownHandlers } = await import('@/lib/observability/shutdown');
         await initTelemetry();
         initSentry();
+        initMailerFromEnv();
         // Wire the automation bus to the BullMQ queue so domain
         // events emitted from usecases enqueue dispatch jobs.
         installAutomationBusDispatcher();
