@@ -31,6 +31,20 @@ module.exports = {
                     800: '#3730a3',
                     900: '#312e81',
                     950: '#1e1b4b',
+                    // ── Semantic brand tokens (theme-driven via CSS vars) ──
+                    // Without these, named utilities like `bg-brand-emphasis`,
+                    // `border-brand-emphasis`, `bg-brand-subtle`, etc. — used
+                    // across ~30 components (radio dot, checkbox fill, switch,
+                    // progress bars, date-picker selected day, filter selected
+                    // state, charts) — resolved to NOTHING and rendered
+                    // colorless (e.g. the radio "fills" with a transparent
+                    // dot). Mapping them to the same `--brand-*` vars the
+                    // arbitrary `[var(--brand-*)]` callers already use makes
+                    // every named usage paint correctly.
+                    default: 'var(--brand-default)',
+                    emphasis: 'var(--brand-emphasis)',
+                    muted: 'var(--brand-muted)',
+                    subtle: 'var(--brand-subtle)',
                 },
 
                 // ── Semantic surface tokens ──
