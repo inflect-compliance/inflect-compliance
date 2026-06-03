@@ -57,7 +57,7 @@ export function SoAPrintView({ report, tenantName }: SoAPrintViewProps) {
             <div className="print-page">
                 <div className="border-b-2 border-border-emphasis pb-4 mb-6">
                     <Heading level={1} className="text-content-emphasis">Statement of Applicability</Heading>
-                    <p className="text-sm text-content-muted mt-1">ISO/IEC 27001:2022 — Annex A Controls</p>
+                    <p className="text-sm text-content-muted mt-1">{report.frameworkName}</p>
                 </div>
 
                 <table className="w-full text-sm mb-8">

@@ -50,7 +50,11 @@ export interface SoASummaryDTO {
 export interface SoAReportDTO {
     tenantId: string;
     tenantSlug: string;
-    framework: string;               // "ISO27001_2022"
+    framework: string;               // framework key, e.g. "ISO27001"
+    /** Human-readable framework name + version for headers, e.g.
+     *  "ISO 27001:2022". Resolved from the installed framework so the
+     *  report header isn't hard-coded to ISO 27001. */
+    frameworkName: string;
     generatedAt: string;             // ISO 8601
     entries: SoAEntryDTO[];
     summary: SoASummaryDTO;

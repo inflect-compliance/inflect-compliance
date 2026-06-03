@@ -178,7 +178,7 @@ export function SoAClient({ report, controls, tenantSlug, canEdit }: SoAClientPr
             {/* Eyebrow + summary line — section-level, not page-level */}
             <div>
                 <p className="text-sm text-content-muted">
-                    ISO 27001:2022 Annex A — {summary.total} requirements
+                    {report.frameworkName} — {summary.total} requirements
                 </p>
             </div>
 

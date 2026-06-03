@@ -55,11 +55,47 @@ export interface SoAOptions {
     includeTests?: boolean;
 }
 
+// ─── Installed-framework resolution ───
+
+/**
+ * Resolve which framework the SoA should report on when the caller
+ * doesn't pin one explicitly. A framework counts as "installed" for a
+ * tenant when at least one of the tenant's controls links to one of
+ * that framework's requirements (`ControlRequirementLink`) — that's
+ * exactly what `installPack` writes. ISO 27001 is preferred when it's
+ * installed (the SoA is an ISO-native artifact); otherwise the first
+ * installed framework is used. Falls back to ISO 27001 only when the
+ * tenant has nothing installed yet, so a fresh tenant still renders a
+ * meaningful (unmapped) baseline instead of erroring.
+ *
+ * Fixes the report defaulting to ISO 27001's 93 requirements even when
+ * the tenant installed a different pack (e.g. NIS2, SOC 2).
+ */
+export async function resolveInstalledFrameworkKey(
+    ctx: RequestContext,
+): Promise<string> {
+    const installed = await runInTenantContext(ctx, (db) =>
+        db.framework.findMany({
+            where: {
+                requirements: {
+                    some: { controlLinks: { some: { tenantId: ctx.tenantId } } },
+                },
+            },
+            select: { key: true },
+            orderBy: { key: 'asc' },
+        }),
+    );
+    if (installed.length === 0) return 'ISO27001';
+    const keys = installed.map((f) => f.key);
+    return keys.includes('ISO27001') ? 'ISO27001' : keys[0];
+}
+
 // ─── Main Use Case ───
 
 export async function getSoA(ctx: RequestContext, options: SoAOptions = {}): Promise<SoAReportDTO> {
     assertCanRead(ctx);
-    const frameworkKey = options.framework || 'ISO27001';
+    const frameworkKey =
+        options.framework || (await resolveInstalledFrameworkKey(ctx));
 
     // 1. Load framework + requirements
     const fw = await runInTenantContext(ctx, (db) =>
@@ -257,6 +293,9 @@ export async function getSoA(ctx: RequestContext, options: SoAOptions = {}): Pro
         tenantId: ctx.tenantId,
         tenantSlug: tenant?.slug || '',
         framework: frameworkKey,
+        // Display name for the report header — resolved from the
+        // installed framework so it isn't hard-coded to ISO 27001.
+        frameworkName: fw.version ? `${fw.name}:${fw.version}` : fw.name,
         generatedAt: new Date().toISOString(),
         entries,
         summary,

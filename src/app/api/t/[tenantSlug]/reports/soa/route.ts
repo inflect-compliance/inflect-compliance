@@ -6,7 +6,10 @@ import { z } from 'zod';
 import { jsonResponse } from '@/lib/api-response';
 
 const SoAQuerySchema = z.object({
-    framework: z.string().default('ISO27001'),
+    // Optional: when omitted, getSoA resolves the tenant's installed
+    // framework (was hard-defaulted to ISO27001, which showed ISO's 93
+    // requirements even for tenants on a different pack).
+    framework: z.string().optional(),
     includeEvidence: z.enum(['true', 'false']).default('false'),
     includeTasks: z.enum(['true', 'false']).default('false'),
     includeTests: z.enum(['true', 'false']).default('false'),
