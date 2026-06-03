@@ -427,6 +427,12 @@ type ResizableTableRowProps<T> = {
   rowProps?: HTMLAttributes<HTMLTableRowElement>;
   table: TableType<T>;
   selectionEnabled: boolean;
+  // Selection state captured at PARENT render time. The memo
+  // comparator below MUST compare this snapshot, not call
+  // `row.getIsSelected()` on both row objects — those read the LIVE
+  // table state, so post-toggle they're always equal and the row
+  // would never re-render (stale `data-selected` + unchecked box).
+  isSelected: boolean;
 } & Pick<
   TableProps<T>,
   "cellRight" | "tdClassName" | "onRowClick" | "onRowAuxClick"
@@ -443,6 +449,7 @@ const ResizableTableRow = memo(
     tdClassName,
     table,
     selectionEnabled,
+    isSelected,
   }: ResizableTableRowProps<T>) {
     const { className, ...rest } = rowProps || {};
 
@@ -503,7 +510,7 @@ const ResizableTableRow = memo(
               }
             : undefined
         }
-        data-selected={row.getIsSelected()}
+        data-selected={isSelected}
         {...rest}
       >
         {row.getVisibleCells().map((cell, index, cells) => {
@@ -582,12 +589,15 @@ const ResizableTableRow = memo(
     );
   },
   (prevProps, nextProps) => {
-    // Only re-render if row data or selection state changes
-    const prevRow = prevProps.row;
-    const nextRow = nextProps.row;
+    // Only re-render if row data or selection state changes. Compare
+    // the `isSelected` SNAPSHOT prop (captured at parent render time),
+    // NOT `row.getIsSelected()` on each row — those read the live
+    // table state and are always equal right after a toggle, which
+    // would skip the re-render and leave `data-selected` + the
+    // checkbox stale (the row-highlight-on-select bug).
     return (
-      prevRow.original === nextRow.original &&
-      prevRow.getIsSelected() === nextRow.getIsSelected()
+      prevProps.row.original === nextProps.row.original &&
+      prevProps.isSelected === nextProps.isSelected
     );
   },
 ) as <T>(props: ResizableTableRowProps<T>) => JSX.Element;
@@ -1033,6 +1043,7 @@ export function Table<T>({
                       tdClassName={tdClassName}
                       table={table}
                       selectionEnabled={selectionEnabled}
+                      isSelected={row.getIsSelected()}
                     />
                   ) : (
                     <tr
