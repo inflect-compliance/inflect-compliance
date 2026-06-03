@@ -126,8 +126,7 @@ export class WorkItemRepository {
         };
 
         // Direct FK. Bounded by controlIds; counting needs every match.
-        const direct = await db.task.findMany({
-            // guardrail-allow: unbounded -- aggregate count, bounded by the controlIds set
+        const direct = await db.task.findMany({ // guardrail-allow: unbounded -- aggregate count, bounded by the controlIds set
             where: { tenantId: ctx.tenantId, controlId: { in: controlIds } },
             select: { id: true, controlId: true, status: true },
         });
@@ -137,8 +136,7 @@ export class WorkItemRepository {
 
         // Generic TaskLink path (the control-tab create flow links via
         // TaskLink, not the FK). Indexed by [tenantId, entityType, entityId].
-        const links = await db.taskLink.findMany({
-            // guardrail-allow: unbounded -- aggregate count, bounded by the controlIds set
+        const links = await db.taskLink.findMany({ // guardrail-allow: unbounded -- aggregate count, bounded by the controlIds set
             where: {
                 tenantId: ctx.tenantId,
                 entityType: 'CONTROL' as TaskLinkEntityType,

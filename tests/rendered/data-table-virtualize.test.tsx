@@ -252,7 +252,7 @@ describe("DataTable — virtualized DOM stays small for large datasets", () => {
 // ─── Behaviour parity — selection, hover, click ──────────────────────
 
 describe("DataTable — virtualized behaviour parity", () => {
-    it("row click handler fires with the clicked row (on double-click)", async () => {
+    it("row click handler fires with the clicked row (single-click, selection off)", async () => {
         const onRowClick = jest.fn();
         const { container } = renderTable({
             data: makeRows(150),
@@ -263,8 +263,11 @@ describe("DataTable — virtualized behaviour parity", () => {
             "[data-virtual-row-index='0']",
         ) as HTMLElement;
         expect(firstRow).toBeTruthy();
-        // R13-PR2 — onRowClick fires on double-click, not single-click.
-        fireEvent.doubleClick(firstRow);
+        // Row-click semantics (revised 2026-06-03): renderTable sets
+        // selectionEnabled={false}, so there's no selection competing
+        // for the single click — onRowClick fires on SINGLE click.
+        // (With selection ON it would fire on double-click instead.)
+        fireEvent.click(firstRow);
         expect(onRowClick).toHaveBeenCalledTimes(1);
         const [row] = onRowClick.mock.calls[0]!;
         expect((row as { original: ThingRow }).original.id).toBe("r0");
