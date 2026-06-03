@@ -87,6 +87,7 @@ export class StubEmailProvider implements EmailProvider {
 // ─── Singleton ───
 
 let provider: EmailProvider = new ConsoleEmailProvider();
+let envInitAttempted = false;
 
 export function setEmailProvider(p: EmailProvider) {
     provider = p;
@@ -97,6 +98,19 @@ export function getEmailProvider(): EmailProvider {
 }
 
 export async function sendEmail(msg: EmailMessage): Promise<void> {
+    // Lazy, per-module-instance init from env. Next's bundler can load
+    // mailer.ts in a DIFFERENT chunk for a route handler than the one
+    // `instrumentation.ts` initialized at startup, leaving the route's
+    // copy on the default console sink — so emails (invites, etc.)
+    // silently no-op even though SMTP is configured. Initialize on the
+    // first real send so whichever instance actually sends picks up
+    // SMTP from env. Guarded on the provider still being the console
+    // default, so a caller that explicitly set a provider (tests' stub,
+    // or a manual setEmailProvider) is never overridden.
+    if (!envInitAttempted && provider instanceof ConsoleEmailProvider) {
+        envInitAttempted = true;
+        initMailerFromEnv();
+    }
     await provider.send(msg);
 }
 
