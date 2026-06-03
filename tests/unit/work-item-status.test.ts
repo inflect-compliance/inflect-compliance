@@ -13,6 +13,7 @@ import {
     ACTIVE_STATUS_FILTER,
     isTerminalStatus,
     isActiveStatus,
+    checkWorkItemTransition,
 } from '../../src/app-layer/domain/work-item-status';
 import { readPrismaSchema } from '../helpers/prisma-schema';
 
@@ -90,6 +91,29 @@ describe('isActiveStatus', () => {
 
     test('TRIAGED is active (the core fix)', () => {
         expect(isActiveStatus('TRIAGED')).toBe(true);
+    });
+});
+
+// ═════════════════════════════════════════════════════════════════════
+// 2b. Transitions — CLOSED reachable directly (RESOLVED retired in UI)
+// ═════════════════════════════════════════════════════════════════════
+
+describe('checkWorkItemTransition — direct close', () => {
+    // RESOLVED was retired as a redundant intermediate; every active
+    // status can now go straight to CLOSED in one step.
+    test.each(['OPEN', 'TRIAGED', 'IN_PROGRESS', 'BLOCKED'])(
+        '%s → CLOSED is legal',
+        (from) => {
+            expect(checkWorkItemTransition(from, 'CLOSED')).toBeNull();
+        },
+    );
+
+    test('a legacy RESOLVED task can still advance to CLOSED', () => {
+        expect(checkWorkItemTransition('RESOLVED', 'CLOSED')).toBeNull();
+    });
+
+    test('CLOSED stays terminal (no transitions out)', () => {
+        expect(checkWorkItemTransition('CLOSED', 'OPEN')).not.toBeNull();
     });
 });
 

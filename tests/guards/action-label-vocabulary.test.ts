@@ -93,14 +93,13 @@ const BASELINE_PLUS_LITERAL_SITES = new Set<string>([
     // baseline honest.
     'src/app/t/[tenantSlug]/(app)/policies/[policyId]/page.tsx:452',
     'src/app/t/[tenantSlug]/(app)/policies/[policyId]/page.tsx:753',
-    // PR-D shifted these legacy `'+ Link'` / `'+ Comment'` string
-    // literals (the ones the regex actually catches — JSX text
-    // doesn't match because it has whitespace between `>` and `+`)
-    // by 20 lines when the EntityPicker import block + the new JSX
-    // expanded the task-link form. Line numbers refreshed; the
+    // Legacy `'+ Link'` / `'+ Comment'` string literals (the ones the
+    // regex catches — JSX text doesn't match, whitespace between `>`
+    // and `+`). Line numbers shift whenever this file grows; refreshed
+    // after the close-resolution Modal + status-flow rework. The
     // literals themselves are unchanged staged debt.
-    'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:494',
-    'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:522',
+    'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:539',
+    'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:567',
     'src/app/t/[tenantSlug]/(app)/tests/runs/[runId]/page.tsx:399',
     'src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx:369',
     'src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx:393',

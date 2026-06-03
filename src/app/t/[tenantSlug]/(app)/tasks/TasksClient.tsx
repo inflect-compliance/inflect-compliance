@@ -68,6 +68,11 @@ const TYPE_LABELS: Record<string, string> = {
 };
 const STATUS_OPTIONS = ['OPEN', 'TRIAGED', 'IN_PROGRESS', 'BLOCKED', 'RESOLVED', 'CLOSED', 'CANCELED'];
 const STATUS_CB_OPTIONS: ComboboxOption[] = STATUS_OPTIONS.map(s => ({ value: s, label: STATUS_LABELS[s] || s }));
+// Bulk status only offers ACTIVE transitions. Terminal statuses
+// (CLOSED / CANCELED) require a per-task resolution note (S8), which
+// the bulk bar can't collect — closing is a deliberate single-task
+// action via the task detail page. RESOLVED is retired everywhere.
+const BULK_STATUS_CB_OPTIONS: ComboboxOption[] = ['OPEN', 'TRIAGED', 'IN_PROGRESS', 'BLOCKED'].map(s => ({ value: s, label: STATUS_LABELS[s] || s }));
 const BULK_ACTION_OPTIONS: ComboboxOption[] = [
     { value: 'assign', label: 'Assign' },
     { value: 'status', label: 'Change Status' },
@@ -597,9 +602,9 @@ function TasksPageInner({
                         <Combobox
                             hideSearch
                             id="bulk-value-input"
-                            selected={STATUS_CB_OPTIONS.find(o => o.value === bulkValue) ?? null}
+                            selected={BULK_STATUS_CB_OPTIONS.find(o => o.value === bulkValue) ?? null}
                             setSelected={(opt) => setBulkValue(opt?.value ?? '')}
-                            options={STATUS_CB_OPTIONS}
+                            options={BULK_STATUS_CB_OPTIONS}
                             placeholder="Select status..."
                             matchTriggerWidth
                             buttonProps={{ className: 'w-full sm:w-auto text-sm' }}

@@ -18,6 +18,8 @@ import { InlineEmptyState } from '@/components/ui/inline-empty-state';
 import { UserCombobox } from '@/components/ui/user-combobox';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
+import { Modal } from '@/components/ui/modal';
+import { FormField } from '@/components/ui/form-field';
 import { CopyText } from '@/components/ui/copy-text';
 import { TERMINAL_WORK_ITEM_STATUSES } from '@/app-layer/domain/work-item-status';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -48,7 +50,12 @@ const ENTITY_TYPE_OPTIONS = ['CONTROL', 'RISK', 'ASSET', 'EVIDENCE', 'FRAMEWORK_
 const ENTITY_TYPE_CB_OPTIONS: ComboboxOption[] = ENTITY_TYPE_OPTIONS.map(t => ({ value: t, label: t }));
 const RELATION_OPTIONS = ['RELATES_TO', 'CAUSED_BY', 'MITIGATED_BY', 'EVIDENCE_FOR'];
 const RELATION_CB_OPTIONS: ComboboxOption[] = RELATION_OPTIONS.map(r => ({ value: r, label: r.replace(/_/g, ' ') }));
-const TASK_STATUS_CB_OPTIONS: ComboboxOption[] = Object.entries(STATUS_LABELS).map(([val, lbl]) => ({ value: val, label: lbl }));
+// RESOLVED retired from the picker — it was redundant with CLOSED.
+// Kept in STATUS_LABELS so a legacy RESOLVED task still shows the right
+// badge; just not offered as a choice (a RESOLVED task is closed via
+// the CLOSED option). CLOSED + CANCELED prompt for a resolution note.
+const SELECTABLE_STATUSES = ['OPEN', 'TRIAGED', 'IN_PROGRESS', 'BLOCKED', 'CLOSED', 'CANCELED'];
+const TASK_STATUS_CB_OPTIONS: ComboboxOption[] = SELECTABLE_STATUSES.map((val) => ({ value: val, label: STATUS_LABELS[val] }));
 
 type Tab = 'overview' | 'links' | 'comments' | 'activity';
 
@@ -72,6 +79,11 @@ export default function TaskDetailPage() {
 
     // Mutation in-flight flags (UI-disable only — not data).
     const [changingStatus, setChangingStatus] = useState(false);
+    // Terminal-status close prompt: the status awaiting a resolution
+    // note (null = no prompt open) + the note draft + last error.
+    const [pendingTerminalStatus, setPendingTerminalStatus] = useState<string | null>(null);
+    const [resolutionDraft, setResolutionDraft] = useState('');
+    const [statusError, setStatusError] = useState('');
     const [assigning, setAssigning] = useState(false);
     // Assignee-picker draft. `undefined` = untouched (mirror the
     // task's persisted assignee); `string | null` = an explicit pick.
@@ -132,22 +144,55 @@ export default function TaskDetailPage() {
             ? assigneeDraft
             : (task?.assigneeUserId ?? null);
 
-    const changeStatus = async (status: string) => {
+    // A terminal status (CLOSED / CANCELED) requires a resolution note
+    // server-side (S8 audit control). Picking one opens a small prompt
+    // for the note; non-terminal changes commit immediately.
+    const requestStatusChange = (status: string) => {
+        setStatusError('');
+        if ((TERMINAL_WORK_ITEM_STATUSES as readonly string[]).includes(status)) {
+            setResolutionDraft('');
+            setPendingTerminalStatus(status);
+            return;
+        }
+        void commitStatus(status, null);
+    };
+
+    const commitStatus = async (status: string, resolution: string | null) => {
         setChangingStatus(true);
+        setStatusError('');
         try {
             // Optimistic — the new status shows instantly, no spinner.
             await taskQuery.mutate(
                 (cur: any) => (cur ? { ...cur, status } : cur),
                 { revalidate: false },
             );
-            await fetch(apiUrl(`/tasks/${taskId}/status`), {
+            const res = await fetch(apiUrl(`/tasks/${taskId}/status`), {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status }),
+                body: JSON.stringify(
+                    resolution ? { status, resolution } : { status },
+                ),
             });
+            if (!res.ok) {
+                // Surface the reason instead of silently reverting — the
+                // old flow swallowed the 4xx and the optimistic patch
+                // snapped back, so "nothing happened" on close.
+                const data = await res.json().catch(() => ({}));
+                throw new Error(
+                    (typeof data?.error === 'string' && data.error) ||
+                        data?.message ||
+                        'Failed to change status',
+                );
+            }
+            setPendingTerminalStatus(null);
+        } catch (e) {
+            setStatusError(
+                e instanceof Error ? e.message : 'Failed to change status',
+            );
         } finally {
             setChangingStatus(false);
             // Reconcile — pick up server-derived fields (completedAt,
-            // resolution) the optimistic patch can't know.
+            // resolution) the optimistic patch can't know (and revert
+            // the optimistic status if the write failed).
             await taskQuery.mutate();
         }
     };
@@ -338,7 +383,7 @@ export default function TaskDetailPage() {
                         hideSearch
                         id="task-status-select"
                         selected={TASK_STATUS_CB_OPTIONS.find(o => o.value === task.status) ?? null}
-                        setSelected={(opt) => { if (opt) changeStatus(opt.value); }}
+                        setSelected={(opt) => { if (opt) requestStatusChange(opt.value); }}
                         options={TASK_STATUS_CB_OPTIONS}
                         disabled={changingStatus}
                         placeholder="Status"
@@ -594,6 +639,78 @@ export default function TaskDetailPage() {
                     )}
                 </div>
             )}
+
+            {/* Resolution prompt — moving a task to a terminal status
+                (CLOSED / CANCELED) records a resolution note on the
+                audit trail (S8). Collected here so closing actually
+                works instead of silently reverting on the 4xx. */}
+            <Modal
+                showModal={pendingTerminalStatus !== null}
+                setShowModal={(next) => {
+                    if (next === false && !changingStatus) {
+                        setPendingTerminalStatus(null);
+                    }
+                }}
+                size="sm"
+                title={`${STATUS_LABELS[pendingTerminalStatus ?? ''] ?? 'Close'} task`}
+                description="Add a short resolution note for the audit trail."
+                preventDefaultClose={changingStatus}
+            >
+                <Modal.Header
+                    title={`${STATUS_LABELS[pendingTerminalStatus ?? ''] ?? 'Close'} task`}
+                    description="A resolution note is recorded on the audit trail."
+                />
+                <Modal.Body>
+                    {statusError && (
+                        <div
+                            className="mb-4 rounded-lg border border-border-error bg-bg-error px-3 py-2 text-sm text-content-error"
+                            role="alert"
+                            id="task-status-error"
+                        >
+                            {statusError}
+                        </div>
+                    )}
+                    <FormField label="Resolution" required>
+                        <textarea
+                            id="task-resolution-input"
+                            className="input w-full"
+                            rows={3}
+                            placeholder="What was done / why it's being closed"
+                            value={resolutionDraft}
+                            onChange={(e) => setResolutionDraft(e.target.value)}
+                            disabled={changingStatus}
+                        />
+                    </FormField>
+                </Modal.Body>
+                <Modal.Actions>
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setPendingTerminalStatus(null)}
+                        disabled={changingStatus}
+                        id="task-status-cancel-btn"
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="primary"
+                        size="sm"
+                        id="confirm-task-status-btn"
+                        disabled={!resolutionDraft.trim() || changingStatus}
+                        onClick={() =>
+                            pendingTerminalStatus &&
+                            commitStatus(
+                                pendingTerminalStatus,
+                                resolutionDraft.trim(),
+                            )
+                        }
+                    >
+                        {changingStatus
+                            ? 'Saving…'
+                            : `${STATUS_LABELS[pendingTerminalStatus ?? ''] ?? 'Close'} task`}
+                    </Button>
+                </Modal.Actions>
+            </Modal>
         </EntityDetailLayout>
     );
 }
