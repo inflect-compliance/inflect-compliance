@@ -4,11 +4,17 @@
  * carries an inline disable directive; collectively they should
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
-import { formatDate } from '@/lib/format-date';
-import { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { Plus } from '@/components/ui/icons/nucleo';
 import { Button } from '@/components/ui/button';
-import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import {
+    StatusBadge,
+    type StatusBadgeVariant,
+} from '@/components/ui/status-badge';
+import { DataTable, createColumns } from '@/components/ui/table';
+import { TableTitleCell } from '@/components/ui/table-title-cell';
+import { TimestampTooltip } from '@/components/ui/timestamp-tooltip';
 // The canonical task-create modal (the SAME one the Tasks page "+ Task"
 // button opens). Reused here so a task created from a control / asset /
 // risk detail page is identical to a standalone task — full fields, and
@@ -17,35 +23,51 @@ import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-bad
 import { NewTaskModal } from '@/app/t/[tenantSlug]/(app)/tasks/NewTaskModal';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-const TASK_STATUS_BADGE: Record<string, StatusBadgeVariant> = {
+
+// Mirrors the Tasks page (TasksClient) maps so the control / asset /
+// risk Tasks tab renders the SAME columns + tones as the global table.
+const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
     OPEN: 'neutral', TRIAGED: 'info', IN_PROGRESS: 'info',
     BLOCKED: 'error', RESOLVED: 'success', CLOSED: 'neutral', CANCELED: 'neutral',
 };
-const SEVERITY_BADGE: Record<string, StatusBadgeVariant> = {
-    CRITICAL: 'error', HIGH: 'error', MEDIUM: 'warning', LOW: 'info', INFO: 'neutral',
+const STATUS_LABELS: Record<string, string> = {
+    OPEN: 'Open', TRIAGED: 'Triaged', IN_PROGRESS: 'In Progress',
+    BLOCKED: 'Blocked', RESOLVED: 'Resolved', CLOSED: 'Closed', CANCELED: 'Canceled',
 };
+const SEVERITY_BADGE: Record<string, StatusBadgeVariant> = {
+    INFO: 'neutral', LOW: 'neutral', MEDIUM: 'warning',
+    HIGH: 'error', CRITICAL: 'error',
+};
+const TYPE_LABELS: Record<string, string> = {
+    AUDIT_FINDING: 'Audit Finding', CONTROL_GAP: 'Control Gap',
+    INCIDENT: 'Incident', IMPROVEMENT: 'Improvement', TASK: 'Task',
+};
+
+interface LinkedTask {
+    id: string;
+    key?: string | null;
+    title: string;
+    type?: string | null;
+    status: string;
+    severity?: string | null;
+    dueAt?: string | null;
+    updatedAt?: string | null;
+    assignee?: { name?: string | null } | null;
+}
 
 interface LinkedTasksPanelProps {
     apiBase: string;
     /**
-     * Domain entity the listed tasks are linked to. Drives the
-     * filter query AND (when `canWrite`) the entityType passed
-     * into the create modal so newly-created tasks are linked back
-     * to the same entity.
-     *
-     * Accepts a string for backward compatibility with the
-     * read-only call sites that pre-date the create flow, but the
-     * canonical values are `'ASSET' | 'RISK'` — the create modal
-     * only fires for those.
+     * Domain entity the listed tasks are linked to. Drives the filter
+     * query AND (when `canWrite`) the entityType passed into the create
+     * modal. Canonical values: `'ASSET' | 'RISK' | 'CONTROL'`.
      */
     entityType: string;
     entityId: string;
     tenantHref: (path: string) => string;
     /**
-     * When true, surface a "+ Task" affordance that opens
-     * `<LinkedTaskCreateModal>`. The Asset + Risk detail pages
-     * pass through their existing `permissions.canWrite` so
-     * READER roles see only the read-only list.
+     * When true, surface the create affordance + row multi-select.
+     * READER roles see only the read-only table.
      */
     canWrite?: boolean;
 }
@@ -57,36 +79,28 @@ export default function LinkedTasksPanel({
     tenantHref,
     canWrite = false,
 }: LinkedTasksPanelProps) {
-    const [tasks, setTasks] = useState<any[]>([]);
+    const router = useRouter();
+    const [tasks, setTasks] = useState<LinkedTask[]>([]);
     const [loading, setLoading] = useState(true);
     const [creating, setCreating] = useState(false);
 
     const loadTasks = useCallback(async () => {
         setLoading(true);
         try {
-            // `apiBase` is `apiUrl('')`, which carries a trailing slash
-            // (`/api/t/<slug>/`). Appending `/tasks` would yield a double
-            // slash (`//tasks`) — Next.js 308-redirects that to a
-            // normalised ABSOLUTE url, which breaks under plain HTTP
-            // (ERR_SSL_PROTOCOL_ERROR) and silently empties the panel.
-            // Strip the trailing slash so the request stays same-origin.
+            // `apiBase` is `apiUrl('')` (trailing slash). Strip it so the
+            // request stays same-origin (see prior //tasks 308 bug).
             const base = apiBase.replace(/\/+$/, '');
-            // PR #158 changed `/tasks` to return `{ rows, truncated }` from
-            // the prior raw-array shape. Accept both — older deploys still
-            // emit arrays, and this is the only LinkedTasksPanel touch
-            // point so a defensive read is cheaper than a coordinated
-            // schema flip.
             const res = await fetch(
                 `${base}/tasks?linkedEntityType=${encodeURIComponent(entityType)}&linkedEntityId=${encodeURIComponent(entityId)}`,
             );
             const data: unknown = res.ok ? await res.json() : { rows: [] };
-            if (Array.isArray(data)) setTasks(data);
+            if (Array.isArray(data)) setTasks(data as LinkedTask[]);
             else if (
                 data &&
                 typeof data === 'object' &&
                 Array.isArray((data as { rows?: unknown }).rows)
             ) {
-                setTasks((data as { rows: unknown[] }).rows);
+                setTasks((data as { rows: LinkedTask[] }).rows);
             } else setTasks([]);
         } catch {
             setTasks([]);
@@ -100,10 +114,6 @@ export default function LinkedTasksPanel({
         void loadTasks();
     }, [loadTasks]);
 
-    // The unified create modal links back to the canonical entity
-    // types (ASSET / RISK / CONTROL). Other callers (legacy) pass
-    // strings that don't fit; gate the affordance so a stray entity
-    // type can't render an unmoored create dialog.
     const canonicalEntityType: 'ASSET' | 'RISK' | 'CONTROL' | null =
         entityType === 'ASSET' ||
         entityType === 'RISK' ||
@@ -112,6 +122,83 @@ export default function LinkedTasksPanel({
             : null;
     const showCreate = canWrite && canonicalEntityType !== null;
 
+    // Columns mirror the Tasks page table so this tab reads identically.
+    const columns = useMemo(
+        () =>
+            createColumns<LinkedTask>([
+                {
+                    id: 'title',
+                    header: 'Title',
+                    accessorFn: (t) => t.title,
+                    cell: ({ row }) => (
+                        <TableTitleCell
+                            href={tenantHref(`/tasks/${row.original.id}`)}
+                        >
+                            {row.original.title}
+                        </TableTitleCell>
+                    ),
+                },
+                {
+                    id: 'type',
+                    header: 'Type',
+                    accessorFn: (t) => t.type ?? '',
+                    cell: ({ getValue }) => (
+                        <span className="text-xs text-content-muted">
+                            {TYPE_LABELS[getValue<string>()] || getValue<string>() || '—'}
+                        </span>
+                    ),
+                },
+                {
+                    id: 'severity',
+                    header: 'Severity',
+                    accessorFn: (t) => t.severity ?? '',
+                    cell: ({ row }) =>
+                        row.original.severity ? (
+                            <StatusBadge
+                                variant={SEVERITY_BADGE[row.original.severity] || 'neutral'}
+                            >
+                                {row.original.severity}
+                            </StatusBadge>
+                        ) : (
+                            <span className="text-content-subtle">—</span>
+                        ),
+                },
+                {
+                    id: 'status',
+                    header: 'Status',
+                    accessorFn: (t) => t.status,
+                    cell: ({ row }) => (
+                        <StatusBadge
+                            variant={STATUS_BADGE[row.original.status] || 'neutral'}
+                        >
+                            {STATUS_LABELS[row.original.status] || row.original.status}
+                        </StatusBadge>
+                    ),
+                },
+                {
+                    id: 'assignee',
+                    header: 'Assignee',
+                    accessorFn: (t) => t.assignee?.name || '—',
+                    cell: ({ getValue }) => (
+                        <span className="text-xs text-content-muted">
+                            {getValue<string>()}
+                        </span>
+                    ),
+                },
+                {
+                    id: 'dueAt',
+                    header: 'Due Date',
+                    cell: ({ row }) => (
+                        <TimestampTooltip
+                            date={row.original.dueAt ?? null}
+                            className="text-xs text-content-muted"
+                        />
+                    ),
+                },
+            ]),
+        [tenantHref],
+    );
+
     return (
         <div className="space-y-default">
             {showCreate && (
@@ -119,18 +206,14 @@ export default function LinkedTasksPanel({
                     <div className="flex justify-end">
                         <Button
                             variant="primary"
+                            size="sm"
                             onClick={() => setCreating(true)}
                             id="linked-task-create-btn"
                             data-testid="linked-task-create-btn"
-                        >
-                            + Task
-                        </Button>
+                            text="Task"
+                            icon={<Plus className="size-4" aria-hidden="true" />}
+                        />
                     </div>
-                    {/* The canonical Tasks-page create modal. The preset
-                        link wires the new task back to this entity AND the
-                        create POSTs to /tasks so it shows in the global
-                        Tasks list. `onCreated` keeps us on the detail page
-                        and refreshes this panel. */}
                     <NewTaskModal
                         open={creating}
                         setOpen={setCreating}
@@ -145,63 +228,19 @@ export default function LinkedTasksPanel({
                 </>
             )}
 
-            {loading ? (
-                <div className="text-content-subtle text-sm animate-pulse py-4 text-center">
-                    Loading linked tasks…
-                </div>
-            ) : tasks.length === 0 ? (
-                <p className="text-content-subtle text-sm text-center py-4">
-                    No linked tasks
-                </p>
-            ) : (
-                <div className="space-y-1">
-                    {tasks.map((task: any) => (
-                        <Link
-                            key={task.id}
-                            href={tenantHref(`/tasks/${task.id}`)}
-                            className="flex items-center gap-compact p-2 rounded-lg hover:bg-bg-muted/50 transition text-sm"
-                            id={`linked-task-${task.id}`}
-                        >
-                            {task.key && (
-                                <span className="font-mono text-xs text-content-subtle w-16 truncate">
-                                    {task.key}
-                                </span>
-                            )}
-                            <span className="flex-1 text-content-emphasis truncate">
-                                {task.title}
-                            </span>
-                            <StatusBadge
-                                variant={
-                                    TASK_STATUS_BADGE[task.status] || 'neutral'
-                                }
-                            >
-                                {task.status}
-                            </StatusBadge>
-                            {task.severity && (
-                                <StatusBadge
-                                    variant={
-                                        SEVERITY_BADGE[task.severity] ||
-                                        'neutral'
-                                    }
-                                >
-                                    {task.severity}
-                                </StatusBadge>
-                            )}
-                            {task.dueAt && (
-                                <span
-                                    className={`text-xs ${
-                                        new Date(task.dueAt) < new Date()
-                                            ? 'text-content-error'
-                                            : 'text-content-muted'
-                                    }`}
-                                >
-                                    {formatDate(task.dueAt)}
-                                </span>
-                            )}
-                        </Link>
-                    ))}
-                </div>
-            )}
+            <DataTable<LinkedTask>
+                data={tasks}
+                columns={columns}
+                getRowId={(t) => t.id}
+                loading={loading}
+                selectionEnabled={canWrite}
+                onRowClick={(row) =>
+                    router.push(tenantHref(`/tasks/${row.original.id}`))
+                }
+                resourceName={(plural) => (plural ? 'tasks' : 'task')}
+                emptyState="No linked tasks"
+                data-testid="linked-tasks-table"
+            />
         </div>
     );
 }
