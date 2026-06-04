@@ -88,6 +88,10 @@ afterAll(() => {
     HTMLElement.prototype.getBoundingClientRect = originalGBCR;
 });
 
+// Column resizing is OPT-IN now (DataTable defaults it OFF as of
+// 2026-06-04 — shelved because the fixed layout it requires caused a
+// horizontal scrollbar). These tests pass `enableColumnResizing`
+// explicitly to verify the feature still works when a table opts in.
 describe('<DataTable> column resizing — behavioural (Tier 2)', () => {
     it('seeds each column its measured content width and switches to fixed layout', () => {
         const { container } = render(
@@ -95,6 +99,7 @@ describe('<DataTable> column resizing — behavioural (Tier 2)', () => {
                 data={rows}
                 columns={columns}
                 getRowId={(r) => r.id}
+                enableColumnResizing
             />,
         );
 
@@ -123,6 +128,7 @@ describe('<DataTable> column resizing — behavioural (Tier 2)', () => {
                 data={rows}
                 columns={columns}
                 getRowId={(r) => r.id}
+                enableColumnResizing
             />,
         );
         // The resize handle is the `cursor-col-resize` grip rendered in

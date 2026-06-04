@@ -166,8 +166,11 @@ export interface DataTableProps<T> {
    *
    * Resizing is force-disabled for virtualized tables (the grid
    * renderer reads `getSize()` directly with no measure step, so it
-   * would collapse to a uniform width). Pass `enableColumnResizing={false}`
-   * to opt a specific table out entirely.
+   * would collapse to a uniform width).
+   *
+   * Default OFF as of 2026-06-04 (shelved — the fixed layout it
+   * requires caused a horizontal scrollbar on some tables). Pass
+   * `enableColumnResizing` to opt a specific table back in.
    */
   enableColumnResizing?: boolean;
 
@@ -298,7 +301,14 @@ export function DataTable<T>({
   virtualize,
   virtualRowHeight,
   virtualHeight,
-  enableColumnResizing = true,
+  // Default OFF (2026-06-04). Column resizing switched the table to a
+  // fixed layout seeded from measured widths, which on some tables
+  // summed wider than the card and left a horizontal scrollbar. The
+  // feature is shelved (default-off) until that's reworked; pass
+  // `enableColumnResizing` to opt a specific table back in. With it
+  // off the table is plain auto-layout (width 100%, cells truncate) —
+  // no fixed layout, no measure-freeze, no horizontal scroll.
+  enableColumnResizing = false,
 }: DataTableProps<T>) {
   // Compose the viewport-fill classes onto the existing className /
   // scrollWrapperClassName slots. Tailwind's `md:` prefixes mean
