@@ -28,6 +28,8 @@ import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 import { EditAssetModal } from '../EditAssetModal';
+import { InheritedEvidencePanel } from '@/components/InheritedEvidencePanel';
+import { InheritedTestPlansPanel } from '@/components/InheritedTestPlansPanel';
 
 const TraceabilityPanel = dynamic(() => import('@/components/TraceabilityPanel'), {
     loading: () => <SkeletonCard lines={3} />,
@@ -225,15 +227,10 @@ export default function AssetDetailPage() {
                 />
             )}
             {activeTab === 'evidence' && (
-                <EmptyState
-                    size="sm"
-                    variant="no-records"
-                    title="Evidence lives on linked controls"
-                    description="Assets don't carry evidence directly — open the controls in the Traceability tab to see their attached evidence."
-                    primaryAction={{
-                        label: 'Open Traceability',
-                        onClick: () => setActiveTab('traceability'),
-                    }}
+                <InheritedEvidencePanel
+                    endpoint={apiUrl(`/assets/${assetId}/evidence`)}
+                    tenantHref={tenantHref}
+                    entityLabel="asset"
                 />
             )}
             {activeTab === 'mappings' && (
@@ -257,15 +254,10 @@ export default function AssetDetailPage() {
                 />
             )}
             {activeTab === 'tests' && (
-                <EmptyState
-                    size="sm"
-                    variant="no-records"
-                    title="Tests run on controls, not assets"
-                    description="Control tests verify mitigations. Navigate to a control via the Traceability tab to see its test plans."
-                    primaryAction={{
-                        label: 'Open Traceability',
-                        onClick: () => setActiveTab('traceability'),
-                    }}
+                <InheritedTestPlansPanel
+                    endpoint={apiUrl(`/assets/${assetId}/test-plans`)}
+                    tenantHref={tenantHref}
+                    entityLabel="asset"
                 />
             )}
 

@@ -1,0 +1,119 @@
+/**
+ * Inherited control data for Asset / Risk detail pages.
+ *
+ * Evidence and test plans attach ONLY to controls. An asset or risk
+ * "has" neither directly — it inherits them from the controls it is
+ * mapped to (ControlAsset for assets, RiskControl for risks). These
+ * read-only aggregators gather the evidence / test plans across the
+ * mapped controls and tag each row with its owning control, so the
+ * Asset/Risk Evidence and Tests tabs can surface them.
+ *
+ * Tenant isolation: every query runs inside `runInTenantContext`
+ * (RLS-bound) AND filters by `ctx.tenantId` — defence in depth, same
+ * as every other repository read.
+ */
+import { RequestContext } from '../types';
+import { runInTenantContext } from '@/lib/db-context';
+import type { PrismaTx } from '@/lib/db-context';
+
+const CONTROL_SELECT = { id: true, code: true, annexId: true, name: true } as const;
+const AGG_TAKE = 200;
+
+type ControlRef = { id: string; code: string | null; annexId: string | null; name: string };
+
+/** Resolve the controls mapped to an asset → (controlId[], control-by-id map). */
+async function controlsForAsset(db: PrismaTx, tenantId: string, assetId: string) {
+    const maps = await db.controlAsset.findMany({
+        where: { tenantId, assetId },
+        select: { controlId: true, control: { select: CONTROL_SELECT } },
+        take: AGG_TAKE,
+    });
+    return mapControls(maps);
+}
+
+/** Resolve the controls mapped to a risk → (controlId[], control-by-id map). */
+async function controlsForRisk(db: PrismaTx, tenantId: string, riskId: string) {
+    const maps = await db.riskControl.findMany({
+        where: { tenantId, riskId },
+        select: { controlId: true, control: { select: CONTROL_SELECT } },
+        take: AGG_TAKE,
+    });
+    return mapControls(maps);
+}
+
+function mapControls(
+    maps: ReadonlyArray<{ controlId: string; control: ControlRef | null }>,
+): { controlIds: string[]; byId: Map<string, ControlRef> } {
+    const byId = new Map<string, ControlRef>();
+    for (const m of maps) {
+        if (m.control) byId.set(m.controlId, m.control);
+    }
+    return { controlIds: [...byId.keys()], byId };
+}
+
+async function evidenceForControls(
+    db: PrismaTx,
+    tenantId: string,
+    controlIds: string[],
+    byId: Map<string, ControlRef>,
+) {
+    if (controlIds.length === 0) return [];
+    const evidence = await db.evidence.findMany({
+        where: { tenantId, controlId: { in: controlIds }, deletedAt: null },
+        orderBy: { createdAt: 'desc' },
+        take: AGG_TAKE,
+    });
+    return evidence.map((e) => ({ ...e, control: e.controlId ? byId.get(e.controlId) ?? null : null }));
+}
+
+async function testPlansForControls(
+    db: PrismaTx,
+    tenantId: string,
+    controlIds: string[],
+    byId: Map<string, ControlRef>,
+) {
+    if (controlIds.length === 0) return [];
+    const plans = await db.controlTestPlan.findMany({
+        where: { tenantId, controlId: { in: controlIds } },
+        include: {
+            runs: {
+                orderBy: { executedAt: 'desc' },
+                take: 1,
+                select: { id: true, result: true, status: true, executedAt: true },
+            },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: AGG_TAKE,
+    });
+    return plans.map((p) => ({ ...p, control: byId.get(p.controlId) ?? null }));
+}
+
+// ─── Public usecases ───
+
+export function getAssetInheritedEvidence(ctx: RequestContext, assetId: string) {
+    return runInTenantContext(ctx, async (db) => {
+        const { controlIds, byId } = await controlsForAsset(db, ctx.tenantId, assetId);
+        return evidenceForControls(db, ctx.tenantId, controlIds, byId);
+    });
+}
+
+export function getRiskInheritedEvidence(ctx: RequestContext, riskId: string) {
+    return runInTenantContext(ctx, async (db) => {
+        const { controlIds, byId } = await controlsForRisk(db, ctx.tenantId, riskId);
+        return evidenceForControls(db, ctx.tenantId, controlIds, byId);
+    });
+}
+
+export function getAssetInheritedTestPlans(ctx: RequestContext, assetId: string) {
+    return runInTenantContext(ctx, async (db) => {
+        const { controlIds, byId } = await controlsForAsset(db, ctx.tenantId, assetId);
+        return testPlansForControls(db, ctx.tenantId, controlIds, byId);
+    });
+}
+
+export function getRiskInheritedTestPlans(ctx: RequestContext, riskId: string) {
+    return runInTenantContext(ctx, async (db) => {
+        const { controlIds, byId } = await controlsForRisk(db, ctx.tenantId, riskId);
+        return testPlansForControls(db, ctx.tenantId, controlIds, byId);
+    });
+}

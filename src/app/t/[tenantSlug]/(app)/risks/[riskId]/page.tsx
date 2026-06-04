@@ -42,6 +42,8 @@ import { useTenantMembers } from '@/components/ui/user-combobox';
 import { cn } from '@/lib/cn';
 import { cardVariants } from '@/components/ui/card';
 import { EditRiskModal, type EditRiskForm } from './_modals/EditRiskModal';
+import { InheritedEvidencePanel } from '@/components/InheritedEvidencePanel';
+import { InheritedTestPlansPanel } from '@/components/InheritedTestPlansPanel';
 
 const TraceabilityPanel = dynamic(() => import('@/components/TraceabilityPanel'), {
     loading: () => <SkeletonCard lines={3} />,
@@ -374,15 +376,10 @@ export default function RiskDetailPage() {
                 />
             )}
             {activeTab === 'evidence' && (
-                <EmptyState
-                    size="sm"
-                    variant="no-records"
-                    title="Evidence lives on linked controls"
-                    description="Risks don't carry evidence directly — open the controls in the Traceability tab to see their attached evidence."
-                    primaryAction={{
-                        label: 'Open Traceability',
-                        onClick: () => setActiveTab('traceability'),
-                    }}
+                <InheritedEvidencePanel
+                    endpoint={apiUrl(`/risks/${riskId}/evidence`)}
+                    tenantHref={href}
+                    entityLabel="risk"
                 />
             )}
             {activeTab === 'mappings' && (
@@ -406,15 +403,10 @@ export default function RiskDetailPage() {
                 />
             )}
             {activeTab === 'tests' && (
-                <EmptyState
-                    size="sm"
-                    variant="no-records"
-                    title="Tests run on controls, not risks"
-                    description="Control tests verify mitigations. Navigate to a control via the Traceability tab to see its test plans."
-                    primaryAction={{
-                        label: 'Open Traceability',
-                        onClick: () => setActiveTab('traceability'),
-                    }}
+                <InheritedTestPlansPanel
+                    endpoint={apiUrl(`/risks/${riskId}/test-plans`)}
+                    tenantHref={href}
+                    entityLabel="risk"
                 />
             )}
 
