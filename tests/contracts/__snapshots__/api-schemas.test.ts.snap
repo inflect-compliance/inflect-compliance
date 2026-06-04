@@ -778,6 +778,32 @@ exports[`API contract — per-schema snapshots schema: ControlCreateRequest 1`] 
         "null"
       ]
     },
+    "automationType": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "AUTOMATED",
+        "MANUAL",
+        "IT_DEPENDENT_MANUAL",
+        null
+      ]
+    },
+    "mitigationType": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "PREVENTIVE",
+        "DETECTIVE",
+        "DETERRENT",
+        "CORRECTIVE",
+        "COMPENSATING",
+        null
+      ]
+    },
     "isCustom": {
       "type": "boolean",
       "default": true
@@ -1293,6 +1319,18 @@ exports[`API contract — per-schema snapshots schema: ControlListItem 1`] = `
         "null"
       ]
     },
+    "automationType": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "mitigationType": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "isCustom": {
       "type": "boolean"
     },
@@ -1615,6 +1653,32 @@ exports[`API contract — per-schema snapshots schema: ControlUpdateRequest 1`] 
       "type": [
         "string",
         "null"
+      ]
+    },
+    "automationType": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "AUTOMATED",
+        "MANUAL",
+        "IT_DEPENDENT_MANUAL",
+        null
+      ]
+    },
+    "mitigationType": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "PREVENTIVE",
+        "DETECTIVE",
+        "DETERRENT",
+        "CORRECTIVE",
+        "COMPENSATING",
+        null
       ]
     }
   },

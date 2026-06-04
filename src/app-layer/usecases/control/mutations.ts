@@ -27,6 +27,8 @@ export async function createControl(ctx: RequestContext, data: {
     ownerUserId?: string | null;
     evidenceSource?: string | null;
     automationKey?: string | null;
+    automationType?: string | null;
+    mitigationType?: string | null;
     annexId?: string | null;
     intent?: string | null;
     isCustom?: boolean;
@@ -70,6 +72,8 @@ export async function createControl(ctx: RequestContext, data: {
             createdByUserId: ctx.userId,
             evidenceSource: (data.evidenceSource as 'MANUAL') || null,
             automationKey: data.automationKey || null,
+            automationType: (data.automationType as 'AUTOMATED') || null,
+            mitigationType: (data.mitigationType as 'PREVENTIVE') || null,
             isCustom,
         });
 
@@ -95,6 +99,8 @@ export async function updateControl(ctx: RequestContext, id: string, data: {
     frequency?: string | null;
     evidenceSource?: string | null;
     automationKey?: string | null;
+    automationType?: string | null;
+    mitigationType?: string | null;
     intent?: string | null;
 }) {
     assertCanUpdateControl(ctx);
@@ -108,6 +114,8 @@ export async function updateControl(ctx: RequestContext, id: string, data: {
             ...(data.frequency !== undefined && { frequency: data.frequency as 'MONTHLY' | null }),
             ...(data.evidenceSource !== undefined && { evidenceSource: data.evidenceSource as 'MANUAL' | null }),
             ...(data.automationKey !== undefined && { automationKey: data.automationKey }),
+            ...(data.automationType !== undefined && { automationType: data.automationType as 'AUTOMATED' | null }),
+            ...(data.mitigationType !== undefined && { mitigationType: data.mitigationType as 'PREVENTIVE' | null }),
             ...(data.intent !== undefined && { intent: data.intent }),
         });
 

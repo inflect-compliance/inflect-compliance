@@ -127,6 +127,8 @@ export const CreateControlSchema = z.object({
     ownerUserId: z.string().optional().nullable(),
     evidenceSource: z.enum(['MANUAL', 'INTEGRATION']).optional().nullable(),
     automationKey: z.string().optional().nullable(),
+    automationType: z.enum(['AUTOMATED', 'MANUAL', 'IT_DEPENDENT_MANUAL']).optional().nullable(),
+    mitigationType: z.enum(['PREVENTIVE', 'DETECTIVE', 'DETERRENT', 'CORRECTIVE', 'COMPENSATING']).optional().nullable(),
     isCustom: z.boolean().optional().default(true),
 }).strip().openapi('ControlCreateRequest', {
     description: 'Payload for creating a control. Status defaults to NOT_STARTED. annexId references the framework annex catalogue (e.g. ISO 27001:2022 A.5.1). Custom controls (isCustom=true) are tenant-specific; framework-shipped controls install via the templates endpoint instead.',
@@ -141,6 +143,8 @@ export const UpdateControlSchema = z.object({
     frequency: z.enum(['AD_HOC', 'DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'ANNUALLY']).optional().nullable(),
     evidenceSource: z.enum(['MANUAL', 'INTEGRATION']).optional().nullable(),
     automationKey: z.string().optional().nullable(),
+    automationType: z.enum(['AUTOMATED', 'MANUAL', 'IT_DEPENDENT_MANUAL']).optional().nullable(),
+    mitigationType: z.enum(['PREVENTIVE', 'DETECTIVE', 'DETERRENT', 'CORRECTIVE', 'COMPENSATING']).optional().nullable(),
 }).strip().openapi('ControlUpdateRequest', {
     description: 'Partial update for a control. Status, applicability, and owner have dedicated focused endpoints; this body covers descriptive metadata only.',
 });

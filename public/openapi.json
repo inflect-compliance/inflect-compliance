@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Inflect Compliance API",
-    "version": "1.437.0",
+    "version": "1.441.0",
     "description": "Multi-tenant compliance-management API. The schema layer in `src/lib/schemas/index.ts` (request bodies) and `src/lib/dto/*.dto.ts` (response shapes) is the single source of truth — this document is generated from those Zod schemas via `npm run openapi:generate`.",
     "license": {
       "name": "Proprietary"
@@ -768,6 +768,32 @@
               "null"
             ]
           },
+          "automationType": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "AUTOMATED",
+              "MANUAL",
+              "IT_DEPENDENT_MANUAL",
+              null
+            ]
+          },
+          "mitigationType": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "PREVENTIVE",
+              "DETECTIVE",
+              "DETERRENT",
+              "CORRECTIVE",
+              "COMPENSATING",
+              null
+            ]
+          },
           "isCustom": {
             "type": "boolean",
             "default": true
@@ -1274,6 +1300,18 @@
               "null"
             ]
           },
+          "automationType": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mitigationType": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "isCustom": {
             "type": "boolean"
           },
@@ -1572,6 +1610,32 @@
             "type": [
               "string",
               "null"
+            ]
+          },
+          "automationType": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "AUTOMATED",
+              "MANUAL",
+              "IT_DEPENDENT_MANUAL",
+              null
+            ]
+          },
+          "mitigationType": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "PREVENTIVE",
+              "DETECTIVE",
+              "DETERRENT",
+              "CORRECTIVE",
+              "COMPENSATING",
+              null
             ]
           }
         },

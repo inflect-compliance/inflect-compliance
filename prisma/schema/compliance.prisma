@@ -455,6 +455,8 @@ model Control {
   nextDueAt                    DateTime?
   evidenceSource               EvidenceSourceType?
   automationKey                String?
+  automationType               ControlAutomationType?
+  mitigationType               ControlMitigationType?
   applicability                Applicability            @default(APPLICABLE)
   applicabilityJustification   String?
   applicabilityDecidedByUserId String?

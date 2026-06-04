@@ -23,6 +23,8 @@ export const ControlListItemDTOSchema = z.object({
     createdByUserId: z.string().nullable().optional(),
     evidenceSource: z.string().nullable().optional(),
     automationKey: z.string().nullable().optional(),
+    automationType: z.string().nullable().optional(),
+    mitigationType: z.string().nullable().optional(),
     isCustom: z.boolean().optional(),
     lastTested: z.string().nullable().optional(),
     nextDueAt: z.string().nullable().optional(),

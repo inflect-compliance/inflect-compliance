@@ -852,3 +852,23 @@ enum ProcessMapStatus {
   ACTIVE
   ARCHIVED
 }
+
+/// Control automation classification (operator-set on the control).
+///   AUTOMATED            — runs without human action.
+///   MANUAL               — performed entirely by a person.
+///   IT_DEPENDENT_MANUAL  — a manual control that relies on
+///                          system-generated information/reports.
+enum ControlAutomationType {
+  AUTOMATED
+  MANUAL
+  IT_DEPENDENT_MANUAL
+}
+
+/// Risk-mitigation nature of a control (how it acts on a risk).
+enum ControlMitigationType {
+  PREVENTIVE
+  DETECTIVE
+  DETERRENT
+  CORRECTIVE
+  COMPENSATING
+}

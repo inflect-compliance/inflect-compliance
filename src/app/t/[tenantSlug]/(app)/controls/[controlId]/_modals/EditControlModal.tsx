@@ -29,7 +29,23 @@ export interface EditControlForm {
     category: string;
     frequency: string;
     owner: string;
+    automationType: string;
+    mitigationType: string;
 }
+
+const AUTOMATION_TYPE_OPTIONS: ComboboxOption[] = [
+    { value: 'AUTOMATED', label: 'Automated' },
+    { value: 'MANUAL', label: 'Manual' },
+    { value: 'IT_DEPENDENT_MANUAL', label: 'IT-Dependent Manual' },
+];
+
+const MITIGATION_TYPE_OPTIONS: ComboboxOption[] = [
+    { value: 'PREVENTIVE', label: 'Preventive' },
+    { value: 'DETECTIVE', label: 'Detective' },
+    { value: 'DETERRENT', label: 'Deterrent' },
+    { value: 'CORRECTIVE', label: 'Corrective' },
+    { value: 'COMPENSATING', label: 'Compensating' },
+];
 
 export interface EditControlModalProps {
     open: boolean;
@@ -207,6 +223,62 @@ export function EditControlModal({
                                         }))
                                     }
                                     options={frequencyOptions}
+                                    placeholder="— None —"
+                                    matchTriggerWidth
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
+                            <div>
+                                <label
+                                    htmlFor="edit-automation-type"
+                                    className="mb-1 block text-sm text-content-default"
+                                >
+                                    Automation Type
+                                </label>
+                                <Combobox
+                                    hideSearch
+                                    forceDropdown
+                                    id="edit-automation-type"
+                                    selected={
+                                        AUTOMATION_TYPE_OPTIONS.find(
+                                            (o) => o.value === form.automationType,
+                                        ) ?? null
+                                    }
+                                    setSelected={(opt) =>
+                                        setForm((f) => ({
+                                            ...f,
+                                            automationType: opt?.value ?? '',
+                                        }))
+                                    }
+                                    options={AUTOMATION_TYPE_OPTIONS}
+                                    placeholder="— None —"
+                                    matchTriggerWidth
+                                />
+                            </div>
+                            <div>
+                                <label
+                                    htmlFor="edit-mitigation-type"
+                                    className="mb-1 block text-sm text-content-default"
+                                >
+                                    Mitigation Type
+                                </label>
+                                <Combobox
+                                    hideSearch
+                                    forceDropdown
+                                    id="edit-mitigation-type"
+                                    selected={
+                                        MITIGATION_TYPE_OPTIONS.find(
+                                            (o) => o.value === form.mitigationType,
+                                        ) ?? null
+                                    }
+                                    setSelected={(opt) =>
+                                        setForm((f) => ({
+                                            ...f,
+                                            mitigationType: opt?.value ?? '',
+                                        }))
+                                    }
+                                    options={MITIGATION_TYPE_OPTIONS}
                                     placeholder="— None —"
                                     matchTriggerWidth
                                 />

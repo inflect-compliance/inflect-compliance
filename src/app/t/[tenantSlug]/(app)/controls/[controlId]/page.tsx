@@ -85,6 +85,13 @@ const FREQ_LABELS: Record<string, string> = {
     AD_HOC: 'Ad Hoc', DAILY: 'Daily', WEEKLY: 'Weekly',
     MONTHLY: 'Monthly', QUARTERLY: 'Quarterly', ANNUALLY: 'Annually',
 };
+const AUTOMATION_TYPE_LABELS: Record<string, string> = {
+    AUTOMATED: 'Automated', MANUAL: 'Manual', IT_DEPENDENT_MANUAL: 'IT-Dependent Manual',
+};
+const MITIGATION_TYPE_LABELS: Record<string, string> = {
+    PREVENTIVE: 'Preventive', DETECTIVE: 'Detective', DETERRENT: 'Deterrent',
+    CORRECTIVE: 'Corrective', COMPENSATING: 'Compensating',
+};
 const FREQ_OPTIONS = ['', 'AD_HOC', 'DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'ANNUALLY'];
 const FREQ_CB_OPTIONS: ComboboxOption[] = FREQ_OPTIONS.filter(Boolean).map(f => ({ value: f, label: FREQ_LABELS[f] || f }));
 const CATEGORY_OPTIONS = ['', 'ORGANIZATIONAL', 'PEOPLE', 'PHYSICAL', 'TECHNOLOGICAL'];
@@ -93,10 +100,6 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 const CATEGORY_CB_OPTIONS: ComboboxOption[] = CATEGORY_OPTIONS.filter(Boolean).map(c => ({ value: c, label: CATEGORY_LABELS[c] || c }));
 const STATUS_CB_OPTIONS: ComboboxOption[] = Object.entries(STATUS_LABELS).map(([val, lbl]) => ({ value: val, label: lbl }));
-const EVIDENCE_SOURCE_OPTIONS: ComboboxOption[] = [
-    { value: 'MANUAL', label: 'Manual' },
-    { value: 'INTEGRATION', label: 'Integration' },
-];
 
 type Tab = 'overview' | 'tasks' | 'evidence' | 'mappings' | 'traceability' | 'activity' | 'tests';
 
@@ -227,22 +230,15 @@ export default function ControlDetailPage() {
     const [activity, setActivity] = useState<AuditLogEntry[]>([]);
     const [activityLoading, setActivityLoading] = useState(false);
 
-    // Automation
-    const [editingAutomation, setEditingAutomation] = useState(false);
-    const [autoEvidenceSource, setAutoEvidenceSource] = useState('');
-    const [autoKey, setAutoKey] = useState('');
-    const [savingAutomation, setSavingAutomation] = useState(false);
-
-    // Sync status (conflict badge + Sync Now)
+    // Sync status — drives the header conflict/synced badges (the
+    // overview Automation section + manual "Sync Now" were removed).
     const [syncStatus, setSyncStatus] = useState<string | null>(null);
     const [syncLastAt, setSyncLastAt] = useState<string | null>(null);
     const [syncError, setSyncError] = useState<string | null>(null);
-    const [syncing, setSyncing] = useState(false);
-    const [syncResult, setSyncResult] = useState<{ status: string; summary?: string } | null>(null);
 
     // Edit modal state
     const [showEditModal, setShowEditModal] = useState(false);
-    const [editForm, setEditForm] = useState({ name: '', description: '', intent: '', category: '', frequency: '', owner: '' });
+    const [editForm, setEditForm] = useState({ name: '', description: '', intent: '', category: '', frequency: '', owner: '', automationType: '', mitigationType: '' });
     const [savingEdit, setSavingEdit] = useState(false);
     const [editError, setEditError] = useState('');
     const [editSuccess, setEditSuccess] = useState(false);
@@ -260,6 +256,8 @@ export default function ControlDetailPage() {
             category: control.category || '',
             frequency: control.frequency || '',
             owner: control.ownerUserId || '',
+            automationType: control.automationType || '',
+            mitigationType: control.mitigationType || '',
         });
         setEditError('');
         setEditSuccess(false);
@@ -394,40 +392,6 @@ export default function ControlDetailPage() {
         setSyncLastAt(initialSyncStatus.lastSyncedAt ?? null);
         setSyncError(initialSyncStatus.errorMessage ?? null);
     }, [initialSyncStatus]);
-
-    const handleSyncNow = async () => {
-        setSyncing(true);
-        setSyncResult(null);
-        try {
-            const res = await fetch(apiUrl(`/controls/${controlId}/sync`), { method: 'POST' });
-            const data = await res.json();
-            if (res.ok && data.execution) {
-                setSyncResult({ status: data.execution.status, summary: data.execution.summary });
-                // One refetch — the page-data payload re-runs the
-                // sync-mapping lookup server-side, so we get the
-                // post-sync status without a second round-trip. The
-                // useEffect on `initialSyncStatus` writes the new
-                // values into the badge state.
-                await refetch();
-            } else {
-                setSyncResult({ status: 'ERROR', summary: data.error || 'Sync failed' });
-            }
-        } catch {
-            setSyncResult({ status: 'ERROR', summary: 'Network error' });
-        }
-        setSyncing(false);
-    };
-
-    const saveAutomation = async () => {
-        setSavingAutomation(true);
-        await fetch(apiUrl(`/controls/${controlId}`), {
-            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ evidenceSource: autoEvidenceSource || null, automationKey: autoKey || null }),
-        });
-        await refetch();
-        setSavingAutomation(false);
-        setEditingAutomation(false);
-    };
 
     // ─── Mutation: change control status (Epic 69 pilot #2) ────────
     //
@@ -973,6 +937,14 @@ export default function ControlDetailPage() {
                             <p className="text-sm text-content-default mt-1">{control.frequency ? FREQ_LABELS[control.frequency] || control.frequency : '—'}</p>
                         </div>
                         <div>
+                            <span className="text-xs text-content-subtle uppercase">Automation Type</span>
+                            <p className="text-sm text-content-default mt-1">{control.automationType ? AUTOMATION_TYPE_LABELS[control.automationType] || control.automationType : '—'}</p>
+                        </div>
+                        <div>
+                            <span className="text-xs text-content-subtle uppercase">Mitigation Type</span>
+                            <p className="text-sm text-content-default mt-1">{control.mitigationType ? MITIGATION_TYPE_LABELS[control.mitigationType] || control.mitigationType : '—'}</p>
+                        </div>
+                        <div>
                             <span className="text-xs text-content-subtle uppercase">Owner</span>
                             <p className="text-sm text-content-default mt-1">{control.owner?.name || '—'}</p>
                         </div>
@@ -1002,100 +974,6 @@ export default function ControlDetailPage() {
                             <span className="text-xs text-content-subtle uppercase">Next Due</span>
                             <p className="text-sm text-content-default mt-1">{control.nextDueAt ? formatDate(control.nextDueAt) : '—'}</p>
                         </div>
-                    </div>
-                    {/* Automation Section */}
-                    <div className="border-t border-border-default pt-4 mt-4">
-                        <div className="flex items-center justify-between mb-2">
-                            <Heading level={3}>Automation</Heading>
-                            <div className="flex items-center gap-tight">
-                                {/* Sync Now button — only when automationKey is set */}
-                                {control.automationKey && permissions.canWrite && !editingAutomation && (
-                                    <Tooltip content="Manually trigger a sync check against the source system.">
-                                        <Button
-                                            variant="secondary"
-                                            size="xs"
-                                            className="flex items-center gap-1 disabled:opacity-50"
-                                            onClick={handleSyncNow}
-                                            disabled={syncing}
-                                            id="sync-now-btn"
-                                        >
-                                            {syncing ? (
-                                                <svg className="animate-spin" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-                                            ) : (
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
-                                            )}
-                                            {syncing ? 'Syncing…' : 'Sync Now'}
-                                        </Button>
-                                    </Tooltip>
-                                )}
-                                {permissions.canWrite && (
-                                    <button className={`${textLinkVariants({ tone: 'link' })} text-xs`} onClick={() => { setAutoEvidenceSource(control.evidenceSource || ''); setAutoKey(control.automationKey || ''); setEditingAutomation(!editingAutomation); }} id="edit-automation-btn">
-                                        {editingAutomation ? 'Cancel' : 'Edit'}
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Sync result flash */}
-                        {syncResult && (
-                            <div className={`mb-3 p-2.5 rounded text-xs flex items-start gap-tight ${
-                                syncResult.status === 'PASSED' ? 'bg-bg-success border border-border-success text-content-success'
-                                : syncResult.status === 'FAILED' || syncResult.status === 'ERROR' ? 'bg-bg-error border border-border-error text-content-error'
-                                : 'bg-bg-elevated/50 border border-border-emphasis text-content-default'
-                            }`} id="sync-result-banner">
-                                <span className="font-semibold">{syncResult.status}</span>
-                                {syncResult.summary && <span className="opacity-80">{syncResult.summary}</span>}
-                            </div>
-                        )}
-
-                        {editingAutomation && permissions.canWrite ? (
-                            <div className="space-y-tight">
-                                <Combobox
-                                    hideSearch
-                                    id="evidence-source-select"
-                                    selected={EVIDENCE_SOURCE_OPTIONS.find(o => o.value === autoEvidenceSource) ?? null}
-                                    setSelected={(opt) => setAutoEvidenceSource(opt?.value ?? '')}
-                                    options={EVIDENCE_SOURCE_OPTIONS}
-                                    placeholder="No source"
-                                    matchTriggerWidth
-                                />
-                                {autoEvidenceSource === 'INTEGRATION' && (
-                                    <input type="text" className="input w-full" placeholder="Automation key (e.g. aws-cis-1.2)" value={autoKey} onChange={e => setAutoKey(e.target.value)} id="automation-key-input" />
-                                )}
-                                <Button variant="primary" onClick={saveAutomation} disabled={savingAutomation} id="save-automation-btn">
-                                    {savingAutomation ? 'Saving...' : 'Save'}
-                                </Button>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-2 gap-default">
-                                <div>
-                                    <span className="text-xs text-content-subtle">Evidence Source</span>
-                                    <p className="text-sm text-content-default mt-1">{control.evidenceSource || '—'}</p>
-                                </div>
-                                <div>
-                                    <span className="text-xs text-content-subtle">Automation Key</span>
-                                    <p className="text-sm text-content-default mt-1 font-mono">{control.automationKey || '—'}</p>
-                                </div>
-                                {syncStatus && (
-                                    <div>
-                                        <span className="text-xs text-content-subtle">Sync Status</span>
-                                        <div className="mt-1 flex items-center gap-1.5">
-                                            <StatusBadge variant={syncStatus === 'SYNCED' ? 'success'
-                                                : syncStatus === 'CONFLICT' ? 'error'
-                                                : syncStatus === 'FAILED' ? 'error'
-                                                : syncStatus === 'STALE' ? 'warning'
-                                                : 'neutral'}>{syncStatus}</StatusBadge>
-                                            {syncLastAt && (
-                                                <span className="text-xs text-content-subtle">{formatDateTime(syncLastAt)}</span>
-                                            )}
-                                        </div>
-                                        {syncError && syncStatus !== 'SYNCED' && (
-                                            <p className="text-xs text-content-error mt-1 truncate" title={syncError}>{syncError}</p>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        )}
                     </div>
                 </div>
             )}
