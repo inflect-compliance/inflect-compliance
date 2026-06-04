@@ -35,7 +35,7 @@
  * columns. The title cell stays single-line, single-element.
  */
 
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 

@@ -26,7 +26,7 @@ import { KPIStat } from '@/components/ui/metric';
 import { MetaStrip } from '@/components/ui/meta-strip';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 import { cardVariants } from '@/components/ui/card';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 import { EditAssetModal } from '../EditAssetModal';
 
 const TraceabilityPanel = dynamic(() => import('@/components/TraceabilityPanel'), {

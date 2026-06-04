@@ -28,7 +28,7 @@
  * cards mark themselves `aria-busy`.
  */
 
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 import * as React from 'react';
 
 // ─── Context ────────────────────────────────────────────────────────

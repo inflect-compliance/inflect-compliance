@@ -9,7 +9,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { cardVariants } from '@/components/ui/card-variants';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 import { MembersTable, type MembersTableRow } from './MembersTable';
 
 export const dynamic = 'force-dynamic';

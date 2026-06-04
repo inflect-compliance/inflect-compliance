@@ -2,7 +2,7 @@
  * Pure priority-chain resolution for `<NextBestActionCard>` (v2-PR-11).
  *
  * Lives in its own React-free module so guard tests can import it
- * without dragging in CVA / @dub/utils / next/link via the
+ * without dragging in CVA / Dub utils / next/link via the
  * containing component file.
  *
  * The chain order IS the contract — see

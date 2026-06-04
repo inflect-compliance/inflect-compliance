@@ -1,4 +1,5 @@
-import { cn, resizeImage } from "@dub/utils";
+import { cn } from "@/lib/cn";
+import { resizeImage } from "@/lib/resize-image";
 import { VariantProps, cva } from "class-variance-authority";
 import { DragEvent, ReactNode, useState } from "react";
 import { useToast } from "./hooks/use-toast";

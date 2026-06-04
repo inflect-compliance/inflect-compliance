@@ -5,7 +5,7 @@
  * carries an inline disable directive; collectively they should
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 import { ChevronLeft } from "lucide-react";
 import { Tooltip } from "../tooltip";
 import {

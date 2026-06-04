@@ -3,7 +3,7 @@
  * 2 `any` sites here are in onSubmit/onChange handlers that pass
  * through whatever shape the caller's <input> element produces.
  */
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 import { InputHTMLAttributes, ReactNode, useMemo, useState } from "react";
 import { Button } from "./button";
 import { Heading } from '@/components/ui/typography';

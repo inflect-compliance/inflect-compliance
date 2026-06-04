@@ -31,7 +31,7 @@
  */
 
 import * as React from 'react';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 import type { CalendarEvent } from '@/app-layer/schemas/calendar.schemas';
 import { ChartLegend, useHeatScale } from '@/components/ui/charts';
 

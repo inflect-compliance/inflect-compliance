@@ -15,7 +15,7 @@ import { textLinkVariants } from '@/components/ui/typography';
 import { StatusBadge as StatusBadgePrimitive, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { cardVariants } from '@/components/ui/card';
 import { InlineEmptyState } from '@/components/ui/inline-empty-state';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 
 // ─── Types ───
 

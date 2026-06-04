@@ -1,6 +1,6 @@
 import { useId } from "react";
 
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 import { SVGProps } from "react";
 
 export function DubCraftedShield(props: SVGProps<SVGSVGElement>) {

@@ -21,7 +21,7 @@
  * rendered inside another drawer (required by Vaul for focus-trap parity).
  */
 
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 import { cva, type VariantProps } from "class-variance-authority";
 import { X } from "lucide-react";
 import { ComponentProps, type HTMLAttributes, type ReactNode } from "react";

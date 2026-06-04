@@ -42,9 +42,8 @@ describe('console.* usage guard', () => {
             'instrumentation.ts',
         ]);
 
-        // Dub-ported utility files — these use console.* by upstream design
+        // Utility / chart / interaction files that use console.* by design
         const ALLOWED_PREFIXES = [
-            'lib/dub-utils/',
             'components/ui/charts/',
             'components/ui/hooks/',
             'components/ui/filter/',

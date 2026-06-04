@@ -35,7 +35,7 @@
  */
 
 import type { ReactNode } from 'react';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 import { Heading } from '@/components/ui/typography';
 import { cardVariants } from '@/components/ui/card';
 

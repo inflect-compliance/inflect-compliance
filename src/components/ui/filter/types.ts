@@ -1,4 +1,5 @@
-import { type FilterOperator } from "@dub/utils";
+// FilterOperator — first-party (formerly re-exported from the Dub utility shim).
+type FilterOperator = 'IS' | 'IS_NOT' | 'IS_ONE_OF' | 'IS_NOT_ONE_OF';
 import { LucideIcon } from "lucide-react";
 import { ComponentType, ReactNode, SVGProps } from "react";
 

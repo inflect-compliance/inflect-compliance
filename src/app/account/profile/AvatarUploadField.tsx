@@ -12,7 +12,7 @@
  * then only has to validate + store the bytes.
  */
 import { useRef, useState, type ChangeEvent } from 'react';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 
 import { InitialsAvatar } from '@/components/ui/initials-avatar';
 import { Button } from '@/components/ui/button';

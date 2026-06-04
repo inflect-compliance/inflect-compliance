@@ -34,7 +34,7 @@
  *     inside a tooltip container.
  */
 
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 import {
     useCallback,
     useContext,

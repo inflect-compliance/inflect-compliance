@@ -82,7 +82,7 @@ import { RiskMatrix } from '@/components/ui/RiskMatrix';
 import ExpiryCalendar from '@/components/ui/ExpiryCalendar';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { buttonVariants } from '@/components/ui/button-variants';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useTenantHref } from '@/lib/tenant-context-provider';

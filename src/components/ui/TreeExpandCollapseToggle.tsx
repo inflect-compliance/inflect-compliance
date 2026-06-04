@@ -17,7 +17,7 @@
  * single toggle that hides one action behind state.
  */
 
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 import { ChevronsDownUp, ChevronsUpDown } from 'lucide-react';
 import { getExpandToggleState } from '@/lib/framework-tree/tree-helpers';
 

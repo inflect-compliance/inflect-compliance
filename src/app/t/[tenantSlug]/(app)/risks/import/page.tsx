@@ -9,7 +9,7 @@ import { buttonVariants } from '@/components/ui/button-variants';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { Heading } from '@/components/ui/typography';
 import { Card, cardVariants } from '@/components/ui/card';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 
 type ParsedRow = {
     title: string;

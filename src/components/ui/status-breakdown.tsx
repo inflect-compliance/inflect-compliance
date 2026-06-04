@@ -39,7 +39,7 @@
  *   emptyState — ReactNode shown when total === 0 (default: "No data").
  */
 
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 import type { ReactNode } from "react";
 
 export type StatusBreakdownVariant =

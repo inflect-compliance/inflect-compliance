@@ -35,7 +35,7 @@
  *     glyph fits, not via this primitive.
  */
 
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 
 export interface RequiredMarkerProps {
     /** Layout overrides on the marker `<span>`. */

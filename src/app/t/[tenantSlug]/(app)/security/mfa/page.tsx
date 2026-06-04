@@ -7,7 +7,7 @@
 import { formatDate } from '@/lib/format-date';
 import { Card, cardVariants } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 
 import { useState, useEffect, useCallback } from 'react';
 import { useTenantApiUrl } from '@/lib/tenant-context-provider';

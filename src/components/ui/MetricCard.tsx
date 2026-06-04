@@ -37,7 +37,7 @@
  */
 
 import * as React from "react";
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 import { cardVariants } from "./card";
 
 export interface MetricCardProps {

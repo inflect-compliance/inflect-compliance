@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Heading } from '@/components/ui/typography';
 import { cardVariants } from '@/components/ui/card';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 import type { NewPolicyFormReturn } from './useNewPolicyForm';
 
 const POLICY_CATEGORIES: ComboboxOption[] = [

@@ -8,7 +8,7 @@ import { AppIcon } from '@/components/icons/AppIcon';
 import { useOptimisticUpdate } from '@/components/ui/hooks';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { cardVariants } from '@/components/ui/card';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 
 type Notification = {
     id: string;

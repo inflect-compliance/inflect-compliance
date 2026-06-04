@@ -1,4 +1,5 @@
-import { cn, pluralize, truncate } from "@dub/utils";
+import { cn } from "@/lib/cn";
+import { pluralize, truncate } from "@/lib/text-utils";
 import { Command } from "cmdk";
 import { X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";

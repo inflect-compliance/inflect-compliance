@@ -35,7 +35,7 @@
  *     control paints the error border without duplicating the text.
  */
 
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 import * as React from "react";
 import { Label } from "./label";
 import { FormDescription } from "./form-description";

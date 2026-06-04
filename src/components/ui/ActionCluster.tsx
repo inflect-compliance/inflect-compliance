@@ -40,7 +40,7 @@
  */
 
 import * as React from "react";
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 import { MoreHorizontal } from "lucide-react";
 
 import { Button } from "./button";

@@ -24,7 +24,7 @@
  *     one id-linked package.
  */
 
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 import { cva, type VariantProps } from "class-variance-authority";
 import { AlertCircle } from "lucide-react";
 import * as React from "react";
