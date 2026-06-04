@@ -66,19 +66,6 @@ test.describe('Controls Enhanced', () => {
         });
     });
 
-    test('mark test completed updates last tested', async ({
-        authedPage,
-        isolatedTenant,
-    }) => {
-        await createControl(authedPage, isolatedTenant.tenantSlug);
-
-        await authedPage.click('#mark-test-completed-btn');
-        await authedPage.waitForLoadState('networkidle').catch(() => {});
-
-        await authedPage.click('#tab-overview');
-        await expect(authedPage.locator('text=Last Tested')).toBeVisible();
-    });
-
     test('activity tab shows events', async ({ authedPage, isolatedTenant }) => {
         // Self-contained: create the control whose activity we inspect.
         await createControl(authedPage, isolatedTenant.tenantSlug);

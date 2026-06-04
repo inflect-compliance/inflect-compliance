@@ -228,9 +228,6 @@ export default function ControlDetailPage() {
     const [activity, setActivity] = useState<AuditLogEntry[]>([]);
     const [activityLoading, setActivityLoading] = useState(false);
 
-    // Test completed
-    const [markingTest, setMarkingTest] = useState(false);
-
     // Automation
     const [editingAutomation, setEditingAutomation] = useState(false);
     const [autoEvidenceSource, setAutoEvidenceSource] = useState('');
@@ -420,13 +417,6 @@ export default function ControlDetailPage() {
             setSyncResult({ status: 'ERROR', summary: 'Network error' });
         }
         setSyncing(false);
-    };
-
-    const handleMarkTestCompleted = async () => {
-        setMarkingTest(true);
-        await fetch(apiUrl(`/controls/${controlId}/test-completed`), { method: 'POST' });
-        await refetch();
-        setMarkingTest(false);
     };
 
     const saveAutomation = async () => {
@@ -873,11 +863,6 @@ export default function ControlDetailPage() {
                     <Button variant="secondary" onClick={() => { setAppChoice(control.applicability); setAppJustification(control.applicabilityJustification || ''); setShowApplicability(!showApplicability); }} id="toggle-applicability-btn">
                         Applicability
                     </Button>
-                    {control.applicability !== 'NOT_APPLICABLE' && (
-                        <Button variant="primary" onClick={handleMarkTestCompleted} disabled={markingTest} id="mark-test-completed-btn">
-                            {markingTest ? '...' : 'Mark Test Completed'}
-                        </Button>
-                    )}
                 </>
             )}
         </>
