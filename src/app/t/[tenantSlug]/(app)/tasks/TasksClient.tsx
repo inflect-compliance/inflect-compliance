@@ -18,6 +18,8 @@ import { useTenantMutation } from '@/lib/hooks/use-tenant-mutation';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import type { CappedList } from '@/lib/list-backfill-cap';
 import { TruncationBanner } from '@/components/ui/TruncationBanner';
+import { TableLoadMoreFooter } from '@/components/ui/table-load-more-footer';
+import { useThresholdLoadMore } from '@/components/ui/hooks';
 import { TimestampTooltip } from '@/components/ui/timestamp-tooltip';
 import { TERMINAL_WORK_ITEM_STATUSES } from '@/app-layer/domain/work-item-status';
 import { DataTable, createColumns, useColumnsDropdown } from '@/components/ui/table';
@@ -219,6 +221,16 @@ function TasksPageInner({
     const tasks = tasksQuery.data?.rows ?? [];
     const truncated = tasksQuery.data?.truncated ?? false;
     const loading = tasksQuery.isLoading && !tasksQuery.data;
+
+    // Progressive disclosure — same org-parity "Load more" affordance
+    // as the Controls table. Above the threshold the table renders the
+    // first slice and the footer reveals more; below it, all rows show.
+    const {
+        visibleRows: visibleTasks,
+        totalCount: totalTasksCount,
+        hasMore: hasMoreTasks,
+        loadMore: loadMoreTasks,
+    } = useThresholdLoadMore(tasks);
     const liveFilters = useMemo(
         () => buildTaskFilters(tasks as unknown as Parameters<typeof buildTaskFilters>[0]),
         [tasks],
@@ -646,7 +658,7 @@ function TasksPageInner({
                 <TruncationBanner truncated={truncated} />
                 <DataTable<TaskListItem>
                     fillBody
-                    data={tasks}
+                    data={visibleTasks}
                     columns={taskColumns}
                     loading={loading}
                     getRowId={(t) => t.id}
@@ -684,6 +696,17 @@ function TasksPageInner({
                     resourceName={(p) => p ? 'tasks' : 'task'}
                     data-testid="tasks-table"
                     className="hover:bg-bg-muted"
+                />
+                {/* Org-parity load-more footer — same primitive as the
+                    Controls table; hidden by the primitive when every
+                    loaded task is already visible. */}
+                <TableLoadMoreFooter
+                    hasMore={hasMoreTasks}
+                    visibleCount={visibleTasks.length}
+                    totalCount={totalTasksCount}
+                    onLoadMore={loadMoreTasks}
+                    resourceName="tasks"
+                    testId="tenant-tasks-load-more"
                 />
             </ListPageShell.Body>
 
