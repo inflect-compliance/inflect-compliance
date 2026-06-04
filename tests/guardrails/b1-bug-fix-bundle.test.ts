@@ -129,15 +129,18 @@ describe('B1 — bug-fix bundle', () => {
             'src/app/t/[tenantSlug]/(app)/dashboard/DashboardClient.tsx',
         );
 
-        it('CHART_BOUND_KPIS set classifies which KPIs drive chart focus', () => {
-            expect(src).toMatch(
-                /CHART_BOUND_KPIS:\s*ReadonlySet<DashboardKpiKey>/,
-            );
-            // All four chart-bound entities present.
-            expect(src).toMatch(/['"]coverage['"]/);
-            expect(src).toMatch(/['"]risks['"]/);
-            expect(src).toMatch(/['"]evidence['"]/);
-            expect(src).toMatch(/['"]findings['"]/);
+        it('the four core entities are chart-bound via their kpiKey binding', () => {
+            // The old `CHART_BOUND_KPIS` set was a vestigial classifier —
+            // once tasks/policies got their own donuts it listed EVERY
+            // KPI, making it a no-op (see the sibling assertion: every
+            // tile is chart-bound, none navigates). It was removed as
+            // dead code (CodeQL js/unused-local-variable). The real
+            // chart-focus mechanism is the per-tile `kpiKey` binding,
+            // asserted here directly.
+            expect(src).toMatch(/kpiKey="coverage"/);
+            expect(src).toMatch(/kpiKey="risks"/);
+            expect(src).toMatch(/kpiKey="evidence"/);
+            expect(src).toMatch(/kpiKey="findings"/);
         });
 
         it('tasks + policies are now chart-bound (own a donut) — no navigation', () => {
