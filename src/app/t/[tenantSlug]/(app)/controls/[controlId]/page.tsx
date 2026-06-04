@@ -216,8 +216,7 @@ export default function ControlDetailPage() {
     const [evidenceNote, setEvidenceNote] = useState('');
     const [savingEvidence, setSavingEvidence] = useState(false);
 
-    // File upload for this control
-    const [showFileUpload, setShowFileUpload] = useState(false);
+    // File upload for this control (folded into the "+ Evidence" form)
     const [fileToUpload, setFileToUpload] = useState<File | null>(null);
     const [fileUploadTitle, setFileUploadTitle] = useState('');
     const [fileUploading, setFileUploading] = useState(false);
@@ -600,17 +599,66 @@ export default function ControlDetailPage() {
         [permissions.canWrite],
     );
 
-    const linkEvidence = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setSavingEvidence(true);
-        await fetch(apiUrl(`/controls/${controlId}/evidence`), {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ kind: 'LINK', url: evidenceUrl, note: evidenceNote || undefined }),
-        });
-        setEvidenceUrl(''); setEvidenceNote('');
+    const resetEvidenceForm = () => {
+        setEvidenceUrl('');
+        setEvidenceNote('');
+        setFileToUpload(null);
+        setFileUploadTitle('');
+        setFileUploadError('');
+        if (fileUploadRef.current) fileUploadRef.current.value = '';
         setShowEvidenceForm(false);
-        await Promise.all([evidenceSWR.mutate(), refetch()]);
-        setSavingEvidence(false);
+    };
+
+    // Unified "+ Evidence" submit. The single form supports BOTH a file
+    // upload (browse + title) and a URL link. A chosen file takes
+    // precedence: it uploads via /evidence/uploads (FileRecord +
+    // Evidence(FILE) + ControlEvidenceLink); otherwise a non-empty URL
+    // links a LINK evidence record. Both land in this control's Evidence
+    // tab + the Evidence Library.
+    const addEvidence = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setFileUploadError('');
+
+        if (fileToUpload) {
+            setFileUploading(true);
+            try {
+                const formData = new FormData();
+                formData.append('file', fileToUpload);
+                if (fileUploadTitle) formData.append('title', fileUploadTitle);
+                formData.append('controlId', controlId);
+                const res = await fetch(apiUrl('/evidence/uploads'), { method: 'POST', body: formData });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({ error: 'Upload failed' }));
+                    throw new Error(err.error || err.message || 'Upload failed');
+                }
+                resetEvidenceForm();
+                await Promise.all([evidenceSWR.mutate(), refetch()]);
+            } catch (err: unknown) {
+                setFileUploadError(err instanceof Error ? err.message : 'Upload failed');
+            } finally {
+                setFileUploading(false);
+            }
+            return;
+        }
+
+        if (!evidenceUrl.trim()) {
+            setFileUploadError('Choose a file to upload, or enter an evidence URL.');
+            return;
+        }
+        setSavingEvidence(true);
+        try {
+            const res = await fetch(apiUrl(`/controls/${controlId}/evidence`), {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ kind: 'LINK', url: evidenceUrl, note: evidenceNote || undefined }),
+            });
+            if (!res.ok) throw new Error('Failed to link evidence');
+            resetEvidenceForm();
+            await Promise.all([evidenceSWR.mutate(), refetch()]);
+        } catch (err: unknown) {
+            setFileUploadError(err instanceof Error ? err.message : 'Failed to link evidence');
+        } finally {
+            setSavingEvidence(false);
+        }
     };
 
     // Epic 67 — delayed-commit unlink. Optimistic remove via SWR
@@ -663,33 +711,6 @@ export default function ControlDetailPage() {
                 }
             },
         });
-    };
-
-    const handleFileUpload = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!fileToUpload) return;
-        setFileUploading(true);
-        setFileUploadError('');
-        try {
-            const formData = new FormData();
-            formData.append('file', fileToUpload);
-            if (fileUploadTitle) formData.append('title', fileUploadTitle);
-            formData.append('controlId', controlId);
-            const res = await fetch(apiUrl('/evidence/uploads'), { method: 'POST', body: formData });
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({ error: 'Upload failed' }));
-                throw new Error(err.error || err.message || 'Upload failed');
-            }
-            setFileToUpload(null);
-            setFileUploadTitle('');
-            setShowFileUpload(false);
-            if (fileUploadRef.current) fileUploadRef.current.value = '';
-            await Promise.all([evidenceSWR.mutate(), refetch()]);
-        } catch (err: unknown) {
-            setFileUploadError(err instanceof Error ? err.message : 'Upload failed');
-        } finally {
-            setFileUploading(false);
-        }
     };
 
     // Loading / error / empty states render through the shared
@@ -1147,65 +1168,56 @@ export default function ControlDetailPage() {
             {tab === 'evidence' && (
                 <div className="space-y-default">
                     {permissions.canWrite && (
-                        <div className="flex justify-end gap-tight">
-                            <Button variant="secondary" onClick={() => { setShowFileUpload(!showFileUpload); setShowEvidenceForm(false); }} id="upload-evidence-btn">
-                                Upload Evidence
-                            </Button>
-                            <Button variant="primary" onClick={() => { setShowEvidenceForm(!showEvidenceForm); setShowFileUpload(false); }} id="link-evidence-btn">
+                        <div className="flex justify-end">
+                            <Button variant="primary" onClick={() => { setShowEvidenceForm(!showEvidenceForm); setFileUploadError(''); }} id="link-evidence-btn">
                                 + Evidence
                             </Button>
                         </div>
                     )}
-                    {/* File upload form for this control */}
-                    {showFileUpload && permissions.canWrite && (
-                        <form onSubmit={handleFileUpload} className={cn(cardVariants({ density: 'compact' }), 'space-y-compact')} id="control-upload-form">
-                            <Heading level={3}>Upload Evidence for {control.name}</Heading>
-                            <input
-                                ref={fileUploadRef}
-                                type="file"
-                                className="input w-full file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-[var(--brand-default)] file:text-content-emphasis hover:file:bg-[var(--brand-default)]"
-                                onChange={e => setFileToUpload(e.target.files?.[0] || null)}
-                                required
-                                id="control-file-input"
-                                accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.csv,.txt,.doc,.docx,.xlsx,.xls,.json,.zip"
-                            />
-                            {fileToUpload && (
-                                <p className="text-xs text-content-muted">{fileToUpload.name} ({fileToUpload.size < 1048576 ? `${(fileToUpload.size / 1024).toFixed(1)} KB` : `${(fileToUpload.size / 1048576).toFixed(1)} MB`})</p>
-                            )}
-                            <input
-                                type="text"
-                                className="input w-full"
-                                placeholder="Title (defaults to filename)"
-                                value={fileUploadTitle}
-                                onChange={e => setFileUploadTitle(e.target.value)}
-                                id="control-upload-title"
-                            />
+                    {/* Unified add-evidence form — upload a file (browse +
+                        title) OR link a URL. A chosen file takes precedence
+                        (the URL fields disable). Either way the evidence is
+                        attached to this control + the Evidence Library. */}
+                    {showEvidenceForm && permissions.canWrite && (
+                        <form onSubmit={addEvidence} className={cn(cardVariants({ density: 'compact' }), 'space-y-default')} id="control-evidence-form">
+                            <div className="space-y-compact">
+                                <label className="block text-xs font-medium text-content-muted" htmlFor="control-file-input">Upload a file</label>
+                                <input
+                                    ref={fileUploadRef}
+                                    type="file"
+                                    className="input w-full file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-[var(--brand-default)] file:text-content-emphasis hover:file:bg-[var(--brand-default)]"
+                                    onChange={e => setFileToUpload(e.target.files?.[0] || null)}
+                                    id="control-file-input"
+                                    accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.csv,.txt,.doc,.docx,.xlsx,.xls,.json,.zip"
+                                />
+                                {fileToUpload && (
+                                    <p className="text-xs text-content-muted">{fileToUpload.name} ({fileToUpload.size < 1048576 ? `${(fileToUpload.size / 1024).toFixed(1)} KB` : `${(fileToUpload.size / 1048576).toFixed(1)} MB`})</p>
+                                )}
+                                <input
+                                    type="text"
+                                    className="input w-full"
+                                    placeholder="File title (defaults to filename)"
+                                    value={fileUploadTitle}
+                                    onChange={e => setFileUploadTitle(e.target.value)}
+                                    id="control-upload-title"
+                                />
+                            </div>
+                            <div className="space-y-compact border-t border-border-subtle pt-3">
+                                <label className="block text-xs font-medium text-content-muted" htmlFor="evidence-url-input">…or link a URL</label>
+                                <input type="url" className="input w-full" placeholder="https://…" value={evidenceUrl} onChange={e => setEvidenceUrl(e.target.value)} id="evidence-url-input" disabled={!!fileToUpload} />
+                                <textarea className="input w-full" rows={2} placeholder="Note (optional)" value={evidenceNote} onChange={e => setEvidenceNote(e.target.value)} id="evidence-note-input" disabled={!!fileToUpload} />
+                            </div>
                             {fileUploadError && (
-                                <div className="text-content-error text-sm bg-bg-error rounded px-3 py-2">{fileUploadError}</div>
+                                <div className="text-content-error text-sm bg-bg-error rounded px-3 py-2" id="control-evidence-error">{fileUploadError}</div>
                             )}
                             {fileUploading && (
-                                // Epic 59 — ProgressBar primitive. The actual
-                                // upload is XHR-bounded so we show a stable
-                                // 60% "working" signal; the ARIA value stays
-                                // correct for AT consumers.
-                                <ProgressBar
-                                    value={60}
-                                    size="md"
-                                    variant="brand"
-                                    aria-label="Uploading evidence file"
-                                />
+                                // Epic 59 — ProgressBar primitive. The upload is
+                                // XHR-bounded so we show a stable 60% "working"
+                                // signal; the ARIA value stays correct for AT.
+                                <ProgressBar value={60} size="md" variant="brand" aria-label="Uploading evidence file" />
                             )}
-                            <Button type="submit" variant="primary" disabled={fileUploading || !fileToUpload} id="submit-control-upload">
-                                {fileUploading ? 'Uploading...' : 'Upload'}
-                            </Button>
-                        </form>
-                    )}
-                    {showEvidenceForm && permissions.canWrite && (
-                        <form onSubmit={linkEvidence} className={cn(cardVariants({ density: 'compact' }), 'space-y-compact')}>
-                            <input type="url" className="input w-full" placeholder="Evidence URL *" value={evidenceUrl} onChange={e => setEvidenceUrl(e.target.value)} required id="evidence-url-input" />
-                            <textarea className="input w-full" rows={2} placeholder="Note (optional)" value={evidenceNote} onChange={e => setEvidenceNote(e.target.value)} id="evidence-note-input" />
-                            <Button type="submit" variant="primary" disabled={savingEvidence} id="submit-evidence-btn">
-                                {savingEvidence ? 'Linking...' : 'Link Evidence'}
+                            <Button type="submit" variant="primary" disabled={fileUploading || savingEvidence || (!fileToUpload && !evidenceUrl.trim())} id="submit-evidence-btn">
+                                {fileUploading ? 'Uploading...' : savingEvidence ? 'Linking...' : 'Add Evidence'}
                             </Button>
                         </form>
                     )}

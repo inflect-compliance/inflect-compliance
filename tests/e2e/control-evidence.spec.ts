@@ -88,7 +88,7 @@ test.describe('Control → Evidence Linking', () => {
         );
     });
 
-    test('upload evidence button is visible and opens form', async ({
+    test('the + Evidence form offers both file upload and URL link', async ({
         authedPage,
         isolatedTenant,
     }) => {
@@ -100,12 +100,16 @@ test.describe('Control → Evidence Linking', () => {
         await authedPage.waitForSelector('#control-title', { timeout: 15000 });
 
         await authedPage.click('#tab-evidence');
-        await authedPage.click('#upload-evidence-btn');
-        await expect(authedPage.locator('#control-upload-form')).toBeVisible({
+        // The separate "Upload Evidence" button was merged into "+ Evidence".
+        await authedPage.click('#link-evidence-btn');
+        await expect(authedPage.locator('#control-evidence-form')).toBeVisible({
             timeout: 5000,
         });
+        // File-upload section (browse + title) now lives in this one form…
         await expect(authedPage.locator('#control-file-input')).toBeVisible();
         await expect(authedPage.locator('#control-upload-title')).toBeVisible();
+        // …alongside the URL-link section.
+        await expect(authedPage.locator('#evidence-url-input')).toBeVisible();
     });
 
     test('unlink evidence removes it from tab', async ({
