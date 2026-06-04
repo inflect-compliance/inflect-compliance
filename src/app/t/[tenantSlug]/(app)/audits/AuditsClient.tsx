@@ -14,7 +14,7 @@ import { Heading } from '@/components/ui/typography';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { CardHeader } from '@/components/ui/card-header';
 import { cardVariants } from '@/components/ui/card';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { NewAuditModal } from './NewAuditModal';
 

@@ -61,7 +61,7 @@ import { RiskMatrixLegend } from '@/components/ui/RiskMatrixLegend';
 import type { RiskMatrixConfigShape } from '@/lib/risk-matrix/types';
 import { Heading } from '@/components/ui/typography';
 import { cardVariants } from '@/components/ui/card';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 
 // ─── Public types ───────────────────────────────────────────────────
 

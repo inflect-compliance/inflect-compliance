@@ -31,7 +31,7 @@
 import { Handle, Position, useReactFlow, type NodeProps } from "@xyflow/react";
 import { memo, useCallback, type MouseEvent } from "react";
 import { ChevronRight } from "@/components/ui/icons/nucleo/chevron-right";
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 import {
     NODE_TAXONOMY,
     NODE_ACCENT_BORDER,

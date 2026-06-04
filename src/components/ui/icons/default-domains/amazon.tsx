@@ -1,4 +1,4 @@
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 
 export function Amazon({ className }: { className?: string }) {
   return (

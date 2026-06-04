@@ -38,7 +38,7 @@
 import { ReactElement, ReactNode } from 'react';
 import { ParentSize } from '@visx/responsive';
 
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 import { EmptyState } from '../empty-state';
 import { ErrorState } from '../error-state';
 import { Skeleton } from '../skeleton';

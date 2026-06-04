@@ -20,7 +20,7 @@ import {
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { cardVariants } from '@/components/ui/card';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 import { Plus } from '@/components/ui/icons/nucleo';
 
 const SEV_BADGE: Record<string, StatusBadgeVariant> = { LOW: 'info', MEDIUM: 'warning', HIGH: 'error', CRITICAL: 'error' };

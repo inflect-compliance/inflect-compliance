@@ -1,4 +1,4 @@
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 
 /**
  * R22-PR-D — `background: "gray"` was hardcoded on every spinner

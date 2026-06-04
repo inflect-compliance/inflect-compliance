@@ -27,7 +27,7 @@
  *     the hierarchy.
  */
 
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 import * as React from "react";
 import { FormDescription } from "./form-description";
 import { InfoTooltip } from "./tooltip";

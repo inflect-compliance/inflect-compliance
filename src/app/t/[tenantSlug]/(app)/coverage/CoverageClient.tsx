@@ -12,7 +12,7 @@ import { Card, cardVariants } from '@/components/ui/card';
 import { KPIStat } from '@/components/ui/metric';
 import { getStatusTone } from '@/lib/design/status-tone';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 
 // ─── Types ──────────────────────────────────────────────────────────
 

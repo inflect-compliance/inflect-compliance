@@ -35,7 +35,7 @@
  */
 
 import { useMemo, type CSSProperties } from 'react';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 import { Card } from '@/components/ui/card';
 import {
     FileTypeIcon,

@@ -19,7 +19,7 @@ import * as React from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalIcon } from 'lucide-react';
 import Link from 'next/link';
 import { cardVariants } from '@/components/ui/card';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 
 import { Button } from '@/components/ui/button';
 import { CalendarHeatmap } from '@/components/ui/CalendarHeatmap';

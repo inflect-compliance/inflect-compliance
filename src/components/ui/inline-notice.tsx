@@ -45,7 +45,7 @@
  *   - <ErrorState> (full-pane error surface)
  */
 
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 import {
     AlertTriangle,
     CheckCircle,

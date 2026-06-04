@@ -37,7 +37,7 @@
 import { type ReactNode } from 'react';
 import { cardVariants } from '@/components/ui/card';
 
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 import { type BreadcrumbItem } from '@/components/ui/breadcrumbs';
 import { PageHeader } from '@/components/layout/PageHeader';
 

@@ -44,7 +44,7 @@ import { ListPageShell } from '@/components/layout/ListPageShell';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading, Eyebrow } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 
 // ─── Types ───
 

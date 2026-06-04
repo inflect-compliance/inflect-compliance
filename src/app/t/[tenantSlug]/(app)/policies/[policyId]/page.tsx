@@ -30,7 +30,7 @@ import { MetaStrip } from '@/components/ui/meta-strip';
 import { POLICY_STATUS_VARIANT } from '@/app-layer/domain/entity-status-mapping';
 import { Card, cardVariants } from '@/components/ui/card';
 import { InlineNotice } from '@/components/ui/inline-notice';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 
 // Lazy-load Tiptap. The editor + ProseMirror chunks land at
 // ~200KB gzipped; deferring the import means the static parts of

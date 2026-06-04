@@ -20,7 +20,7 @@
 
 "use client";
 
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 import { type VariantProps, cva } from "class-variance-authority";
 import { Check, Copy, type LucideIcon } from "lucide-react";
 import { forwardRef } from "react";

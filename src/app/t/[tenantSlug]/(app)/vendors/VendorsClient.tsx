@@ -16,7 +16,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
 import { buttonVariants } from '@/components/ui/button';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 import { DataTable, createColumns, useColumnsDropdown } from '@/components/ui/table';
 import { Package } from 'lucide-react';
 import {

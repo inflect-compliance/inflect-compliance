@@ -1,4 +1,4 @@
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 
 export function Figma({ className }: { className?: string }) {
   return (

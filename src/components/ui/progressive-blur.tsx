@@ -2,7 +2,7 @@
  * Epic 64 — `<ProgressiveBlur>`.
  *
  * Edge fade/blur affordance for scrollable surfaces (sheets, modal
- * bodies, chart legends, dense tables). Stacks four backdrop-filter
+ * bodies, chart legends, dense tables). Stacks N `backdrop-filter`
  * layers under linear-gradient masks so the blur strength tapers off
  * smoothly toward the centre.
  *
@@ -15,19 +15,22 @@
  *   // Convenience: top + bottom in one call
  *   <ProgressiveBlur side="both" />
  *
- * Token integration: the blur itself is a `backdrop-filter` so it
- * has no fill colour to themeable. The component is theme-neutral
- * by construction — it picks up whatever sits behind the scroll
- * container and softens it. Ported from the Dub UI pattern (which
- * itself follows AndrewPrifer/progressive-blur) with the same
- * tapered-mask choreography.
+ * Implementation: the well-known layered-backdrop-blur technique — a
+ * stack of `backdrop-filter` planes, each revealed by a linear-gradient
+ * mask band, with geometrically-decreasing blur strength so the
+ * strongest blur sits at the edge and fades inward. (Same technique as
+ * the MIT `AndrewPrifer/progressive-blur`.) First-party implementation.
  *
- * Composition rule: place inside a `position: relative` container
- * that has `overflow: auto/scroll/hidden`. The component pins to
- * the container's edge via `absolute inset-0`; pointer-events are
- * disabled so clicks pass through to the underlying scroller.
+ * Token integration: the blur is a `backdrop-filter` with no fill, so
+ * the component is theme-neutral by construction — it softens whatever
+ * sits behind the scroll container.
+ *
+ * Composition rule: place inside a `position: relative` container that
+ * has `overflow: auto/scroll/hidden`. The component pins to the
+ * container's edge via `absolute`; pointer-events are disabled so
+ * clicks pass through to the underlying scroller.
  */
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 import * as React from 'react';
 
 type SingleSide = 'top' | 'right' | 'bottom' | 'left';
@@ -53,8 +56,8 @@ export interface ProgressiveBlurProps
 }
 
 /**
- * Convenience wrapper — `side="both"` mounts a top + bottom pair so
- * a vertically-scrolling container can be wrapped with one tag.
+ * Convenience wrapper — `side="both"` mounts a top + bottom pair so a
+ * vertically-scrolling container can be wrapped with one tag.
  */
 export function ProgressiveBlur({
     side = 'top',
@@ -111,6 +114,44 @@ interface SingleProgressiveBlurProps
     size?: string;
 }
 
+const MIN_BLUR_PX = 0.5;
+
+/**
+ * Per-layer blur in px, indexed from the edge inward (0 = strongest).
+ * Geometric ramp from `strength` down to `MIN_BLUR_PX` across `steps`
+ * layers. With the defaults (strength 32, 4 steps) this yields
+ * 32 / 8 / 2 / 0.5 — each layer a quarter of the previous.
+ */
+function blurRamp(strength: number, steps: number): number[] {
+    if (steps <= 1) return [strength];
+    const ratio = (MIN_BLUR_PX / strength) ** (1 / (steps - 1));
+    return Array.from({ length: steps }, (_, i) => strength * ratio ** i);
+}
+
+/**
+ * Mask band for layer `i` (edge-relative). Layer 0 is opaque at the
+ * very edge and fades by one step; each subsequent layer's opaque band
+ * slides one step further inward, so weaker blurs cover the region
+ * deeper from the edge. Direction `opp` points away from the blurred
+ * edge.
+ */
+function maskFor(i: number, step: number, opp: SingleSide): string {
+    const black = 'rgba(0, 0, 0, 1)';
+    const clear = 'rgba(0, 0, 0, 0)';
+    const pct = (n: number) => `${n * step}%`;
+    let stops: string;
+    if (i === 0) {
+        stops = `${black} 0%, ${clear} ${pct(1)}`;
+    } else if (i === 1) {
+        stops = `${black} 0%, ${black} ${pct(1)}, ${clear} ${pct(2)}`;
+    } else {
+        stops =
+            `${clear} ${pct(i - 2)}, ${black} ${pct(i - 1)}, ` +
+            `${black} ${pct(i)}, ${clear} ${pct(i + 1)}`;
+    }
+    return `linear-gradient(to ${opp}, ${stops})`;
+}
+
 function SingleProgressiveBlur({
     side,
     strength,
@@ -121,16 +162,12 @@ function SingleProgressiveBlur({
     ...rest
 }: SingleProgressiveBlurProps) {
     const step = 100 / steps;
-    const factor = 0.5;
-    // Geometric ramp: step i gets half the blur of step i+1, tuned
-    // to match the Dub source so the visual taper is identical.
-    const base = Math.pow(strength / factor, 1 / Math.max(1, steps - 1));
-    const blurAt = (i: number): string =>
-        `blur(${factor * base ** (steps - i - 1)}px)`;
+    const opp = oppositeSide[side];
+    const blurs = blurRamp(strength, steps);
 
-    // Horizontal sides (left/right) constrain WIDTH; vertical
-    // sides (top/bottom) constrain HEIGHT. Keep `inset-0` for the
-    // perpendicular axis so the band spans the full container edge.
+    // Horizontal sides (left/right) constrain WIDTH; vertical sides
+    // (top/bottom) constrain HEIGHT. The perpendicular axis spans the
+    // full container edge.
     const isHorizontal = side === 'left' || side === 'right';
     const sizeStyle: React.CSSProperties = isHorizontal
         ? { width: size ?? '5rem' }
@@ -142,10 +179,6 @@ function SingleProgressiveBlur({
         right: 'top-0 bottom-0 right-0',
     }[side];
 
-    const black = 'rgba(0, 0, 0, 1)';
-    const transparent = 'rgba(0, 0, 0, 0)';
-    const opp = oppositeSide[side];
-
     return (
         <div
             data-progressive-blur={side}
@@ -154,48 +187,23 @@ function SingleProgressiveBlur({
             {...rest}
         >
             <div className="relative size-full">
-                {/* Layer 0 — strongest blur, narrowest mask. */}
-                <div
-                    className="absolute inset-0"
-                    style={{
-                        zIndex: 1,
-                        WebkitMask: `linear-gradient(to ${opp}, ${black} 0%, ${transparent} ${step}%)`,
-                        mask: `linear-gradient(to ${opp}, ${black} 0%, ${transparent} ${step}%)`,
-                        backdropFilter: blurAt(0),
-                        WebkitBackdropFilter: blurAt(0),
-                    }}
-                />
-
-                {steps > 1 && (
-                    <div
-                        className="absolute inset-0"
-                        style={{
-                            zIndex: 2,
-                            WebkitMask: `linear-gradient(to ${opp}, ${black} 0%, ${black} ${step}%, ${transparent} ${step * 2}%)`,
-                            mask: `linear-gradient(to ${opp}, ${black} 0%, ${black} ${step}%, ${transparent} ${step * 2}%)`,
-                            backdropFilter: blurAt(1),
-                            WebkitBackdropFilter: blurAt(1),
-                        }}
-                    />
-                )}
-
-                {steps > 2 &&
-                    Array.from({ length: steps - 2 }, (_, idx) => {
-                        const filter = blurAt(idx + 2);
-                        return (
-                            <div
-                                key={idx}
-                                className="absolute inset-0"
-                                style={{
-                                    zIndex: idx + 3,
-                                    WebkitMask: `linear-gradient(to ${opp}, ${transparent} ${idx * step}%, ${black} ${(idx + 1) * step}%, ${black} ${(idx + 2) * step}%, ${transparent} ${(idx + 3) * step}%)`,
-                                    mask: `linear-gradient(to ${opp}, ${transparent} ${idx * step}%, ${black} ${(idx + 1) * step}%, ${black} ${(idx + 2) * step}%, ${transparent} ${(idx + 3) * step}%)`,
-                                    backdropFilter: filter,
-                                    WebkitBackdropFilter: filter,
-                                }}
-                            />
-                        );
-                    })}
+                {blurs.map((px, i) => {
+                    const mask = maskFor(i, step, opp);
+                    const filter = `blur(${px}px)`;
+                    return (
+                        <div
+                            key={i}
+                            className="absolute inset-0"
+                            style={{
+                                zIndex: i + 1,
+                                WebkitMask: mask,
+                                mask,
+                                backdropFilter: filter,
+                                WebkitBackdropFilter: filter,
+                            }}
+                        />
+                    );
+                })}
             </div>
         </div>
     );
