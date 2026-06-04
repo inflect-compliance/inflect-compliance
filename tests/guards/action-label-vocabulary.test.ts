@@ -100,7 +100,7 @@ const BASELINE_PLUS_LITERAL_SITES = new Set<string>([
     // literals themselves are unchanged staged debt.
     'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:539',
     'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:567',
-    'src/app/t/[tenantSlug]/(app)/tests/runs/[runId]/page.tsx:399',
+    'src/app/t/[tenantSlug]/(app)/tests/runs/[runId]/page.tsx:419',
     'src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx:369',
     'src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx:393',
     'src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx:470',

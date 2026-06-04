@@ -85,6 +85,7 @@ export default function TestRunPage() {
     const [evEvidenceId, setEvEvidenceId] = useState('');
     const [evFile, setEvFile] = useState<File | null>(null);
     const [evFileTitle, setEvFileTitle] = useState('');
+    const [evError, setEvError] = useState('');
     const [linkingEv, setLinkingEv] = useState(false);
     const [unlinkingId, setUnlinkingId] = useState<string | null>(null);
 
@@ -137,46 +138,63 @@ export default function TestRunPage() {
         }
     };
 
+    // Attach evidence to this run. Both new uploads (FILE) and new links
+    // (LINK) are created as first-class Evidence Library records LINKED TO
+    // THE CONTROL (run.controlId) — so they surface in the control's
+    // Evidence tab and the Evidence Library, not just on this run. The
+    // created (or pre-existing) evidence record is then linked to the run.
     const linkEvidence = async () => {
+        if (!run) return;
         setLinkingEv(true);
+        setEvError('');
         try {
+            let evidenceId = evEvidenceId;
+
             if (evKind === 'FILE_UPLOAD') {
-                // Step 1: Upload file as evidence record
                 if (!evFile) return;
+                // Canonical multipart upload — creates FileRecord +
+                // Evidence(FILE) + the ControlEvidenceLink in one flow.
                 const formData = new FormData();
                 formData.append('file', evFile);
                 formData.append('title', evFileTitle || evFile.name);
-                formData.append('type', 'FILE');
-                if (evNote) formData.append('content', evNote);
-
-                const uploadRes = await fetch(apiUrl('/evidence'), {
+                formData.append('controlId', run.controlId);
+                const uploadRes = await fetch(apiUrl('/evidence/uploads'), {
                     method: 'POST',
                     body: formData,
                 });
                 if (!uploadRes.ok) {
-                    const err = await uploadRes.text();
-                    throw new Error(err || 'Upload failed');
+                    throw new Error((await uploadRes.text()) || 'Upload failed');
                 }
-                const newEvidence = await uploadRes.json();
-
-                // Step 2: Link the evidence to the test run
-                const linkRes = await fetch(apiUrl(`/tests/runs/${runId}/evidence`), {
+                evidenceId = (await uploadRes.json()).id;
+            } else if (evKind === 'LINK') {
+                if (!evUrl) return;
+                // Create a LINK evidence record in the library, linked to
+                // the control. `content` carries the URL (createEvidence
+                // maps it onto the control evidence-link's `url`).
+                const createRes = await fetch(apiUrl('/evidence'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ kind: 'EVIDENCE', evidenceId: newEvidence.id, note: evNote || null }),
+                    body: JSON.stringify({
+                        type: 'LINK',
+                        title: evFileTitle || evUrl,
+                        content: evUrl,
+                        controlId: run.controlId,
+                    }),
                 });
-                if (!linkRes.ok) throw new Error('Failed to link evidence');
-            } else {
-                const body: Record<string, unknown> = { kind: evKind, note: evNote || null };
-                if (evKind === 'LINK') body.url = evUrl;
-                if (evKind === 'EVIDENCE') body.evidenceId = evEvidenceId;
-                const res = await fetch(apiUrl(`/tests/runs/${runId}/evidence`), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body),
-                });
-                if (!res.ok) throw new Error('Failed to link');
+                if (!createRes.ok) {
+                    throw new Error((await createRes.text()) || 'Failed to create link evidence');
+                }
+                evidenceId = (await createRes.json()).id;
             }
+
+            // Link the evidence record (newly-created or pre-existing) to
+            // this test run.
+            const linkRes = await fetch(apiUrl(`/tests/runs/${runId}/evidence`), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ kind: 'EVIDENCE', evidenceId, note: evNote || null }),
+            });
+            if (!linkRes.ok) throw new Error('Failed to link evidence to the run');
 
             setShowEvForm(false);
             setEvUrl('');
@@ -185,6 +203,8 @@ export default function TestRunPage() {
             setEvFile(null);
             setEvFileTitle('');
             await fetchRun();
+        } catch (err) {
+            setEvError(err instanceof Error ? err.message : 'Failed to add evidence');
         } finally {
             setLinkingEv(false);
         }
@@ -393,7 +413,7 @@ export default function TestRunPage() {
                     {permissions.canWrite && (
                         <Button
                             variant="primary"
-                            onClick={() => setShowEvForm(!showEvForm)}
+                            onClick={() => { setShowEvForm(!showEvForm); setEvError(''); }}
                             id="link-evidence-btn"
                         >
                             {showEvForm ? 'Cancel' : '+ Evidence'}
@@ -403,6 +423,11 @@ export default function TestRunPage() {
 
                 {showEvForm && (
                     <div className="space-y-compact mb-4 p-3 rounded bg-bg-default/50 animate-fadeIn">
+                        {evError && (
+                            <div className="rounded border border-border-error bg-bg-error px-3 py-2 text-sm text-content-error" role="alert" id="evidence-error">
+                                {evError}
+                            </div>
+                        )}
                         <div>
                             <label className="text-xs text-content-muted block mb-1">Evidence Type</label>
                             <Combobox
@@ -443,10 +468,6 @@ export default function TestRunPage() {
                                         )}
                                     </label>
                                 </div>
-                                <div>
-                                    <label className="text-xs text-content-muted block mb-1">Title</label>
-                                    <input className="input w-full" value={evFileTitle} onChange={e => setEvFileTitle(e.target.value)} placeholder="Evidence title..." id="evidence-file-title-input" />
-                                </div>
                             </>
                         )}
                         {evKind === 'LINK' && (
@@ -459,6 +480,12 @@ export default function TestRunPage() {
                             <div>
                                 <label className="text-xs text-content-muted block mb-1">Evidence ID</label>
                                 <input className="input w-full" value={evEvidenceId} onChange={e => setEvEvidenceId(e.target.value)} placeholder="Evidence record ID" id="evidence-id-input" />
+                            </div>
+                        )}
+                        {(evKind === 'FILE_UPLOAD' || evKind === 'LINK') && (
+                            <div>
+                                <label className="text-xs text-content-muted block mb-1">Title</label>
+                                <input className="input w-full" value={evFileTitle} onChange={e => setEvFileTitle(e.target.value)} placeholder="Evidence title..." id="evidence-file-title-input" />
                             </div>
                         )}
                         <div>
