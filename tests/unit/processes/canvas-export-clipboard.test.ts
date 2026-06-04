@@ -40,7 +40,14 @@ describe("canCopyImageToClipboard", () => {
             navigator as { clipboard?: { write?: unknown } }
         ).clipboard = {};
         (globalThis as { ClipboardItem?: unknown }).ClipboardItem =
-            class FakeClipboardItem {};
+            // Constructor mirrors the real ClipboardItem(items) shape so
+            // CodeQL's call-graph doesn't flag the production
+            // `new ClipboardItem({...})` as passing a superfluous arg.
+            class FakeClipboardItem {
+                constructor(_items: Record<string, Blob>) {
+                    void _items;
+                }
+            };
         expect(canCopyImageToClipboard()).toBe(false);
     });
 
@@ -57,7 +64,14 @@ describe("canCopyImageToClipboard", () => {
             write: async () => {},
         };
         (globalThis as { ClipboardItem?: unknown }).ClipboardItem =
-            class FakeClipboardItem {};
+            // Constructor mirrors the real ClipboardItem(items) shape so
+            // CodeQL's call-graph doesn't flag the production
+            // `new ClipboardItem({...})` as passing a superfluous arg.
+            class FakeClipboardItem {
+                constructor(_items: Record<string, Blob>) {
+                    void _items;
+                }
+            };
         expect(canCopyImageToClipboard()).toBe(true);
     });
 });

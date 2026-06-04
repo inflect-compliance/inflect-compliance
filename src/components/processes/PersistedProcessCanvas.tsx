@@ -355,7 +355,7 @@ function Inner({
             snapEnabled ? "1" : "0",
         );
     }, [snapEnabled]);
-    const { screenToFlowPosition, updateNodeData, updateEdgeData } = useReactFlow();
+    const { screenToFlowPosition, updateNodeData } = useReactFlow();
     // R28 — undo/redo history. Snapshots are pushed AFTER each
     // substantive edit (create/delete/move-stop/inspector-commit/
     // variant-cycle); keyboard binds Cmd+Z / Cmd+Shift+Z.
@@ -2357,7 +2357,7 @@ function Inner({
                     against the live canvas state. */}
                 {activeId && diffAgainstVersion != null && loadedMap && (
                     <CanvasDiffOverlay
-                        open={diffAgainstVersion != null}
+                        open
                         onOpenChange={(next) =>
                             setDiffAgainstVersion(next ? diffAgainstVersion : null)
                         }

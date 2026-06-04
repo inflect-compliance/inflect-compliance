@@ -81,13 +81,6 @@ const KIND_SERIES: Record<TraceabilityNodeKind, ChartSeriesIndex> = {
     policy: 3, // violet
 };
 
-const KIND_LABEL: Record<TraceabilityNodeKind, string> = {
-    asset: 'Asset',
-    risk: 'Risk',
-    control: 'Control',
-    requirement: 'Requirement',
-    policy: 'Policy',
-};
 
 // Flat per-kind fill. Restores the pre-#536 look: each kind reads as
 // one distinct, high-contrast colour rather than a washed gradient.

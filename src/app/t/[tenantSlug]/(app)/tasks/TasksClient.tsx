@@ -68,8 +68,6 @@ const TYPE_LABELS: Record<string, string> = {
     AUDIT_FINDING: 'Audit Finding', CONTROL_GAP: 'Control Gap',
     INCIDENT: 'Incident', IMPROVEMENT: 'Improvement', TASK: 'Task',
 };
-const STATUS_OPTIONS = ['OPEN', 'TRIAGED', 'IN_PROGRESS', 'BLOCKED', 'RESOLVED', 'CLOSED', 'CANCELED'];
-const STATUS_CB_OPTIONS: ComboboxOption[] = STATUS_OPTIONS.map(s => ({ value: s, label: STATUS_LABELS[s] || s }));
 // Bulk status only offers ACTIVE transitions. Terminal statuses
 // (CLOSED / CANCELED) require a per-task resolution note (S8), which
 // the bulk bar can't collect — closing is a deliberate single-task

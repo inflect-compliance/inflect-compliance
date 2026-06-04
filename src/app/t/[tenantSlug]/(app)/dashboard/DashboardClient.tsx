@@ -479,14 +479,6 @@ function ChartFocusWrapper({
 // to their list page because they had no chart to light up; they now
 // own the Task-status and Policy-status donuts below, so the whole
 // grid behaves consistently (click = focus, no surprise navigation).
-const CHART_BOUND_KPIS: ReadonlySet<DashboardKpiKey> = new Set([
-    'coverage',
-    'risks',
-    'evidence',
-    'findings',
-    'tasks',
-    'policies',
-]);
 
 function InteractiveKpiGrid({
     exec,
