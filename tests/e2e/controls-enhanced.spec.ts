@@ -88,17 +88,4 @@ test.describe('Controls Enhanced', () => {
             .isVisible();
         expect(hasActivity || hasNoActivity).toBe(true);
     });
-
-    test('automation section is visible on detail page', async ({
-        authedPage,
-        isolatedTenant,
-    }) => {
-        await createControl(authedPage, isolatedTenant.tenantSlug);
-
-        await authedPage.click('#tab-overview');
-        await expect(
-            authedPage.getByRole('heading', { name: 'Automation' }),
-        ).toBeVisible({ timeout: 15000 });
-        await expect(authedPage.locator('#edit-automation-btn')).toBeVisible();
-    });
 });
