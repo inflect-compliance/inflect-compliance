@@ -154,8 +154,7 @@ const nodeProject = {
     //  current numbers (br=50/fn=50/ln=62/st=59) say that target is
     //  not realistic with the current scope: `src/lib/**` includes
     //  one-shot scripts, instrumentation helpers, and CLI entry
-    //  points shipped intentionally without unit tests, plus
-    //  `src/lib/dub-utils/**` (ported third-party code). Tightening
+    //  points shipped intentionally without unit tests. Tightening
     //  the global to match raw averages would penalise legitimate
     //  utility code; the durable lever is per-path tightening on
     //  areas that matter (e.g. `usecases/`) PLUS the structural
@@ -196,7 +195,6 @@ const jsdomProject = {
     moduleNameMapper: {
         '^@/env$': '<rootDir>/tests/mocks/env.ts',
         '^@/(.*)$': '<rootDir>/src/$1',
-        '^@dub/utils$': '<rootDir>/tests/rendered/dub-utils-mock.ts',
         // Epic 41 — react-grid-layout uses the package `exports` field
         // to map `react-grid-layout/legacy` → `dist/legacy.js`. Jest's
         // CJS resolver doesn't honour subpath exports under all

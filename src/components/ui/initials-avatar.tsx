@@ -23,7 +23,7 @@
  * never decides precedence.
  */
 import { useState } from 'react';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 
 // ─── Initials ──────────────────────────────────────────────────────
 

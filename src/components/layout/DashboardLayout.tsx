@@ -41,7 +41,7 @@
  */
 
 import * as React from "react";
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 
 import { PageHeader, type PageHeaderProps } from "./PageHeader";
 

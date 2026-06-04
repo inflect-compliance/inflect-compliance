@@ -11,7 +11,7 @@ import { FileText, SearchX } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { Card, cardVariants } from '@/components/ui/card';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 
 export default function TemplatesPage() {
     const apiUrl = useTenantApiUrl();

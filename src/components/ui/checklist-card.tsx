@@ -32,7 +32,7 @@
  * change that."
  */
 
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 import { AppIcon } from '@/components/icons/AppIcon';
 import { Card } from '@/components/ui/card';
 import { Heading } from '@/components/ui/typography';

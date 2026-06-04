@@ -24,7 +24,7 @@ import { formatDateTime } from '@/lib/format-date';
 import { useToast } from '@/components/ui/hooks/use-toast';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 
 // ─── Types ───
 

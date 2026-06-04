@@ -49,7 +49,7 @@
  */
 import { Fragment, useState } from 'react';
 import { cardVariants } from '@/components/ui/card-variants';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 
 import { ChartLegend, useHeatScale } from '@/components/ui/charts';
 import { ShimmerDots } from '@/components/ui/shimmer-dots';

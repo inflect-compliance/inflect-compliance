@@ -16,7 +16,7 @@
  *     Use these inside `content` to keep every menu identical.
  */
 
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import {

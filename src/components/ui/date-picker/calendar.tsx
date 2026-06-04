@@ -32,7 +32,7 @@
  *     grid; we preserve it by not overriding `components.Day`.
  */
 
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 import { addMonths, addYears, format } from 'date-fns';
 import type { Locale as DateFnsLocale } from 'date-fns/locale';
 import {

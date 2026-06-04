@@ -29,7 +29,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { Card, cardVariants } from '@/components/ui/card';
 import { InlineNotice } from '@/components/ui/inline-notice';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 
 // ─── Step Definitions ───
 //

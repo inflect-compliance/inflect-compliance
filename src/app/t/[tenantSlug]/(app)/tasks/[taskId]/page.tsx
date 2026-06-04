@@ -30,7 +30,7 @@ import {
     TASK_SEVERITY_VARIANT,
 } from '@/app-layer/domain/entity-status-mapping';
 import { cardVariants } from '@/components/ui/card';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 
 // Polish PR-1 — STATUS_BADGE / SEVERITY_BADGE moved to shared
 // domain mapping (TASK_STATUS_VARIANT / TASK_SEVERITY_VARIANT).

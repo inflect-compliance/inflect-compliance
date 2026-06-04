@@ -1,4 +1,4 @@
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 import { motion } from "motion/react";
 import {
   ComponentPropsWithoutRef,

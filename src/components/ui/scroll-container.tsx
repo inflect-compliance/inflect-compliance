@@ -1,4 +1,4 @@
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 import { PropsWithChildren, useRef } from "react";
 import { useScrollProgress } from "./hooks/use-scroll-progress";
 

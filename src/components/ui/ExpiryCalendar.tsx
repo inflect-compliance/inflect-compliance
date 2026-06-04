@@ -23,7 +23,7 @@
 import { formatDateCompact } from '@/lib/format-date';
 import { Heading } from '@/components/ui/typography';
 import { cardVariants } from '@/components/ui/card-variants';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 
 // ─── Props ──────────────────────────────────────────────────────────
 

@@ -16,7 +16,7 @@
  */
 
 import { ChevronRight, Loader2 } from 'lucide-react';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 import type { ReactNode } from 'react';
 import { forwardRef } from 'react';
 

@@ -31,7 +31,7 @@
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import { HelpCircle } from "lucide-react";
 import { forwardRef, type ReactNode } from "react";
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 
 export type TooltipSide = "top" | "right" | "bottom" | "left";
 export type TooltipAlign = "start" | "center" | "end";

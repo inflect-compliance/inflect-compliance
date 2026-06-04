@@ -23,7 +23,7 @@ import { Combobox } from '@/components/ui/combobox';
 import { InlineEmptyState } from '@/components/ui/inline-empty-state';
 import { CopyText } from '@/components/ui/copy-text';
 import { cardVariants } from '@/components/ui/card';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 import { DataTable, createColumns } from '@/components/ui/table';
 import type { FrameworkDTO, RequirementDTO, FrameworkMappingDTO } from '@/lib/dto';
 

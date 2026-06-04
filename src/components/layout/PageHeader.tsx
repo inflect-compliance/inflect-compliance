@@ -58,7 +58,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 import {
     Breadcrumbs,
     type BreadcrumbItem,

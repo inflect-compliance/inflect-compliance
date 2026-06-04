@@ -1,4 +1,4 @@
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 
 export function GitHubEnhanced({ className }: { className?: string }) {
   return (

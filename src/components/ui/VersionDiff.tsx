@@ -36,7 +36,7 @@
 
 import { diffLines } from 'diff';
 import { useMemo } from 'react';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 import { Card } from '@/components/ui/card';
 
 export interface VersionDiffOption {

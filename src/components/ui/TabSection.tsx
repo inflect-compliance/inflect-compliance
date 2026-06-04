@@ -34,7 +34,7 @@
  */
 
 import * as React from "react";
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 
 import { Heading } from "./typography";
 

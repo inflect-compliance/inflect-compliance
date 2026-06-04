@@ -46,7 +46,7 @@
  */
 
 import type { ReactNode } from 'react';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 
 export interface NavSectionProps {
     /**

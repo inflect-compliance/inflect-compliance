@@ -30,7 +30,7 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 import { Command } from "cmdk";
 import { useCallback, useState, type ReactNode } from "react";
 import { Magnifier } from "@/components/ui/icons/nucleo/magnifier";

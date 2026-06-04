@@ -1,4 +1,4 @@
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 
 export function ProductHunt({ className }: { className?: string }) {
   return (

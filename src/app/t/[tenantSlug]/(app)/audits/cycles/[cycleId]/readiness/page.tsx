@@ -9,7 +9,7 @@ import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-bad
 import { Heading } from '@/components/ui/typography';
 import { cardVariants } from '@/components/ui/card';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 
 function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
     const r = (size - 8) / 2;

@@ -35,7 +35,7 @@
  */
 
 import * as React from 'react';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 import { ArrowDownIcon, ArrowUpIcon, MinusIcon } from 'lucide-react';
 
 // ─── Tone tokens ─────────────────────────────────────────────────────

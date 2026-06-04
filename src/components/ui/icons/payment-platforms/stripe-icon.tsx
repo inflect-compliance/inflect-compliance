@@ -1,4 +1,4 @@
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 import { SVGProps } from "react";
 
 export function StripeIcon(props: SVGProps<SVGSVGElement>) {

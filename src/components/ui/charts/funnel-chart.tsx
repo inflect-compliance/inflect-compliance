@@ -45,7 +45,8 @@
  *      the theme.
  */
 
-import { cn, currencyFormatter, nFormatter } from "@dub/utils";
+import { cn } from "@/lib/cn";
+import { currencyFormatter, nFormatter } from "@/lib/number-format";
 import { curveCatmullRom } from "@visx/curve";
 import { ParentSize } from "@visx/responsive";
 import { scaleLinear } from "@visx/scale";

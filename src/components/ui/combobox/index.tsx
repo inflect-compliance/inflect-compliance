@@ -42,7 +42,7 @@
  *     aria-selected attributes.
  */
 
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 import { Command, useCommandState } from "cmdk";
 import { ChevronDown } from "lucide-react";
 import * as React from "react";

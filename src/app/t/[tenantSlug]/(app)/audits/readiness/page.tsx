@@ -38,7 +38,7 @@ import type { ReadinessResult } from '@/app-layer/usecases/audit-readiness-scori
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { cardVariants } from '@/components/ui/card-variants';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 
 export const dynamic = 'force-dynamic';
 

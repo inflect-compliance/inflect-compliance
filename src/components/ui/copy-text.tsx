@@ -23,7 +23,7 @@
 
 "use client";
 
-import { cn } from "@dub/utils";
+import { cn } from "@/lib/cn";
 import { Check, Copy } from "lucide-react";
 import { type ReactNode, forwardRef } from "react";
 import { useToast } from "./hooks/use-toast";

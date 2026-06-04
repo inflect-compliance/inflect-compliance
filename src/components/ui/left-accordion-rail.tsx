@@ -49,7 +49,7 @@ import {
 import { ChevronRight } from '@/components/ui/icons/nucleo/chevron-right';
 import { ChevronLeft } from '@/components/ui/icons/nucleo/chevron-left';
 import { cardVariants } from '@/components/ui/card';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 
 // ─── Public types ──────────────────────────────────────────────────
 

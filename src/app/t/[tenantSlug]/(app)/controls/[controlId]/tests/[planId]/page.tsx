@@ -17,7 +17,7 @@ import { Heading } from '@/components/ui/typography';
 import { CardHeader } from '@/components/ui/card-header';
 import { KPIStat } from '@/components/ui/metric';
 import { cardVariants } from '@/components/ui/card';
-import { cn } from '@dub/utils';
+import { cn } from '@/lib/cn';
 import { Plus } from '@/components/ui/icons/nucleo';
 
 interface TestPlanDetail {
