@@ -180,6 +180,10 @@ test.describe('Core Certification Flow', () => {
                 { timeout: 10000 },
             );
 
+            // Traceability lives on its own tab now (it was removed from
+            // the Overview tab, which duplicated it). Open the tab before
+            // asserting on the linked-controls table.
+            await page.click('#tab-traceability');
             await page.waitForSelector('#traceability-panel', { timeout: 60000 });
             await expect(
                 page.locator('#linked-controls-table'),

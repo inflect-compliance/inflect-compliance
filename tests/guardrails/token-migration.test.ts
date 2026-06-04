@@ -135,8 +135,18 @@ describe('Risk detail page token migration', () => {
     });
 
     it('uses Button for save/cancel/edit actions', () => {
-        expect(src).toContain('<Button variant="primary"');
-        expect(src).toContain('<Button variant="secondary"');
+        // The edit Save/Cancel actions moved into the extracted
+        // EditRiskModal (mirrors the control detail page). The modal
+        // owns the primary Save + secondary Cancel; the page keeps the
+        // Button primitive for its own Overview Edit trigger +
+        // Applicability action.
+        const modalSrc = read(
+            'app/t/[tenantSlug]/(app)/risks/[riskId]/_modals/EditRiskModal.tsx',
+        );
+        expect(modalSrc).toContain('<Button');
+        expect(modalSrc).toContain('variant="primary"');
+        expect(modalSrc).toContain('variant="secondary"');
+        expect(src).toContain('variant="secondary"');
     });
 
     it('uses StatusBadge for risk status and severity (via MetaStrip)', () => {
