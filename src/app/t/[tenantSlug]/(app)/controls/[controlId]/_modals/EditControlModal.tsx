@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Modal } from '@/components/ui/modal';
 import { RequiredMarker } from '@/components/ui/required-marker';
+import { UserCombobox } from '@/components/ui/user-combobox';
 
 export interface EditControlForm {
     name: string;
@@ -54,7 +55,8 @@ export interface EditControlModalProps {
     setForm: React.Dispatch<React.SetStateAction<EditControlForm>>;
     saving: boolean;
     error: string;
-    currentOwnerName: string | null | undefined;
+    /** Tenant slug for the owner UserCombobox roster lookup. */
+    tenantSlug: string;
     categoryOptions: ComboboxOption[];
     frequencyOptions: ComboboxOption[];
     onCancel: () => void;
@@ -68,7 +70,7 @@ export function EditControlModal({
     setForm,
     saving,
     error,
-    currentOwnerName,
+    tenantSlug,
     categoryOptions,
     frequencyOptions,
     onCancel,
@@ -291,25 +293,19 @@ export function EditControlModal({
                             >
                                 Owner
                             </label>
-                            <input
+                            <UserCombobox
                                 id="edit-owner"
-                                type="text"
-                                className="input w-full"
-                                placeholder="User ID (leave empty to clear)"
-                                value={form.owner}
-                                onChange={(e) =>
+                                name="ownerUserId"
+                                tenantSlug={tenantSlug}
+                                selectedId={form.owner || null}
+                                onChange={(userId) =>
                                     setForm((f) => ({
                                         ...f,
-                                        owner: e.target.value,
+                                        owner: userId ?? '',
                                     }))
                                 }
-                                data-testid="edit-owner-input"
+                                placeholder="Unassigned"
                             />
-                            {currentOwnerName && (
-                                <p className="mt-1 text-xs text-content-muted">
-                                    Current: {currentOwnerName}
-                                </p>
-                            )}
                         </div>
                     </fieldset>
                 </Modal.Body>

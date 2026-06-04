@@ -80,7 +80,10 @@ export function EditEvidenceModal({
         setError(null);
         try {
             const res = await fetch(apiUrl(`/evidence/${initial.id}`), {
-                method: 'PATCH',
+                // The tenant evidence route exposes PUT (not PATCH) for
+                // metadata updates; a PATCH 405'd, surfacing as the
+                // generic "Failed to update evidence" on every save.
+                method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     title,

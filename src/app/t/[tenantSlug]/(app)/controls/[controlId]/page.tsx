@@ -988,7 +988,7 @@ export default function ControlDetailPage() {
                 setForm={setEditForm}
                 saving={savingEdit}
                 error={editError}
-                currentOwnerName={control.owner?.name}
+                tenantSlug={tenantSlug}
                 categoryOptions={CATEGORY_CB_OPTIONS}
                 frequencyOptions={FREQ_CB_OPTIONS}
                 onCancel={handleEditCancel}

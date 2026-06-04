@@ -169,6 +169,17 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
                         >
                             Clauses
                         </Link>
+                        {/* Findings moved off the Tests page header onto
+                            the Audit surface — findings are raised and
+                            tracked against audit cycles, so they belong
+                            next to Frameworks/Clauses here. */}
+                        <Link
+                            href={`/t/${tenantSlug}/findings`}
+                            className={cn(buttonVariants({ variant: 'secondary' }))}
+                            id="findings-link-btn"
+                        >
+                            {t.findingsTab}
+                        </Link>
                         <Button variant="primary" icon={<Plus className="-ml-0.5 -mr-2.5" />} onClick={() => setIsCreateOpen(true)} id="new-audit-btn">{t.newAudit}</Button>
                     </div>
                 }

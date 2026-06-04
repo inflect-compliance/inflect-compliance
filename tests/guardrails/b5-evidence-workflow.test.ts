@@ -52,7 +52,10 @@ describe('B5 — Evidence workflow completion', () => {
 
         it('EditEvidenceModal primitive exists', () => {
             expect(modal).toMatch(/export function EditEvidenceModal/);
-            expect(modal).toMatch(/method:\s*['"]PATCH['"]/);
+            // The tenant evidence route exposes PUT (not PATCH) for
+            // metadata updates; the modal must match it or every save
+            // 405s. Originally this asserted PATCH, codifying that bug.
+            expect(modal).toMatch(/method:\s*['"]PUT['"]/);
             expect(modal).toMatch(/\/evidence\/\$\{initial\.id\}/);
         });
 

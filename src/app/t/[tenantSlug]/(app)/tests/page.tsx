@@ -231,9 +231,6 @@ function TestsRollupContent() {
                         <Link href={tenantHref('/tests/dashboard')} className={buttonVariants({ variant: 'secondary', size: 'sm' })} id="tests-dashboard-btn">
                             <AppIcon name="dashboard" size={14} /> Dashboard
                         </Link>
-                        <Link href={tenantHref('/findings')} className={buttonVariants({ variant: 'secondary', size: 'sm' })} id="findings-link-btn">
-                            <AppIcon name="fileWarning" size={14} /> Findings
-                        </Link>
                         <Link href={tenantHref('/access-reviews')} className={buttonVariants({ variant: 'secondary', size: 'sm' })} id="tests-uar-btn">
                             <AppIcon name="userCheck" size={14} /> UAR
                         </Link>

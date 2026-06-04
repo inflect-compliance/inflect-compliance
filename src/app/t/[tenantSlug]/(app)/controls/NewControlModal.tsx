@@ -41,6 +41,7 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { UserCombobox } from '@/components/ui/user-combobox';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -58,6 +59,22 @@ const FREQUENCY_OPTIONS: ComboboxOption[] = [
     { value: 'MONTHLY', label: 'Monthly' },
     { value: 'QUARTERLY', label: 'Quarterly' },
     { value: 'ANNUALLY', label: 'Annually' },
+];
+
+// Mirror of EditControlModal's classification options (the Prisma
+// enums are the source of truth — keep these two lists in sync).
+const AUTOMATION_TYPE_OPTIONS: ComboboxOption[] = [
+    { value: 'AUTOMATED', label: 'Automated' },
+    { value: 'MANUAL', label: 'Manual' },
+    { value: 'IT_DEPENDENT_MANUAL', label: 'IT-Dependent Manual' },
+];
+
+const MITIGATION_TYPE_OPTIONS: ComboboxOption[] = [
+    { value: 'PREVENTIVE', label: 'Preventive' },
+    { value: 'DETECTIVE', label: 'Detective' },
+    { value: 'DETERRENT', label: 'Deterrent' },
+    { value: 'CORRECTIVE', label: 'Corrective' },
+    { value: 'COMPENSATING', label: 'Compensating' },
 ];
 
 const CATEGORY_OPTIONS: ComboboxOption[] = [
@@ -88,6 +105,9 @@ const formSchema = z
         description: z.string().optional(),
         category: z.string().optional(),
         frequency: z.string().optional(),
+        ownerUserId: z.string().optional(),
+        automationType: z.string().optional(),
+        mitigationType: z.string().optional(),
         applicability: z.enum(['APPLICABLE', 'NOT_APPLICABLE']),
         justification: z.string().optional(),
     })
@@ -112,6 +132,9 @@ const DEFAULT_VALUES: FormValues = {
     description: '',
     category: '',
     frequency: '',
+    ownerUserId: '',
+    automationType: '',
+    mitigationType: '',
     applicability: 'APPLICABLE',
     justification: '',
 };
@@ -192,6 +215,9 @@ export function NewControlModal({ open, setOpen, tenantSlug }: NewControlModalPr
                 description: values.description?.trim() || undefined,
                 category: values.category || undefined,
                 frequency: values.frequency || undefined,
+                ownerUserId: values.ownerUserId || undefined,
+                automationType: values.automationType || undefined,
+                mitigationType: values.mitigationType || undefined,
                 isCustom: true,
             };
             const res = await fetch(apiUrl('/controls'), {
@@ -368,6 +394,86 @@ export function NewControlModal({ open, setOpen, tenantSlug }: NewControlModalPr
                                 />
                             </FormField>
                         </div>
+                        <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
+                            <FormField
+                                label="Automation Type"
+                                error={errors.automationType?.message}
+                            >
+                                <Controller
+                                    control={control}
+                                    name="automationType"
+                                    render={({ field }) => (
+                                        <Combobox
+                                            id="control-automation-type-input"
+                                            name="automationType"
+                                            options={AUTOMATION_TYPE_OPTIONS}
+                                            selected={
+                                                AUTOMATION_TYPE_OPTIONS.find(
+                                                    (o) => o.value === field.value,
+                                                ) ?? null
+                                            }
+                                            setSelected={(o) =>
+                                                field.onChange(o?.value ?? '')
+                                            }
+                                            placeholder="Select automation type…"
+                                            hideSearch
+                                            matchTriggerWidth
+                                            forceDropdown
+                                            buttonProps={{ className: 'w-full' }}
+                                            caret
+                                        />
+                                    )}
+                                />
+                            </FormField>
+                            <FormField
+                                label="Mitigation Type"
+                                error={errors.mitigationType?.message}
+                            >
+                                <Controller
+                                    control={control}
+                                    name="mitigationType"
+                                    render={({ field }) => (
+                                        <Combobox
+                                            id="control-mitigation-type-input"
+                                            name="mitigationType"
+                                            options={MITIGATION_TYPE_OPTIONS}
+                                            selected={
+                                                MITIGATION_TYPE_OPTIONS.find(
+                                                    (o) => o.value === field.value,
+                                                ) ?? null
+                                            }
+                                            setSelected={(o) =>
+                                                field.onChange(o?.value ?? '')
+                                            }
+                                            placeholder="Select mitigation type…"
+                                            hideSearch
+                                            matchTriggerWidth
+                                            forceDropdown
+                                            buttonProps={{ className: 'w-full' }}
+                                            caret
+                                        />
+                                    )}
+                                />
+                            </FormField>
+                        </div>
+                        <FormField label="Owner" error={errors.ownerUserId?.message}>
+                            <Controller
+                                control={control}
+                                name="ownerUserId"
+                                render={({ field }) => (
+                                    <UserCombobox
+                                        id="control-owner-input"
+                                        name="ownerUserId"
+                                        tenantSlug={tenantSlug}
+                                        selectedId={field.value || null}
+                                        onChange={(userId) =>
+                                            field.onChange(userId ?? '')
+                                        }
+                                        placeholder="Unassigned"
+                                    />
+                                )}
+                            />
+                        </FormField>
                         <div role="group" aria-labelledby="applicability-legend">
                             <div className="mb-1 flex items-center gap-1.5">
                                 <span
