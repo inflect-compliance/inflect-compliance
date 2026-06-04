@@ -1217,7 +1217,7 @@ export default function ControlDetailPage() {
                                 <ProgressBar value={60} size="md" variant="brand" aria-label="Uploading evidence file" />
                             )}
                             <Button type="submit" variant="primary" disabled={fileUploading || savingEvidence || (!fileToUpload && !evidenceUrl.trim())} id="submit-evidence-btn">
-                                {fileUploading ? 'Uploading…' : savingEvidence ? 'Linking…' : 'Add Evidence'}
+                                {fileUploading ? 'Uploading...' : savingEvidence ? 'Linking...' : 'Add Evidence'}
                             </Button>
                         </form>
                     )}
