@@ -1055,6 +1055,13 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                 ) : (
                     <DataTable
                         fillBody
+                        // Column resizing is opt-in per table (disabled
+                        // by default since #823). Re-enabled here only —
+                        // the Evidence Library's wide title/folder/owner
+                        // columns benefit most from user-tuned widths.
+                        // Auto-disables above the virtualization
+                        // threshold, where fixed grid widths apply.
+                        enableColumnResizing
                         data={visibleEvidence}
                         columns={evidenceColumns}
                         getRowId={(ev: any) => ev.id}
