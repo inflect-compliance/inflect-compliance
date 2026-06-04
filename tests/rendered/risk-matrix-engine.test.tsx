@@ -7,14 +7,15 @@
  *     existing tenant's matrix UI.
  *   - NxN dimensions: 4×6 / 7×7 render the right cell count, row /
  *     column count, and per-axis labels.
- *   - Bubble overlay: scenario chips appear with truncation +
- *     "+N more" overflow; tooltip carries the full list.
+ *   - Bubble overlay: a single-risk cell shows its title inline; a
+ *     multi-risk cell collapses to a "N Risks identified" count
+ *     summary (the names live in the hover tooltip).
  *   - Axis swap: data placement stays semantically correct after
  *     toggling — a click on the same DOM position before/after
  *     swap dispatches a different (likelihood, impact) cell to
  *     onCellClick.
- *   - Dense cells stay legible: bubbleLimit caps + overflow chip;
- *     count fallback when `risks` is absent.
+ *   - Dense cells stay legible: no per-title chips, no overflow;
+ *     count summary / fallback when `risks` is absent.
  */
 
 import { fireEvent, render, screen, within } from '@testing-library/react';
@@ -155,7 +156,32 @@ describe('<RiskMatrix> — NxN dimensions', () => {
 });
 
 describe('<RiskMatrix> — bubble overlay', () => {
-    it('shows scenario titles in cells when mode=bubble', () => {
+    it('shows the single risk title inline when a bubble cell holds exactly one risk', () => {
+        render(
+            withTooltip(
+                <RiskMatrix
+                    config={DEFAULT_RISK_MATRIX_CONFIG}
+                    mode="bubble"
+                    cells={[
+                        {
+                            likelihood: 4,
+                            impact: 5,
+                            count: 1,
+                            risks: [{ id: 'r1', title: 'Supply chain breach' }],
+                        },
+                    ]}
+                />,
+            ),
+        );
+        const cell = screen.getByTestId('risk-matrix-cell-4-5');
+        expect(cell.textContent).toContain('Supply chain breach');
+        // A single risk is NOT collapsed to a count summary.
+        expect(
+            within(cell).queryByTestId('risk-matrix-cell-count-summary'),
+        ).toBeNull();
+    });
+
+    it('collapses a cell with multiple risks to a "N Risks identified" summary (names move to the tooltip)', () => {
         render(
             withTooltip(
                 <RiskMatrix
@@ -176,11 +202,17 @@ describe('<RiskMatrix> — bubble overlay', () => {
             ),
         );
         const cell = screen.getByTestId('risk-matrix-cell-5-5');
-        expect(cell.textContent).toContain('Supply chain breach');
-        expect(cell.textContent).toContain('Insider data exfil');
+        // The cell shows the count summary, not the crammed titles.
+        expect(
+            within(cell).getByTestId('risk-matrix-cell-count-summary')
+                .textContent,
+        ).toContain('2 Risks identified');
+        // Individual names are not rendered inside the cell box.
+        expect(cell.textContent).not.toContain('Supply chain breach');
+        expect(cell.textContent).not.toContain('Insider data exfil');
     });
 
-    it('caps visible chips at bubbleLimit and renders a +N overflow chip', () => {
+    it('pluralises the summary and never renders per-title chips for a dense cell', () => {
         const risks = Array.from({ length: 7 }, (_, i) => ({
             id: `r${i}`,
             title: `Risk ${i + 1}`,
@@ -190,19 +222,23 @@ describe('<RiskMatrix> — bubble overlay', () => {
                 <RiskMatrix
                     config={DEFAULT_RISK_MATRIX_CONFIG}
                     mode="bubble"
-                    bubbleLimit={2}
                     cells={[{ likelihood: 5, impact: 5, count: 7, risks }]}
                 />,
             ),
         );
         const cell = screen.getByTestId('risk-matrix-cell-5-5');
-        expect(cell.textContent).toContain('Risk 1');
-        expect(cell.textContent).toContain('Risk 2');
-        // Risk 3..7 hidden in cell, overflow chip surfaces the count.
-        expect(cell.textContent).not.toContain('Risk 3');
         expect(
-            within(cell).getByTestId('risk-matrix-cell-overflow').textContent,
-        ).toContain('+ 5 more');
+            within(cell).getByTestId('risk-matrix-cell-count-summary')
+                .textContent,
+        ).toContain('7 Risks identified');
+        // No per-title chips and no "+N more" overflow chip.
+        expect(cell.textContent).not.toContain('Risk 1');
+        expect(
+            within(cell).queryByTestId('risk-matrix-cell-bubbles'),
+        ).toBeNull();
+        expect(
+            within(cell).queryByTestId('risk-matrix-cell-overflow'),
+        ).toBeNull();
     });
 
     it('falls back to count when risks is absent in bubble mode', () => {

@@ -278,10 +278,12 @@ export function RiskMatrixCell({
 
 // ─── Bubble overlay ─────────────────────────────────────────────────
 //
-// Lays the visible risks as truncated chips stacked vertically inside
-// the cell. Caps at `limit`; everything beyond becomes a `+N more`
-// overflow chip. Tooltip carries the full list, so the visual is a
-// scannable hint, not the source of truth.
+// A cell holding ONE risk shows that risk's (truncated) title inline —
+// a scannable hint. A cell holding TWO OR MORE risks collapses to a
+// "N Risks identified" count summary: stacking multiple truncated
+// titles inside the ~28px cell overlapped and clipped them (the broken
+// box this replaces). Either way the full list of names lives in the
+// hover/focus tooltip that `<RiskMatrixCell>` renders.
 
 function BubbleOverlay({
     risks,
@@ -294,6 +296,22 @@ function BubbleOverlay({
     limit: number;
     fg: string;
 }) {
+    // `count` is authoritative; `risks.length` guards the (pathological)
+    // case where the two disagree so we never cram a multi-risk cell.
+    const total = Math.max(count, risks.length);
+
+    if (total > 1) {
+        return (
+            <span
+                className="absolute inset-0 flex items-center justify-center px-0.5 text-center text-[10px] font-semibold leading-tight"
+                style={{ color: fg }}
+                data-testid="risk-matrix-cell-count-summary"
+            >
+                {total} {pluralize(total, 'Risk')} identified
+            </span>
+        );
+    }
+
     // Defensive: when only `count` is supplied (no per-risk data),
     // fall back to the count number. This keeps the overlay honest
     // when the data layer hasn't been migrated to ship risks per cell.
@@ -307,8 +325,9 @@ function BubbleOverlay({
             </span>
         );
     }
+
+    // Exactly one risk with data — show its title inline.
     const visible = risks.slice(0, limit);
-    const overflow = Math.max(0, risks.length - visible.length);
     return (
         <div
             className="absolute inset-0 flex flex-col items-stretch justify-center gap-[2px] overflow-hidden p-1"
@@ -324,15 +343,6 @@ function BubbleOverlay({
                     {r.title}
                 </span>
             ))}
-            {overflow > 0 && (
-                <span
-                    className="truncate rounded-sm bg-white/10 px-1 py-[1px] text-[9px] font-medium leading-tight"
-                    style={{ color: fg }}
-                    data-testid="risk-matrix-cell-overflow"
-                >
-                    + {overflow} more
-                </span>
-            )}
         </div>
     );
 }
