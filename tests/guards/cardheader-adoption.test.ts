@@ -26,11 +26,11 @@ interface CardHeaderEntry {
 
 const CARDHEADER_PAGES: CardHeaderEntry[] = [
     // ── Adopted ──
-    {
-        file: "src/app/t/[tenantSlug]/(app)/risks/[riskId]/page.tsx",
-        adopted: true,
-        note: "Risks detail — first proof-of-pattern CardHeader adopter (Roadmap-3 PR-5).",
-    },
+    // Risks detail (risks/[riskId]) was the first proof-of-pattern
+    // adopter, but its only CardHeader sat on an Overview-tab
+    // Traceability section that was removed — risk traceability now
+    // lives solely on the dedicated Traceability tab. De-registered
+    // here when that section was dropped.
     {
         file: "src/app/t/[tenantSlug]/(app)/audits/AuditsClient.tsx",
         adopted: true,

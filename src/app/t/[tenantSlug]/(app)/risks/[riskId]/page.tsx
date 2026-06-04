@@ -15,7 +15,6 @@ import LinkedTasksPanel from '@/components/LinkedTasksPanel';
 import { EmptyState } from '@/components/ui/empty-state';
 import { AsidePanel } from '@/components/ui/aside-panel';
 import { Eyebrow } from '@/components/ui/typography';
-import { CardHeader } from '@/components/ui/card-header';
 import { KPIStat } from '@/components/ui/metric';
 import { MetaStrip } from '@/components/ui/meta-strip';
 import {
@@ -41,16 +40,10 @@ import { Button } from '@/components/ui/button';
 import { Pen2 } from '@/components/ui/icons/nucleo';
 import { Tooltip } from '@/components/ui/tooltip';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
-import { UserCombobox, useTenantMembers } from '@/components/ui/user-combobox';
-import { DatePicker } from '@/components/ui/date-picker/date-picker';
-import {
-    parseYMD,
-    startOfUtcDay,
-    toYMD,
-} from '@/components/ui/date-picker/date-utils';
-import { NumberStepper } from '@/components/ui/number-stepper';
+import { useTenantMembers } from '@/components/ui/user-combobox';
 import { cn } from '@dub/utils';
 import { cardVariants } from '@/components/ui/card';
+import { EditRiskModal, type EditRiskForm } from './_modals/EditRiskModal';
 
 const TraceabilityPanel = dynamic(() => import('@/components/TraceabilityPanel'), {
     loading: () => <SkeletonCard lines={3} />,
@@ -152,7 +145,7 @@ export default function RiskDetailPage() {
         { key: 'activity', label: 'Activity' },
         { key: 'tests', label: 'Tests' },
     ];
-    const [editForm, setEditForm] = useState<Partial<Risk>>({});
+    const [editForm, setEditForm] = useState<EditRiskForm>({});
 
     const fetchRisk = useCallback(async () => {
         setLoading(true);
@@ -190,7 +183,8 @@ export default function RiskDetailPage() {
         setEditing(true);
     };
 
-    const handleSave = async () => {
+    const handleSave = async (e?: React.FormEvent) => {
+        e?.preventDefault();
         setSaving(true);
         setError(null);
         try {
@@ -251,9 +245,6 @@ export default function RiskDetailPage() {
             setError(err.message);
         }
     };
-
-    const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
-        setEditForm(f => ({ ...f, [field]: e.target.value }));
 
     const breadcrumbs = [
         { label: 'Dashboard', href: href('/dashboard') },
@@ -347,31 +338,16 @@ export default function RiskDetailPage() {
                 />
             }
             actions={
-                canWrite && !editing && (
-                    <>
-                        {/* B2 — icon-only edit affordance, canonical
-                            unified pattern across detail pages. */}
-                        <Tooltip content="Edit risk">
-                            <Button
-                                variant="secondary"
-                                size="icon"
-                                onClick={startEditing}
-                                id="edit-risk-btn"
-                                aria-label="Edit risk"
-                            >
-                                <Pen2 className="size-4" />
-                            </Button>
-                        </Tooltip>
-                        <Combobox
-                            hideSearch
-                            id="risk-status-select"
-                            selected={STATUS_OPTIONS.find(o => o.value === risk.status) ?? null}
-                            setSelected={(opt) => { if (opt) handleStatusChange(opt.value); }}
-                            options={STATUS_OPTIONS}
-                            placeholder="Status"
-                            buttonProps={{ className: 'text-sm' }}
-                        />
-                    </>
+                canWrite && (
+                    <Combobox
+                        hideSearch
+                        id="risk-status-select"
+                        selected={STATUS_OPTIONS.find(o => o.value === risk.status) ?? null}
+                        setSelected={(opt) => { if (opt) handleStatusChange(opt.value); }}
+                        options={STATUS_OPTIONS}
+                        placeholder="Status"
+                        buttonProps={{ className: 'text-sm' }}
+                    />
                 )
             }
             // Right-rail roadmap Phase 1 — Linked Tasks rides the
@@ -465,237 +441,102 @@ export default function RiskDetailPage() {
 
             {activeTab === 'overview' && (
                 <>
-            {/* Detail / Edit Card */}
+            {/* Detail Card */}
             <div className={cn(cardVariants(), 'space-y-default')} id="risk-detail">
-                {editing ? (
-                    /* ─── Edit Mode ─── */
-                    <>
-                        <div>
-                            <label className="input-label">Title *</label>
-                            <input className="input" value={editForm.title ?? ''} onChange={set('title')} />
-                        </div>
-                        <div>
-                            <label className="input-label">Description</label>
-                            <textarea className="input min-h-[100px]" value={editForm.description ?? ''} onChange={set('description')} />
-                        </div>
-                        <div className="grid grid-cols-2 gap-default">
-                            <div>
-                                <label className="input-label">Category</label>
-                                <Combobox
-                                    hideSearch
-                                    selected={CATEGORY_OPTIONS.find(o => o.value === (editForm.category ?? '')) ?? null}
-                                    setSelected={(opt) => setEditForm(f => ({ ...f, category: opt?.value ?? '' }))}
-                                    options={CATEGORY_OPTIONS}
-                                    placeholder="— Select —"
-                                    matchTriggerWidth
-                                />
-                            </div>
-                            <div>
-                                <label className="input-label">Treatment Owner</label>
-                                <input className="input" value={editForm.treatmentOwner ?? ''} onChange={set('treatmentOwner')} />
-                            </div>
-                            <div>
-                                <label className="input-label">Assigned to</label>
-                                <UserCombobox
-                                    tenantSlug={tenant.tenantSlug}
-                                    selectedId={editForm.ownerUserId || null}
-                                    onChange={(userId) =>
-                                        setEditForm((f) => ({ ...f, ownerUserId: userId ?? '' }))
-                                    }
-                                    matchTriggerWidth
-                                    id="risk-assignee"
-                                    placeholder="Unassigned"
-                                />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-3 gap-default">
-                            {/* Epic 60 — NumberStepper replaces raw number inputs
-                                on the ISO 27005 1..5 likelihood/impact scale.
-                                Matches the Assets CIA fields for consistency. */}
-                            <div>
-                                <label className="input-label" htmlFor="risk-likelihood">Likelihood</label>
-                                <NumberStepper
-                                    id="risk-likelihood"
-                                    size="sm"
-                                    ariaLabel="Likelihood (1–5)"
-                                    min={1}
-                                    max={5}
-                                    value={editForm.likelihood ?? 3}
-                                    onChange={(v) => setEditForm(f => ({ ...f, likelihood: v }))}
-                                />
-                            </div>
-                            <div>
-                                <label className="input-label" htmlFor="risk-impact">Impact</label>
-                                <NumberStepper
-                                    id="risk-impact"
-                                    size="sm"
-                                    ariaLabel="Impact (1–5)"
-                                    min={1}
-                                    max={5}
-                                    value={editForm.impact ?? 3}
-                                    onChange={(v) => setEditForm(f => ({ ...f, impact: v }))}
-                                />
-                            </div>
-                            <div>
-                                <label className="input-label">Score</label>
-                                <div className="input bg-bg-subtle flex items-center text-lg font-bold">
-                                    {(editForm.likelihood ?? 3) * (editForm.impact ?? 3)}
-                                </div>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-default">
-                            <div>
-                                <label className="input-label">Treatment</label>
-                                <Combobox
-                                    hideSearch
-                                    selected={TREATMENT_OPTIONS.find(o => o.value === (editForm.treatment ?? '')) ?? null}
-                                    setSelected={(opt) => setEditForm(f => ({ ...f, treatment: opt?.value ?? '' }))}
-                                    options={TREATMENT_OPTIONS}
-                                    placeholder="—"
-                                    matchTriggerWidth
-                                />
-                            </div>
-                            <div>
-                                <label className="input-label" htmlFor="risk-next-review-inline">Next Review</label>
-                                {/* Epic 58 — shared DatePicker; `editForm.nextReviewAt`
-                                    stays a YMD string for the PATCH payload. */}
-                                <DatePicker
-                                    id="risk-next-review-inline"
-                                    className="w-full"
-                                    placeholder="Pick date"
-                                    clearable
-                                    align="start"
-                                    value={parseYMD(editForm.nextReviewAt ?? '')}
-                                    onChange={(next) =>
-                                        setEditForm((f) => ({
-                                            ...f,
-                                            nextReviewAt: toYMD(next) ?? '',
-                                        }))
-                                    }
-                                    disabledDays={{
-                                        before: startOfUtcDay(new Date()),
-                                    }}
-                                    aria-label="Next review date"
-                                />
-                            </div>
-                        </div>
-                        <div>
-                            <label className="input-label">Treatment Notes</label>
-                            <textarea className="input min-h-[80px]" value={editForm.treatmentNotes ?? ''} onChange={set('treatmentNotes')} />
-                        </div>
-                        <div className="flex gap-compact pt-2">
-                            <Button variant="primary" onClick={handleSave} disabled={saving} loading={saving} id="save-risk-btn">
-                                Save
+                {canWrite && (
+                    <div className="flex justify-end -mt-1 -mb-2">
+                        {/* B2 — icon-only edit affordance; opens the Edit
+                            Risk modal, mirroring the control detail page. */}
+                        <Tooltip content="Edit risk">
+                            <Button
+                                variant="secondary"
+                                size="icon"
+                                onClick={startEditing}
+                                id="edit-risk-btn"
+                                aria-label="Edit risk"
+                            >
+                                <Pen2 className="size-4" />
                             </Button>
-                            <Button variant="secondary" onClick={() => setEditing(false)}>Cancel</Button>
-                        </div>
-                    </>
-                ) : (
-                    /* ─── Read Mode ─── */
-                    <>
-                        {risk.description && (
-                            <div>
-                                <Eyebrow>Description</Eyebrow>
-                                <p className="text-sm text-content-default whitespace-pre-wrap">{risk.description}</p>
-                            </div>
-                        )}
-
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
-                            <div>
-                                <Eyebrow>Category</Eyebrow>
-                                <p className="text-sm">{risk.category || '—'}</p>
-                            </div>
-                            <div>
-                                <Eyebrow>Treatment Owner</Eyebrow>
-                                <p className="text-sm">{risk.treatmentOwner || '—'}</p>
-                            </div>
-                            <div>
-                                <Eyebrow>Treatment</Eyebrow>
-                                <p className="text-sm">{risk.treatment || 'Untreated'}</p>
-                            </div>
-                            <div>
-                                <Eyebrow>Target Date</Eyebrow>
-                                <p className="text-sm">{risk.targetDate ? formatDate(risk.targetDate) : '—'}</p>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-default">
-                            <div className={cardVariants({ density: 'compact' })}>
-                                <KPIStat value={risk.likelihood} label="Likelihood" size="sm" />
-                            </div>
-                            <div className={cardVariants({ density: 'compact' })}>
-                                <KPIStat value={risk.impact} label="Impact" size="sm" />
-                            </div>
-                            <div className={cardVariants({ density: 'compact' })}>
-                                <KPIStat
-                                    value={risk.inherentScore}
-                                    label="Inherent Score"
-                                    size="sm"
-                                    tone={risk.inherentScore > 12 ? 'critical' : risk.inherentScore > 5 ? 'attention' : 'success'}
-                                />
-                            </div>
-                        </div>
-
-                        {risk.threat && (
-                            <div>
-                                <Eyebrow>Threat</Eyebrow>
-                                <p className="text-sm text-content-default">{risk.threat}</p>
-                            </div>
-                        )}
-                        {risk.vulnerability && (
-                            <div>
-                                <Eyebrow>Vulnerability</Eyebrow>
-                                <p className="text-sm text-content-default whitespace-pre-wrap">{risk.vulnerability}</p>
-                            </div>
-                        )}
-                        {risk.treatmentNotes && (
-                            <div>
-                                <Eyebrow>Treatment Notes</Eyebrow>
-                                <p className="text-sm text-content-default whitespace-pre-wrap">{risk.treatmentNotes}</p>
-                            </div>
-                        )}
-
-                        <div className="grid grid-cols-2 gap-default border-t border-border-subtle pt-4">
-                            <div>
-                                <Eyebrow>Next Review</Eyebrow>
-                                <p className={`text-sm ${overdue ? 'text-content-error font-semibold' : ''}`}>
-                                    {risk.nextReviewAt
-                                        ? `${overdue ? '! ' : ''}${formatDate(risk.nextReviewAt)}`
-                                        : '—'
-                                    }
-                                </p>
-                            </div>
-                            <div>
-                                <Eyebrow>Created</Eyebrow>
-                                <p className="text-sm text-content-muted">{formatDate(risk.createdAt)}</p>
-                            </div>
-                        </div>
-                    </>
+                        </Tooltip>
+                    </div>
                 )}
-            </div>
+                {risk.description && (
+                    <div>
+                        <Eyebrow>Description</Eyebrow>
+                        <p className="text-sm text-content-default whitespace-pre-wrap">{risk.description}</p>
+                    </div>
+                )}
 
-            {/* Traceability */}
-            <div className={cardVariants()}>
-                {/* Roadmap-3 PR-5 — `<CardHeader>` replaces the
-                    inline level=2 heading. Card heading level
-                    drops to 3 (the canonical for cards inside
-                    pages) and the rhythm matches every other
-                    card-header instance. */}
-                <CardHeader
-                    title={
-                        <span className="inline-flex items-center gap-tight">
-                            <AppIcon name="link" size={18} /> Traceability
-                        </span>
-                    }
-                    className="mb-default"
-                />
-                <TraceabilityPanel
-                    apiBase={apiUrl('')}
-                    entityType="risk"
-                    entityId={riskId}
-                    canWrite={canWrite}
-                    tenantHref={href}
-                />
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
+                    <div>
+                        <Eyebrow>Category</Eyebrow>
+                        <p className="text-sm">{risk.category || '—'}</p>
+                    </div>
+                    <div>
+                        <Eyebrow>Treatment Owner</Eyebrow>
+                        <p className="text-sm">{risk.treatmentOwner || '—'}</p>
+                    </div>
+                    <div>
+                        <Eyebrow>Treatment</Eyebrow>
+                        <p className="text-sm">{risk.treatment || 'Untreated'}</p>
+                    </div>
+                    <div>
+                        <Eyebrow>Target Date</Eyebrow>
+                        <p className="text-sm">{risk.targetDate ? formatDate(risk.targetDate) : '—'}</p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-default">
+                    <div className={cardVariants({ density: 'compact' })}>
+                        <KPIStat value={risk.likelihood} label="Likelihood" size="sm" />
+                    </div>
+                    <div className={cardVariants({ density: 'compact' })}>
+                        <KPIStat value={risk.impact} label="Impact" size="sm" />
+                    </div>
+                    <div className={cardVariants({ density: 'compact' })}>
+                        <KPIStat
+                            value={risk.inherentScore}
+                            label="Inherent Score"
+                            size="sm"
+                            tone={risk.inherentScore > 12 ? 'critical' : risk.inherentScore > 5 ? 'attention' : 'success'}
+                        />
+                    </div>
+                </div>
+
+                {risk.threat && (
+                    <div>
+                        <Eyebrow>Threat</Eyebrow>
+                        <p className="text-sm text-content-default">{risk.threat}</p>
+                    </div>
+                )}
+                {risk.vulnerability && (
+                    <div>
+                        <Eyebrow>Vulnerability</Eyebrow>
+                        <p className="text-sm text-content-default whitespace-pre-wrap">{risk.vulnerability}</p>
+                    </div>
+                )}
+                {risk.treatmentNotes && (
+                    <div>
+                        <Eyebrow>Treatment Notes</Eyebrow>
+                        <p className="text-sm text-content-default whitespace-pre-wrap">{risk.treatmentNotes}</p>
+                    </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-default border-t border-border-subtle pt-4">
+                    <div>
+                        <Eyebrow>Next Review</Eyebrow>
+                        <p className={`text-sm ${overdue ? 'text-content-error font-semibold' : ''}`}>
+                            {risk.nextReviewAt
+                                ? `${overdue ? '! ' : ''}${formatDate(risk.nextReviewAt)}`
+                                : '—'
+                            }
+                        </p>
+                    </div>
+                    <div>
+                        <Eyebrow>Created</Eyebrow>
+                        <p className="text-sm text-content-muted">{formatDate(risk.createdAt)}</p>
+                    </div>
+                </div>
             </div>
 
             {/* Epic G-7 — Risk Treatment Plan card. Owner-choices left
@@ -713,6 +554,24 @@ export default function RiskDetailPage() {
                 />
             </div>
                 </>
+            )}
+
+            {/* Edit Risk modal — opened by the Overview-tab Edit button.
+                Mirrors the control detail page's EditControlModal. */}
+            {canWrite && (
+                <EditRiskModal
+                    open={editing}
+                    setOpen={setEditing}
+                    form={editForm}
+                    setForm={setEditForm}
+                    saving={saving}
+                    error={error}
+                    tenantSlug={tenant.tenantSlug}
+                    categoryOptions={CATEGORY_OPTIONS}
+                    treatmentOptions={TREATMENT_OPTIONS}
+                    onCancel={() => setEditing(false)}
+                    onSubmit={handleSave}
+                />
             )}
         </EntityDetailLayout>
     );

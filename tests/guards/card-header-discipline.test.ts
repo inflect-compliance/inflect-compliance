@@ -34,8 +34,14 @@ const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf-8');
 
 const PRIMITIVE_PATH = 'src/components/ui/card-header.tsx';
 
+// The risks detail page was the original proof-of-pattern adopter,
+// but its CardHeader sat on an Overview-tab Traceability section that
+// has since been removed (risk traceability now lives only on the
+// dedicated Traceability tab). The controls detail page is a stable
+// CardHeader adopter (Linked Work Items section header, R9-PR2) and
+// keeps this discipline check anchored to a real mount site.
 const ADOPTERS = [
-    'src/app/t/[tenantSlug]/(app)/risks/[riskId]/page.tsx',
+    'src/app/t/[tenantSlug]/(app)/controls/[controlId]/page.tsx',
 ];
 
 describe('CardHeader discipline (Roadmap-3 PR-5)', () => {
