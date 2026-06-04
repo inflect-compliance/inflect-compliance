@@ -1181,26 +1181,31 @@ export default function ControlDetailPage() {
                     {showEvidenceForm && permissions.canWrite && (
                         <form onSubmit={addEvidence} className={cn(cardVariants({ density: 'compact' }), 'space-y-default')} id="control-evidence-form">
                             <div className="space-y-compact">
-                                <label className="block text-xs font-medium text-content-muted" htmlFor="control-file-input">Upload a file</label>
-                                <input
-                                    ref={fileUploadRef}
-                                    type="file"
-                                    className="input w-full file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-[var(--brand-default)] file:text-content-emphasis hover:file:bg-[var(--brand-default)]"
-                                    onChange={e => setFileToUpload(e.target.files?.[0] || null)}
-                                    id="control-file-input"
-                                    accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.csv,.txt,.doc,.docx,.xlsx,.xls,.json,.zip"
-                                />
-                                {fileToUpload && (
-                                    <p className="text-xs text-content-muted">{fileToUpload.name} ({fileToUpload.size < 1048576 ? `${(fileToUpload.size / 1024).toFixed(1)} KB` : `${(fileToUpload.size / 1048576).toFixed(1)} MB`})</p>
-                                )}
-                                <input
-                                    type="text"
-                                    className="input w-full"
-                                    placeholder="File title (defaults to filename)"
-                                    value={fileUploadTitle}
-                                    onChange={e => setFileUploadTitle(e.target.value)}
-                                    id="control-upload-title"
-                                />
+                                <div>
+                                    <label className="mb-1 block text-xs font-medium text-content-muted" htmlFor="control-upload-title">Title</label>
+                                    <input
+                                        type="text"
+                                        className="input w-full"
+                                        placeholder="Title (defaults to filename)"
+                                        value={fileUploadTitle}
+                                        onChange={e => setFileUploadTitle(e.target.value)}
+                                        id="control-upload-title"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="mb-1 block text-xs font-medium text-content-muted" htmlFor="control-file-input">Upload a file</label>
+                                    <input
+                                        ref={fileUploadRef}
+                                        type="file"
+                                        className="input w-full file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-[var(--brand-default)] file:text-content-emphasis hover:file:bg-[var(--brand-default)]"
+                                        onChange={e => setFileToUpload(e.target.files?.[0] || null)}
+                                        id="control-file-input"
+                                        accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.csv,.txt,.doc,.docx,.xlsx,.xls,.json,.zip"
+                                    />
+                                    {fileToUpload && (
+                                        <p className="mt-1 text-xs text-content-muted">{fileToUpload.name} ({fileToUpload.size < 1048576 ? `${(fileToUpload.size / 1024).toFixed(1)} KB` : `${(fileToUpload.size / 1048576).toFixed(1)} MB`})</p>
+                                    )}
+                                </div>
                             </div>
                             <div className="space-y-compact border-t border-border-subtle pt-3">
                                 <label className="block text-xs font-medium text-content-muted" htmlFor="evidence-url-input">…or link a URL</label>
