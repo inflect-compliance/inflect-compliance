@@ -2,7 +2,7 @@
 
 import { formatDate, formatDateTime } from '@/lib/format-date';
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
@@ -30,6 +30,13 @@ import {
     TASK_SEVERITY_VARIANT,
 } from '@/app-layer/domain/entity-status-mapping';
 import { cardVariants } from '@/components/ui/card';
+// Shared evidence sub-table — lives under the control detail route's
+// `_tabs/` (kept there so existing guard exemptions + a unit test keyed
+// on that path stay valid). Imported here via the `@/app` alias.
+import { EvidenceSubTable } from '@/app/t/[tenantSlug]/(app)/controls/[controlId]/_tabs/EvidenceSubTable';
+import { EditTaskModal, type EditTaskForm } from './_modals/EditTaskModal';
+import { toYMD } from '@/components/ui/date-picker/date-utils';
+import { Pen2 } from '@/components/ui/icons/nucleo';
 import { cn } from '@/lib/cn';
 
 // Polish PR-1 — STATUS_BADGE / SEVERITY_BADGE moved to shared
@@ -57,7 +64,7 @@ const RELATION_CB_OPTIONS: ComboboxOption[] = RELATION_OPTIONS.map(r => ({ value
 const SELECTABLE_STATUSES = ['OPEN', 'TRIAGED', 'IN_PROGRESS', 'BLOCKED', 'CLOSED', 'CANCELED'];
 const TASK_STATUS_CB_OPTIONS: ComboboxOption[] = SELECTABLE_STATUSES.map((val) => ({ value: val, label: STATUS_LABELS[val] }));
 
-type Tab = 'overview' | 'links' | 'comments' | 'activity';
+type Tab = 'overview' | 'evidence' | 'links' | 'comments' | 'activity';
 
 const FINDING_SOURCE_LABELS: Record<string, string> = {
     INTERNAL: 'Internal', EXTERNAL_AUDITOR: 'External Auditor', PEN_TEST: 'Pen Test', INCIDENT: 'Incident',
@@ -96,9 +103,28 @@ export default function TaskDetailPage() {
     const [linkRelation, setLinkRelation] = useState('RELATES_TO');
     const [savingLink, setSavingLink] = useState(false);
 
+    // Evidence form state — mirrors the control "+ Evidence" form: a
+    // single form that either uploads a file OR links a URL.
+    const [showEvidenceForm, setShowEvidenceForm] = useState(false);
+    const [evidenceUrl, setEvidenceUrl] = useState('');
+    const [evidenceNote, setEvidenceNote] = useState('');
+    const [fileToUpload, setFileToUpload] = useState<File | null>(null);
+    const [fileUploadTitle, setFileUploadTitle] = useState('');
+    const [evidenceError, setEvidenceError] = useState('');
+    const [savingEvidence, setSavingEvidence] = useState(false);
+    const fileUploadRef = useRef<HTMLInputElement>(null);
+
     // Comment form state.
     const [commentBody, setCommentBody] = useState('');
     const [savingComment, setSavingComment] = useState(false);
+
+    // Edit-task modal state — mirrors the control detail edit flow.
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editForm, setEditForm] = useState<EditTaskForm>({
+        title: '', description: '', type: 'TASK', severity: 'MEDIUM', priority: 'P2', dueAt: '',
+    });
+    const [savingEdit, setSavingEdit] = useState(false);
+    const [editError, setEditError] = useState('');
 
     const canComment = role !== 'READER';
 
@@ -124,6 +150,12 @@ export default function TaskDetailPage() {
     );
     const links = linksQuery.data ?? [];
     const linksLoading = linksQuery.isLoading;
+
+    // Task Evidence tab — same `{ links, evidence }` payload the control
+    // evidence tab fetches, so the shared <EvidenceSubTable> renders it.
+    const evidenceQuery = useTenantSWR<{ links: any[]; evidence: any[] }>(
+        taskId && tab === 'evidence' ? `/tasks/${taskId}/evidence` : null,
+    );
 
     const commentsQuery = useTenantSWR<any[]>(
         taskId && tab === 'comments' ? `/tasks/${taskId}/comments` : null,
@@ -262,6 +294,155 @@ export default function TaskDetailPage() {
         });
     };
 
+    const resetEvidenceForm = () => {
+        setEvidenceUrl('');
+        setEvidenceNote('');
+        setFileToUpload(null);
+        setFileUploadTitle('');
+        setEvidenceError('');
+        if (fileUploadRef.current) fileUploadRef.current.value = '';
+        setShowEvidenceForm(false);
+    };
+
+    // Unified "+ Evidence" submit — mirrors the control evidence form. A
+    // chosen file uploads via /evidence/uploads (FileRecord + Evidence
+    // tagged with this taskId); otherwise a non-empty URL links a LINK
+    // evidence row to the task. Both land in this task's Evidence tab
+    // AND the Evidence Library.
+    const addEvidence = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setEvidenceError('');
+
+        if (fileToUpload) {
+            setSavingEvidence(true);
+            try {
+                const formData = new FormData();
+                formData.append('file', fileToUpload);
+                if (fileUploadTitle) formData.append('title', fileUploadTitle);
+                formData.append('taskId', taskId);
+                const res = await fetch(apiUrl('/evidence/uploads'), {
+                    method: 'POST',
+                    body: formData,
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({ error: 'Upload failed' }));
+                    throw new Error(err.error || err.message || 'Upload failed');
+                }
+                resetEvidenceForm();
+                await Promise.all([evidenceQuery.mutate(), taskQuery.mutate()]);
+            } catch (err: unknown) {
+                setEvidenceError(err instanceof Error ? err.message : 'Upload failed');
+            } finally {
+                setSavingEvidence(false);
+            }
+            return;
+        }
+
+        if (!evidenceUrl.trim()) {
+            setEvidenceError('Choose a file to upload, or enter an evidence URL.');
+            return;
+        }
+        setSavingEvidence(true);
+        try {
+            const res = await fetch(apiUrl(`/tasks/${taskId}/evidence`), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: evidenceUrl.trim(), note: evidenceNote || undefined }),
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error || err.message || 'Failed to link evidence');
+            }
+            resetEvidenceForm();
+            await Promise.all([evidenceQuery.mutate(), taskQuery.mutate()]);
+        } catch (err: unknown) {
+            setEvidenceError(err instanceof Error ? err.message : 'Failed to link evidence');
+        } finally {
+            setSavingEvidence(false);
+        }
+    };
+
+    // Epic 67 — delayed-commit evidence removal (detach Evidence.taskId).
+    // Optimistic SWR filter so the row disappears immediately; undo
+    // restores it, commit-failure rolls back.
+    const removeEvidence = (evidenceId: string) => {
+        const previous = evidenceQuery.data;
+        void evidenceQuery.mutate(
+            previous
+                ? { ...previous, evidence: (previous.evidence ?? []).filter((ev: any) => ev.id !== evidenceId) }
+                : previous,
+            { revalidate: false },
+        );
+        triggerUndoToast({
+            message: 'Evidence removed',
+            undoMessage: 'Undo',
+            action: async () => {
+                const res = await fetch(
+                    apiUrl(`/tasks/${taskId}/evidence/${evidenceId}`),
+                    { method: 'DELETE' },
+                );
+                if (!res.ok) throw new Error('Remove evidence failed');
+                await Promise.all([evidenceQuery.mutate(), taskQuery.mutate()]);
+            },
+            undoAction: () => {
+                void evidenceQuery.mutate(previous, { revalidate: false });
+            },
+            onError: () => {
+                void evidenceQuery.mutate(previous, { revalidate: false });
+            },
+        });
+    };
+
+    const openEditModal = () => {
+        if (!task) return;
+        setEditError('');
+        setEditForm({
+            title: task.title ?? '',
+            description: task.description ?? '',
+            type: task.type ?? 'TASK',
+            severity: task.severity ?? 'MEDIUM',
+            priority: task.priority ?? 'P2',
+            dueAt: task.dueAt ? toYMD(new Date(task.dueAt)) ?? '' : '',
+        });
+        setShowEditModal(true);
+    };
+
+    const handleEditSave = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSavingEdit(true);
+        setEditError('');
+        try {
+            const res = await fetch(apiUrl(`/tasks/${taskId}`), {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: editForm.title,
+                    description: editForm.description || null,
+                    type: editForm.type,
+                    severity: editForm.severity,
+                    priority: editForm.priority,
+                    dueAt: editForm.dueAt
+                        ? new Date(editForm.dueAt).toISOString()
+                        : null,
+                }),
+            });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(
+                    (typeof data?.error === 'string' && data.error) ||
+                        data?.message ||
+                        'Failed to save task',
+                );
+            }
+            setShowEditModal(false);
+            await taskQuery.mutate();
+        } catch (err) {
+            setEditError(err instanceof Error ? err.message : 'Failed to save task');
+        } finally {
+            setSavingEdit(false);
+        }
+    };
+
     const addComment = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!commentBody.trim()) return;
@@ -307,7 +488,8 @@ export default function TaskDetailPage() {
 
     const tabs: { key: Tab; label: string; count?: number }[] = [
         { key: 'overview', label: 'Overview' },
-        { key: 'links', label: 'Evidence', count: task._count?.links ?? links.length },
+        { key: 'evidence', label: 'Evidence', count: evidenceQuery.data?.evidence?.length ?? task._count?.evidence },
+        { key: 'links', label: 'Links', count: task._count?.links ?? links.length },
         { key: 'comments', label: 'Comments', count: task._count?.comments ?? comments.length },
         { key: 'activity', label: 'Activity' },
     ];
@@ -426,6 +608,23 @@ export default function TaskDetailPage() {
             {/* Overview Tab */}
             {tab === 'overview' && (
                 <div className={cn(cardVariants(), 'space-y-default')}>
+                    {/* Overview header with Edit button — mirrors the
+                        control detail overview edit affordance. */}
+                    {permissions.canWrite && (
+                        <div className="flex justify-end -mt-1 -mb-2">
+                            <Button
+                                variant="secondary"
+                                size="icon"
+                                onClick={openEditModal}
+                                data-testid="task-edit-button"
+                                id="task-edit-button"
+                                aria-label="Edit task"
+                                title="Edit task"
+                            >
+                                <Pen2 className="size-4" />
+                            </Button>
+                        </div>
+                    )}
                     <div className="grid grid-cols-2 gap-section">
                         <div className="col-span-2">
                             <span className="text-xs text-content-subtle uppercase">Description</span>
@@ -498,6 +697,109 @@ export default function TaskDetailPage() {
                                 )}
                             </div>
                         </div>
+                    )}
+                </div>
+            )}
+
+            {/* Evidence Tab — same look + behaviour as the control
+                Evidence tab: upload a file OR link a URL, both scoped to
+                this task via Evidence.taskId. */}
+            {tab === 'evidence' && (
+                <div className="space-y-default">
+                    {permissions.canWrite && (
+                        <div className="flex justify-end">
+                            <Button
+                                variant="primary"
+                                onClick={() => setShowEvidenceForm(!showEvidenceForm)}
+                                id="add-evidence-btn"
+                            >
+                                Add Evidence
+                            </Button>
+                        </div>
+                    )}
+                    {showEvidenceForm && permissions.canWrite && (
+                        <form
+                            onSubmit={addEvidence}
+                            className={cn(cardVariants({ density: 'compact' }), 'space-y-compact')}
+                        >
+                            {evidenceError && (
+                                <div
+                                    className="rounded-lg border border-border-error bg-bg-error px-3 py-2 text-sm text-content-error"
+                                    role="alert"
+                                    id="task-evidence-error"
+                                >
+                                    {evidenceError}
+                                </div>
+                            )}
+                            <FormField label="Upload file">
+                                <input
+                                    ref={fileUploadRef}
+                                    type="file"
+                                    id="evidence-file-input"
+                                    className="block w-full text-sm text-content-muted file:mr-3 file:rounded-md file:border-0 file:bg-bg-muted file:px-3 file:py-1.5 file:text-sm file:text-content-default"
+                                    onChange={(e) => {
+                                        const f = e.target.files?.[0] ?? null;
+                                        setFileToUpload(f);
+                                        if (f && !fileUploadTitle) setFileUploadTitle(f.name);
+                                    }}
+                                />
+                            </FormField>
+                            {fileToUpload && (
+                                <FormField label="Title">
+                                    <input
+                                        className="input w-full"
+                                        value={fileUploadTitle}
+                                        onChange={(e) => setFileUploadTitle(e.target.value)}
+                                        placeholder="Evidence title"
+                                    />
+                                </FormField>
+                            )}
+                            <div className="text-xs text-content-subtle">
+                                — or link a URL —
+                            </div>
+                            <FormField label="Evidence URL">
+                                <input
+                                    className="input w-full"
+                                    id="evidence-url-input"
+                                    value={evidenceUrl}
+                                    onChange={(e) => setEvidenceUrl(e.target.value)}
+                                    placeholder="https://…"
+                                    disabled={!!fileToUpload}
+                                />
+                            </FormField>
+                            <FormField label="Note">
+                                <input
+                                    className="input w-full"
+                                    value={evidenceNote}
+                                    onChange={(e) => setEvidenceNote(e.target.value)}
+                                    placeholder="Optional note"
+                                    disabled={!!fileToUpload}
+                                />
+                            </FormField>
+                            <Button
+                                type="submit"
+                                variant="primary"
+                                disabled={savingEvidence}
+                                id="submit-evidence-btn"
+                            >
+                                {savingEvidence ? 'Saving…' : 'Add Evidence'}
+                            </Button>
+                        </form>
+                    )}
+                    {evidenceQuery.error ? (
+                        <InlineEmptyState
+                            title="Couldn't load evidence"
+                            description="Something went wrong fetching this task's evidence. Reload the page to try again."
+                        />
+                    ) : (
+                        <EvidenceSubTable
+                            data={evidenceQuery.data}
+                            loading={evidenceQuery.isLoading && !evidenceQuery.data}
+                            canWrite={!!permissions.canWrite}
+                            onUnlink={() => {}}
+                            onUnlinkEvidence={removeEvidence}
+                            tenantHref={tenantHref}
+                        />
                     )}
                 </div>
             )}
@@ -711,6 +1013,19 @@ export default function TaskDetailPage() {
                     </Button>
                 </Modal.Actions>
             </Modal>
+
+            {/* Edit-task modal — page owns state + mutation, the modal
+                is a thin renderer (control-detail parity). */}
+            <EditTaskModal
+                open={showEditModal}
+                setOpen={setShowEditModal}
+                form={editForm}
+                setForm={setEditForm}
+                saving={savingEdit}
+                error={editError}
+                onCancel={() => setShowEditModal(false)}
+                onSubmit={handleEditSave}
+            />
         </EntityDetailLayout>
     );
 }

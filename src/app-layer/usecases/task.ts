@@ -574,6 +574,114 @@ export async function removeTaskLink(ctx: RequestContext, linkId: string) {
     return outcome;
 }
 
+// ─── Evidence ───
+//
+// Task evidence mirrors the control Evidence tab. A task attaches
+// Evidence entities directly via `Evidence.taskId` (no separate link
+// table — unlike controls, which carry a ControlEvidenceLink bridge).
+// The shared <EvidenceSubTable> renders the `{ links, evidence }`
+// payload identically; for tasks `links` is always empty.
+
+/**
+ * Task Evidence tab payload — same `{ links, evidence }` shape the
+ * control Evidence tab returns, so the shared sub-table can render it
+ * unchanged.
+ */
+export async function getTaskEvidenceTab(ctx: RequestContext, taskId: string) {
+    assertCanReadTasks(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const task = await db.task.findFirst({
+            where: { id: taskId, tenantId: ctx.tenantId },
+            select: { id: true },
+        });
+        if (!task) throw notFound('Task not found');
+        const evidence = await db.evidence.findMany({
+            where: { taskId, tenantId: ctx.tenantId, deletedAt: null },
+            orderBy: { createdAt: 'desc' },
+        });
+        return { links: [], evidence };
+    });
+}
+
+/**
+ * Attach a URL as evidence on a task — mirrors the control "+ Evidence"
+ * URL path. Creates a LINK-type Evidence row pointing at the task. File
+ * uploads go through `/evidence/uploads` (uploadEvidenceFile) with a
+ * `taskId`, exactly like controls.
+ */
+export async function linkTaskEvidence(
+    ctx: RequestContext,
+    taskId: string,
+    data: { url: string; note?: string | null },
+) {
+    assertCanWriteTasks(ctx);
+    const url = data.url.trim();
+    const note = data.note ? sanitizePlainText(data.note) : null;
+    const result = await runInTenantContext(ctx, async (db) => {
+        const task = await db.task.findFirst({
+            where: { id: taskId, tenantId: ctx.tenantId },
+            select: { id: true },
+        });
+        if (!task) throw notFound('Task not found');
+        const evidence = await db.evidence.create({
+            data: {
+                tenantId: ctx.tenantId,
+                taskId,
+                type: 'LINK',
+                title: note || url,
+                content: url,
+                status: 'DRAFT',
+                ownerUserId: ctx.userId,
+            },
+        });
+        await logEvent(db, ctx, {
+            action: 'TASK_EVIDENCE_LINKED',
+            entityType: 'Task',
+            entityId: taskId,
+            details: `Evidence linked: ${url}`,
+            detailsJson: { category: 'relationship', operation: 'linked', sourceEntity: 'Task', sourceId: taskId, targetEntity: 'Evidence', targetId: evidence.id, relation: 'LINK' },
+        });
+        return evidence;
+    });
+    await bumpEntityCacheVersion(ctx, 'task');
+    return result;
+}
+
+/**
+ * Detach evidence from a task — clears `Evidence.taskId` so the row
+ * stays in the Evidence Library but no longer shows on this task's
+ * Evidence tab (mirrors control evidence unlink: the association is
+ * removed, the evidence survives).
+ */
+export async function unlinkTaskEvidence(
+    ctx: RequestContext,
+    taskId: string,
+    evidenceId: string,
+) {
+    assertCanWriteTasks(ctx);
+    const outcome = await runInTenantContext(ctx, async (db) => {
+        const evidence = await db.evidence.findFirst({
+            where: { id: evidenceId, taskId, tenantId: ctx.tenantId },
+            select: { id: true },
+        });
+        if (!evidence) throw notFound('Task evidence not found');
+        await db.evidence.update({
+            where: { id: evidenceId },
+            data: { taskId: null },
+        });
+        await logEvent(db, ctx, {
+            action: 'TASK_EVIDENCE_UNLINKED',
+            entityType: 'Task',
+            entityId: taskId,
+            details: `Evidence unlinked: ${evidenceId}`,
+            detailsJson: { category: 'relationship', operation: 'unlinked', sourceEntity: 'Task', sourceId: taskId, targetEntity: 'Evidence', targetId: evidenceId },
+        });
+        return { success: true };
+    });
+    await bumpEntityCacheVersion(ctx, 'task');
+    return outcome;
+}
+
 // ─── Comments ───
 
 export async function listTaskComments(ctx: RequestContext, taskId: string) {

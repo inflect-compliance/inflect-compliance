@@ -26,6 +26,7 @@ export const POST = withApiErrorHandling(async (req: NextRequest, { params: para
     const metadata = {
         title: formData.get('title') as string | undefined,
         controlId: formData.get('controlId') as string | null,
+        taskId: formData.get('taskId') as string | null,
         category: formData.get('category') as string | null,
         // B8 follow-up — folder rides with the upload form so a
         // batch upload writes the same folder onto every row.

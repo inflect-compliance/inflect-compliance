@@ -96,10 +96,10 @@ const BASELINE_PLUS_LITERAL_SITES = new Set<string>([
     // Legacy `'+ Link'` / `'+ Comment'` string literals (the ones the
     // regex catches — JSX text doesn't match, whitespace between `>`
     // and `+`). Line numbers shift whenever this file grows; refreshed
-    // after the close-resolution Modal + status-flow rework. The
+    // after the Evidence tab + edit-modal landed above them. The
     // literals themselves are unchanged staged debt.
-    'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:539',
-    'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:567',
+    'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:841',
+    'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:869',
     'src/app/t/[tenantSlug]/(app)/tests/runs/[runId]/page.tsx:419',
     'src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx:369',
     'src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx:393',

@@ -76,8 +76,10 @@ const PRIMARY_BUDGET: Record<string, number> = {
     "src/app/t/[tenantSlug]/(app)/tests/runs/[runId]/page.tsx": 3,
     // 3 page-level primaries + 1 for the close-resolution Modal's
     // confirm CTA (a distinct modal region added when terminal status
-    // changes started prompting for a resolution note).
-    "src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx": 4,
+    // changes started prompting for a resolution note) + 2 for the
+    // Evidence tab region (its "Add Evidence" trigger + form submit,
+    // mirroring the Links tab's add/submit pair).
+    "src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx": 6,
     "src/app/t/[tenantSlug]/(app)/risks/ai/page.tsx": 3,
     "src/app/t/[tenantSlug]/(app)/controls/[controlId]/tests/[planId]/page.tsx": 3,
     "src/app/t/[tenantSlug]/(app)/admin/members/page.tsx": 3,
