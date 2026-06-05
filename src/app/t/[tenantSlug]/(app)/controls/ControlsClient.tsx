@@ -40,9 +40,18 @@ import { EntityListPage } from '@/components/layout/EntityListPage';
 import { TableLoadMoreFooter } from '@/components/ui/table-load-more-footer';
 import { useThresholdLoadMore } from '@/components/ui/hooks';
 import { AsidePanel } from '@/components/ui/aside-panel';
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from '@/components/ui/accordion';
+import {
+    categorizeControl,
+    ISO27001_DOMAIN_ORDER,
+} from '@/lib/controls/control-taxonomy';
 import { AiAssistRail } from '@/components/ui/ai-assist-rail';
 import { Sparkle3 } from '@/components/ui/icons/nucleo/sparkle3';
-import { Eyebrow } from '@/components/ui/typography';
 import { SelectionSummaryPanel } from '@/components/ui/selection-summary-panel';
 import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
 import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
@@ -377,11 +386,11 @@ function ControlsPageInner({
         () => [
             { id: 'code', label: 'Code' },
             { id: 'name', label: 'Title' },
-            // ISO 27001 Annex A theme (Organizational / People /
-            // Physical / Technological) — stored on `Control.category`,
-            // surfaced as "Type" so the scannable column name matches
-            // the orientation rail's "Type" filter section.
-            { id: 'type', label: 'Type' },
+            // Framework-tagged control category, derived per-control via
+            // `categorizeControl` (ISO 27001 granular Annex domain, or
+            // the framework-native category for other frameworks) —
+            // mirrors the Browse rail's category grouping.
+            { id: 'category', label: 'Category' },
             { id: 'status', label: 'Status' },
             { id: 'applicability', label: 'Applicability' },
             { id: 'owner', label: 'Owner' },
@@ -539,24 +548,34 @@ function ControlsPageInner({
             ),
         },
         {
-            // ISO 27001 Annex A theme (e.g. Organizational, People,
-            // Physical, Technological). Sourced from `Control.category`
-            // — the field is free-form but framework imports + the
-            // Annex A seeder write only those four canonical values.
-            // Custom controls created without a category render `—`.
-            id: 'type',
-            header: 'Type',
-            accessorFn: (c) => c.category || '',
-            cell: ({ getValue }) => {
-                const v = getValue<string>();
-                if (!v) {
+            // Framework-tagged control category, derived via
+            // `categorizeControl`: ISO 27001 → granular Annex domain
+            // (Access control, Physical & environmental, Cryptography,
+            // …); other frameworks → their persisted TSC / section
+            // category. The badge carries the category; the framework
+            // it belongs to rides alongside as a small tag so a
+            // multi-framework control set stays legible. Controls that
+            // resolve to no category render `—`.
+            id: 'category',
+            header: 'Category',
+            accessorFn: (c) => categorizeControl(c)?.category || '',
+            cell: ({ row }) => {
+                const cat = categorizeControl(row.original);
+                if (!cat) {
                     return <span className="text-xs text-content-subtle">—</span>;
                 }
                 return (
-                    // Default variant + default `subtle` tone (R9-PR11)
-                    // — neutral bg + muted text, quieter than the
-                    // status pill so the eye anchors on Status first.
-                    <StatusBadge>{v}</StatusBadge>
+                    <span className="inline-flex items-center gap-tight">
+                        {cat.frameworkLabel && (
+                            <span className="text-[10px] font-medium uppercase tracking-wide text-content-subtle">
+                                {cat.frameworkLabel}
+                            </span>
+                        )}
+                        {/* Default variant + `subtle` tone (R9-PR11) —
+                            quieter than the status pill so the eye
+                            anchors on Status first. */}
+                        <StatusBadge>{cat.category}</StatusBadge>
+                    </span>
                 );
             },
         },
@@ -743,68 +762,58 @@ function ControlsPageInner({
             </AsidePanel>
         ) : undefined;
 
-    // Orientation rail — Risks-parity. Was a left-accordion rail
-    // on the LEFT (B7); now an <AsidePanel> on the RIGHT, matching
-    // the chrome of Risks' AI-Assist rail. Three sections — Status,
-    // Type (Annex theme), Owner — each clickable to filter via
-    // `filterCtx`; the table re-fetches via the standard URL-sync.
-    const statusCounts = useMemo(() => {
-        const map = new Map<string, number>();
+    // Browse rail — category accordion. The loaded controls are
+    // grouped by their framework-native category, derived via
+    // `categorizeControl`: ISO 27001 → granular Annex domain (Access
+    // control, Physical & environmental, Cryptography, …); other
+    // frameworks → their persisted TSC / section category. Each
+    // category is a collapsible <Accordion> section TAGGED with the
+    // framework it belongs to; expanding it reveals the controls in
+    // that category, each carrying a status tag and linking to its
+    // detail page. The rail NAVIGATES — it no longer filters the table.
+    // When the tenant's controls span multiple frameworks, each
+    // framework's categories appear as their own tagged groups.
+    const categoryGroups = useMemo(() => {
+        type Group = {
+            key: string;
+            frameworkKey: string;
+            frameworkLabel: string;
+            category: string;
+            controls: ControlListItem[];
+        };
+        const map = new Map<string, Group>();
         for (const c of controls) {
-            const k = (c as { status?: string }).status ?? 'NOT_STARTED';
-            map.set(k, (map.get(k) ?? 0) + 1);
+            const cat = categorizeControl(c);
+            if (!cat) continue;
+            const key = `${cat.frameworkKey}::${cat.category}`;
+            let g = map.get(key);
+            if (!g) {
+                g = { key, ...cat, controls: [] };
+                map.set(key, g);
+            }
+            g.controls.push(c);
         }
-        return map;
-    }, [controls]);
-    const typeCounts = useMemo(() => {
-        // Annex A theme stored on `Control.category`; rendered as
-        // "Type" in the column + the rail to match the user's
-        // mental model.
-        const map = new Map<string, number>();
-        for (const c of controls) {
-            const k = (c as { category?: string | null }).category ?? '';
-            if (!k) continue;
-            map.set(k, (map.get(k) ?? 0) + 1);
-        }
-        return map;
-    }, [controls]);
-    const ownerCounts = useMemo(() => {
-        // Owner buckets — keyed by user id so filterCtx writes
-        // `ownerUserId` correctly. We carry the display label
-        // alongside so the rail row reads as a name, not a cuid.
-        const map = new Map<string, { label: string; count: number }>();
-        for (const c of controls) {
-            const o = c.owner;
-            if (!o) continue;
-            const label = o.name ?? o.email ?? o.id;
-            const prev = map.get(o.id);
-            map.set(o.id, { label, count: (prev?.count ?? 0) + 1 });
-        }
-        return map;
+        // Stable order: framework label A→Z, then the canonical ISO
+        // domain order for ISO groups, then descending control count,
+        // then category name as the final tie-break.
+        const isoIndex = (name: string) => {
+            const i = ISO27001_DOMAIN_ORDER.indexOf(name);
+            return i === -1 ? Number.MAX_SAFE_INTEGER : i;
+        };
+        return Array.from(map.values()).sort((a, b) => {
+            if (a.frameworkLabel !== b.frameworkLabel)
+                return a.frameworkLabel.localeCompare(b.frameworkLabel);
+            const ai = isoIndex(a.category);
+            const bi = isoIndex(b.category);
+            if (ai !== bi) return ai - bi;
+            if (b.controls.length !== a.controls.length)
+                return b.controls.length - a.controls.length;
+            return a.category.localeCompare(b.category);
+        });
     }, [controls]);
 
     const railRowClass =
         'flex w-full items-center justify-between gap-tight rounded-md px-2 py-1 text-left text-xs text-content-default hover:bg-bg-muted/50 focus-visible:outline-none focus-visible:bg-bg-muted';
-    // Section labels inside the aside use the canonical <Eyebrow>
-    // (uppercase, tracked, muted) — keeps the heading-primitive
-    // ratchet honest while reading like a labelled group. The
-    // AsidePanel header carries the panel-level heading; each
-    // section here is a labelled group inside it.
-    const railHeadingClass = 'px-2';
-
-    const statusEntries = Object.entries(CONTROL_STATUS_LABELS)
-        .map(([value, label]) => ({
-            value,
-            label,
-            count: statusCounts.get(value) ?? 0,
-        }))
-        .sort((a, b) => b.count - a.count);
-    const typeEntries = Array.from(typeCounts.entries()).sort(
-        (a, b) => b[1] - a[1],
-    );
-    const ownerEntries = Array.from(ownerCounts.entries()).sort(
-        (a, b) => b[1].count - a[1].count,
-    );
 
     const browseAside = (
         <AsidePanel
@@ -812,89 +821,82 @@ function ControlsPageInner({
             surfaceKey="controls-list-browse"
             icon={<AppIcon name="controls" size={16} />}
         >
-            <div
-                className="space-y-default"
-                data-testid="controls-browse-aside"
-            >
-                <section aria-label="Filter by status">
-                    <Eyebrow className={railHeadingClass}>Status</Eyebrow>
-                    <ul className="flex flex-col gap-0.5" role="list">
-                        {statusEntries.map((e) => (
-                            <li key={e.value}>
-                                <button
-                                    type="button"
-                                    className={railRowClass}
-                                    data-rail-section-value={`status:${e.value}`}
-                                    onClick={() => filterCtx.set('status', e.value)}
-                                >
-                                    <span className="truncate">{e.label}</span>
-                                    <span className="text-content-subtle tabular-nums">
-                                        {e.count}
+            <div data-testid="controls-browse-aside">
+                {categoryGroups.length === 0 ? (
+                    <p className="px-2 py-1 text-xs text-content-subtle">
+                        No categorised controls yet.
+                    </p>
+                ) : (
+                    <Accordion type="multiple" className="space-y-0">
+                        {categoryGroups.map((g) => (
+                            <AccordionItem
+                                key={g.key}
+                                value={g.key}
+                                density="compact"
+                                data-category-group={g.key}
+                            >
+                                <AccordionTrigger size="sm" className="px-2">
+                                    <span className="flex min-w-0 flex-1 items-center justify-between gap-tight pr-2">
+                                        <span className="flex min-w-0 flex-col items-start gap-0.5">
+                                            <span className="truncate font-medium text-content-default">
+                                                {g.category}
+                                            </span>
+                                            {g.frameworkLabel && (
+                                                <span
+                                                    className="inline-flex items-center rounded border border-border-subtle bg-bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-content-muted"
+                                                    data-framework-tag={g.frameworkLabel}
+                                                >
+                                                    {g.frameworkLabel}
+                                                </span>
+                                            )}
+                                        </span>
+                                        <span className="shrink-0 tabular-nums text-content-subtle">
+                                            {g.controls.length}
+                                        </span>
                                     </span>
-                                </button>
-                            </li>
+                                </AccordionTrigger>
+                                <AccordionContent size="sm">
+                                    <ul
+                                        className="flex flex-col gap-0.5 pb-1"
+                                        role="list"
+                                    >
+                                        {g.controls.map((c) => (
+                                            <li key={c.id}>
+                                                <button
+                                                    type="button"
+                                                    className={railRowClass}
+                                                    data-control-id={c.id}
+                                                    onClick={() =>
+                                                        router.push(
+                                                            tenantHref(
+                                                                `/controls/${c.id}`,
+                                                            ),
+                                                        )
+                                                    }
+                                                >
+                                                    <span className="truncate">
+                                                        {c.code || c.annexId
+                                                            ? `${c.code || c.annexId} · ${c.name}`
+                                                            : c.name}
+                                                    </span>
+                                                    <StatusBadge
+                                                        variant={
+                                                            STATUS_BADGE[c.status] ||
+                                                            'neutral'
+                                                        }
+                                                    >
+                                                        {STATUS_LABELS[c.status] ||
+                                                            c.status}
+                                                    </StatusBadge>
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </AccordionContent>
+                            </AccordionItem>
                         ))}
-                    </ul>
-                </section>
-
-                {typeEntries.length > 0 && (
-                    <section aria-label="Filter by type">
-                        <Eyebrow className={railHeadingClass}>Type</Eyebrow>
-                        <ul className="flex flex-col gap-0.5" role="list">
-                            {typeEntries.map(([cat, n]) => (
-                                <li key={cat}>
-                                    <button
-                                        type="button"
-                                        className={railRowClass}
-                                        data-rail-section-value={`type:${cat}`}
-                                        onClick={() => filterCtx.set('category', cat)}
-                                    >
-                                        <span className="truncate">{cat}</span>
-                                        <span className="text-content-subtle tabular-nums">
-                                            {n}
-                                        </span>
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    </section>
+                    </Accordion>
                 )}
-
-                {ownerEntries.length > 0 && (
-                    <section aria-label="Filter by owner">
-                        <Eyebrow className={railHeadingClass}>Owner</Eyebrow>
-                        <ul className="flex flex-col gap-0.5" role="list">
-                            {ownerEntries.map(([uid, info]) => (
-                                <li key={uid}>
-                                    <button
-                                        type="button"
-                                        className={railRowClass}
-                                        data-rail-section-value={`owner:${uid}`}
-                                        onClick={() =>
-                                            filterCtx.set('ownerUserId', uid)
-                                        }
-                                    >
-                                        <span className="truncate">
-                                            {info.label}
-                                        </span>
-                                        <span className="text-content-subtle tabular-nums">
-                                            {info.count}
-                                        </span>
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    </section>
-                )}
-
-                <button
-                    type="button"
-                    className={railRowClass}
-                    data-rail-section-value="reset"
-                    onClick={() => filterCtx.clearAll()}
-                >
-                    Clear all filters
-                </button>
             </div>
         </AsidePanel>
     );

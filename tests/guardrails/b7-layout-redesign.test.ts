@@ -13,8 +13,10 @@
  *      `leftRail` slots; the rails sit OUTSIDE the table card
  *      via `gap-section` separation, not the legacy
  *      `gap-default` flush positioning.
- *   4. The canonical Controls list mounts a LeftAccordionRail
- *      with at least the Status + Category orientation sections.
+ *   4. The canonical Controls list mounts a "Browse" AsidePanel that
+ *      groups controls by framework-tagged CATEGORY in a collapsible
+ *      accordion (was: Status / Type / Owner filter sections). The
+ *      rail navigates; it no longer filters the table.
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -90,16 +92,17 @@ describe('B7 — layout redesign', () => {
         });
     });
 
-    describe('Controls list mounts a Risks-parity browse aside (was LeftAccordionRail)', () => {
-        // 2026-05-25 — the controls orientation rail moved from a
-        // <LeftAccordionRail> on the LEFT (the original B7 wiring)
-        // to an <AsidePanel> on the RIGHT, matching the chrome of
-        // Risks' AI-assist rail. Status / Type / Owner sections all
-        // live inside the new aside; the table-side `Type` column
-        // surfaces the same `Control.category` value the rail
-        // filters on. The B7 primitive still exists in the codebase
-        // and is verified above — this `describe` only re-anchors
-        // the Controls page contract.
+    describe('Controls list mounts a category-accordion browse aside', () => {
+        // 2026-06-05 — the Browse rail was reworked from Status / Type
+        // / Owner FILTER sections into a CATEGORY accordion. Each
+        // control's framework-native category is derived via
+        // `categorizeControl` (ISO 27001 → granular Annex domain;
+        // other frameworks → their persisted category); the rail
+        // renders one collapsible <Accordion> section per category,
+        // tagged with the framework it belongs to. Expanding a
+        // section reveals the controls in it — each with a status tag
+        // and a click-to-navigate to the control detail page. The
+        // rail NAVIGATES; it no longer filters the table.
         const src = read(
             'src/app/t/[tenantSlug]/(app)/controls/ControlsClient.tsx',
         );
@@ -120,26 +123,31 @@ describe('B7 — layout redesign', () => {
             expect(src).toMatch(/aside=\{composedAside\}/);
         });
 
-        it('browse sections include Status, Type, AND Owner', () => {
-            // Status is enum-driven (always renders); Type +
-            // Owner are data-derived (only render when the snapshot
-            // has values). All three wiring branches must be in the
-            // source so a future "drop one" PR fails CI. The source
-            // shape is `data-rail-section-value={`status:${id}`}` —
-            // the regex anchors on the prefix string inside the
-            // template literal.
-            expect(src).toMatch(/data-rail-section-value=\{`status:/);
-            expect(src).toMatch(/data-rail-section-value=\{`type:/);
-            expect(src).toMatch(/data-rail-section-value=\{`owner:/);
+        it('groups controls by framework-tagged category in an accordion', () => {
+            // Categories are DERIVED (not a stored single string) via
+            // the shared taxonomy module, then rendered as collapsible
+            // accordion sections. Each section carries its framework
+            // tag so a multi-framework control set stays legible.
+            expect(src).toMatch(
+                /import\s*\{[\s\S]{0,120}categorizeControl[\s\S]{0,120}\}\s*from\s*['"]@\/lib\/controls\/control-taxonomy['"]/,
+            );
+            expect(src).toMatch(/<Accordion\s+type="multiple"/);
+            expect(src).toMatch(/data-category-group=/);
+            expect(src).toMatch(/data-framework-tag=/);
         });
 
-        it('clicking a rail value routes through filterCtx.set', () => {
-            // Type → `category` (the Annex theme is stored on
-            // `Control.category` even though the UI label is
-            // "Type"). Owner → `ownerUserId`.
-            expect(src).toMatch(/filterCtx\.set\(['"]status['"]/);
-            expect(src).toMatch(/filterCtx\.set\(['"]category['"]/);
-            expect(src).toMatch(/filterCtx\.set\(['"]ownerUserId['"]/);
+        it('rail NAVIGATES (status tag per control) — it does not filter', () => {
+            // Status is now a per-control tag (StatusBadge) inside the
+            // expanded rows; clicking a row routes to the control
+            // detail page. The legacy filter wiring is gone, so a
+            // future "make the rail filter again" PR fails CI.
+            expect(src).toMatch(/data-control-id=\{c\.id\}/);
+            // <AccordionContent appears once — the next StatusBadge /
+            // router.push after it is unambiguously the rail's.
+            expect(src).toMatch(/<AccordionContent[\s\S]{0,1600}StatusBadge/);
+            expect(src).toMatch(/<AccordionContent[\s\S]{0,1600}router\.push/);
+            expect(src).not.toMatch(/data-rail-section-value/);
+            expect(src).not.toMatch(/filterCtx\.set\(/);
         });
     });
 
@@ -167,35 +175,35 @@ describe('B7 — layout redesign', () => {
         });
     });
 
-    describe('Controls table — `Type` column (Annex theme)', () => {
+    describe('Controls table — `Category` column (framework-tagged)', () => {
         const src = read(
             'src/app/t/[tenantSlug]/(app)/controls/ControlsClient.tsx',
         );
 
-        it('column-visibility list includes Type before Status', () => {
-            // Anchor on the assetColumnList-style block — the Type
+        it('column-visibility list includes Category before Status', () => {
+            // Anchor on the controlColumnList block — the Category
             // entry must appear before the Status entry so the
-            // default-visible column order reads Code · Title · Type
-            // · Status.
+            // default-visible column order reads Code · Title ·
+            // Category · Status.
             const start = src.indexOf('const controlColumnList');
             expect(start).toBeGreaterThan(0);
             const slice = src.slice(start, start + 1200);
-            const typeIdx = slice.indexOf("id: 'type'");
+            const catIdx = slice.indexOf("id: 'category'");
             const statusIdx = slice.indexOf("id: 'status'");
-            expect(typeIdx).toBeGreaterThan(0);
-            expect(statusIdx).toBeGreaterThan(typeIdx);
+            expect(catIdx).toBeGreaterThan(0);
+            expect(statusIdx).toBeGreaterThan(catIdx);
         });
 
-        it('column def renders Control.category under the header "Type"', () => {
-            // `accessorFn: (c) => c.category || ''` + header
-            // "Type" — the data field stays `category` (matches
-            // the schema + filter-defs), the UI label is "Type"
-            // so it lines up with the rail section + the user
-            // mental model.
+        it('column derives the category via categorizeControl under header "Category"', () => {
+            // The category is DERIVED per-control (framework-tagged
+            // granular domain), not read from a single stored string —
+            // so the column matches the Browse rail's grouping.
             expect(src).toMatch(
-                /id:\s*['"]type['"][\s\S]{0,200}header:\s*['"]Type['"]/,
+                /id:\s*['"]category['"][\s\S]{0,200}header:\s*['"]Category['"]/,
             );
-            expect(src).toMatch(/accessorFn:\s*\(c\)\s*=>\s*c\.category/);
+            expect(src).toMatch(
+                /accessorFn:\s*\(c\)\s*=>\s*categorizeControl\(c\)/,
+            );
         });
     });
 });

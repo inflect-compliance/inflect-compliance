@@ -15,6 +15,12 @@
  * Run on VM:     docker exec -it inflect-app-1 npx tsx /app/prisma/seed-catalog.ts
  */
 const { PrismaClient } = require('@prisma/client');
+// Granular ISO 27001 domain taxonomy — the SAME module the Controls
+// "Browse" rail derives categories from at runtime, so the persisted
+// FrameworkRequirement / ControlTemplate categories never drift from
+// what the UI shows. The module is dependency-free, so a relative
+// require resolves cleanly under tsx.
+const { iso27001Domain } = require('../src/lib/controls/control-taxonomy');
 
 const prisma = new PrismaClient();
 
@@ -42,8 +48,8 @@ async function main() {
     for (const req of annexAData) {
         const r = await prisma.frameworkRequirement.upsert({
             where: { frameworkId_code: { frameworkId: iso27001.id, code: req.key } },
-            update: { title: req.title, description: req.summary || null, theme: req.theme, themeNumber: req.themeNumber, sortOrder: req.sortOrder },
-            create: { frameworkId: iso27001.id, code: req.key, title: req.title, description: req.summary || null, category: req.theme, theme: req.theme, themeNumber: req.themeNumber, sortOrder: req.sortOrder },
+            update: { title: req.title, description: req.summary || null, category: iso27001Domain(req.key) || req.theme, theme: req.theme, themeNumber: req.themeNumber, sortOrder: req.sortOrder },
+            create: { frameworkId: iso27001.id, code: req.key, title: req.title, description: req.summary || null, category: iso27001Domain(req.key) || req.theme, theme: req.theme, themeNumber: req.themeNumber, sortOrder: req.sortOrder },
         });
         requirementMap[req.key] = r.id;
     }
@@ -153,7 +159,7 @@ async function main() {
         const existing = await prisma.controlTemplate.findUnique({ where: { code } });
         if (!existing) {
             const template = await prisma.controlTemplate.create({
-                data: { code, title: req.title, description: req.summary || null, category: req.theme, defaultFrequency: 'QUARTERLY' },
+                data: { code, title: req.title, description: req.summary || null, category: iso27001Domain(req.key) || req.theme, defaultFrequency: 'QUARTERLY' },
             });
             for (const task of defaultTasks) {
                 await prisma.controlTemplateTask.create({ data: { templateId: template.id, title: task.title, description: task.description } });
