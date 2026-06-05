@@ -88,6 +88,41 @@ async function testPlansForControls(
     return plans.map((p) => ({ ...p, control: byId.get(p.controlId) ?? null }));
 }
 
+async function mappingsForControls(
+    db: PrismaTx,
+    tenantId: string,
+    controlIds: string[],
+    byId: Map<string, ControlRef>,
+) {
+    if (controlIds.length === 0) return [];
+    // Control → framework requirement links. Frameworks +
+    // requirements are a GLOBAL catalogue (no tenantId), so the
+    // tenant scope rides on ControlRequirementLink.tenantId; the
+    // requirement/framework are read through the relation.
+    const links = await db.controlRequirementLink.findMany({
+        where: { tenantId, controlId: { in: controlIds } },
+        select: {
+            controlId: true,
+            requirement: {
+                select: {
+                    id: true,
+                    code: true,
+                    title: true,
+                    framework: { select: { id: true, name: true, version: true } },
+                },
+            },
+        },
+        take: AGG_TAKE,
+    });
+    return links.map((l) => ({
+        requirementId: l.requirement.id,
+        code: l.requirement.code,
+        title: l.requirement.title,
+        framework: l.requirement.framework,
+        control: byId.get(l.controlId) ?? null,
+    }));
+}
+
 // ─── Public usecases ───
 
 export function getAssetInheritedEvidence(ctx: RequestContext, assetId: string) {
@@ -115,5 +150,19 @@ export function getRiskInheritedTestPlans(ctx: RequestContext, riskId: string) {
     return runInTenantContext(ctx, async (db) => {
         const { controlIds, byId } = await controlsForRisk(db, ctx.tenantId, riskId);
         return testPlansForControls(db, ctx.tenantId, controlIds, byId);
+    });
+}
+
+export function getAssetInheritedMappings(ctx: RequestContext, assetId: string) {
+    return runInTenantContext(ctx, async (db) => {
+        const { controlIds, byId } = await controlsForAsset(db, ctx.tenantId, assetId);
+        return mappingsForControls(db, ctx.tenantId, controlIds, byId);
+    });
+}
+
+export function getRiskInheritedMappings(ctx: RequestContext, riskId: string) {
+    return runInTenantContext(ctx, async (db) => {
+        const { controlIds, byId } = await controlsForRisk(db, ctx.tenantId, riskId);
+        return mappingsForControls(db, ctx.tenantId, controlIds, byId);
     });
 }

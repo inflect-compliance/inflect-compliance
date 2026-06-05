@@ -30,6 +30,7 @@ import { cn } from '@/lib/cn';
 import { EditAssetModal } from '../EditAssetModal';
 import { InheritedEvidencePanel } from '@/components/InheritedEvidencePanel';
 import { InheritedTestPlansPanel } from '@/components/InheritedTestPlansPanel';
+import { InheritedMappingsPanel } from '@/components/InheritedMappingsPanel';
 
 const TraceabilityPanel = dynamic(() => import('@/components/TraceabilityPanel'), {
     loading: () => <SkeletonCard lines={3} />,
@@ -234,15 +235,10 @@ export default function AssetDetailPage() {
                 />
             )}
             {activeTab === 'mappings' && (
-                <EmptyState
-                    size="sm"
-                    variant="no-records"
-                    title="Framework mappings live on controls"
-                    description="An asset inherits coverage from its protecting controls. Open the Traceability tab to navigate to them."
-                    primaryAction={{
-                        label: 'Open Traceability',
-                        onClick: () => setActiveTab('traceability'),
-                    }}
+                <InheritedMappingsPanel
+                    endpoint={apiUrl(`/assets/${assetId}/mappings`)}
+                    tenantHref={tenantHref}
+                    entityLabel="asset"
                 />
             )}
             {activeTab === 'activity' && (

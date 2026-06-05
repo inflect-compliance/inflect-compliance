@@ -44,6 +44,7 @@ import { cardVariants } from '@/components/ui/card';
 import { EditRiskModal, type EditRiskForm } from './_modals/EditRiskModal';
 import { InheritedEvidencePanel } from '@/components/InheritedEvidencePanel';
 import { InheritedTestPlansPanel } from '@/components/InheritedTestPlansPanel';
+import { InheritedMappingsPanel } from '@/components/InheritedMappingsPanel';
 
 const TraceabilityPanel = dynamic(() => import('@/components/TraceabilityPanel'), {
     loading: () => <SkeletonCard lines={3} />,
@@ -383,15 +384,10 @@ export default function RiskDetailPage() {
                 />
             )}
             {activeTab === 'mappings' && (
-                <EmptyState
-                    size="sm"
-                    variant="no-records"
-                    title="Framework mappings live on controls"
-                    description="A risk inherits framework coverage from its mitigating controls. Open the Traceability tab to navigate to them."
-                    primaryAction={{
-                        label: 'Open Traceability',
-                        onClick: () => setActiveTab('traceability'),
-                    }}
+                <InheritedMappingsPanel
+                    endpoint={apiUrl(`/risks/${riskId}/mappings`)}
+                    tenantHref={href}
+                    entityLabel="risk"
                 />
             )}
             {activeTab === 'activity' && (
