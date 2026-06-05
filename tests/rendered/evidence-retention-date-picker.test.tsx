@@ -29,13 +29,20 @@ const EVIDENCE_UPLOAD =
     'src/app/t/[tenantSlug]/(app)/evidence/UploadEvidenceModal.tsx';
 const EVIDENCE_CLIENT =
     'src/app/t/[tenantSlug]/(app)/evidence/EvidenceClient.tsx';
+// Retention editing moved out of the EvidenceClient table column and into
+// the evidence Edit modal (2026-06-05). The DatePicker now lives here.
+const EDIT_EVIDENCE_MODAL =
+    'src/app/t/[tenantSlug]/(app)/evidence/EditEvidenceModal.tsx';
 const POLICY_DETAIL =
     'src/app/t/[tenantSlug]/(app)/policies/[policyId]/page.tsx';
 
-const EVIDENCE_FILES = [EVIDENCE_UPLOAD, EVIDENCE_CLIENT];
+// Surfaces that carry a retention/expiry DatePicker.
+const DATE_PICKER_FILES = [EVIDENCE_UPLOAD, EDIT_EVIDENCE_MODAL, POLICY_DETAIL];
+// Surfaces that must never reintroduce a native <input type="date">.
+const EVIDENCE_FILES = [EVIDENCE_UPLOAD, EVIDENCE_CLIENT, EDIT_EVIDENCE_MODAL];
 
 describe('Epic 58 — DatePicker imports', () => {
-    it.each([EVIDENCE_UPLOAD, EVIDENCE_CLIENT, POLICY_DETAIL])(
+    it.each(DATE_PICKER_FILES)(
         '%s imports the shared DatePicker',
         (file) => {
             const src = read(file);
@@ -45,7 +52,7 @@ describe('Epic 58 — DatePicker imports', () => {
         },
     );
 
-    it.each([EVIDENCE_UPLOAD, EVIDENCE_CLIENT, POLICY_DETAIL])(
+    it.each(DATE_PICKER_FILES)(
         '%s bridges YMD strings with parseYMD / toYMD at the picker edge',
         (file) => {
             const src = read(file);
@@ -108,8 +115,8 @@ describe('Epic 58 — DatePicker call-site invariants', () => {
             datePickerBlocks: [],
         },
         {
-            label: 'EvidenceClient',
-            src: read(EVIDENCE_CLIENT),
+            label: 'EditEvidenceModal',
+            src: read(EDIT_EVIDENCE_MODAL),
             datePickerBlocks: [],
         },
         {
@@ -179,12 +186,23 @@ describe('Epic 58 — existing API contracts preserved', () => {
         );
     });
 
-    it('Inline retention edit still posts { retentionUntil: ISO | null, retentionPolicy }', () => {
-        const src = read(EVIDENCE_CLIENT);
+    it('Edit modal retention posts { retentionUntil: ISO | null, retentionPolicy } to /retention', () => {
+        const src = read(EDIT_EVIDENCE_MODAL);
+        expect(src).toMatch(/\/evidence\/\$\{initial\.id\}\/retention/);
         expect(src).toMatch(
-            /retentionUntil:\s*editRetentionDate\s*\?\s*new Date\(editRetentionDate\)\.toISOString\(\)\s*:\s*null/,
+            /retentionUntil:\s*retentionDate\s*[\s\S]*?new Date\(retentionDate\)[\s\S]*?\.toISOString\(\)[\s\S]*?:\s*null/,
         );
-        expect(src).toMatch(/retentionPolicy:\s*editRetentionDate\s*\?\s*['"]FIXED_DATE['"]/);
+        expect(src).toMatch(/retentionPolicy:\s*retentionDate\s*\?\s*['"]FIXED_DATE['"]/);
+    });
+
+    it('EvidenceClient retention column is display-only (no inline editor)', () => {
+        const src = read(EVIDENCE_CLIENT);
+        // The inline edit state + handler were removed when retention
+        // moved to the modal.
+        expect(src).not.toMatch(/editingRetention/);
+        expect(src).not.toMatch(/saveRetention/);
+        // The status badge + resolved date stay (display).
+        expect(src).toMatch(/retention-status-\$\{ev\.id\}/);
     });
 
     it('Policy "Next review" picker retains the canonical field id for the save handler', () => {

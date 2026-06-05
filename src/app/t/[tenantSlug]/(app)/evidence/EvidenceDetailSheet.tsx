@@ -53,6 +53,8 @@ export interface EvidenceDetailSheetProps {
         controlId: string | null;
         /** B8 follow-up — current folder, threaded to the edit modal. */
         folder: string | null;
+        /** Retention date (ISO) — edited in the modal now. */
+        retentionUntil: string | null;
     }) => void;
     /** Existing parent review pipeline — re-uses the optimistic mutation. */
     onReview: (id: string, action: 'SUBMITTED' | 'APPROVED' | 'REJECTED') => void;
@@ -65,6 +67,7 @@ interface EvidenceDetailPayload {
     type: string;
     status: string;
     nextReviewDate: string | null;
+    retentionUntil: string | null;
     owner: string | null;
     ownerUserId: string | null;
     controlId: string | null;
@@ -277,6 +280,7 @@ export function EvidenceDetailSheet({
                                                     folder?: string | null;
                                                 }
                                             ).folder ?? null,
+                                            retentionUntil: evidence.retentionUntil,
                                         })
                                     }
                                     id="evidence-sheet-edit-btn"

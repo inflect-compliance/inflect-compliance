@@ -23,12 +23,6 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
-import { DatePicker } from '@/components/ui/date-picker/date-picker';
-import {
-    parseYMD,
-    startOfUtcDay,
-    toYMD,
-} from '@/components/ui/date-picker/date-utils';
 import {
     DataTable,
     createColumns,
@@ -219,11 +213,9 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
         // through here so the modal seeds the input with the
         // current value.
         folder: string | null;
+        // Retention date is now edited in the modal too (was inline).
+        retentionUntil: string | null;
     } | null>(null);
-
-    // Retention edit state
-    const [editingRetention, setEditingRetention] = useState<string | null>(null);
-    const [editRetentionDate, setEditRetentionDate] = useState('');
 
     // Invalidate every cached evidence-list filter variant. SWR's
     // function-form `mutate()` matches by absolute URL prefix —
@@ -352,20 +344,6 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
 
     const archiveEvidence = (id: string) => setArchived(id, true);
     const unarchiveEvidence = (id: string) => setArchived(id, false);
-
-    const saveRetention = async (id: string) => {
-        await fetch(apiUrl(`/evidence/${id}/retention`), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                retentionUntil: editRetentionDate ? new Date(editRetentionDate).toISOString() : null,
-                retentionPolicy: editRetentionDate ? 'FIXED_DATE' : 'NONE',
-            }),
-        });
-        setEditingRetention(null);
-        setEditRetentionDate('');
-        invalidateEvidence();
-    };
 
     const statusLabel = (status: string) => {
         const map: Record<string, string> = { DRAFT: t.draft, SUBMITTED: t.submitted, APPROVED: t.approved, REJECTED: t.rejected, PENDING_UPLOAD: 'Uploading...' };
@@ -645,72 +623,20 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             cell: ({ row }: { row: any }) => {
                 const ev = row.original;
                 const rs = getRetentionStatus(ev, hydratedNow);
+                // Retention is now edited from the evidence Edit modal
+                // (Edit icon → "Retention date"); the column is display-
+                // only. Status badge + the resolved date.
                 return (
                     <div className="text-xs">
-                        <div className="flex items-center gap-1.5">
-                            <StatusBadge variant={rs.badge} id={`retention-status-${ev.id}`}>
-                                {rs.icon} {rs.label}
-                            </StatusBadge>
-                            {/* Retention-date edit moved here from the
-                                Actions column (which now carries the
-                                evidence Edit / Archive / Download icon
-                                columns). */}
-                            {permissions.canWrite && !ev.isArchived && editingRetention !== ev.id && (
-                                <Tooltip content="Edit retention date">
-                                    <button
-                                        type="button"
-                                        aria-label="Edit retention date"
-                                        className="inline-flex h-6 w-6 items-center justify-center rounded text-content-subtle transition-colors hover:bg-bg-muted hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                        id={`edit-retention-${ev.id}`}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setEditingRetention(ev.id);
-                                            setEditRetentionDate(ev.retentionUntil ? ev.retentionUntil.split('T')[0] : '');
-                                        }}
-                                    >
-                                        <Pen2 className="size-3.5" />
-                                    </button>
-                                </Tooltip>
-                            )}
-                        </div>
+                        <StatusBadge variant={rs.badge} id={`retention-status-${ev.id}`}>
+                            {rs.icon} {rs.label}
+                        </StatusBadge>
                         {ev.retentionUntil && !ev.isArchived && (
                             <TimestampTooltip
                                 date={ev.retentionUntil}
                                 className="text-content-subtle mt-0.5 block"
                                 data-testid={`evidence-row-retention-date-${ev.id}`}
                             />
-                        )}
-                        {editingRetention === ev.id && (
-                            <div className="mt-2 flex gap-1 items-center">
-                                {/*
-                                  Epic 58 — inline retention edit now
-                                  uses the shared DatePicker. The
-                                  surrounding YMD-string state stays
-                                  unchanged so `saveRetention()` keeps
-                                  the existing retention API contract.
-                                */}
-                                <DatePicker
-                                    id={`retention-edit-${ev.id}`}
-                                    className="w-36 text-xs"
-                                    placeholder="Pick date"
-                                    clearable
-                                    align="start"
-                                    value={parseYMD(editRetentionDate)}
-                                    onChange={(next) => {
-                                        setEditRetentionDate(
-                                            toYMD(next) ?? '',
-                                        );
-                                    }}
-                                    disabledDays={{
-                                        before: startOfUtcDay(new Date()),
-                                    }}
-                                    aria-label="Retention date"
-                                />
-                                <Button variant="primary" size="sm" className="text-xs py-0.5 px-1.5" onClick={() => saveRetention(ev.id)}>Save</Button>
-                                <Tooltip content="Cancel edit" shortcut="Esc">
-                                    <Button variant="secondary" size="sm" className="text-xs py-0.5 px-1.5" onClick={() => setEditingRetention(null)} aria-label="Cancel">×</Button>
-                                </Tooltip>
-                            </div>
                         )}
                     </div>
                 );
@@ -783,6 +709,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                                     ownerUserId: ev.ownerUserId ?? null,
                                     controlId: ev.control?.id ?? null,
                                     folder: ev.folder ?? null,
+                                    retentionUntil: ev.retentionUntil ?? null,
                                 });
                                 setEditModalOpen(true);
                             }}
@@ -880,7 +807,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             meta: { disableTruncate: true },
         },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    ]), [t, permissions, editingRetention, editRetentionDate, apiUrl]);
+    ]), [t, permissions, apiUrl]);
 
     return (
         <ListPageShell className="animate-fadeIn gap-section">

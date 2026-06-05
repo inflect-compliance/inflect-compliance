@@ -20,6 +20,12 @@ import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { UserCombobox } from '@/components/ui/user-combobox';
+import { DatePicker } from '@/components/ui/date-picker/date-picker';
+import {
+    parseYMD,
+    startOfUtcDay,
+    toYMD,
+} from '@/components/ui/date-picker/date-utils';
 import { useTenantApiUrl } from '@/lib/tenant-context-provider';
 
 export interface EditEvidenceModalProps {
@@ -34,6 +40,8 @@ export interface EditEvidenceModalProps {
         controlId: string | null;
         /** B8 follow-up — current folder label (null = unfoldered). */
         folder?: string | null;
+        /** Retention date (ISO) — edited here now (was inline in the table). */
+        retentionUntil?: string | null;
     } | null;
     onSaved?: () => void;
 }
@@ -52,6 +60,11 @@ export function EditEvidenceModal({
     const [controlId, setControlId] = useState('');
     // B8 follow-up — folder is editable post-create.
     const [folder, setFolder] = useState('');
+    // Retention date — moved here from the inline table column. Held as a
+    // YMD string; the initial value is remembered so we only hit the
+    // retention endpoint when it actually changes.
+    const [retentionDate, setRetentionDate] = useState('');
+    const [initialRetention, setInitialRetention] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isDirty, setIsDirty] = useState(false);
@@ -66,6 +79,9 @@ export function EditEvidenceModal({
             setOwnerUserId(initial.ownerUserId);
             setControlId(initial.controlId ?? '');
             setFolder(initial.folder ?? '');
+            const ymd = initial.retentionUntil ? initial.retentionUntil.split('T')[0] : '';
+            setRetentionDate(ymd);
+            setInitialRetention(ymd);
             setSubmitting(false);
             setError(null);
             setIsDirty(false);
@@ -100,6 +116,25 @@ export function EditEvidenceModal({
                 const err = await res.json().catch(() => ({}));
                 setError(err.error?.message || 'Failed to update evidence');
                 return;
+            }
+            // Retention moved into this modal — persist via the dedicated
+            // retention endpoint, but only when the date actually changed.
+            if (retentionDate !== initialRetention) {
+                const rr = await fetch(apiUrl(`/evidence/${initial.id}/retention`), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        retentionUntil: retentionDate
+                            ? new Date(retentionDate).toISOString()
+                            : null,
+                        retentionPolicy: retentionDate ? 'FIXED_DATE' : 'NONE',
+                    }),
+                });
+                if (!rr.ok) {
+                    const err = await rr.json().catch(() => ({}));
+                    setError(err.error?.message || 'Saved details, but failed to update retention');
+                    return;
+                }
             }
             setIsDirty(false);
             setOpen(false);
@@ -226,6 +261,28 @@ export function EditEvidenceModal({
                                     markDirty();
                                 }}
                                 placeholder="e.g. SOC2/2026 — clear to unfile"
+                            />
+                        </FormField>
+                        {/* Retention date — moved here from the inline
+                            table column. Clearing it sets the policy back
+                            to NONE. */}
+                        <FormField
+                            label="Retention date"
+                            description="When this evidence's retention period ends. Clear to remove the retention policy."
+                        >
+                            <DatePicker
+                                id="edit-evidence-retention-input"
+                                className="w-full"
+                                placeholder="No retention date"
+                                clearable
+                                align="start"
+                                value={parseYMD(retentionDate)}
+                                onChange={(next) => {
+                                    setRetentionDate(toYMD(next) ?? '');
+                                    markDirty();
+                                }}
+                                disabledDays={{ before: startOfUtcDay(new Date()) }}
+                                aria-label="Retention date"
                             />
                         </FormField>
                     </fieldset>
