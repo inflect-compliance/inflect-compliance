@@ -38,6 +38,10 @@ const evidenceListSelect = {
     type: true,
     status: true,
     owner: true,
+    // Real owner FK — seeds the edit modal's owner picker when the
+    // Evidence list-row edit affordance opens it (B8 follow-up parity
+    // with the detail sheet's edit).
+    ownerUserId: true,
     // B8 follow-up — folder label is rendered as a column + drives
     // the Folder filter's option set.
     folder: true,
