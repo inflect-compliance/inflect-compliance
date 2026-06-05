@@ -1,3 +1,8 @@
+// Side effect — set Zod's `jitless` flag (browser only) before this
+// module's own client env-validation parse, which would otherwise be the
+// first thing to trigger Zod's CSP-violating `new Function` probe. See
+// src/lib/zod-jitless.ts.
+import '@/lib/zod-jitless';
 import { createEnv } from '@t3-oss/env-nextjs';
 import { z } from 'zod';
 import { DEV_FALLBACK_DATA_ENCRYPTION_KEY } from '@/lib/security/encryption-constants';

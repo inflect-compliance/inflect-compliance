@@ -1,5 +1,9 @@
 'use client';
 
+// Side effect — disable Zod's eval-based JIT before any schema parses,
+// so the strict CSP doesn't report Zod's `new Function` probe. Keep at
+// the top of the client entry. See src/lib/zod-jitless.ts.
+import '@/lib/zod-jitless';
 import { useEffect } from 'react';
 import { Toaster } from 'sonner';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
