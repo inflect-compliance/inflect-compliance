@@ -183,6 +183,15 @@ export function FilterToolbar({
                 <FilterUI.List
                     filters={filters}
                     activeFilters={activeFilters}
+                    // Without onSelect, the active-pill value dropdown
+                    // could only REMOVE values — picking a different
+                    // value did nothing (single-select filters like
+                    // applicability could never be switched from the
+                    // pill). Wire the same dispatcher the Select uses so
+                    // the pill can change/add values too.
+                    onSelect={(key, value) =>
+                        dispatchOnSelect(filters, ctx, String(key), value as string | string[])
+                    }
                     onRemove={(key, value) => remove(String(key), String(value))}
                     onRemoveFilter={(key) => removeAll(String(key))}
                     onRemoveAll={clearAll}
