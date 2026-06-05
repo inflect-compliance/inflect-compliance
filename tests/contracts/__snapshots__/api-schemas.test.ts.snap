@@ -3742,6 +3742,30 @@ exports[`API contract — per-schema snapshots schema: TaskCreateRequest 1`] = `
 }"
 `;
 
+exports[`API contract — per-schema snapshots schema: TaskEvidenceLinkRequest 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "url": {
+      "type": "string",
+      "maxLength": 2000,
+      "format": "uri"
+    },
+    "note": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 2000
+    }
+  },
+  "required": [
+    "url"
+  ],
+  "description": "Attach a URL as evidence on a task. File uploads use the multipart /evidence/uploads endpoint with a taskId."
+}"
+`;
+
 exports[`API contract — per-schema snapshots schema: TaskLinkAddRequest 1`] = `
 "{
   "type": "object",
