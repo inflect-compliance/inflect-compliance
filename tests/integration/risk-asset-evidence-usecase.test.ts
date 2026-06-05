@@ -3,10 +3,18 @@
  *
  * Proves, against a real DB, that a risk and an asset can attach
  * evidence the same way a control/task can: link a URL → LINK Evidence
- * row tagged with the entity; list via the `{ links, evidence }` shape
- * the shared <EvidenceSubTable> renders; unlink detaches (clears the FK)
- * without deleting the row; and tenant isolation holds.
+ * row tagged with the entity; upload a file tagged to the entity; list
+ * via the `{ links, evidence }` shape the shared <EvidenceSubTable>
+ * renders; unlink detaches (clears the FK) without deleting the row;
+ * and tenant isolation holds.
  */
+// STORAGE_PROVIDER defaults to "s3" in env.ts; uploadEvidenceFile needs
+// the local provider in tests (mirrors evidence-import.test.ts). Set
+// before the storage module's lazy singleton is constructed.
+process.env.STORAGE_PROVIDER = 'local';
+process.env.FILE_STORAGE_ROOT =
+    process.env.FILE_STORAGE_ROOT || '/tmp/test-evidence-uploads';
+
 import { PrismaClient, Role, MembershipStatus } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { randomUUID } from 'crypto';
@@ -23,6 +31,7 @@ import {
     linkAssetEvidence,
     unlinkAssetEvidence,
 } from '@/app-layer/usecases/asset';
+import { uploadEvidenceFile } from '@/app-layer/usecases/evidence';
 
 const globalPrisma = new PrismaClient({
     adapter: new PrismaPg({ connectionString: DB_URL }),
@@ -134,12 +143,54 @@ describeFn('asset evidence usecases (integration)', () => {
         expect(ev.assetId).toBe(ASSET_ID);
     });
 
-    it('getAssetEvidenceTab returns it; unlink detaches but keeps the row', async () => {
-        const ev = await linkAssetEvidence(adminCtx(), ASSET_ID, { url: 'https://example.com/a2' });
+    it('getAssetEvidenceTab returns it (with a note); unlink detaches but keeps the row', async () => {
+        const ev = await linkAssetEvidence(adminCtx(), ASSET_ID, { url: 'https://example.com/a2', note: 'Proof' });
         const tab = await getAssetEvidenceTab(adminCtx(), ASSET_ID);
         expect(tab.evidence.some((e) => e.id === ev.id)).toBe(true);
         await unlinkAssetEvidence(adminCtx(), ASSET_ID, ev.id);
         const still = await globalPrisma.evidence.findUnique({ where: { id: ev.id } });
         expect(still?.assetId).toBeNull();
+    });
+
+    it('unlinking a non-existent asset evidence throws', async () => {
+        await expect(unlinkAssetEvidence(adminCtx(), ASSET_ID, 'ev-does-not-exist')).rejects.toThrow();
+    });
+});
+
+describeFn('uploadEvidenceFile — risk/asset tagging (integration)', () => {
+    const txtFile = () =>
+        new File(['attached evidence body'], 'note.txt', { type: 'text/plain' });
+
+    it('uploads a file tagged to a risk', async () => {
+        const ev = await uploadEvidenceFile(adminCtx(), txtFile(), {
+            title: 'Risk upload',
+            riskId: RISK_ID,
+        });
+        expect(ev.riskId).toBe(RISK_ID);
+        expect(ev.type).toBe('FILE');
+    });
+
+    it('uploads a file tagged to an asset', async () => {
+        const ev = await uploadEvidenceFile(adminCtx(), txtFile(), {
+            title: 'Asset upload',
+            assetId: ASSET_ID,
+        });
+        expect(ev.assetId).toBe(ASSET_ID);
+    });
+
+    it('rejects an upload tagged to a foreign risk', async () => {
+        await expect(
+            uploadEvidenceFile(adminCtx(), txtFile(), { riskId: FOREIGN_RISK_ID }),
+        ).rejects.toThrow();
+    });
+
+    it('rejects an upload tagged to a non-existent asset', async () => {
+        await expect(
+            uploadEvidenceFile(adminCtx(), txtFile(), { assetId: 'asset-nope' }),
+        ).rejects.toThrow();
+    });
+
+    it('unlinking a non-existent risk evidence throws', async () => {
+        await expect(unlinkRiskEvidence(adminCtx(), RISK_ID, 'ev-nope')).rejects.toThrow();
     });
 });
