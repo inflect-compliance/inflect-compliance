@@ -2276,11 +2276,43 @@ exports[`API contract — per-schema snapshots schema: FindingCreateRequest 1`] 
         "null"
       ]
     },
+    "analysis": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 20000
+    },
     "owner": {
       "type": [
         "string",
         "null"
       ]
+    },
+    "assigneeUserId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "controlId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "compensatingControlId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "riskIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 100
     },
     "dueDate": {
       "type": [
@@ -2294,7 +2326,7 @@ exports[`API contract — per-schema snapshots schema: FindingCreateRequest 1`] 
     "type",
     "title"
   ],
-  "description": "Create an audit finding. auditId is optional — findings can be raised independently of an audit cycle. description + rootCause are encrypted at rest."
+  "description": "Create an audit finding. auditId is optional — findings can be raised independently of an audit cycle. description, rootCause + analysis are encrypted at rest. assigneeUserId / controlId / compensatingControlId / riskIds are validated against the tenant."
 }"
 `;
 
@@ -2327,11 +2359,43 @@ exports[`API contract — per-schema snapshots schema: FindingUpdateRequest 1`] 
         "null"
       ]
     },
+    "analysis": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 20000
+    },
     "owner": {
       "type": [
         "string",
         "null"
       ]
+    },
+    "assigneeUserId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "controlId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "compensatingControlId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "riskIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 100
     },
     "dueDate": {
       "type": [
@@ -2344,7 +2408,7 @@ exports[`API contract — per-schema snapshots schema: FindingUpdateRequest 1`] 
       "enum": [
         "OPEN",
         "IN_PROGRESS",
-        "RESOLVED",
+        "READY_FOR_VERIFICATION",
         "CLOSED"
       ]
     },
@@ -2355,7 +2419,7 @@ exports[`API contract — per-schema snapshots schema: FindingUpdateRequest 1`] 
       ]
     }
   },
-  "description": "Partial update for a finding — including lifecycle transitions and verification notes."
+  "description": "Partial update for a finding — including lifecycle transitions and verification notes. Relation fields (assignee/control/compensating/risks) are validated against the tenant; riskIds is a full replace."
 }"
 `;
 

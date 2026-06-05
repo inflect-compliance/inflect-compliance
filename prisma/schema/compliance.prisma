@@ -296,6 +296,7 @@ model Risk {
   // Epic G-7 — structured treatment plans (replaces free-text
   // `treatmentNotes` for ISO 27001 6.1.3 conformance).
   treatmentPlans  RiskTreatmentPlan[]
+  findingLinks    FindingRisk[]
   // Evidence attached directly to this risk (Evidence Library tag +
   // the risk Evidence tab). Mirrors Control/Task.
   evidence        Evidence[]
@@ -490,6 +491,8 @@ model Control {
   testRuns                     ControlTestRun[]
   evidence                     Evidence[]
   frameworkMappings            FrameworkMapping[]
+  findings                     Finding[]                @relation("FindingControl")
+  compensatingForFindings      Finding[]                @relation("FindingCompensatingControl")
   integrationExecutions        IntegrationExecution[]
   policyLinks                  PolicyControlLink[]
   risks                        RiskControl[]
@@ -949,34 +952,70 @@ model PolicyTemplate {
 }
 
 model Finding {
-  id                String            @id @default(cuid())
-  tenantId          String
-  auditId           String?
-  severity          FindingSeverity
-  type              FindingType
-  title             String
-  description       String
-  rootCause         String?
-  correctiveAction  String?
-  owner             String?
-  dueDate           DateTime?
-  status            FindingStatus     @default(OPEN)
-  verificationNotes String?
-  verifiedBy        String?
-  verifiedAt        DateTime?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  deletedAt         DateTime?
-  deletedByUserId   String?
-  audit             Audit?            @relation(fields: [auditId], references: [id])
-  tenant            Tenant            @relation(fields: [tenantId], references: [id])
-  evidenceLinks     FindingEvidence[]
+  id                    String            @id @default(cuid())
+  tenantId              String
+  auditId               String?
+  severity              FindingSeverity
+  type                  FindingType
+  title                 String
+  description           String
+  rootCause             String?
+  correctiveAction      String?
+  // Free-text analyst notes / commentary on the finding. Encrypted at
+  // rest (see encrypted-fields manifest).
+  analysis              String?
+  owner                 String?
+  // Assignee — a tenant member accountable for the finding (supersedes
+  // the legacy free-text `owner`).
+  assigneeUserId        String?
+  // The control this finding is raised against.
+  controlId             String?
+  // A compensating control that mitigates the finding.
+  compensatingControlId String?
+  dueDate               DateTime?
+  status                FindingStatus     @default(OPEN)
+  verificationNotes     String?
+  verifiedBy            String?
+  verifiedAt            DateTime?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  deletedAt             DateTime?
+  deletedByUserId       String?
+  audit                 Audit?            @relation(fields: [auditId], references: [id])
+  tenant                Tenant            @relation(fields: [tenantId], references: [id])
+  assignee              User?             @relation("FindingAssignee", fields: [assigneeUserId], references: [id])
+  control               Control?          @relation("FindingControl", fields: [controlId], references: [id], onDelete: SetNull)
+  compensatingControl   Control?          @relation("FindingCompensatingControl", fields: [compensatingControlId], references: [id], onDelete: SetNull)
+  evidenceLinks         FindingEvidence[]
+  riskLinks             FindingRisk[]
 
   @@unique([id, tenantId])
   @@index([tenantId])
   @@index([tenantId, createdAt])
   @@index([tenantId, deletedAt])
   @@index([tenantId, auditId])
+  @@index([tenantId, assigneeUserId])
+  @@index([tenantId, controlId])
+  @@index([tenantId, compensatingControlId])
+}
+
+// Many-to-many: a finding can implicate several risks. Composite parent
+// FKs to (id, tenantId) guarantee both sides share this row's tenant —
+// the FindingEvidence pattern. RLS + indexes mirror that junction.
+model FindingRisk {
+  id        String   @id @default(cuid())
+  tenantId  String
+  findingId String
+  riskId    String
+  createdAt DateTime @default(now())
+  finding   Finding  @relation(fields: [findingId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  risk      Risk     @relation(fields: [riskId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([findingId, riskId])
+  @@index([tenantId])
+  @@index([tenantId, findingId])
+  @@index([tenantId, riskId])
 }
 
 model FindingEvidence {

@@ -175,6 +175,7 @@ model Tenant {
   evidenceReviews                   EvidenceReview[]
   auditChecklistItems               AuditChecklistItem[]
   findingEvidences                  FindingEvidence[]
+  findingRisks                      FindingRisk[]
   auditorPackAccesses               AuditorPackAccess[]
   // PolicyControlLink denormalisation (single-table follow-on).
   policyControlLinks                PolicyControlLink[]
@@ -637,6 +638,7 @@ model User {
   controlApplicabilityDecisions Control[]                    @relation("ControlApplicabilityDecider")
   createdControls               Control[]                    @relation("ControlCreator")
   ownedControls                 Control[]                    @relation("ControlOwner")
+  assignedFindings              Finding[]                    @relation("FindingAssignee")
   controlAssetsCreated          ControlAsset[]               @relation("ControlAssetCreator")
   controlContributions          ControlContributor[]
   controlEvidenceLinksCreated   ControlEvidenceLink[]        @relation("ControlEvidenceCreator")
