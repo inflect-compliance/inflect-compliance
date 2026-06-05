@@ -15,12 +15,9 @@
  * below it.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { FormField } from '@/components/ui/form-field';
 import { InlineEmptyState } from '@/components/ui/inline-empty-state';
-import { cardVariants } from '@/components/ui/card';
-import { cn } from '@/lib/cn';
 import { useToastWithUndo } from '@/components/ui/hooks';
+import { EvidenceAddForm } from '@/components/EvidenceAddForm';
 import {
     EvidenceSubTable,
     type EvidenceTabData,
@@ -174,81 +171,37 @@ export function AttachedEvidencePanel({
 
     return (
         <div className="space-y-default" data-testid={`${entity}-attached-evidence`}>
-            {canWrite && (
-                <div className="flex justify-end">
-                    <Button
-                        variant="secondary"
-                        onClick={() => setShowForm(!showForm)}
-                        id={`add-${entity}-evidence-btn`}
-                    >
-                        Add Evidence
-                    </Button>
-                </div>
-            )}
-            {showForm && canWrite && (
-                <form
-                    onSubmit={addEvidence}
-                    className={cn(cardVariants({ density: 'compact' }), 'space-y-compact')}
-                >
-                    {formError && (
-                        <div
-                            className="rounded-lg border border-border-error bg-bg-error px-3 py-2 text-sm text-content-error"
-                            role="alert"
-                        >
-                            {formError}
-                        </div>
-                    )}
-                    <FormField label="Upload file">
-                        <input
-                            ref={fileRef}
-                            type="file"
-                            className="block w-full text-sm text-content-muted file:mr-3 file:rounded-md file:border-0 file:bg-bg-muted file:px-3 file:py-1.5 file:text-sm file:text-content-default"
-                            onChange={(e) => {
-                                const f = e.target.files?.[0] ?? null;
-                                setFile(f);
-                                if (f && !fileTitle) setFileTitle(f.name);
-                            }}
-                        />
-                    </FormField>
-                    {file && (
-                        <FormField label="Title">
-                            <input
-                                className="input w-full"
-                                value={fileTitle}
-                                onChange={(e) => setFileTitle(e.target.value)}
-                                placeholder="Evidence title"
-                            />
-                        </FormField>
-                    )}
-                    <div className="text-xs text-content-subtle">— or link a URL —</div>
-                    <FormField label="Evidence URL">
-                        <input
-                            className="input w-full"
-                            value={url}
-                            onChange={(e) => setUrl(e.target.value)}
-                            placeholder="https://…"
-                            disabled={!!file}
-                        />
-                    </FormField>
-                    <FormField label="Note">
-                        <input
-                            className="input w-full"
-                            value={note}
-                            onChange={(e) => setNote(e.target.value)}
-                            placeholder="Optional note"
-                            disabled={!!file}
-                        />
-                    </FormField>
-                    <Button
-                        type="submit"
-                        variant="primary"
-                        disabled={saving}
-                        id={`submit-${entity}-evidence-btn`}
-                    >
-                        {saving ? 'Saving…' : 'Add Evidence'}
-                    </Button>
-                </form>
-            )}
+            <EvidenceAddForm
+                ids={{
+                    trigger: `add-${entity}-evidence-btn`,
+                    form: `${entity}-evidence-form`,
+                    title: `${entity}-evidence-title`,
+                    file: `${entity}-evidence-file`,
+                    url: `${entity}-evidence-url`,
+                    note: `${entity}-evidence-note`,
+                    error: `${entity}-evidence-error`,
+                    submit: `submit-${entity}-evidence-btn`,
+                }}
+                canWrite={canWrite}
+                show={showForm}
+                onToggleShow={() => setShowForm(!showForm)}
+                file={file}
+                onFileChange={(f) => {
+                    setFile(f);
+                    if (f && !fileTitle) setFileTitle(f.name);
+                }}
+                fileInputRef={fileRef}
+                title={fileTitle}
+                onTitleChange={setFileTitle}
+                url={url}
+                onUrlChange={setUrl}
+                note={note}
+                onNoteChange={setNote}
+                onSubmit={addEvidence}
+                error={formError}
+                uploading={saving && !!file}
+                saving={saving && !file}
+            />
             {error ? (
                 <InlineEmptyState
                     title="Couldn't load evidence"

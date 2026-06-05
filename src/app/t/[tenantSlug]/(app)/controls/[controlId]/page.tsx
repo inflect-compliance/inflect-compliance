@@ -16,6 +16,7 @@ import { EditControlModal } from './_modals/EditControlModal';
 import { ControlReverseLookupModal } from '@/components/controls/ControlReverseLookupModal';
 import { ControlMappingsTab } from './_tabs/ControlMappingsTab';
 import { EvidenceSubTable } from './_tabs/EvidenceSubTable';
+import { EvidenceAddForm } from '@/components/EvidenceAddForm';
 import { MetaStrip } from '@/components/ui/meta-strip';
 import { CONTROL_STATUS_VARIANT } from '@/app-layer/domain/entity-status-mapping';
 // Inline pencil icon to avoid lucide-react barrel import issue with Next.js 14
@@ -33,7 +34,6 @@ import { useToastWithUndo } from '@/components/ui/hooks';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { Tooltip } from '@/components/ui/tooltip';
 import { CopyText } from '@/components/ui/copy-text';
-import { ProgressBar } from '@/components/ui/progress-bar';
 import dynamic from 'next/dynamic';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 import { cardVariants } from '@/components/ui/card';
@@ -1045,65 +1045,34 @@ export default function ControlDetailPage() {
 
             {tab === 'evidence' && (
                 <div className="space-y-default">
-                    {permissions.canWrite && (
-                        <div className="flex justify-end">
-                            <Button variant="primary" onClick={() => { setShowEvidenceForm(!showEvidenceForm); setFileUploadError(''); }} id="link-evidence-btn">
-                                + Evidence
-                            </Button>
-                        </div>
-                    )}
-                    {/* Unified add-evidence form — upload a file (browse +
-                        title) OR link a URL. A chosen file takes precedence
-                        (the URL fields disable). Either way the evidence is
-                        attached to this control + the Evidence Library. */}
-                    {showEvidenceForm && permissions.canWrite && (
-                        <form onSubmit={addEvidence} className={cn(cardVariants({ density: 'compact' }), 'space-y-default')} id="control-evidence-form">
-                            <div className="space-y-compact">
-                                <div>
-                                    <label className="mb-1 block text-xs font-medium text-content-muted" htmlFor="control-upload-title">Title</label>
-                                    <input
-                                        type="text"
-                                        className="input w-full"
-                                        placeholder="Title (defaults to filename)"
-                                        value={fileUploadTitle}
-                                        onChange={e => setFileUploadTitle(e.target.value)}
-                                        id="control-upload-title"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="mb-1 block text-xs font-medium text-content-muted" htmlFor="control-file-input">Upload a file</label>
-                                    <input
-                                        ref={fileUploadRef}
-                                        type="file"
-                                        className="input w-full file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-[var(--brand-default)] file:text-content-emphasis hover:file:bg-[var(--brand-default)]"
-                                        onChange={e => setFileToUpload(e.target.files?.[0] || null)}
-                                        id="control-file-input"
-                                        accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.csv,.txt,.doc,.docx,.xlsx,.xls,.json,.zip"
-                                    />
-                                    {fileToUpload && (
-                                        <p className="mt-1 text-xs text-content-muted">{fileToUpload.name} ({fileToUpload.size < 1048576 ? `${(fileToUpload.size / 1024).toFixed(1)} KB` : `${(fileToUpload.size / 1048576).toFixed(1)} MB`})</p>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="space-y-compact border-t border-border-subtle pt-3">
-                                <label className="block text-xs font-medium text-content-muted" htmlFor="evidence-url-input">…or link a URL</label>
-                                <input type="url" className="input w-full" placeholder="https://…" value={evidenceUrl} onChange={e => setEvidenceUrl(e.target.value)} id="evidence-url-input" disabled={!!fileToUpload} />
-                                <textarea className="input w-full" rows={2} placeholder="Note (optional)" value={evidenceNote} onChange={e => setEvidenceNote(e.target.value)} id="evidence-note-input" disabled={!!fileToUpload} />
-                            </div>
-                            {fileUploadError && (
-                                <div className="text-content-error text-sm bg-bg-error rounded px-3 py-2" id="control-evidence-error">{fileUploadError}</div>
-                            )}
-                            {fileUploading && (
-                                // Epic 59 — ProgressBar primitive. The upload is
-                                // XHR-bounded so we show a stable 60% "working"
-                                // signal; the ARIA value stays correct for AT.
-                                <ProgressBar value={60} size="md" variant="brand" aria-label="Uploading evidence file" />
-                            )}
-                            <Button type="submit" variant="primary" disabled={fileUploading || savingEvidence || (!fileToUpload && !evidenceUrl.trim())} id="submit-evidence-btn">
-                                {fileUploading ? 'Uploading...' : savingEvidence ? 'Linking...' : 'Add Evidence'}
-                            </Button>
-                        </form>
-                    )}
+                    <EvidenceAddForm
+                        ids={{
+                            trigger: 'link-evidence-btn',
+                            form: 'control-evidence-form',
+                            title: 'control-upload-title',
+                            file: 'control-file-input',
+                            url: 'evidence-url-input',
+                            note: 'evidence-note-input',
+                            error: 'control-evidence-error',
+                            submit: 'submit-evidence-btn',
+                        }}
+                        canWrite={permissions.canWrite}
+                        show={showEvidenceForm}
+                        onToggleShow={() => { setShowEvidenceForm(!showEvidenceForm); setFileUploadError(''); }}
+                        file={fileToUpload}
+                        onFileChange={setFileToUpload}
+                        fileInputRef={fileUploadRef}
+                        title={fileUploadTitle}
+                        onTitleChange={setFileUploadTitle}
+                        url={evidenceUrl}
+                        onUrlChange={setEvidenceUrl}
+                        note={evidenceNote}
+                        onNoteChange={setEvidenceNote}
+                        onSubmit={addEvidence}
+                        error={fileUploadError}
+                        uploading={fileUploading}
+                        saving={savingEvidence}
+                    />
                     <div className={cn(cardVariants({ density: 'none' }), 'overflow-hidden')}>
                         {evidenceSWR.error ? (
                             <InlineEmptyState

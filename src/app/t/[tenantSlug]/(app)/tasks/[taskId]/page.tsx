@@ -3,7 +3,9 @@
 import { formatDate, formatDateTime } from '@/lib/format-date';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { textLinkVariants } from '@/components/ui/typography';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
@@ -34,6 +36,7 @@ import { cardVariants } from '@/components/ui/card';
 // `_tabs/` (kept there so existing guard exemptions + a unit test keyed
 // on that path stay valid). Imported here via the `@/app` alias.
 import { EvidenceSubTable } from '@/app/t/[tenantSlug]/(app)/controls/[controlId]/_tabs/EvidenceSubTable';
+import { EvidenceAddForm } from '@/components/EvidenceAddForm';
 import { EditTaskModal, type EditTaskForm } from './_modals/EditTaskModal';
 import { toYMD } from '@/components/ui/date-picker/date-utils';
 import { Pen2 } from '@/components/ui/icons/nucleo';
@@ -661,7 +664,15 @@ export default function TaskDetailPage() {
                         {task.control && (
                             <div>
                                 <span className="text-xs text-content-subtle uppercase">Control</span>
-                                <p className="text-sm text-content-default mt-1">{task.control.code} — {task.control.name}</p>
+                                <p className="text-sm mt-1">
+                                    <Link
+                                        href={tenantHref(`/controls/${task.control.id}`)}
+                                        className={textLinkVariants({ tone: 'link' })}
+                                        id="task-control-link"
+                                    >
+                                        {task.control.code} — {task.control.name}
+                                    </Link>
+                                </p>
                             </div>
                         )}
                         {task.completedAt && (
@@ -706,86 +717,37 @@ export default function TaskDetailPage() {
                 this task via Evidence.taskId. */}
             {tab === 'evidence' && (
                 <div className="space-y-default">
-                    {permissions.canWrite && (
-                        <div className="flex justify-end">
-                            <Button
-                                variant="primary"
-                                onClick={() => setShowEvidenceForm(!showEvidenceForm)}
-                                id="add-evidence-btn"
-                            >
-                                Add Evidence
-                            </Button>
-                        </div>
-                    )}
-                    {showEvidenceForm && permissions.canWrite && (
-                        <form
-                            onSubmit={addEvidence}
-                            className={cn(cardVariants({ density: 'compact' }), 'space-y-compact')}
-                        >
-                            {evidenceError && (
-                                <div
-                                    className="rounded-lg border border-border-error bg-bg-error px-3 py-2 text-sm text-content-error"
-                                    role="alert"
-                                    id="task-evidence-error"
-                                >
-                                    {evidenceError}
-                                </div>
-                            )}
-                            <FormField label="Upload file">
-                                <input
-                                    ref={fileUploadRef}
-                                    type="file"
-                                    id="evidence-file-input"
-                                    className="block w-full text-sm text-content-muted file:mr-3 file:rounded-md file:border-0 file:bg-bg-muted file:px-3 file:py-1.5 file:text-sm file:text-content-default"
-                                    onChange={(e) => {
-                                        const f = e.target.files?.[0] ?? null;
-                                        setFileToUpload(f);
-                                        if (f && !fileUploadTitle) setFileUploadTitle(f.name);
-                                    }}
-                                />
-                            </FormField>
-                            {fileToUpload && (
-                                <FormField label="Title">
-                                    <input
-                                        className="input w-full"
-                                        value={fileUploadTitle}
-                                        onChange={(e) => setFileUploadTitle(e.target.value)}
-                                        placeholder="Evidence title"
-                                    />
-                                </FormField>
-                            )}
-                            <div className="text-xs text-content-subtle">
-                                — or link a URL —
-                            </div>
-                            <FormField label="Evidence URL">
-                                <input
-                                    className="input w-full"
-                                    id="evidence-url-input"
-                                    value={evidenceUrl}
-                                    onChange={(e) => setEvidenceUrl(e.target.value)}
-                                    placeholder="https://…"
-                                    disabled={!!fileToUpload}
-                                />
-                            </FormField>
-                            <FormField label="Note">
-                                <input
-                                    className="input w-full"
-                                    value={evidenceNote}
-                                    onChange={(e) => setEvidenceNote(e.target.value)}
-                                    placeholder="Optional note"
-                                    disabled={!!fileToUpload}
-                                />
-                            </FormField>
-                            <Button
-                                type="submit"
-                                variant="primary"
-                                disabled={savingEvidence}
-                                id="submit-evidence-btn"
-                            >
-                                {savingEvidence ? 'Saving…' : 'Add Evidence'}
-                            </Button>
-                        </form>
-                    )}
+                    <EvidenceAddForm
+                        ids={{
+                            trigger: 'add-evidence-btn',
+                            form: 'task-evidence-form',
+                            title: 'task-upload-title',
+                            file: 'evidence-file-input',
+                            url: 'evidence-url-input',
+                            note: 'evidence-note-input',
+                            error: 'task-evidence-error',
+                            submit: 'submit-evidence-btn',
+                        }}
+                        canWrite={!!permissions.canWrite}
+                        show={showEvidenceForm}
+                        onToggleShow={() => setShowEvidenceForm(!showEvidenceForm)}
+                        file={fileToUpload}
+                        onFileChange={(f) => {
+                            setFileToUpload(f);
+                            if (f && !fileUploadTitle) setFileUploadTitle(f.name);
+                        }}
+                        fileInputRef={fileUploadRef}
+                        title={fileUploadTitle}
+                        onTitleChange={setFileUploadTitle}
+                        url={evidenceUrl}
+                        onUrlChange={setEvidenceUrl}
+                        note={evidenceNote}
+                        onNoteChange={setEvidenceNote}
+                        onSubmit={addEvidence}
+                        error={evidenceError}
+                        uploading={savingEvidence && !!fileToUpload}
+                        saving={savingEvidence && !fileToUpload}
+                    />
                     {evidenceQuery.error ? (
                         <InlineEmptyState
                             title="Couldn't load evidence"

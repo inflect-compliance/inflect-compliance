@@ -98,8 +98,8 @@ const BASELINE_PLUS_LITERAL_SITES = new Set<string>([
     // and `+`). Line numbers shift whenever this file grows; refreshed
     // after the Evidence tab + edit-modal landed above them. The
     // literals themselves are unchanged staged debt.
-    'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:841',
-    'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:869',
+    'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:803',
+    'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:831',
     'src/app/t/[tenantSlug]/(app)/tests/runs/[runId]/page.tsx:419',
     'src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx:369',
     'src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx:393',

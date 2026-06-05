@@ -85,6 +85,12 @@ const PRIMARY_BUDGET: Record<string, number> = {
     "src/app/t/[tenantSlug]/(app)/admin/members/page.tsx": 3,
     "src/app/t/[tenantSlug]/(app)/admin/api-keys/page.tsx": 3,
 
+    // Shared add-evidence form — the reveal trigger + the form submit
+    // are two genuinely separate regions (the form only mounts once the
+    // trigger is clicked). Used identically by the Control / Task / Risk
+    // / Asset evidence tabs.
+    "src/components/EvidenceAddForm.tsx": 2,
+
     // 2-primary tier — page CTA + inline form (R5-PR7 pattern)
     "src/components/ui/HeroMetric.tsx": 2,
     "src/components/TestPlansPanel.tsx": 2,
