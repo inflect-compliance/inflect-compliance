@@ -438,6 +438,8 @@ export async function uploadEvidenceFile(
     metadata: {
         title?: string;
         controlId?: string | null;
+        /** Source task — set when uploaded from a task's Evidence tab. */
+        taskId?: string | null;
         category?: string | null;
         /** B8 follow-up — folder applied to the newly-created
          *  evidence row. Trimmed + null-coerced inside `create`. */
@@ -475,6 +477,7 @@ export async function uploadEvidenceFile(
     // Create FileRecord + Evidence in a transaction
     const result = await runInTenantContext(ctx, async (db) => {
         const controlId = metadata.controlId || null;
+        const taskId = metadata.taskId || null;
 
         // Validate control belongs to the same tenant
         if (controlId) {
@@ -483,6 +486,15 @@ export async function uploadEvidenceFile(
                 select: { id: true },
             });
             if (!control) throw badRequest('INVALID_CONTROL', 'Control not found or belongs to a different tenant');
+        }
+
+        // Validate task belongs to the same tenant
+        if (taskId) {
+            const task = await db.task.findFirst({
+                where: { id: taskId, tenantId: ctx.tenantId },
+                select: { id: true },
+            });
+            if (!task) throw badRequest('INVALID_TASK', 'Task not found or belongs to a different tenant');
         }
 
         // ─── SHA-256 Dedup ───
@@ -520,6 +532,7 @@ export async function uploadEvidenceFile(
             fileSize: writeResult.sizeBytes,
             fileRecordId,
             controlId,
+            taskId,
             category: metadata.category || undefined,
             // B8 follow-up — same null-coercion as the TEXT path.
             folder: metadata.folder?.trim() || null,

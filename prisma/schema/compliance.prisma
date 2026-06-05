@@ -79,6 +79,11 @@ model Task {
   comments        TaskComment[]
   links           TaskLink[]
   watchers        TaskWatcher[]
+  // Evidence attached directly to this task — the task Evidence tab
+  // mirrors the control Evidence tab. `Evidence.taskId` is the source
+  // pointer that also powers the "uploaded from" back-reference on the
+  // evidence detail surface.
+  evidence        Evidence[]
 
   @@unique([tenantId, key])
   @@index([tenantId])
@@ -669,6 +674,10 @@ model Evidence {
   id                String                    @id @default(cuid())
   tenantId          String
   controlId         String?
+  // Source task — set when this evidence was uploaded/linked from a
+  // task's Evidence tab. Powers the task Evidence tab AND the
+  // "uploaded from" back-reference on the evidence detail surface.
+  taskId            String?
   type              EvidenceType
   title             String
   content           String?
@@ -701,6 +710,7 @@ model Evidence {
   // their proof here.
   vendorAnswers     VendorAssessmentAnswer[]  @relation("VendorAnswerEvidence")
   control           Control?                  @relation(fields: [controlId], references: [id])
+  task              Task?                     @relation(fields: [taskId], references: [id])
   fileRecord        FileRecord?               @relation(fields: [fileRecordId], references: [id])
   ownerUser         User?                     @relation("EvidenceOwner", fields: [ownerUserId], references: [id])
   tenant            Tenant                    @relation(fields: [tenantId], references: [id])
@@ -721,6 +731,9 @@ model Evidence {
   // Already a heavily-used UI surface — every control detail page
   // pulls evidence by controlId.
   @@index([tenantId, controlId])
+  // Supports the task Evidence tab ("evidence for task X") + the
+  // evidence "uploaded from" back-reference lookup.
+  @@index([tenantId, taskId])
   // GAP-perf — supports `type` filter (FILE|LINK|TEXT|SCREENSHOT).
   @@index([tenantId, type])
   // B8 follow-up — supports folder filter + group-by reads. Same

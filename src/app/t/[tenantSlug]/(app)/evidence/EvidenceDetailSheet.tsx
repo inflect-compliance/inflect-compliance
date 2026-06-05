@@ -24,7 +24,9 @@ import { Button } from '@/components/ui/button';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { formatDate } from '@/lib/format-date';
 import { Pen2 } from '@/components/ui/icons/nucleo';
-import { useTenantApiUrl } from '@/lib/tenant-context-provider';
+import Link from 'next/link';
+import { textLinkVariants } from '@/components/ui/typography';
+import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 
 const EVIDENCE_STATUS_VARIANT: Record<string, StatusBadgeVariant> = {
     DRAFT: 'neutral',
@@ -67,6 +69,9 @@ interface EvidenceDetailPayload {
     ownerUserId: string | null;
     controlId: string | null;
     control?: { id: string; code: string | null; name: string } | null;
+    taskId: string | null;
+    /** Source task — set when this evidence was uploaded from a task. */
+    task?: { id: string; key: string | null; title: string } | null;
     createdAt: string;
     updatedAt: string;
 }
@@ -81,6 +86,7 @@ export function EvidenceDetailSheet({
     onReview,
 }: EvidenceDetailSheetProps) {
     const apiUrl = useTenantApiUrl();
+    const tenantHref = useTenantHref();
 
     const detailQuery = useQuery<EvidenceDetailPayload>({
         queryKey: ['evidence', 'detail', evidenceId],
@@ -105,6 +111,21 @@ export function EvidenceDetailSheet({
                 value: `${evidence.control.code ?? ''}${evidence.control.code ? ' — ' : ''}${evidence.control.name}`,
             });
         }
+        if (evidence.task) {
+            // Back-reference — which task this evidence was uploaded from.
+            rows.push({
+                label: 'Uploaded from task',
+                value: (
+                    <Link
+                        href={tenantHref(`/tasks/${evidence.task.id}`)}
+                        className={textLinkVariants({ tone: 'link' })}
+                    >
+                        {evidence.task.key ? `${evidence.task.key} — ` : ''}
+                        {evidence.task.title}
+                    </Link>
+                ),
+            });
+        }
         if (evidence.nextReviewDate) {
             rows.push({
                 label: 'Next review',
@@ -116,7 +137,7 @@ export function EvidenceDetailSheet({
             value: formatDate(new Date(evidence.updatedAt)),
         });
         return rows;
-    }, [evidence]);
+    }, [evidence, tenantHref]);
 
     return (
         <Sheet

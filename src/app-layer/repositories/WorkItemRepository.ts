@@ -258,7 +258,7 @@ export class WorkItemRepository {
                 watchers: {
                     include: { user: { select: { id: true, name: true, email: true } } },
                 },
-                _count: { select: { links: true, comments: true, watchers: true } },
+                _count: { select: { links: true, comments: true, watchers: true, evidence: true } },
             },
         });
     }

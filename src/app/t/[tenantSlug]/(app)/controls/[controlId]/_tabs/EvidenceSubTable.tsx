@@ -1,13 +1,16 @@
 'use client';
 
 /**
- * Control detail — Evidence sub-table (R10-PR3 follow-up).
+ * Shared Evidence sub-table.
  *
- * Extracted from `page.tsx` as part of the raw-`<table>` → `<DataTable>`
- * migration; the page-size ratchet at
- * `tests/guards/controls-detail-page-size.test.ts` mandates that
- * inline-grown helpers live under `_tabs/` rather than balloon the
- * 1,400+ line page.
+ * Originally extracted from the control detail `page.tsx` (R10-PR3) as
+ * part of the raw-`<table>` → `<DataTable>` migration. Now SHARED — the
+ * control Evidence tab AND the task Evidence tab both render through it.
+ * It stays under `controls/[controlId]/_tabs/` (rather than moving to
+ * `@/components/`) so the existing guard exemptions + unit test keyed on
+ * this path keep working; the task detail page imports it via the
+ * `@/app/...` alias. Behaviour is identical across consumers; the task
+ * tab opts into direct-evidence removal via `onUnlinkEvidence`.
  *
  * The evidence tab interleaves two source arrays:
  *   • `links` — EvidenceLinkDTO rows (user-attached URLs / file refs)
@@ -47,7 +50,8 @@ interface EvidenceTableRow {
     createdByName?: string;
     statusBadge?: { label: string; variant: StatusBadgeVariant };
     createdAt?: string | Date | null;
-    linkId?: string;           // present on rows we can unlink
+    linkId?: string;           // present on link rows we can unlink
+    evidenceId?: string;       // present on direct-evidence rows we can unlink
 }
 
 export function EvidenceSubTable({
@@ -55,12 +59,21 @@ export function EvidenceSubTable({
     loading,
     canWrite,
     onUnlink,
+    onUnlinkEvidence,
     tenantHref,
 }: {
     data: EvidenceTabData | undefined;
     loading: boolean;
     canWrite: boolean;
     onUnlink: (linkId: string) => void;
+    /**
+     * Opt-in removal for direct-evidence rows (Evidence entities, not
+     * link rows). The control evidence tab omits it — its direct
+     * Evidence stays read-only there. The task evidence tab passes it
+     * so task-attached evidence (which IS direct, via Evidence.taskId)
+     * is removable. Absent ⇒ no remove button on direct-evidence rows.
+     */
+    onUnlinkEvidence?: (evidenceId: string) => void;
     tenantHref: (path: string) => string;
 }) {
     const rows = useMemo<EvidenceTableRow[]>(() => {
@@ -93,6 +106,11 @@ export function EvidenceSubTable({
             });
         }
         for (const ev of directEvidence) {
+            // LINK-type evidence carries its URL in `content`; render it
+            // as an external href so a task URL-evidence row reads the
+            // same as a control link row. FILE / TEXT evidence keep the
+            // title-link-to-library treatment.
+            const isUrlEvidence = ev.type === 'LINK' && !!ev.content;
             out.push({
                 rowKey: `ev-${ev.id}`,
                 kindBadge: {
@@ -104,8 +122,11 @@ export function EvidenceSubTable({
                               ? 'neutral'
                               : 'info',
                 },
-                titleCell: 'evidence-title',
+                titleCell: isUrlEvidence ? 'link-href' : 'evidence-title',
+                titleHref: isUrlEvidence ? ev.content : undefined,
+                titleNote: isUrlEvidence ? ev.title : undefined,
                 titleText: ev.title,
+                evidenceId: ev.id,
                 statusCell: 'badge',
                 statusBadge: {
                     label: ev.status,
@@ -208,21 +229,37 @@ export function EvidenceSubTable({
                           {
                               id: 'actions',
                               header: 'Actions',
-                              cell: ({ row }: { row: { original: EvidenceTableRow } }) =>
-                                  row.original.linkId ? (
-                                      <button
-                                          className="text-content-error text-xs hover:text-content-error"
-                                          onClick={() => onUnlink(row.original.linkId!)}
-                                          id={`unlink-${row.original.linkId}`}
-                                      >
-                                          × Remove
-                                      </button>
-                                  ) : null,
+                              cell: ({ row }: { row: { original: EvidenceTableRow } }) => {
+                                  const r = row.original;
+                                  if (r.linkId) {
+                                      return (
+                                          <button
+                                              className="text-content-error text-xs hover:text-content-error"
+                                              onClick={() => onUnlink(r.linkId!)}
+                                              id={`unlink-${r.linkId}`}
+                                          >
+                                              × Remove
+                                          </button>
+                                      );
+                                  }
+                                  if (r.evidenceId && onUnlinkEvidence) {
+                                      return (
+                                          <button
+                                              className="text-content-error text-xs hover:text-content-error"
+                                              onClick={() => onUnlinkEvidence(r.evidenceId!)}
+                                              id={`unlink-evidence-${r.evidenceId}`}
+                                          >
+                                              × Remove
+                                          </button>
+                                      );
+                                  }
+                                  return null;
+                              },
                           },
                       ]
                     : []),
             ]),
-        [canWrite, onUnlink, tenantHref],
+        [canWrite, onUnlink, onUnlinkEvidence, tenantHref],
     );
 
     // E2E semantics — preserve the pre-migration contract:

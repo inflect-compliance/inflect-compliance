@@ -445,6 +445,13 @@ export const AssignTaskSchema = z.object({
     description: 'Reassign or unassign a task. Pass null to clear the assignee.',
 });
 
+export const LinkTaskEvidenceSchema = z.object({
+    url: z.string().url().max(2000),
+    note: z.string().max(2000).nullable().optional(),
+}).strip().openapi('TaskEvidenceLinkRequest', {
+    description: 'Attach a URL as evidence on a task. File uploads use the multipart /evidence/uploads endpoint with a taskId.',
+});
+
 export const AddTaskLinkSchema = z.object({
     entityType: z.enum(['CONTROL', 'FRAMEWORK_REQUIREMENT', 'RISK', 'ASSET', 'POLICY', 'EVIDENCE', 'FILE', 'AUDIT_PACK', 'VENDOR']),
     entityId: z.string().min(1),
