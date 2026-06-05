@@ -70,8 +70,12 @@ interface EvidenceDetailPayload {
     controlId: string | null;
     control?: { id: string; code: string | null; name: string } | null;
     taskId: string | null;
-    /** Source task — set when this evidence was uploaded from a task. */
+    /** Source task / risk / asset — set when uploaded from that entity. */
     task?: { id: string; key: string | null; title: string } | null;
+    riskId: string | null;
+    risk?: { id: string; key: string | null; title: string } | null;
+    assetId: string | null;
+    asset?: { id: string; key: string | null; name: string } | null;
     createdAt: string;
     updatedAt: string;
 }
@@ -122,6 +126,34 @@ export function EvidenceDetailSheet({
                     >
                         {evidence.task.key ? `${evidence.task.key} — ` : ''}
                         {evidence.task.title}
+                    </Link>
+                ),
+            });
+        }
+        if (evidence.risk) {
+            rows.push({
+                label: 'Uploaded from risk',
+                value: (
+                    <Link
+                        href={tenantHref(`/risks/${evidence.risk.id}`)}
+                        className={textLinkVariants({ tone: 'link' })}
+                    >
+                        {evidence.risk.key ? `${evidence.risk.key} — ` : ''}
+                        {evidence.risk.title}
+                    </Link>
+                ),
+            });
+        }
+        if (evidence.asset) {
+            rows.push({
+                label: 'Uploaded from asset',
+                value: (
+                    <Link
+                        href={tenantHref(`/assets/${evidence.asset.id}`)}
+                        className={textLinkVariants({ tone: 'link' })}
+                    >
+                        {evidence.asset.key ? `${evidence.asset.key} — ` : ''}
+                        {evidence.asset.name}
                     </Link>
                 ),
             });

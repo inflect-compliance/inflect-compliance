@@ -43,6 +43,8 @@ import { cn } from '@/lib/cn';
 import { cardVariants } from '@/components/ui/card';
 import { EditRiskModal, type EditRiskForm } from './_modals/EditRiskModal';
 import { InheritedEvidencePanel } from '@/components/InheritedEvidencePanel';
+import { AttachedEvidencePanel } from '@/components/AttachedEvidencePanel';
+import { Heading } from '@/components/ui/typography';
 import { InheritedTestPlansPanel } from '@/components/InheritedTestPlansPanel';
 import { InheritedMappingsPanel } from '@/components/InheritedMappingsPanel';
 
@@ -377,11 +379,27 @@ export default function RiskDetailPage() {
                 />
             )}
             {activeTab === 'evidence' && (
-                <InheritedEvidencePanel
-                    endpoint={apiUrl(`/risks/${riskId}/evidence`)}
-                    tenantHref={href}
-                    entityLabel="risk"
-                />
+                <div className="space-y-section">
+                    <div className="space-y-default">
+                        <Heading level={3}>Attached evidence</Heading>
+                        <AttachedEvidencePanel
+                            entityId={riskId}
+                            entity="risk"
+                            endpoint={`/risks/${riskId}/evidence/attached`}
+                            apiUrl={apiUrl}
+                            tenantHref={href}
+                            canWrite={canWrite}
+                        />
+                    </div>
+                    <div className="space-y-default">
+                        <Heading level={3}>Inherited from controls</Heading>
+                        <InheritedEvidencePanel
+                            endpoint={apiUrl(`/risks/${riskId}/evidence`)}
+                            tenantHref={href}
+                            entityLabel="risk"
+                        />
+                    </div>
+                </div>
             )}
             {activeTab === 'mappings' && (
                 <InheritedMappingsPanel

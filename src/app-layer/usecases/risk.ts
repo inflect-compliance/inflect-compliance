@@ -422,3 +422,98 @@ export async function linkControlToRisk(ctx: RequestContext, riskId: string, con
     return linked;
 }
 
+// ─── Attached Evidence ───
+//
+// Evidence attached directly to a risk via `Evidence.riskId` — same
+// pattern as Control/Task. The risk Evidence tab renders this through
+// the shared <EvidenceSubTable> ({ links, evidence } shape; `links`
+// always empty). Distinct from the read-only INHERITED evidence
+// (aggregated from the risk's mapped controls), which the tab shows in
+// its own section.
+
+/** Risk attached-evidence payload — `{ links, evidence }` for the shared sub-table. */
+export async function getRiskEvidenceTab(ctx: RequestContext, riskId: string) {
+    assertCanRead(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const risk = await db.risk.findFirst({
+            where: { id: riskId, tenantId: ctx.tenantId },
+            select: { id: true },
+        });
+        if (!risk) throw notFound('Risk not found');
+        const evidence = await db.evidence.findMany({
+            where: { riskId, tenantId: ctx.tenantId, deletedAt: null },
+            orderBy: { createdAt: 'desc' },
+        });
+        return { links: [], evidence };
+    });
+}
+
+/** Attach a URL as evidence on a risk (file uploads go through /evidence/uploads with a riskId). */
+export async function linkRiskEvidence(
+    ctx: RequestContext,
+    riskId: string,
+    data: { url: string; note?: string | null },
+) {
+    assertCanWrite(ctx);
+    const url = data.url.trim();
+    const note = data.note ? sanitizePlainText(data.note) : null;
+    const result = await runInTenantContext(ctx, async (db) => {
+        const risk = await db.risk.findFirst({
+            where: { id: riskId, tenantId: ctx.tenantId },
+            select: { id: true },
+        });
+        if (!risk) throw notFound('Risk not found');
+        const evidence = await db.evidence.create({
+            data: {
+                tenantId: ctx.tenantId,
+                riskId,
+                type: 'LINK',
+                title: note || url,
+                content: url,
+                status: 'DRAFT',
+                ownerUserId: ctx.userId,
+            },
+        });
+        await logEvent(db, ctx, {
+            action: 'RISK_EVIDENCE_LINKED',
+            entityType: 'Risk',
+            entityId: riskId,
+            details: `Evidence linked: ${url}`,
+            detailsJson: { category: 'relationship', operation: 'linked', sourceEntity: 'Risk', sourceId: riskId, targetEntity: 'Evidence', targetId: evidence.id, relation: 'LINK' },
+        });
+        return evidence;
+    });
+    await bumpEntityCacheVersion(ctx, 'evidence');
+    return result;
+}
+
+/** Detach evidence from a risk — clears `Evidence.riskId`; the evidence survives in the library. */
+export async function unlinkRiskEvidence(
+    ctx: RequestContext,
+    riskId: string,
+    evidenceId: string,
+) {
+    assertCanWrite(ctx);
+    const outcome = await runInTenantContext(ctx, async (db) => {
+        const evidence = await db.evidence.findFirst({
+            where: { id: evidenceId, riskId, tenantId: ctx.tenantId },
+            select: { id: true },
+        });
+        if (!evidence) throw notFound('Risk evidence not found');
+        await db.evidence.update({
+            where: { id: evidenceId },
+            data: { riskId: null },
+        });
+        await logEvent(db, ctx, {
+            action: 'RISK_EVIDENCE_UNLINKED',
+            entityType: 'Risk',
+            entityId: riskId,
+            details: `Evidence unlinked: ${evidenceId}`,
+            detailsJson: { category: 'relationship', operation: 'unlinked', sourceEntity: 'Risk', sourceId: riskId, targetEntity: 'Evidence', targetId: evidenceId },
+        });
+        return { success: true };
+    });
+    await bumpEntityCacheVersion(ctx, 'evidence');
+    return outcome;
+}
+

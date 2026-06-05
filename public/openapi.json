@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Inflect Compliance API",
-    "version": "1.446.0",
+    "version": "1.447.1",
     "description": "Multi-tenant compliance-management API. The schema layer in `src/lib/schemas/index.ts` (request bodies) and `src/lib/dto/*.dto.ts` (response shapes) is the single source of truth — this document is generated from those Zod schemas via `npm run openapi:generate`.",
     "license": {
       "name": "Proprietary"
@@ -178,6 +178,27 @@
           }
         ],
         "description": "Asset with linked controls and risks. Returned by GET /assets/{id}."
+      },
+      "AssetEvidenceLinkRequest": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "maxLength": 2000,
+            "format": "uri"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "description": "Attach a URL as evidence on an asset. File uploads use the multipart /evidence/uploads endpoint with an assetId."
       },
       "AssetListItem": {
         "type": "object",
@@ -3091,6 +3112,27 @@
           }
         ],
         "description": "Risk with full linked-control objects. Returned by GET /risks/{id}."
+      },
+      "RiskEvidenceLinkRequest": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "maxLength": 2000,
+            "format": "uri"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "description": "Attach a URL as evidence on a risk. File uploads use the multipart /evidence/uploads endpoint with a riskId."
       },
       "RiskListItem": {
         "type": "object",

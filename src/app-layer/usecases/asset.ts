@@ -4,6 +4,8 @@ import { assertCanRead, assertCanWrite, assertCanAdmin } from '../policies/commo
 import { logEvent } from '../events/audit';
 import { notFound } from '@/lib/errors/types';
 import { runInTenantContext } from '@/lib/db-context';
+import { sanitizePlainText } from '@/lib/security/sanitize';
+import { bumpEntityCacheVersion } from '@/lib/cache/list-cache';
 import { createAssignmentNotification } from '../notifications/assignment';
 import { logger } from '@/lib/observability';
 
@@ -190,4 +192,99 @@ export async function listAssetsWithDeleted(ctx: RequestContext) {
     return runInTenantContext(ctx, (db) =>
         db.asset.findMany(withDeleted({ where: { tenantId: ctx.tenantId }, orderBy: { createdAt: 'desc' as const } }))
     );
+}
+
+// ─── Attached Evidence ───
+//
+// Evidence attached directly to an asset via `Evidence.assetId` — same
+// pattern as Control/Task/Risk. The asset Evidence tab renders this
+// through the shared <EvidenceSubTable> ({ links, evidence } shape;
+// `links` always empty). Distinct from the read-only INHERITED evidence
+// (aggregated from the asset's mapped controls), shown in its own
+// section.
+
+/** Asset attached-evidence payload — `{ links, evidence }` for the shared sub-table. */
+export async function getAssetEvidenceTab(ctx: RequestContext, assetId: string) {
+    assertCanRead(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const asset = await db.asset.findFirst({
+            where: { id: assetId, tenantId: ctx.tenantId },
+            select: { id: true },
+        });
+        if (!asset) throw notFound('Asset not found');
+        const evidence = await db.evidence.findMany({
+            where: { assetId, tenantId: ctx.tenantId, deletedAt: null },
+            orderBy: { createdAt: 'desc' },
+        });
+        return { links: [], evidence };
+    });
+}
+
+/** Attach a URL as evidence on an asset (file uploads go through /evidence/uploads with an assetId). */
+export async function linkAssetEvidence(
+    ctx: RequestContext,
+    assetId: string,
+    data: { url: string; note?: string | null },
+) {
+    assertCanWrite(ctx);
+    const url = data.url.trim();
+    const note = data.note ? sanitizePlainText(data.note) : null;
+    const result = await runInTenantContext(ctx, async (db) => {
+        const asset = await db.asset.findFirst({
+            where: { id: assetId, tenantId: ctx.tenantId },
+            select: { id: true },
+        });
+        if (!asset) throw notFound('Asset not found');
+        const evidence = await db.evidence.create({
+            data: {
+                tenantId: ctx.tenantId,
+                assetId,
+                type: 'LINK',
+                title: note || url,
+                content: url,
+                status: 'DRAFT',
+                ownerUserId: ctx.userId,
+            },
+        });
+        await logEvent(db, ctx, {
+            action: 'ASSET_EVIDENCE_LINKED',
+            entityType: 'Asset',
+            entityId: assetId,
+            details: `Evidence linked: ${url}`,
+            detailsJson: { category: 'relationship', operation: 'linked', sourceEntity: 'Asset', sourceId: assetId, targetEntity: 'Evidence', targetId: evidence.id, relation: 'LINK' },
+        });
+        return evidence;
+    });
+    await bumpEntityCacheVersion(ctx, 'evidence');
+    return result;
+}
+
+/** Detach evidence from an asset — clears `Evidence.assetId`; the evidence survives in the library. */
+export async function unlinkAssetEvidence(
+    ctx: RequestContext,
+    assetId: string,
+    evidenceId: string,
+) {
+    assertCanWrite(ctx);
+    const outcome = await runInTenantContext(ctx, async (db) => {
+        const evidence = await db.evidence.findFirst({
+            where: { id: evidenceId, assetId, tenantId: ctx.tenantId },
+            select: { id: true },
+        });
+        if (!evidence) throw notFound('Asset evidence not found');
+        await db.evidence.update({
+            where: { id: evidenceId },
+            data: { assetId: null },
+        });
+        await logEvent(db, ctx, {
+            action: 'ASSET_EVIDENCE_UNLINKED',
+            entityType: 'Asset',
+            entityId: assetId,
+            details: `Evidence unlinked: ${evidenceId}`,
+            detailsJson: { category: 'relationship', operation: 'unlinked', sourceEntity: 'Asset', sourceId: assetId, targetEntity: 'Evidence', targetId: evidenceId },
+        });
+        return { success: true };
+    });
+    await bumpEntityCacheVersion(ctx, 'evidence');
+    return outcome;
 }

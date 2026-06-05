@@ -452,6 +452,20 @@ export const LinkTaskEvidenceSchema = z.object({
     description: 'Attach a URL as evidence on a task. File uploads use the multipart /evidence/uploads endpoint with a taskId.',
 });
 
+export const LinkRiskEvidenceSchema = z.object({
+    url: z.string().url().max(2000),
+    note: z.string().max(2000).nullable().optional(),
+}).strip().openapi('RiskEvidenceLinkRequest', {
+    description: 'Attach a URL as evidence on a risk. File uploads use the multipart /evidence/uploads endpoint with a riskId.',
+});
+
+export const LinkAssetEvidenceSchema = z.object({
+    url: z.string().url().max(2000),
+    note: z.string().max(2000).nullable().optional(),
+}).strip().openapi('AssetEvidenceLinkRequest', {
+    description: 'Attach a URL as evidence on an asset. File uploads use the multipart /evidence/uploads endpoint with an assetId.',
+});
+
 export const AddTaskLinkSchema = z.object({
     entityType: z.enum(['CONTROL', 'FRAMEWORK_REQUIREMENT', 'RISK', 'ASSET', 'POLICY', 'EVIDENCE', 'FILE', 'AUDIT_PACK', 'VENDOR']),
     entityId: z.string().min(1),

@@ -29,6 +29,8 @@ import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 import { EditAssetModal } from '../EditAssetModal';
 import { InheritedEvidencePanel } from '@/components/InheritedEvidencePanel';
+import { AttachedEvidencePanel } from '@/components/AttachedEvidencePanel';
+import { Heading } from '@/components/ui/typography';
 import { InheritedTestPlansPanel } from '@/components/InheritedTestPlansPanel';
 import { InheritedMappingsPanel } from '@/components/InheritedMappingsPanel';
 
@@ -228,11 +230,27 @@ export default function AssetDetailPage() {
                 />
             )}
             {activeTab === 'evidence' && (
-                <InheritedEvidencePanel
-                    endpoint={apiUrl(`/assets/${assetId}/evidence`)}
-                    tenantHref={tenantHref}
-                    entityLabel="asset"
-                />
+                <div className="space-y-section">
+                    <div className="space-y-default">
+                        <Heading level={3}>Attached evidence</Heading>
+                        <AttachedEvidencePanel
+                            entityId={assetId}
+                            entity="asset"
+                            endpoint={`/assets/${assetId}/evidence/attached`}
+                            apiUrl={apiUrl}
+                            tenantHref={tenantHref}
+                            canWrite={permissions.canWrite}
+                        />
+                    </div>
+                    <div className="space-y-default">
+                        <Heading level={3}>Inherited from controls</Heading>
+                        <InheritedEvidencePanel
+                            endpoint={apiUrl(`/assets/${assetId}/evidence`)}
+                            tenantHref={tenantHref}
+                            entityLabel="asset"
+                        />
+                    </div>
+                </div>
             )}
             {activeTab === 'mappings' && (
                 <InheritedMappingsPanel

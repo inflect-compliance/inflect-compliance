@@ -161,6 +161,30 @@ exports[`API contract — per-schema snapshots schema: AssetDetail 1`] = `
 }"
 `;
 
+exports[`API contract — per-schema snapshots schema: AssetEvidenceLinkRequest 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "url": {
+      "type": "string",
+      "maxLength": 2000,
+      "format": "uri"
+    },
+    "note": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 2000
+    }
+  },
+  "required": [
+    "url"
+  ],
+  "description": "Attach a URL as evidence on an asset. File uploads use the multipart /evidence/uploads endpoint with an assetId."
+}"
+`;
+
 exports[`API contract — per-schema snapshots schema: AssetListItem 1`] = `
 "{
   "type": "object",
@@ -3209,6 +3233,30 @@ exports[`API contract — per-schema snapshots schema: RiskDetail 1`] = `
     }
   ],
   "description": "Risk with full linked-control objects. Returned by GET /risks/{id}."
+}"
+`;
+
+exports[`API contract — per-schema snapshots schema: RiskEvidenceLinkRequest 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "url": {
+      "type": "string",
+      "maxLength": 2000,
+      "format": "uri"
+    },
+    "note": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 2000
+    }
+  },
+  "required": [
+    "url"
+  ],
+  "description": "Attach a URL as evidence on a risk. File uploads use the multipart /evidence/uploads endpoint with a riskId."
 }"
 `;
 

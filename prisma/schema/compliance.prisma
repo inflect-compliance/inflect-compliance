@@ -201,6 +201,9 @@ model Asset {
   risks               AssetRiskLink[]
   controls            ControlAsset[]
   riskSuggestionItems RiskSuggestionItem[]
+  // Evidence attached directly to this asset (Evidence Library tag +
+  // the asset Evidence tab). Mirrors Control/Task.
+  evidence            Evidence[]
 
   @@index([tenantId, name])
   @@index([tenantId])
@@ -293,6 +296,9 @@ model Risk {
   // Epic G-7 — structured treatment plans (replaces free-text
   // `treatmentNotes` for ISO 27001 6.1.3 conformance).
   treatmentPlans  RiskTreatmentPlan[]
+  // Evidence attached directly to this risk (Evidence Library tag +
+  // the risk Evidence tab). Mirrors Control/Task.
+  evidence        Evidence[]
 
   /// Composite parent key — supports the
   /// `RiskTreatmentPlan.(riskId, tenantId) → Risk.(id, tenantId)`
@@ -678,6 +684,11 @@ model Evidence {
   // task's Evidence tab. Powers the task Evidence tab AND the
   // "uploaded from" back-reference on the evidence detail surface.
   taskId            String?
+  // Source risk / asset — same pattern as taskId: set when uploaded
+  // from that entity's Evidence tab; powers the attached-evidence tab
+  // + the "uploaded from" back-reference.
+  riskId            String?
+  assetId           String?
   type              EvidenceType
   title             String
   content           String?
@@ -711,6 +722,8 @@ model Evidence {
   vendorAnswers     VendorAssessmentAnswer[]  @relation("VendorAnswerEvidence")
   control           Control?                  @relation(fields: [controlId], references: [id])
   task              Task?                     @relation(fields: [taskId], references: [id])
+  risk              Risk?                     @relation(fields: [riskId], references: [id])
+  asset             Asset?                    @relation(fields: [assetId], references: [id])
   fileRecord        FileRecord?               @relation(fields: [fileRecordId], references: [id])
   ownerUser         User?                     @relation("EvidenceOwner", fields: [ownerUserId], references: [id])
   tenant            Tenant                    @relation(fields: [tenantId], references: [id])
@@ -734,6 +747,9 @@ model Evidence {
   // Supports the task Evidence tab ("evidence for task X") + the
   // evidence "uploaded from" back-reference lookup.
   @@index([tenantId, taskId])
+  // Same, for the risk + asset Evidence tabs.
+  @@index([tenantId, riskId])
+  @@index([tenantId, assetId])
   // GAP-perf — supports `type` filter (FILE|LINK|TEXT|SCREENSHOT).
   @@index([tenantId, type])
   // B8 follow-up — supports folder filter + group-by reads. Same

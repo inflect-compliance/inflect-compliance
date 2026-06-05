@@ -161,9 +161,11 @@ export class EvidenceRepository {
                 where: { id, tenantId: ctx.tenantId },
                 include: {
                     control: true,
-                    // Source task — powers the "uploaded from" back-
-                    // reference on the evidence detail sheet.
+                    // Source task / risk / asset — powers the "uploaded
+                    // from" back-reference on the evidence detail sheet.
                     task: { select: { id: true, key: true, title: true } },
+                    risk: { select: { id: true, key: true, title: true } },
+                    asset: { select: { id: true, key: true, name: true } },
                     reviews: { include: { reviewer: { select: { name: true, email: true } } }, orderBy: { createdAt: 'desc' } },
                 },
             });
