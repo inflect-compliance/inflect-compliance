@@ -567,7 +567,7 @@ function ControlsPageInner({
                 return (
                     <span className="inline-flex items-center gap-tight">
                         {cat.frameworkLabel && (
-                            <span className="text-[10px] font-medium uppercase tracking-wide text-content-subtle">
+                            <span className="inline-flex items-center rounded border border-border-subtle bg-bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-content-muted">
                                 {cat.frameworkLabel}
                             </span>
                         )}
@@ -815,20 +815,57 @@ function ControlsPageInner({
     const railRowClass =
         'flex w-full items-center justify-between gap-tight rounded-md px-2 py-1 text-left text-xs text-content-default hover:bg-bg-muted/50 focus-visible:outline-none focus-visible:bg-bg-muted';
 
+    // Controlled accordion — lets the "Expand all / Collapse all"
+    // toggle drive every section at once.
+    const [openSections, setOpenSections] = useState<string[]>([]);
+    const allSectionKeys = useMemo(
+        () => categoryGroups.map((g) => g.key),
+        [categoryGroups],
+    );
+    const allExpanded =
+        allSectionKeys.length > 0 &&
+        openSections.length === allSectionKeys.length;
+
     const browseAside = (
         <AsidePanel
             title="Browse"
             surfaceKey="controls-list-browse"
+            defaultWidth={480}
             icon={<AppIcon name="controls" size={16} />}
         >
-            <div data-testid="controls-browse-aside">
+            <div data-testid="controls-browse-aside" className="space-y-default">
                 {categoryGroups.length === 0 ? (
                     <p className="px-2 py-1 text-xs text-content-subtle">
                         No categorised controls yet.
                     </p>
                 ) : (
-                    <Accordion type="multiple" className="space-y-0">
-                        {categoryGroups.map((g) => (
+                    <>
+                        <div className="flex justify-end">
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    setOpenSections(
+                                        allExpanded ? [] : allSectionKeys,
+                                    )
+                                }
+                                className="rounded-md px-2 py-1 text-xs font-medium text-content-muted hover:bg-bg-muted/50 hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                data-testid="controls-browse-expand-all"
+                            >
+                                {allExpanded ? 'Collapse all' : 'Expand all'}
+                            </button>
+                        </div>
+                        {/* Scroll stays INSIDE the browse box (viewport-
+                            clamped) so an all-expanded rail doesn't push
+                            the whole page — mirrors the table's
+                            fillBody scroll. */}
+                        <div className="max-h-[calc(100vh-15rem)] overflow-y-auto pr-1">
+                            <Accordion
+                                type="multiple"
+                                value={openSections}
+                                onValueChange={setOpenSections}
+                                className="space-y-0"
+                            >
+                                {categoryGroups.map((g) => (
                             <AccordionItem
                                 key={g.key}
                                 value={g.key}
@@ -843,7 +880,7 @@ function ControlsPageInner({
                                             </span>
                                             {g.frameworkLabel && (
                                                 <span
-                                                    className="inline-flex items-center rounded border border-border-subtle bg-bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-content-muted"
+                                                    className="text-[10px] font-medium uppercase tracking-wide text-content-subtle"
                                                     data-framework-tag={g.frameworkLabel}
                                                 >
                                                     {g.frameworkLabel}
@@ -894,8 +931,10 @@ function ControlsPageInner({
                                     </ul>
                                 </AccordionContent>
                             </AccordionItem>
-                        ))}
-                    </Accordion>
+                                ))}
+                            </Accordion>
+                        </div>
+                    </>
                 )}
             </div>
         </AsidePanel>

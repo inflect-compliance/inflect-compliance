@@ -86,6 +86,14 @@ export interface AsidePanelProps {
      * that should not claim 320px unprompted. Default false.
      */
     defaultCollapsed?: boolean;
+    /**
+     * Initial expanded width (px) before the user has dragged a
+     * preference for this `surfaceKey`. Clamped to [MIN_WIDTH,
+     * MAX_WIDTH]. Use for a content-dense rail (e.g. the controls
+     * category browser) that wants more room than the 320px default.
+     * Once the user resizes, that choice persists and wins.
+     */
+    defaultWidth?: number;
     /** Rail content — rendered once, in the docked panel or the Sheet. */
     children: ReactNode;
 }
@@ -98,6 +106,7 @@ export function AsidePanel({
     surfaceKey,
     icon,
     defaultCollapsed = false,
+    defaultWidth = DEFAULT_WIDTH,
     children,
 }: AsidePanelProps) {
     const [collapsed, setCollapsed] = useLocalStorage<boolean>(
@@ -106,7 +115,7 @@ export function AsidePanel({
     );
     const [width, setWidth] = useLocalStorage<number>(
         `aside:width:${surfaceKey}`,
-        DEFAULT_WIDTH,
+        Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, defaultWidth)),
     );
     const [sheetOpen, setSheetOpen] = useState(false);
 
