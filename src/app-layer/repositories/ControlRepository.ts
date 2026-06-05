@@ -31,6 +31,11 @@ const controlListSelect = {
     description: true,
     status: true,
     applicability: true,
+    // Framework-native category (SOC 2 TSC, NIS2 / ISO section, …).
+    // The Browse rail's category grouping (`categorizeControl`) uses it
+    // as the cross-framework fallback — ISO 27001 derives its granular
+    // domain from the Annex clause instead.
+    category: true,
     frequency: true,
     ownerUserId: true,
     // `createdAt` is required by the cursor-pagination helper
