@@ -90,9 +90,10 @@ describe('R17-PR8 — Risk Distribution donut filter-aware', () => {
         expect(SRC).toMatch(/isDimmed\s*&&\s*['"]opacity-60['"]/);
     });
 
-    it('"Focused" badge renders inside the heading only when focused', () => {
-        expect(SRC).toMatch(
-            /\{isFocused\s*&&\s*\(\s*<span[\s\S]*?data-chart-focus-badge[\s\S]*?Focused/,
-        );
+    it('focus is indicated by the ring only — the textual "Focused" badge was removed', () => {
+        // The brand ring (asserted above) is the sole focus affordance;
+        // the in-heading "Focused" pill was removed per product direction,
+        // so the badge marker must not reappear on any dashboard chart.
+        expect(SRC).not.toMatch(/data-chart-focus-badge/);
     });
 });

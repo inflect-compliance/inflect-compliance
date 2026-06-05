@@ -442,15 +442,20 @@ export default function DashboardClient({
 function ChartFocusWrapper({
     kpiKey,
     children,
+    id,
 }: {
     kpiKey: DashboardKpiKey;
     children: React.ReactNode;
+    /** Optional anchor id so the KPI click-to-scroll can target a
+        chart that has no inner id of its own (e.g. the trend cards). */
+    id?: string;
 }) {
     const { selectedKpi } = useDashboardChartFilter();
     const isFocused = selectedKpi === kpiKey;
     const isDimmed = selectedKpi !== null && !isFocused;
     return (
         <div
+            id={id}
             data-chart-focus={isFocused ? 'true' : undefined}
             data-chart-dimmed={isDimmed ? 'true' : undefined}
             data-chart-focus-key={kpiKey}
@@ -480,6 +485,33 @@ function ChartFocusWrapper({
 // own the Task-status and Policy-status donuts below, so the whole
 // grid behaves consistently (click = focus, no surprise navigation).
 
+// Each KPI's owning chart, by DOM id, for the click-to-scroll below.
+// These are the topmost chart that the KPI lights up; `findings` has
+// no standalone chart so it anchors to its trend card (rendered only
+// when the trend section is present — the scroll is a no-op otherwise).
+const CHART_SCROLL_TARGETS: Record<DashboardKpiKey, string> = {
+    coverage: 'control-coverage',
+    risks: 'risk-distribution',
+    evidence: 'evidence-status',
+    tasks: 'task-status',
+    policies: 'policy-status',
+    findings: 'findings-trend',
+};
+
+// Bring a KPI's owning chart into view when the tile is focused, but
+// only if it isn't already fully on screen (e.g. it sits below the
+// fold). Already-visible charts don't jump.
+function scrollChartIntoView(kpi: DashboardKpiKey) {
+    if (typeof document === 'undefined') return;
+    const el = document.getElementById(CHART_SCROLL_TARGETS[kpi]);
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const fullyVisible = rect.top >= 0 && rect.bottom <= window.innerHeight;
+    if (!fullyVisible) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
 function InteractiveKpiGrid({
     exec,
     trendBundle,
@@ -491,8 +523,17 @@ function InteractiveKpiGrid({
 }) {
     const { selectedKpi, toggleSelectedKpi } = useDashboardChartFilter();
     const isSelected = (kpi: DashboardKpiKey) => selectedKpi === kpi;
-    // Every tile is chart-bound now: a click focuses its chart.
-    const click = (kpi: DashboardKpiKey) => () => toggleSelectedKpi(kpi);
+    // Every tile is chart-bound now: a click focuses its chart. When
+    // focusing (not clearing), also scroll that chart into view if it's
+    // below the current viewport. The rAF defer lets the focus ring
+    // paint before we measure/scroll.
+    const click = (kpi: DashboardKpiKey) => () => {
+        const willFocus = selectedKpi !== kpi;
+        toggleSelectedKpi(kpi);
+        if (willFocus) {
+            requestAnimationFrame(() => scrollChartIntoView(kpi));
+        }
+    };
 
     return (
         <div
@@ -607,14 +648,6 @@ function RiskDistributionSection({
         >
             <Heading level={3} className="mb-3">
                 Risk Distribution
-                {isFocused && (
-                    <span
-                        className="ml-2 inline-flex items-center rounded-full bg-brand-subtle px-2 py-0.5 text-xs font-medium text-brand-emphasis"
-                        data-chart-focus-badge
-                    >
-                        Focused
-                    </span>
-                )}
             </Heading>
             <div className="grid grid-cols-2 gap-default items-center">
                 <DonutChart
@@ -674,7 +707,7 @@ function RiskDistributionSection({
 // The Tasks + Policies KPI tiles used to navigate to their list page
 // because they had no chart to focus. They now own a status-breakdown
 // donut built on this section, identical in chassis to the Risk
-// Distribution box (focus ring + dim + "Focused" badge + donut + a
+// Distribution box (focus ring + dim + donut + a
 // per-status legend with counts) so the chart row reads as one unified
 // set of boxes. `kpiKey` ties the box to its KPI tile's focus state.
 
@@ -718,14 +751,6 @@ function StatusDonutSection({
         >
             <Heading level={3} className="mb-3">
                 {title}
-                {isFocused && (
-                    <span
-                        className="ml-2 inline-flex items-center rounded-full bg-brand-subtle px-2 py-0.5 text-xs font-medium text-brand-emphasis"
-                        data-chart-focus-badge
-                    >
-                        Focused
-                    </span>
-                )}
             </Heading>
             <div className="grid grid-cols-2 gap-default items-center">
                 <DonutChart
@@ -936,7 +961,7 @@ function TrendSection({ trends }: { trends: TrendPayload }) {
                         colorClassName="text-content-error"
                     />
                 </ChartFocusWrapper>
-                <ChartFocusWrapper kpiKey="findings">
+                <ChartFocusWrapper kpiKey="findings" id="findings-trend">
                     <TrendCard
                         label="Open Findings"
                         value={findingsPoints[findingsPoints.length - 1].value}
