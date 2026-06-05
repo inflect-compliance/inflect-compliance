@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Inflect Compliance API",
-    "version": "1.441.0",
+    "version": "1.446.0",
     "description": "Multi-tenant compliance-management API. The schema layer in `src/lib/schemas/index.ts` (request bodies) and `src/lib/dto/*.dto.ts` (response shapes) is the single source of truth — this document is generated from those Zod schemas via `npm run openapi:generate`.",
     "license": {
       "name": "Proprietary"
@@ -3597,6 +3597,27 @@
           "title"
         ],
         "description": "Create a task (unified work-item type covering audit findings, control gaps, incidents, improvements, and ad-hoc tasks). The type discriminator gates which UI surfaces this work item appears in."
+      },
+      "TaskEvidenceLinkRequest": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "maxLength": 2000,
+            "format": "uri"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "description": "Attach a URL as evidence on a task. File uploads use the multipart /evidence/uploads endpoint with a taskId."
       },
       "TaskLinkAddRequest": {
         "type": "object",
