@@ -343,10 +343,20 @@ export const CreateFindingSchema = z.object({
     description: z.string().optional(),
     rootCause: z.string().optional().nullable(),
     correctiveAction: z.string().optional().nullable(),
+    // Analyst notes / commentary (encrypted at rest).
+    analysis: z.string().max(20000).optional().nullable(),
     owner: z.string().optional().nullable(),
+    // Assignee — a tenant member id (validated server-side).
+    assigneeUserId: z.string().optional().nullable(),
+    // The control the finding is raised against.
+    controlId: z.string().optional().nullable(),
+    // A compensating control that mitigates the finding.
+    compensatingControlId: z.string().optional().nullable(),
+    // Risks this finding implicates (many-to-many).
+    riskIds: z.array(z.string()).max(100).optional(),
     dueDate: z.string().optional().nullable(),
 }).strip().openapi('FindingCreateRequest', {
-    description: 'Create an audit finding. auditId is optional — findings can be raised independently of an audit cycle. description + rootCause are encrypted at rest.',
+    description: 'Create an audit finding. auditId is optional — findings can be raised independently of an audit cycle. description, rootCause + analysis are encrypted at rest. assigneeUserId / controlId / compensatingControlId / riskIds are validated against the tenant.',
 });
 
 export const UpdateFindingSchema = z.object({
@@ -356,12 +366,17 @@ export const UpdateFindingSchema = z.object({
     description: z.string().optional(),
     rootCause: z.string().optional().nullable(),
     correctiveAction: z.string().optional().nullable(),
+    analysis: z.string().max(20000).optional().nullable(),
     owner: z.string().optional().nullable(),
+    assigneeUserId: z.string().optional().nullable(),
+    controlId: z.string().optional().nullable(),
+    compensatingControlId: z.string().optional().nullable(),
+    riskIds: z.array(z.string()).max(100).optional(),
     dueDate: z.string().optional().nullable(),
-    status: z.enum(['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED']).optional(),
+    status: z.enum(['OPEN', 'IN_PROGRESS', 'READY_FOR_VERIFICATION', 'CLOSED']).optional(),
     verificationNotes: z.string().optional().nullable(),
 }).strip().openapi('FindingUpdateRequest', {
-    description: 'Partial update for a finding — including lifecycle transitions and verification notes.',
+    description: 'Partial update for a finding — including lifecycle transitions and verification notes. Relation fields (assignee/control/compensating/risks) are validated against the tenant; riskIds is a full replace.',
 });
 
 // ─── Audits ───

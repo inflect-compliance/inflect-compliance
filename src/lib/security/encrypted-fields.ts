@@ -117,6 +117,7 @@ export const ENCRYPTED_FIELDS: Readonly<Record<string, readonly string[]>> = {
         'description',
         'rootCause',
         'correctiveAction',
+        'analysis',
         'verificationNotes',
     ],
 

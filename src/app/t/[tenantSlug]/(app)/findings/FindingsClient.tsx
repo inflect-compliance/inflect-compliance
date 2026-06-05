@@ -8,20 +8,12 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
 import { DataTable, createColumns, useColumnsDropdown } from '@/components/ui/table';
 import { ListPageShell } from '@/components/layout/ListPageShell';
-import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
-import { DatePicker } from '@/components/ui/date-picker/date-picker';
 import type { CappedList } from '@/lib/list-backfill-cap';
 import { TruncationBanner } from '@/components/ui/TruncationBanner';
-import {
-    parseYMD,
-    startOfUtcDay,
-    toYMD,
-} from '@/components/ui/date-picker/date-utils';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { cardVariants } from '@/components/ui/card';
-import { cn } from '@/lib/cn';
 import { Plus } from '@/components/ui/icons/nucleo';
+import { CreateFindingModal } from './CreateFindingModal';
 
 const SEV_BADGE: Record<string, StatusBadgeVariant> = { LOW: 'info', MEDIUM: 'warning', HIGH: 'error', CRITICAL: 'error' };
 const STATUS_BADGE: Record<string, StatusBadgeVariant> = { OPEN: 'error', IN_PROGRESS: 'info', READY_FOR_VERIFICATION: 'warning', CLOSED: 'success' };
@@ -65,7 +57,6 @@ interface FindingsClientProps {
  */
 export function FindingsClient({ initialFindings, tenantSlug, translations: t }: FindingsClientProps) {
     const [showForm, setShowForm] = useState(false);
-    const [form, setForm] = useState({ title: '', description: '', severity: 'MEDIUM', type: 'OBSERVATION', owner: '', dueDate: '' });
 
     const apiUrl = (path: string) => `/api/t/${tenantSlug}${path}`;
     const queryClient = useQueryClient();
@@ -83,25 +74,6 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
     });
     const findings = findingsQuery.data?.rows ?? [];
     const truncated = findingsQuery.data?.truncated ?? false;
-
-    const createMutation = useMutation({
-
-        mutationFn: async (newFinding: any) => {
-            const res = await fetch(apiUrl('/findings'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newFinding) });
-            if (!res.ok) throw new Error('Failed to create finding');
-            return res.json();
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.findings.all(tenantSlug) });
-            setShowForm(false);
-            setForm({ title: '', description: '', severity: 'MEDIUM', type: 'OBSERVATION', owner: '', dueDate: '' });
-        }
-    });
-
-    const createFinding = (e: React.FormEvent) => {
-        e.preventDefault();
-        createMutation.mutate(form);
-    };
 
     const statusMutation = useMutation({
         mutationFn: async ({ id, status }: { id: string, status: string }) => {
@@ -198,7 +170,10 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
             id: 'owner',
             header: t.owner,
 
-            accessorFn: (f: any) => f.owner || '—',
+            // Prefer the assignee (the canonical owner relation); fall
+            // back to the legacy free-text `owner` for older findings.
+            accessorFn: (f: any) =>
+                f.assignee?.name || f.assignee?.email || f.owner || '—',
 
             cell: ({ getValue }: any) => <span className="text-xs">{getValue()}</span>,
         },
@@ -247,90 +222,12 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
                 />
             </ListPageShell.Header>
 
-            {showForm && (
-                <form onSubmit={createFinding} className={cn(cardVariants(), 'space-y-default animate-fadeIn')}>
-                    <div className="grid grid-cols-2 gap-default">
-                        <div><label className="input-label">{t.findingTitle} *</label><input className="input" required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} /></div>
-                        <div>
-                            <label className="input-label">{t.severity}</label>
-                            {(() => {
-                                const options: ComboboxOption[] = [
-                                    { value: 'LOW', label: t.low },
-                                    { value: 'MEDIUM', label: t.medium },
-                                    { value: 'HIGH', label: t.high },
-                                    { value: 'CRITICAL', label: t.critical },
-                                ];
-                                return (
-                                    <Combobox
-                                        id="finding-severity-select"
-                                        name="severity"
-                                        options={options}
-                                        selected={options.find(o => o.value === form.severity) ?? null}
-                                        setSelected={(o) => setForm(f => ({ ...f, severity: o?.value ?? 'MEDIUM' }))}
-                                        placeholder={t.severity}
-                                        hideSearch
-                                        matchTriggerWidth
-                                        buttonProps={{ className: 'w-full' }}
-                                        caret
-                                    />
-                                );
-                            })()}
-                        </div>
-                        <div>
-                            <label className="input-label">{t.type}</label>
-                            {(() => {
-                                const options: ComboboxOption[] = [
-                                    { value: 'NONCONFORMITY', label: t.nonconformity },
-                                    { value: 'OBSERVATION', label: t.observation },
-                                    { value: 'OPPORTUNITY', label: t.opportunity },
-                                ];
-                                return (
-                                    <Combobox
-                                        id="finding-type-select"
-                                        name="type"
-                                        options={options}
-                                        selected={options.find(o => o.value === form.type) ?? null}
-                                        setSelected={(o) => setForm(f => ({ ...f, type: o?.value ?? 'OBSERVATION' }))}
-                                        placeholder={t.type}
-                                        hideSearch
-                                        matchTriggerWidth
-                                        buttonProps={{ className: 'w-full' }}
-                                        caret
-                                    />
-                                );
-                            })()}
-                        </div>
-                        <div><label className="input-label">{t.owner}</label><input className="input" value={form.owner} onChange={e => setForm(f => ({ ...f, owner: e.target.value }))} /></div>
-                        <div className="col-span-2"><label className="input-label">{t.description} *</label><textarea className="input" required value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></div>
-                        {/* Epic 58 — shared DatePicker. YMD string
-                            state preserved for the create payload. */}
-                        <div>
-                            <label className="input-label" htmlFor="finding-due-date">
-                                {t.dueDate}
-                            </label>
-                            <DatePicker
-                                id="finding-due-date"
-                                className="w-full"
-                                placeholder="Select date"
-                                clearable
-                                align="start"
-                                value={parseYMD(form.dueDate)}
-                                onChange={(next) =>
-                                    setForm((f) => ({
-                                        ...f,
-                                        dueDate: toYMD(next) ?? '',
-                                    }))
-                                }
-                                disabledDays={{
-                                    before: startOfUtcDay(new Date()),
-                                }}
-                                aria-label={t.dueDate}
-                            />
-                        </div>
-                    </div>
-                    <div className="flex gap-tight"><Button variant="secondary" onClick={() => setShowForm(false)}>{t.cancel}</Button><Button type="submit" variant="primary">{t.createFinding}</Button></div>
-                </form>
-            )}
+            <CreateFindingModal
+                open={showForm}
+                setOpen={setShowForm}
+                tenantSlug={tenantSlug}
+                apiUrl={apiUrl}
+            />
 
             <ListPageShell.Body>
                 <TruncationBanner truncated={truncated} />
