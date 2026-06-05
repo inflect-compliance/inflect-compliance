@@ -46,6 +46,7 @@ const FOREIGN_TENANT_ID = `t-${TAG}-other`;
 let admin: { userId: string };
 let RISK_ID = '';
 let ASSET_ID = '';
+let CONTROL_ID = '';
 let FOREIGN_RISK_ID = '';
 
 async function makeUser(label: string): Promise<{ userId: string }> {
@@ -85,6 +86,10 @@ beforeAll(async () => {
         data: { tenantId: TENANT_ID, name: 'Asset with evidence', type: 'SYSTEM' },
     });
     ASSET_ID = asset.id;
+    const control = await globalPrisma.control.create({
+        data: { tenantId: TENANT_ID, name: 'Control with evidence' },
+    });
+    CONTROL_ID = control.id;
     const foreignRisk = await globalPrisma.risk.create({
         data: { tenantId: FOREIGN_TENANT_ID, title: 'Foreign risk' },
     });
@@ -98,7 +103,9 @@ afterAll(async () => {
     }
     const tenants = { tenantId: { in: [TENANT_ID, FOREIGN_TENANT_ID] } };
     try { await globalPrisma.auditLog.deleteMany({ where: tenants }); } catch { /* best effort */ }
+    try { await globalPrisma.controlEvidenceLink.deleteMany({ where: tenants }); } catch { /* best effort */ }
     try { await globalPrisma.evidence.deleteMany({ where: tenants }); } catch { /* best effort */ }
+    try { await globalPrisma.control.deleteMany({ where: tenants }); } catch { /* best effort */ }
     try { await globalPrisma.risk.deleteMany({ where: tenants }); } catch { /* best effort */ }
     try { await globalPrisma.asset.deleteMany({ where: tenants }); } catch { /* best effort */ }
     try { await globalPrisma.tenantMembership.deleteMany({ where: tenants }); } catch { /* best effort */ }
@@ -157,12 +164,28 @@ describeFn('asset evidence usecases (integration)', () => {
     });
 });
 
-describeFn('uploadEvidenceFile — risk/asset tagging (integration)', () => {
-    const txtFile = () =>
-        new File(['attached evidence body'], 'note.txt', { type: 'text/plain' });
+describeFn('uploadEvidenceFile — entity tagging (integration)', () => {
+    // Unique content per upload so each call exercises the create path
+    // (not the SHA-256 dedup-reuse branch).
+    const txtFile = (body: string) =>
+        new File([body], 'note.txt', { type: 'text/plain' });
+
+    it('uploads a file tagged to a control (+ ControlEvidenceLink bridge)', async () => {
+        const ev = await uploadEvidenceFile(adminCtx(), txtFile('control body'), {
+            title: 'Control upload',
+            controlId: CONTROL_ID,
+        });
+        expect(ev.controlId).toBe(CONTROL_ID);
+        expect(ev.type).toBe('FILE');
+        // Bridge row so it shows in the control Evidence tab.
+        const link = await globalPrisma.controlEvidenceLink.findFirst({
+            where: { controlId: CONTROL_ID, tenantId: TENANT_ID },
+        });
+        expect(link).not.toBeNull();
+    });
 
     it('uploads a file tagged to a risk', async () => {
-        const ev = await uploadEvidenceFile(adminCtx(), txtFile(), {
+        const ev = await uploadEvidenceFile(adminCtx(), txtFile('risk body'), {
             title: 'Risk upload',
             riskId: RISK_ID,
         });
@@ -171,22 +194,36 @@ describeFn('uploadEvidenceFile — risk/asset tagging (integration)', () => {
     });
 
     it('uploads a file tagged to an asset', async () => {
-        const ev = await uploadEvidenceFile(adminCtx(), txtFile(), {
+        const ev = await uploadEvidenceFile(adminCtx(), txtFile('asset body'), {
             title: 'Asset upload',
             assetId: ASSET_ID,
         });
         expect(ev.assetId).toBe(ASSET_ID);
     });
 
+    it('reuses the FileRecord on a duplicate-content upload (dedup path)', async () => {
+        const ev = await uploadEvidenceFile(adminCtx(), txtFile('control body'), {
+            title: 'Dup upload',
+            riskId: RISK_ID,
+        });
+        expect(ev.type).toBe('FILE');
+    });
+
+    it('rejects an upload tagged to a foreign control', async () => {
+        await expect(
+            uploadEvidenceFile(adminCtx(), txtFile('x'), { controlId: 'ctrl-nope' }),
+        ).rejects.toThrow();
+    });
+
     it('rejects an upload tagged to a foreign risk', async () => {
         await expect(
-            uploadEvidenceFile(adminCtx(), txtFile(), { riskId: FOREIGN_RISK_ID }),
+            uploadEvidenceFile(adminCtx(), txtFile('y'), { riskId: FOREIGN_RISK_ID }),
         ).rejects.toThrow();
     });
 
     it('rejects an upload tagged to a non-existent asset', async () => {
         await expect(
-            uploadEvidenceFile(adminCtx(), txtFile(), { assetId: 'asset-nope' }),
+            uploadEvidenceFile(adminCtx(), txtFile('z'), { assetId: 'asset-nope' }),
         ).rejects.toThrow();
     });
 
