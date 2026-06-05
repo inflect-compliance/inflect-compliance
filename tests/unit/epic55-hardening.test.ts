@@ -20,9 +20,13 @@ function read(rel: string): string {
     return fs.readFileSync(path.join(ROOT, rel), 'utf-8');
 }
 
-const FINDINGS_SRC = read(
-    'src/app/t/[tenantSlug]/(app)/findings/FindingsClient.tsx',
-);
+// The severity + type Comboboxes moved from the inline FindingsClient
+// form into the CreateFindingModal (2026-06-05). Assert against the
+// joined surface — the modal is where the pickers live now.
+const FINDINGS_SRC =
+    read('src/app/t/[tenantSlug]/(app)/findings/FindingsClient.tsx') +
+    '\n' +
+    read('src/app/t/[tenantSlug]/(app)/findings/CreateFindingModal.tsx');
 const CLAUSES_SRC = read(
     'src/app/t/[tenantSlug]/(app)/clauses/ClausesBrowser.tsx',
 );
@@ -60,9 +64,9 @@ describe('findings/FindingsClient — severity + type', () => {
         expect(FINDINGS_SRC).not.toMatch(/<select\b/);
     });
 
-    it('exposes finding-severity-select + finding-type-select ids', () => {
-        expect(FINDINGS_SRC).toMatch(/id=["']finding-severity-select["']/);
-        expect(FINDINGS_SRC).toMatch(/id=["']finding-type-select["']/);
+    it('exposes finding-severity + finding-type ids', () => {
+        expect(FINDINGS_SRC).toMatch(/id=["']finding-severity["']/);
+        expect(FINDINGS_SRC).toMatch(/id=["']finding-type["']/);
     });
 
     it('both use hideSearch (≤5 options)', () => {
