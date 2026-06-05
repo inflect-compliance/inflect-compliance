@@ -22,7 +22,6 @@ import { EditEvidenceModal } from './EditEvidenceModal';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
-import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { DatePicker } from '@/components/ui/date-picker/date-picker';
 import {
@@ -66,7 +65,7 @@ import {
 } from './filter-defs';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
-import { Plus } from '@/components/ui/icons/nucleo';
+import { Plus, Pen2, Download, BoxArchive } from '@/components/ui/icons/nucleo';
 
 interface Permissions {
     canRead: boolean;
@@ -80,6 +79,11 @@ const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
     DRAFT: 'neutral', SUBMITTED: 'info', APPROVED: 'success', REJECTED: 'error',
     PENDING_UPLOAD: 'info',
 };
+
+// Shared icon-only action button (Edit / Archive / Download columns) —
+// mirrors the control-table quick-edit affordance.
+const ICON_ACTION_CLASS =
+    'inline-flex h-7 w-7 items-center justify-center rounded-md text-content-muted transition-colors hover:bg-bg-muted hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 type RetentionFilter = 'active' | 'expiring' | 'archived';
 
@@ -631,7 +635,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                         {row.original.folder}
                     </span>
                 ) : (
-                    <span className="text-content-subtle">\u2014</span>
+                    <span className="text-content-subtle">—</span>
                 ),
         },
         {
@@ -647,6 +651,27 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                             <StatusBadge variant={rs.badge} id={`retention-status-${ev.id}`}>
                                 {rs.icon} {rs.label}
                             </StatusBadge>
+                            {/* Retention-date edit moved here from the
+                                Actions column (which now carries the
+                                evidence Edit / Archive / Download icon
+                                columns). */}
+                            {permissions.canWrite && !ev.isArchived && editingRetention !== ev.id && (
+                                <Tooltip content="Edit retention date">
+                                    <button
+                                        type="button"
+                                        aria-label="Edit retention date"
+                                        className="inline-flex h-6 w-6 items-center justify-center rounded text-content-subtle transition-colors hover:bg-bg-muted hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        id={`edit-retention-${ev.id}`}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setEditingRetention(ev.id);
+                                            setEditRetentionDate(ev.retentionUntil ? ev.retentionUntil.split('T')[0] : '');
+                                        }}
+                                    >
+                                        <Pen2 className="size-3.5" />
+                                    </button>
+                                </Tooltip>
+                            )}
                         </div>
                         {ev.retentionUntil && !ev.isArchived && (
                             <TimestampTooltip
@@ -733,6 +758,98 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                 <span className="text-xs">{getValue()}</span>
             ),
         },
+        // Edit — icon-only column (Control-table parity). Opens the
+        // SAME EditEvidenceModal the detail side-sheet's edit icon does.
+        {
+            id: 'edit',
+            header: '',
+            enableHiding: false,
+            cell: ({ row }: { row: any }) => {
+                const ev = row.original;
+                if (!permissions.canWrite || ev.id?.startsWith('temp:')) return null;
+                return (
+                    <Tooltip content="Edit evidence">
+                        <button
+                            type="button"
+                            aria-label="Edit evidence"
+                            className={ICON_ACTION_CLASS}
+                            id={`edit-evidence-${ev.id}`}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setEditInitial({
+                                    id: ev.id,
+                                    title: ev.title,
+                                    description: ev.content ?? null,
+                                    ownerUserId: ev.ownerUserId ?? null,
+                                    controlId: ev.control?.id ?? null,
+                                    folder: ev.folder ?? null,
+                                });
+                                setEditModalOpen(true);
+                            }}
+                        >
+                            <Pen2 className="size-3.5" />
+                        </button>
+                    </Tooltip>
+                );
+            },
+            meta: { disableTruncate: true },
+        },
+        // Archive — icon-only column. Toggles archive / unarchive.
+        {
+            id: 'archive',
+            header: '',
+            enableHiding: false,
+            cell: ({ row }: { row: any }) => {
+                const ev = row.original;
+                if (!permissions.canWrite || ev.id?.startsWith('temp:')) return null;
+                const archived = !!ev.isArchived;
+                return (
+                    <Tooltip content={archived ? 'Unarchive evidence' : 'Archive evidence'}>
+                        <button
+                            type="button"
+                            aria-label={archived ? 'Unarchive evidence' : 'Archive evidence'}
+                            className={ICON_ACTION_CLASS}
+                            id={`${archived ? 'unarchive' : 'archive'}-${ev.id}`}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (archived) unarchiveEvidence(ev.id);
+                                else archiveEvidence(ev.id);
+                            }}
+                        >
+                            <BoxArchive className={`size-3.5${archived ? ' text-content-emphasis' : ''}`} />
+                        </button>
+                    </Tooltip>
+                );
+            },
+            meta: { disableTruncate: true },
+        },
+        // Download — icon-only column. Only file-backed evidence is
+        // downloadable; non-file rows render nothing.
+        {
+            id: 'download',
+            header: '',
+            enableHiding: false,
+            cell: ({ row }: { row: any }) => {
+                const ev = row.original;
+                if (ev.type !== 'FILE' || !ev.fileRecordId || ev.id?.startsWith('temp:')) return null;
+                return (
+                    <Tooltip content="Download file">
+                        <a
+                            href={apiUrl(`/evidence/files/${ev.fileRecordId}/download`)}
+                            download
+                            aria-label="Download file"
+                            className={ICON_ACTION_CLASS}
+                            id={`download-${ev.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <Download className="size-3.5" />
+                        </a>
+                    </Tooltip>
+                );
+            },
+            meta: { disableTruncate: true },
+        },
+        // Review workflow — the remaining state-transition actions.
         {
             id: 'actions',
             header: t.actions,
@@ -742,39 +859,19 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                 const ev = row.original;
                 const isPending = ev.id?.startsWith('temp:');
                 if (isPending) return <span className="text-xs text-content-subtle">Uploading...</span>;
+                if (!permissions.canWrite) return null;
                 return (
                     <div className="flex gap-1 flex-wrap" onClick={e => e.stopPropagation()}>
-                        {ev.type === 'FILE' && ev.fileRecordId && (
-                            <a href={apiUrl(`/evidence/files/${ev.fileRecordId}/download`)} download className={buttonVariants({ variant: 'secondary', size: 'sm' })} id={`download-${ev.id}`}>⬇</a>
-                        )}
-                        {permissions.canWrite && !ev.isArchived && (
-                            <Tooltip content="Edit retention date">
-                                <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    onClick={() => { setEditingRetention(ev.id); setEditRetentionDate(ev.retentionUntil ? ev.retentionUntil.split('T')[0] : ''); }}
-                                    id={`edit-retention-${ev.id}`}
-                                >
-                                    Edit
-                                </Button>
-                            </Tooltip>
-                        )}
-                        {permissions.canWrite && !ev.isArchived && (
-                            <Button variant="secondary" size="sm" onClick={() => archiveEvidence(ev.id)} id={`archive-${ev.id}`}>Archive</Button>
-                        )}
-                        {permissions.canWrite && ev.isArchived && (
-                            <Button variant="secondary" size="sm" onClick={() => unarchiveEvidence(ev.id)} id={`unarchive-${ev.id}`}>Unarchive</Button>
-                        )}
-                        {permissions.canWrite && ev.status === 'DRAFT' && (
+                        {ev.status === 'DRAFT' && (
                             <Button variant="secondary" size="sm" onClick={() => submitReview(ev.id, 'SUBMITTED')}>{t.submitForReview}</Button>
                         )}
-                        {permissions.canWrite && ev.status === 'SUBMITTED' && (
+                        {ev.status === 'SUBMITTED' && (
                             <>
                                 <Button variant="secondary" size="sm" onClick={() => submitReview(ev.id, 'APPROVED')}>{t.approveEvidence}</Button>
                                 <Button variant="destructive" size="sm" onClick={() => submitReview(ev.id, 'REJECTED', 'Needs improvement')}>{t.rejectEvidence}</Button>
                             </>
                         )}
-                        {permissions.canWrite && ev.status === 'REJECTED' && (
+                        {ev.status === 'REJECTED' && (
                             <Button variant="secondary" size="sm" onClick={() => submitReview(ev.id, 'SUBMITTED')}>{t.submitForReview}</Button>
                         )}
                     </div>
