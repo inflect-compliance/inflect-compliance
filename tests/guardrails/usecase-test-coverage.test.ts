@@ -53,8 +53,6 @@ const EXEMPTIONS: Record<string, string> = {
     // ratchet asks for a direct import.
     'src/app-layer/usecases/clause.ts':
         'Roadmap Q1 — exercised transitively via control/framework tests; direct unit tests pending.',
-    'src/app-layer/usecases/mapping.ts':
-        'Roadmap Q1 — projection layer; pending direct unit tests in Q1 PR set.',
     'src/app-layer/usecases/framework/catalog.ts':
         'Roadmap Q1 — fixtures-driven catalog loader, currently exercised only via framework.install integration.',
     'src/app-layer/usecases/framework/tree.ts':
@@ -184,7 +182,7 @@ describe('every usecase file has an importing test', () => {
         // untested file without explicitly admitting the regression in
         // a separate, visible diff. PR 19 took auditLog.ts off the
         // list, so the ratchet is at 11 now.
-        const BASELINE = 11;
+        const BASELINE = 10;
         expect(EXEMPTION_COUNT).toBeLessThanOrEqual(BASELINE);
     });
 
