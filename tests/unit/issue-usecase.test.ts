@@ -97,7 +97,11 @@ import { makeRequestContext } from '../helpers/make-context';
 beforeEach(() => {
     jest.clearAllMocks();
     (checkWorkItemTransition as jest.Mock).mockReturnValue(null);
-    (isTerminalStatus as jest.Mock).mockImplementation((s: string) =>
+    // `isTerminalStatus` is a type-guard (returns `status is "CLOSED" |
+    // "RESOLVED" | "CANCELED"`), so a direct `as jest.Mock` cast triggers
+    // TS2352 (the type guard doesn't sufficiently overlap with `Mock`).
+    // The `as unknown as jest.Mock` two-step is the canonical workaround.
+    (isTerminalStatus as unknown as jest.Mock).mockImplementation((s: string) =>
         ['DONE', 'CLOSED', 'WONT_FIX', 'DUPLICATE'].includes(s),
     );
     (getSlaStatus as jest.Mock).mockReturnValue({ label: 'on-track', breached: false });

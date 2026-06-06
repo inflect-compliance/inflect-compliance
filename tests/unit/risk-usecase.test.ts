@@ -157,7 +157,12 @@ describe('listRisks — owner enrichment', () => {
             { id: 'u-2', name: 'Bob', email: 'b@e' },
         ]);
 
-        const rows = await listRisks(readerCtx);
+        // The Risk row's TS type comes from RiskRepository.list and
+        // doesn't carry `owner` — that field is attached at the usecase
+        // layer by `attachOwnerUsers`. Cast to `any[]` here so the
+        // structural assertions read the enriched shape without
+        // fighting the source-of-truth repository type.
+        const rows = (await listRisks(readerCtx)) as any[];
 
         expect(rows[0].owner).toEqual({ id: 'u-1', name: 'Alice', email: 'a@e' });
         expect(rows[1].owner).toEqual({ id: 'u-2', name: 'Bob', email: 'b@e' });
@@ -173,7 +178,7 @@ describe('listRisks — owner enrichment', () => {
             { id: 'r-1', ownerUserId: 'u-ghost' },
         ]);
         (mockDb.user.findMany as jest.Mock).mockResolvedValue([]);
-        const rows = await listRisks(readerCtx);
+        const rows = (await listRisks(readerCtx)) as any[];
         expect(rows[0].owner).toBeNull();
     });
 
@@ -194,7 +199,10 @@ describe('listRisksPaginated — owner enrichment + pagination shape', () => {
         });
         (mockDb.user.findMany as jest.Mock).mockResolvedValue([{ id: 'u-1', name: 'Alice', email: 'a@e' }]);
 
-        const res = await listRisksPaginated(readerCtx, {} as any);
+        // Same `owner` enrichment cast as in listRisks above —
+        // RiskRepository.listPaginated's items[] doesn't carry `owner`
+        // in its source type.
+        const res = (await listRisksPaginated(readerCtx, {} as any)) as any;
 
         expect(res.pageInfo).toEqual({ hasNextPage: false, nextCursor: null });
         expect(res.items[0].owner).toEqual({ id: 'u-1', name: 'Alice', email: 'a@e' });
