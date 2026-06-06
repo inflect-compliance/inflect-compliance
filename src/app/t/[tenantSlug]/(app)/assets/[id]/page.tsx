@@ -22,7 +22,7 @@ import { Pen2 } from '@/components/ui/icons/nucleo';
 import { Tooltip } from '@/components/ui/tooltip';
 import { type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Eyebrow } from '@/components/ui/typography';
-import { KPIStat } from '@/components/ui/metric';
+import { AssetCriticalityBadge } from '../_form/AssetCriticalityFields';
 import { MetaStrip } from '@/components/ui/meta-strip';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 import { cardVariants } from '@/components/ui/card';
@@ -315,18 +315,12 @@ export default function AssetDetailPage() {
                             </div>
                             <div><Eyebrow>Data Residency</Eyebrow><p className="text-sm">{asset.dataResidency || '—'}</p></div>
                         </div>
-                        <Heading level={3}>Risk Assessment</Heading>
-                        <div className="grid grid-cols-3 gap-default">
-                            <div className={cardVariants({ density: 'compact' })}>
-                                <KPIStat value={asset.confidentiality ?? '—'} label="Confidentiality" size="sm" />
-                            </div>
-                            <div className={cardVariants({ density: 'compact' })}>
-                                <KPIStat value={asset.integrity ?? '—'} label="Integrity" size="sm" />
-                            </div>
-                            <div className={cardVariants({ density: 'compact' })}>
-                                <KPIStat value={asset.availability ?? '—'} label="Availability" size="sm" />
-                            </div>
-                        </div>
+                        <Heading level={3}>Asset Criticality</Heading>
+                        <AssetCriticalityBadge
+                            confidentiality={asset.confidentiality ?? 3}
+                            integrity={asset.integrity ?? 3}
+                            availability={asset.availability ?? 3}
+                        />
                         <div className="grid grid-cols-2 gap-default border-t border-border-default/50 pt-4">
                             <div><Eyebrow>Created</Eyebrow><p className="text-sm text-content-muted">{formatDate(asset.createdAt)}</p></div>
                             <div><Eyebrow>Updated</Eyebrow><p className="text-sm text-content-muted">{formatDate(asset.updatedAt)}</p></div>

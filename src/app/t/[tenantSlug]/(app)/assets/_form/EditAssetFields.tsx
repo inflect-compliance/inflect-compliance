@@ -10,6 +10,7 @@
  */
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { UserCombobox } from '@/components/ui/user-combobox';
+import { AssetCriticalityFields } from './AssetCriticalityFields';
 import { ASSET_CLASSIFICATION_OPTIONS } from './asset-options';
 import type { EditAssetFormReturn } from './useEditAssetForm';
 
@@ -47,6 +48,7 @@ export function EditAssetFields({
     tenantSlug: string;
 }) {
     return (
+        <>
         <div className="grid grid-cols-2 gap-default">
             <div>
                 <label className="input-label">Name *</label>
@@ -152,5 +154,13 @@ export function EditAssetFields({
                 />
             </div>
         </div>
+        <AssetCriticalityFields
+            idPrefix="asset-edit"
+            confidentiality={form.fields.confidentiality}
+            integrity={form.fields.integrity}
+            availability={form.fields.availability}
+            onChange={(key, value) => form.setField(key, value)}
+        />
+        </>
     );
 }

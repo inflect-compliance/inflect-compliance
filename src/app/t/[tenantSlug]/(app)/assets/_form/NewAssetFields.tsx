@@ -6,10 +6,9 @@
  */
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { FormField } from '@/components/ui/form-field';
-import { FormSection } from '@/components/ui/form-section';
 import { Input } from '@/components/ui/input';
 import { UserCombobox } from '@/components/ui/user-combobox';
-import { NumberStepper } from '@/components/ui/number-stepper';
+import { AssetCriticalityFields } from './AssetCriticalityFields';
 import {
     ASSET_CLASSIFICATION_OPTIONS,
     ASSET_DATA_RESIDENCY_OPTIONS,
@@ -159,46 +158,14 @@ export function NewAssetFields({
                 />
             </FormField>
 
-            {/* Epic 60 — NumberStepper on the CIA triple. min/max=1..5
-                matches the ISO 27005 impact scale. The CIA scores are the
-                asset's risk assessment. */}
-            <FormSection eyebrow="Risk Assessment">
-            <div className="grid grid-cols-3 gap-default">
-                <FormField label={labels.confidentiality}>
-                    <NumberStepper
-                        id="asset-confidentiality"
-                        size="sm"
-                        ariaLabel={labels.confidentiality}
-                        min={1}
-                        max={5}
-                        value={form.fields.confidentiality}
-                        onChange={(v) => form.setField('confidentiality', v)}
-                    />
-                </FormField>
-                <FormField label={labels.integrity}>
-                    <NumberStepper
-                        id="asset-integrity"
-                        size="sm"
-                        ariaLabel={labels.integrity}
-                        min={1}
-                        max={5}
-                        value={form.fields.integrity}
-                        onChange={(v) => form.setField('integrity', v)}
-                    />
-                </FormField>
-                <FormField label={labels.availability}>
-                    <NumberStepper
-                        id="asset-availability"
-                        size="sm"
-                        ariaLabel={labels.availability}
-                        min={1}
-                        max={5}
-                        value={form.fields.availability}
-                        onChange={(v) => form.setField('availability', v)}
-                    />
-                </FormField>
-            </div>
-            </FormSection>
+            {/* CIA triad → asset criticality (sliders + high-water-mark
+                score). min/max=1..5 matches the ISO 27005 impact scale. */}
+            <AssetCriticalityFields
+                confidentiality={form.fields.confidentiality}
+                integrity={form.fields.integrity}
+                availability={form.fields.availability}
+                onChange={(key, value) => form.setField(key, value)}
+            />
         </>
     );
 }

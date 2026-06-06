@@ -13,6 +13,7 @@ import * as React from 'react';
 import * as fs from 'fs';
 import * as path from 'path';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 jest.mock('next/navigation', () => ({
     useRouter: () => ({ push: jest.fn(), replace: jest.fn(), refresh: jest.fn(), prefetch: jest.fn() }),
@@ -32,7 +33,11 @@ beforeEach(() => {
 
 function withClient(node: React.ReactNode) {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    return render(<QueryClientProvider client={client}>{node}</QueryClientProvider>);
+    return render(
+        <QueryClientProvider client={client}>
+            <TooltipProvider>{node}</TooltipProvider>
+        </QueryClientProvider>,
+    );
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -72,9 +77,12 @@ describe('NewAssetFields (create)', () => {
         }
     });
 
-    it('titles the C/I/A triple "Risk Assessment"', () => {
-        withClient(<NewAssetFields form={form} labels={NEW_LABELS} tenantSlug="acme" />);
-        expect(screen.getByText('Risk Assessment')).not.toBeNull();
+    it('titles the C/I/A box "Asset Criticality" with sliders + a score', () => {
+        const { container } = withClient(<NewAssetFields form={form} labels={NEW_LABELS} tenantSlug="acme" />);
+        expect(screen.getByText('Asset Criticality')).not.toBeNull();
+        // C/I/A are sliders now (not NumberSteppers)
+        expect(container.querySelectorAll('input[type="range"]').length).toBe(3);
+        expect(screen.getByTestId('asset-criticality-score')).not.toBeNull();
     });
 });
 
@@ -109,7 +117,10 @@ describe('asset detail page source', () => {
         expect(src).not.toMatch(/suggest-risks-btn/);
         expect(src).not.toMatch(/Suggest Risks/);
     });
-    it('titles the C/I/A block "Risk Assessment"', () => {
-        expect(src).toMatch(/Risk Assessment/);
+    it('titles the criticality block "Asset Criticality" and shows only the score (no C/I/A breakdown)', () => {
+        expect(src).toMatch(/Asset Criticality/);
+        expect(src).not.toMatch(/Risk Assessment/);
+        expect(src).toMatch(/AssetCriticalityBadge/);
+        expect(src).not.toMatch(/label="Confidentiality"/);
     });
 });
