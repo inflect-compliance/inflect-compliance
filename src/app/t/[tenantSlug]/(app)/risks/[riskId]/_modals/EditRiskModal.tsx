@@ -30,7 +30,7 @@ import {
     startOfUtcDay,
     toYMD,
 } from '@/components/ui/date-picker/date-utils';
-import { NumberStepper } from '@/components/ui/number-stepper';
+import { RiskEvaluationFields } from '../../_shared/RiskEvaluationFields';
 
 export interface EditRiskForm {
     title?: string;
@@ -149,6 +149,8 @@ export function EditRiskModal({
                                     options={categoryOptions}
                                     placeholder="— Select —"
                                     matchTriggerWidth
+                                    buttonProps={{ className: 'w-full' }}
+                                    caret
                                 />
                             </div>
                             <FormField label="Treatment Owner">
@@ -165,7 +167,7 @@ export function EditRiskModal({
                                 />
                             </FormField>
                             <div>
-                                <span className={fieldLabel}>Assigned to</span>
+                                <span className={fieldLabel}>Owner</span>
                                 <UserCombobox
                                     tenantSlug={tenantSlug}
                                     selectedId={form.ownerUserId || null}
@@ -181,42 +183,17 @@ export function EditRiskModal({
                                 />
                             </div>
                         </div>
-                        <div className="grid grid-cols-3 gap-default">
-                            <div>
-                                <span className={fieldLabel}>Likelihood</span>
-                                <NumberStepper
-                                    id="risk-edit-likelihood"
-                                    size="sm"
-                                    ariaLabel="Likelihood (1–5)"
-                                    min={1}
-                                    max={5}
-                                    value={form.likelihood ?? 3}
-                                    onChange={(v) =>
-                                        setForm((f) => ({ ...f, likelihood: v }))
-                                    }
-                                />
-                            </div>
-                            <div>
-                                <span className={fieldLabel}>Impact</span>
-                                <NumberStepper
-                                    id="risk-edit-impact"
-                                    size="sm"
-                                    ariaLabel="Impact (1–5)"
-                                    min={1}
-                                    max={5}
-                                    value={form.impact ?? 3}
-                                    onChange={(v) =>
-                                        setForm((f) => ({ ...f, impact: v }))
-                                    }
-                                />
-                            </div>
-                            <div>
-                                <span className={fieldLabel}>Score</span>
-                                <div className="input flex items-center bg-bg-subtle text-lg font-bold">
-                                    {(form.likelihood ?? 3) * (form.impact ?? 3)}
-                                </div>
-                            </div>
-                        </div>
+                        <RiskEvaluationFields
+                            idPrefix="risk-edit"
+                            likelihood={form.likelihood ?? 3}
+                            impact={form.impact ?? 3}
+                            onLikelihood={(v) =>
+                                setForm((f) => ({ ...f, likelihood: v }))
+                            }
+                            onImpact={(v) =>
+                                setForm((f) => ({ ...f, impact: v }))
+                            }
+                        />
                         <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
                             <div>
                                 <span className={fieldLabel}>Treatment</span>
@@ -237,6 +214,8 @@ export function EditRiskModal({
                                     options={treatmentOptions}
                                     placeholder="—"
                                     matchTriggerWidth
+                                    buttonProps={{ className: 'w-full' }}
+                                    caret
                                 />
                             </div>
                             <div>

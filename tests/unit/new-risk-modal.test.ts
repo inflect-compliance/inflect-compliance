@@ -25,6 +25,9 @@ function read(rel: string): string {
 const MODAL_SRC = read(
     'src/app/t/[tenantSlug]/(app)/risks/NewRiskModal.tsx',
 );
+const SHARED_SRC = read(
+    'src/app/t/[tenantSlug]/(app)/risks/_shared/RiskEvaluationFields.tsx',
+);
 const CLIENT_SRC = read(
     'src/app/t/[tenantSlug]/(app)/risks/RisksClient.tsx',
 );
@@ -97,7 +100,9 @@ describe('NewRiskModal — business contract preserved', () => {
             'category',
             'likelihood',
             'impact',
-            'treatmentOwner',
+            'ownerUserId',
+            'treatment',
+            'treatmentNotes',
         ]) {
             expect(MODAL_SRC).toMatch(new RegExp(`${field}:`));
         }
@@ -138,28 +143,29 @@ describe('NewRiskModal — business contract preserved', () => {
 
 // ─── 4. Scoring UX invariants ────────────────────────────────────
 
-describe('NewRiskModal — scoring UX', () => {
-    it('exposes likelihood + impact as 1–5 range inputs', () => {
-        expect(MODAL_SRC).toMatch(
-            /id=["']risk-likelihood["'][\s\S]{0,200}type=["']range["']/,
-        );
-        expect(MODAL_SRC).toMatch(
-            /id=["']risk-impact["'][\s\S]{0,200}type=["']range["']/,
-        );
-        expect(MODAL_SRC).toMatch(/min=\{1\}\s+max=\{5\}/);
+describe('NewRiskModal — scoring UX (shared RiskEvaluationFields)', () => {
+    it('mounts the shared <RiskEvaluationFields> evaluation box', () => {
+        expect(MODAL_SRC).toMatch(/<RiskEvaluationFields\b/);
+        // Titled "Risk Evaluation" (R5) — the title lives in the shared box.
+        expect(SHARED_SRC).toMatch(/Risk Evaluation/);
     });
 
-    it('computes the score as likelihood × impact', () => {
-        expect(MODAL_SRC).toMatch(
-            /const score\s*=\s*form\.likelihood\s*\*\s*form\.impact/,
+    it('the shared box exposes likelihood + impact as 1–5 range inputs', () => {
+        expect(SHARED_SRC).toMatch(
+            /id=\{`\$\{idPrefix\}-likelihood`\}[\s\S]{0,200}type=["']range["']/,
         );
+        expect(SHARED_SRC).toMatch(
+            /id=\{`\$\{idPrefix\}-impact`\}[\s\S]{0,200}type=["']range["']/,
+        );
+        expect(SHARED_SRC).toMatch(/min=\{1\}\s+max=\{5\}/);
     });
 
-    it('renders a risk badge driven by the computed score', () => {
-        expect(MODAL_SRC).toMatch(/getRiskBadge\(score\)/);
-        expect(MODAL_SRC).toMatch(
-            /data-testid=["']risk-score-preview["']/,
+    it('computes the score as likelihood × impact and drives the badge', () => {
+        expect(SHARED_SRC).toMatch(
+            /const score\s*=\s*likelihood\s*\*\s*impact/,
         );
+        expect(SHARED_SRC).toMatch(/getRiskBadge\(score\)/);
+        expect(SHARED_SRC).toMatch(/data-testid=\{`\$\{idPrefix\}-score-preview`\}/);
     });
 
     it('gates submit behind non-empty title + not submitting', () => {

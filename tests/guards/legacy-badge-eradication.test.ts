@@ -40,10 +40,11 @@ const EXEMPT_FILES = new Set<string>([
   // accessors — the property holds an arbitrary class string for the
   // 3-tier urgency gradient. Exempt from PR-1 raw-color migration too.
   "src/components/ui/ExpiryCalendar.tsx",
-  // NewRiskModal uses `badge.tone` (not the .badge CSS class) — `badge`
-  // is a local variable holding a `{ tone, label }` shape for risk
-  // score preview styling.
-  "src/app/t/[tenantSlug]/(app)/risks/NewRiskModal.tsx",
+  // RiskEvaluationFields (shared create/edit scoring box) uses `badge.tone`
+  // (not the .badge CSS class) — `badge` is a local variable holding a
+  // `{ tone, label }` shape for the risk-score preview styling. The code
+  // moved here from NewRiskModal on 2026-06-06.
+  "src/app/t/[tenantSlug]/(app)/risks/_shared/RiskEvaluationFields.tsx",
 ]);
 
 // `className=` strings (string OR template literal) containing the

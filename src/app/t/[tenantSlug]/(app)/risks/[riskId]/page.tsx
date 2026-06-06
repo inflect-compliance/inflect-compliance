@@ -39,6 +39,7 @@ import { Pen2 } from '@/components/ui/icons/nucleo';
 import { Tooltip } from '@/components/ui/tooltip';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { useTenantMembers } from '@/components/ui/user-combobox';
+import { RISK_TREATMENT_OPTIONS } from '../_shared/risk-options';
 import { cn } from '@/lib/cn';
 import { cardVariants } from '@/components/ui/card';
 import { EditRiskModal, type EditRiskForm } from './_modals/EditRiskModal';
@@ -92,12 +93,7 @@ const CATEGORIES = [
     'Financial', 'Reputational', 'Physical', 'Human Resources',
 ];
 const CATEGORY_OPTIONS: ComboboxOption[] = CATEGORIES.map(c => ({ value: c, label: c }));
-const TREATMENT_OPTIONS: ComboboxOption[] = [
-    { value: 'TREAT', label: 'Treat' },
-    { value: 'TRANSFER', label: 'Transfer' },
-    { value: 'TOLERATE', label: 'Tolerate' },
-    { value: 'AVOID', label: 'Avoid' },
-];
+const TREATMENT_OPTIONS = RISK_TREATMENT_OPTIONS;
 
 // Polish PR-1 — STATUS_VARIANT moved to shared domain mapping.
 // Imported from @/app-layer/domain/entity-status-mapping as

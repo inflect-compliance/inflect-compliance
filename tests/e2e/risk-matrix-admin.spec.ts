@@ -87,9 +87,9 @@ test.describe('Risk matrix admin → live rendering loop', () => {
         });
         await page.waitForLoadState('networkidle').catch(() => {});
 
-        // The page header carries a Heatmap/Register toggle button.
+        // The page header carries a Matrix/Register toggle button.
         const heatmapToggle = page
-            .getByRole('button', { name: /Heatmap/i })
+            .getByRole('button', { name: /Matrix/i })
             .first();
         if (await heatmapToggle.isVisible().catch(() => false)) {
             await heatmapToggle.click();
