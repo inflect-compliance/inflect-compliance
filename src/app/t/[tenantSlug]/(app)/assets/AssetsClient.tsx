@@ -25,6 +25,7 @@ import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
 import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
 import { Plus } from '@/components/ui/icons/nucleo';
+import { buildCumulativeTrend } from './asset-kpi-trend';
 import { NewAssetModal } from './NewAssetModal';
 
 interface AssetsClientProps {
@@ -148,6 +149,20 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
     const criticalAssets = assets.filter((a: any) => a.criticality === 'HIGH').length;
     // guardrail-ignore: KPI count, not a refilter.
     const retiredAssets = assets.filter((a: any) => a.status === 'RETIRED').length;
+
+    // Sparkline data per KPI — cumulative count by `createdAt`, so each
+    // tile shows how its current number was built up over time. Derived
+    // client-side from the loaded rows (no extra request).
+    const assetTrends = useMemo(
+        () => ({
+            total: buildCumulativeTrend(assets, () => true),
+            active: buildCumulativeTrend(assets, (a) => a.status === 'ACTIVE'),
+            critical: buildCumulativeTrend(assets, (a) => a.criticality === 'HIGH'),
+            retired: buildCumulativeTrend(assets, (a) => a.status === 'RETIRED'),
+        }),
+        [assets],
+    );
+
     const assetKpiDefs: ReadonlyArray<KpiFilterDef<AssetKpiId>> = useMemo(
         () => [
             {
@@ -301,6 +316,8 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                     <KpiFilterCard
                         label="Total assets"
                         value={totalAssets}
+                        sparkline={assetTrends.total}
+                        sparklineVariant="brand"
                         onClick={() => toggleAssetKpi('total')}
                         selected={activeAssetKpi === 'total'}
                     />
@@ -308,6 +325,8 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                         label="Active"
                         value={activeAssets}
                         tone="success"
+                        sparkline={assetTrends.active}
+                        sparklineVariant="success"
                         onClick={() => toggleAssetKpi('active')}
                         selected={activeAssetKpi === 'active'}
                     />
@@ -315,6 +334,8 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                         label="High criticality"
                         value={criticalAssets}
                         tone={criticalAssets > 0 ? 'critical' : 'default'}
+                        sparkline={assetTrends.critical}
+                        sparklineVariant="error"
                         onClick={() => toggleAssetKpi('critical')}
                         selected={activeAssetKpi === 'critical'}
                     />
@@ -322,6 +343,8 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                         label="Retired"
                         value={retiredAssets}
                         tone="attention"
+                        sparkline={assetTrends.retired}
+                        sparklineVariant="neutral"
                         onClick={() => toggleAssetKpi('retired')}
                         selected={activeAssetKpi === 'retired'}
                     />
