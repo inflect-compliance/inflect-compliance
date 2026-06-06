@@ -1,6 +1,10 @@
 # Dependencies
 node_modules/
 
+# Python — `scripts/coverage-by-domain.py` runs from repo root.
+__pycache__/
+*.pyc
+
 # Reference repos (porting source — not part of the project)
 dub-reference/
 
