@@ -56,6 +56,8 @@ import { cn } from "@/lib/cn";
 
 import { Card } from "@/components/ui/card";
 import { KPIStat, type KPIStatProps, type MetricTone, type MetricTrend } from "@/components/ui/metric";
+import { MiniAreaChart, type MiniAreaChartVariant } from "@/components/ui/mini-area-chart";
+import type { TimeSeriesPoint } from "@/components/ui/charts";
 
 export interface KpiFilterCardProps {
     /** Short label rendered as 11px uppercase eyebrow above the value. */
@@ -66,6 +68,13 @@ export interface KpiFilterCardProps {
     description?: React.ReactNode;
     /** Optional trend indicator next to the value. */
     trend?: MetricTrend;
+    /**
+     * Optional inline sparkline drawn under the value — the metric's
+     * recent trajectory. Needs ≥2 points; fewer renders nothing.
+     */
+    sparkline?: TimeSeriesPoint[];
+    /** Colour variant for the sparkline. Defaults to `brand`. */
+    sparklineVariant?: MiniAreaChartVariant;
     /** Tone bag for the value colour. */
     tone?: MetricTone;
     /**
@@ -133,6 +142,8 @@ export function KpiFilterCard({
     value,
     description,
     trend,
+    sparkline,
+    sparklineVariant = "brand",
     tone,
     onClick,
     selected = false,
@@ -151,6 +162,22 @@ export function KpiFilterCard({
         size: "md",
         id,
     };
+
+    const sparkLabel =
+        typeof label === "string" ? `${label} trend` : "Trend";
+    const body = (
+        <>
+            <KPIStat {...kpiStatProps} />
+            {sparkline && sparkline.length >= 2 && (
+                <MiniAreaChart
+                    data={sparkline}
+                    variant={sparklineVariant}
+                    aria-label={sparkLabel}
+                    className="mt-3 h-8 w-full"
+                />
+            )}
+        </>
+    );
 
     // Render a <button> when clickable so Enter/Space activate the
     // filter for free. Without onClick, render a plain <div> Card
@@ -177,7 +204,7 @@ export function KpiFilterCard({
                     }
                 }}
             >
-                <KPIStat {...kpiStatProps} />
+                {body}
             </Card>
         );
     }
@@ -187,7 +214,7 @@ export function KpiFilterCard({
             className={cn(STATIC_CARD_CLASSES, className)}
             data-testid={testId}
         >
-            <KPIStat {...kpiStatProps} />
+            {body}
         </Card>
     );
 }

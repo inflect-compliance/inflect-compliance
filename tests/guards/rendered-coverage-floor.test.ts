@@ -49,7 +49,9 @@ const ROOT = path.resolve(__dirname, '../..');
 // upward-only ratchet from 134 on the next addition.
 // Raised 134 → 143 (2026-06-03): button icon-as-child row test +
 // accumulated rendered-test gains since the last bump.
-const RENDERED_TEST_FLOOR = 143;
+// Raised 143 → 152 (2026-06-06): asset/risk modal-field, asset-criticality,
+// and asset-KPI-trendline rendered tests.
+const RENDERED_TEST_FLOOR = 152;
 const E2E_SPEC_FLOOR = 36;
 const REGISTRY_FLOOR = 5;
 
