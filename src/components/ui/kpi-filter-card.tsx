@@ -58,6 +58,7 @@ import { Card } from "@/components/ui/card";
 import { KPIStat, type KPIStatProps, type MetricTone, type MetricTrend } from "@/components/ui/metric";
 import { MiniAreaChart, type MiniAreaChartVariant } from "@/components/ui/mini-area-chart";
 import type { TimeSeriesPoint } from "@/components/ui/charts";
+import { KPI_ACCENTS, kpiAccentValueClass, type KpiAccent } from "@/components/ui/kpi-accent";
 
 export interface KpiFilterCardProps {
     /** Short label rendered as 11px uppercase eyebrow above the value. */
@@ -73,9 +74,20 @@ export interface KpiFilterCardProps {
      * recent trajectory. Needs ≥2 points; fewer renders nothing.
      */
     sparkline?: TimeSeriesPoint[];
-    /** Colour variant for the sparkline. Defaults to `brand`. */
+    /**
+     * Colour variant for the sparkline. Defaults to the `accent`'s
+     * sparkline (or `brand` when no accent is set).
+     */
     sparklineVariant?: MiniAreaChartVariant;
-    /** Tone bag for the value colour. */
+    /**
+     * KPI colour accent — gives the headline value a gradient (the
+     * dashboard `<KpiCard>` look) and supplies the default sparkline
+     * colour. The shared palette in `kpi-accent.ts` keeps every list
+     * page's KPI cards on the same scheme. When set, the gradient owns
+     * the value colour (`tone` is ignored).
+     */
+    accent?: KpiAccent;
+    /** Tone bag for the value colour. Ignored when `accent` is set. */
     tone?: MetricTone;
     /**
      * When provided, makes the card clickable. Renders as a `<button>`
@@ -143,7 +155,8 @@ export function KpiFilterCard({
     description,
     trend,
     sparkline,
-    sparklineVariant = "brand",
+    sparklineVariant,
+    accent,
     tone,
     onClick,
     selected = false,
@@ -153,12 +166,25 @@ export function KpiFilterCard({
 }: KpiFilterCardProps) {
     const isClickable = onClick !== undefined;
 
+    // Accent drives the headline-value gradient + the default sparkline
+    // colour (the dashboard <KpiCard> look). An explicit sparklineVariant
+    // still wins; without an accent we fall back to `brand`.
+    const accentDef = accent ? KPI_ACCENTS[accent] : null;
+    const effectiveSparklineVariant =
+        sparklineVariant ?? accentDef?.sparkline ?? "brand";
+    const renderedValue = accentDef ? (
+        <span className={kpiAccentValueClass(accent!)}>{value}</span>
+    ) : (
+        value
+    );
+
     const kpiStatProps: KPIStatProps = {
         label,
-        value,
+        value: renderedValue,
         description,
         trend,
-        tone,
+        // The gradient owns the value colour when an accent is set.
+        tone: accentDef ? undefined : tone,
         size: "md",
         id,
     };
@@ -179,7 +205,7 @@ export function KpiFilterCard({
                 <div className="mt-3 h-8 w-full">
                     <MiniAreaChart
                         data={sparkline}
-                        variant={sparklineVariant}
+                        variant={effectiveSparklineVariant}
                         aria-label={sparkLabel}
                         className="h-full w-full"
                     />
