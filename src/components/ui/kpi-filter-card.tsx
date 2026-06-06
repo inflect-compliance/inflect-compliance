@@ -113,8 +113,12 @@ export interface KpiFilterCardProps {
  * Static card class — matches the Risks-page Card defaults. Outer
  * spacing and elevation come from Card's own defaults (density
  * "comfortable" = p-6, elevation "raised" = glass-card recipe).
+ *
+ * `select-none` keeps the headline number + label from being
+ * text-highlighted when the card is clicked (these cards are filter
+ * toggles, not copyable content).
  */
-const STATIC_CARD_CLASSES = "";
+const STATIC_CARD_CLASSES = "select-none";
 
 /**
  * Hover affordance for clickable cards — preserves the exact ring
@@ -123,7 +127,7 @@ const STATIC_CARD_CLASSES = "";
  * the click cue; the ring is the hover-state lift.
  */
 const CLICKABLE_CARD_CLASSES =
-    "cursor-pointer hover:ring-1 hover:ring-[color:var(--ring)] transition-colors duration-150 ease-out";
+    "cursor-pointer select-none hover:ring-1 hover:ring-[color:var(--ring)] transition-colors duration-150 ease-out";
 
 /**
  * Selected affordance — brand-emphasis ring + tinted glow. R23's
