@@ -60,6 +60,8 @@ export const UpdateAssetSchema = z.object({
 
 export const CreateRiskSchema = z.object({
     title: z.string().min(1, 'Title is required'),
+    description: z.string().optional().nullable(),
+    category: z.string().optional().nullable(),
     threat: z.string().optional(),
     vulnerability: z.string().optional(),
     impact: z.coerce.number().int().min(1).max(10).optional().default(3),
@@ -67,7 +69,9 @@ export const CreateRiskSchema = z.object({
     treatment: z.string().optional().nullable(),
     treatmentOwner: z.string().optional().nullable(),
     treatmentNotes: z.string().optional().nullable(),
+    ownerUserId: z.string().optional().nullable(),    // Real user reference — the risk owner (people picker)
     targetDate: z.string().optional().nullable(),
+    nextReviewAt: z.string().optional().nullable(),
 }).strip().openapi('RiskCreateRequest', {
     description: 'Payload for creating a risk. Inherent score = impact × likelihood; the server computes residualScore separately when treatment data lands. treatmentNotes is encrypted at rest (Epic B field-encryption manifest).',
 });

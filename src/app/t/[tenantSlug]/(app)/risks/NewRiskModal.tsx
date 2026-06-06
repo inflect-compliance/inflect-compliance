@@ -53,7 +53,9 @@ import { FormError } from '@/components/ui/form-error';
 import { FormSection } from '@/components/ui/form-section';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { InfoTooltip } from '@/components/ui/tooltip';
+import { UserCombobox } from '@/components/ui/user-combobox';
+import { RiskEvaluationFields } from './_shared/RiskEvaluationFields';
+import { RISK_TREATMENT_OPTIONS } from './_shared/risk-options';
 import { DatePicker } from '@/components/ui/date-picker/date-picker';
 import {
     parseYMD,
@@ -81,29 +83,6 @@ const CATEGORY_OPTIONS: ComboboxOption[] = CATEGORIES.map((c) => ({
     label: c,
 }));
 
-function getRiskBadge(score: number): {
-    label: string;
-    tone: 'success' | 'warning' | 'danger' | 'critical';
-} {
-    if (score <= 5) return { label: 'Low', tone: 'success' };
-    if (score <= 12) return { label: 'Medium', tone: 'warning' };
-    if (score <= 18) return { label: 'High', tone: 'danger' };
-    return { label: 'Critical', tone: 'critical' };
-}
-
-const TONE_CLASSES: Record<
-    ReturnType<typeof getRiskBadge>['tone'],
-    string
-> = {
-    success:
-        'border-border-success bg-bg-success text-content-success',
-    warning:
-        'border-border-warning bg-bg-warning text-content-warning',
-    danger:
-        'border-border-warning bg-bg-warning text-content-warning',
-    critical:
-        'border-border-error bg-bg-error text-content-error',
-};
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -154,7 +133,9 @@ export function NewRiskModal({
         category: '',
         likelihood: 3,
         impact: 3,
-        treatmentOwner: '',
+        ownerUserId: '',
+        treatment: '',
+        treatmentNotes: '',
         nextReviewAt: '',
     });
     const [templateId, setTemplateId] = useState('');
@@ -172,8 +153,16 @@ export function NewRiskModal({
             const res = await fetch(apiUrl('/controls'));
             if (!res.ok) throw new Error(`Controls: ${res.status}`);
             const data = await res.json();
-            if (!Array.isArray(data)) return [];
-            return data.map((c: ControlOption) => ({
+            // GET /controls returns the backfill-capped shape
+            // `{ rows, truncated }` (applyBackfillCap), not a bare array —
+            // the previous `Array.isArray` guard always fell through to []
+            // so the link-controls list was permanently empty.
+            const list: ControlOption[] = Array.isArray(data)
+                ? data
+                : Array.isArray(data?.rows)
+                  ? data.rows
+                  : [];
+            return list.map((c: ControlOption) => ({
                 id: c.id,
                 annexId: c.annexId ?? null,
                 name: c.name,
@@ -221,7 +210,9 @@ export function NewRiskModal({
             category: '',
             likelihood: 3,
             impact: 3,
-            treatmentOwner: '',
+            ownerUserId: '',
+            treatment: '',
+            treatmentNotes: '',
             nextReviewAt: '',
         });
         setTemplateId('');
@@ -262,9 +253,6 @@ export function NewRiskModal({
             return next;
         });
 
-    const score = form.likelihood * form.impact;
-    const badge = getRiskBadge(score);
-
     const canSubmit = form.title.trim().length > 0 && !submitting;
 
     const telemetry = useFormTelemetry('NewRiskModal');
@@ -287,7 +275,9 @@ export function NewRiskModal({
                 category: form.category || undefined,
                 likelihood: form.likelihood,
                 impact: form.impact,
-                treatmentOwner: form.treatmentOwner.trim() || undefined,
+                ownerUserId: form.ownerUserId || undefined,
+                treatment: form.treatment || undefined,
+                treatmentNotes: form.treatmentNotes.trim() || undefined,
             };
             if (form.nextReviewAt) {
                 payload.nextReviewAt = new Date(
@@ -464,20 +454,18 @@ export function NewRiskModal({
                                 />
                             </FormField>
 
-                            {/* Owner */}
-                            <FormField label="Treatment owner">
-                                <Input
+                            {/* Owner — tenant-member people picker. */}
+                            <FormField label="Owner">
+                                <UserCombobox
                                     id="risk-owner"
-                                    type="text"
-                                    placeholder="Name or team"
-                                    value={form.treatmentOwner}
-                                    onChange={(e) =>
-                                        update(
-                                            'treatmentOwner',
-                                            e.target.value,
-                                        )
+                                    tenantSlug={tenantSlug}
+                                    selectedId={form.ownerUserId || null}
+                                    onChange={(userId) =>
+                                        update('ownerUserId', userId ?? '')
                                     }
-                                    autoComplete="off"
+                                    forceDropdown
+                                    matchTriggerWidth
+                                    placeholder="Unassigned"
                                 />
                             </FormField>
                         </div>
@@ -495,87 +483,49 @@ export function NewRiskModal({
                             />
                         </FormField>
 
-                        {/* Scoring */}
-                        <div className="rounded-lg border border-border-subtle bg-bg-subtle p-4">
-                            <div className="grid grid-cols-1 gap-default sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-                                <div>
-                                    <div className="mb-1 flex items-center gap-1.5">
-                                        <label
-                                            className="text-sm text-content-default"
-                                            htmlFor="risk-likelihood"
-                                        >
-                                            Likelihood ·{' '}
-                                            <span className="font-semibold text-content-emphasis">
-                                                {form.likelihood}
-                                            </span>
-                                        </label>
-                                        <InfoTooltip
-                                            aria-label="About likelihood"
-                                            iconClassName="h-3.5 w-3.5"
-                                            content="Inherent probability of this scenario in the next 12 months, ignoring current controls. 1 = rare, 5 = almost certain."
-                                        />
-                                    </div>
-                                    <input
-                                        id="risk-likelihood"
-                                        type="range"
-                                        min={1}
-                                        max={5}
-                                        value={form.likelihood}
-                                        onChange={(e) =>
-                                            update(
-                                                'likelihood',
-                                                Number(e.target.value),
-                                            )
-                                        }
-                                        className="w-full accent-brand-emphasis"
-                                    />
-                                </div>
-                                <div>
-                                    <div className="mb-1 flex items-center gap-1.5">
-                                        <label
-                                            className="text-sm text-content-default"
-                                            htmlFor="risk-impact"
-                                        >
-                                            Impact ·{' '}
-                                            <span className="font-semibold text-content-emphasis">
-                                                {form.impact}
-                                            </span>
-                                        </label>
-                                        <InfoTooltip
-                                            aria-label="About impact"
-                                            iconClassName="h-3.5 w-3.5"
-                                            content="Severity to the organisation if the risk materialises. 1 = minor / isolated, 5 = catastrophic / regulatory."
-                                        />
-                                    </div>
-                                    <input
-                                        id="risk-impact"
-                                        type="range"
-                                        min={1}
-                                        max={5}
-                                        value={form.impact}
-                                        onChange={(e) =>
-                                            update(
-                                                'impact',
-                                                Number(e.target.value),
-                                            )
-                                        }
-                                        className="w-full accent-brand-emphasis"
-                                    />
-                                </div>
-                                <div
-                                    className={`shrink-0 rounded-md border px-3 py-2 text-center ${TONE_CLASSES[badge.tone]}`}
-                                    data-testid="risk-score-preview"
-                                >
-                                    <p className="text-xs uppercase tracking-wider opacity-75">
-                                        Score
-                                    </p>
-                                    <p className="text-xl font-bold">{score}</p>
-                                    <p className="text-[11px] font-medium">
-                                        {badge.label}
-                                    </p>
-                                </div>
-                            </div>
+                        {/* Risk Evaluation — shared scoring box (matches
+                            the detail edit modal). */}
+                        <RiskEvaluationFields
+                            likelihood={form.likelihood}
+                            impact={form.impact}
+                            onLikelihood={(v) => update('likelihood', v)}
+                            onImpact={(v) => update('impact', v)}
+                        />
+
+                        {/* Treatment decision + notes */}
+                        <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
+                            <FormField label="Treatment">
+                                <Combobox
+                                    id="risk-treatment"
+                                    name="treatment"
+                                    options={RISK_TREATMENT_OPTIONS}
+                                    selected={
+                                        RISK_TREATMENT_OPTIONS.find(
+                                            (o) => o.value === form.treatment,
+                                        ) ?? null
+                                    }
+                                    setSelected={(o) =>
+                                        update('treatment', o?.value ?? '')
+                                    }
+                                    placeholder="Select treatment…"
+                                    hideSearch
+                                    matchTriggerWidth
+                                    buttonProps={{ className: 'w-full' }}
+                                    caret
+                                />
+                            </FormField>
                         </div>
+                        <FormField label="Treatment notes">
+                            <Textarea
+                                id="risk-treatment-notes"
+                                rows={3}
+                                placeholder="Planned mitigation, rationale, residual-risk notes…"
+                                value={form.treatmentNotes}
+                                onChange={(e) =>
+                                    update('treatmentNotes', e.target.value)
+                                }
+                            />
+                        </FormField>
 
                         {/* Review date — Epic 58 shared DatePicker.
                             `form.nextReviewAt` stays a YMD string so the
@@ -643,7 +593,7 @@ export function NewRiskModal({
                                                 <span className="w-16 shrink-0 text-xs text-content-muted">
                                                     {c.annexId || 'CUST'}
                                                 </span>
-                                                <span className="truncate text-content-emphasis">
+                                                <span className="text-content-emphasis">
                                                     {c.name}
                                                 </span>
                                             </label>

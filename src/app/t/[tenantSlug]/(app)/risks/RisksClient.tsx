@@ -615,9 +615,6 @@ function RisksPageInner({
                         </Button>
                         {permissions.canWrite && (
                             <>
-                                <Link href={tenantHref('/risks/ai')} className={buttonVariants({ variant: 'secondary' })} id="ai-risk-btn">
-                                    AI Assessment
-                                </Link>
                                 <Link href={tenantHref('/risks/import')} className={buttonVariants({ variant: 'secondary' })} id="risk-import-btn">
                                     Import
                                 </Link>

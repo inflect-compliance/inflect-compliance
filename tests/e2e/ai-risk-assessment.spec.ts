@@ -10,12 +10,12 @@ test.describe('AI-Assisted Risk Assessment', () => {
         tenantSlug = await loginAndGetTenant(page, ADMIN_USER);
     });
 
-    test('risks page has AI Assessment button', async ({ page }) => {
+    test('risks page no longer shows the AI Assessment header button', async ({ page }) => {
+        // R2 (2026-06-06) — the header AI Assessment button was removed; the
+        // AI flow is reached via the assist rail / direct /risks/ai URL.
         await safeGoto(page, `/t/${tenantSlug}/risks`, { waitUntil: 'domcontentloaded' });
         await page.waitForLoadState('networkidle').catch(() => {});
-        await page.waitForSelector('#ai-risk-btn', { timeout: 30000 });
-        await expect(page.locator('#ai-risk-btn')).toBeVisible();
-        await expect(page.locator('#ai-risk-btn')).toContainText('AI Assessment');
+        await expect(page.locator('#ai-risk-btn')).toHaveCount(0);
     });
 
     test('navigates to AI assessment page and shows form', async ({ page }) => {

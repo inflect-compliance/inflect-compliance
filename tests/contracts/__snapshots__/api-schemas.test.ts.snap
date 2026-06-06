@@ -3218,6 +3218,18 @@ exports[`API contract — per-schema snapshots schema: RiskCreateRequest 1`] = `
       "type": "string",
       "minLength": 1
     },
+    "description": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "category": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "threat": {
       "type": "string"
     },
@@ -3254,7 +3266,19 @@ exports[`API contract — per-schema snapshots schema: RiskCreateRequest 1`] = `
         "null"
       ]
     },
+    "ownerUserId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "targetDate": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "nextReviewAt": {
       "type": [
         "string",
         "null"
