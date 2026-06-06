@@ -150,6 +150,9 @@ export function MetricCard({
             className={cn(
                 cardVariants({ density: 'compact' }),
                 "relative isolate overflow-hidden",
+                // `select-none` — the metric value/label aren't copyable
+                // content; stops them being text-highlighted on click.
+                "select-none",
                 clickable
                     ? "cursor-pointer hover:border-border-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-default focus-visible:ring-offset-2 focus-visible:ring-offset-bg-page transition-colors duration-150 ease-out"
                     : "hover:border-border-emphasis transition-colors duration-150 ease-out",
