@@ -316,35 +316,32 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                     <KpiFilterCard
                         label="Total assets"
                         value={totalAssets}
+                        accent="indigo"
                         sparkline={assetTrends.total}
-                        sparklineVariant="brand"
                         onClick={() => toggleAssetKpi('total')}
                         selected={activeAssetKpi === 'total'}
                     />
                     <KpiFilterCard
                         label="Active"
                         value={activeAssets}
-                        tone="success"
+                        accent="emerald"
                         sparkline={assetTrends.active}
-                        sparklineVariant="success"
                         onClick={() => toggleAssetKpi('active')}
                         selected={activeAssetKpi === 'active'}
                     />
                     <KpiFilterCard
                         label="High criticality"
                         value={criticalAssets}
-                        tone={criticalAssets > 0 ? 'critical' : 'default'}
+                        accent="rose"
                         sparkline={assetTrends.critical}
-                        sparklineVariant="error"
                         onClick={() => toggleAssetKpi('critical')}
                         selected={activeAssetKpi === 'critical'}
                     />
                     <KpiFilterCard
                         label="Retired"
                         value={retiredAssets}
-                        tone="attention"
+                        accent="slate"
                         sparkline={assetTrends.retired}
-                        sparklineVariant="neutral"
                         onClick={() => toggleAssetKpi('retired')}
                         selected={activeAssetKpi === 'retired'}
                     />
