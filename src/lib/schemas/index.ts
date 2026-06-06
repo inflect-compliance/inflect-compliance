@@ -25,6 +25,7 @@ export const CreateAssetSchema = z.object({
     type: z.string().min(1, 'Type is required'),
     classification: z.string().optional(),
     owner: z.string().optional(),
+    ownerUserId: z.string().optional().nullable(),    // Real user reference — the asset owner (people picker)
     location: z.string().optional(),
     confidentiality: z.coerce.number().int().min(1).max(5).optional().default(3),
     integrity: z.coerce.number().int().min(1).max(5).optional().default(3),

@@ -47,7 +47,7 @@ const INITIAL: NewAssetFormFields = {
     name: '',
     type: 'SYSTEM',
     classification: '',
-    owner: '',
+    ownerUserId: '',
     location: '',
     dataResidency: '',
     confidentiality: 3,
@@ -72,7 +72,7 @@ export function useNewAssetForm({
                 availability: payload.availability,
             };
             if (payload.classification) body.classification = payload.classification;
-            if (payload.owner) body.owner = payload.owner;
+            if (payload.ownerUserId) body.ownerUserId = payload.ownerUserId;
             if (payload.location) body.location = payload.location;
             if (payload.dataResidency) body.dataResidency = payload.dataResidency;
 

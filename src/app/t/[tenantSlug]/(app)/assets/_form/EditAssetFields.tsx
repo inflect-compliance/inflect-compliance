@@ -10,6 +10,7 @@
  */
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { UserCombobox } from '@/components/ui/user-combobox';
+import { ASSET_CLASSIFICATION_OPTIONS } from './asset-options';
 import type { EditAssetFormReturn } from './useEditAssetForm';
 
 const TYPES = [
@@ -68,6 +69,8 @@ export function EditAssetFields({
                     }
                     options={TYPE_OPTIONS}
                     matchTriggerWidth
+                    buttonProps={{ className: 'w-full' }}
+                    caret
                 />
             </div>
             <div>
@@ -85,6 +88,8 @@ export function EditAssetFields({
                     options={CRIT_OPTIONS}
                     placeholder="—"
                     matchTriggerWidth
+                    buttonProps={{ className: 'w-full' }}
+                    caret
                 />
             </div>
             <div>
@@ -101,10 +106,12 @@ export function EditAssetFields({
                     }
                     options={STATUS_OPTIONS}
                     matchTriggerWidth
+                    buttonProps={{ className: 'w-full' }}
+                    caret
                 />
             </div>
             <div>
-                <label className="input-label">Assigned to</label>
+                <label className="input-label">Owner</label>
                 <UserCombobox
                     tenantSlug={tenantSlug}
                     selectedId={form.fields.ownerUserId || null}
@@ -118,29 +125,22 @@ export function EditAssetFields({
                 />
             </div>
             <div>
-                <label className="input-label">Owner (label)</label>
-                <input
-                    className="input"
-                    value={form.fields.owner}
-                    onChange={(e) => form.setField('owner', e.target.value)}
-                />
-            </div>
-            <div>
-                <label className="input-label">External Ref</label>
-                <input
-                    className="input"
-                    value={form.fields.externalRef}
-                    onChange={(e) => form.setField('externalRef', e.target.value)}
-                />
-            </div>
-            <div>
                 <label className="input-label">Classification</label>
-                <input
-                    className="input"
-                    value={form.fields.classification}
-                    onChange={(e) =>
-                        form.setField('classification', e.target.value)
+                <Combobox
+                    hideSearch
+                    selected={
+                        ASSET_CLASSIFICATION_OPTIONS.find(
+                            (o) => o.value === form.fields.classification,
+                        ) ?? null
                     }
+                    setSelected={(opt) =>
+                        form.setField('classification', opt?.value ?? '')
+                    }
+                    options={ASSET_CLASSIFICATION_OPTIONS}
+                    placeholder="Select classification…"
+                    matchTriggerWidth
+                    buttonProps={{ className: 'w-full' }}
+                    caret
                 />
             </div>
             <div>

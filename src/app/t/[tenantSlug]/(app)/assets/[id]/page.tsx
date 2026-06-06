@@ -189,11 +189,6 @@ export default function AssetDetailPage() {
                     ]}
                 />
             }
-            actions={
-                permissions.canWrite && (
-                    <Link href={tenantHref(`/risks/ai?assetId=${assetId}`)} className={buttonVariants({ variant: 'secondary' })} id="suggest-risks-btn">Suggest Risks</Link>
-                )
-            }
         >
             {error && <div className={cn(cardVariants({ density: 'compact' }), 'border-border-error text-content-error text-sm')}>{error}</div>}
 
@@ -320,6 +315,7 @@ export default function AssetDetailPage() {
                             </div>
                             <div><Eyebrow>Data Residency</Eyebrow><p className="text-sm">{asset.dataResidency || '—'}</p></div>
                         </div>
+                        <Heading level={3}>Risk Assessment</Heading>
                         <div className="grid grid-cols-3 gap-default">
                             <div className={cardVariants({ density: 'compact' })}>
                                 <KPIStat value={asset.confidentiality ?? '—'} label="Confidentiality" size="sm" />

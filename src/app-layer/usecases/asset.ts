@@ -42,6 +42,7 @@ export async function createAsset(ctx: RequestContext, data: any) {
             type: data.type,
             classification: data.classification,
             owner: data.owner,
+            ownerUserId: data.ownerUserId || null,
             location: data.location,
             confidentiality: data.confidentiality,
             integrity: data.integrity,

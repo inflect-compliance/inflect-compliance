@@ -6,8 +6,14 @@
  */
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { FormField } from '@/components/ui/form-field';
+import { FormSection } from '@/components/ui/form-section';
 import { Input } from '@/components/ui/input';
+import { UserCombobox } from '@/components/ui/user-combobox';
 import { NumberStepper } from '@/components/ui/number-stepper';
+import {
+    ASSET_CLASSIFICATION_OPTIONS,
+    ASSET_DATA_RESIDENCY_OPTIONS,
+} from './asset-options';
 import type { NewAssetFormFields, NewAssetFormReturn } from './useNewAssetForm';
 
 const ASSET_TYPES = [
@@ -44,9 +50,11 @@ export interface NewAssetFieldsLabels {
 export function NewAssetFields({
     form,
     labels,
+    tenantSlug,
 }: {
     form: NewAssetFormReturn;
     labels: NewAssetFieldsLabels;
+    tenantSlug: string;
 }) {
     return (
         <>
@@ -84,23 +92,39 @@ export function NewAssetFields({
                     />
                 </FormField>
                 <FormField label={labels.classification}>
-                    <Input
+                    <Combobox
                         id="asset-classification-input"
-                        value={form.fields.classification}
-                        onChange={(e) =>
-                            form.setField('classification', e.target.value)
+                        name="classification"
+                        options={ASSET_CLASSIFICATION_OPTIONS}
+                        selected={
+                            ASSET_CLASSIFICATION_OPTIONS.find(
+                                (o) => o.value === form.fields.classification,
+                            ) ?? null
                         }
-                        placeholder={labels.classificationPlaceholder}
+                        setSelected={(o) =>
+                            form.setField('classification', o?.value ?? '')
+                        }
+                        placeholder="Select classification…"
+                        hideSearch
+                        matchTriggerWidth
+                        buttonProps={{ className: 'w-full' }}
+                        caret
                     />
                 </FormField>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-default">
                 <FormField label={labels.owner}>
-                    <Input
+                    <UserCombobox
                         id="asset-owner-input"
-                        value={form.fields.owner}
-                        onChange={(e) => form.setField('owner', e.target.value)}
+                        tenantSlug={tenantSlug}
+                        selectedId={form.fields.ownerUserId || null}
+                        onChange={(userId) =>
+                            form.setField('ownerUserId', userId ?? '')
+                        }
+                        forceDropdown
+                        matchTriggerWidth
+                        placeholder="Unassigned"
                     />
                 </FormField>
                 <FormField label={labels.location}>
@@ -115,18 +139,30 @@ export function NewAssetFields({
             </div>
 
             <FormField label={labels.dataResidency}>
-                <Input
+                <Combobox
                     id="asset-data-residency-input"
-                    value={form.fields.dataResidency}
-                    onChange={(e) =>
-                        form.setField('dataResidency', e.target.value)
+                    name="dataResidency"
+                    options={ASSET_DATA_RESIDENCY_OPTIONS}
+                    selected={
+                        ASSET_DATA_RESIDENCY_OPTIONS.find(
+                            (o) => o.value === form.fields.dataResidency,
+                        ) ?? null
                     }
-                    placeholder={labels.residencyPlaceholder}
+                    setSelected={(o) =>
+                        form.setField('dataResidency', o?.value ?? '')
+                    }
+                    placeholder="Select residency…"
+                    hideSearch
+                    matchTriggerWidth
+                    buttonProps={{ className: 'w-full' }}
+                    caret
                 />
             </FormField>
 
             {/* Epic 60 — NumberStepper on the CIA triple. min/max=1..5
-                matches the ISO 27005 impact scale. */}
+                matches the ISO 27005 impact scale. The CIA scores are the
+                asset's risk assessment. */}
+            <FormSection eyebrow="Risk Assessment">
             <div className="grid grid-cols-3 gap-default">
                 <FormField label={labels.confidentiality}>
                     <NumberStepper
@@ -162,6 +198,7 @@ export function NewAssetFields({
                     />
                 </FormField>
             </div>
+            </FormSection>
         </>
     );
 }

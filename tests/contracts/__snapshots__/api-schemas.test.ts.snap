@@ -18,6 +18,12 @@ exports[`API contract — per-schema snapshots schema: AssetCreateRequest 1`] = 
     "owner": {
       "type": "string"
     },
+    "ownerUserId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "location": {
       "type": "string"
     },

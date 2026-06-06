@@ -144,6 +144,20 @@ describe('createAsset', () => {
         await expect(createAsset(readerCtx, { name: 'X' })).rejects.toBeDefined();
         expect(AssetRepository.create).not.toHaveBeenCalled();
     });
+
+    it('passes ownerUserId to the repository (people-picker owner)', async () => {
+        (AssetRepository.create as jest.Mock).mockResolvedValue({ id: 'a-2', name: 'DB' });
+        await createAsset(editorCtx, { name: 'DB', type: 'DATA_STORE', ownerUserId: 'u-7' });
+        const createArgs = (AssetRepository.create as jest.Mock).mock.calls[0][2];
+        expect(createArgs.ownerUserId).toBe('u-7');
+    });
+
+    it('coerces an empty ownerUserId to null', async () => {
+        (AssetRepository.create as jest.Mock).mockResolvedValue({ id: 'a-3' });
+        await createAsset(editorCtx, { name: 'X', type: 'SYSTEM', ownerUserId: '' });
+        const createArgs = (AssetRepository.create as jest.Mock).mock.calls[0][2];
+        expect(createArgs.ownerUserId).toBeNull();
+    });
 });
 
 // ─── updateAsset — three-state + notification ──────────────────────

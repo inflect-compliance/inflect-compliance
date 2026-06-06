@@ -4,10 +4,10 @@
  * Mirrors `<NewAssetFields>`:
  *   - name — required.
  *   - type — one of the AssetType values.
- *   - classification — optional.
- *   - owner — optional free text.
+ *   - classification — optional (standard four-tier dropdown).
+ *   - ownerUserId — optional tenant-member reference (people picker).
  *   - location — optional free text.
- *   - dataResidency — optional free text.
+ *   - dataResidency — optional (EU/UK/US/Other dropdown).
  *   - confidentiality / integrity / availability — 1..5 ISO 27005 scale.
  */
 import { z } from 'zod';
@@ -35,7 +35,7 @@ export const NewAssetFormSchema = z.object({
     name: z.string().trim().min(1, 'Asset name is required').max(255),
     type: z.enum(ASSET_TYPE_VALUES),
     classification: z.string().trim().max(255).default(''),
-    owner: z.string().trim().max(255).default(''),
+    ownerUserId: z.string().trim().max(255).default(''),
     location: z.string().trim().max(255).default(''),
     dataResidency: z.string().trim().max(255).default(''),
     confidentiality: cia,

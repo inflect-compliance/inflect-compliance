@@ -105,7 +105,7 @@ export function NewAssetModal({
                         disabled={form.submitting}
                         className="m-0 p-0 border-0 space-y-default"
                     >
-                        <NewAssetFields form={form} labels={labels} />
+                        <NewAssetFields form={form} labels={labels} tenantSlug={tenantSlug} />
                     </fieldset>
                 </Modal.Body>
                 <Modal.Actions>
