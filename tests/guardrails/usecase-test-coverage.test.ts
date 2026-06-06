@@ -61,8 +61,6 @@ const EXEMPTIONS: Record<string, string> = {
         'Roadmap Q1 — pending direct unit tests.',
 
     // Q2 — Audit + audit-trail
-    'src/app-layer/usecases/auditLog.ts':
-        'Roadmap Q2 — wrapper over AuditLogRepository.queryAuditLog; pending direct tests.',
     'src/app-layer/usecases/org-audit.ts':
         'Roadmap Q2 — org-scoped audit feed projection; pending direct tests.',
 
@@ -184,8 +182,9 @@ describe('every usecase file has an importing test', () => {
         // Today's baseline. When you add an exemption, you must also
         // lower this floor — i.e. you can't sneak in an additional
         // untested file without explicitly admitting the regression in
-        // a separate, visible diff.
-        const BASELINE = 12;
+        // a separate, visible diff. PR 19 took auditLog.ts off the
+        // list, so the ratchet is at 11 now.
+        const BASELINE = 11;
         expect(EXEMPTION_COUNT).toBeLessThanOrEqual(BASELINE);
     });
 
