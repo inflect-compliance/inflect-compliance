@@ -169,12 +169,21 @@ export function KpiFilterCard({
         <>
             <KPIStat {...kpiStatProps} />
             {sparkline && sparkline.length >= 2 && (
-                <MiniAreaChart
-                    data={sparkline}
-                    variant={sparklineVariant}
-                    aria-label={sparkLabel}
-                    className="mt-3 h-8 w-full"
-                />
+                // Fixed-height wrapper is LOAD-BEARING. MiniAreaChart's
+                // <ParentSize> forces inline `height: 100%`, which would
+                // override an `h-8` passed on the chart itself and resolve
+                // against the auto-height card — ParentSize then grows to
+                // fill, the card grows to fit, and they expand without
+                // bound. Pinning the parent to h-8 (32px) stops the loop.
+                // Mirrors KpiCard's `<div className="h-8 w-full">` wrapper.
+                <div className="mt-3 h-8 w-full">
+                    <MiniAreaChart
+                        data={sparkline}
+                        variant={sparklineVariant}
+                        aria-label={sparkLabel}
+                        className="h-full w-full"
+                    />
+                </div>
             )}
         </>
     );
