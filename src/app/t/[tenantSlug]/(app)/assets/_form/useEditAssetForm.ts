@@ -105,7 +105,14 @@ export function useEditAssetForm({
                 body: JSON.stringify(fields),
             });
             if (!res.ok) throw new Error(`Failed to save (${res.status})`);
-            const updated = await res.json();
+            const payload = await res.json();
+            // PATCH /assets/:id returns `{ success, asset }` while GET
+            // returns the bare asset. Unwrap so the detail page's
+            // optimistic `setAsset(updated)` receives the same shape it
+            // loaded with — otherwise the Overview reads undefined fields
+            // (e.g. criticality C/I/A) and looks unchanged until a manual
+            // refresh re-runs the GET.
+            const updated = payload?.asset ?? payload;
             setIsDirty(false);
             onSuccess(updated);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
