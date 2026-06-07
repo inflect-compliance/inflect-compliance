@@ -196,17 +196,21 @@ export function KpiFilterCard({
     const sparkLabel =
         typeof label === "string" ? `${label} trend` : "Trend";
     const body = (
-        <>
+        // B2 (2026-06-07): the sparkline sits to the RIGHT of the value, not
+        // beneath it — so trendline cards keep the SAME (compact) height as
+        // cards without a trendline, instead of growing a row taller.
+        // `items-end` aligns the sparkline to the value's baseline.
+        <div className="flex items-end justify-between gap-compact">
             <KPIStat {...kpiStatProps} />
             {sparkline && sparkline.length >= 2 && (
-                // Fixed-height wrapper is LOAD-BEARING. MiniAreaChart's
+                // Fixed-size wrapper is LOAD-BEARING. MiniAreaChart's
                 // <ParentSize> forces inline `height: 100%`, which would
                 // override an `h-8` passed on the chart itself and resolve
                 // against the auto-height card — ParentSize then grows to
                 // fill, the card grows to fit, and they expand without
-                // bound. Pinning the parent to h-8 (32px) stops the loop.
-                // Mirrors KpiCard's `<div className="h-8 w-full">` wrapper.
-                <div className="mt-3 h-8 w-full">
+                // bound. Pinning the parent to a fixed h-8/w-20 stops the
+                // loop and keeps the sparkline a slim trend to the right.
+                <div className="h-8 w-20 shrink-0">
                     <MiniAreaChart
                         data={sparkline}
                         variant={effectiveSparklineVariant}
@@ -215,7 +219,7 @@ export function KpiFilterCard({
                     />
                 </div>
             )}
-        </>
+        </div>
     );
 
     // Render a <button> when clickable so Enter/Space activate the

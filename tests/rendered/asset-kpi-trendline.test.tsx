@@ -54,11 +54,21 @@ describe('KpiFilterCard sparkline', () => {
     // MiniAreaChart's <ParentSize> renders its wrapper div (with the
     // passed className) but returns null inside at 0×0 (jsdom has no
     // layout), so we assert the wrapper, not the svg.
-    const sparkWrapper = (c: HTMLElement) => c.querySelector('.mt-3.h-8.w-full');
+    // B2 (2026-06-07): the wrapper is now h-8 w-20 to the RIGHT of the
+    // value (was .mt-3.h-8.w-full stacked beneath it).
+    const sparkWrapper = (c: HTMLElement) => c.querySelector('.h-8.w-20');
 
     it('renders the sparkline wrapper when given ≥2 points', () => {
         const { container } = render(<KpiFilterCard label="Total assets" value={3} sparkline={spark} />);
         expect(sparkWrapper(container)).not.toBeNull();
+    });
+
+    it('lays the sparkline to the RIGHT of the value (B2 — flex row, not stacked below)', () => {
+        const { container } = render(<KpiFilterCard label="Total assets" value={3} sparkline={spark} />);
+        // value + sparkline share a horizontal flex row (items-end).
+        expect(container.querySelector('.flex.items-end')).not.toBeNull();
+        // the old below-the-value stacked wrapper is gone.
+        expect(container.querySelector('.mt-3.h-8.w-full')).toBeNull();
     });
 
     it('renders no sparkline without data', () => {

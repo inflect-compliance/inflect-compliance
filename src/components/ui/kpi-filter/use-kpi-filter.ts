@@ -137,6 +137,18 @@ export function useKpiFilter<TKpiId extends string>(
         (id: TKpiId) => {
             const def = defs.find((d) => d.id === id);
             if (!def) return;
+            // B2 (2026-06-07): KPI cards are mutually exclusive. Clear every
+            // OTHER def's filter BEFORE applying the new one — otherwise
+            // switching from one card to another (e.g. High-Criticality →
+            // Active) leaves the previous filter set. That both breaks the
+            // result set (criticality=HIGH AND status=ACTIVE) AND makes
+            // `activeKpiId` null (two defs' isActive match at once), so the
+            // newly-clicked card never lights up / animates. Each def owns
+            // a distinct filter key, so the clears + the apply compose into
+            // one batched state update.
+            defs.forEach((d) => {
+                if (d.id !== id && d.clear) d.clear(ctx);
+            });
             def.apply(ctx);
         },
         [defs, ctx],

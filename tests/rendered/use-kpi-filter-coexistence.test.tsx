@@ -166,14 +166,15 @@ describe('useKpiFilter — coexistence with sibling filter state', () => {
         expect(setSpy).not.toHaveBeenCalledWith('category', expect.anything());
     });
 
-    it('switching between KPIs: applying a NEW KPI replaces the old one\'s key but preserves siblings', () => {
-        // Initial state: status=OPEN ('open' KPI active) + a sibling
-        // category filter. Toggle to 'critical' KPI — should call
-        // set('severity', 'CRITICAL') which doesn't disturb status
-        // OR category. The previous KPI's keys remain (status=OPEN
-        // still present) — KPIs don't auto-clear the previous one;
-        // page authors who want exclusivity define mutually-exclusive
-        // predicates so only one isActive at a time.
+    it('switching between KPIs: applying a NEW KPI clears the old KPI\'s key but preserves non-KPI siblings', () => {
+        // B2 (2026-06-07): KPI cards are now MUTUALLY EXCLUSIVE. Initial
+        // state: status=OPEN ('open' KPI active) + a sibling category
+        // filter. Toggling to 'critical' applies set('severity','CRITICAL')
+        // AND clears the previous KPI's key (status, via 'open'.clear) so
+        // only one card is active at a time. Without this, the two predicates
+        // (status=OPEN, severity=CRITICAL) both match → activeKpiId goes null
+        // and the new card never lights up (the reported bug). Only KPI defs'
+        // `clear`s run, so the non-KPI `category` sibling is untouched.
         const { ctx, setSpy, removeAllSpy } = makeMockCtx({
             status: ['OPEN'],
             category: ['IT-SECURITY'],
@@ -189,8 +190,9 @@ describe('useKpiFilter — coexistence with sibling filter state', () => {
         });
         // Critical KPI applied — sets severity.
         expect(setSpy).toHaveBeenCalledWith('severity', 'CRITICAL');
-        // Old KPI's `status` key was NOT auto-removed; the page
-        // author owns mutual exclusivity via the predicate model.
-        expect(removeAllSpy).not.toHaveBeenCalledWith('status');
+        // The previous KPI's `status` key WAS cleared (mutual exclusivity).
+        expect(removeAllSpy).toHaveBeenCalledWith('status');
+        // The non-KPI `category` sibling is NOT touched.
+        expect(removeAllSpy).not.toHaveBeenCalledWith('category');
     });
 });
