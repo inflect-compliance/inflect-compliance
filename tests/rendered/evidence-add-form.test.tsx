@@ -7,7 +7,7 @@
  * and the same trigger / submit labels. The ids are configurable so each
  * page keeps its E2E selectors; this test drives the form generically.
  */
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import * as React from 'react';
 
 import { EvidenceAddForm } from '@/components/EvidenceAddForm';

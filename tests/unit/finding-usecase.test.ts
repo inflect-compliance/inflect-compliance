@@ -67,7 +67,6 @@ beforeEach(() => {
     (sanitizePlainText as jest.Mock).mockImplementation((s: string) => `SAN::${s}`);
 });
 
-const adminCtx = makeRequestContext('ADMIN', { userId: 'user-admin' });
 const editorCtx = makeRequestContext('EDITOR', { userId: 'user-editor' });
 const readerCtx = makeRequestContext('READER');
 

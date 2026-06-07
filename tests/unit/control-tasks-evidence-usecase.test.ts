@@ -67,7 +67,6 @@ beforeEach(() => {
     jest.clearAllMocks();
 });
 
-const adminCtx = makeRequestContext('ADMIN');
 const editorCtx = makeRequestContext('EDITOR');
 const readerCtx = makeRequestContext('READER');
 

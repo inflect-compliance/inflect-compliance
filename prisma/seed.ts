@@ -24,7 +24,12 @@ async function main() {
     // Pre-creating with the password hash + name preserves credentials
     // login + the friendly display name on the OWNER user that the
     // production tenant-creation path otherwise leaves blank.
-    const pwd = await bcrypt.hash('password123', 10);
+    // B9 — the demo password is overridable via SEED_PASSWORD; the
+    // literal is the well-known local-dev default (prod users are
+    // provisioned via OAuth, never this seed). Tests/CI leave it unset
+    // so the default holds.
+    const seedPassword = process.env.SEED_PASSWORD || 'password123';
+    const pwd = await bcrypt.hash(seedPassword, 10);
 
     const admin = await prisma.user.upsert({
         where: { emailHash: hashForLookup('admin@acme.com') },
@@ -961,7 +966,7 @@ async function main() {
     // Silence unused-binding lint for the re-exported bcrypt alias above.
     void bcryptLib;
 
-    console.log('\n🎉 Seed complete! Login with admin@acme.com / password123');
+    console.log('\n🎉 Seed complete! Login as admin@acme.com — password set via SEED_PASSWORD (default in prisma/seed.ts)');
 }
 
 main().catch(console.error).finally(() => prisma.$disconnect());

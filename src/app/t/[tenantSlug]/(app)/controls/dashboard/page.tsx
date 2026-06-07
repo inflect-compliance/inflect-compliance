@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import type { ControlDashboardDTO, ConsistencyCheckDTO } from '@/lib/dto';
 import { AppIcon } from '@/components/icons/AppIcon';
-import { Button } from '@/components/ui/button';
 import { IconAction } from '@/components/ui/icon-action';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { ProgressBar } from '@/components/ui/progress-bar';
