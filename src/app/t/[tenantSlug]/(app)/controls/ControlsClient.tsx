@@ -55,7 +55,6 @@ import {
 } from '@/lib/controls/control-taxonomy';
 import { AiAssistRail } from '@/components/ui/ai-assist-rail';
 import { Sparkle3 } from '@/components/ui/icons/nucleo/sparkle3';
-import { SelectionSummaryPanel } from '@/components/ui/selection-summary-panel';
 import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
 import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
 import type { CappedList } from '@/lib/list-backfill-cap';
@@ -753,42 +752,30 @@ function ControlsPageInner({
         },
     ]), [appPermissions, tenantHref, taskStats]);
 
-    // Selection-summary rail — mounted only when the viewer can edit
-    // AND ≥1 row is selected. `<AsidePanel>` owns the collapse chrome +
-    // the `<Sheet>` fallback below xl; `<SelectionSummaryPanel>` is the
-    // content. Absent ⇒ the list page is single-column, unchanged.
-    const selectionAside =
-        canEditControls && selectedIds.length > 0 ? (
-            <AsidePanel
-                title="Selection"
-                surfaceKey="controls-list"
-                icon={<AppIcon name="controls" size={16} />}
-            >
-                <SelectionSummaryPanel
-                    count={selectedIds.length}
-                    resourceLabel={{ singular: 'control', plural: 'controls' }}
-                    onClear={() => setRowSelection({})}
-                    actions={[
-                        {
-                            label: 'Mark Implemented',
-                            icon: <CheckCircle2 className="size-3.5" />,
-                            onClick: () => bulkSetStatus('IMPLEMENTED'),
-                        },
-                        {
-                            label: 'Mark Needs Review',
-                            icon: <AlertTriangle className="size-3.5" />,
-                            onClick: () => bulkSetStatus('NEEDS_REVIEW'),
-                        },
-                        {
-                            label: 'Mark Not Applicable',
-                            icon: <X className="size-3.5" />,
-                            tone: 'danger',
-                            onClick: () => bulkSetStatus('NOT_APPLICABLE'),
-                        },
-                    ]}
-                />
-            </AsidePanel>
-        ) : undefined;
+    // B1 (2026-06-07): the bulk-status verbs live in the DataTable's
+    // header-row selection toolbar (`batchActions`) — the row-select action
+    // bar that pops over the column-names row — NOT a right-rail. The
+    // selection-summary AsidePanel was removed.
+    const controlBatchActions = canEditControls
+        ? [
+              {
+                  label: 'Mark Implemented',
+                  icon: <CheckCircle2 className="size-3.5" />,
+                  onClick: () => bulkSetStatus('IMPLEMENTED'),
+              },
+              {
+                  label: 'Mark Needs Review',
+                  icon: <AlertTriangle className="size-3.5" />,
+                  onClick: () => bulkSetStatus('NEEDS_REVIEW'),
+              },
+              {
+                  label: 'Mark Not Applicable',
+                  icon: <X className="size-3.5" />,
+                  tone: 'danger' as const,
+                  onClick: () => bulkSetStatus('NOT_APPLICABLE'),
+              },
+          ]
+        : undefined;
 
     // Browse rail — category accordion. The loaded controls are
     // grouped by their framework-native category, derived via
@@ -989,7 +976,6 @@ function ControlsPageInner({
     // inside the docked third column.
     const composedAside = (
         <div className="flex flex-col gap-default">
-            {selectionAside}
             {browseAside}
             {aiAssistAside}
         </div>
@@ -1205,13 +1191,11 @@ function ControlsPageInner({
                 onColumnVisibilityChange: setColumnVisibility,
                 'data-testid': 'controls-table',
                 className: 'hover:bg-bg-muted',
-                // Right-rail Phase 2 — selection is page-controlled so
-                // the selection-summary rail can render the bulk-status
-                // verbs (see `selectionAside` above). The floating
-                // batch-action toolbar (`batchActions`) is retired here
-                // in favour of the rail. For viewers without edit
-                // permission, selection is left off entirely — no
-                // checkboxes, no rail — exactly the prior behaviour.
+                // B1 — selection is page-controlled; the bulk-status verbs
+                // render in the header-row selection toolbar via
+                // `batchActions`. For viewers without edit permission,
+                // selection is left off entirely (no checkboxes, no bar).
+                batchActions: controlBatchActions,
                 selectedRows: canEditControls ? rowSelection : undefined,
                 onRowSelectionChange: canEditControls
                     ? handleRowSelectionChange

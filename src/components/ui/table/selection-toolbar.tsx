@@ -80,7 +80,7 @@ export const BatchActionButton = forwardRef<
     ref={ref}
     type="button"
     className={cn(
-      "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+      "inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-background",
       "disabled:pointer-events-none disabled:opacity-50",
       variant === "default" &&
@@ -197,7 +197,10 @@ export function SelectionToolbar<T>({
       aria-label="Batch actions"
       data-testid="selection-toolbar"
     >
-      <div className="flex h-11 items-center py-2.5 pr-2">
+      {/* B1 (2026-06-07): the bar matches the column-header row height
+          (~37px) so it pops over it cleanly — was h-11 (45px incl. border),
+          which overhung the header by ~8px. */}
+      <div className="flex h-9 items-center pr-2">
         {/* Select-all / indeterminate checkbox */}
         <div className="relative flex h-full w-12 shrink-0 items-center justify-center">
           <Tooltip

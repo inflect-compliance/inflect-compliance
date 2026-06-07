@@ -651,68 +651,11 @@ function TasksPageInner({
                 />
             </ListPageShell.Filters>
 
-            {/* Bulk Actions Toolbar — flex-shrink-0 so it keeps its
-                natural height in the ListPageShell column. */}
-            {appPermissions.tasks.edit && selected.size > 0 && (
-                <div className={cn(cardVariants({ density: 'compact' }), 'flex items-center gap-compact border border-[var(--brand-default)]/30 flex-shrink-0')} id="bulk-toolbar">
-                    <span className="text-sm text-[var(--brand-default)] font-medium">{selected.size} selected</span>
-                    <Combobox
-                        hideSearch
-                        id="bulk-action-select"
-                        selected={BULK_ACTION_OPTIONS.find(o => o.value === bulkAction) ?? null}
-                        setSelected={(opt) => { setBulkAction(opt?.value ?? ''); setBulkValue(''); }}
-                        options={BULK_ACTION_OPTIONS}
-                        placeholder="Choose action..."
-                        matchTriggerWidth
-                        buttonProps={{ className: 'w-full sm:w-auto text-sm' }}
-                    />
-                    {bulkAction === 'assign' && (
-                        <input className="input w-full sm:w-48 text-sm" placeholder="User ID (blank = unassign)" value={bulkValue} onChange={e => setBulkValue(e.target.value)} id="bulk-value-input" />
-                    )}
-                    {bulkAction === 'status' && (
-                        <Combobox
-                            hideSearch
-                            id="bulk-value-input"
-                            selected={BULK_STATUS_CB_OPTIONS.find(o => o.value === bulkValue) ?? null}
-                            setSelected={(opt) => setBulkValue(opt?.value ?? '')}
-                            options={BULK_STATUS_CB_OPTIONS}
-                            placeholder="Select status..."
-                            matchTriggerWidth
-                            buttonProps={{ className: 'w-full sm:w-auto text-sm' }}
-                        />
-                    )}
-                    {bulkAction === 'due' && (
-                        // Epic 58 — shared DatePicker for the bulk "Set due
-                        // date" action. `bulkValue` stays a YMD string so
-                        // the bulk POST body is unchanged.
-                        <DatePicker
-                            id="bulk-value-input"
-                            className="w-full sm:w-40 text-sm"
-                            placeholder="Due date"
-                            clearable
-                            align="start"
-                            value={parseYMD(bulkValue)}
-                            onChange={(next) =>
-                                setBulkValue(toYMD(next) ?? '')
-                            }
-                            disabledDays={{
-                                before: startOfUtcDay(new Date()),
-                            }}
-                            aria-label="Bulk due date"
-                        />
-                    )}
-                    <IconAction
-                        variant="primary"
-                        disabled={!bulkAction || (bulkAction === 'status' && !bulkValue)}
-                        loading={bulkMutation.isMutating}
-                        onClick={handleBulkSubmit}
-                        id="bulk-apply-btn"
-                        icon={<AppIcon name="checkCircle" size={16} />}
-                        label="Apply"
-                    />
-                    <button className="text-xs text-content-muted hover:text-content-emphasis" onClick={() => setSelected(new Set())}>Clear</button>
-                </div>
-            )}
+            {/* B1 (2026-06-07): the bulk-edit form moved INTO the
+                DataTable's header-row selection toolbar (`selectionControls`
+                below) — it pops over the column-names row on row-select.
+                The toolbar owns the count + Clear; the form keeps only
+                action + value + Apply. */}
 
             <ListPageShell.Body>
                 <TruncationBanner truncated={truncated} />
@@ -738,6 +681,57 @@ function TasksPageInner({
                     onRowSelectionChange={(rows) =>
                         setSelected(new Set(rows.map((r) => r.original.id)))
                     }
+                    selectionControls={() => (
+                        <div className="flex items-center gap-compact">
+                            <Combobox
+                                hideSearch
+                                id="bulk-action-select"
+                                selected={BULK_ACTION_OPTIONS.find(o => o.value === bulkAction) ?? null}
+                                setSelected={(opt) => { setBulkAction(opt?.value ?? ''); setBulkValue(''); }}
+                                options={BULK_ACTION_OPTIONS}
+                                placeholder="Choose action..."
+                                matchTriggerWidth
+                                buttonProps={{ className: 'text-sm' }}
+                            />
+                            {bulkAction === 'assign' && (
+                                <input className="input w-full sm:w-44 text-sm" placeholder="User ID (blank = unassign)" value={bulkValue} onChange={e => setBulkValue(e.target.value)} id="bulk-value-input" />
+                            )}
+                            {bulkAction === 'status' && (
+                                <Combobox
+                                    hideSearch
+                                    id="bulk-value-input"
+                                    selected={BULK_STATUS_CB_OPTIONS.find(o => o.value === bulkValue) ?? null}
+                                    setSelected={(opt) => setBulkValue(opt?.value ?? '')}
+                                    options={BULK_STATUS_CB_OPTIONS}
+                                    placeholder="Select status..."
+                                    matchTriggerWidth
+                                    buttonProps={{ className: 'text-sm' }}
+                                />
+                            )}
+                            {bulkAction === 'due' && (
+                                <DatePicker
+                                    id="bulk-value-input"
+                                    className="w-full sm:w-40 text-sm"
+                                    placeholder="Due date"
+                                    clearable
+                                    align="start"
+                                    value={parseYMD(bulkValue)}
+                                    onChange={(next) => setBulkValue(toYMD(next) ?? '')}
+                                    disabledDays={{ before: startOfUtcDay(new Date()) }}
+                                    aria-label="Bulk due date"
+                                />
+                            )}
+                            <IconAction
+                                variant="primary"
+                                disabled={!bulkAction || (bulkAction === 'status' && !bulkValue)}
+                                loading={bulkMutation.isMutating}
+                                onClick={handleBulkSubmit}
+                                id="bulk-apply-btn"
+                                icon={<AppIcon name="checkCircle" size={16} />}
+                                label="Apply"
+                            />
+                        </div>
+                    )}
                     onRowClick={(row) => router.push(tenantHref(`/tasks/${row.original.id}`))}
                     emptyState={
                         hasActive ? (
