@@ -388,8 +388,8 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                                     Add condition
                                 </Button>
                                 <p className="text-xs text-content-subtle">
-                                    "any of" / "none of" take a comma-separated value set. Numeric
-                                    fields support greater/less than.
+                                    Set operators (any of / none of) take a comma-separated value
+                                    set. Numeric fields support greater/less than.
                                 </p>
                             </>
                         )}
