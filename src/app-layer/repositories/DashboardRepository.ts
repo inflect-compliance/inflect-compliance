@@ -137,6 +137,21 @@ export interface VendorSummary {
 }
 
 /**
+ * Asset summary — the counts that back the Assets-page KPI cards.
+ * Mirrors the KPI tiles: Total / Active / High criticality / Retired.
+ */
+export interface AssetSummary {
+    /** Non-deleted assets. */
+    total: number;
+    /** status = ACTIVE. */
+    active: number;
+    /** criticality = HIGH. */
+    highCriticality: number;
+    /** status = RETIRED. */
+    retired: number;
+}
+
+/**
  * Risk heatmap cell — one cell in the likelihood × impact matrix.
  */
 export interface RiskHeatmapCell {
@@ -555,6 +570,24 @@ export class DashboardRepository {
         ]);
 
         return { total, overdueReview };
+    }
+
+    /**
+     * Asset KPI counts for the daily snapshot + the Assets-page cards.
+     * All counts exclude soft-deleted rows (`deletedAt: null`), so the
+     * snapshot series mirrors what the live Assets table shows.
+     */
+    static async getAssetSummary(db: PrismaTx, ctx: RequestContext): Promise<AssetSummary> {
+        const tenantId = ctx.tenantId;
+
+        const [total, active, highCriticality, retired] = await Promise.all([
+            db.asset.count({ where: { tenantId, deletedAt: null } }),
+            db.asset.count({ where: { tenantId, deletedAt: null, status: 'ACTIVE' } }),
+            db.asset.count({ where: { tenantId, deletedAt: null, criticality: 'HIGH' } }),
+            db.asset.count({ where: { tenantId, deletedAt: null, status: 'RETIRED' } }),
+        ]);
+
+        return { total, active, highCriticality, retired };
     }
 
     /**

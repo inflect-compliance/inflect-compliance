@@ -1,48 +1,17 @@
 /**
- * Asset KPI trendlines (2026-06-06): the 4 asset KPI tiles gain an inline
- * sparkline (cumulative-by-createdAt). Covers the pure trend builder + the
- * KpiFilterCard sparkline wiring.
+ * Asset KPI trendlines: the 4 asset KPI tiles render an inline sparkline.
+ *
+ * The series now comes from the daily compliance-snapshot table (one frozen
+ * point per 24h) via getComplianceTrends — see DashboardRepository.getAssetSummary
+ * + the snapshot job. The KpiFilterCard sparkline wiring below is the
+ * presentational contract (renders the chart when given ≥2 points), unchanged
+ * by the data-source swap. The per-day series shape is covered server-side in
+ * the compliance-trends + snapshot unit tests.
  */
 import { render } from '@testing-library/react';
 import * as React from 'react';
 import type { TimeSeriesPoint } from '@/components/ui/charts';
-import { buildCumulativeTrend } from '@/app/t/[tenantSlug]/(app)/assets/asset-kpi-trend';
 import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
-
-const rows = [
-    { createdAt: '2026-01-01T00:00:00Z', status: 'ACTIVE' },
-    { createdAt: '2026-02-01T00:00:00Z', status: 'RETIRED' },
-    { createdAt: '2026-03-01T00:00:00Z', status: 'ACTIVE' },
-];
-
-describe('buildCumulativeTrend', () => {
-    it('returns [] when nothing matches', () => {
-        expect(buildCumulativeTrend(rows, (r) => r.status === 'NOPE')).toEqual([]);
-    });
-
-    it('is cumulative + monotonic and ends at the total match count', () => {
-        const series = buildCumulativeTrend(rows, () => true, 3);
-        expect(series).toHaveLength(3);
-        const values = series.map((p) => p.value);
-        expect(values[values.length - 1]).toBe(3); // final = total
-        // monotonic non-decreasing
-        for (let i = 1; i < values.length; i++) {
-            expect(values[i]).toBeGreaterThanOrEqual(values[i - 1]);
-        }
-    });
-
-    it('respects the predicate (only ACTIVE)', () => {
-        const series = buildCumulativeTrend(rows, (r) => r.status === 'ACTIVE', 5);
-        expect(series[series.length - 1].value).toBe(2);
-    });
-
-    it('a single matching date yields a flat 2-point line', () => {
-        const series = buildCumulativeTrend([rows[0]], () => true);
-        expect(series).toHaveLength(2);
-        expect(series[0].value).toBe(1);
-        expect(series[1].value).toBe(1);
-    });
-});
 
 describe('KpiFilterCard sparkline', () => {
     const spark: TimeSeriesPoint[] = [

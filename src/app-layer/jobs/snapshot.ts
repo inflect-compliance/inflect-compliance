@@ -132,6 +132,7 @@ export async function generateSnapshotForTenant(
             policySummary,
             taskSummary,
             vendorSummary,
+            assetSummary,
             findingsOpen,
         ] = await Promise.all([
             DashboardRepository.getControlCoverage(db, ctx),
@@ -141,6 +142,7 @@ export async function generateSnapshotForTenant(
             DashboardRepository.getPolicySummary(db, ctx),
             DashboardRepository.getTaskSummary(db, ctx),
             DashboardRepository.getVendorSummary(db, ctx),
+            DashboardRepository.getAssetSummary(db, ctx),
             db.finding.count({ where: { tenantId, status: { not: 'CLOSED' } } }),
         ]);
 
@@ -187,6 +189,12 @@ export async function generateSnapshotForTenant(
             // Vendors
             vendorsTotal: vendorSummary.total,
             vendorsOverdueReview: vendorSummary.overdueReview,
+
+            // Assets
+            assetsTotal: assetSummary.total,
+            assetsActive: assetSummary.active,
+            assetsHighCriticality: assetSummary.highCriticality,
+            assetsRetired: assetSummary.retired,
 
             // Findings
             findingsOpen,

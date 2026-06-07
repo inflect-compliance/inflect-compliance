@@ -97,6 +97,11 @@ function setupDashboardMocks() {
     mockTx.vendor = {
         count: jest.fn(async () => 5),
     };
+    mockTx.asset = {
+        // getAssetSummary issues 4 counts (total/active/highCriticality/retired).
+        // A single fixed return is enough to assert the fields are wired.
+        count: jest.fn(async () => 7),
+    };
     mockTx.finding = {
         count: jest.fn(async () => 4),
     };
@@ -201,6 +206,23 @@ describe('Snapshot Job', () => {
         const upsertCall = mockUpsert.mock.calls[0][0];
         expect(upsertCall.create).toHaveProperty('risksOpen');
         expect(upsertCall.create).toHaveProperty('risksCritical');
+    });
+
+    it('stores the asset KPI buckets', async () => {
+        setupDashboardMocks();
+        mockUpsert.mockResolvedValue({});
+
+        await runSnapshotJob({ tenantId: 'tenant-1' });
+
+        const upsertCall = mockUpsert.mock.calls[0][0];
+        expect(upsertCall.create).toMatchObject({
+            assetsTotal: 7,
+            assetsActive: 7,
+            assetsHighCriticality: 7,
+            assetsRetired: 7,
+        });
+        // mirrored into update so re-runs overwrite (idempotent upsert)
+        expect(upsertCall.update).toHaveProperty('assetsTotal', 7);
     });
 
     it('result reports success with correct counts', async () => {

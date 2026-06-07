@@ -47,6 +47,12 @@ export interface TrendDataPoint {
     tasksOpen: number;
     tasksOverdue: number;
 
+    // Assets
+    assetsTotal: number;
+    assetsActive: number;
+    assetsHighCriticality: number;
+    assetsRetired: number;
+
     // Findings
     findingsOpen: number;
 }
@@ -89,6 +95,10 @@ function toDataPoint(s: ComplianceSnapshot): TrendDataPoint {
         policiesOverdueReview: s.policiesOverdueReview,
         tasksOpen: s.tasksOpen,
         tasksOverdue: s.tasksOverdue,
+        assetsTotal: s.assetsTotal,
+        assetsActive: s.assetsActive,
+        assetsHighCriticality: s.assetsHighCriticality,
+        assetsRetired: s.assetsRetired,
         findingsOpen: s.findingsOpen,
     };
 }
