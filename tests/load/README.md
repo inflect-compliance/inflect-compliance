@@ -234,7 +234,7 @@ The directory is gitignored; the CI workflow uploads it as an artifact.
 | ----------------------- | ------------------------ | ------------------------------------------------ |
 | `BASE_URL`              | `http://localhost:3006`  | Target host.                                     |
 | `LOAD_TEST_EMAIL`       | `admin@acme.com`         | Login email.                                     |
-| `LOAD_TEST_PASSWORD`    | `password123`            | Login password.                                  |
+| `LOAD_TEST_PASSWORD`    | _(see `prisma/seed.ts`)_ | Login password — matches the seeded demo users.  |
 | `LOAD_TEST_TENANT`      | `acme-corp`              | Tenant slug for `/api/t/<slug>/…`.               |
 | `VUS`                   | `50`                     | Target concurrency.                              |
 | `DURATION`              | `2m`                     | Steady-state duration.                           |
