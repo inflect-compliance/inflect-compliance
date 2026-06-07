@@ -55,10 +55,10 @@ describe('KpiFilterCard sparkline', () => {
     // passed className) but returns null inside at 0×0 (jsdom has no
     // layout), so we assert the wrapper, not the svg.
     // B2 (2026-06-07): the wrapper is to the RIGHT of the value (was
-    // .mt-3.h-8.w-full stacked beneath it). B2-follow (#73, 2026-06-07):
-    // it now spans the right HALF of the card (h-8 w-1/2), not a narrow chip.
+    // .mt-3.h-8.w-full stacked beneath it). B2-follow (#73 → #75,
+    // 2026-06-07): it now spans the right TWO-THIRDS of the card (h-8 w-2/3).
     const sparkWrapper = (c: HTMLElement) =>
-        c.querySelector('.h-8[class*="w-1/2"]');
+        c.querySelector('.h-8[class*="w-2/3"]');
 
     it('renders the sparkline wrapper when given ≥2 points', () => {
         const { container } = render(<KpiFilterCard label="Total assets" value={3} sparkline={spark} />);

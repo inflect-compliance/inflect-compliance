@@ -33,8 +33,8 @@ export interface EntityPrevNextNavProps {
 function Chevron({ dir }: { dir: 'up' | 'down' }) {
     return (
         <svg
-            width="14"
-            height="14"
+            width="11"
+            height="11"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -73,13 +73,12 @@ export function EntityPrevNextNav({
                 aria-label={label}
                 data-testid={`entity-nav-${dir === 'up' ? 'prev' : 'next'}`}
                 className={cn(
-                    'flex h-[18px] w-6 items-center justify-center text-content-muted transition-colors',
-                    'hover:bg-bg-muted hover:text-content-emphasis',
+                    // #75 — smaller, borderless: bare chevron buttons (no box,
+                    // no background); just a subtle colour shift on hover.
+                    'flex h-3.5 w-4 items-center justify-center text-content-subtle transition-colors',
+                    'hover:text-content-emphasis',
                     'disabled:pointer-events-none disabled:opacity-50',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    dir === 'up'
-                        ? 'rounded-t-md border-b border-border-subtle'
-                        : 'rounded-b-md',
+                    'focus-visible:outline-none focus-visible:rounded focus-visible:ring-2 focus-visible:ring-ring',
                 )}
             >
                 <Chevron dir={dir} />
@@ -92,10 +91,8 @@ export function EntityPrevNextNav({
 
     return (
         <div
-            className={cn(
-                'inline-flex flex-col overflow-hidden rounded-md border border-border-subtle bg-bg-default',
-                className,
-            )}
+            // #75 — no bordered/filled box; just the bare chevron column.
+            className={cn('inline-flex flex-col -my-1', className)}
             data-testid="entity-prev-next-nav"
         >
             {step(prevId, 'up', `Previous ${labelSingular}`)}

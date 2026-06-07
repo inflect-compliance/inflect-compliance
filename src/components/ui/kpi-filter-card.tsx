@@ -209,11 +209,11 @@ export function KpiFilterCard({
                 // against the auto-height card — ParentSize then grows to
                 // fill, the card grows to fit, and they expand without
                 // bound. Pinning the parent height (h-8) stops the loop.
-                // B2-follow (#73, 2026-06-07): the trend spans the RIGHT HALF
-                // of the card (w-1/2) — value on the left half, sparkline
-                // from the middle to the right edge — instead of a narrow
+                // B2-follow (#73 → #75, 2026-06-07): the trend spans the
+                // right TWO-THIRDS of the card (w-2/3) — value on the left
+                // third, sparkline filling the rest — instead of a narrow
                 // chip jammed against the right.
-                <div className="h-8 w-1/2 shrink-0">
+                <div className="h-8 w-2/3 shrink-0">
                     <MiniAreaChart
                         data={sparkline}
                         variant={effectiveSparklineVariant}
