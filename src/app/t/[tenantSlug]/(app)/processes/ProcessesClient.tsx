@@ -28,7 +28,9 @@
  */
 import { useState } from "react";
 import dynamic from "next/dynamic";
+import { cn } from "@/lib/cn";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
+import { RulesTab } from "./RulesTab";
 // R31 Bundle 3 — page-level Heading + PageBreadcrumbs retired. The
 // document bar inside the canvas now carries the breadcrumbs +
 // document title inline (Figma-style).
@@ -80,6 +82,78 @@ export function ProcessesClient({
         initialProcesses[0]?.id ?? null,
     );
 
+    // Automation Epic 1 — the Process page gains a tab bar. "Canvas" is
+    // the existing process-map editor; "Rules" is the automation-rule
+    // inventory. The tab bar uses the canonical EntityDetailLayout pattern
+    // (border-b accent + emphasis text) — the single-tab-pattern ratchet
+    // reserves the pill primitive out of app pages. Epic 9 extends this
+    // with Analytics; Epic 10 adds Monitor.
+    const [tab, setTab] = useState<"canvas" | "rules">("canvas");
+    const TABS: ReadonlyArray<{ key: "canvas" | "rules"; label: string }> = [
+        { key: "canvas", label: "Canvas" },
+        { key: "rules", label: "Rules" },
+    ];
+
+    return (
+        <div className="flex h-full min-h-0 flex-col">
+            <nav
+                className="flex gap-1 border-b border-border-default overflow-x-auto"
+                role="tablist"
+                aria-label="Process page sections"
+            >
+                {TABS.map((t) => {
+                    const isActive = tab === t.key;
+                    return (
+                        <button
+                            key={t.key}
+                            type="button"
+                            role="tab"
+                            aria-selected={isActive}
+                            className={cn(
+                                "px-4 py-2 text-sm font-medium transition border-b-2 whitespace-nowrap",
+                                isActive
+                                    ? "border-[var(--brand-default)] text-content-emphasis"
+                                    : "border-transparent text-content-muted hover:text-content-emphasis",
+                            )}
+                            onClick={() => setTab(t.key)}
+                            id={`processes-tab-${t.key}`}
+                            data-testid={`processes-tab-${t.key}`}
+                        >
+                            {t.label}
+                        </button>
+                    );
+                })}
+            </nav>
+            <div className="min-h-0 flex-1 pt-3">
+                {tab === "rules" ? (
+                    <RulesTab tenantSlug={tenantSlug} />
+                ) : (
+                    <CanvasWorkspace
+                        tenantSlug={tenantSlug}
+                        processes={processes}
+                        activeId={activeId}
+                        setActiveId={setActiveId}
+                        setProcesses={setProcesses}
+                    />
+                )}
+            </div>
+        </div>
+    );
+}
+
+function CanvasWorkspace({
+    tenantSlug,
+    processes,
+    activeId,
+    setActiveId,
+    setProcesses,
+}: {
+    tenantSlug: string;
+    processes: ProcessMapSummary[];
+    activeId: string | null;
+    setActiveId: (id: string | null) => void;
+    setProcesses: (p: ProcessMapSummary[]) => void;
+}) {
     return (
         // R31 Bundle 3 (PR 1) — Page header retired. Pre-R31 the
         // page above the canvas carried a CRUD-page header

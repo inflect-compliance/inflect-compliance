@@ -1,0 +1,115 @@
+/**
+ * Zod schemas for automation-rule API input (Workflow Automation Epic 1).
+ *
+ * The action config is a discriminated union keyed on `actionType`, mirroring
+ * `AutomationActionConfig` in `src/app-layer/automation/types.ts`. The trigger
+ * filter stays a permissive record at Epic 1 (flat equality map); Epic 4
+ * replaces it with the recursive FilterGroup DSL.
+ */
+import { z } from 'zod';
+import { AutomationActionType, AutomationRuleStatus } from '@prisma/client';
+
+const Name = z.string().min(1, 'Name is required').max(200).transform((s) => s.trim());
+const OptionalDescription = z
+    .union([z.string().max(2000).transform((s) => s.trim()), z.null()])
+    .optional();
+
+// ─── Action config (discriminated union) ────────────────────────────
+
+const NotifyUserConfig = z.object({
+    userIds: z.array(z.string().min(1)).min(1, 'Select at least one recipient'),
+    message: z.string().min(1).max(2000),
+    linkUrl: z.string().url().optional(),
+});
+
+const CreateTaskConfig = z.object({
+    title: z.string().min(1).max(300),
+    severity: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).optional(),
+    priority: z.enum(['P0', 'P1', 'P2', 'P3']).optional(),
+    assigneeUserId: z.string().optional(),
+    linkEntityType: z.string().optional(),
+    linkEntityIdField: z.string().optional(),
+});
+
+const UpdateStatusConfig = z.object({
+    entityType: z.enum(['Risk', 'Task', 'Control', 'Issue']),
+    field: z.string().min(1),
+    toStatus: z.string().min(1),
+});
+
+const WebhookConfig = z.object({
+    url: z.string().url(),
+    method: z.enum(['POST', 'PUT', 'PATCH']).optional(),
+    headers: z.record(z.string(), z.string()).optional(),
+    secretRef: z.string().optional(),
+});
+
+/**
+ * A rule's `(actionType, actionConfig)` pair must agree. We validate the
+ * config shape against the declared action type via `superRefine` so a
+ * NOTIFY_USER rule can't ship a webhook config.
+ */
+const ACTION_CONFIG_BY_TYPE = {
+    NOTIFY_USER: NotifyUserConfig,
+    CREATE_TASK: CreateTaskConfig,
+    UPDATE_STATUS: UpdateStatusConfig,
+    WEBHOOK: WebhookConfig,
+} as const;
+
+// Flat equality filter at Epic 1 (Epic 4 swaps in the recursive DSL).
+const TriggerFilter = z
+    .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
+    .nullable()
+    .optional();
+
+export const CreateAutomationRuleSchema = z
+    .object({
+        name: Name,
+        description: OptionalDescription,
+        triggerEvent: z.string().min(1, 'Trigger event is required'),
+        triggerFilter: TriggerFilter,
+        actionType: z.nativeEnum(AutomationActionType),
+        actionConfig: z.record(z.string(), z.unknown()),
+        status: z.nativeEnum(AutomationRuleStatus).optional(),
+        priority: z.number().int().min(0).max(1000).optional(),
+    })
+    .superRefine((val, ctx) => {
+        const schema = ACTION_CONFIG_BY_TYPE[val.actionType];
+        const res = schema.safeParse(val.actionConfig);
+        if (!res.success) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['actionConfig'],
+                message: `Invalid config for ${val.actionType}: ${res.error.issues[0]?.message ?? 'invalid'}`,
+            });
+        }
+    });
+
+export const UpdateAutomationRuleSchema = z
+    .object({
+        name: Name.optional(),
+        description: OptionalDescription,
+        triggerEvent: z.string().min(1).optional(),
+        triggerFilter: TriggerFilter,
+        actionType: z.nativeEnum(AutomationActionType).optional(),
+        actionConfig: z.record(z.string(), z.unknown()).optional(),
+        status: z.nativeEnum(AutomationRuleStatus).optional(),
+        priority: z.number().int().min(0).max(1000).optional(),
+    })
+    .superRefine((val, ctx) => {
+        // Only validate config when BOTH type and config are present together
+        // (a partial update of just `priority` carries neither).
+        if (val.actionType && val.actionConfig) {
+            const res = ACTION_CONFIG_BY_TYPE[val.actionType].safeParse(val.actionConfig);
+            if (!res.success) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ['actionConfig'],
+                    message: `Invalid config for ${val.actionType}: ${res.error.issues[0]?.message ?? 'invalid'}`,
+                });
+            }
+        }
+    });
+
+export type CreateAutomationRuleBody = z.infer<typeof CreateAutomationRuleSchema>;
+export type UpdateAutomationRuleBody = z.infer<typeof UpdateAutomationRuleSchema>;

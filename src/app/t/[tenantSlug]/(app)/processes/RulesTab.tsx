@@ -1,0 +1,197 @@
+'use client';
+
+/**
+ * Automation Rules tab (Automation Epic 1).
+ *
+ * The "rule inventory" overview — Archer's workflow-manager entry screen.
+ * Lists every automation rule with status, trigger, action, last-fired,
+ * execution count, and priority, filterable by status / trigger / action.
+ *
+ * Filtering is in-memory over the fetched list (rule counts are small).
+ * Row click → RuleDetailSheet and the "+ Rule" builder land in Epics 2-3;
+ * Epic 1 ships the read-only inventory.
+ */
+import { useMemo } from 'react';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
+import { CACHE_KEYS } from '@/lib/swr-keys';
+import { EntityListPage } from '@/components/layout/EntityListPage';
+import { createColumns } from '@/components/ui/table';
+import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { EmptyState } from '@/components/ui/empty-state';
+import { formatDate } from '@/lib/format-date';
+import {
+    FilterProvider,
+    useFilterContext,
+    useFilters,
+} from '@/components/ui/filter';
+import { toApiSearchParams } from '@/lib/filters/url-sync';
+import {
+    buildRuleFilters,
+    RULE_FILTER_KEYS,
+    RULE_STATUS_LABELS,
+    RULE_ACTION_LABELS,
+} from './automation-filter-defs';
+
+export interface AutomationRuleRow {
+    id: string;
+    name: string;
+    triggerEvent: string;
+    actionType: keyof typeof RULE_ACTION_LABELS;
+    status: keyof typeof RULE_STATUS_LABELS;
+    priority: number;
+    executionCount: number;
+    lastTriggeredAt: string | Date | null;
+}
+
+const STATUS_VARIANT: Record<string, StatusBadgeVariant> = {
+    ENABLED: 'success',
+    DISABLED: 'neutral',
+    DRAFT: 'info',
+    ARCHIVED: 'neutral',
+};
+
+function humanizeEvent(name: string): string {
+    return name
+        .toLowerCase()
+        .split('_')
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+}
+
+/** Comma-separated multi-select match (empty filter = match all). */
+function matchesCsv(filterValue: string | null, rowValue: string): boolean {
+    if (!filterValue) return true;
+    return filterValue.split(',').filter(Boolean).includes(rowValue);
+}
+
+export function RulesTab({ tenantSlug }: { tenantSlug: string }) {
+    const filterCtx = useFilterContext([], RULE_FILTER_KEYS, {});
+    return (
+        <FilterProvider value={filterCtx}>
+            <RulesTabInner tenantSlug={tenantSlug} />
+        </FilterProvider>
+    );
+}
+
+function RulesTabInner({ tenantSlug: _tenantSlug }: { tenantSlug: string }) {
+    const { state, search } = useFilters();
+    const { data, isLoading, error } = useTenantSWR<AutomationRuleRow[]>(
+        CACHE_KEYS.automation.rules.list(),
+    );
+
+    const rows = useMemo(() => {
+        const all = data ?? [];
+        const sp = toApiSearchParams(state, { search });
+        const status = sp.get('status');
+        const trigger = sp.get('triggerEvent');
+        const action = sp.get('actionType');
+        return all.filter(
+            (r) =>
+                matchesCsv(status, r.status) &&
+                matchesCsv(trigger, r.triggerEvent) &&
+                matchesCsv(action, r.actionType),
+        );
+    }, [data, state, search]);
+
+    const columns = useMemo(
+        () =>
+            createColumns<AutomationRuleRow>([
+                {
+                    accessorKey: 'name',
+                    header: 'Name',
+                    cell: ({ row }) => (
+                        <span className="font-medium text-content-emphasis">
+                            {row.original.name}
+                        </span>
+                    ),
+                },
+                {
+                    accessorKey: 'triggerEvent',
+                    header: 'Trigger',
+                    cell: ({ row }) => (
+                        <span className="text-sm text-content-default">
+                            {humanizeEvent(row.original.triggerEvent)}
+                        </span>
+                    ),
+                },
+                {
+                    accessorKey: 'actionType',
+                    header: 'Action',
+                    cell: ({ row }) => (
+                        <span className="text-sm text-content-muted">
+                            {RULE_ACTION_LABELS[row.original.actionType] ??
+                                row.original.actionType}
+                        </span>
+                    ),
+                },
+                {
+                    accessorKey: 'status',
+                    header: 'Status',
+                    cell: ({ row }) => (
+                        <StatusBadge
+                            variant={STATUS_VARIANT[row.original.status] ?? 'neutral'}
+                        >
+                            {RULE_STATUS_LABELS[row.original.status] ?? row.original.status}
+                        </StatusBadge>
+                    ),
+                },
+                {
+                    accessorKey: 'lastTriggeredAt',
+                    header: 'Last Triggered',
+                    cell: ({ row }) =>
+                        row.original.lastTriggeredAt ? (
+                            <span className="text-sm text-content-muted tabular-nums">
+                                {formatDate(row.original.lastTriggeredAt)}
+                            </span>
+                        ) : (
+                            <span className="text-sm text-content-subtle">Never</span>
+                        ),
+                },
+                {
+                    accessorKey: 'executionCount',
+                    header: 'Runs',
+                    cell: ({ row }) => (
+                        <span className="text-sm tabular-nums text-content-muted">
+                            {row.original.executionCount}
+                        </span>
+                    ),
+                },
+                {
+                    accessorKey: 'priority',
+                    header: 'Priority',
+                    cell: ({ row }) => (
+                        <span className="text-sm tabular-nums text-content-muted">
+                            {row.original.priority}
+                        </span>
+                    ),
+                },
+            ]),
+        [],
+    );
+
+    return (
+        <EntityListPage<AutomationRuleRow>
+            header={{
+                eyebrow: 'Automation',
+                title: 'Rules',
+                count: `${rows.length} ${rows.length === 1 ? 'rule' : 'rules'}`,
+            }}
+            filters={{ defs: buildRuleFilters() }}
+            table={{
+                data: rows,
+                columns,
+                loading: isLoading,
+                error: error ? 'Failed to load automation rules' : undefined,
+                getRowId: (r) => r.id,
+                resourceName: (plural) => (plural ? 'rules' : 'rule'),
+                emptyState: (
+                    <EmptyState
+                        title="No automation rules yet"
+                        description="Automation rules fire actions when domain events occur. The rule builder arrives in a later release."
+                    />
+                ),
+                'data-testid': 'automation-rules-table',
+            }}
+        />
+    );
+}

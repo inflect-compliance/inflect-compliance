@@ -131,6 +131,20 @@ export const CACHE_KEYS = {
     frameworks: makeResource('frameworks'),
     issues: makeResource('issues'),
 
+    // ─── Workflow automation (Automation Epics 1–10) ─────────────
+    automation: {
+        rules: {
+            list: () => '/automation/rules' as const,
+            detail: (id: string) => `/automation/rules/${id}` as const,
+            executions: (id: string) => `/automation/rules/${id}/executions` as const,
+        },
+        templates: () => '/automation/templates' as const,
+        analytics: () => '/automation/analytics' as const,
+        executions: {
+            live: () => '/automation/executions/live' as const,
+        },
+    },
+
     // ─── Audit lifecycle ────────────────────────────────────────
     audits: {
         ...makeResource('audits'),
