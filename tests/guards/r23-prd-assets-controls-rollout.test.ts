@@ -63,9 +63,13 @@ describe('R23-PR-D — Assets + Controls KPI rollout', () => {
 
             it('mounts at least one <KpiFilterCard /> with a selected= prop', () => {
                 expect(src).toMatch(/<KpiFilterCard\b/);
+                // R-filter-gear (#3, 2026-06-07): the KPI grid is data-driven
+                // over the gear's visibleKpiCards, so `selected` compares the
+                // active id against the per-card id (`=== card.id`) rather than
+                // a literal. Accept either form.
                 expect(src).toMatch(
                     new RegExp(
-                        `selected=\\{${page.activeVar}\\s*===\\s*['"]`,
+                        `selected=\\{${page.activeVar}\\s*===\\s*(card\\.id|['"])`,
                     ),
                 );
             });

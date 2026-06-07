@@ -100,28 +100,22 @@ describe('R23-PR-B — useKpiFilter hook', () => {
             expect(src).toMatch(/useKpiFilter\(/);
         });
 
-        it('KPI cards drive selected via activeKpiId === <id>', () => {
-            // The shared primitive's selected-state contract: each
-            // KpiFilterCard receives `selected={activeKpiId === '<id>'}`.
-            // This locks the Risks page as the reference consumer.
-            expect(src).toMatch(/selected=\{activeKpiId\s*===\s*['"]total['"]\}/);
-            expect(src).toMatch(/selected=\{activeKpiId\s*===\s*['"]open['"]\}/);
+        it('KPI cards drive selected via activeKpiId === <id> (data-driven)', () => {
+            // R-filter-gear (#3, 2026-06-07): the KPI grid is now data-driven
+            // over the gear's `visibleKpiCards` (so the gear controls which
+            // cards show + their order). `selected` is wired via the per-card
+            // `kpiId`; the `total`/`open` filter ids live in the render config.
+            expect(src).toMatch(/activeKpiId\s*===\s*kpiId/);
+            expect(src).toMatch(/kpi:\s*['"]total['"]/);
+            expect(src).toMatch(/kpi:\s*['"]open['"]/);
         });
 
         it('KPI clicks route through toggleKpi (not inline filterCtx.set)', () => {
-            // The Risks page used to call `filterCtx.set('status', 'OPEN')`
-            // directly from the onClick. The shared hook owns that
-            // operation now via toggleKpi('open'). A future PR that
-            // re-introduces the inline `filterCtx.set('status', ...)`
-            // call on a KPI onClick line means the hook has been
-            // bypassed.
-            //
-            // Stricter form would be a JSX-aware scan; the simpler
-            // form here is "the KPI onClicks call toggleKpi". If a
-            // future Risks-page KPI uses a different toggle name,
-            // update this ratchet.
-            expect(src).toMatch(/onClick=\{\(\)\s*=>\s*toggleKpi\(['"]total['"]\)\}/);
-            expect(src).toMatch(/onClick=\{\(\)\s*=>\s*toggleKpi\(['"]open['"]\)\}/);
+            // The shared hook owns the filter operation via toggleKpi(kpiId);
+            // a re-introduced inline `filterCtx.set(...)` on a KPI onClick
+            // means the hook was bypassed.
+            expect(src).toMatch(/toggleKpi\(kpiId\)/);
+            expect(src).not.toMatch(/onClick=\{\(\)\s*=>\s*filterCtx\.set/);
         });
     });
 });

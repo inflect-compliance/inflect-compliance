@@ -43,8 +43,13 @@ describe('AssetsClient adoption of the accent pattern', () => {
         'utf8',
     );
     it('all four asset KPI cards carry a distinct accent', () => {
+        // R-filter-gear (#3, 2026-06-07): the KPI grid is data-driven, so the
+        // accents live in a per-id config object (`accent: 'indigo'`) and flow
+        // through `accent={c.accent}` — accept the prop or the config form.
         for (const accent of ['indigo', 'emerald', 'rose', 'slate']) {
-            expect(src).toContain(`accent="${accent}"`);
+            expect(src).toMatch(
+                new RegExp(`accent(="|:\\s*')${accent}('|")`),
+            );
         }
     });
     it('drops the old flat tone / explicit sparklineVariant on the KPI cards', () => {
