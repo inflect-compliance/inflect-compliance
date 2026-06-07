@@ -56,11 +56,38 @@ const ACTION_CONFIG_BY_TYPE = {
     WEBHOOK: WebhookConfig,
 } as const;
 
-// Flat equality filter at Epic 1 (Epic 4 swaps in the recursive DSL).
-const TriggerFilter = z
-    .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
-    .nullable()
-    .optional();
+// Filter DSL v2 (Epic 4) — a recursive FilterGroup, OR the legacy flat
+// equality map for backward compatibility. The evaluator (filters.ts)
+// narrows by structure at read time.
+const FilterCondition = z.object({
+    field: z.string().min(1),
+    operator: z.enum(['eq', 'neq', 'in', 'not_in', 'gt', 'lt', 'contains']),
+    value: z.union([
+        z.string(),
+        z.number(),
+        z.boolean(),
+        z.array(z.string()),
+    ]),
+});
+
+// Recursive group: conditions may be leaf conditions or nested groups.
+type FilterGroupShape = {
+    logic: 'AND' | 'OR';
+    conditions: Array<z.infer<typeof FilterCondition> | FilterGroupShape>;
+};
+const FilterGroup: z.ZodType<FilterGroupShape> = z.lazy(() =>
+    z.object({
+        logic: z.enum(['AND', 'OR']),
+        conditions: z.array(z.union([FilterCondition, FilterGroup])),
+    }),
+);
+
+const LegacyFlatFilter = z.record(
+    z.string(),
+    z.union([z.string(), z.number(), z.boolean()]),
+);
+
+const TriggerFilter = z.union([FilterGroup, LegacyFlatFilter]).nullable().optional();
 
 export const CreateAutomationRuleSchema = z
     .object({

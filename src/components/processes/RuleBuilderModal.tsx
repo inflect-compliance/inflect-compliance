@@ -36,14 +36,28 @@ import type { AutomationRuleRow } from '@/app/t/[tenantSlug]/(app)/processes/Rul
 
 type ActionType = 'NOTIFY_USER' | 'CREATE_TASK' | 'UPDATE_STATUS' | 'WEBHOOK';
 
+type Operator = 'eq' | 'neq' | 'in' | 'not_in' | 'gt' | 'lt' | 'contains';
+
 interface Condition {
     field: string;
+    operator: Operator;
     value: string;
 }
+
+const OPERATOR_OPTIONS: ReadonlyArray<{ value: Operator; label: string }> = [
+    { value: 'eq', label: 'equals' },
+    { value: 'neq', label: 'not equals' },
+    { value: 'in', label: 'any of' },
+    { value: 'not_in', label: 'none of' },
+    { value: 'gt', label: 'greater than' },
+    { value: 'lt', label: 'less than' },
+    { value: 'contains', label: 'contains' },
+];
 
 interface BuilderState {
     name: string;
     triggerEvent: string;
+    logic: 'AND' | 'OR';
     conditions: Condition[];
     actionType: ActionType;
     notify: { userIds: string[]; message: string };
@@ -55,6 +69,7 @@ interface BuilderState {
 const EMPTY: BuilderState = {
     name: '',
     triggerEvent: '',
+    logic: 'AND',
     conditions: [],
     actionType: 'NOTIFY_USER',
     notify: { userIds: [], message: '' },
@@ -132,10 +147,26 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
         }
     }
 
-    function buildTriggerFilter(): Record<string, string> | null {
+    function buildTriggerFilter():
+        | {
+              logic: 'AND' | 'OR';
+              conditions: Array<{ field: string; operator: Operator; value: string | string[] }>;
+          }
+        | null {
         const valid = form.conditions.filter((c) => c.field && c.value !== '');
         if (valid.length === 0) return null;
-        return Object.fromEntries(valid.map((c) => [c.field, c.value]));
+        return {
+            logic: form.logic,
+            conditions: valid.map((c) => ({
+                field: c.field,
+                operator: c.operator,
+                // in/not_in take a value set — split the comma-separated input.
+                value:
+                    c.operator === 'in' || c.operator === 'not_in'
+                        ? c.value.split(',').map((s) => s.trim()).filter(Boolean)
+                        : c.value,
+            })),
+        };
     }
 
     async function handleSave() {
@@ -219,8 +250,27 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                             </p>
                         ) : (
                             <>
+                                {/* AND/OR group logic — shown once ≥2 conditions exist. */}
+                                {form.conditions.length > 1 && (
+                                    <div className="flex items-center gap-compact text-sm">
+                                        <span className="text-content-muted">Match</span>
+                                        <RadioGroup
+                                            value={form.logic}
+                                            onValueChange={(v) => patch({ logic: v as 'AND' | 'OR' })}
+                                            className="flex gap-default"
+                                        >
+                                            <label className="flex items-center gap-tight">
+                                                <RadioGroupItem value="AND" /> all (AND)
+                                            </label>
+                                            <label className="flex items-center gap-tight">
+                                                <RadioGroupItem value="OR" /> any (OR)
+                                            </label>
+                                        </RadioGroup>
+                                    </div>
+                                )}
                                 {form.conditions.map((cond, i) => {
                                     const fieldDef = availableFields.find((f) => f.field === cond.field);
+                                    const isSet = cond.operator === 'in' || cond.operator === 'not_in';
                                     return (
                                         <div key={i} className="flex items-end gap-compact">
                                             <FormField label={i === 0 ? 'Field' : undefined} className="flex-1">
@@ -236,7 +286,7 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                                                     }
                                                     setSelected={(o) => {
                                                         const next = [...form.conditions];
-                                                        next[i] = { field: o?.value ?? '', value: '' };
+                                                        next[i] = { ...next[i], field: o?.value ?? '', value: '' };
                                                         patch({ conditions: next });
                                                     }}
                                                     placeholder="Field…"
@@ -244,8 +294,32 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                                                     matchTriggerWidth
                                                 />
                                             </FormField>
-                                            <FormField label={i === 0 ? 'Equals' : undefined} className="flex-1">
-                                                {fieldDef?.type === 'enum' ? (
+                                            <FormField label={i === 0 ? 'Operator' : undefined}>
+                                                <Combobox
+                                                    options={OPERATOR_OPTIONS.map((op) => ({
+                                                        value: op.value,
+                                                        label: op.label,
+                                                    }))}
+                                                    selected={{
+                                                        value: cond.operator,
+                                                        label:
+                                                            OPERATOR_OPTIONS.find((op) => op.value === cond.operator)
+                                                                ?.label ?? cond.operator,
+                                                    }}
+                                                    setSelected={(o) => {
+                                                        const next = [...form.conditions];
+                                                        next[i] = {
+                                                            ...next[i],
+                                                            operator: (o?.value as Operator) ?? 'eq',
+                                                        };
+                                                        patch({ conditions: next });
+                                                    }}
+                                                    forceDropdown
+                                                    matchTriggerWidth
+                                                />
+                                            </FormField>
+                                            <FormField label={i === 0 ? 'Value' : undefined} className="flex-1">
+                                                {fieldDef?.type === 'enum' && !isSet ? (
                                                     <Combobox
                                                         options={(fieldDef.options ?? []).map((opt) => ({
                                                             value: opt.value,
@@ -267,14 +341,18 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                                                     />
                                                 ) : (
                                                     <Input
-                                                        type={fieldDef?.type === 'number' ? 'number' : 'text'}
+                                                        type={
+                                                            fieldDef?.type === 'number' && !isSet
+                                                                ? 'number'
+                                                                : 'text'
+                                                        }
                                                         value={cond.value}
                                                         onChange={(e) => {
                                                             const next = [...form.conditions];
                                                             next[i] = { ...next[i], value: e.target.value };
                                                             patch({ conditions: next });
                                                         }}
-                                                        placeholder="Value"
+                                                        placeholder={isSet ? 'comma,separated,values' : 'Value'}
                                                     />
                                                 )}
                                             </FormField>
@@ -298,7 +376,11 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                                         patch({
                                             conditions: [
                                                 ...form.conditions,
-                                                { field: availableFields[0]?.field ?? '', value: '' },
+                                                {
+                                                    field: availableFields[0]?.field ?? '',
+                                                    operator: 'eq',
+                                                    value: '',
+                                                },
                                             ],
                                         })
                                     }
@@ -306,8 +388,8 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                                     Add condition
                                 </Button>
                                 <p className="text-xs text-content-subtle">
-                                    Conditions match by equality. Operators and AND/OR groups arrive
-                                    in a later release.
+                                    "any of" / "none of" take a comma-separated value set. Numeric
+                                    fields support greater/less than.
                                 </p>
                             </>
                         )}
