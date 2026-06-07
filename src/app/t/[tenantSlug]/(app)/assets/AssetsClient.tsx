@@ -226,7 +226,6 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
             { id: 'type', label: 'Type' },
             { id: 'classification', label: 'Classification' },
             { id: 'owner', label: 'Owner' },
-            { id: 'cia', label: 'C/I/A' },
             { id: 'controls', label: 'Controls' },
         ],
         [],
@@ -290,12 +289,6 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
             id: 'owner',
             header: t.owner,
             accessorFn: (a: any) => a.owner || '—',
-        },
-        {
-            id: 'cia',
-            header: t.cia,
-            accessorFn: (a: any) => `${a.confidentiality}/${a.integrity}/${a.availability}`,
-            cell: ({ getValue }: any) => <span className="text-xs">{getValue()}</span>,
         },
         {
             id: 'controls',
