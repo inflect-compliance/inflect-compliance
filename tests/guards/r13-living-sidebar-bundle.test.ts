@@ -298,9 +298,6 @@ describe('Roadmap-13 PR-12 — Living Sidebar capstone bundle', () => {
             expect(defaultRecipe).not.toMatch(/hover:before:w-\[4px\]/);
             expect(activeRecipe).toMatch(/before:top-1!/);
             expect(activeRecipe).toMatch(/before:bottom-1!/);
-            // The active edge band stays 4px (wider than the idle 3px — the
-            // R13-PR9 "reach"); B0-follow (#74) slimmed the FOOTPRINT via the
-            // trimmed row wash (75%→42%), not this band.
             expect(activeRecipe).toMatch(/before:w-\[4px\]!/);
         });
         it('transition-property list broadened to include geometry', () => {
@@ -374,93 +371,6 @@ describe('Roadmap-13 PR-12 — Living Sidebar capstone bundle', () => {
             expect(headerRecipe).toMatch(/uppercase/);
             expect(headerRecipe).toMatch(/text-content-subtle/);
             expect(headerRecipe).toMatch(/select-none/);
-        });
-    });
-
-    // ─────────────────────────────────────────────────────────────────
-    // R-flame (2026-06-07) — flame-tongue layer. ADDITIVE: the flame
-    // lives on a dedicated child <span>, NOT the ::before band, because
-    // nav-band-shimmer already owns ::before's background-position and
-    // two background-position animations on one element can't drift
-    // independently. So every ::before assertion above still holds, and
-    // this block locks the new child layer + its tokens/keyframes.
-    // ─────────────────────────────────────────────────────────────────
-    describe('R-flame — flame-tongue child layer', () => {
-        it('renders a dedicated ACTIVE-ONLY flame child <span> (B0: no hover flame)', () => {
-            expect(NAV_ITEM_SRC).toMatch(/const NAV_ITEM_FLAME_BASE\s*=/);
-            expect(NAV_ITEM_SRC).toMatch(/const NAV_ITEM_FLAME_ACTIVE\s*=/);
-            // B0 (2026-06-07) removed the hover flame — the child renders
-            // only when `active`, and NAV_ITEM_FLAME_HOVER is gone.
-            expect(NAV_ITEM_SRC).not.toMatch(/const NAV_ITEM_FLAME_HOVER\s*=/);
-            expect(NAV_ITEM_SRC).toMatch(
-                /\{active && \(\s*<span\s+aria-hidden="true"/,
-            );
-        });
-
-        it('does NOT put flame onto the preserved ::before compositions', () => {
-            const alive =
-                TAILWIND_CONFIG.match(/'nav-band-alive':\s*'([^']+)'/)?.[1] ?? '';
-            const activeAlive =
-                TAILWIND_CONFIG.match(
-                    /'nav-band-active-alive':\s*'([^']+)'/,
-                )?.[1] ?? '';
-            expect(alive).not.toMatch(/flame|ember/);
-            expect(activeAlive).not.toMatch(/flame|ember/);
-            // shimmer still owns ::before's background-position pan.
-            expect(alive).toMatch(/nav-band-shimmer/);
-        });
-
-        it('declares flame-drift (8s) + ember-drift (12s) background-position keyframes', () => {
-            expect(TAILWIND_CONFIG).toMatch(
-                /'nav-band-flame-drift':\s*\{[\s\S]*?background-position/,
-            );
-            expect(TAILWIND_CONFIG).toMatch(
-                /'nav-band-ember-drift':\s*\{[\s\S]*?background-position/,
-            );
-            expect(TAILWIND_CONFIG).toMatch(
-                /nav-band-flame-drift 8s ease-in-out var\(--nav-flame-delay, 0ms\) infinite/,
-            );
-            expect(TAILWIND_CONFIG).toMatch(
-                /nav-band-ember-drift 12s ease-in-out var\(--nav-flame-delay, 0ms\) infinite/,
-            );
-        });
-
-        it('flame is ACTIVE-ONLY (B0 removed the hover ignite); active drifts as embers @ 12s', () => {
-            expect(NAV_ITEM_SRC).toMatch(/opacity-0 transition-opacity duration-500/);
-            // No hover ignite anymore (B0).
-            expect(NAV_ITEM_SRC).not.toMatch(
-                /group-hover:animate-nav-band-flame-drift/,
-            );
-            // B0-follow (#74, 2026-06-07): the active flame is at opacity-95
-            // (was 70) for legibility — a slim, fluid, visible flame.
-            expect(NAV_ITEM_SRC).toMatch(/opacity-95 animate-nav-band-ember-drift/);
-        });
-
-        it('active flame is the BLUE (METRO) / GREY (PwC) --nav-flame-active (B0)', () => {
-            expect(NAV_ITEM_SRC).toMatch(/var\(--nav-flame-active\)/);
-            expect(NAV_ITEM_SRC).toMatch(/var\(--nav-flame-active-halo\)/);
-            for (const block of [DARK_BLOCK, LIGHT_BLOCK]) {
-                expect(block).toMatch(/--nav-flame-active:/);
-                expect(block).toMatch(/--nav-flame-active-halo:/);
-            }
-        });
-
-        it('staggers the flame phase per-row via a third --nav-flame-delay bucket', () => {
-            expect(NAV_ITEM_SRC).toMatch(/flameDelayMs/);
-            expect(NAV_ITEM_SRC).toMatch(/'--nav-flame-delay':/);
-        });
-
-        it('declares flame palette tokens in BOTH themes', () => {
-            for (const block of [DARK_BLOCK, LIGHT_BLOCK]) {
-                expect(block).toMatch(/--nav-flame-tongue-a:/);
-                expect(block).toMatch(/--nav-flame-tongue-b:/);
-                expect(block).toMatch(/--nav-flame-halo-color:/);
-            }
-        });
-
-        it('--nav-shimmer-distortion is light-theme-only (cream trims drift amplitude)', () => {
-            expect(LIGHT_BLOCK).toMatch(/--nav-shimmer-distortion:\s*0?\.6/);
-            expect(DARK_BLOCK).not.toMatch(/--nav-shimmer-distortion:/);
         });
     });
 });

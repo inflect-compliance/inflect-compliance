@@ -225,21 +225,17 @@ describe('<NavItem> active band tone — behavioural (Tier 2)', () => {
         const link = screen.getByRole('link', { name: 'Controls' });
         const bandValue = extractBeforeBg(link.className, 'active');
 
-        // The band's LINEAR base must NOT be the brand RAMP (the v1
-        // regression: a `linear-gradient(--brand-default, --brand-muted,
-        // --brand-emphasis)` fill painting the band brand-yellow). B0
-        // (2026-06-07) recolours the stardust "stars" to --brand-default
-        // (yellow METRO / orange PwC), so --brand-default is now expected;
-        // the v1-regression SIGNATURE is the other two ramp stops, which
-        // must stay absent.
+        // The band's linear-gradient stops must NOT reference the
+        // brand ramp. The radial "stardust particle" layers are pure
+        // white rgba and carry no brand tokens, so the only brand
+        // tokens that could appear here would be a leftover ramp.
+        expect(bandValue).not.toContain('var(--brand-default)');
         expect(bandValue).not.toContain('var(--brand-muted)');
         expect(bandValue).not.toContain('var(--brand-emphasis)');
 
-        // The linear base positively IS the page-bg (three identical
-        // --bg-page stops collapse to a solid).
+        // And it positively IS the page-bg ramp (three identical
+        // --bg-page stops collapse the linear gradient to a solid).
         expect(bandValue).toContain('var(--bg-page)');
-        // B0: the stardust stars are --brand-default.
-        expect(bandValue).toContain('var(--brand-default)');
     });
 
     it('the DEFAULT (idle) band still uses the brand ramp — the swap is active-only', () => {

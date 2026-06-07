@@ -178,11 +178,8 @@ describe('Roadmap-13 PR-4 — active band swaps to secondary brand', () => {
             // loses the "alive" glitter motion that the band-
             // alive composition's shimmer pan animates.
             const recipe = activeRecipe();
-            // B0-follow (#74, 2026-06-07): the stardust "stars" grew
-            // 1.5px → 2px for legibility (the high-contrast element of the
-            // slim flame). Still three radial particle layers.
             expect(recipe).toMatch(
-                /before:bg-\[radial-gradient\(circle_2px[\s\S]*?radial-gradient\(circle_2px[\s\S]*?radial-gradient\(circle_2px/,
+                /before:bg-\[radial-gradient\(circle_1\.5px[\s\S]*?radial-gradient\(circle_1\.5px[\s\S]*?radial-gradient\(circle_1\.5px/,
             );
         });
 
@@ -272,15 +269,5 @@ describe('Roadmap-13 PR-4 — active band swaps to secondary brand', () => {
             expect(recipe).not.toMatch(/--brand-secondary/);
             expect(recipe).not.toMatch(/nav-band-glow-active/);
         });
-    });
-});
-
-describe('R-flame — active flame settles to a warm --bg-page variant', () => {
-    it('active flame tongues use the BLUE/GREY --nav-flame-active token (B0)', () => {
-        // B0 (2026-06-07): the active flame is BLUE (METRO) / GREY (PwC) via
-        // --nav-flame-active — replacing the warm color-mix(--bg-page, brand)
-        // "glowing coals". Paired with yellow/orange stars on the band.
-        expect(NAV_ITEM_SRC).toMatch(/const NAV_ITEM_FLAME_ACTIVE\s*=/);
-        expect(NAV_ITEM_SRC).toMatch(/var\(--nav-flame-active\)/);
     });
 });

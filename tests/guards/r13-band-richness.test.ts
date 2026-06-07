@@ -215,13 +215,3 @@ describe('Roadmap-13 PR-2 — band gradient richness + glow', () => {
         });
     });
 });
-
-describe('R-flame — band richness gains a heat halo', () => {
-    it('declares --nav-flame-halo-color in both themes', () => {
-        const count = (TOKENS_SRC.match(/--nav-flame-halo-color:/g) ?? []).length;
-        expect(count).toBeGreaterThanOrEqual(2);
-    });
-    it('keeps the static --nav-band-glow box-shadow as the baseline anchor', () => {
-        expect(NAV_ITEM_SRC).toMatch(/before:shadow-\[var\(--nav-band-glow\)\]/);
-    });
-});

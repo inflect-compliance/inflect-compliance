@@ -339,26 +339,6 @@ module.exports = {
                             '0 0 6px var(--brand-secondary-default)',
                     },
                 },
-                // R-flame — flame-tongue vertical drift. Pans the flame
-                // CHILD layer's background-position up its own length (the
-                // layer is sized taller than the band via background-size,
-                // so a 100%↔0% position pan reads as a tongue licking
-                // upward). 8s = "just-lit" hover pace; the 12s ember
-                // variant (same palindrome shape, gentler 80%↔20% travel)
-                // is the active "settled coals" pace. ease-in-out
-                // palindrome so the infinite loop has no seam. Lives on a
-                // DEDICATED child element, NOT the ::before band — the
-                // band's nav-band-shimmer already owns ::before's
-                // background-position, and two background-position
-                // animations on one element can't drift independently.
-                'nav-band-flame-drift': {
-                    '0%, 100%': { 'background-position': '50% 100%' },
-                    '50%': { 'background-position': '50% 0%' },
-                },
-                'nav-band-ember-drift': {
-                    '0%, 100%': { 'background-position': '50% 80%' },
-                    '50%': { 'background-position': '50% 20%' },
-                },
                 // R15-PR7 — one-shot horizontal sweep of brand-tinted
                 // light across the row body. The hover paints a
                 // narrow diagonal gradient at `background-size:
@@ -626,18 +606,6 @@ module.exports = {
                 // active.
                 'nav-band-active-alive':
                     'nav-band-starburst 700ms ease-out, nav-band-reveal-sweep 450ms ease-out, nav-band-shimmer 4s ease-in-out var(--nav-shimmer-delay, 0ms) infinite, nav-band-halo-breath 6s ease-in-out var(--nav-breath-delay, 0ms) infinite',
-                // R-flame — drift tracks for the dedicated flame CHILD
-                // layer (NOT the ::before band). Per-row staggered via
-                // --nav-flame-delay (hashSlugToDriftDelays). The flame
-                // tongues + heat-scatter halo are LAYERS in the child's
-                // background-image, so this single background-position
-                // track pans both together (P2's halo "piggybacks the
-                // flame-drift keyframe"). Hover uses the 8s flame; active
-                // swaps to the 12s ember.
-                'nav-band-flame-drift':
-                    'nav-band-flame-drift 8s ease-in-out var(--nav-flame-delay, 0ms) infinite',
-                'nav-band-ember-drift':
-                    'nav-band-ember-drift 12s ease-in-out var(--nav-flame-delay, 0ms) infinite',
             },
         },
     },
