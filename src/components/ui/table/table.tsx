@@ -834,7 +834,15 @@ export function Table<T>({
             role="region"
             aria-label="Table contents (scrollable)"
             className={cn(
-              "relative min-h-[400px] overflow-x-auto rounded-[inherit]",
+              "relative overflow-x-auto rounded-[inherit]",
+              // B6 (2026-06-07): the 400px floor is for the EMPTY state only
+              // (room for the "no rows" message). A POPULATED non-fillBody
+              // sub-table — e.g. a detail-page Tasks tab with a single task —
+              // sizes to content; the floor was leaving ~320px of empty,
+              // grid-less space below the row(s). fillBody list tables clamp
+              // to the viewport via their own md:min-h-0 / max-h-full and are
+              // unaffected (their rows are > 0 anyway when populated).
+              numRows === 0 && "min-h-[400px]",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-default)]/40",
               // Scroll-snap so rows align cleanly with the sticky
               // header instead of stopping mid-row. `snap-proximity`
