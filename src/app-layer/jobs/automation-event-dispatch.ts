@@ -242,6 +242,28 @@ export async function runAutomationEventDispatch(
                             lastTriggeredAt: new Date(),
                         },
                     });
+
+                    // 6. Chained workflow (Epic 7) — if this rule chains to
+                    //    a next rule, enqueue it (optionally delayed),
+                    //    carrying the payload + lineage. The chain job has
+                    //    its own depth-cap cycle backstop.
+                    if (rule.nextRuleId) {
+                        const { enqueue } = await import('./queue');
+                        await enqueue(
+                            'rule-chain-dispatch',
+                            {
+                                tenantId: event.tenantId,
+                                ruleId: rule.nextRuleId,
+                                parentExecutionId: executionId,
+                                triggerEvent: event.event,
+                                data: event.data as Record<string, unknown>,
+                                depth: 1,
+                            },
+                            rule.nextRuleDelay
+                                ? { delay: rule.nextRuleDelay * 60_000 }
+                                : undefined,
+                        );
+                    }
                 } catch (err) {
                     result.executionsFailed++;
                     const msg = err instanceof Error ? err.message : String(err);

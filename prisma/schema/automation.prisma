@@ -246,6 +246,11 @@ model AutomationRule {
   /// Action fired on breach + its config.
   slaBreachActionType AutomationActionType?
   slaBreachConfigJson Json?
+  /// Chained workflow (Epic 7): fire `nextRule` after this rule succeeds,
+  /// optionally after `nextRuleDelay` minutes. A DFS cycle guard in the
+  /// usecase prevents loops. `null` = terminal rule.
+  nextRuleId        String?
+  nextRuleDelay     Int?
   createdByUserId   String?
   updatedByUserId   String?
   createdAt         DateTime             @default(now())
@@ -256,6 +261,8 @@ model AutomationRule {
 
   tenant     Tenant                @relation(fields: [tenantId], references: [id])
   executions AutomationExecution[]
+  nextRule   AutomationRule?       @relation("RuleChain", fields: [nextRuleId], references: [id])
+  prevRules  AutomationRule[]      @relation("RuleChain")
 
   @@unique([tenantId, name])
   @@index([tenantId])
@@ -263,6 +270,7 @@ model AutomationRule {
   @@index([tenantId, triggerEvent])
   @@index([tenantId, deletedAt])
   @@index([tenantId, triggerEvent, status])
+  @@index([nextRuleId])
 }
 
 model AutomationExecution {
@@ -294,6 +302,9 @@ model AutomationExecution {
   /// (ruleId, event, stable identifier in payload) so a retried
   /// event never double-fires an action. Unique per tenant when set.
   idempotencyKey     String?
+  /// Chained-workflow lineage (Epic 7): the execution that triggered this
+  /// one via a rule chain. `null` for top-level (event/manual) executions.
+  parentExecutionId  String?
   startedAt          DateTime?
   completedAt        DateTime?
   createdAt          DateTime                  @default(now())
@@ -309,4 +320,5 @@ model AutomationExecution {
   @@index([ruleId, createdAt])
   @@index([triggerEvent, createdAt])
   @@index([jobRunId])
+  @@index([tenantId, parentExecutionId])
 }

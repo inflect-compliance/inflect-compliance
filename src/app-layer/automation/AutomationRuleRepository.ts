@@ -86,6 +86,8 @@ export class AutomationRuleRepository {
                 slaBreachConfigJson: input.slaBreachConfig
                     ? (input.slaBreachConfig as Prisma.InputJsonValue)
                     : Prisma.JsonNull,
+                nextRuleId: input.nextRuleId ?? null,
+                nextRuleDelay: input.nextRuleDelay ?? null,
                 createdByUserId: ctx.userId,
                 updatedByUserId: ctx.userId,
             },
@@ -133,6 +135,13 @@ export class AutomationRuleRepository {
                     ? Prisma.JsonNull
                     : (input.slaBreachConfig as Prisma.InputJsonValue);
         }
+        if (input.nextRuleId !== undefined) {
+            data.nextRule =
+                input.nextRuleId === null
+                    ? { disconnect: true }
+                    : { connect: { id: input.nextRuleId } };
+        }
+        if (input.nextRuleDelay !== undefined) data.nextRuleDelay = input.nextRuleDelay;
 
         return db.automationRule.update({ where: { id }, data });
     }

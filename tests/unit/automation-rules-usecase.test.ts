@@ -115,6 +115,17 @@ describe('automation-rules usecase — delegation + audit', () => {
         );
     });
 
+    it('updateAutomationRule rejects a chain that loops back (cycle guard)', async () => {
+        repo.getById.mockImplementation((_db: any, _ctx: any, id: string) =>
+            Promise.resolve(id === 'r2' ? ({ id: 'r2', nextRuleId: 'r1' } as any) : null),
+        );
+        const ctx = makeRequestContext('ADMIN');
+        await expect(
+            updateAutomationRule(ctx, 'r1', { nextRuleId: 'r2' }),
+        ).rejects.toThrow(/cycle/i);
+        expect(repo.update).not.toHaveBeenCalled();
+    });
+
     it('updateAutomationRule throws notFound when the rule is missing', async () => {
         repo.update.mockResolvedValue(null as any);
         const ctx = makeRequestContext('ADMIN');

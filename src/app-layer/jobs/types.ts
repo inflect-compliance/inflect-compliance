@@ -223,6 +223,19 @@ export interface SlaMonitorPayload {
     tenantId?: string;
 }
 
+/** Automation Epic 7 — fire the next rule in a chain. */
+export interface RuleChainDispatchPayload {
+    tenantId: string;
+    /** The next rule to run. */
+    ruleId: string;
+    /** The execution that triggered this chain step (lineage). */
+    parentExecutionId: string;
+    triggerEvent: string;
+    data: Record<string, unknown>;
+    /** Chain depth — a runtime cycle backstop (capped in the job). */
+    depth: number;
+}
+
 /** Weekly compliance digest — executive summary email */
 export interface ComplianceDigestPayload {
     tenantId?: string;
@@ -453,6 +466,7 @@ export interface JobPayloadMap {
     'sync-pull': SyncPullPayload;
     'compliance-snapshot': ComplianceSnapshotPayload;
     'sla-monitor': SlaMonitorPayload;
+    'rule-chain-dispatch': RuleChainDispatchPayload;
     'compliance-digest': ComplianceDigestPayload;
     'automation-event-dispatch': AutomationEventDispatchPayload;
     'key-rotation': KeyRotationPayload;
@@ -497,6 +511,12 @@ export const JOB_DEFAULTS: Record<JobName, {
         backoff: { type: 'exponential', delay: 5000 },
         removeOnComplete: 200,
         removeOnFail: 500,
+    },
+    'rule-chain-dispatch': {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 5000 },
+        removeOnComplete: 500,
+        removeOnFail: 1000,
     },
     'daily-evidence-expiry': {
         attempts: 2,

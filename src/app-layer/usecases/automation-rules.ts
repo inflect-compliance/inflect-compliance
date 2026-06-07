@@ -23,9 +23,33 @@ import {
     type UpdateAutomationRuleInput,
 } from '../automation';
 import { logEvent } from '../events/audit';
-import { notFound } from '@/lib/errors/types';
+import { notFound, badRequest } from '@/lib/errors/types';
 import { runInTenantContext } from '@/lib/db-context';
 import { sanitizePlainText } from '@/lib/security/sanitize';
+
+/**
+ * Pure cycle check (Epic 7): walking the chain from `nextRuleId` via
+ * `nextOf`, would we ever reach `ruleId` (loop back) or revisit a node
+ * (pre-existing cycle)? Exported for unit testing the algorithm.
+ */
+export function followChainHasCycle(
+    ruleId: string,
+    nextRuleId: string,
+    nextOf: (id: string) => string | null,
+    maxHops = 100,
+): boolean {
+    let cur: string | null = nextRuleId;
+    const seen = new Set<string>();
+    let hops = 0;
+    while (cur && hops < maxHops) {
+        if (cur === ruleId) return true;
+        if (seen.has(cur)) return true;
+        seen.add(cur);
+        cur = nextOf(cur);
+        hops++;
+    }
+    return false;
+}
 
 /** Optional free-text fields are sanitised before persistence. */
 function sanitizeOptional(value: string | null | undefined): string | null | undefined {
@@ -86,6 +110,24 @@ export async function updateAutomationRule(
 ) {
     assertCanManageAutomation(ctx);
     return runInTenantContext(ctx, async (db) => {
+        // Chain cycle guard (Epic 7): a new nextRuleId must not loop back.
+        if (input.nextRuleId) {
+            const nextCache = new Map<string, string | null>();
+            let cur: string | null = input.nextRuleId;
+            const seen = new Set<string>();
+            let hops = 0;
+            while (cur && hops < 100) {
+                if (cur === id) throw badRequest('Rule chain would create a cycle');
+                if (seen.has(cur)) break;
+                seen.add(cur);
+                if (!nextCache.has(cur)) {
+                    const r = await AutomationRuleRepository.getById(db, ctx, cur);
+                    nextCache.set(cur, r?.nextRuleId ?? null);
+                }
+                cur = nextCache.get(cur) ?? null;
+                hops++;
+            }
+        }
         const rule = await AutomationRuleRepository.update(db, ctx, id, {
             ...input,
             ...(input.name !== undefined ? { name: sanitizePlainText(input.name) } : {}),

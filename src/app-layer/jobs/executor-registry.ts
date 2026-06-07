@@ -574,6 +574,14 @@ executorRegistry.register('sla-monitor', async (payload) => {
     return result;
 });
 
+// ── rule-chain-dispatch (Automation Epic 7) ──────────────────────────
+
+executorRegistry.register('rule-chain-dispatch', async (payload) => {
+    const { runRuleChainDispatch } = await import('./rule-chain-dispatch');
+    const { result } = await runRuleChainDispatch(payload);
+    return result;
+});
+
 // ── compliance-digest ────────────────────────────────────────────────
 
 executorRegistry.register('compliance-digest', async (payload) => {

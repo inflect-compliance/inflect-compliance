@@ -52,6 +52,8 @@ export const PUT = withApiErrorHandling(
             slaReminderMinutes: body.slaReminderMinutes,
             slaBreachActionType: body.slaBreachActionType,
             slaBreachConfig: body.slaBreachConfig,
+            nextRuleId: body.nextRuleId,
+            nextRuleDelay: body.nextRuleDelay,
         });
         return jsonResponse(rule);
     }),

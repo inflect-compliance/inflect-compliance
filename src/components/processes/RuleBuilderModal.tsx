@@ -26,6 +26,7 @@ import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { UserCombobox } from '@/components/ui/user-combobox';
 import { useTenantApiUrl } from '@/lib/tenant-context-provider';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import {
     EVENT_LABELS,
@@ -66,6 +67,9 @@ interface BuilderState {
     webhook: { url: string; method: string };
     /** Optional SLA window in minutes (Epic 5); empty = no SLA. */
     slaWindowMinutes: string;
+    /** Optional chain target (Epic 7); empty = terminal rule. */
+    nextRuleId: string;
+    nextRuleDelay: string;
 }
 
 const EMPTY: BuilderState = {
@@ -79,6 +83,8 @@ const EMPTY: BuilderState = {
     status: { entityType: 'Risk', field: 'status', toStatus: '' },
     webhook: { url: '', method: 'POST' },
     slaWindowMinutes: '',
+    nextRuleId: '',
+    nextRuleDelay: '',
 };
 
 const ACTION_OPTIONS: ReadonlyArray<{ value: ActionType; label: string; hint: string }> = [
@@ -103,6 +109,13 @@ export interface RuleBuilderModalProps {
 export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBuilderModalProps) {
     const apiUrl = useTenantApiUrl();
     const { mutate } = useSWRConfig();
+    // Epic 7 — chain targets (other rules). Excludes the rule being edited.
+    const { data: allRules } = useTenantSWR<AutomationRuleRow[]>(
+        CACHE_KEYS.automation.rules.list(),
+    );
+    const chainOptions: ComboboxOption[] = (allRules ?? [])
+        .filter((r) => r.id !== editRule?.id)
+        .map((r) => ({ value: r.id, label: r.name }));
     const [step, setStep] = useState<1 | 2 | 3>(1);
     const [form, setForm] = useState<BuilderState>(EMPTY);
     const [submitting, setSubmitting] = useState(false);
@@ -185,6 +198,8 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                 slaWindowMinutes: form.slaWindowMinutes
                     ? Number(form.slaWindowMinutes)
                     : null,
+                nextRuleId: form.nextRuleId || null,
+                nextRuleDelay: form.nextRuleDelay ? Number(form.nextRuleDelay) : null,
             };
             const url = editRule
                 ? apiUrl(CACHE_KEYS.automation.rules.detail(editRule.id))
@@ -493,6 +508,38 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                                     placeholder="e.g. 1440 (24h)"
                                 />
                             </FormField>
+                        </div>
+
+                        {/* Chain to next rule (Epic 7) — sequential workflow. */}
+                        <div className="border-t border-border-subtle pt-default space-y-default">
+                            <FormField
+                                label="Chain to next rule"
+                                description="Optional. After this rule succeeds, fire another rule."
+                            >
+                                <Combobox
+                                    options={chainOptions}
+                                    selected={
+                                        form.nextRuleId
+                                            ? chainOptions.find((o) => o.value === form.nextRuleId) ?? null
+                                            : null
+                                    }
+                                    setSelected={(o) => patch({ nextRuleId: o?.value ?? '' })}
+                                    placeholder="No chained rule"
+                                    forceDropdown
+                                    matchTriggerWidth
+                                />
+                            </FormField>
+                            {form.nextRuleId && (
+                                <FormField label="Chain delay (minutes)">
+                                    <Input
+                                        type="number"
+                                        min={0}
+                                        value={form.nextRuleDelay}
+                                        onChange={(e) => patch({ nextRuleDelay: e.target.value })}
+                                        placeholder="0 (immediate)"
+                                    />
+                                </FormField>
+                            )}
                         </div>
                     </div>
                 )}
