@@ -374,7 +374,11 @@
    * still reads as brand-coloured) with translucency (the page tone
    * still leaks through the backdrop-blur). Lower alphas read as
    * "ghost variant"; higher alphas dissolve back into opacity. */
-  --btn-glass-fill-primary: rgba(255, 205, 17, 0.55);
+  /* B10 (2026-06-07): deepened from rgba(255,205,17,0.55). The brighter,
+   * more translucent yellow read as a pale wash in dark theme — a deeper,
+   * more saturated gold at higher alpha gives the create button real
+   * presence and pairs with the navy `text-content-inverted` label. */
+  --btn-glass-fill-primary: rgba(232, 185, 4, 0.85);
   --btn-glass-fill-secondary: rgba(0, 60, 122, 0.55);
   --btn-glass-fill-destructive: rgba(220, 38, 38, 0.55);
   --btn-glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.28), 0 6px 14px rgba(0, 0, 0, 0.18);
