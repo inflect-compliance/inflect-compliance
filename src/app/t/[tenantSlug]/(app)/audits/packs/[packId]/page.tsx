@@ -5,7 +5,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
 import { RequirePermission } from '@/components/require-permission';
-import { Button } from '@/components/ui/button';
 import { IconAction } from '@/components/ui/icon-action';
 import { Tooltip } from '@/components/ui/tooltip';
 import { buttonVariants } from '@/components/ui/button-variants';

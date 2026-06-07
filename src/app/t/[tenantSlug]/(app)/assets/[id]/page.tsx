@@ -9,7 +9,6 @@ import { SkeletonCard } from '@/components/ui/skeleton';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import Link from 'next/link';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { useTenantMembers } from '@/components/ui/user-combobox';
 import dynamic from 'next/dynamic';
@@ -17,7 +16,6 @@ import LinkedTasksPanel from '@/components/LinkedTasksPanel';
 import { EmptyState } from '@/components/ui/empty-state';
 import { CopyText } from '@/components/ui/copy-text';
 import { Button } from '@/components/ui/button';
-import { buttonVariants } from '@/components/ui/button-variants';
 import { Pen2 } from '@/components/ui/icons/nucleo';
 import { Tooltip } from '@/components/ui/tooltip';
 import { type StatusBadgeVariant } from '@/components/ui/status-badge';

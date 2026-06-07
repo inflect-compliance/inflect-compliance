@@ -7,10 +7,10 @@
 import { formatDate, formatDateTime } from '@/lib/format-date';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { InlineEmptyState } from '@/components/ui/inline-empty-state';
-import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { Heading, textLinkVariants } from '@/components/ui/typography';
+import { Heading } from '@/components/ui/typography';
 import { EditControlModal } from './_modals/EditControlModal';
 import { ControlReverseLookupModal } from '@/components/controls/ControlReverseLookupModal';
 import { ControlMappingsTab } from './_tabs/ControlMappingsTab';
@@ -24,7 +24,6 @@ const PencilIcon = ({ size = 14 }: { size?: number }) => (
 );
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
-import { DataTable } from '@/components/ui/table';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useTenantMutation } from '@/lib/hooks/use-tenant-mutation';
 import { CACHE_KEYS } from '@/lib/swr-keys';
