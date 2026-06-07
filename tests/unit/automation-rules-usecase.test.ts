@@ -22,6 +22,7 @@ jest.mock('@/app-layer/automation', () => ({
         create: jest.fn(),
         update: jest.fn(),
         archive: jest.fn(),
+        toggle: jest.fn(),
     },
     assertCanReadAutomation: (ctx: any) => {
         if (!ctx.permissions.canRead) throw new Error('forbidden:read');
@@ -43,6 +44,7 @@ import {
     createAutomationRule,
     updateAutomationRule,
     archiveAutomationRule,
+    toggleAutomationRule,
 } from '@/app-layer/usecases/automation-rules';
 import { AutomationRuleRepository } from '@/app-layer/automation';
 import { logEvent } from '@/app-layer/events/audit';
@@ -126,6 +128,35 @@ describe('automation-rules usecase — delegation + audit', () => {
         repo.getById.mockResolvedValue(null as any);
         const ctx = makeRequestContext('ADMIN');
         await expect(getAutomationRule(ctx, 'nope')).rejects.toThrow(/not found/i);
+    });
+
+    it('toggleAutomationRule enables a rule and audits ENABLED', async () => {
+        repo.toggle.mockResolvedValue({ id: 'r4', name: 'Tog', status: 'ENABLED' } as any);
+        const ctx = makeRequestContext('ADMIN');
+        await toggleAutomationRule(ctx, 'r4', 'ENABLED');
+        expect(repo.toggle).toHaveBeenCalledWith(mockDb, ctx, 'r4', 'ENABLED');
+        expect(logEvent).toHaveBeenCalledWith(
+            mockDb,
+            ctx,
+            expect.objectContaining({ action: 'AUTOMATION_RULE_ENABLED', entityId: 'r4' }),
+        );
+    });
+
+    it('toggleAutomationRule throws notFound when the rule is archived/missing', async () => {
+        repo.toggle.mockResolvedValue(null as any);
+        const ctx = makeRequestContext('ADMIN');
+        await expect(toggleAutomationRule(ctx, 'gone', 'DISABLED')).rejects.toThrow(
+            /not found|archived/i,
+        );
+        expect(logEvent).not.toHaveBeenCalled();
+    });
+
+    it('toggleAutomationRule rejects a non-admin', async () => {
+        const ctx = makeRequestContext('EDITOR');
+        await expect(toggleAutomationRule(ctx, 'r4', 'ENABLED')).rejects.toThrow(
+            'forbidden:manage',
+        );
+        expect(repo.toggle).not.toHaveBeenCalled();
     });
 
     it('archiveAutomationRule audits and returns the archived rule', async () => {

@@ -137,6 +137,31 @@ export class AutomationRuleRepository {
     }
 
     /**
+     * Enable/disable toggle (Epic 2). Convenience over `update` that
+     * refuses to flip an ARCHIVED rule back to life — archived is a
+     * terminal soft-deleted state; resurrection would need an explicit
+     * un-archive flow, not a status toggle. Returns null when the rule
+     * is missing or archived.
+     */
+    static async toggle(
+        db: PrismaTx,
+        ctx: RequestContext,
+        id: string,
+        status: 'ENABLED' | 'DISABLED',
+    ) {
+        const existing = await db.automationRule.findFirst({
+            where: { id, tenantId: ctx.tenantId },
+        });
+        if (!existing || existing.status === 'ARCHIVED' || existing.deletedAt) {
+            return null;
+        }
+        return db.automationRule.update({
+            where: { id },
+            data: { status, updatedByUserId: ctx.userId },
+        });
+    }
+
+    /**
      * Dispatcher-only counter bump. Not intended for usecase code —
      * keep it separate so every *user-visible* mutation goes through
      * `update` (which sets `updatedByUserId` + writes audit log).

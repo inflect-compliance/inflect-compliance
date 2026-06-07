@@ -11,8 +11,12 @@
  * Row click → RuleDetailSheet and the "+ Rule" builder land in Epics 2-3;
  * Epic 1 ships the read-only inventory.
  */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
+import { RuleDetailSheet } from '@/components/processes/RuleDetailSheet';
+import { RuleBuilderModal } from '@/components/processes/RuleBuilderModal';
+import { Button } from '@/components/ui/button';
+import { Plus } from '@/components/ui/icons/nucleo';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import { EntityListPage } from '@/components/layout/EntityListPage';
 import { createColumns } from '@/components/ui/table';
@@ -73,11 +77,15 @@ export function RulesTab({ tenantSlug }: { tenantSlug: string }) {
     );
 }
 
-function RulesTabInner({ tenantSlug: _tenantSlug }: { tenantSlug: string }) {
+function RulesTabInner({ tenantSlug }: { tenantSlug: string }) {
     const { state, search } = useFilters();
     const { data, isLoading, error } = useTenantSWR<AutomationRuleRow[]>(
         CACHE_KEYS.automation.rules.list(),
     );
+    const [selected, setSelected] = useState<AutomationRuleRow | null>(null);
+    const [sheetOpen, setSheetOpen] = useState(false);
+    const [builderOpen, setBuilderOpen] = useState(false);
+    const [editRule, setEditRule] = useState<AutomationRuleRow | null>(null);
 
     const rows = useMemo(() => {
         const all = data ?? [];
@@ -170,28 +178,65 @@ function RulesTabInner({ tenantSlug: _tenantSlug }: { tenantSlug: string }) {
     );
 
     return (
-        <EntityListPage<AutomationRuleRow>
-            header={{
-                eyebrow: 'Automation',
-                title: 'Rules',
-                count: `${rows.length} ${rows.length === 1 ? 'rule' : 'rules'}`,
-            }}
-            filters={{ defs: buildRuleFilters() }}
-            table={{
-                data: rows,
-                columns,
-                loading: isLoading,
-                error: error ? 'Failed to load automation rules' : undefined,
-                getRowId: (r) => r.id,
-                resourceName: (plural) => (plural ? 'rules' : 'rule'),
-                emptyState: (
-                    <EmptyState
-                        title="No automation rules yet"
-                        description="Automation rules fire actions when domain events occur. The rule builder arrives in a later release."
-                    />
-                ),
-                'data-testid': 'automation-rules-table',
-            }}
-        />
+        <>
+            <EntityListPage<AutomationRuleRow>
+                header={{
+                    eyebrow: 'Automation',
+                    title: 'Rules',
+                    count: `${rows.length} ${rows.length === 1 ? 'rule' : 'rules'}`,
+                }}
+                filters={{
+                    defs: buildRuleFilters(),
+                    toolbarPrimary: (
+                        <Button
+                            variant="primary"
+                            icon={<Plus />}
+                            onClick={() => {
+                                setEditRule(null);
+                                setBuilderOpen(true);
+                            }}
+                            id="new-rule-btn"
+                        >
+                            Rule
+                        </Button>
+                    ),
+                }}
+                table={{
+                    data: rows,
+                    columns,
+                    loading: isLoading,
+                    error: error ? 'Failed to load automation rules' : undefined,
+                    getRowId: (r) => r.id,
+                    resourceName: (plural) => (plural ? 'rules' : 'rule'),
+                    onRowClick: (r) => {
+                        setSelected(r.original);
+                        setSheetOpen(true);
+                    },
+                    emptyState: (
+                        <EmptyState
+                            title="No automation rules yet"
+                            description="Automation rules fire actions when domain events occur. The rule builder arrives in a later release."
+                        />
+                    ),
+                    'data-testid': 'automation-rules-table',
+                }}
+            />
+            <RuleDetailSheet
+                rule={selected}
+                open={sheetOpen}
+                onOpenChange={setSheetOpen}
+                onEdit={(r) => {
+                    setSheetOpen(false);
+                    setEditRule(r);
+                    setBuilderOpen(true);
+                }}
+            />
+            <RuleBuilderModal
+                tenantSlug={tenantSlug}
+                open={builderOpen}
+                setOpen={setBuilderOpen}
+                editRule={editRule}
+            />
+        </>
     );
 }

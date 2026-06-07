@@ -60,13 +60,53 @@ export type AutomationActionConfig =
     | { type: 'UPDATE_STATUS'; config: UpdateStatusActionConfig }
     | { type: 'WEBHOOK'; config: WebhookActionConfig };
 
-// ─── Filter expression ─────────────────────────────────────────────────
+// ─── Filter expression (DSL v2, Epic 4) ────────────────────────────────
 //
-// Deliberately simple: equality map against top-level payload fields.
-// Anything richer (ranges, "any of", computed expressions) should land
-// as a versioned DSL later — not by overloading this shape.
+// A recursive condition tree with AND/OR grouping and value-set + range
+// operators, matching Archer's conditional-routing capability. The
+// evaluator (`filters.ts`) ALSO accepts the legacy flat equality map
+// (`{ field: value }`) so pre-Epic-4 rows keep firing without a migration
+// — the migration is convenience, the dual-shape evaluator is the contract.
 
-export type AutomationTriggerFilter = Record<string, string | number | boolean>;
+export type FilterOperator =
+    | 'eq'
+    | 'neq'
+    | 'in'
+    | 'not_in'
+    | 'gt'
+    | 'lt'
+    | 'contains';
+
+export interface FilterCondition {
+    field: string;
+    operator: FilterOperator;
+    value: string | number | boolean | string[];
+}
+
+export interface FilterGroup {
+    logic: 'AND' | 'OR';
+    conditions: Array<FilterCondition | FilterGroup>;
+}
+
+/** Legacy pre-Epic-4 shape: a flat top-level equality map. */
+export type LegacyTriggerFilter = Record<string, string | number | boolean>;
+
+/**
+ * Stored filter shape. New rules write a `FilterGroup`; legacy rows hold a
+ * `LegacyTriggerFilter`. The evaluator narrows by structure at read time.
+ */
+export type AutomationTriggerFilter = FilterGroup | LegacyTriggerFilter;
+
+/** Type guard — is this value the new recursive group shape? */
+export function isFilterGroup(f: unknown): f is FilterGroup {
+    return (
+        !!f &&
+        typeof f === 'object' &&
+        'logic' in f &&
+        'conditions' in f &&
+        Array.isArray((f as FilterGroup).conditions)
+    );
+}
 
 // The producer-side event shape lives in `event-contracts.ts` as the
 // `AutomationDomainEvent` discriminated union. That's the canonical

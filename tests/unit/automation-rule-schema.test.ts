@@ -43,6 +43,37 @@ describe('CreateAutomationRuleSchema', () => {
         expect(res.success).toBe(false);
     });
 
+    it('accepts a FilterGroup trigger filter (DSL v2)', () => {
+        const res = CreateAutomationRuleSchema.safeParse({
+            name: 'Grouped',
+            triggerEvent: 'RISK_CREATED',
+            triggerFilter: {
+                logic: 'AND',
+                conditions: [
+                    { field: 'severity', operator: 'in', value: ['HIGH', 'CRITICAL'] },
+                    {
+                        logic: 'OR',
+                        conditions: [{ field: 'score', operator: 'gt', value: 15 }],
+                    },
+                ],
+            },
+            actionType: 'NOTIFY_USER',
+            actionConfig: { userIds: ['u1'], message: 'hi' },
+        });
+        expect(res.success).toBe(true);
+    });
+
+    it('still accepts the legacy flat trigger filter', () => {
+        const res = CreateAutomationRuleSchema.safeParse({
+            name: 'Legacy',
+            triggerEvent: 'RISK_CREATED',
+            triggerFilter: { severity: 'CRITICAL' },
+            actionType: 'NOTIFY_USER',
+            actionConfig: { userIds: ['u1'], message: 'hi' },
+        });
+        expect(res.success).toBe(true);
+    });
+
     it('accepts a valid WEBHOOK rule with method + headers', () => {
         const res = CreateAutomationRuleSchema.safeParse({
             name: 'Slack push',

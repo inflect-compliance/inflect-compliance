@@ -20,6 +20,7 @@ export type {
     Unsubscribe,
 } from './automation-bus';
 export { matchesFilter } from './filters';
+export { isFilterGroup } from './types';
 export {
     installAutomationBusDispatcher,
     bullmqAutomationDispatcher,
@@ -68,6 +69,10 @@ export type {
     AutomationExecutionListFilters,
     AutomationRuleListFilters,
     AutomationTriggerFilter,
+    FilterOperator,
+    FilterCondition,
+    FilterGroup,
+    LegacyTriggerFilter,
     CreateAutomationRuleInput,
     CreateTaskActionConfig,
     NotifyUserActionConfig,

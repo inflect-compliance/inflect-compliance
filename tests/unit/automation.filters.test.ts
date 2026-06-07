@@ -73,3 +73,111 @@ describe('matchesFilter', () => {
         expect(matchesFilter(evt, { result: 'FAIL' })).toBe(false);
     });
 });
+
+// ─── DSL v2 (Epic 4) — FilterGroup ─────────────────────────────────────
+describe('matchesFilter — FilterGroup DSL v2', () => {
+    const evt = riskEvent({ title: 'Breach', score: 18, category: 'SEC' });
+
+    it('AND passes only when every condition matches', () => {
+        expect(
+            matchesFilter(evt, {
+                logic: 'AND',
+                conditions: [
+                    { field: 'category', operator: 'eq', value: 'SEC' },
+                    { field: 'score', operator: 'gt', value: 10 },
+                ],
+            }),
+        ).toBe(true);
+        expect(
+            matchesFilter(evt, {
+                logic: 'AND',
+                conditions: [
+                    { field: 'category', operator: 'eq', value: 'SEC' },
+                    { field: 'score', operator: 'gt', value: 20 },
+                ],
+            }),
+        ).toBe(false);
+    });
+
+    it('OR passes when any condition matches', () => {
+        expect(
+            matchesFilter(evt, {
+                logic: 'OR',
+                conditions: [
+                    { field: 'category', operator: 'eq', value: 'NOPE' },
+                    { field: 'score', operator: 'gt', value: 10 },
+                ],
+            }),
+        ).toBe(true);
+        expect(
+            matchesFilter(evt, {
+                logic: 'OR',
+                conditions: [
+                    { field: 'category', operator: 'eq', value: 'NOPE' },
+                    { field: 'score', operator: 'lt', value: 5 },
+                ],
+            }),
+        ).toBe(false);
+    });
+
+    it('in / not_in operate on a value set', () => {
+        expect(
+            matchesFilter(evt, {
+                logic: 'AND',
+                conditions: [{ field: 'category', operator: 'in', value: ['SEC', 'COMP'] }],
+            }),
+        ).toBe(true);
+        expect(
+            matchesFilter(evt, {
+                logic: 'AND',
+                conditions: [{ field: 'category', operator: 'not_in', value: ['SEC'] }],
+            }),
+        ).toBe(false);
+    });
+
+    it('gt / lt are numeric; contains is substring', () => {
+        expect(
+            matchesFilter(evt, {
+                logic: 'AND',
+                conditions: [{ field: 'score', operator: 'lt', value: 20 }],
+            }),
+        ).toBe(true);
+        expect(
+            matchesFilter(evt, {
+                logic: 'AND',
+                conditions: [{ field: 'title', operator: 'contains', value: 'reach' }],
+            }),
+        ).toBe(true);
+    });
+
+    it('nested groups compose (AND of an OR)', () => {
+        expect(
+            matchesFilter(evt, {
+                logic: 'AND',
+                conditions: [
+                    { field: 'score', operator: 'gt', value: 10 },
+                    {
+                        logic: 'OR',
+                        conditions: [
+                            { field: 'category', operator: 'eq', value: 'COMP' },
+                            { field: 'category', operator: 'eq', value: 'SEC' },
+                        ],
+                    },
+                ],
+            }),
+        ).toBe(true);
+    });
+
+    it('unknown field fails closed inside a group', () => {
+        expect(
+            matchesFilter(evt, {
+                logic: 'AND',
+                conditions: [{ field: 'ghost', operator: 'eq', value: 'x' }],
+            }),
+        ).toBe(false);
+    });
+
+    it('empty conditions array matches (no constraints)', () => {
+        expect(matchesFilter(evt, { logic: 'AND', conditions: [] })).toBe(true);
+    });
+});
