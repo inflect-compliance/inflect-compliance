@@ -82,6 +82,9 @@ interface RiskListItem {
     owner?: { id: string; name: string | null; email: string | null } | null;
     asset: { name: string } | null;
     controls: unknown[];
+    /** B7 — unified linked-task counts (TaskLink RISK), supplied by listRisks. */
+    taskTotal?: number;
+    taskDone?: number;
 }
 
 interface RisksClientProps {
@@ -304,6 +307,7 @@ function RisksPageInner({
             { id: 'owner', label: 'Owner' },
             { id: 'treatment', label: 'Treatment' },
             { id: 'controls', label: 'Controls' },
+            { id: 'tasks', label: 'Tasks' },
         ],
         [],
     );
@@ -588,6 +592,27 @@ function RisksPageInner({
             cell: ({ getValue }) => (
                 <span className="text-xs">{getValue<number>()}</span>
             ),
+        },
+        {
+            // B7 — unified linked-task count (done/total), matching Controls.
+            id: 'tasks',
+            header: 'Tasks',
+            accessorFn: (r) => `${r.taskDone ?? 0}/${r.taskTotal ?? 0}`,
+            cell: ({ row }) => {
+                const total = row.original.taskTotal ?? 0;
+                const done = row.original.taskDone ?? 0;
+                return (
+                    <span
+                        className={
+                            total > 0 && done === total
+                                ? 'text-content-success text-xs'
+                                : 'text-content-muted text-xs'
+                        }
+                    >
+                        {done}/{total}
+                    </span>
+                );
+            },
         },
     ]), [t, getRiskLevel, matrixConfig]);
 

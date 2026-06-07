@@ -1,5 +1,7 @@
 import { RequestContext } from '../types';
 import { AssetRepository, AssetListParams, AssetFilters } from '../repositories/AssetRepository';
+import { WorkItemRepository } from '../repositories/WorkItemRepository';
+import type { TaskLinkEntityType } from '@prisma/client';
 import { assertCanRead, assertCanWrite, assertCanAdmin } from '../policies/common';
 import { logEvent } from '../events/audit';
 import { notFound } from '@/lib/errors/types';
@@ -11,9 +13,22 @@ import { logger } from '@/lib/observability';
 
 export async function listAssets(ctx: RequestContext, filters?: AssetFilters) {
     assertCanRead(ctx);
-    return runInTenantContext(ctx, (db) =>
-        AssetRepository.list(db, ctx, filters)
-    );
+    return runInTenantContext(ctx, async (db) => {
+        const rows = await AssetRepository.list(db, ctx, filters);
+        // B7 — attach unified linked-task counts (TaskLink ASSET) so the
+        // list page can show a Tasks column, matching Controls.
+        const counts = await WorkItemRepository.countLinkedToEntities(
+            db,
+            ctx,
+            'ASSET' as TaskLinkEntityType,
+            rows.map((r: { id: string }) => r.id),
+        );
+        return rows.map((r) => ({
+            ...r,
+            taskTotal: counts.get(r.id)?.total ?? 0,
+            taskDone: counts.get(r.id)?.done ?? 0,
+        }));
+    });
 }
 
 export async function listAssetsPaginated(ctx: RequestContext, params: AssetListParams) {

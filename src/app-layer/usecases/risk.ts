@@ -1,5 +1,6 @@
 import { RequestContext } from '../types';
 import { RiskRepository, RiskFilters, RiskListParams } from '../repositories/RiskRepository';
+import { WorkItemRepository } from '../repositories/WorkItemRepository';
 import { RiskTemplateRepository } from '../repositories/RiskTemplateRepository';
 import { assertCanRead, assertCanWrite, assertCanAdmin } from '../policies/common';
 import { logEvent } from '../events/audit';
@@ -10,7 +11,7 @@ import { sanitizePlainText } from '@/lib/security/sanitize';
 import { cachedListRead, bumpEntityCacheVersion } from '@/lib/cache/list-cache';
 import { createAssignmentNotification } from '../notifications/assignment';
 import { logger } from '@/lib/observability';
-import type { TreatmentDecision, RiskStatus } from '@prisma/client';
+import type { TreatmentDecision, RiskStatus, TaskLinkEntityType } from '@prisma/client';
 
 // Epic D.2 — sanitise optional free-text on UPDATE without disturbing
 // the three-state contract: undefined → don't touch, null → SET NULL,
@@ -39,10 +40,33 @@ export async function listRisks(
         // result can't poison the unbounded API GET cache.
         params: options.take ? { ...filters, _take: options.take } : filters,
         loader: async () => {
-            const rows = await runInTenantContext(ctx, (db) =>
-                RiskRepository.list(db, ctx, filters, options),
+            // B7 — fetch rows + unified linked-task counts (TaskLink RISK)
+            // in one tenant context so the list page can show a Tasks column.
+            const { rows, counts } = await runInTenantContext(
+                ctx,
+                async (db) => {
+                    const rows = await RiskRepository.list(
+                        db,
+                        ctx,
+                        filters,
+                        options,
+                    );
+                    const counts =
+                        await WorkItemRepository.countLinkedToEntities(
+                            db,
+                            ctx,
+                            'RISK' as TaskLinkEntityType,
+                            rows.map((r: { id: string }) => r.id),
+                        );
+                    return { rows, counts };
+                },
             );
-            return attachOwnerUsers(ctx, rows);
+            const withCounts = rows.map((r) => ({
+                ...r,
+                taskTotal: counts.get(r.id)?.total ?? 0,
+                taskDone: counts.get(r.id)?.done ?? 0,
+            }));
+            return attachOwnerUsers(ctx, withCounts);
         },
     });
 }
