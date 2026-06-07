@@ -178,8 +178,11 @@ describe('Roadmap-13 PR-4 — active band swaps to secondary brand', () => {
             // loses the "alive" glitter motion that the band-
             // alive composition's shimmer pan animates.
             const recipe = activeRecipe();
+            // B0-follow (#74, 2026-06-07): the stardust "stars" grew
+            // 1.5px → 2px for legibility (the high-contrast element of the
+            // slim flame). Still three radial particle layers.
             expect(recipe).toMatch(
-                /before:bg-\[radial-gradient\(circle_1\.5px[\s\S]*?radial-gradient\(circle_1\.5px[\s\S]*?radial-gradient\(circle_1\.5px/,
+                /before:bg-\[radial-gradient\(circle_2px[\s\S]*?radial-gradient\(circle_2px[\s\S]*?radial-gradient\(circle_2px/,
             );
         });
 

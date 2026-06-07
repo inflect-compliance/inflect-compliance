@@ -503,7 +503,7 @@ export const NAV_ITEM_DEFAULT =
  * five secondary-brand override classes + the navy-glow plumbing.
  */
 export const NAV_ITEM_ACTIVE =
-    'text-[var(--brand-default)] bg-[radial-gradient(circle_at_left,_var(--brand-secondary-subtle),_transparent_75%)] before:opacity-100 before:animate-nav-band-active-alive before:top-1! before:bottom-1! before:w-[4px]! before:bg-[radial-gradient(circle_1.5px_at_50%_80%,_color-mix(in_srgb,_var(--brand-default)_90%,_transparent),_transparent_70%),radial-gradient(circle_1.5px_at_50%_55%,_color-mix(in_srgb,_var(--brand-default)_55%,_transparent),_transparent_70%),radial-gradient(circle_1.5px_at_50%_30%,_color-mix(in_srgb,_var(--brand-default)_25%,_transparent),_transparent_70%),linear-gradient(to_bottom,_var(--bg-page),_var(--bg-page),_var(--bg-page))]! before:shadow-[var(--nav-band-glow-active)]! after:opacity-100 shadow-[0_0_12px_2px_var(--nav-row-aura-color),var(--nav-bevel-shadow)] font-medium';
+    'text-[var(--brand-default)] bg-[radial-gradient(circle_at_left,_var(--brand-secondary-subtle),_transparent_42%)] before:opacity-100 before:animate-nav-band-active-alive before:top-1! before:bottom-1! before:w-[4px]! before:bg-[radial-gradient(circle_2px_at_50%_80%,_color-mix(in_srgb,_var(--brand-default)_100%,_transparent),_transparent_70%),radial-gradient(circle_2px_at_50%_55%,_color-mix(in_srgb,_var(--brand-default)_75%,_transparent),_transparent_70%),radial-gradient(circle_2px_at_50%_30%,_color-mix(in_srgb,_var(--brand-default)_45%,_transparent),_transparent_70%),linear-gradient(to_bottom,_var(--bg-page),_var(--bg-page),_var(--bg-page))]! before:shadow-[var(--nav-band-glow-active)]! after:opacity-100 shadow-[0_0_12px_2px_var(--nav-row-aura-color),var(--nav-bevel-shadow)] font-medium';
 
 /**
  * R-flame (2026-06-07) — the flame-tongue layer.
@@ -554,9 +554,14 @@ const NAV_ITEM_FLAME_BASE = [
 // `--nav-flame-active` (METRO) / GREY (PwC) — see tokens.css — drifting as
 // slow embers. (Paired with yellow/orange stars on the ::before band.)
 const NAV_ITEM_FLAME_ACTIVE = [
-    'top-1 bottom-1 w-[4px]',
-    'bg-[radial-gradient(ellipse_2px_9px_at_50%_75%,_var(--nav-flame-active),_transparent_72%),radial-gradient(ellipse_1.5px_7px_at_50%_50%,_var(--nav-flame-active),_transparent_72%),radial-gradient(ellipse_1.5px_6px_at_50%_28%,_var(--nav-flame-active),_transparent_72%),radial-gradient(ellipse_9px_18px_at_50%_55%,_var(--nav-flame-active-halo),_transparent_80%)]',
-    'opacity-70 animate-nav-band-ember-drift',
+    // B0-follow (#74): a SLIM, FLUID flame. The tongues lick up at VARYING
+    // x (38% / 60% / 42% / 58%) so the right silhouette wavers organically
+    // — a fluid flame edge, not a rigid bar — taller + at full legibility
+    // (opacity 95). The slim footprint comes from the trimmed row wash +
+    // the 3px ::before band above.
+    'top-0.5 bottom-0.5 w-[5px]',
+    'bg-[radial-gradient(ellipse_1.5px_13px_at_38%_80%,_var(--nav-flame-active),_transparent_68%),radial-gradient(ellipse_1.5px_11px_at_60%_56%,_var(--nav-flame-active),_transparent_68%),radial-gradient(ellipse_1.5px_10px_at_42%_34%,_var(--nav-flame-active),_transparent_68%),radial-gradient(ellipse_1.5px_8px_at_58%_18%,_var(--nav-flame-active),_transparent_68%),radial-gradient(ellipse_6px_20px_at_48%_55%,_var(--nav-flame-active-halo),_transparent_82%)]',
+    'opacity-95 animate-nav-band-ember-drift',
 ].join(' ');
 
 /**
