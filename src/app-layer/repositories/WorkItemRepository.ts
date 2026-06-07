@@ -162,6 +162,56 @@ export class WorkItemRepository {
         return result;
     }
 
+    /**
+     * B7 (2026-06-07) — generic batched linked-task counter for entities
+     * that link tasks ONLY via TaskLink (no direct FK) — Asset, Risk, … .
+     * Returns an `entityId → { total, done }` map. ONE indexed query over
+     * [tenantId, entityType, entityId]; NOT an N+1 over the entity list.
+     * (Controls carry an extra direct-`Task.controlId` FK path, so they keep
+     * their own `countLinkedToControls`.) `done` = RESOLVED|CLOSED, matching
+     * the controls column.
+     */
+    static async countLinkedToEntities(
+        db: PrismaTx,
+        ctx: RequestContext,
+        entityType: TaskLinkEntityType,
+        entityIds: string[],
+    ): Promise<Map<string, { total: number; done: number }>> {
+        const result = new Map<string, { total: number; done: number }>();
+        if (entityIds.length === 0) return result;
+
+        // entityId → (taskId → status), dedup by task id.
+        const perEntity = new Map<string, Map<string, string>>();
+        const links = await db.taskLink.findMany({ // guardrail-allow: unbounded -- aggregate count, bounded by the entityIds set
+            where: {
+                tenantId: ctx.tenantId,
+                entityType,
+                entityId: { in: entityIds },
+            },
+            select: {
+                entityId: true,
+                taskId: true,
+                task: { select: { status: true } },
+            },
+        });
+        for (const l of links) {
+            let m = perEntity.get(l.entityId);
+            if (!m) {
+                m = new Map();
+                perEntity.set(l.entityId, m);
+            }
+            m.set(l.taskId, l.task.status);
+        }
+        for (const [entityId, taskMap] of perEntity) {
+            let done = 0;
+            for (const status of taskMap.values()) {
+                if (status === 'RESOLVED' || status === 'CLOSED') done++;
+            }
+            result.set(entityId, { total: taskMap.size, done });
+        }
+        return result;
+    }
+
     static async listPaginated(db: PrismaTx, ctx: RequestContext, params: TaskListParams): Promise<PaginatedResponse<unknown>> {
         const limit = clampLimit(params.limit);
         const where = WorkItemRepository._buildWhere(ctx, params.filters);
