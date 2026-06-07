@@ -383,11 +383,15 @@ describe('Roadmap-13 PR-12 — Living Sidebar capstone bundle', () => {
     // this block locks the new child layer + its tokens/keyframes.
     // ─────────────────────────────────────────────────────────────────
     describe('R-flame — flame-tongue child layer', () => {
-        it('renders a dedicated flame child <span> with its own classes', () => {
+        it('renders a dedicated ACTIVE-ONLY flame child <span> (B0: no hover flame)', () => {
             expect(NAV_ITEM_SRC).toMatch(/const NAV_ITEM_FLAME_BASE\s*=/);
-            expect(NAV_ITEM_SRC).toMatch(/const NAV_ITEM_FLAME_HOVER\s*=/);
             expect(NAV_ITEM_SRC).toMatch(/const NAV_ITEM_FLAME_ACTIVE\s*=/);
-            expect(NAV_ITEM_SRC).toMatch(/<span\s+aria-hidden="true"/);
+            // B0 (2026-06-07) removed the hover flame — the child renders
+            // only when `active`, and NAV_ITEM_FLAME_HOVER is gone.
+            expect(NAV_ITEM_SRC).not.toMatch(/const NAV_ITEM_FLAME_HOVER\s*=/);
+            expect(NAV_ITEM_SRC).toMatch(
+                /\{active && \(\s*<span\s+aria-hidden="true"/,
+            );
         });
 
         it('does NOT put flame onto the preserved ::before compositions', () => {
@@ -418,16 +422,22 @@ describe('Roadmap-13 PR-12 — Living Sidebar capstone bundle', () => {
             );
         });
 
-        it('hover ignites (450ms opacity) + drifts @ 8s; active settles to ember @ 12s', () => {
+        it('flame is ACTIVE-ONLY (B0 removed the hover ignite); active drifts as embers @ 12s', () => {
             expect(NAV_ITEM_SRC).toMatch(/opacity-0 transition-opacity duration-500/);
-            expect(NAV_ITEM_SRC).toMatch(
-                /group-hover:opacity-100 group-hover:animate-nav-band-flame-drift/,
+            // No hover ignite anymore (B0).
+            expect(NAV_ITEM_SRC).not.toMatch(
+                /group-hover:animate-nav-band-flame-drift/,
             );
-            expect(NAV_ITEM_SRC).toMatch(/opacity-60 animate-nav-band-ember-drift/);
+            expect(NAV_ITEM_SRC).toMatch(/opacity-70 animate-nav-band-ember-drift/);
         });
 
-        it('active flame settles to a warm variant of --bg-page (glowing coals)', () => {
-            expect(NAV_ITEM_SRC).toMatch(/color-mix\(in_srgb,_var\(--bg-page\),_var\(--brand-/);
+        it('active flame is the BLUE (METRO) / GREY (PwC) --nav-flame-active (B0)', () => {
+            expect(NAV_ITEM_SRC).toMatch(/var\(--nav-flame-active\)/);
+            expect(NAV_ITEM_SRC).toMatch(/var\(--nav-flame-active-halo\)/);
+            for (const block of [DARK_BLOCK, LIGHT_BLOCK]) {
+                expect(block).toMatch(/--nav-flame-active:/);
+                expect(block).toMatch(/--nav-flame-active-halo:/);
+            }
         });
 
         it('staggers the flame phase per-row via a third --nav-flame-delay bucket', () => {
