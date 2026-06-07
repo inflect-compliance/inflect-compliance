@@ -84,17 +84,24 @@ body {
  * --border-default tokens, so one class serves METRO dark + PwC light.
  */
 .surface-popup-texture {
+  /* Focal glow drawn toward the top — the eye enters a pop-up from its
+   * leading edge, so the brand pool sits at `top center`, not dead
+   * centre, and the warm wash reaches further down the surface (78%)
+   * before the vignette. Calibrated to the OS-vibrancy range: at the
+   * original 4%/6% the wash was sub-perceptual on both themes (the
+   * "no texture landed" report). */
   background:
     radial-gradient(
-      ellipse at center,
-      color-mix(in srgb, var(--bg-default), var(--brand-default) 4%) 0%,
-      var(--bg-default) 60%,
-      color-mix(in srgb, var(--bg-default), black 6%) 100%
+      ellipse 120% 80% at 50% 0%,
+      color-mix(in srgb, var(--bg-default), var(--brand-default) 10%) 0%,
+      color-mix(in srgb, var(--bg-default), var(--brand-default) 4%) 42%,
+      var(--bg-default) 78%,
+      color-mix(in srgb, var(--bg-default), black 9%) 100%
     );
   border: 1px solid
-    color-mix(in srgb, var(--border-default), var(--brand-default) 15%);
+    color-mix(in srgb, var(--border-default), var(--brand-default) 22%);
   box-shadow:
-    inset 0 1px 0 0 color-mix(in srgb, var(--bg-default), white 16%),
+    inset 0 1px 0 0 color-mix(in srgb, var(--bg-default), white 20%),
     var(--shadow-lg);
 }
 .glass-card {

@@ -200,7 +200,11 @@ function ModalRoot({
                         }}
                         className={cn(
                             "fixed bottom-0 left-0 right-0 z-50 flex flex-col",
-                            "max-h-[92vh] rounded-t-[10px] border-t border-border-subtle bg-bg-default text-content-emphasis",
+                            // Mobile drawer shares the desktop modal's
+                            // focal-glow texture (background + border +
+                            // glass edge) for parity — replaces the flat
+                            // bg-bg-default/border-border-subtle.
+                            "surface-popup-texture max-h-[92vh] rounded-t-[10px] text-content-emphasis",
                             className,
                         )}
                     >
