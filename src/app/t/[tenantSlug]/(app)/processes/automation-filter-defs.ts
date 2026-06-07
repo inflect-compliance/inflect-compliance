@@ -12,7 +12,11 @@ import {
     optionsFromEnum,
 } from '@/components/ui/filter/filter-definitions';
 import { CircleDot, Zap, Wrench } from 'lucide-react';
-import { AUTOMATION_EVENT_NAMES } from '@/app-layer/automation';
+// Import the leaf events module, NOT the @/app-layer/automation barrel: the
+// barrel re-exports automation-bus → observability → OpenTelemetry, which
+// drags the Node-only `async_hooks` into this client-bundled file and breaks
+// the Next build. `events.ts` is pure constants.
+import { AUTOMATION_EVENT_NAMES } from '@/app-layer/automation/events';
 
 export const RULE_STATUS_LABELS = {
     DRAFT: 'Draft',
