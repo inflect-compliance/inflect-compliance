@@ -184,3 +184,10 @@ describe('Roadmap-13 PR-7 — inset bevel shadow on hover', () => {
         });
     });
 });
+
+describe('R-flame — static band glow preserved; heat halo added', () => {
+    it('keeps --nav-band-glow box-shadow (baseline) + adds --nav-flame-halo-color', () => {
+        expect(NAV_ITEM_SRC).toMatch(/before:shadow-\[var\(--nav-band-glow\)\]/);
+        expect(DARK_BLOCK).toMatch(/--nav-flame-halo-color:/);
+    });
+});

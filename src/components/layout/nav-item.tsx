@@ -29,6 +29,27 @@
  *
  * The transition is `transition-colors` (motion-language ratchet —
  * duration MUST enumerate the property, never `transition-all`).
+ *
+ * Flame vocabulary (R-flame, 2026-06-07) — layered onto the R12/R13/R15
+ * band, additively:
+ *
+ *   - flame tongues   3 vertically-elongated radial "tongues" on a
+ *                     DEDICATED child <span> (NAV_ITEM_FLAME_*), NOT the
+ *                     ::before band — a second background-position
+ *                     animation can't share ::before with nav-band-
+ *                     shimmer, so the flame gets its own element. Every
+ *                     R13/R15 ::before layer + ratchet is preserved.
+ *   - flame-drift     8s ease-in-out background-position pan, "kindling
+ *                     catching fire" on hover; ignites over 450ms.
+ *   - ember-drift     12s gentler pan, "glowing coals" on active; tongues
+ *                     settle to a warm color-mix of --bg-page @ 60%.
+ *   - heat halo       a wide near-transparent radial (--nav-flame-halo-
+ *                     color) under the tongues, sharing the same drift —
+ *                     the breathing aura beyond the static --nav-band-glow.
+ *   - per-row stagger third hash bucket → --nav-flame-delay.
+ *   - PwC cream       "thermal shimmer": --nav-flame-tongue-* resolve to
+ *                     near-transparent tints; --nav-shimmer-distortion
+ *                     (light-only) trims the drift amplitude 40%.
  */
 
 import Link from 'next/link';
@@ -485,6 +506,62 @@ export const NAV_ITEM_ACTIVE =
     'text-[var(--brand-default)] bg-[radial-gradient(circle_at_left,_var(--brand-secondary-subtle),_transparent_75%)] before:opacity-100 before:animate-nav-band-active-alive before:top-1! before:bottom-1! before:w-[4px]! before:bg-[radial-gradient(circle_1.5px_at_50%_80%,_rgba(255,255,255,0.9),_transparent_70%),radial-gradient(circle_1.5px_at_50%_55%,_rgba(255,255,255,0.5),_transparent_70%),radial-gradient(circle_1.5px_at_50%_30%,_rgba(255,255,255,0.2),_transparent_70%),linear-gradient(to_bottom,_var(--bg-page),_var(--bg-page),_var(--bg-page))]! before:shadow-[var(--nav-band-glow-active)]! after:opacity-100 shadow-[0_0_12px_2px_var(--nav-row-aura-color),var(--nav-bevel-shadow)] font-medium';
 
 /**
+ * R-flame (2026-06-07) — the flame-tongue layer.
+ *
+ * The band gains a heat treatment that lives on a DEDICATED child
+ * `<span>`, NOT the `::before` band. Rationale: the band's
+ * `nav-band-shimmer` already animates `::before`'s `background-position`,
+ * and two `background-position` animations on one element cannot drift
+ * independently (the later one replaces the earlier). A separate child
+ * is the only way to give the flame its own pan while preserving the
+ * shimmer untouched — so every existing R13/R15 `::before` ratchet still
+ * holds byte-for-byte; this is purely additive.
+ *
+ * Background-image stack (top → bottom): three vertically-elongated
+ * radial "tongues" over one wide, near-transparent "halo" (P2's
+ * heat-scatter aura — it shares the child's single `background-position`
+ * track, i.e. it "piggybacks the flame-drift keyframe"). The child is
+ * sized TALLER than the band (`--nav-shimmer-distortion`, light-theme-
+ * only, trims the cream amplitude by 40%) so the position pan reads as
+ * tongues licking upward.
+ *
+ *   hover  ("kindling catching fire")  brand tongues ignite (opacity
+ *                                       0 → 1 over 450ms, matching the
+ *                                       reveal-sweep tempo) + drift @ 8s.
+ *   active ("glowing coals")           tongues settle to a warm variant
+ *                                       of `--bg-page` @ 60% opacity +
+ *                                       ember-drift @ 12s.
+ *
+ * Per-row phase stagger via `--nav-flame-delay` (a third
+ * `hashSlugToDriftDelays` bucket). PwC cream gets the "thermal shimmer"
+ * automatically: `--nav-flame-tongue-*` resolve to near-transparent
+ * brand tints there instead of the navy's vivid tongues.
+ */
+const NAV_ITEM_FLAME_BASE = [
+    'pointer-events-none absolute left-0 rounded-r-full overflow-visible',
+    // Taller than the band so flame-drift can pan up its own length.
+    '[background-size:100%_calc(100%_+_100%*var(--nav-shimmer-distortion,1))]',
+    // Ignite over 500ms — the nearest value in the locked transition-
+    // duration vocabulary (animation-language-lock) to the band's 450ms
+    // reveal-sweep, so the ignite reads as synced without an arbitrary
+    // `duration-[450ms]` bracket. (The reveal-sweep keyframe itself stays
+    // 450ms — that's an animation duration, not a transition utility.)
+    'opacity-0 transition-opacity duration-500 ease-out',
+].join(' ');
+
+const NAV_ITEM_FLAME_HOVER = [
+    'top-1.5 bottom-1.5 w-[3px]',
+    'bg-[radial-gradient(ellipse_2px_9px_at_50%_75%,_var(--nav-flame-tongue-a),_transparent_72%),radial-gradient(ellipse_1.5px_7px_at_50%_50%,_var(--nav-flame-tongue-b),_transparent_72%),radial-gradient(ellipse_1.5px_6px_at_50%_28%,_var(--nav-flame-tongue-a),_transparent_72%),radial-gradient(ellipse_9px_18px_at_50%_55%,_var(--nav-flame-halo-color),_transparent_80%)]',
+    'group-hover:opacity-100 group-hover:animate-nav-band-flame-drift',
+].join(' ');
+
+const NAV_ITEM_FLAME_ACTIVE = [
+    'top-1 bottom-1 w-[4px]',
+    'bg-[radial-gradient(ellipse_2px_9px_at_50%_75%,_color-mix(in_srgb,_var(--bg-page),_var(--brand-default)_30%),_transparent_72%),radial-gradient(ellipse_1.5px_7px_at_50%_50%,_color-mix(in_srgb,_var(--bg-page),_var(--brand-muted)_30%),_transparent_72%),radial-gradient(ellipse_1.5px_6px_at_50%_28%,_color-mix(in_srgb,_var(--bg-page),_var(--brand-default)_30%),_transparent_72%),radial-gradient(ellipse_9px_18px_at_50%_55%,_var(--nav-flame-halo-color),_transparent_80%)]',
+    'opacity-60 animate-nav-band-ember-drift',
+].join(' ');
+
+/**
  * Badge recipe — aligned + breathing. (R12-PR8 lock.)
  *
  * Optional count chip (e.g. calendar's upcoming-event count). Five
@@ -566,6 +643,7 @@ export const NAV_ITEM_BADGE =
 function hashSlugToDriftDelays(slug: string): {
     shimmerDelayMs: number;
     breathDelayMs: number;
+    flameDelayMs: number;
 } {
     let h = 0;
     for (let i = 0; i < slug.length; i++) {
@@ -575,12 +653,17 @@ function hashSlugToDriftDelays(slug: string): {
     return {
         shimmerDelayMs: abs % 1000,
         breathDelayMs: (abs >> 4) % 1500,
+        // R-flame — third independent bucket. 0..1999ms ≈ a quarter of
+        // the 8s flame cycle, so rows' flames are out of phase without
+        // any pair mirroring (same quarter-cycle logic as shimmer/breath).
+        flameDelayMs: (abs >> 8) % 2000,
     };
 }
 
 export function NavItem({ href, icon: Icon, label, active, badge, onClick }: NavItemProps) {
     const slug = href.split('/').pop() ?? '';
-    const { shimmerDelayMs, breathDelayMs } = hashSlugToDriftDelays(slug);
+    const { shimmerDelayMs, breathDelayMs, flameDelayMs } =
+        hashSlugToDriftDelays(slug);
     const driftStyle = {
         // CSS custom properties consumed by the per-track
         // animation-delay slots inside `nav-band-alive` and
@@ -589,6 +672,7 @@ export function NavItem({ href, icon: Icon, label, active, badge, onClick }: Nav
         // into the `::before` pseudo where the animation runs.
         '--nav-shimmer-delay': `${shimmerDelayMs}ms`,
         '--nav-breath-delay': `${breathDelayMs}ms`,
+        '--nav-flame-delay': `${flameDelayMs}ms`,
     } as CSSProperties;
 
     return (
@@ -599,6 +683,14 @@ export function NavItem({ href, icon: Icon, label, active, badge, onClick }: Nav
             data-testid={`nav-${slug}`}
             style={driftStyle}
         >
+            {/* R-flame — dedicated flame-tongue layer over the band's
+                left edge. Decorative + pointer-events-none; the row's
+                icon/label sit in the padded content area to its right,
+                so it never overlaps interactive content. */}
+            <span
+                aria-hidden="true"
+                className={`${NAV_ITEM_FLAME_BASE} ${active ? NAV_ITEM_FLAME_ACTIVE : NAV_ITEM_FLAME_HOVER}`}
+            />
             <Icon className={NAV_ITEM_ICON_CLASS} aria-hidden="true" />
             {/* R15-PR8 — magnetic letter spacing. The label
                 breathes its tracking open on hover-of-the-row.

@@ -237,3 +237,9 @@ describe('Roadmap-15 PR-2 — band halo breath', () => {
         });
     });
 });
+
+describe('R-flame — flame-drift keyframe is distinct from halo-breath', () => {
+    it('nav-band-flame-drift animates background-position (orthogonal to halo-breath filter)', () => {
+        expect(TAILWIND_CONFIG).toMatch(/'nav-band-flame-drift':\s*\{[\s\S]*?background-position/);
+    });
+});
