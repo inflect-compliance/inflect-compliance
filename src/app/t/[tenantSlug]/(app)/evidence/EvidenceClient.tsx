@@ -35,6 +35,9 @@ import {
     FilterProvider,
     useFilterContext,
     useFilters,
+    useFilterCardVisibility,
+    filtersToCards,
+    selectVisibleFilters,
     type FilterType,
 } from '@/components/ui/filter';
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
@@ -535,11 +538,38 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     const {
         columnVisibility,
         setColumnVisibility,
+        orderColumns,
         dropdown: columnsDropdown,
     } = useColumnsDropdown({
         storageKey: 'inflect:col-vis:evidence',
         columns: evidenceColumnList,
     });
+
+    // ─── Filter defs (FDEFS) + the "Edit filter cards" gear ───
+    // Built in the parent (rather than inside EvidenceFilterToolbar) so
+    // the filter gear can ride the same toolbar `actions` slot as the
+    // columns gear. The FilterProvider state (keyed by
+    // EVIDENCE_FILTER_KEYS) is untouched — a hidden filter keeps its value.
+    const evidenceFilters: FilterType[] = useMemo(
+        () =>
+            buildEvidenceFilters(
+                controls as Parameters<typeof buildEvidenceFilters>[0],
+                evidence,
+            ),
+        [controls, evidence],
+    );
+    const filterCards = useMemo(
+        () => filtersToCards(evidenceFilters),
+        [evidenceFilters],
+    );
+    const { visibleCards, dropdown: filtersDropdown } = useFilterCardVisibility({
+        storageKey: 'inflect:filter-vis:evidence',
+        cards: filterCards,
+    });
+    const visibleFilterDefs = useMemo(
+        () => selectVisibleFilters(visibleCards, evidenceFilters),
+        [visibleCards, evidenceFilters],
+    );
 
     // ── Evidence Column Definitions ──
 
@@ -1004,8 +1034,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                   the gallery read from the same `displayEvidence` array.
                 */}
                 <EvidenceFilterToolbar
-                    controls={controls}
-                    evidence={evidence}
+                    filters={visibleFilterDefs}
                     actions={
                         <>
                             <ToggleGroup
@@ -1019,7 +1048,12 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                                 selectAction={(v) => setFilter('view', v === 'list' ? '' : v)}
                                 className="shrink-0"
                             />
-                            {viewMode === 'list' ? columnsDropdown : null}
+                            {viewMode === 'list' ? (
+                                <>
+                                    {filtersDropdown}
+                                    {columnsDropdown}
+                                </>
+                            ) : null}
                         </>
                     }
                 />
@@ -1082,7 +1116,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                     <DataTable
                         fillBody
                         data={visibleEvidence}
-                        columns={evidenceColumns}
+                        columns={orderColumns(evidenceColumns)}
                         getRowId={(ev: any) => ev.id}
                         // Column resizing is opt-in per table (disabled
                         // by default since #823). Re-enabled here only —
@@ -1161,22 +1195,12 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
 // ─── Evidence filter toolbar ─────────────────────────────────────────
 
 function EvidenceFilterToolbar({
-    controls,
-    evidence,
+    filters,
     actions,
 }: {
-    controls: unknown[];
-    evidence: ReadonlyArray<{ folder?: string | null }>;
+    filters: FilterType[];
     actions?: React.ReactNode;
 }) {
-    const filters: FilterType[] = useMemo(
-        () =>
-            buildEvidenceFilters(
-                controls as Parameters<typeof buildEvidenceFilters>[0],
-                evidence,
-            ),
-        [controls, evidence],
-    );
     return (
         <FilterToolbar
             filters={filters}

@@ -31,7 +31,10 @@ import * as path from 'node:path';
 const ROOT = path.resolve(__dirname, '../..');
 
 const ICON_BUTTON_SITES = [
-    'src/components/ui/table/columns-dropdown.tsx',
+    // R-filter-gear (2026-06-07): the controlled gear's <Button> moved into
+    // the shared <ChecklistGearButton> primitive (both toolbar gears trigger
+    // through it). The legacy table-bound variant still has its own <Button>.
+    'src/components/ui/checklist-gear-button.tsx',
     'src/components/ui/table/edit-columns-button.tsx',
 ] as const;
 
@@ -49,7 +52,7 @@ describe('R24-PR-E — Icon-button shape rollout', () => {
                 // mounts the Settings icon — both files have exactly
                 // one such usage today.
                 const gearMatch = src.match(
-                    /<Button[\s\S]*?icon=\{<Settings[\s\S]*?\/>/m,
+                    /<Button[\s\S]*?icon=\{[\s\S]*?\/>/m,
                 );
                 expect(gearMatch).not.toBeNull();
                 const gearBlock = gearMatch![0];
@@ -69,7 +72,7 @@ describe('R24-PR-E — Icon-button shape rollout', () => {
                 // the cva-driven glass material entirely. The
                 // canonical shape is <Button> + className overrides.
                 expect(src).toMatch(
-                    /<Button[\s\S]*?icon=\{<Settings[\s\S]*?\/>/m,
+                    /<Button[\s\S]*?icon=\{[\s\S]*?\/>/m,
                 );
             });
         });

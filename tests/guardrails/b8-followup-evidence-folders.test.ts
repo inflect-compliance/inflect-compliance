@@ -207,8 +207,16 @@ describe('B8 follow-up — evidence folders', () => {
             expect(edit).toMatch(/data-testid="edit-evidence-folder-input"/);
         });
 
-        it('EvidenceClient threads evidence into the filter toolbar', () => {
-            expect(client).toMatch(/EvidenceFilterToolbar[\s\S]{0,300}evidence=\{evidence\}/);
+        it('EvidenceClient threads evidence into the filter toolbar (via buildEvidenceFilters)', () => {
+            // R-filter-gear (2026-06-07): the filters are now built in the
+            // PARENT (so the filter gear can sit beside the columns gear in
+            // the actions slot) and the visible subset is passed down — but
+            // `evidence` still drives the folder filter options through
+            // buildEvidenceFilters, and the built defs reach the toolbar.
+            expect(client).toMatch(/buildEvidenceFilters\([\s\S]{0,120}evidence/);
+            expect(client).toMatch(
+                /<EvidenceFilterToolbar[\s\S]{0,120}filters=\{visibleFilterDefs\}/,
+            );
         });
 
         it('EvidenceClient declares a global folder-suggestions datalist', () => {

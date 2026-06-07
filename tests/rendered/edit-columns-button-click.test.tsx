@@ -36,7 +36,7 @@ function Harness() {
 describe('Edit columns button — click opens the popover', () => {
     test('Radix Popover.Trigger props land on the rendered button', () => {
         render(<Harness />);
-        const gear = screen.getByTestId('edit-columns-button');
+        const gear = screen.getByTestId('toggle-columns-button');
         // The Radix-injected trigger props must be present — they
         // are what makes the button function as a popover trigger.
         expect(gear).toHaveAttribute('aria-expanded', 'false');
@@ -45,7 +45,7 @@ describe('Edit columns button — click opens the popover', () => {
 
     test('clicking the gear flips aria-expanded to true', () => {
         render(<Harness />);
-        const gear = screen.getByTestId('edit-columns-button');
+        const gear = screen.getByTestId('toggle-columns-button');
         fireEvent.click(gear);
         expect(gear).toHaveAttribute('aria-expanded', 'true');
     });

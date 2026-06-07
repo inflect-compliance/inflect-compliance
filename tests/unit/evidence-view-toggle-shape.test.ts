@@ -93,9 +93,12 @@ describe('Epic 43.2 — view toggle wiring', () => {
         // The columns dropdown is only meaningful for the list view —
         // hiding it under viewMode === 'list' is the correct shape.
         // R10-PR6 unified the mount via `useColumnsDropdown` returning a
-        // `dropdown` node; accept either shape.
+        // `dropdown` node; R-filter-gear (2026-06-07) renders BOTH gears
+        // (filter + columns) as a fragment under the same list guard.
+        // Accept any of those shapes — the invariant is `columnsDropdown`
+        // stays gated behind `viewMode === 'list'`.
         expect(src).toMatch(
-            /viewMode === ['"]list['"]\s*\?\s*(<ColumnsDropdown|columnsDropdown)/,
+            /viewMode === ['"]list['"][\s\S]{0,300}columnsDropdown/,
         );
     });
 

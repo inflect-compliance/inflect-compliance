@@ -177,3 +177,28 @@ describe('columns-dropdown gear coverage (R10-PR8)', () => {
         }
     });
 });
+
+// R-filter-gear (2026-06-07) — the two toolbar gears (Edit filter cards +
+// Toggle columns) are differentiated by icon (Settings vs Columns3) but
+// share ONE primitive: <ChecklistGearButton>. This locks that delegation
+// so a future PR can't fork the checklist UI back into two copies.
+describe('R-filter-gear — both gears mount the shared ChecklistGearButton', () => {
+    const read = (rel: string) =>
+        fs.readFileSync(path.join(ROOT, rel), 'utf8');
+
+    it('columns gear delegates to ChecklistGearButton (Columns3, toggle-columns-button)', () => {
+        const src = read('src/components/ui/table/columns-dropdown.tsx');
+        expect(src).toMatch(/ChecklistGearButton/);
+        expect(src).toMatch(/\bColumns3\b/);
+        expect(src).toMatch(/data-testid="toggle-columns-button"/);
+        expect(src).toMatch(/title="Toggle columns"/);
+    });
+
+    it('filter gear delegates to ChecklistGearButton (Settings, edit-filters-button)', () => {
+        const src = read('src/components/ui/filter/edit-filters-button.tsx');
+        expect(src).toMatch(/ChecklistGearButton/);
+        expect(src).toMatch(/\bSettings\b/);
+        expect(src).toMatch(/data-testid="edit-filters-button"/);
+        expect(src).toMatch(/title="Edit filter cards"/);
+    });
+});

@@ -85,3 +85,18 @@ export type {
   UseFilterPresetsResult,
 } from "./use-filter-presets";
 export { useFilterPresets } from "./use-filter-presets";
+
+// R-filter-gear (2026-06-07) — the "Edit filter cards" gear.
+export { EditFiltersButton } from "./edit-filters-button";
+export type { EditFiltersButtonProps } from "./edit-filters-button";
+export {
+  useFilterCardVisibility,
+  filtersToCards,
+  selectVisibleFilters,
+} from "./use-filter-card-visibility";
+export type {
+  CardDefinition,
+  CardKind,
+  UseFilterCardVisibilityOptions,
+  UseFilterCardVisibilityResult,
+} from "./use-filter-card-visibility";

@@ -34,6 +34,9 @@ import {
     filterStateToUrlParams,
     useFilterContext,
     useFilters,
+    useFilterCardVisibility,
+    filtersToCards,
+    selectVisibleFilters,
     type FilterType,
 } from '@/components/ui/filter';
 import { EntityListPage } from '@/components/layout/EntityListPage';
@@ -328,6 +331,23 @@ function ControlsPageInner({
         [controls],
     );
 
+    // R-filter-gear — the "Edit filter cards" gear: which filter cards
+    // show (and in what order) in the toolbar. Visible defs subset +
+    // reorder `liveFilterDefs`; the FilterProvider state (keyed by
+    // CONTROL_FILTER_KEYS) is untouched, so a hidden filter keeps its value.
+    const filterCards = useMemo(
+        () => filtersToCards(liveFilterDefs),
+        [liveFilterDefs],
+    );
+    const { visibleCards, dropdown: filtersDropdown } = useFilterCardVisibility({
+        storageKey: 'inflect:filter-vis:controls',
+        cards: filterCards,
+    });
+    const visibleFilterDefs = useMemo(
+        () => selectVisibleFilters(visibleCards, liveFilterDefs),
+        [visibleCards, liveFilterDefs],
+    );
+
     // ─── R23-PR-D — KPI definitions for the Controls page ───
     // Status-based buckets aligned to the existing `status` filter.
     // The "In Progress" KPI buckets IN_PROGRESS + IMPLEMENTING under
@@ -403,6 +423,7 @@ function ControlsPageInner({
     const {
         columnVisibility,
         setColumnVisibility,
+        orderColumns,
         dropdown: columnsDropdown,
     } = useColumnsDropdown({
         storageKey: 'inflect:col-vis:controls',
@@ -1082,10 +1103,15 @@ function ControlsPageInner({
                 </div>
             }
             filters={{
-                defs: liveFilterDefs,
+                defs: visibleFilterDefs,
                 searchId: 'controls-search',
                 searchPlaceholder: 'Search controls…',
-                toolbarActions: columnsDropdown,
+                toolbarActions: (
+                    <>
+                        {filtersDropdown}
+                        {columnsDropdown}
+                    </>
+                ),
             }}
             table={{
                 // PR-1 — sliced data via useThresholdLoadMore so the
@@ -1093,7 +1119,7 @@ function ControlsPageInner({
                 // once. The footer (see `tableFooter` below) handles
                 // progressive disclosure.
                 data: visibleControls,
-                columns: controlColumns,
+                columns: orderColumns(controlColumns),
                 loading,
                 getRowId: getControlRowId,
                 // PR-1 — sortable headers, matching the org-level

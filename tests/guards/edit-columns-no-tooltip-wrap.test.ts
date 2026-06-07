@@ -17,11 +17,14 @@
  * `tests/rendered/edit-columns-button-click.test.tsx` locks the
  * runtime behaviour; this guard locks the structural shape.
  *
- * Two files maintain the gear:
- *   • columns-dropdown.tsx  — state-controlled variant
- *   • edit-columns-button.tsx — TanStack table-bound variant
- *
- * Both must follow the rule.
+ * Files that render the gear TRIGGER (and so must follow the rule):
+ *   • checklist-gear-button.tsx — the shared gear primitive (2026-06-07);
+ *     both toolbar gears (Edit filter cards + Toggle columns) trigger
+ *     through it. The thin wrappers (columns-dropdown.tsx,
+ *     edit-filters-button.tsx) only pass `title` props down, so the
+ *     constraint is locked once, here.
+ *   • edit-columns-button.tsx — the TanStack table-bound variant, which
+ *     still renders its own trigger.
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -30,7 +33,7 @@ const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 
 const FILES = [
-    'src/components/ui/table/columns-dropdown.tsx',
+    'src/components/ui/checklist-gear-button.tsx',
     'src/components/ui/table/edit-columns-button.tsx',
 ];
 
@@ -48,7 +51,7 @@ describe('Edit columns button — no <Tooltip> wrapping inside Popover', () => {
                 // step a future "let's add a tooltip back" PR would
                 // take, and that step fails CI here.
                 expect(src).not.toMatch(
-                    /import\s*\{[^}]*\bTooltip\b[^}]*\}\s*from\s*['"]\.\.\/tooltip['"]/,
+                    /import\s*\{[^}]*\bTooltip\b[^}]*\}\s*from\s*['"][.\/]*tooltip['"]/,
                 );
             });
 

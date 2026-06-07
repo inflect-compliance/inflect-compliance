@@ -140,6 +140,7 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
     const {
         columnVisibility,
         setColumnVisibility,
+        orderColumns,
         dropdown: columnsDropdown,
     } = useColumnsDropdown({
         storageKey: 'inflect:col-vis:findings',
@@ -237,7 +238,7 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
                 <DataTable
                     fillBody
                     data={findings}
-                    columns={findingColumns}
+                    columns={orderColumns(findingColumns)}
                     getRowId={(f: any) => f.id}
                     columnVisibility={columnVisibility}
                     onColumnVisibilityChange={setColumnVisibility}
