@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import type { AutomationExecution, AutomationExecutionStatus } from '@prisma/client';
 import { PrismaTx } from '@/lib/db-context';
 import { RequestContext } from '../types';
 import type {
@@ -137,5 +138,32 @@ export class AutomationExecutionRepository {
             orderBy: { createdAt: 'desc' },
             take: limit,
         });
+    }
+
+    /**
+     * Cursor-paginated per-rule history (Epic 6). Fetches `limit + 1` to
+     * detect a next page; returns the page + the next cursor (the id to
+     * resume after) or null when exhausted.
+     */
+    static async listForRulePaginated(
+        db: PrismaTx,
+        ctx: RequestContext,
+        ruleId: string,
+        opts: { limit?: number; cursor?: string; status?: AutomationExecutionStatus } = {}
+    ): Promise<{ items: AutomationExecution[]; nextCursor: string | null }> {
+        const limit = Math.min(Math.max(opts.limit ?? 25, 1), 100);
+        const rows = await db.automationExecution.findMany({
+            where: {
+                tenantId: ctx.tenantId,
+                ruleId,
+                ...(opts.status ? { status: opts.status } : {}),
+            },
+            orderBy: { createdAt: 'desc' },
+            take: limit + 1,
+            ...(opts.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
+        });
+        const hasMore = rows.length > limit;
+        const items = hasMore ? rows.slice(0, limit) : rows;
+        return { items, nextCursor: hasMore ? items[items.length - 1].id : null };
     }
 }

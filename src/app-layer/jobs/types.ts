@@ -318,6 +318,13 @@ export interface AutomationEventDispatchPayload {
         stableKey?: string;
         data: Record<string, unknown>;
     };
+    /**
+     * Epic 6 — manual re-trigger of a SINGLE rule. When set, only this rule
+     * is considered (instead of every rule matching the event), and the
+     * execution row records the given `triggeredBy` (default 'event').
+     */
+    targetRuleId?: string;
+    triggeredBy?: string;
 }
 
 /**

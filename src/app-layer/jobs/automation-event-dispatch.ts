@@ -125,13 +125,15 @@ export async function runAutomationEventDispatch(
                 );
             }
 
-            // 1. Load matching enabled rules.
+            // 1. Load matching enabled rules. Epic 6 — a manual re-trigger
+            //    targets ONE rule via payload.targetRuleId.
             const rules = await prisma.automationRule.findMany({
                 where: {
                     tenantId: event.tenantId,
                     triggerEvent: event.event,
                     status: 'ENABLED',
                     deletedAt: null,
+                    ...(payload.targetRuleId ? { id: payload.targetRuleId } : {}),
                 },
                 orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
             });
@@ -175,7 +177,7 @@ export async function runAutomationEventDispatch(
                                 event.data as Prisma.InputJsonValue,
                             status: 'PENDING',
                             idempotencyKey,
-                            triggeredBy: 'event',
+                            triggeredBy: payload.triggeredBy ?? 'event',
                             jobRunId,
                             startedAt: new Date(),
                         },

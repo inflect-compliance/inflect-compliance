@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button';
 import { useTenantMutation } from '@/lib/hooks/use-tenant-mutation';
 import { useTenantApiUrl } from '@/lib/tenant-context-provider';
 import { CACHE_KEYS } from '@/lib/swr-keys';
-import { formatDateTime } from '@/lib/format-date';
+import { ExecutionsPanel } from '@/components/processes/ExecutionsPanel';
 import type { AutomationRuleRow } from '@/app/t/[tenantSlug]/(app)/processes/RulesTab';
 import { RULE_ACTION_LABELS } from '@/app/t/[tenantSlug]/(app)/processes/automation-filter-defs';
 
@@ -158,22 +158,9 @@ export function RuleDetailSheet({ rule, open, onOpenChange, onEdit }: RuleDetail
                                 />
                             </div>
 
-                            {/* Execution mini-log — replaced by the real table in Epic 6. */}
+                            {/* Execution history (Epic 6) — list + re-trigger. */}
                             <Card>
-                                <div className="space-y-tight">
-                                    <p className="text-[11px] uppercase tracking-wide text-content-subtle">
-                                        Recent executions
-                                    </p>
-                                    <p className="text-sm text-content-muted tabular-nums">
-                                        {rule.executionCount} total ·{' '}
-                                        {rule.lastTriggeredAt
-                                            ? `last ${formatDateTime(rule.lastTriggeredAt)}`
-                                            : 'never fired'}
-                                    </p>
-                                    <p className="text-xs text-content-subtle">
-                                        Full execution history arrives in a later release.
-                                    </p>
-                                </div>
+                                <ExecutionsPanel ruleId={rule.id} ruleEnabled={isEnabled} />
                             </Card>
                         </div>
                     </Sheet.Body>
