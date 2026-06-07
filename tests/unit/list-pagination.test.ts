@@ -100,40 +100,49 @@ describe('Column visibility defaults + merge', () => {
     });
 });
 
-// ─── ColumnsDropdown — source contract ───────────────────────────────
+// ─── ColumnsDropdown + shared primitive — source contract ────────────
+//
+// R-filter-gear (2026-06-07): ColumnsDropdown is now a thin wrapper over
+// the shared <ChecklistGearButton> (the Popover + cmdk + reset + numbered
+// rows live there). The alwaysVisible handling moved to useColumnsDropdown.
 
-describe('ColumnsDropdown — source contract', () => {
-    const src = read('src/components/ui/table/columns-dropdown.tsx');
+describe('ColumnsDropdown + shared primitive — source contract', () => {
+    const wrapper = read('src/components/ui/table/columns-dropdown.tsx');
+    const primitive = read('src/components/ui/checklist-gear-button.tsx');
+    const hook = read('src/components/ui/table/use-columns-dropdown.tsx');
 
-    it('is a client component with the documented props surface', () => {
-        expect(src).toMatch(/^"use client"/);
-        expect(src).toMatch(/export interface ColumnsDropdownProps\b/);
-        for (const prop of ['columns', 'visibility', 'onChange', 'defaultVisibility']) {
-            expect(src).toContain(prop);
+    it('ColumnsDropdown is a thin client wrapper over the shared primitive', () => {
+        expect(wrapper).toMatch(/^"use client"/);
+        expect(wrapper).toMatch(/export interface ColumnsDropdownProps\b/);
+        for (const prop of ['items', 'onToggle', 'onReset', 'someModified']) {
+            expect(wrapper).toContain(prop);
         }
+        expect(wrapper).toMatch(/ChecklistGearButton/);
+        expect(wrapper).toMatch(/\bColumns3\b/);
+        expect(wrapper).toMatch(/data-testid="toggle-columns-button"/);
     });
 
-    it('uses the shared Popover + cmdk listbox (no bespoke menu)', () => {
-        expect(src).toMatch(/from ["']\.\.\/popover["']/);
-        expect(src).toMatch(/from ["']cmdk["']/);
-        expect(src).toMatch(/<Command\b/);
+    it('the shared primitive uses Popover + cmdk listbox (no bespoke menu)', () => {
+        expect(primitive).toMatch(/from ["']\.\/popover["']/);
+        expect(primitive).toMatch(/from ["']cmdk["']/);
+        expect(primitive).toMatch(/<Command\b/);
     });
 
-    it('supports alwaysVisible columns (not rendered in the toggle list)', () => {
-        expect(src).toMatch(/alwaysVisible\?\:\s*boolean/);
-        expect(src).toMatch(/filter\(\(c\)\s*=>\s*!c\.alwaysVisible\)/);
+    it('useColumnsDropdown supports alwaysVisible columns (excluded from the toggle list)', () => {
+        expect(hook).toMatch(/alwaysVisible\?\:\s*boolean/);
+        expect(hook).toMatch(/alwaysVisible !== true/);
     });
 
-    it('shows a "Reset to defaults" row only when the user diverged', () => {
-        expect(src).toMatch(/Reset to defaults/);
-        expect(src).toMatch(/someHidden/);
+    it('the shared primitive shows a "Reset to defaults" row gated on modification', () => {
+        expect(primitive).toMatch(/Reset to defaults/);
+        expect(primitive).toMatch(/someModified/);
     });
 
     it('uses semantic tokens (no raw slate classes)', () => {
-        // Drift sentinel — the new primitive must stay on semantic tokens
+        // Drift sentinel — the primitive must stay on semantic tokens
         // so the light/dark toggle works out of the box.
-        expect(src).not.toMatch(/bg-slate-/);
-        expect(src).not.toMatch(/text-slate-/);
+        expect(primitive).not.toMatch(/bg-slate-/);
+        expect(primitive).not.toMatch(/text-slate-/);
     });
 });
 

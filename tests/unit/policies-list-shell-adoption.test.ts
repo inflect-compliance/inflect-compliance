@@ -55,8 +55,8 @@ describe('Policies list — Epic 45.1 shell + column wiring', () => {
     it('mounts <EntityListPage<any>> and threads the canonical props', () => {
         expect(clientSrc).toContain('<EntityListPage<any>');
         expect(clientSrc).toMatch(/header=\{\{[\s\S]{0,200}title:/);
-        expect(clientSrc).toMatch(/filters=\{\{[\s\S]{0,200}defs:\s*liveFilters/);
-        expect(clientSrc).toMatch(/table=\{\{[\s\S]{0,200}columns:\s*policyColumns/);
+        expect(clientSrc).toMatch(/filters=\{\{[\s\S]{0,200}defs:\s*visibleFilterDefs/);
+        expect(clientSrc).toMatch(/table=\{\{[\s\S]{0,260}columns:\s*orderColumns\(policyColumns/);
     });
 
     it('threads searchId + searchPlaceholder for the live filter search box', () => {

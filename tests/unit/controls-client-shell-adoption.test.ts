@@ -61,7 +61,7 @@ describe('ControlsClient — EntityListPage adoption', () => {
         // box — typing filters the table, no Enter. Both thread
         // through the shell alongside the filter `defs`.
         expect(source).toMatch(/filters\s*=\s*\{\{/);
-        expect(source).toContain('defs: liveFilterDefs');
+        expect(source).toContain('defs: visibleFilterDefs');
         expect(source).toContain("searchId: 'controls-search'");
         expect(source).toMatch(/searchPlaceholder:\s*['"]Search controls/);
     });
@@ -74,7 +74,7 @@ describe('ControlsClient — EntityListPage adoption', () => {
         // slice. Both surface the same row shape to the table; what
         // matters is that the shell receives `controls`-derived data.
         expect(source).toMatch(/data:\s*(visibleControls|controls)\b/);
-        expect(source).toContain('columns: controlColumns');
+        expect(source).toContain('columns: orderColumns(controlColumns)');
         // `getRowId` is a stable `useCallback` (right-rail Phase 2 —
         // a referentially-stable row-id fn keeps a selection-toggle
         // re-render from rebuilding the DataTable model).

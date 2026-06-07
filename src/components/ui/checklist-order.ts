@@ -54,10 +54,13 @@ export function toggleOrder(order: ReadonlyArray<string>, id: string): string[] 
 }
 
 /**
- * Reconcile a persisted order against the live def list: drop ids that no
- * longer exist; APPEND newly-added defs to the end (so a new filter/column
- * shipped in a release shows up rather than silently vanishing). Returns
- * the input array identity when nothing changed (stable for memo/deps).
+ * Reconcile a persisted order against the live def list by DROPPING ids
+ * that no longer exist. It deliberately does NOT append defs absent from
+ * the order — a def can be absent because the user HID it, and re-adding
+ * it would silently un-hide it on every load. New defs (e.g. a filter
+ * shipped in a release) surface as toggleable-OFF rows via
+ * `buildChecklistItems` instead, so the user opts them in. Returns the
+ * input array identity when nothing was dropped (stable for memo/deps).
  */
 export function reconcileOrder(
     order: ReadonlyArray<string>,
@@ -65,12 +68,8 @@ export function reconcileOrder(
 ): string[] {
     const live = new Set(defs.map((d) => d.id));
     const kept = order.filter((id) => live.has(id));
-    const known = new Set(kept);
-    const appended = defs.filter((d) => !known.has(d.id)).map((d) => d.id);
-    const next = [...kept, ...appended];
-    const same =
-        next.length === order.length && next.every((id, i) => id === order[i]);
-    return same ? (order as string[]) : next;
+    // `filter` preserves order, so equal length ⇒ nothing dropped ⇒ identical.
+    return kept.length === order.length ? (order as string[]) : kept;
 }
 
 /** True when the order differs from default (hidden OR reordered). */

@@ -246,8 +246,10 @@ describe('Popover — existing consumer surface intact', () => {
         expect(filterList).toMatch(/from ["']\.\.\/popover["']/);
     });
 
-    it('ColumnsDropdown still composes Popover', () => {
-        const cd = read('src/components/ui/table/columns-dropdown.tsx');
-        expect(cd).toMatch(/from ["']\.\.\/popover["']/);
+    it('the gear (via the shared ChecklistGearButton) still composes Popover', () => {
+        // R-filter-gear (2026-06-07): ColumnsDropdown is now a thin wrapper;
+        // the Popover composition moved into the shared primitive.
+        const gear = read('src/components/ui/checklist-gear-button.tsx');
+        expect(gear).toMatch(/from ["']\.\/popover["']/);
     });
 });
