@@ -104,6 +104,27 @@ export async function updateAutomationRule(
     });
 }
 
+export async function toggleAutomationRule(
+    ctx: RequestContext,
+    id: string,
+    status: 'ENABLED' | 'DISABLED',
+) {
+    assertCanManageAutomation(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const rule = await AutomationRuleRepository.toggle(db, ctx, id, status);
+        if (!rule) {
+            throw notFound('Automation rule not found, or it has been archived');
+        }
+        await logEvent(db, ctx, {
+            action: status === 'ENABLED' ? 'AUTOMATION_RULE_ENABLED' : 'AUTOMATION_RULE_DISABLED',
+            entityType: 'AutomationRule',
+            entityId: rule.id,
+            detailsJson: { name: rule.name, status },
+        });
+        return rule;
+    });
+}
+
 export async function archiveAutomationRule(ctx: RequestContext, id: string) {
     assertCanManageAutomation(ctx);
     return runInTenantContext(ctx, async (db) => {
