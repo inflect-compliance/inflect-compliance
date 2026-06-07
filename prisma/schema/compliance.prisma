@@ -1367,6 +1367,12 @@ model ComplianceSnapshot {
   vendorsTotal         Int @default(0)
   vendorsOverdueReview Int @default(0)
 
+  // ── Assets ──
+  assetsTotal           Int @default(0)
+  assetsActive          Int @default(0)
+  assetsHighCriticality Int @default(0)
+  assetsRetired         Int @default(0)
+
   // ── Findings ──
   findingsOpen Int @default(0)
 

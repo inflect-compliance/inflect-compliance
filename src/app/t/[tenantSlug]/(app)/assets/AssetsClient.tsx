@@ -29,7 +29,8 @@ import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
 import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
 import { Plus } from '@/components/ui/icons/nucleo';
-import { buildCumulativeTrend } from './asset-kpi-trend';
+import type { TrendPayload } from '@/app-layer/usecases/compliance-trends';
+import type { TimeSeriesPoint } from '@/components/ui/charts';
 import { NewAssetModal } from './NewAssetModal';
 
 interface AssetsClientProps {
@@ -173,16 +174,32 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
 
     // Sparkline data per KPI — cumulative count by `createdAt`, so each
     // tile shows how its current number was built up over time. Derived
-    // client-side from the loaded rows (no extra request).
-    const assetTrends = useMemo(
-        () => ({
-            total: buildCumulativeTrend(assets, () => true),
-            active: buildCumulativeTrend(assets, (a) => a.status === 'ACTIVE'),
-            critical: buildCumulativeTrend(assets, (a) => a.criticality === 'HIGH'),
-            retired: buildCumulativeTrend(assets, (a) => a.status === 'RETIRED'),
-        }),
-        [assets],
-    );
+    // KPI sparklines are a REAL per-day series from the daily
+    // compliance-snapshot job (one frozen point per 24h), not a
+    // client-side replay of the loaded rows. Same endpoint + snapshot
+    // table the executive dashboard trend uses. A fresh tenant (or the
+    // first day after this shipped) returns <2 points → cards render
+    // without a sparkline until history accrues.
+    const trendsQuery = useQuery({
+        queryKey: queryKeys.assets.trends(tenantSlug),
+        queryFn: async (): Promise<TrendPayload> => {
+            const res = await fetch(apiUrl('/dashboard/trends?days=30'));
+            if (!res.ok) throw new Error('Failed to fetch asset trends');
+            return res.json();
+        },
+        staleTime: 5 * 60_000,
+    });
+    const assetTrends = useMemo(() => {
+        const points = trendsQuery.data?.dataPoints ?? [];
+        const series = (pick: (d: TrendPayload['dataPoints'][number]) => number): TimeSeriesPoint[] =>
+            points.map((d) => ({ date: new Date(d.date), value: pick(d) }));
+        return {
+            total: series((d) => d.assetsTotal),
+            active: series((d) => d.assetsActive),
+            critical: series((d) => d.assetsHighCriticality),
+            retired: series((d) => d.assetsRetired),
+        };
+    }, [trendsQuery.data]);
 
     const assetKpiDefs: ReadonlyArray<KpiFilterDef<AssetKpiId>> = useMemo(
         () => [

@@ -42,6 +42,8 @@ export const queryKeys = {
         all: (tenantSlug: string) => ['assets', tenantSlug] as const,
         list: (tenantSlug: string, filters?: Record<string, string>) =>
             ['assets', tenantSlug, 'list', filters ?? {}] as const,
+        /** Daily KPI snapshot series backing the Assets-page sparklines. */
+        trends: (tenantSlug: string) => ['assets', tenantSlug, 'trends'] as const,
     },
     vendors: {
         all: (tenantSlug: string) => ['vendors', tenantSlug] as const,

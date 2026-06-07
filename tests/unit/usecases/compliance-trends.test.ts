@@ -49,6 +49,10 @@ function snapshotRow(overrides: Record<string, any> = {}) {
         policiesOverdueReview: 1,
         tasksOpen: 9,
         tasksOverdue: 2,
+        assetsTotal: 42,
+        assetsActive: 30,
+        assetsHighCriticality: 8,
+        assetsRetired: 12,
         findingsOpen: 3,
         ...overrides,
     };
@@ -89,6 +93,11 @@ describe('getComplianceTrends', () => {
         expect(dp.controlsImplemented).toBe(37);
         expect(dp.risksCritical).toBe(1);
         expect(dp.findingsOpen).toBe(3);
+        // asset KPI series — backs the Assets-page sparklines
+        expect(dp.assetsTotal).toBe(42);
+        expect(dp.assetsActive).toBe(30);
+        expect(dp.assetsHighCriticality).toBe(8);
+        expect(dp.assetsRetired).toBe(12);
     });
 
     it('defaults to 90 days when no argument is supplied', async () => {
