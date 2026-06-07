@@ -73,6 +73,30 @@ body {
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
 }
+
+/*
+ * B3 (2026-06-07) — pop-up surface texture (modals / sheets / notifications).
+ * A brand-tinted focal glow: a whisper of brand colour pooled at the centre,
+ * fading to the base surface, then a hair darker at the edges so the eye is
+ * drawn inward. Paired with an "elegant" border (base border tinted with a
+ * touch of brand) and a top inner-highlight hairline (glass edge) over the
+ * drop shadow. Resolves per-theme via the --bg-default / --brand-default /
+ * --border-default tokens, so one class serves METRO dark + PwC light.
+ */
+.surface-popup-texture {
+  background:
+    radial-gradient(
+      ellipse at center,
+      color-mix(in srgb, var(--bg-default), var(--brand-default) 4%) 0%,
+      var(--bg-default) 60%,
+      color-mix(in srgb, var(--bg-default), black 6%) 100%
+    );
+  border: 1px solid
+    color-mix(in srgb, var(--border-default), var(--brand-default) 15%);
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in srgb, var(--bg-default), white 16%),
+    var(--shadow-lg);
+}
 .glass-card {
   @apply p-4 md:p-5;
 }

@@ -104,7 +104,10 @@ describe('Modal — source contract', () => {
         ]) {
             expect(src).not.toMatch(pattern);
         }
-        expect(src).toMatch(/bg-bg-default/);
+        // B3 (2026-06-07): the content surface is the token-based
+        // `.surface-popup-texture` class (still semantic) instead of a
+        // literal `bg-bg-default`.
+        expect(src).toMatch(/surface-popup-texture/);
         expect(src).toMatch(/bg-bg-overlay/);
         expect(src).toMatch(/border-border-subtle/);
     });
@@ -166,7 +169,10 @@ describe('Sheet — source contract', () => {
         ]) {
             expect(src).not.toMatch(pattern);
         }
-        expect(src).toMatch(/bg-bg-default/);
+        // B3 (2026-06-07): the content surface is the token-based
+        // `.surface-popup-texture` class (still semantic) instead of a
+        // literal `bg-bg-default`.
+        expect(src).toMatch(/surface-popup-texture/);
         expect(src).toMatch(/bg-bg-overlay/);
         expect(src).toMatch(/border-border-subtle/);
     });

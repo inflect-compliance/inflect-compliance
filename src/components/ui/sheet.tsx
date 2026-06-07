@@ -153,7 +153,9 @@ function SheetRoot({
                     <div
                         data-sheet-content
                         className={cn(
-                            "flex size-full grow flex-col overflow-hidden rounded-lg border border-border-subtle bg-bg-default text-content-emphasis shadow-lg",
+                            // B3 — brand-tinted focal-glow texture + elegant
+                            // border + glass edge (see globals.css).
+                            "surface-popup-texture flex size-full grow flex-col overflow-hidden rounded-lg text-content-emphasis",
                         )}
                     >
                         {fallbackTitle}

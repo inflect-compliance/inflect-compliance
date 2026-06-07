@@ -62,8 +62,11 @@ const modalContentVariants = cva(
         // components below.
         "fixed inset-0 z-40 m-auto h-fit w-full",
         "flex max-h-[min(85vh,680px)] flex-col",
-        "border border-border-subtle bg-bg-default text-content-emphasis",
-        "p-0 shadow-lg sm:rounded-lg",
+        // B3 — brand-tinted focal-glow texture + elegant border + glass-edge
+        // highlight (the class provides bg, border, and shadow; see
+        // globals.css `.surface-popup-texture`).
+        "surface-popup-texture text-content-emphasis",
+        "p-0 sm:rounded-lg",
         "scrollbar-hide animate-scale-in overflow-hidden",
     ],
     {
