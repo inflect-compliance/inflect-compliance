@@ -61,7 +61,7 @@ describe('ControlsClient — EntityListPage adoption', () => {
         // box — typing filters the table, no Enter. Both thread
         // through the shell alongside the filter `defs`.
         expect(source).toMatch(/filters\s*=\s*\{\{/);
-        expect(source).toContain('defs: visibleFilterDefs');
+        expect(source).toContain('defs: liveFilterDefs');
         expect(source).toContain("searchId: 'controls-search'");
         expect(source).toMatch(/searchPlaceholder:\s*['"]Search controls/);
     });

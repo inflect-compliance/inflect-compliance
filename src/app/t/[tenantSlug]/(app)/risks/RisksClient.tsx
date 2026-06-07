@@ -35,8 +35,7 @@ import {
     useFilterContext,
     useFilters,
     useFilterCardVisibility,
-    filtersToCards,
-    selectVisibleFilters,
+    type CardDefinition,
     type FilterType,
 } from '@/components/ui/filter';
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
@@ -365,6 +364,25 @@ function RisksPageInner({
     );
     const { activeKpiId, toggle: toggleKpi } = useKpiFilter(kpiDefs);
 
+    // R-filter-gear (#3, 2026-06-07) — the gear controls the quantifiable
+    // KPI cards (Total / Avg score / Open / Overdue), not filter categories.
+    // The hook lives in the PARENT (where the KPI grid is); the gear is
+    // threaded DOWN to RisksFilterToolbar's actions slot.
+    const kpiCards: CardDefinition[] = useMemo(
+        () => [
+            { id: 'total', label: t.totalRisks, kind: 'kpi' },
+            { id: 'avgScore', label: t.avgScore, kind: 'kpi' },
+            { id: 'open', label: t.openRisks, kind: 'kpi' },
+            { id: 'overdue', label: t.overdueReviews, kind: 'kpi' },
+        ],
+        [t],
+    );
+    const { visibleCards: visibleKpiCards, dropdown: filtersDropdown } =
+        useFilterCardVisibility({
+            storageKey: 'inflect:filter-vis:risks',
+            cards: kpiCards,
+        });
+
     // Epic 44.3 — collapse the loaded page into the sparse `(L, I)`
     // shape the new `<RiskMatrix>` engine consumes. Each cell carries
     // count + risk titles for the bubble overlay; the engine handles
@@ -637,34 +655,58 @@ function RisksPageInner({
                     primitive; later R23 PRs roll it out to Assets,
                     Controls, Tasks, Evidence, Policies, Vendors. */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
-                    <KpiFilterCard
-                        label={t.totalRisks}
-                        value={total}
-                        onClick={() => toggleKpi('total')}
-                        selected={activeKpiId === 'total'}
-                    />
-                    <KpiFilterCard
-                        label={t.avgScore}
-                        value={avgScore}
-                        tone="attention"
-                    />
-                    <KpiFilterCard
-                        label={t.openRisks}
-                        value={openCount}
-                        tone="success"
-                        onClick={() => toggleKpi('open')}
-                        selected={activeKpiId === 'open'}
-                    />
-                    <KpiFilterCard
-                        label={t.overdueReviews}
-                        value={overdueRisks.length}
-                        tone={overdueRisks.length > 0 ? 'critical' : 'success'}
-                    />
+                    {visibleKpiCards.map((card) => {
+                        const cfg: Record<
+                            string,
+                            {
+                                value: React.ReactNode;
+                                tone?:
+                                    | 'success'
+                                    | 'attention'
+                                    | 'critical'
+                                    | 'default';
+                                kpi?: RiskKpiId;
+                            }
+                        > = {
+                            total: { value: total, kpi: 'total' },
+                            avgScore: { value: avgScore, tone: 'attention' },
+                            open: {
+                                value: openCount,
+                                tone: 'success',
+                                kpi: 'open',
+                            },
+                            overdue: {
+                                value: overdueRisks.length,
+                                tone:
+                                    overdueRisks.length > 0
+                                        ? 'critical'
+                                        : 'success',
+                            },
+                        };
+                        const c = cfg[card.id];
+                        if (!c) return null;
+                        const kpiId = c.kpi;
+                        return (
+                            <KpiFilterCard
+                                key={card.id}
+                                label={card.label}
+                                value={c.value}
+                                tone={c.tone}
+                                onClick={
+                                    kpiId ? () => toggleKpi(kpiId) : undefined
+                                }
+                                selected={
+                                    kpiId ? activeKpiId === kpiId : undefined
+                                }
+                            />
+                        );
+                    })}
                 </div>
 
                 <RisksFilterToolbar
                     risks={risks}
                     columnsDropdown={columnsDropdown}
+                    filtersDropdown={filtersDropdown}
                 />
             </ListPageShell.Filters>
 
@@ -765,23 +807,19 @@ function RisksPageInner({
 function RisksFilterToolbar({
     risks,
     columnsDropdown,
+    filtersDropdown,
 }: {
     risks: RiskListItem[];
     columnsDropdown?: React.ReactNode;
+    filtersDropdown?: React.ReactNode;
 }) {
+    // R-filter-gear (#3): the KPI-card gear is built in the PARENT (it
+    // controls the parent's KPI grid) and threaded in here; this toolbar
+    // shows the FULL filter defs.
     const filters: FilterType[] = useMemo(() => buildRiskFilters(risks), [risks]);
-    const filterCards = useMemo(() => filtersToCards(filters), [filters]);
-    const { visibleCards, dropdown: filtersDropdown } = useFilterCardVisibility({
-        storageKey: 'inflect:filter-vis:risks',
-        cards: filterCards,
-    });
-    const visibleFilterDefs = useMemo(
-        () => selectVisibleFilters(visibleCards, filters),
-        [visibleCards, filters],
-    );
     return (
         <FilterToolbar
-            filters={visibleFilterDefs}
+            filters={filters}
             searchId="risks-search"
             searchPlaceholder="Search risks…"
             actions={<>{columnsDropdown}{filtersDropdown}</>}

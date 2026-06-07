@@ -11,8 +11,7 @@ import {
     useFilterContext,
     useFilters,
     useFilterCardVisibility,
-    filtersToCards,
-    selectVisibleFilters,
+    type CardDefinition,
 } from '@/components/ui/filter';
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
 import { ListPageShell } from '@/components/layout/ListPageShell';
@@ -135,15 +134,23 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
     });
     const assets = assetsQuery.data ?? [];
     const liveFilters = useMemo(() => buildAssetFilters(), []);
-    const filterCards = useMemo(() => filtersToCards(liveFilters), [liveFilters]);
-    const { visibleCards, dropdown: filtersDropdown } = useFilterCardVisibility({
-        storageKey: 'inflect:filter-vis:assets',
-        cards: filterCards,
-    });
-    const visibleFilterDefs = useMemo(
-        () => selectVisibleFilters(visibleCards, liveFilters),
-        [visibleCards, liveFilters],
+    // R-filter-gear (#3, 2026-06-07) — the gear controls the quantifiable
+    // KPI cards (Total / Active / High criticality / Retired), not the
+    // filter categories (which stay in the Filter dropdown).
+    const kpiCards: CardDefinition[] = useMemo(
+        () => [
+            { id: 'total', label: 'Total assets', kind: 'kpi' },
+            { id: 'active', label: 'Active', kind: 'kpi' },
+            { id: 'critical', label: 'High criticality', kind: 'kpi' },
+            { id: 'retired', label: 'Retired', kind: 'kpi' },
+        ],
+        [],
     );
+    const { visibleCards: visibleKpiCards, dropdown: filtersDropdown } =
+        useFilterCardVisibility({
+            storageKey: 'inflect:filter-vis:assets',
+            cards: kpiCards,
+        });
 
     // R23-PR-D — KPI definitions for the Assets page. Mirrors the
     // Risks-page reference shape: typed id union, predicate per KPI
@@ -326,41 +333,55 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                     same grid, same gap, same KpiFilterCard primitive,
                     KPIs derived from filter state via useKpiFilter. */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
-                    <KpiFilterCard
-                        label="Total assets"
-                        value={totalAssets}
-                        accent="indigo"
-                        sparkline={assetTrends.total}
-                        onClick={() => toggleAssetKpi('total')}
-                        selected={activeAssetKpi === 'total'}
-                    />
-                    <KpiFilterCard
-                        label="Active"
-                        value={activeAssets}
-                        accent="emerald"
-                        sparkline={assetTrends.active}
-                        onClick={() => toggleAssetKpi('active')}
-                        selected={activeAssetKpi === 'active'}
-                    />
-                    <KpiFilterCard
-                        label="High criticality"
-                        value={criticalAssets}
-                        accent="rose"
-                        sparkline={assetTrends.critical}
-                        onClick={() => toggleAssetKpi('critical')}
-                        selected={activeAssetKpi === 'critical'}
-                    />
-                    <KpiFilterCard
-                        label="Retired"
-                        value={retiredAssets}
-                        accent="slate"
-                        sparkline={assetTrends.retired}
-                        onClick={() => toggleAssetKpi('retired')}
-                        selected={activeAssetKpi === 'retired'}
-                    />
+                    {visibleKpiCards.map((card) => {
+                        const cfg: Record<
+                            string,
+                            {
+                                value: number;
+                                accent: 'indigo' | 'emerald' | 'rose' | 'slate';
+                                sparkline?: typeof assetTrends.total;
+                            }
+                        > = {
+                            total: {
+                                value: totalAssets,
+                                accent: 'indigo',
+                                sparkline: assetTrends.total,
+                            },
+                            active: {
+                                value: activeAssets,
+                                accent: 'emerald',
+                                sparkline: assetTrends.active,
+                            },
+                            critical: {
+                                value: criticalAssets,
+                                accent: 'rose',
+                                sparkline: assetTrends.critical,
+                            },
+                            retired: {
+                                value: retiredAssets,
+                                accent: 'slate',
+                                sparkline: assetTrends.retired,
+                            },
+                        };
+                        const c = cfg[card.id];
+                        if (!c) return null;
+                        return (
+                            <KpiFilterCard
+                                key={card.id}
+                                label={card.label}
+                                value={c.value}
+                                accent={c.accent}
+                                sparkline={c.sparkline}
+                                onClick={() =>
+                                    toggleAssetKpi(card.id as AssetKpiId)
+                                }
+                                selected={activeAssetKpi === card.id}
+                            />
+                        );
+                    })}
                 </div>
                 <FilterToolbar
-                    filters={visibleFilterDefs}
+                    filters={liveFilters}
                     searchId="assets-search"
                     searchPlaceholder="Search assets…"
                     actions={<>{columnsDropdown}{filtersDropdown}</>}

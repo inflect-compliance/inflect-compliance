@@ -137,10 +137,22 @@ export function useFilterCardVisibility({
     );
 
     const [stored, setStored] = useLocalStorage<string[]>(storageKey, defaults);
-    const order = useMemo(
-        () => reconcileOrder(stored, defaultVisibleDefs),
-        [stored, defaultVisibleDefs],
-    );
+    const order = useMemo(() => {
+        const reconciled = reconcileOrder(stored, defaultVisibleDefs);
+        // Stale-data migration: if a NON-empty persisted order had ALL of
+        // its ids dropped (the gear's cards changed identity — e.g. filter
+        // categories → KPI cards under the same storage key), fall back to
+        // defaults rather than rendering an empty card set. A genuinely
+        // empty `stored` (user hid everything) is respected.
+        if (
+            reconciled.length === 0 &&
+            Array.isArray(stored) &&
+            stored.length > 0
+        ) {
+            return defaults;
+        }
+        return reconciled;
+    }, [stored, defaultVisibleDefs, defaults]);
 
     const cardById = useMemo(
         () => new Map(cards.map((c) => [c.id, c])),

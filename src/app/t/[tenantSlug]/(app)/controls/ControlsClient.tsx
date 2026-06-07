@@ -35,8 +35,7 @@ import {
     useFilterContext,
     useFilters,
     useFilterCardVisibility,
-    filtersToCards,
-    selectVisibleFilters,
+    type CardDefinition,
     type FilterType,
 } from '@/components/ui/filter';
 import { EntityListPage } from '@/components/layout/EntityListPage';
@@ -331,22 +330,25 @@ function ControlsPageInner({
         [controls],
     );
 
-    // R-filter-gear — the "Edit filter cards" gear: which filter cards
-    // show (and in what order) in the toolbar. Visible defs subset +
-    // reorder `liveFilterDefs`; the FilterProvider state (keyed by
-    // CONTROL_FILTER_KEYS) is untouched, so a hidden filter keeps its value.
-    const filterCards = useMemo(
-        () => filtersToCards(liveFilterDefs),
-        [liveFilterDefs],
+    // R-filter-gear (#3, 2026-06-07): the "Edit filter cards" gear now
+    // controls the QUANTIFIABLE KPI cards above the table (Total /
+    // Implemented / In Progress / Not Started) — their visibility + order —
+    // not the filter categories (those live in the Filter dropdown). The
+    // toolbar still gets the full `liveFilterDefs`.
+    const kpiCards: CardDefinition[] = useMemo(
+        () => [
+            { id: 'total', label: 'Total controls', kind: 'kpi' },
+            { id: 'implemented', label: 'Implemented', kind: 'kpi' },
+            { id: 'inProgress', label: 'In progress', kind: 'kpi' },
+            { id: 'notStarted', label: 'Not started', kind: 'kpi' },
+        ],
+        [],
     );
-    const { visibleCards, dropdown: filtersDropdown } = useFilterCardVisibility({
-        storageKey: 'inflect:filter-vis:controls',
-        cards: filterCards,
-    });
-    const visibleFilterDefs = useMemo(
-        () => selectVisibleFilters(visibleCards, liveFilterDefs),
-        [visibleCards, liveFilterDefs],
-    );
+    const { visibleCards: visibleKpiCards, dropdown: filtersDropdown } =
+        useFilterCardVisibility({
+            storageKey: 'inflect:filter-vis:controls',
+            cards: kpiCards,
+        });
 
     // ─── R23-PR-D — KPI definitions for the Controls page ───
     // Status-based buckets aligned to the existing `status` filter.
@@ -1077,37 +1079,56 @@ function ControlsPageInner({
                    EntityListPage owns the placement; the page owns
                    the KPI definitions + the card content. */
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
-                    <KpiFilterCard
-                        label="Total controls"
-                        value={totalControls}
-                        onClick={() => toggleControlKpi('total')}
-                        selected={activeControlKpi === 'total'}
-                    />
-                    <KpiFilterCard
-                        label="Implemented"
-                        value={implementedControls}
-                        tone="success"
-                        onClick={() => toggleControlKpi('implemented')}
-                        selected={activeControlKpi === 'implemented'}
-                    />
-                    <KpiFilterCard
-                        label="In progress"
-                        value={inProgressControls}
-                        tone="attention"
-                        onClick={() => toggleControlKpi('inProgress')}
-                        selected={activeControlKpi === 'inProgress'}
-                    />
-                    <KpiFilterCard
-                        label="Not started"
-                        value={notStartedControls}
-                        tone={notStartedControls > 0 ? 'critical' : 'default'}
-                        onClick={() => toggleControlKpi('notStarted')}
-                        selected={activeControlKpi === 'notStarted'}
-                    />
+                    {visibleKpiCards.map((card) => {
+                        // Render config per KPI id — the gear owns which
+                        // cards show + their order (visibleKpiCards).
+                        const cfg: Record<
+                            string,
+                            {
+                                value: number;
+                                tone?:
+                                    | 'success'
+                                    | 'attention'
+                                    | 'critical'
+                                    | 'default';
+                            }
+                        > = {
+                            total: { value: totalControls },
+                            implemented: {
+                                value: implementedControls,
+                                tone: 'success',
+                            },
+                            inProgress: {
+                                value: inProgressControls,
+                                tone: 'attention',
+                            },
+                            notStarted: {
+                                value: notStartedControls,
+                                tone:
+                                    notStartedControls > 0
+                                        ? 'critical'
+                                        : 'default',
+                            },
+                        };
+                        const c = cfg[card.id];
+                        if (!c) return null;
+                        return (
+                            <KpiFilterCard
+                                key={card.id}
+                                label={card.label}
+                                value={c.value}
+                                tone={c.tone}
+                                onClick={() =>
+                                    toggleControlKpi(card.id as ControlKpiId)
+                                }
+                                selected={activeControlKpi === card.id}
+                            />
+                        );
+                    })}
                 </div>
             }
             filters={{
-                defs: visibleFilterDefs,
+                defs: liveFilterDefs,
                 searchId: 'controls-search',
                 searchPlaceholder: 'Search controls…',
                 toolbarActions: (
