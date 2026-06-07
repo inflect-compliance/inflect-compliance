@@ -52,6 +52,11 @@ const EXEMPT_FILE_PATTERNS: RegExp[] = [
  * as a separate visual zone.
  */
 const PRIMARY_BUDGET: Record<string, number> = {
+    // Automation Epic 3 — the rule builder is a step wizard: "Next"
+    // (steps 1-2) and "Create/Save rule" (step 3) are each the single
+    // primary of their step and are never on screen together. The static
+    // scanner counts both, so the budget is 2.
+    "src/components/processes/RuleBuilderModal.tsx": 2,
     // Heavy detail pages — page-header CTA + multiple modal CTAs
     // #102 item 1 dropped 2 (Map Requirement + Map) to the extracted
     // Mappings tab component below.
