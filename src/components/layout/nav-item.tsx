@@ -503,7 +503,7 @@ export const NAV_ITEM_DEFAULT =
  * five secondary-brand override classes + the navy-glow plumbing.
  */
 export const NAV_ITEM_ACTIVE =
-    'text-[var(--brand-default)] bg-[radial-gradient(circle_at_left,_var(--brand-secondary-subtle),_transparent_75%)] before:opacity-100 before:animate-nav-band-active-alive before:top-1! before:bottom-1! before:w-[4px]! before:bg-[radial-gradient(circle_1.5px_at_50%_80%,_rgba(255,255,255,0.9),_transparent_70%),radial-gradient(circle_1.5px_at_50%_55%,_rgba(255,255,255,0.5),_transparent_70%),radial-gradient(circle_1.5px_at_50%_30%,_rgba(255,255,255,0.2),_transparent_70%),linear-gradient(to_bottom,_var(--bg-page),_var(--bg-page),_var(--bg-page))]! before:shadow-[var(--nav-band-glow-active)]! after:opacity-100 shadow-[0_0_12px_2px_var(--nav-row-aura-color),var(--nav-bevel-shadow)] font-medium';
+    'text-[var(--brand-default)] bg-[radial-gradient(circle_at_left,_var(--brand-secondary-subtle),_transparent_75%)] before:opacity-100 before:animate-nav-band-active-alive before:top-1! before:bottom-1! before:w-[4px]! before:bg-[radial-gradient(circle_1.5px_at_50%_80%,_color-mix(in_srgb,_var(--brand-default)_90%,_transparent),_transparent_70%),radial-gradient(circle_1.5px_at_50%_55%,_color-mix(in_srgb,_var(--brand-default)_55%,_transparent),_transparent_70%),radial-gradient(circle_1.5px_at_50%_30%,_color-mix(in_srgb,_var(--brand-default)_25%,_transparent),_transparent_70%),linear-gradient(to_bottom,_var(--bg-page),_var(--bg-page),_var(--bg-page))]! before:shadow-[var(--nav-band-glow-active)]! after:opacity-100 shadow-[0_0_12px_2px_var(--nav-row-aura-color),var(--nav-bevel-shadow)] font-medium';
 
 /**
  * R-flame (2026-06-07) — the flame-tongue layer.
@@ -549,16 +549,14 @@ const NAV_ITEM_FLAME_BASE = [
     'opacity-0 transition-opacity duration-500 ease-out',
 ].join(' ');
 
-const NAV_ITEM_FLAME_HOVER = [
-    'top-1.5 bottom-1.5 w-[3px]',
-    'bg-[radial-gradient(ellipse_2px_9px_at_50%_75%,_var(--nav-flame-tongue-a),_transparent_72%),radial-gradient(ellipse_1.5px_7px_at_50%_50%,_var(--nav-flame-tongue-b),_transparent_72%),radial-gradient(ellipse_1.5px_6px_at_50%_28%,_var(--nav-flame-tongue-a),_transparent_72%),radial-gradient(ellipse_9px_18px_at_50%_55%,_var(--nav-flame-halo-color),_transparent_80%)]',
-    'group-hover:opacity-100 group-hover:animate-nav-band-flame-drift',
-].join(' ');
-
+// B0 (2026-06-07): the hover flame was removed — the flame is an
+// ACTIVE-only signal now. The active tongues are the BLUE
+// `--nav-flame-active` (METRO) / GREY (PwC) — see tokens.css — drifting as
+// slow embers. (Paired with yellow/orange stars on the ::before band.)
 const NAV_ITEM_FLAME_ACTIVE = [
     'top-1 bottom-1 w-[4px]',
-    'bg-[radial-gradient(ellipse_2px_9px_at_50%_75%,_color-mix(in_srgb,_var(--bg-page),_var(--brand-default)_30%),_transparent_72%),radial-gradient(ellipse_1.5px_7px_at_50%_50%,_color-mix(in_srgb,_var(--bg-page),_var(--brand-muted)_30%),_transparent_72%),radial-gradient(ellipse_1.5px_6px_at_50%_28%,_color-mix(in_srgb,_var(--bg-page),_var(--brand-default)_30%),_transparent_72%),radial-gradient(ellipse_9px_18px_at_50%_55%,_var(--nav-flame-halo-color),_transparent_80%)]',
-    'opacity-60 animate-nav-band-ember-drift',
+    'bg-[radial-gradient(ellipse_2px_9px_at_50%_75%,_var(--nav-flame-active),_transparent_72%),radial-gradient(ellipse_1.5px_7px_at_50%_50%,_var(--nav-flame-active),_transparent_72%),radial-gradient(ellipse_1.5px_6px_at_50%_28%,_var(--nav-flame-active),_transparent_72%),radial-gradient(ellipse_9px_18px_at_50%_55%,_var(--nav-flame-active-halo),_transparent_80%)]',
+    'opacity-70 animate-nav-band-ember-drift',
 ].join(' ');
 
 /**
@@ -683,14 +681,17 @@ export function NavItem({ href, icon: Icon, label, active, badge, onClick }: Nav
             data-testid={`nav-${slug}`}
             style={driftStyle}
         >
-            {/* R-flame — dedicated flame-tongue layer over the band's
-                left edge. Decorative + pointer-events-none; the row's
-                icon/label sit in the padded content area to its right,
-                so it never overlaps interactive content. */}
-            <span
-                aria-hidden="true"
-                className={`${NAV_ITEM_FLAME_BASE} ${active ? NAV_ITEM_FLAME_ACTIVE : NAV_ITEM_FLAME_HOVER}`}
-            />
+            {/* R-flame / B0 — dedicated flame-tongue layer over the band's
+                left edge. ACTIVE-only now (the hover flame was removed).
+                Decorative + pointer-events-none; the row's icon/label sit in
+                the padded content area to its right, so it never overlaps
+                interactive content. */}
+            {active && (
+                <span
+                    aria-hidden="true"
+                    className={`${NAV_ITEM_FLAME_BASE} ${NAV_ITEM_FLAME_ACTIVE}`}
+                />
+            )}
             <Icon className={NAV_ITEM_ICON_CLASS} aria-hidden="true" />
             {/* R15-PR8 — magnetic letter spacing. The label
                 breathes its tracking open on hover-of-the-row.

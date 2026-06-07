@@ -122,9 +122,14 @@ describe('Roadmap-15 PR-1 — Stardust particle trail', () => {
     });
 });
 
-describe('R-flame — flame is a SEPARATE child; stardust stack untouched', () => {
-    it('flame tongues use --nav-flame-tongue-*, not the band white particles', () => {
+describe('R-flame — flame is a SEPARATE child; DEFAULT stardust untouched', () => {
+    it('the ACTIVE flame child uses --nav-flame-active (B0 blue/grey)', () => {
+        // B0 (2026-06-07): the flame is active-only and the active tongues
+        // are the BLUE (METRO) / GREY (PwC) --nav-flame-active token (not
+        // the old --nav-flame-tongue-* hover palette). The DEFAULT band's
+        // white stardust (NAV_ITEM_BAND_BASE) is still intact — asserted in
+        // the main suite above.
         expect(NAV_ITEM_SRC).toMatch(/const NAV_ITEM_FLAME_BASE\s*=/);
-        expect(NAV_ITEM_SRC).toMatch(/var\(--nav-flame-tongue-a\)/);
+        expect(NAV_ITEM_SRC).toMatch(/var\(--nav-flame-active\)/);
     });
 });

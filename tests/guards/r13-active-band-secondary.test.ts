@@ -273,8 +273,11 @@ describe('Roadmap-13 PR-4 — active band swaps to secondary brand', () => {
 });
 
 describe('R-flame — active flame settles to a warm --bg-page variant', () => {
-    it('active flame tongues color-mix --bg-page with brand (glowing coals)', () => {
+    it('active flame tongues use the BLUE/GREY --nav-flame-active token (B0)', () => {
+        // B0 (2026-06-07): the active flame is BLUE (METRO) / GREY (PwC) via
+        // --nav-flame-active — replacing the warm color-mix(--bg-page, brand)
+        // "glowing coals". Paired with yellow/orange stars on the band.
         expect(NAV_ITEM_SRC).toMatch(/const NAV_ITEM_FLAME_ACTIVE\s*=/);
-        expect(NAV_ITEM_SRC).toMatch(/color-mix\(in_srgb,_var\(--bg-page\)/);
+        expect(NAV_ITEM_SRC).toMatch(/var\(--nav-flame-active\)/);
     });
 });
