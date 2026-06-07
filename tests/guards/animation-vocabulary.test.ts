@@ -128,3 +128,11 @@ describe('Animation vocabulary discipline (Roadmap-6 PR-1)', () => {
         expect(stripped).not.toMatch(/\.animate-slideIn\s*\{/);
     });
 });
+
+describe('R-flame — flame keyframes are registered vocabulary', () => {
+    const TW = fs.readFileSync(path.join(ROOT, 'tailwind.config.js'), 'utf-8');
+    it('nav-band-flame-drift + nav-band-ember-drift are defined keyframes', () => {
+        expect(TW).toMatch(/'nav-band-flame-drift':\s*\{/);
+        expect(TW).toMatch(/'nav-band-ember-drift':\s*\{/);
+    });
+});

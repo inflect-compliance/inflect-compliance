@@ -271,3 +271,10 @@ describe('Roadmap-13 PR-4 — active band swaps to secondary brand', () => {
         });
     });
 });
+
+describe('R-flame — active flame settles to a warm --bg-page variant', () => {
+    it('active flame tongues color-mix --bg-page with brand (glowing coals)', () => {
+        expect(NAV_ITEM_SRC).toMatch(/const NAV_ITEM_FLAME_ACTIVE\s*=/);
+        expect(NAV_ITEM_SRC).toMatch(/color-mix\(in_srgb,_var\(--bg-page\)/);
+    });
+});

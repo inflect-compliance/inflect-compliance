@@ -299,3 +299,10 @@ describe('Roadmap-15 PR-4 — active starburst bloom', () => {
         });
     });
 });
+
+describe('R-flame — active flame uses ember-drift (12s)', () => {
+    it('declares nav-band-ember-drift @ 12s + wires it on active rows', () => {
+        expect(TAILWIND_CONFIG).toMatch(/nav-band-ember-drift 12s ease-in-out/);
+        expect(NAV_ITEM_SRC).toMatch(/animate-nav-band-ember-drift/);
+    });
+});

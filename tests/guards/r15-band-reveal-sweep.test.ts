@@ -233,3 +233,10 @@ describe('Roadmap-15 PR-3 — band reveal sweep', () => {
         });
     });
 });
+
+describe('R-flame — ignite matches the reveal-sweep tempo (450ms)', () => {
+    const NAV_ITEM = fs.readFileSync(path.join(ROOT, 'src/components/layout/nav-item.tsx'), 'utf-8');
+    it('flame ignites over a 450ms opacity transition', () => {
+        expect(NAV_ITEM).toMatch(/opacity-0 transition-opacity duration-500/);
+    });
+});

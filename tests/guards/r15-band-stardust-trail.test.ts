@@ -121,3 +121,10 @@ describe('Roadmap-15 PR-1 — Stardust particle trail', () => {
         });
     });
 });
+
+describe('R-flame — flame is a SEPARATE child; stardust stack untouched', () => {
+    it('flame tongues use --nav-flame-tongue-*, not the band white particles', () => {
+        expect(NAV_ITEM_SRC).toMatch(/const NAV_ITEM_FLAME_BASE\s*=/);
+        expect(NAV_ITEM_SRC).toMatch(/var\(--nav-flame-tongue-a\)/);
+    });
+});

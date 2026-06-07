@@ -373,4 +373,79 @@ describe('Roadmap-13 PR-12 — Living Sidebar capstone bundle', () => {
             expect(headerRecipe).toMatch(/select-none/);
         });
     });
+
+    // ─────────────────────────────────────────────────────────────────
+    // R-flame (2026-06-07) — flame-tongue layer. ADDITIVE: the flame
+    // lives on a dedicated child <span>, NOT the ::before band, because
+    // nav-band-shimmer already owns ::before's background-position and
+    // two background-position animations on one element can't drift
+    // independently. So every ::before assertion above still holds, and
+    // this block locks the new child layer + its tokens/keyframes.
+    // ─────────────────────────────────────────────────────────────────
+    describe('R-flame — flame-tongue child layer', () => {
+        it('renders a dedicated flame child <span> with its own classes', () => {
+            expect(NAV_ITEM_SRC).toMatch(/const NAV_ITEM_FLAME_BASE\s*=/);
+            expect(NAV_ITEM_SRC).toMatch(/const NAV_ITEM_FLAME_HOVER\s*=/);
+            expect(NAV_ITEM_SRC).toMatch(/const NAV_ITEM_FLAME_ACTIVE\s*=/);
+            expect(NAV_ITEM_SRC).toMatch(/<span\s+aria-hidden="true"/);
+        });
+
+        it('does NOT put flame onto the preserved ::before compositions', () => {
+            const alive =
+                TAILWIND_CONFIG.match(/'nav-band-alive':\s*'([^']+)'/)?.[1] ?? '';
+            const activeAlive =
+                TAILWIND_CONFIG.match(
+                    /'nav-band-active-alive':\s*'([^']+)'/,
+                )?.[1] ?? '';
+            expect(alive).not.toMatch(/flame|ember/);
+            expect(activeAlive).not.toMatch(/flame|ember/);
+            // shimmer still owns ::before's background-position pan.
+            expect(alive).toMatch(/nav-band-shimmer/);
+        });
+
+        it('declares flame-drift (8s) + ember-drift (12s) background-position keyframes', () => {
+            expect(TAILWIND_CONFIG).toMatch(
+                /'nav-band-flame-drift':\s*\{[\s\S]*?background-position/,
+            );
+            expect(TAILWIND_CONFIG).toMatch(
+                /'nav-band-ember-drift':\s*\{[\s\S]*?background-position/,
+            );
+            expect(TAILWIND_CONFIG).toMatch(
+                /nav-band-flame-drift 8s ease-in-out var\(--nav-flame-delay, 0ms\) infinite/,
+            );
+            expect(TAILWIND_CONFIG).toMatch(
+                /nav-band-ember-drift 12s ease-in-out var\(--nav-flame-delay, 0ms\) infinite/,
+            );
+        });
+
+        it('hover ignites (450ms opacity) + drifts @ 8s; active settles to ember @ 12s', () => {
+            expect(NAV_ITEM_SRC).toMatch(/opacity-0 transition-opacity duration-500/);
+            expect(NAV_ITEM_SRC).toMatch(
+                /group-hover:opacity-100 group-hover:animate-nav-band-flame-drift/,
+            );
+            expect(NAV_ITEM_SRC).toMatch(/opacity-60 animate-nav-band-ember-drift/);
+        });
+
+        it('active flame settles to a warm variant of --bg-page (glowing coals)', () => {
+            expect(NAV_ITEM_SRC).toMatch(/color-mix\(in_srgb,_var\(--bg-page\),_var\(--brand-/);
+        });
+
+        it('staggers the flame phase per-row via a third --nav-flame-delay bucket', () => {
+            expect(NAV_ITEM_SRC).toMatch(/flameDelayMs/);
+            expect(NAV_ITEM_SRC).toMatch(/'--nav-flame-delay':/);
+        });
+
+        it('declares flame palette tokens in BOTH themes', () => {
+            for (const block of [DARK_BLOCK, LIGHT_BLOCK]) {
+                expect(block).toMatch(/--nav-flame-tongue-a:/);
+                expect(block).toMatch(/--nav-flame-tongue-b:/);
+                expect(block).toMatch(/--nav-flame-halo-color:/);
+            }
+        });
+
+        it('--nav-shimmer-distortion is light-theme-only (cream trims drift amplitude)', () => {
+            expect(LIGHT_BLOCK).toMatch(/--nav-shimmer-distortion:\s*0?\.6/);
+            expect(DARK_BLOCK).not.toMatch(/--nav-shimmer-distortion:/);
+        });
+    });
 });
