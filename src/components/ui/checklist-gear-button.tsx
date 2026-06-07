@@ -23,8 +23,8 @@
  * Locked by `edit-columns-no-tooltip-wrap` + `checklist-gear-primitive`.
  */
 import { Command } from 'cmdk';
-import { RotateCcw } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { GripVertical, RotateCcw } from 'lucide-react';
+import { useRef, useState, type ReactNode } from 'react';
 import { Button } from './button';
 import { Popover } from './popover';
 import { ScrollContainer } from './scroll-container';
@@ -38,6 +38,12 @@ export interface ChecklistGearButtonProps {
     onToggle: (id: string) => void;
     /** Restore defaults. Omit to hide the reset row. */
     onReset?: () => void;
+    /**
+     * Drag-to-reorder a visible row to another visible row's position.
+     * When provided, visible rows show a drag handle. Click-to-order still
+     * works — drag is the complementary "move anywhere" gesture.
+     */
+    onReorder?: (fromId: string, toId: string) => void;
     /** Ring indicator — true when modified from default (hidden or reordered). */
     someModified: boolean;
     /** Hover hint + accessible name (e.g. "Edit filter cards"). */
@@ -54,6 +60,7 @@ export function ChecklistGearButton({
     items,
     onToggle,
     onReset,
+    onReorder,
     someModified,
     title,
     icon,
@@ -62,6 +69,9 @@ export function ChecklistGearButton({
     id,
 }: ChecklistGearButtonProps) {
     const [open, setOpen] = useState(false);
+    // The id being dragged (handle → drop target). A ref, not state — it
+    // mutates across native drag events without needing a re-render.
+    const dragId = useRef<string | null>(null);
 
     const reset = () => {
         onReset?.();
@@ -96,7 +106,51 @@ export function ChecklistGearButton({
                                     )}
                                     onSelect={() => onToggle(item.id)}
                                     data-testid={`checklist-toggle-${item.id}`}
+                                    onDragOver={
+                                        onReorder && item.visible
+                                            ? (e) => e.preventDefault()
+                                            : undefined
+                                    }
+                                    onDrop={
+                                        onReorder && item.visible
+                                            ? (e) => {
+                                                  e.preventDefault();
+                                                  const from = dragId.current;
+                                                  if (from && from !== item.id) {
+                                                      onReorder(from, item.id);
+                                                  }
+                                                  dragId.current = null;
+                                              }
+                                            : undefined
+                                    }
                                 >
+                                    {/* Drag handle (visible rows) — reorder a
+                                        card/column anywhere. A SEPARATE gesture
+                                        from the row click (toggle), so the two
+                                        don't fight; `stopPropagation` on
+                                        pointer-down keeps cmdk from selecting
+                                        the row when you grab the handle. */}
+                                    {onReorder && item.visible && (
+                                        <span
+                                            draggable
+                                            onDragStart={(e) => {
+                                                dragId.current = item.id;
+                                                e.dataTransfer.effectAllowed =
+                                                    'move';
+                                            }}
+                                            onDragEnd={() => {
+                                                dragId.current = null;
+                                            }}
+                                            onPointerDown={(e) =>
+                                                e.stopPropagation()
+                                            }
+                                            className="flex h-4 w-3 shrink-0 cursor-grab items-center justify-center text-content-subtle [&_svg]:h-3.5 [&_svg]:w-3.5"
+                                            data-testid={`checklist-drag-${item.id}`}
+                                            aria-hidden="true"
+                                        >
+                                            <GripVertical />
+                                        </span>
+                                    )}
                                     {/* Order badge — the 1-based position
                                         (= left-to-right order); blank when
                                         hidden. */}

@@ -10,6 +10,7 @@ import {
     defaultOrder,
     isModifiedFromDefault,
     reconcileOrder,
+    reorderOrder,
     toggleOrder,
     type ChecklistDef,
 } from '@/components/ui/checklist-order';
@@ -35,6 +36,33 @@ describe('checklist-order', () => {
         it('re-showing a toggled-off id puts it back at the end', () => {
             const off = toggleOrder(['a', 'b', 'c'], 'a'); // ['b','c']
             expect(toggleOrder(off, 'a')).toEqual(['b', 'c', 'a']);
+        });
+    });
+
+    describe('reorderOrder (drag-to-reorder)', () => {
+        it('moves an id to the target position (inserted before it)', () => {
+            expect(reorderOrder(['a', 'b', 'c', 'd'], 'a', 'c')).toEqual([
+                'b',
+                'a',
+                'c',
+                'd',
+            ]);
+        });
+        it('drags a later id ahead of an earlier one', () => {
+            expect(reorderOrder(['a', 'b', 'c'], 'c', 'a')).toEqual([
+                'c',
+                'a',
+                'b',
+            ]);
+        });
+        it('is a no-op (same identity) when from === to', () => {
+            const o = ['a', 'b'];
+            expect(reorderOrder(o, 'a', 'a')).toBe(o);
+        });
+        it('is a no-op when either id is hidden (not in the order)', () => {
+            const o = ['a', 'b'];
+            expect(reorderOrder(o, 'a', 'z')).toBe(o);
+            expect(reorderOrder(o, 'z', 'a')).toBe(o);
         });
     });
 

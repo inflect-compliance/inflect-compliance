@@ -33,6 +33,7 @@ import {
     defaultOrder,
     isModifiedFromDefault,
     reconcileOrder,
+    reorderOrder,
     toggleOrder,
     type ChecklistDef,
 } from '../checklist-order';
@@ -131,6 +132,17 @@ export function useColumnsDropdown({
         [setStored, defaultVisibleDefs],
     );
     const onReset = useCallback(() => setStored(defaults), [setStored, defaults]);
+    const onReorder = useCallback(
+        (fromId: string, toId: string) =>
+            setStored((prev) =>
+                reorderOrder(
+                    reconcileOrder(prev, defaultVisibleDefs),
+                    fromId,
+                    toId,
+                ),
+            ),
+        [setStored, defaultVisibleDefs],
+    );
 
     // Back-compat: if a consumer drives visibility from the DataTable side
     // (no header-toggle UI ships today), fold it into the order — keep the
@@ -159,6 +171,7 @@ export function useColumnsDropdown({
             items={items}
             onToggle={onToggle}
             onReset={onReset}
+            onReorder={onReorder}
             someModified={someModified}
         />
     );
