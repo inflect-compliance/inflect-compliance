@@ -52,6 +52,10 @@ export const POST = withApiErrorHandling(
                 actionConfig: body.actionConfig as never,
                 status: body.status,
                 priority: body.priority,
+                slaWindowMinutes: body.slaWindowMinutes,
+                slaReminderMinutes: body.slaReminderMinutes,
+                slaBreachActionType: body.slaBreachActionType,
+                slaBreachConfig: body.slaBreachConfig,
             });
             return jsonResponse(rule, { status: 201 });
         },

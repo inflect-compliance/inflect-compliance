@@ -115,7 +115,15 @@ export function isFilterGroup(f: unknown): f is FilterGroup {
 
 // ─── Repository input DTOs ─────────────────────────────────────────────
 
-export interface CreateAutomationRuleInput {
+/** SLA fields shared by create/update (Epic 5). */
+export interface AutomationRuleSlaInput {
+    slaWindowMinutes?: number | null;
+    slaReminderMinutes?: number | null;
+    slaBreachActionType?: AutomationActionType | null;
+    slaBreachConfig?: Record<string, unknown> | null;
+}
+
+export interface CreateAutomationRuleInput extends AutomationRuleSlaInput {
     name: string;
     description?: string | null;
     triggerEvent: AutomationEventName | string;
@@ -130,7 +138,7 @@ export interface CreateAutomationRuleInput {
     priority?: number;
 }
 
-export interface UpdateAutomationRuleInput {
+export interface UpdateAutomationRuleInput extends AutomationRuleSlaInput {
     name?: string;
     description?: string | null;
     triggerEvent?: AutomationEventName | string;

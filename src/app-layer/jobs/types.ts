@@ -217,6 +217,12 @@ export interface ComplianceSnapshotPayload {
     date?: string;
 }
 
+/** Automation Epic 5 — SLA breach sweep over RUNNING executions. */
+export interface SlaMonitorPayload {
+    /** Limit the sweep to one tenant (default: all). */
+    tenantId?: string;
+}
+
 /** Weekly compliance digest — executive summary email */
 export interface ComplianceDigestPayload {
     tenantId?: string;
@@ -439,6 +445,7 @@ export interface JobPayloadMap {
     'notification-dispatch': NotificationDispatchPayload;
     'sync-pull': SyncPullPayload;
     'compliance-snapshot': ComplianceSnapshotPayload;
+    'sla-monitor': SlaMonitorPayload;
     'compliance-digest': ComplianceDigestPayload;
     'automation-event-dispatch': AutomationEventDispatchPayload;
     'key-rotation': KeyRotationPayload;
@@ -477,6 +484,12 @@ export const JOB_DEFAULTS: Record<JobName, {
         backoff: { type: 'exponential', delay: 5000 },
         removeOnComplete: 500,
         removeOnFail: 1000,
+    },
+    'sla-monitor': {
+        attempts: 2,
+        backoff: { type: 'exponential', delay: 5000 },
+        removeOnComplete: 200,
+        removeOnFail: 500,
     },
     'daily-evidence-expiry': {
         attempts: 2,

@@ -62,6 +62,12 @@ export const SCHEDULED_JOBS: ScheduleDefinition[] = [
         defaultPayload: {},
     },
     {
+        name: 'sla-monitor',
+        pattern: '*/5 * * * *',   // every 5 minutes
+        description: 'Detect automation executions that breached their rule SLA window and fire the breach action',
+        defaultPayload: {},
+    },
+    {
         name: 'daily-evidence-expiry',
         pattern: '0 6 * * *',     // daily at 06:00 UTC
         description: 'Sweep expiring evidence at 30/7/1 day thresholds + flush outbox',

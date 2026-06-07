@@ -64,6 +64,8 @@ interface BuilderState {
     task: { title: string; severity: string; priority: string };
     status: { entityType: string; field: string; toStatus: string };
     webhook: { url: string; method: string };
+    /** Optional SLA window in minutes (Epic 5); empty = no SLA. */
+    slaWindowMinutes: string;
 }
 
 const EMPTY: BuilderState = {
@@ -76,6 +78,7 @@ const EMPTY: BuilderState = {
     task: { title: '', severity: '', priority: '' },
     status: { entityType: 'Risk', field: 'status', toStatus: '' },
     webhook: { url: '', method: 'POST' },
+    slaWindowMinutes: '',
 };
 
 const ACTION_OPTIONS: ReadonlyArray<{ value: ActionType; label: string; hint: string }> = [
@@ -179,6 +182,9 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                 triggerFilter: buildTriggerFilter(),
                 actionType: form.actionType,
                 actionConfig: buildActionConfig(),
+                slaWindowMinutes: form.slaWindowMinutes
+                    ? Number(form.slaWindowMinutes)
+                    : null,
             };
             const url = editRule
                 ? apiUrl(CACHE_KEYS.automation.rules.detail(editRule.id))
@@ -471,6 +477,22 @@ export function RuleBuilderModal({ tenantSlug, open, setOpen, editRule }: RuleBu
                                     />
                                 </FormField>
                             )}
+                        </div>
+
+                        {/* SLA window (Epic 5) — optional deadline for resolution. */}
+                        <div className="border-t border-border-subtle pt-default">
+                            <FormField
+                                label="SLA window (minutes)"
+                                description="Optional. If an execution runs past this many minutes it's flagged as breached."
+                            >
+                                <Input
+                                    type="number"
+                                    min={1}
+                                    value={form.slaWindowMinutes}
+                                    onChange={(e) => patch({ slaWindowMinutes: e.target.value })}
+                                    placeholder="e.g. 1440 (24h)"
+                                />
+                            </FormField>
                         </div>
                     </div>
                 )}

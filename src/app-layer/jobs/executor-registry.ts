@@ -566,6 +566,14 @@ executorRegistry.register('compliance-snapshot', async (payload) => {
     return result;
 });
 
+// ── sla-monitor (Automation Epic 5) ──────────────────────────────────
+
+executorRegistry.register('sla-monitor', async (payload) => {
+    const { runSlaMonitorJob } = await import('./sla-monitor');
+    const { result } = await runSlaMonitorJob({ tenantId: payload.tenantId });
+    return result;
+});
+
 // ── compliance-digest ────────────────────────────────────────────────
 
 executorRegistry.register('compliance-digest', async (payload) => {
