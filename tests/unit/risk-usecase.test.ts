@@ -36,6 +36,9 @@ const mockDb = {
     tenant: { findUnique: jest.fn() },
     user: { findMany: jest.fn() },
     risk: { findFirst: jest.fn(), findMany: jest.fn() },
+    // B7 — listRisks now folds in WorkItemRepository.countLinkedToEntities
+    // (TaskLink count). Default to no links → taskTotal/taskDone = 0.
+    taskLink: { findMany: jest.fn().mockResolvedValue([]) },
 } as any;
 
 jest.mock('@/lib/db-context', () => ({
@@ -138,9 +141,10 @@ describe('listRisks — owner enrichment', () => {
 
         const rows = await listRisks(readerCtx);
 
+        // B7 — listRisks folds in linked-task counts (0/0 with no links).
         expect(rows).toEqual([
-            { id: 'r-1', ownerUserId: null, owner: null },
-            { id: 'r-2', ownerUserId: null, owner: null },
+            { id: 'r-1', ownerUserId: null, owner: null, taskTotal: 0, taskDone: 0 },
+            { id: 'r-2', ownerUserId: null, owner: null, taskTotal: 0, taskDone: 0 },
         ]);
         // Zero-id fast path — User lookup never fires.
         expect(mockDb.user.findMany).not.toHaveBeenCalled();

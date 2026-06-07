@@ -24,6 +24,9 @@
 const mockDb = {
     asset: { findFirst: jest.fn(), findMany: jest.fn() },
     evidence: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
+    // B7 — listAssets now folds in WorkItemRepository.countLinkedToEntities
+    // (TaskLink count). Default to no links → taskTotal/taskDone = 0.
+    taskLink: { findMany: jest.fn().mockResolvedValue([]) },
 } as any;
 
 jest.mock('@/lib/db-context', () => ({
@@ -106,7 +109,8 @@ describe('asset reads', () => {
     it('listAssets delegates under read gate', async () => {
         (AssetRepository.list as jest.Mock).mockResolvedValue([{ id: 'a-1' }]);
         const rows = await listAssets(readerCtx);
-        expect(rows).toEqual([{ id: 'a-1' }]);
+        // B7 — listAssets folds in linked-task counts (0/0 with no links).
+        expect(rows).toEqual([{ id: 'a-1', taskTotal: 0, taskDone: 0 }]);
     });
 
     it('listAssetsPaginated delegates', async () => {

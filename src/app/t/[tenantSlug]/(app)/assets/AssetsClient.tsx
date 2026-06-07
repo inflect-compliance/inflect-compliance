@@ -227,6 +227,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
             { id: 'classification', label: 'Classification' },
             { id: 'owner', label: 'Owner' },
             { id: 'controls', label: 'Controls' },
+            { id: 'tasks', label: 'Tasks' },
         ],
         [],
     );
@@ -295,6 +296,27 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
             header: t.controlsCol,
             accessorFn: (a: any) => a._count?.controls || 0,
             cell: ({ getValue }: any) => <span className="text-xs">{getValue()}</span>,
+        },
+        {
+            // B7 — unified linked-task count (done/total), matching Controls.
+            id: 'tasks',
+            header: 'Tasks',
+            accessorFn: (a: any) => `${a.taskDone ?? 0}/${a.taskTotal ?? 0}`,
+            cell: ({ row }: any) => {
+                const total = row.original.taskTotal ?? 0;
+                const done = row.original.taskDone ?? 0;
+                return (
+                    <span
+                        className={
+                            total > 0 && done === total
+                                ? 'text-content-success text-xs'
+                                : 'text-content-muted text-xs'
+                        }
+                    >
+                        {done}/{total}
+                    </span>
+                );
+            },
         },
     ]), [t]);
 
