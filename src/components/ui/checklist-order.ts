@@ -81,6 +81,28 @@ export function reconcileOrder(
     return kept.length === order.length ? (order as string[]) : kept;
 }
 
+/**
+ * Drag-to-reorder: move `fromId` to `toId`'s position (inserted before it).
+ * Both must be in the order (visible) — dropping onto a hidden row is a
+ * no-op. Returns the input identity when nothing moves.
+ */
+export function reorderOrder(
+    order: ReadonlyArray<string>,
+    fromId: string,
+    toId: string,
+): string[] {
+    if (
+        fromId === toId ||
+        !order.includes(fromId) ||
+        !order.includes(toId)
+    ) {
+        return order as string[];
+    }
+    const without = order.filter((id) => id !== fromId);
+    const toIdx = without.indexOf(toId);
+    return [...without.slice(0, toIdx), fromId, ...without.slice(toIdx)];
+}
+
 /** True when the order differs from default (hidden OR reordered). */
 export function isModifiedFromDefault(
     order: ReadonlyArray<string>,

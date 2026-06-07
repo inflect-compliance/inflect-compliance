@@ -25,6 +25,7 @@ export interface ColumnsDropdownProps {
     items: ChecklistGearItem[];
     onToggle: (id: string) => void;
     onReset?: () => void;
+    onReorder?: (fromId: string, toId: string) => void;
     someModified: boolean;
     className?: string;
     id?: string;
@@ -34,6 +35,7 @@ export function ColumnsDropdown({
     items,
     onToggle,
     onReset,
+    onReorder,
     someModified,
     className,
     id,
@@ -43,6 +45,7 @@ export function ColumnsDropdown({
             items={items}
             onToggle={onToggle}
             onReset={onReset}
+            onReorder={onReorder}
             someModified={someModified}
             icon={<Columns3 className="h-4 w-4 shrink-0" />}
             title="Toggle columns"
