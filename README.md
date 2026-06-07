@@ -1,6 +1,6 @@
 # Inflect Compliance
 
-End-to-end ISO/IEC 27001:2022 compliance management platform with SOC 2 and NIS2 mapping.
+End-to-end Governance, Risk & Compliance (GRC) platform — manage controls, risks, assets, evidence, policies, and audits across multiple frameworks (ISO/IEC 27001:2022, SOC 2, NIS2, and more) with cross-framework mapping.
 
 ## Quick Start
 
@@ -30,17 +30,21 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000)
 
-### Demo Credentials
-| Email | Password | Role |
-|-------|----------|------|
-| admin@acme.com | password123 | Owner |
-| editor@acme.com | password123 | Editor |
-| viewer@acme.com | password123 | Viewer |
+### Demo Users
+The seed (`prisma/seed.ts`) provisions these demo users for **local
+development only**. Their password is set in the seed script and is
+intentionally **not published here**.
+
+| Email | Role |
+|-------|------|
+| admin@acme.com | Owner |
+| editor@acme.com | Editor |
+| viewer@acme.com | Viewer |
 
 ## Features
 
 ### Core
-- **Clause Tracker (4–10)** — Track progress through ISO 27001:2022 requirements
+- **Framework Requirement Tracker** — Track progress through framework requirements (ISO 27001:2022 clauses 4–10, SOC 2 TSC, NIS2, …)
 - **Asset Inventory** — Register and classify information assets (C/I/A ratings)
 - **Risk Register** — Assess risks with likelihood×impact scoring + heatmap
 - **Controls Library** — Annex A controls + custom controls, implementation tracking

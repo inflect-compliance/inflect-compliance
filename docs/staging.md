@@ -103,12 +103,16 @@ The API endpoint is **triple-gated**:
 
 ### Demo credentials
 
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | `admin@acme.com` | `password123` |
-| Editor | `editor@acme.com` | `password123` |
-| Viewer | `viewer@acme.com` | `password123` |
-| Auditor | `auditor@acme.com` | `password123` |
+The seed (`prisma/seed.ts`) provisions these demo users. Their shared
+password is set in the seed script and is intentionally **not published
+here** — read it from the seed if you need it for local/staging access.
+
+| Role | Email |
+|------|-------|
+| Admin | `admin@acme.com` |
+| Editor | `editor@acme.com` |
+| Viewer | `viewer@acme.com` |
+| Auditor | `auditor@acme.com` |
 
 ### Seeded data
 
