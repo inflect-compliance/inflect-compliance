@@ -406,10 +406,11 @@ function ControlsPageInner({
         () => [
             { id: 'code', label: 'Code' },
             { id: 'name', label: 'Title' },
-            // Framework-tagged control category, derived per-control via
-            // `categorizeControl` (ISO 27001 granular Annex domain, or
-            // the framework-native category for other frameworks) —
-            // mirrors the Browse rail's category grouping.
+            // Framework + Category, split into two columns (2026-06-07).
+            // Both derived per-control via `categorizeControl` (ISO 27001
+            // granular Annex domain, or the framework-native category) —
+            // mirrors the Browse rail's grouping.
+            { id: 'framework', label: 'Framework' },
             { id: 'category', label: 'Category' },
             { id: 'status', label: 'Status' },
             { id: 'applicability', label: 'Applicability' },
@@ -569,14 +570,29 @@ function ControlsPageInner({
             ),
         },
         {
-            // Framework-tagged control category, derived via
-            // `categorizeControl`: ISO 27001 → granular Annex domain
-            // (Access control, Physical & environmental, Cryptography,
-            // …); other frameworks → their persisted TSC / section
-            // category. The badge carries the category; the framework
-            // it belongs to rides alongside as a small tag so a
-            // multi-framework control set stays legible. Controls that
-            // resolve to no category render `—`.
+            // Framework column — split out of `category` (2026-06-07).
+            // The framework a control belongs to, derived via
+            // `categorizeControl`, as a small uppercase tag.
+            id: 'framework',
+            header: 'Framework',
+            accessorFn: (c) => categorizeControl(c)?.frameworkLabel || '',
+            cell: ({ row }) => {
+                const label = categorizeControl(row.original)?.frameworkLabel;
+                if (!label) {
+                    return <span className="text-xs text-content-subtle">—</span>;
+                }
+                return (
+                    <span className="inline-flex items-center rounded border border-border-subtle bg-bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-content-muted">
+                        {label}
+                    </span>
+                );
+            },
+        },
+        {
+            // Category badge only — the framework now lives in its own
+            // `framework` column (split 2026-06-07). `categorizeControl`:
+            // ISO 27001 → granular Annex domain; other frameworks → their
+            // persisted TSC / section category. No category → `—`.
             id: 'category',
             header: 'Category',
             accessorFn: (c) => categorizeControl(c)?.category || '',
@@ -585,19 +601,7 @@ function ControlsPageInner({
                 if (!cat) {
                     return <span className="text-xs text-content-subtle">—</span>;
                 }
-                return (
-                    <span className="inline-flex items-center gap-tight">
-                        {cat.frameworkLabel && (
-                            <span className="inline-flex items-center rounded border border-border-subtle bg-bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-content-muted">
-                                {cat.frameworkLabel}
-                            </span>
-                        )}
-                        {/* Default variant + `subtle` tone (R9-PR11) —
-                            quieter than the status pill so the eye
-                            anchors on Status first. */}
-                        <StatusBadge>{cat.category}</StatusBadge>
-                    </span>
-                );
+                return <StatusBadge>{cat.category}</StatusBadge>;
             },
         },
         {
@@ -1108,8 +1112,8 @@ function ControlsPageInner({
                 searchPlaceholder: 'Search controls…',
                 toolbarActions: (
                     <>
-                        {filtersDropdown}
                         {columnsDropdown}
+                        {filtersDropdown}
                     </>
                 ),
             }}

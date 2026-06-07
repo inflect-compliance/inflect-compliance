@@ -784,7 +784,7 @@ function RisksFilterToolbar({
             filters={visibleFilterDefs}
             searchId="risks-search"
             searchPlaceholder="Search risks…"
-            actions={<>{filtersDropdown}{columnsDropdown}</>}
+            actions={<>{columnsDropdown}{filtersDropdown}</>}
         />
     );
 }

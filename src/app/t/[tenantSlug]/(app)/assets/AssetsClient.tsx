@@ -363,7 +363,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                     filters={visibleFilterDefs}
                     searchId="assets-search"
                     searchPlaceholder="Search assets…"
-                    actions={<>{filtersDropdown}{columnsDropdown}</>}
+                    actions={<>{columnsDropdown}{filtersDropdown}</>}
                 />
             </ListPageShell.Filters>
 

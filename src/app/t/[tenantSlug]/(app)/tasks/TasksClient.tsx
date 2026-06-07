@@ -644,7 +644,7 @@ function TasksPageInner({
                     filters={visibleFilterDefs}
                     searchId="tasks-search"
                     searchPlaceholder="Search tasks…"
-                    actions={<>{filtersDropdown}{columnsDropdown}</>}
+                    actions={<>{columnsDropdown}{filtersDropdown}</>}
                 />
             </ListPageShell.Filters>
 

@@ -1050,8 +1050,8 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                             />
                             {viewMode === 'list' ? (
                                 <>
-                                    {filtersDropdown}
                                     {columnsDropdown}
+                                    {filtersDropdown}
                                 </>
                             ) : null}
                         </>

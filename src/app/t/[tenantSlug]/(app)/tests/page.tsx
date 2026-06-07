@@ -273,7 +273,7 @@ function TestsRollupContent() {
                     filters={visibleFilterDefs}
                     searchId="tests-search"
                     searchPlaceholder="Search test plans…"
-                    actions={<>{filtersDropdown}{columnsDropdown}</>}
+                    actions={<>{columnsDropdown}{filtersDropdown}</>}
                 />
             </ListPageShell.Filters>
 

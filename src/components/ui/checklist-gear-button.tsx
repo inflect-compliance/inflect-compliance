@@ -80,6 +80,15 @@ export function ChecklistGearButton({
                             {items.map((item) => (
                                 <Command.Item
                                     key={item.id}
+                                    // Explicit, stable value — without it cmdk
+                                    // derives the value from the row's rendered
+                                    // text, which INCLUDES the order-badge
+                                    // number. When toggling changes a row's
+                                    // number its derived value churns, leaving
+                                    // some rows (e.g. a default-hidden one like
+                                    // "Frequency") unselectable. The id is
+                                    // stable + unique.
+                                    value={item.id}
                                     className={cn(
                                         'flex cursor-pointer select-none items-center gap-2.5 whitespace-nowrap rounded-md px-3 py-1.5',
                                         'text-content-default hover:text-content-emphasis',

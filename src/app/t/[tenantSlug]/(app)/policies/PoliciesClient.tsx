@@ -490,8 +490,8 @@ function PoliciesPageInner({
                 searchPlaceholder: 'Search policies…',
                 toolbarActions: (
                     <>
-                        {filtersDropdown}
                         {columnsDropdown}
+                        {filtersDropdown}
                     </>
                 ),
             }}

@@ -366,7 +366,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                     filters={visibleFilterDefs}
                     searchId="vendors-search"
                     searchPlaceholder="Search vendors…"
-                    actions={<>{filtersDropdown}{columnsDropdown}</>}
+                    actions={<>{columnsDropdown}{filtersDropdown}</>}
                 />
             </ListPageShell.Filters>
 

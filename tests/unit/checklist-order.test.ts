@@ -65,6 +65,12 @@ describe('checklist-order', () => {
             const order = ['a', 'b', 'c'];
             expect(reconcileOrder(order, DEFS)).toBe(order);
         });
+        it('falls back to default order when handed a non-array (legacy VisibilityState object)', () => {
+            // Pre-gear localStorage held `{ id: bool }`; reusing the key
+            // means we can be handed that object. Must NOT crash on .filter.
+            const legacy = { a: true, b: false } as unknown as string[];
+            expect(reconcileOrder(legacy, DEFS)).toEqual(['a', 'b', 'c']);
+        });
     });
 
     describe('buildChecklistItems', () => {

@@ -66,6 +66,15 @@ export function reconcileOrder(
     order: ReadonlyArray<string>,
     defs: ReadonlyArray<{ id: string }>,
 ): string[] {
+    // Defensive: a persisted value from BEFORE the gear shipped is a
+    // TanStack VisibilityState OBJECT (`{ id: bool }`), not an order array
+    // — reusing the `inflect:col-vis:<entity>` key means old browsers hand
+    // us that shape. Fall back to the default order rather than crashing on
+    // `.filter` ("e.filter is not a function"). The next toggle persists the
+    // new array shape, migrating the user forward.
+    if (!Array.isArray(order)) {
+        return defs.map((d) => d.id);
+    }
     const live = new Set(defs.map((d) => d.id));
     const kept = order.filter((id) => live.has(id));
     // `filter` preserves order, so equal length ⇒ nothing dropped ⇒ identical.
