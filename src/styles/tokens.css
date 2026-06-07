@@ -474,7 +474,7 @@
   --nav-flame-halo-color: rgba(255, 205, 17, 0.20); /* brand-yellow   @ 20% */
   /* B0 (2026-06-07) — the ACTIVE row's flame is BLUE (electric
      secondary) with YELLOW stars (--brand-default) on navy. */
-  --nav-flame-active:      rgba(59, 130, 246, 0.65); /* electric blue @ 65% */
+  --nav-flame-active:      rgba(125, 200, 255, 0.95); /* electric blue @ 65% */
   --nav-flame-active-halo: rgba(59, 130, 246, 0.22); /* blue heat-scatter */
 
   /* ───────────────────────────────────────────────────────────────
@@ -878,7 +878,7 @@
   --nav-flame-halo-color: rgba(208, 74, 2, 0.22); /* brand-orange @ 22% */
   /* B0 (2026-06-07) — cream's ACTIVE flame is GREY (slate) with
      ORANGE stars (--brand-default). */
-  --nav-flame-active:      rgba(100, 116, 139, 0.50); /* slate grey @ 50% */
+  --nav-flame-active:      rgba(71, 85, 105, 0.85); /* slate grey @ 50% */
   --nav-flame-active-halo: rgba(100, 116, 139, 0.18); /* grey heat-scatter */
   --nav-shimmer-distortion: 0.6;                  /* −40% vertical drift on cream */
 

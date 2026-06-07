@@ -298,6 +298,9 @@ describe('Roadmap-13 PR-12 — Living Sidebar capstone bundle', () => {
             expect(defaultRecipe).not.toMatch(/hover:before:w-\[4px\]/);
             expect(activeRecipe).toMatch(/before:top-1!/);
             expect(activeRecipe).toMatch(/before:bottom-1!/);
+            // The active edge band stays 4px (wider than the idle 3px — the
+            // R13-PR9 "reach"); B0-follow (#74) slimmed the FOOTPRINT via the
+            // trimmed row wash (75%→42%), not this band.
             expect(activeRecipe).toMatch(/before:w-\[4px\]!/);
         });
         it('transition-property list broadened to include geometry', () => {
@@ -428,7 +431,9 @@ describe('Roadmap-13 PR-12 — Living Sidebar capstone bundle', () => {
             expect(NAV_ITEM_SRC).not.toMatch(
                 /group-hover:animate-nav-band-flame-drift/,
             );
-            expect(NAV_ITEM_SRC).toMatch(/opacity-70 animate-nav-band-ember-drift/);
+            // B0-follow (#74, 2026-06-07): the active flame is at opacity-95
+            // (was 70) for legibility — a slim, fluid, visible flame.
+            expect(NAV_ITEM_SRC).toMatch(/opacity-95 animate-nav-band-ember-drift/);
         });
 
         it('active flame is the BLUE (METRO) / GREY (PwC) --nav-flame-active (B0)', () => {
