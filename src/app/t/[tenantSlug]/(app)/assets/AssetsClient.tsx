@@ -10,6 +10,9 @@ import {
     FilterProvider,
     useFilterContext,
     useFilters,
+    useFilterCardVisibility,
+    filtersToCards,
+    selectVisibleFilters,
 } from '@/components/ui/filter';
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
 import { ListPageShell } from '@/components/layout/ListPageShell';
@@ -132,6 +135,15 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
     });
     const assets = assetsQuery.data ?? [];
     const liveFilters = useMemo(() => buildAssetFilters(), []);
+    const filterCards = useMemo(() => filtersToCards(liveFilters), [liveFilters]);
+    const { visibleCards, dropdown: filtersDropdown } = useFilterCardVisibility({
+        storageKey: 'inflect:filter-vis:assets',
+        cards: filterCards,
+    });
+    const visibleFilterDefs = useMemo(
+        () => selectVisibleFilters(visibleCards, liveFilters),
+        [visibleCards, liveFilters],
+    );
 
     // R23-PR-D — KPI definitions for the Assets page. Mirrors the
     // Risks-page reference shape: typed id union, predicate per KPI
@@ -213,6 +225,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
     const {
         columnVisibility,
         setColumnVisibility,
+        orderColumns,
         dropdown: columnsDropdown,
     } = useColumnsDropdown({
         storageKey: 'inflect:col-vis:assets',
@@ -347,10 +360,10 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                     />
                 </div>
                 <FilterToolbar
-                    filters={liveFilters}
+                    filters={visibleFilterDefs}
                     searchId="assets-search"
                     searchPlaceholder="Search assets…"
-                    actions={columnsDropdown}
+                    actions={<>{filtersDropdown}{columnsDropdown}</>}
                 />
             </ListPageShell.Filters>
 
@@ -358,7 +371,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                 <DataTable
                     fillBody
                     data={assets}
-                    columns={assetColumns}
+                    columns={orderColumns(assetColumns)}
                     getRowId={(a: any) => a.id}
                     columnVisibility={columnVisibility}
                     onColumnVisibilityChange={setColumnVisibility}

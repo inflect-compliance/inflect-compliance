@@ -60,6 +60,20 @@ describe("v2-PR-7 FilterToolbar slot contract", () => {
         expect(primaryIdx).toBeGreaterThan(0);
         expect(secondaryIdx).toBeLessThan(primaryIdx);
     });
+
+    it("renders the consumer `actions` node in the secondary slot (holds BOTH gears)", () => {
+        // R-filter-gear (2026-06-07): the secondary slot is a ReactNode
+        // pass-through, so a list page mounts BOTH gears as a fragment —
+        // `actions={<>{filterGear}{columnsGear}</>}`. The slot rendering
+        // `{actions}` verbatim is what lets the two-child fragment land
+        // (the rendered two-child assertion lives in
+        // `checklist-gear-primitive.test.tsx`).
+        const secondaryIdx = src.indexOf(
+            'data-testid="filter-toolbar-secondary"',
+        );
+        const secondaryBlock = src.slice(secondaryIdx, secondaryIdx + 400);
+        expect(secondaryBlock).toMatch(/\{actions\}/);
+    });
 });
 
 describe("v2-PR-7 EntityListPage exposes the slots", () => {

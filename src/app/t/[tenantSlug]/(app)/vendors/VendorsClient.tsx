@@ -23,6 +23,9 @@ import {
     FilterProvider,
     useFilterContext,
     useFilters,
+    useFilterCardVisibility,
+    filtersToCards,
+    selectVisibleFilters,
 } from '@/components/ui/filter';
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
 import { ListPageShell } from '@/components/layout/ListPageShell';
@@ -145,6 +148,15 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
     const vendors = vendorsQuery.data?.rows ?? [];
     const truncated = vendorsQuery.data?.truncated ?? false;
     const liveFilters = useMemo(() => buildVendorFilters(), []);
+    const filterCards = useMemo(() => filtersToCards(liveFilters), [liveFilters]);
+    const { visibleCards, dropdown: filtersDropdown } = useFilterCardVisibility({
+        storageKey: 'inflect:filter-vis:vendors',
+        cards: filterCards,
+    });
+    const visibleFilterDefs = useMemo(
+        () => selectVisibleFilters(visibleCards, liveFilters),
+        [visibleCards, liveFilters],
+    );
 
     // ─── R23-PR-F — KPI definitions for the Vendors page ───
     type VendorKpiId = 'total' | 'active' | 'critical' | 'reviewOverdue';
@@ -207,13 +219,14 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
     const {
         columnVisibility,
         setColumnVisibility,
+        orderColumns,
         dropdown: columnsDropdown,
     } = useColumnsDropdown({
         storageKey: 'inflect:col-vis:vendors',
         columns: vendorColumnList,
     });
 
-    const vendorColumns = useMemo(() => createColumns<any>([
+    const vendorColumns = useMemo(() => orderColumns(createColumns<any>([
         {
             accessorKey: 'name',
             header: 'Name',
@@ -281,7 +294,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
             accessorFn: (v: any) => v.owner?.name || '—',
             cell: ({ getValue }: any) => <span className="text-content-muted">{getValue()}</span>,
         },
-    ]), [tenantHref, hydratedNow]);
+    ])), [tenantHref, hydratedNow, orderColumns]);
 
     return (
         <ListPageShell className="gap-section">
@@ -350,10 +363,10 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                     />
                 </div>
                 <FilterToolbar
-                    filters={liveFilters}
+                    filters={visibleFilterDefs}
                     searchId="vendors-search"
                     searchPlaceholder="Search vendors…"
-                    actions={columnsDropdown}
+                    actions={<>{filtersDropdown}{columnsDropdown}</>}
                 />
             </ListPageShell.Filters>
 

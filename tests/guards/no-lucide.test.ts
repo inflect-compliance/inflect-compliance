@@ -166,6 +166,11 @@ const LEGACY_LUCIDE_USERS = new Set<string>([
     'src/components/ui/RichTextEditor.tsx',
     'src/components/ui/RiskMatrix.tsx',
     'src/components/ui/sheet.tsx',
+    // R-filter-gear (2026-06-07): the shared gear-popover primitive + the
+    // two thin wrappers carry the gear icons (Settings / Columns3 /
+    // RotateCcw) — same gear-icon family as columns-dropdown below.
+    'src/components/ui/checklist-gear-button.tsx',
+    'src/components/ui/filter/edit-filters-button.tsx',
     'src/components/ui/table/columns-dropdown.tsx',
     'src/components/ui/table/edit-columns-button.tsx',
     'src/components/ui/tooltip.tsx',

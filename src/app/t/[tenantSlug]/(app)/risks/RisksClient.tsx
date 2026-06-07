@@ -34,6 +34,9 @@ import {
     FilterProvider,
     useFilterContext,
     useFilters,
+    useFilterCardVisibility,
+    filtersToCards,
+    selectVisibleFilters,
     type FilterType,
 } from '@/components/ui/filter';
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
@@ -307,6 +310,7 @@ function RisksPageInner({
     const {
         columnVisibility,
         setColumnVisibility,
+        orderColumns,
         dropdown: columnsDropdown,
     } = useColumnsDropdown({
         storageKey: 'inflect:col-vis:risks',
@@ -687,7 +691,7 @@ function RisksPageInner({
                     <DataTable<RiskListItem>
                         fillBody
                         data={visibleRisks}
-                        columns={riskTableColumns}
+                        columns={orderColumns(riskTableColumns)}
                         loading={loading}
                         getRowId={(r) => r.id}
                         sortableColumns={sortableRiskColumns}
@@ -766,12 +770,21 @@ function RisksFilterToolbar({
     columnsDropdown?: React.ReactNode;
 }) {
     const filters: FilterType[] = useMemo(() => buildRiskFilters(risks), [risks]);
+    const filterCards = useMemo(() => filtersToCards(filters), [filters]);
+    const { visibleCards, dropdown: filtersDropdown } = useFilterCardVisibility({
+        storageKey: 'inflect:filter-vis:risks',
+        cards: filterCards,
+    });
+    const visibleFilterDefs = useMemo(
+        () => selectVisibleFilters(visibleCards, filters),
+        [visibleCards, filters],
+    );
     return (
         <FilterToolbar
-            filters={filters}
+            filters={visibleFilterDefs}
             searchId="risks-search"
             searchPlaceholder="Search risks…"
-            actions={columnsDropdown}
+            actions={<>{filtersDropdown}{columnsDropdown}</>}
         />
     );
 }

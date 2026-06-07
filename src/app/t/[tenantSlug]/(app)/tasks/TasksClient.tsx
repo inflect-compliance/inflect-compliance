@@ -27,6 +27,9 @@ import {
     FilterProvider,
     useFilterContext,
     useFilters,
+    useFilterCardVisibility,
+    filtersToCards,
+    selectVisibleFilters,
 } from '@/components/ui/filter';
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
 import { ListPageShell } from '@/components/layout/ListPageShell';
@@ -278,6 +281,15 @@ function TasksPageInner({
         () => buildTaskFilters(tasks as unknown as Parameters<typeof buildTaskFilters>[0]),
         [tasks],
     );
+    const filterCards = useMemo(() => filtersToCards(liveFilters), [liveFilters]);
+    const { visibleCards, dropdown: filtersDropdown } = useFilterCardVisibility({
+        storageKey: 'inflect:filter-vis:tasks',
+        cards: filterCards,
+    });
+    const visibleFilterDefs = useMemo(
+        () => selectVisibleFilters(visibleCards, liveFilters),
+        [visibleCards, liveFilters],
+    );
 
     const isOverdue = (task: TaskListItem) => !!(hydratedNow && task.dueAt && new Date(task.dueAt) < hydratedNow && !(TERMINAL_WORK_ITEM_STATUSES as readonly string[]).includes(task.status));
 
@@ -450,6 +462,7 @@ function TasksPageInner({
         columnVisibility,
         setColumnVisibility,
         dropdown: columnsDropdown,
+        orderColumns,
     } = useColumnsDropdown({
         storageKey: 'inflect:col-vis:tasks',
         columns: taskColumnList,
@@ -628,10 +641,10 @@ function TasksPageInner({
                     />
                 </div>
                 <FilterToolbar
-                    filters={liveFilters}
+                    filters={visibleFilterDefs}
                     searchId="tasks-search"
                     searchPlaceholder="Search tasks…"
-                    actions={columnsDropdown}
+                    actions={<>{filtersDropdown}{columnsDropdown}</>}
                 />
             </ListPageShell.Filters>
 
@@ -703,7 +716,7 @@ function TasksPageInner({
                 <DataTable<TaskListItem>
                     fillBody
                     data={visibleTasks}
-                    columns={taskColumns}
+                    columns={orderColumns(taskColumns)}
                     loading={loading}
                     getRowId={(t) => t.id}
                     sortableColumns={sortableColumns}

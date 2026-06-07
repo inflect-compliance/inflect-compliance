@@ -69,7 +69,7 @@ describe('useColumnsDropdown', () => {
         render(<Harness />);
         // Gear button is rendered and labelled — what the universal
         // gear ratchet (R10-PR8/PR9) keys on.
-        expect(screen.getByTestId('edit-columns-button')).toBeInTheDocument();
+        expect(screen.getByTestId('toggle-columns-button')).toBeInTheDocument();
     });
 
     test('`alwaysVisible: true` columns are excluded from setVisibility writes', () => {

@@ -1,203 +1,54 @@
 "use client";
 
 /**
- * ColumnsDropdown — state-based column visibility toggle.
+ * ColumnsDropdown — the "Toggle columns" gear (2026-06-07 rewrite).
  *
- * Sibling of `EditColumnsButton`. Where `EditColumnsButton` needs a live
- * TanStack `Table<T>` instance (and therefore has to sit inside the table
- * component tree), this variant is driven by the *controlled* visibility
- * state + a column config. That means page authors can mount it in the
- * toolbar, above the table — exactly where users expect to see "edit
- * columns" in an enterprise list UX.
+ * Now a thin wrapper over the shared `<ChecklistGearButton>` (the same
+ * primitive the "Edit filter cards" gear uses). It binds the COLUMN
+ * domain: the `Columns3` icon (distinct from the filter gear's `Settings`
+ * so the two adjacent gears are tellable apart at a glance), the "Toggle
+ * columns" title, and the `toggle-columns-button` test-id. All checklist /
+ * numbered click-to-order / ring / reset behaviour lives in the shared
+ * primitive; `useColumnsDropdown` owns the order+visibility state and maps
+ * it into `items`.
  *
- * Usage:
- *
- *   const { columnVisibility, setColumnVisibility } = useColumnVisibility(
- *     'my-table',
- *     { all: ['code','name','status'], defaultVisible: ['code','name'] }
- *   );
- *
- *   <ColumnsDropdown
- *     columns={[
- *       { id: 'code',   label: 'Code' },
- *       { id: 'name',   label: 'Name' },
- *       { id: 'status', label: 'Status' },
- *     ]}
- *     visibility={columnVisibility}
- *     onChange={setColumnVisibility}
- *     defaultVisibility={{ code: true, name: true, status: true }}
- *   />
+ * Sits SECOND (right) in the toolbar actions slot — it controls the table
+ * below, secondary to the filter gear.
  */
 
-import { Command } from "cmdk";
-import { RotateCcw, Settings } from "lucide-react";
-import { useMemo, useState } from "react";
-import type { VisibilityState } from "@tanstack/react-table";
-import { Button } from "../button";
-import { Popover } from "../popover";
-import { ScrollContainer } from "../scroll-container";
-import { cn } from "./table-utils";
-
-export interface ColumnsDropdownColumn {
-    /** Column id — matches a key in the `visibility` state. */
-    id: string;
-    /** Human-readable label shown in the toggle list. */
-    label: string;
-    /** Column may not be hidden — always on, rendered without a toggle. */
-    alwaysVisible?: boolean;
-}
+import { Columns3 } from "lucide-react";
+import { ChecklistGearButton } from "../checklist-gear-button";
+import type { ChecklistGearItem } from "../checklist-order";
 
 export interface ColumnsDropdownProps {
-    /** Declarative column list (id + label). */
-    columns: ColumnsDropdownColumn[];
-    /** Current visibility state (typically from `useColumnVisibility`). */
-    visibility: VisibilityState;
-    /** Commit a new visibility state. */
-    onChange: (next: VisibilityState) => void;
-    /**
-     * Visibility to apply when the user taps "Reset to defaults". Omit to
-     * hide the reset row.
-     */
-    defaultVisibility?: VisibilityState;
-    /** Button className override. */
+    /** Rows in display order (visible numbered, then hidden). */
+    items: ChecklistGearItem[];
+    onToggle: (id: string) => void;
+    onReset?: () => void;
+    someModified: boolean;
     className?: string;
-    /** Stable id for E2E / automation. */
     id?: string;
 }
 
 export function ColumnsDropdown({
-    columns,
-    visibility,
-    onChange,
-    defaultVisibility,
+    items,
+    onToggle,
+    onReset,
+    someModified,
     className,
-    id = "columns-dropdown",
+    id,
 }: ColumnsDropdownProps) {
-    const [open, setOpen] = useState(false);
-
-    const hideable = useMemo(
-        () => columns.filter((c) => !c.alwaysVisible),
-        [columns],
-    );
-
-    // A column is "hidden from default" if its current visibility differs
-    // from the default — used to surface the reset row + a visual hint.
-    const someHidden = useMemo(() => {
-        if (!defaultVisibility) return false;
-        for (const col of hideable) {
-            const current = visibility[col.id] ?? defaultVisibility[col.id] ?? true;
-            const defaultVal = defaultVisibility[col.id] ?? true;
-            if (current !== defaultVal) return true;
-        }
-        return false;
-    }, [visibility, defaultVisibility, hideable]);
-
-    const toggle = (id: string) => {
-        const current = visibility[id] ?? true;
-        onChange({ ...visibility, [id]: !current });
-    };
-
-    const reset = () => {
-        if (defaultVisibility) onChange({ ...defaultVisibility });
-        setOpen(false);
-    };
-
     return (
-        <Popover
-            openPopover={open}
-            setOpenPopover={setOpen}
-            align="end"
-            content={
-                <ScrollContainer className="max-h-[50vh]">
-                    <Command tabIndex={0} loop>
-                        <Command.List className="flex w-screen flex-col gap-0.5 p-1 text-sm focus-visible:outline-none sm:w-auto sm:min-w-[180px]">
-                            {hideable.map((col) => {
-                                const isVisible = visibility[col.id] ?? true;
-                                return (
-                                    <Command.Item
-                                        key={col.id}
-                                        className={cn(
-                                            "flex cursor-pointer select-none items-center gap-2.5 whitespace-nowrap rounded-md px-3 py-1.5",
-                                            "text-content-default hover:text-content-emphasis",
-                                            "data-[selected=true]:bg-bg-muted",
-                                        )}
-                                        onSelect={() => toggle(col.id)}
-                                        data-testid={`column-toggle-${col.id}`}
-                                    >
-                                        <div
-                                            className={cn(
-                                                "flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors",
-                                                isVisible
-                                                    ? "border-[var(--brand-default)] bg-[var(--brand-emphasis)] text-white"
-                                                    : "border-border-default bg-transparent",
-                                            )}
-                                        >
-                                            {isVisible && (
-                                                <svg
-                                                    className="h-3 w-3"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    stroke="currentColor"
-                                                    strokeWidth={3}
-                                                >
-                                                    <path
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        d="M5 13l4 4L19 7"
-                                                    />
-                                                </svg>
-                                            )}
-                                        </div>
-                                        <span className="truncate">{col.label}</span>
-                                    </Command.Item>
-                                );
-                            })}
-
-                            {defaultVisibility && someHidden && (
-                                <>
-                                    <div className="my-1 h-px bg-border-subtle" />
-                                    <Command.Item
-                                        className={cn(
-                                            "flex cursor-pointer select-none items-center gap-2.5 whitespace-nowrap rounded-md px-3 py-1.5",
-                                            "text-content-muted hover:text-content-default",
-                                            "data-[selected=true]:bg-bg-muted",
-                                        )}
-                                        onSelect={reset}
-                                        data-testid="columns-reset"
-                                    >
-                                        <RotateCcw className="h-3.5 w-3.5 shrink-0" />
-                                        <span>Reset to defaults</span>
-                                    </Command.Item>
-                                </>
-                            )}
-                        </Command.List>
-                    </Command>
-                </ScrollContainer>
-            }
-        >
-            {/* Edit columns trigger.
-                Tooltip is intentionally NOT wrapping this button —
-                the prior `<Tooltip><Button/></Tooltip>` composition
-                swallowed Radix `Popover.Trigger.asChild`'s injected
-                props (onClick / aria-expanded / aria-haspopup / data-state),
-                leaving the gear visually present but functionally
-                dead. That was the "Edit columns button doesn't
-                open" bug. `title` provides the native hover hint;
-                `aria-label` provides the screen-reader name. */}
-            <Button
-                type="button"
-                className={cn(
-                    "size-9 shrink-0 whitespace-nowrap rounded-[8px] p-0",
-                    someHidden && "ring-1 ring-[var(--brand-default)]/30",
-                    className,
-                )}
-                variant="secondary"
-                icon={<Settings className="h-4 w-4 shrink-0" />}
-                title="Edit columns"
-                aria-label="Edit columns"
-                data-testid="edit-columns-button"
-                id={id}
-            />
-        </Popover>
+        <ChecklistGearButton
+            items={items}
+            onToggle={onToggle}
+            onReset={onReset}
+            someModified={someModified}
+            icon={<Columns3 className="h-4 w-4 shrink-0" />}
+            title="Toggle columns"
+            data-testid="toggle-columns-button"
+            className={className}
+            id={id}
+        />
     );
 }

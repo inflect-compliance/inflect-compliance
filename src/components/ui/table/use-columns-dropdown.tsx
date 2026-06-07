@@ -1,156 +1,173 @@
 'use client';
 
 /**
- * R10-PR6 — `useColumnsDropdown`: the single contract for mounting a
- * column-visibility gear above a DataTable.
+ * useColumnsDropdown — the "Toggle columns" gear's state (2026-06-07).
  *
- * Before R10-PR6 every consumer of `<ColumnsDropdown>` repeated the
- * same ~25 lines: declare a `ColumnVisibilityConfig`, call
- * `useColumnVisibility(storageKey, config)`, compute defaults via
- * `getDefaultVisibility`, declare a *separate* `[{id,label}]` array
- * for the dropdown, then plumb all four into the DataTable + filter
- * toolbar. The column list was duplicated — string ids in `config.all`,
- * `{id,label}` records in the dropdown array — and the two had to
- * stay in sync by hand.
+ * Owns BOTH column visibility AND left-to-right order via the shared
+ * click-to-order model (`checklist-order.ts`), persisted to localStorage
+ * under the same `inflect:col-vis:<entity>` key (now storing the visible-
+ * id order array). Renders the `<ColumnsDropdown>` gear (Columns3) and
+ * returns:
  *
- * This hook collapses the dance into one call:
- *
- *   const { columnVisibility, setColumnVisibility, dropdown } =
- *     useColumnsDropdown({
- *       storageKey: 'inflect:col-vis:risks',
- *       columns: [
- *         { id: 'title',  label: 'Title' },
- *         { id: 'asset',  label: 'Asset' },
- *         { id: 'status', label: 'Status', defaultVisible: false },
- *       ],
- *     });
+ *   const { columnVisibility, orderColumns, dropdown: columnsGear } =
+ *     useColumnsDropdown({ storageKey: 'inflect:col-vis:risks', columns: [...] });
  *
  *   <DataTable
- *     columnVisibility={columnVisibility}
- *     onColumnVisibilityChange={setColumnVisibility}
+ *     columns={orderColumns(baseColumns)}   // ← reorder per the gear
+ *     columnVisibility={columnVisibility}   // ← hide per the gear
  *     ...
  *   />
- *   <FilterToolbar actions={dropdown} />
+ *   // actions slot: <>{filterGear}{columnsGear}</>
  *
- * Single source of truth for the column list. localStorage-persisted
- * via the existing `useColumnVisibility` infrastructure (no new
- * persistence layer). Reset-to-defaults works because we precompute
- * the defaults from the same column list.
- *
- * Returns the dropdown as a `ReactNode` (not a JSX function) so call
- * sites can drop it directly into a slot prop. That's an intentional
- * deviation from the "hooks return state, components render JSX"
- * convention — the cost of a separate component would be to re-thread
- * the same column list through props at every consumer.
+ * `orderColumns` is a slot-merge: managed columns follow the gear order;
+ * fixed columns (select / actions / always-visible) keep their positions.
  */
 
-import { useMemo, type ReactNode } from 'react';
+import { useCallback, useMemo, type ReactNode } from 'react';
 import type { VisibilityState } from '@tanstack/react-table';
 import { ColumnsDropdown } from './columns-dropdown';
-import { useColumnVisibility } from '../hooks/use-column-visibility';
-import { getDefaultVisibility } from './column-visibility-utils';
+import { useLocalStorage } from '../hooks';
+import {
+    applySlotOrder,
+    buildChecklistItems,
+    defaultOrder,
+    isModifiedFromDefault,
+    reconcileOrder,
+    toggleOrder,
+    type ChecklistDef,
+} from '../checklist-order';
 
 export interface ColumnDropdownColumn {
-    /** TanStack column id — must match the DataTable column def's `id`. */
+    /** TanStack column id — must match the DataTable column def's id. */
     id: string;
     /** Human-readable label shown in the dropdown checklist. */
     label: string;
-    /**
-     * Whether the column is visible by default. Omitted = `true`.
-     * Use `false` for columns that should be opt-in (e.g. dense
-     * detail columns the user can toggle on but doesn't need by
-     * default).
-     */
+    /** Optional icon shown in the checklist row. */
+    icon?: ReactNode;
+    /** Whether visible by default. Omitted = `true`. */
     defaultVisible?: boolean;
-    /**
-     * Always-visible columns can't be toggled off (e.g. the actions
-     * column, the row-select column). Omitted = togglable.
-     */
+    /** Always-visible columns can't be toggled/reordered (select, actions). */
     alwaysVisible?: boolean;
 }
 
 export interface UseColumnsDropdownOptions {
-    /**
-     * localStorage key for the visibility state. Convention:
-     * `'inflect:col-vis:<entity>'` (e.g. `'inflect:col-vis:risks'`).
-     * The key persists per-user-per-browser; users get the column set
-     * they last chose when they revisit the page.
-     */
+    /** Convention: `'inflect:col-vis:<entity>'`. */
     storageKey: string;
-    /**
-     * The full column list, in the order they should appear in the
-     * dropdown checklist. Order doesn't have to match the DataTable's
-     * column order — but it usually does.
-     */
+    /** The full column list (toggleable + always-visible). */
     columns: ColumnDropdownColumn[];
 }
 
 export interface UseColumnsDropdownResult {
     /** Pass to `<DataTable columnVisibility={…}>`. */
     columnVisibility: VisibilityState;
-    /** Pass to `<DataTable onColumnVisibilityChange={…}>`. */
+    /** Pass to `<DataTable onColumnVisibilityChange={…}>` (optional). */
     setColumnVisibility: (visibility: VisibilityState) => void;
-    /**
-     * Pre-rendered dropdown — drop directly into
-     * `<FilterToolbar actions={dropdown}>` (or
-     * `<EntityListPage filters={{ toolbarActions: dropdown }}>`).
-     */
+    /** Reorder a column array per the gear: `columns={orderColumns(base)}`. */
+    orderColumns: <T extends object>(columns: ReadonlyArray<T>) => T[];
+    /** Pre-rendered gear — drop into the toolbar actions slot. */
     dropdown: ReactNode;
-    /**
-     * The default visibility map. Rarely needed externally — the
-     * dropdown's "Reset to defaults" action already uses it.
-     */
+    /** Default visibility map. */
     defaults: VisibilityState;
 }
 
-export function useColumnsDropdown(
-    options: UseColumnsDropdownOptions,
-): UseColumnsDropdownResult {
-    const { storageKey, columns } = options;
-
-    // Derive the underlying `ColumnVisibilityConfig` once per column-
-    // list change. The `all` and `defaultVisible` arrays are
-    // computed from the same source so they can never diverge.
-    const config = useMemo(
-        () => ({
-            all: columns.map((c) => c.id),
-            defaultVisible: columns
-                .filter((c) => c.defaultVisible !== false)
-                .map((c) => c.id),
-            fixed: columns
-                .filter((c) => c.alwaysVisible === true)
-                .map((c) => c.id),
-        }),
+export function useColumnsDropdown({
+    storageKey,
+    columns,
+}: UseColumnsDropdownOptions): UseColumnsDropdownResult {
+    const hideable = useMemo(
+        () => columns.filter((c) => c.alwaysVisible !== true),
         [columns],
     );
-
-    const { columnVisibility, setColumnVisibility } = useColumnVisibility(
-        storageKey,
-        config,
+    const defaultVisibleDefs = useMemo(
+        () => hideable.filter((c) => c.defaultVisible !== false),
+        [hideable],
+    );
+    const defaults = useMemo(
+        () => defaultOrder(defaultVisibleDefs),
+        [defaultVisibleDefs],
     );
 
-    const defaults = useMemo(() => getDefaultVisibility(config), [config]);
+    const [stored, setStored] = useLocalStorage<string[]>(storageKey, defaults);
+    const order = useMemo(
+        () => reconcileOrder(stored, defaultVisibleDefs),
+        [stored, defaultVisibleDefs],
+    );
+    const orderSet = useMemo(() => new Set(order), [order]);
 
-    // Bare `{ id, label }` projection for ColumnsDropdown — strip the
-    // R10-PR6 metadata so the consumer-facing dropdown stays a thin
-    // popover. `alwaysVisible: true` columns are excluded from the
-    // checklist entirely (the user can't toggle them).
-    const dropdownItems = useMemo(
-        () =>
-            columns
-                .filter((c) => c.alwaysVisible !== true)
-                .map((c) => ({ id: c.id, label: c.label })),
-        [columns],
+    // Include EVERY column: always-visible columns are explicitly `true`
+    // (not merely absent) so the map round-trips cleanly to the DataTable
+    // and consumers can read each column's state directly.
+    const columnVisibility = useMemo<VisibilityState>(() => {
+        const vis: VisibilityState = {};
+        for (const c of columns) {
+            vis[c.id] = c.alwaysVisible === true ? true : orderSet.has(c.id);
+        }
+        return vis;
+    }, [columns, orderSet]);
+
+    const defaultVisibility = useMemo<VisibilityState>(() => {
+        const vis: VisibilityState = {};
+        const def = new Set(defaultVisibleDefs.map((c) => c.id));
+        for (const c of columns) {
+            vis[c.id] = c.alwaysVisible === true ? true : def.has(c.id);
+        }
+        return vis;
+    }, [columns, defaultVisibleDefs]);
+
+    const items = useMemo(
+        () => buildChecklistItems(hideable as ChecklistDef[], order),
+        [hideable, order],
+    );
+    const someModified = useMemo(
+        () => isModifiedFromDefault(order, defaults),
+        [order, defaults],
+    );
+
+    const onToggle = useCallback(
+        (id: string) =>
+            setStored((prev) =>
+                toggleOrder(reconcileOrder(prev, defaultVisibleDefs), id),
+            ),
+        [setStored, defaultVisibleDefs],
+    );
+    const onReset = useCallback(() => setStored(defaults), [setStored, defaults]);
+
+    // Back-compat: if a consumer drives visibility from the DataTable side
+    // (no header-toggle UI ships today), fold it into the order — keep the
+    // order of still-visible columns, append newly-visible at the end.
+    const setColumnVisibility = useCallback(
+        (v: VisibilityState) =>
+            setStored((prev) => {
+                const cur = reconcileOrder(prev, defaultVisibleDefs);
+                const kept = cur.filter((id) => v[id] !== false);
+                const newly = hideable
+                    .filter((c) => v[c.id] === true && !cur.includes(c.id))
+                    .map((c) => c.id);
+                return [...kept, ...newly];
+            }),
+        [setStored, defaultVisibleDefs, hideable],
+    );
+
+    const orderColumns = useCallback(
+        <T extends object>(cols: ReadonlyArray<T>): T[] =>
+            applySlotOrder(cols, order),
+        [order],
     );
 
     const dropdown = (
         <ColumnsDropdown
-            columns={dropdownItems}
-            visibility={columnVisibility}
-            onChange={(v) => setColumnVisibility(v)}
-            defaultVisibility={defaults}
+            items={items}
+            onToggle={onToggle}
+            onReset={onReset}
+            someModified={someModified}
         />
     );
 
-    return { columnVisibility, setColumnVisibility, dropdown, defaults };
+    return {
+        columnVisibility,
+        setColumnVisibility,
+        orderColumns,
+        dropdown,
+        defaults: defaultVisibility,
+    };
 }

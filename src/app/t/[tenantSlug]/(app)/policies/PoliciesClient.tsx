@@ -20,6 +20,9 @@ import {
     FilterProvider,
     useFilterContext,
     useFilters,
+    useFilterCardVisibility,
+    filtersToCards,
+    selectVisibleFilters,
 } from '@/components/ui/filter';
 import { EntityListPage } from '@/components/layout/EntityListPage';
 import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
@@ -183,6 +186,16 @@ function PoliciesPageInner({
         [policies],
     );
 
+    const filterCards = useMemo(() => filtersToCards(liveFilters), [liveFilters]);
+    const { visibleCards, dropdown: filtersDropdown } = useFilterCardVisibility({
+        storageKey: 'inflect:filter-vis:policies',
+        cards: filterCards,
+    });
+    const visibleFilterDefs = useMemo(
+        () => selectVisibleFilters(visibleCards, liveFilters),
+        [visibleCards, liveFilters],
+    );
+
     // ─── R23-PR-F — KPI definitions for the Policies page ───
     type PolicyKpiId = 'total' | 'draft' | 'inReview' | 'approved';
     // guardrail-ignore: KPI counts across the loaded page, not a refilter.
@@ -242,6 +255,7 @@ function PoliciesPageInner({
     const {
         columnVisibility,
         setColumnVisibility,
+        orderColumns,
         dropdown: columnsDropdown,
     } = useColumnsDropdown({
         storageKey: 'inflect:col-vis:policies',
@@ -471,14 +485,19 @@ function PoliciesPageInner({
                 </div>
             }
             filters={{
-                defs: liveFilters,
+                defs: visibleFilterDefs,
                 searchId: 'policies-search',
                 searchPlaceholder: 'Search policies…',
-                toolbarActions: columnsDropdown,
+                toolbarActions: (
+                    <>
+                        {filtersDropdown}
+                        {columnsDropdown}
+                    </>
+                ),
             }}
             table={{
                 data: policies,
-                columns: policyColumns,
+                columns: orderColumns(policyColumns),
                 loading,
                 getRowId: (p: any) => p.id,
                 onRowClick: (row) =>

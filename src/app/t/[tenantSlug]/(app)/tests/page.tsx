@@ -12,7 +12,7 @@ import { ListPageShell } from '@/components/layout/ListPageShell';
 import { useRouter } from 'next/navigation';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import { buttonVariants } from '@/components/ui/button-variants';
-import { FilterProvider, useFilterContext, useFilters } from '@/components/ui/filter';
+import { FilterProvider, useFilterContext, useFilters, useFilterCardVisibility, filtersToCards, selectVisibleFilters } from '@/components/ui/filter';
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
@@ -105,6 +105,7 @@ function TestsRollupContent() {
     const {
         columnVisibility,
         setColumnVisibility,
+        orderColumns,
         dropdown: columnsDropdown,
     } = useColumnsDropdown({
         storageKey: 'inflect:col-vis:tests',
@@ -120,6 +121,16 @@ function TestsRollupContent() {
     });
 
     const liveFilters = useMemo(() => buildTestFilters(), []);
+
+    const filterCards = useMemo(() => filtersToCards(liveFilters), [liveFilters]);
+    const { visibleCards, dropdown: filtersDropdown } = useFilterCardVisibility({
+        storageKey: 'inflect:filter-vis:tests',
+        cards: filterCards,
+    });
+    const visibleFilterDefs = useMemo(
+        () => selectVisibleFilters(visibleCards, liveFilters),
+        [visibleCards, liveFilters],
+    );
 
     // ── Client-side filtering from the filter context ──
     const filteredPlans = useMemo(() => {
@@ -151,7 +162,7 @@ function TestsRollupContent() {
 
     const planColumns = useMemo(
         () =>
-            createColumns<TestPlanSummary>([
+            orderColumns(createColumns<TestPlanSummary>([
                 {
                     id: 'name', header: 'Name', accessorKey: 'name',
                     cell: ({ row }) => (
@@ -203,8 +214,8 @@ function TestsRollupContent() {
                     accessorFn: (p) => p._count?.runs ?? 0,
                     cell: ({ getValue }) => <span className="text-content-subtle">{getValue() as number}</span>,
                 },
-            ]),
-        [tenantHref],
+            ])),
+        [tenantHref, orderColumns],
     );
 
     if (loading) return <div className="p-12 text-center text-content-subtle animate-pulse">Loading tests overview...</div>;
@@ -259,10 +270,10 @@ function TestsRollupContent() {
                     live content search + column-visibility gear. Replaces
                     the old All/Overdue/Failed toggle blade. */}
                 <FilterToolbar
-                    filters={liveFilters}
+                    filters={visibleFilterDefs}
                     searchId="tests-search"
                     searchPlaceholder="Search test plans…"
-                    actions={columnsDropdown}
+                    actions={<>{filtersDropdown}{columnsDropdown}</>}
                 />
             </ListPageShell.Filters>
 
