@@ -236,6 +236,16 @@ model AutomationRule {
   /// the source of truth (AutomationExecution is).
   executionCount    Int                  @default(0)
   lastTriggeredAt   DateTime?
+  /// SLA window (Epic 5): max minutes between an execution starting and
+  /// resolving before it's a breach. `null` = no SLA. The sla-monitor job
+  /// scans RUNNING executions past this window and fires the breach action.
+  slaWindowMinutes    Int?
+  /// Optional reminder lead time (minutes before breach). Reserved for the
+  /// reminder sweep; the monitor reads it but reminder fan-out is a follow-up.
+  slaReminderMinutes  Int?
+  /// Action fired on breach + its config.
+  slaBreachActionType AutomationActionType?
+  slaBreachConfigJson Json?
   createdByUserId   String?
   updatedByUserId   String?
   createdAt         DateTime             @default(now())
