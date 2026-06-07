@@ -22,6 +22,7 @@ import { NewRiskModal } from './NewRiskModal';
 import { Button } from '@/components/ui/button';
 import { Tooltip } from '@/components/ui/tooltip';
 import { AppIcon } from '@/components/icons/AppIcon';
+import { IconAction } from '@/components/ui/icon-action';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -625,9 +626,12 @@ function RisksPageInner({
                         )}
                     </div>
                     <div className="flex gap-tight">
-                        <Button variant="secondary" onClick={() => setView(view === 'register' ? 'heatmap' : 'register')}>
-                            {view === 'register' ? t.heatmap : t.register}
-                        </Button>
+                        <IconAction
+                            variant="secondary"
+                            onClick={() => setView(view === 'register' ? 'heatmap' : 'register')}
+                            icon={<AppIcon name={view === 'register' ? 'dashboard' : 'overview'} size={16} />}
+                            label={view === 'register' ? t.heatmap : t.register}
+                        />
                         {permissions.canWrite && (
                             <>
                                 <Tooltip content="Import risks">

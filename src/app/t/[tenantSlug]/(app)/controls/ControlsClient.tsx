@@ -27,6 +27,7 @@ import {
     useColumnsDropdown,
 } from '@/components/ui/table';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { Tooltip } from '@/components/ui/tooltip';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
 import {
@@ -1047,20 +1048,28 @@ function ControlsPageInner({
                             outside the create-permission gate so READERs
                             can still glance at the asset → risk → control
                             flow. */}
-                        <Link href={tenantHref('/controls/sankey')} className={buttonVariants({ variant: 'secondary', size: 'sm' })} id="controls-sankey-btn">
-                            <AppIcon name="share" size={14} /> Sankey
-                        </Link>
+                        <Tooltip content="Sankey flow">
+                            <Link href={tenantHref('/controls/sankey')} aria-label="Sankey flow" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="controls-sankey-btn">
+                                <AppIcon name="share" size={16} />
+                            </Link>
+                        </Tooltip>
                         {appPermissions.controls.create && (
                             <>
-                                <Link href={tenantHref('/controls/dashboard')} className={buttonVariants({ variant: 'secondary', size: 'sm' })} id="controls-dashboard-btn">
-                                    <AppIcon name="dashboard" size={14} /> Dashboard
-                                </Link>
-                                <Link href={tenantHref('/frameworks')} className={buttonVariants({ variant: 'secondary', size: 'sm' })} id="frameworks-btn">
-                                    <AppIcon name="frameworks" size={14} /> Frameworks
-                                </Link>
-                                <Link href={tenantHref('/controls/templates')} className={buttonVariants({ variant: 'secondary', size: 'sm' })} id="install-templates-btn">
-                                    <AppIcon name="templates" size={14} /> Install from Templates
-                                </Link>
+                                <Tooltip content="Controls dashboard">
+                                    <Link href={tenantHref('/controls/dashboard')} aria-label="Controls dashboard" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="controls-dashboard-btn">
+                                        <AppIcon name="dashboard" size={16} />
+                                    </Link>
+                                </Tooltip>
+                                <Tooltip content="Frameworks">
+                                    <Link href={tenantHref('/frameworks')} aria-label="Frameworks" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="frameworks-btn">
+                                        <AppIcon name="frameworks" size={16} />
+                                    </Link>
+                                </Tooltip>
+                                <Tooltip content="Install from templates">
+                                    <Link href={tenantHref('/controls/templates')} aria-label="Install from templates" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="install-templates-btn">
+                                        <AppIcon name="templates" size={16} />
+                                    </Link>
+                                </Tooltip>
                                 <Button
                                     variant="primary"
                                     icon={<Plus className="-ml-0.5 -mr-2.5" />}

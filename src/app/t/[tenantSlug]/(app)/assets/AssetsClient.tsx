@@ -14,6 +14,8 @@ import {
     type CardDefinition,
 } from '@/components/ui/filter';
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
+import { Tooltip } from '@/components/ui/tooltip';
+import { AppIcon } from '@/components/icons/AppIcon';
 import { ListPageShell } from '@/components/layout/ListPageShell';
 import { toApiSearchParams } from '@/lib/filters/url-sync';
 import { buildAssetFilters, ASSET_FILTER_KEYS } from './filter-defs';
@@ -321,7 +323,9 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                         )}
                     </div>
                     <div className="flex gap-tight">
-                        <Link href={tenantHref('/coverage')} className={buttonVariants({ variant: 'secondary' })}>Coverage</Link>
+                        <Tooltip content="Coverage">
+                            <Link href={tenantHref('/coverage')} aria-label="Coverage" className={buttonVariants({ variant: 'secondary', size: 'icon' })}><AppIcon name="shield" size={16} /></Link>
+                        </Tooltip>
                         <Button variant="primary" icon={<Plus className="-ml-0.5 -mr-2.5" />} onClick={() => setIsCreateOpen(true)} id="new-asset-btn">{t.addAsset}</Button>
                     </div>
                 </div>
