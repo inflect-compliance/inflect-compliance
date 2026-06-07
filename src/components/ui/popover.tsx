@@ -80,7 +80,7 @@ function PopoverRoot({
         <Drawer.Portal>
           <Drawer.Overlay className="bg-bg-subtle fixed inset-0 z-50 bg-opacity-10 backdrop-blur" />
           <Drawer.Content
-            className="border-border-subtle bg-bg-default fixed bottom-0 left-0 right-0 z-50 mt-24 rounded-t-[10px] border-t"
+            className="surface-popup-texture fixed bottom-0 left-0 right-0 z-50 mt-24 rounded-t-[10px]"
             onEscapeKeyDown={onEscapeKeyDown}
             onPointerDownOutside={(e) => {
               // Prevent dismissal when clicking inside a toast
@@ -132,7 +132,12 @@ function PopoverRoot({
           align={align}
           side={side}
           className={cn(
-            "animate-slide-up-fade border-border-subtle bg-bg-default z-50 items-center rounded-lg border drop-shadow-lg sm:block",
+            // B3-follow (2026-06-08): popover surfaces (user menu,
+            // notifications, tenant/org switchers, comboboxes) share the
+            // same brand-tinted focal-glow texture as modals/sheets/toast
+            // — `.surface-popup-texture` owns background + border + the
+            // glass-edge/drop-shadow, so no flat bg-bg-default/border here.
+            "surface-popup-texture animate-slide-up-fade z-50 items-center rounded-lg sm:block",
             popoverContentClassName,
           )}
           sticky={sticky}

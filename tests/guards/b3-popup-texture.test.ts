@@ -18,6 +18,7 @@ const GLOBALS = read('src/app/globals.css');
 const MODAL = read('src/components/ui/modal.tsx');
 const SHEET = read('src/components/ui/sheet.tsx');
 const TOAST = read('src/components/ui/undo-toast.tsx');
+const POPOVER = read('src/components/ui/popover.tsx');
 
 describe('B3 — pop-up surface texture', () => {
     it('globals.css defines .surface-popup-texture as a brand-tinted focal glow', () => {
@@ -40,5 +41,16 @@ describe('B3 — pop-up surface texture', () => {
         expect(MODAL).toMatch(/surface-popup-texture/);
         expect(SHEET).toMatch(/surface-popup-texture/);
         expect(TOAST).toMatch(/surface-popup-texture/);
+    });
+
+    // B3-follow (2026-06-08): the texture extended to popover surfaces so
+    // the user menu, notifications, tenant/org switchers, and comboboxes
+    // stop rendering flat. Both the desktop Radix content and the mobile
+    // Vaul drawer carry it.
+    it('popover (desktop content + mobile drawer) adopts the texture class', () => {
+        const occurrences = POPOVER.match(/surface-popup-texture/g) ?? [];
+        expect(occurrences.length).toBeGreaterThanOrEqual(2);
+        // and no longer paints a flat bg-bg-default on the content surface.
+        expect(POPOVER).not.toMatch(/bg-bg-default[^;"']*drop-shadow-lg/);
     });
 });
