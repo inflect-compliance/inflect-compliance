@@ -67,7 +67,12 @@ const modalContentVariants = cva(
         // globals.css `.surface-popup-texture`).
         "surface-popup-texture text-content-emphasis",
         "p-0 sm:rounded-lg",
-        "scrollbar-hide animate-scale-in overflow-hidden",
+        // Tier-2 "fly-in" entrance + snappy exit (see tailwind.config.js).
+        // State-gated so Radix's Presence runs the exit animation on close
+        // before unmounting — the panel pops in on open, shrinks away on
+        // dismiss. prefers-reduced-motion flattens both to 1ms (tokens.css).
+        "scrollbar-hide overflow-hidden",
+        "data-[state=open]:animate-modal-fly-in data-[state=closed]:animate-modal-fly-out",
     ],
     {
         variants: {
@@ -233,7 +238,7 @@ function ModalRoot({
                 <Dialog.Overlay
                     id="modal-backdrop"
                     data-modal-overlay
-                    className="animate-fade-in fixed inset-0 z-40 bg-bg-overlay backdrop-blur-md"
+                    className="data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out fixed inset-0 z-40 bg-bg-overlay backdrop-blur-md"
                 />
                 <Dialog.Content
                     onOpenAutoFocus={(e) => e.preventDefault()}

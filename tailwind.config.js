@@ -207,9 +207,30 @@ module.exports = {
                     '0%': { opacity: '0', transform: 'scale(0.95)' },
                     '100%': { opacity: '1', transform: 'scale(1)' },
                 },
+                // Modal "fly-in" (Tier 2, 2026-06-08) — a macOS window-open
+                // pop: the panel scales up from 0.88 and the back-out easing
+                // (in the `animation` shorthand below) carries it past 1.0
+                // before it settles, so it reads as flying toward the viewer.
+                // Two-stop keyframe; the overshoot lives in the cubic-bezier,
+                // not a third keyframe stop. Centre transform-origin (default)
+                // grows it from the middle of the viewport.
+                'modal-fly-in': {
+                    '0%': { opacity: '0', transform: 'scale(0.88)' },
+                    '100%': { opacity: '1', transform: 'scale(1)' },
+                },
+                // Dismiss is snappier than open — a quick shrink + fade, no
+                // overshoot (you don't bounce things away from you).
+                'modal-fly-out': {
+                    '0%': { opacity: '1', transform: 'scale(1)' },
+                    '100%': { opacity: '0', transform: 'scale(0.96)' },
+                },
                 'fade-in': {
                     '0%': { opacity: '0' },
                     '100%': { opacity: '1' },
+                },
+                'fade-out': {
+                    '0%': { opacity: '1' },
+                    '100%': { opacity: '0' },
                 },
                 'table-pinned-shadow': {
                     '0%': { filter: 'drop-shadow(rgba(0, 0, 0, 0.1) -2px 10px 6px)' },
@@ -451,7 +472,14 @@ module.exports = {
                 'slide-up-fade': 'slide-up-fade 0.2s ease-out',
                 'slide-down-fade': 'slide-down-fade 0.2s ease-out',
                 'scale-in': 'scale-in 0.15s ease-out',
+                // The back-out cubic-bezier is the spring: it overshoots ~2.5%
+                // past full size near the end, then settles. Defined here in
+                // config (not an `ease-[…]` className) so the animation-language
+                // lock — which bans arbitrary easings in markup — stays green.
+                'modal-fly-in': 'modal-fly-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                'modal-fly-out': 'modal-fly-out 0.15s ease-in',
                 'fade-in': 'fade-in 0.15s ease-out',
+                'fade-out': 'fade-out 0.15s ease-out',
                 'table-pinned-shadow': 'table-pinned-shadow cubic-bezier(0, 0, 1, 0)',
                 'shimmer-pulse': 'shimmer-pulse 1.6s ease-in-out infinite',
                 'shimmer-sweep': 'shimmer-sweep 1.6s ease-in-out infinite',
