@@ -510,7 +510,11 @@ export const buttonVariants = cva(
           // label), the white text stays crisp — unlike the old
           // `::after` overlay that washed it out. `bg-[image:…]` paints
           // the gradient; `text-white` rides on top.
-          "bg-[image:var(--btn-gradient-primary)] text-white",
+          // B10 (2026-06-07): label is `text-content-inverted` (deep navy
+          // "metro" blue in dark / off-white in light) — NOT `text-white`.
+          // White on the METRO-yellow dark fill was a low-contrast wash; the
+          // inverted token is the semantic text-on-brand colour.
+          "bg-[image:var(--btn-gradient-primary)] text-content-inverted",
           // Hover brightens the whole gradient rather than collapsing
           // it to a flat brand fill (which would lose the gradient on
           // hover).
