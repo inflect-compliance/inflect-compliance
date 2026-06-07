@@ -149,12 +149,16 @@ describe('Right-rail list-page aside discipline (Phase 2)', () => {
         expect(src).toContain('Clear selection');
     });
 
-    it('controls list page passes a selection rail (proof-of-pattern adoption)', () => {
-        // The controls list is the canonical adopter. Removing the
-        // aside returns it to the floating batch-toolbar pattern.
+    it('controls list page uses the header-row selection bar (B1), keeping the browse/AI rails', () => {
+        // B1 (2026-06-07): the controls selection actions moved from the
+        // SelectionSummaryPanel right-rail INTO the DataTable's header-row
+        // `batchActions` bar (the row-select bar that pops over the
+        // column-names row). The aside slot persists for the browse + AI
+        // assist rails; only the SELECTION rail is retired.
         const src = read(CONTROLS_CLIENT_PATH);
         expect(src).toMatch(/<EntityListPage[\s\S]*?\baside=\{/);
-        expect(src).toContain('<SelectionSummaryPanel');
+        expect(src).not.toContain('<SelectionSummaryPanel');
+        expect(src).toMatch(/batchActions:\s*controlBatchActions/);
     });
 });
 

@@ -116,34 +116,32 @@ describe('Controls list — UX polish', () => {
         });
     });
 
-    describe('Bulk actions — selection-summary rail (right-rail Phase 2)', () => {
-        it('wires the three bulk-status verbs into the selection rail', () => {
-            // Right-rail Phase 2 retired the floating `batchActions`
-            // toolbar — the bulk-status verbs now render inside the
-            // `<SelectionSummaryPanel>` docked in the `aside` slot.
-            expect(source).toContain('<SelectionSummaryPanel');
+    describe('Bulk actions — header-row selection bar (B1)', () => {
+        it('wires the three bulk-status verbs into the DataTable batchActions', () => {
+            // B1 (2026-06-07): the bulk-status verbs render in the
+            // DataTable's header-row selection toolbar via `batchActions`
+            // (the row-select bar that pops over the column-names row),
+            // NOT the retired SelectionSummaryPanel right-rail.
+            expect(source).toMatch(/batchActions:\s*controlBatchActions/);
             expect(source).toContain("label: 'Mark Implemented'");
             expect(source).toContain("label: 'Mark Needs Review'");
             expect(source).toContain("label: 'Mark Not Applicable'");
-            // The legacy declarative-toolbar prop is gone — selection
-            // is page-controlled (`selectedRows` + `onRowSelectionChange`).
-            expect(source).not.toContain('batchActions:');
+            expect(source).not.toContain('<SelectionSummaryPanel');
         });
 
         it('the destructive Mark-Not-Applicable verb carries tone=danger', () => {
-            // Same intent as the retired `variant: 'danger'` on the
-            // Epic 52 BatchAction — locks the destructive treatment
-            // through to the rail's SelectionSummaryAction contract.
+            // Locks the destructive treatment through to the batch-action
+            // button's tone contract.
             expect(source).toMatch(
                 /label: 'Mark Not Applicable'[\s\S]{0,400}tone: 'danger'/,
             );
         });
 
-        it('the rail is permission-gated AND selection-gated', () => {
-            // READER sees neither checkboxes nor rail; the rail only
-            // mounts when the viewer can edit AND ≥1 row is selected.
+        it('the bulk actions are permission-gated (canEditControls)', () => {
+            // READER sees neither checkboxes nor the action bar; the
+            // batchActions only exist when the viewer can edit.
             expect(source).toMatch(
-                /canEditControls\s*&&\s*selectedIds\.length\s*>\s*0/,
+                /const controlBatchActions = canEditControls/,
             );
         });
     });
