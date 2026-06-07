@@ -42,4 +42,12 @@ describe('ChecklistGearButton — structural locks', () => {
         expect(code).not.toMatch(/import[^;]*\bTooltip\b[^;]*from/);
         expect(code).not.toMatch(/<Tooltip\b/);
     });
+
+    it('supports drag-to-reorder via a drag handle on visible rows', () => {
+        expect(PRIMITIVE).toMatch(/onReorder\?:/);
+        expect(PRIMITIVE).toMatch(/onReorder && item\.visible/);
+        expect(PRIMITIVE).toMatch(/draggable/);
+        expect(PRIMITIVE).toMatch(/onDrop=/);
+        expect(PRIMITIVE).toMatch(/GripVertical/);
+    });
 });

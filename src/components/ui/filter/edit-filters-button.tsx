@@ -19,6 +19,7 @@ export interface EditFiltersButtonProps {
     items: ChecklistGearItem[];
     onToggle: (id: string) => void;
     onReset?: () => void;
+    onReorder?: (fromId: string, toId: string) => void;
     someModified: boolean;
     className?: string;
     id?: string;

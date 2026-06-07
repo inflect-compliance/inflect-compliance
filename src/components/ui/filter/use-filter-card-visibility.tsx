@@ -39,6 +39,7 @@ import {
     defaultOrder,
     isModifiedFromDefault,
     reconcileOrder,
+    reorderOrder,
     toggleOrder,
 } from '@/components/ui/checklist-order';
 import { EditFiltersButton } from './edit-filters-button';
@@ -182,12 +183,24 @@ export function useFilterCardVisibility({
         [setStored, defaultVisibleDefs],
     );
     const onReset = useCallback(() => setStored(defaults), [setStored, defaults]);
+    const onReorder = useCallback(
+        (fromId: string, toId: string) =>
+            setStored((prev) =>
+                reorderOrder(
+                    reconcileOrder(prev, defaultVisibleDefs),
+                    fromId,
+                    toId,
+                ),
+            ),
+        [setStored, defaultVisibleDefs],
+    );
 
     const dropdown = (
         <EditFiltersButton
             items={items}
             onToggle={onToggle}
             onReset={onReset}
+            onReorder={onReorder}
             someModified={someModified}
         />
     );
