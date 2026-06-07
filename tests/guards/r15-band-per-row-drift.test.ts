@@ -211,11 +211,3 @@ describe('Roadmap-15 PR-5 — per-row drift', () => {
         });
     });
 });
-
-describe('R-flame — per-row flame phase stagger (--nav-flame-delay)', () => {
-    it('hash returns a flameDelayMs bucket; the var is set + consumed', () => {
-        expect(NAV_ITEM_SRC).toMatch(/flameDelayMs/);
-        expect(NAV_ITEM_SRC).toMatch(/'--nav-flame-delay':/);
-        expect(TAILWIND_CONFIG).toMatch(/var\(--nav-flame-delay, 0ms\)/);
-    });
-});

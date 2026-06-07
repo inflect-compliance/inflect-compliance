@@ -462,21 +462,6 @@
    */
   --nav-row-aura-color: rgba(59, 130, 246, 0.18);
 
-  /* R-flame — flame-tongue + heat-scatter palette (METRO navy: vivid
-     brand tongues over the deep-navy band). The flame lives on a
-     dedicated child layer over the band; these tokens colour its
-     radial-gradient tongues + the breathing halo. `--nav-shimmer-
-     distortion` is light-theme-only (defined in the PwC block) — navy
-     wants the full drift amplitude, so it relies on the `, 1` var
-     fallback at the call sites. */
-  --nav-flame-tongue-a: rgba(255, 205, 17, 0.55);   /* brand-default @ 55% */
-  --nav-flame-tongue-b: rgba(255, 224, 102, 0.45);  /* brand-muted    @ 45% */
-  --nav-flame-halo-color: rgba(255, 205, 17, 0.20); /* brand-yellow   @ 20% */
-  /* B0 (2026-06-07) — the ACTIVE row's flame is BLUE (electric
-     secondary) with YELLOW stars (--brand-default) on navy. */
-  --nav-flame-active:      rgba(125, 200, 255, 0.95); /* electric blue @ 65% */
-  --nav-flame-active-halo: rgba(59, 130, 246, 0.22); /* blue heat-scatter */
-
   /* ───────────────────────────────────────────────────────────────
    * R16-PR1 — Lickable Chart palette + motion (METRO theme).
    *
@@ -865,22 +850,6 @@
    * compensates for cream-surface absorption.
    */
   --nav-row-aura-color: rgba(30, 58, 138, 0.18);
-
-  /* R-flame — PwC cream gets a "thermal shimmer" instead of vivid
-     tongues: near-transparent brand-tinted heat waves. Cream surfaces
-     amplify colour variance, so saturated tongues that read as "alive"
-     on navy read as "glitchy" on cream — hence the low-alpha brand tint
-     here, and the `--nav-shimmer-distortion` that trims the vertical
-     drift amplitude by 40% (light-theme-only token; navy falls back to
-     1 at the call sites). */
-  --nav-flame-tongue-a: rgba(208, 74, 2, 0.20);   /* brand-subtle tint */
-  --nav-flame-tongue-b: rgba(208, 74, 2, 0.14);   /* fainter heat wave */
-  --nav-flame-halo-color: rgba(208, 74, 2, 0.22); /* brand-orange @ 22% */
-  /* B0 (2026-06-07) — cream's ACTIVE flame is GREY (slate) with
-     ORANGE stars (--brand-default). */
-  --nav-flame-active:      rgba(71, 85, 105, 0.85); /* slate grey @ 50% */
-  --nav-flame-active-halo: rgba(100, 116, 139, 0.18); /* grey heat-scatter */
-  --nav-shimmer-distortion: 0.6;                  /* −40% vertical drift on cream */
 
   /* ───────────────────────────────────────────────────────────────
    * R16-PR1 — Lickable Chart palette + motion (PwC theme).
