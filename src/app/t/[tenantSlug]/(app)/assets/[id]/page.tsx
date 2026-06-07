@@ -25,6 +25,7 @@ import { Eyebrow } from '@/components/ui/typography';
 import { AssetCriticalityBadge } from '../_form/AssetCriticalityFields';
 import { MetaStrip } from '@/components/ui/meta-strip';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
+import { EntityPrevNextNav } from '@/components/ui/entity-prev-next-nav';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 import { EditAssetModal } from '../EditAssetModal';
@@ -123,6 +124,32 @@ export default function AssetDetailPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { fetchAsset(); }, [fetchAsset]);
 
+    // B5 — ordered asset-id list for the prev/next nav beside the name.
+    // Fetched once (the default list order) so the up/down buttons walk the
+    // same sequence the list page shows. Best-effort: failures just hide
+    // the affordance.
+    const [assetIds, setAssetIds] = useState<string[]>([]);
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await fetch(apiUrl('/assets'));
+                if (!res.ok) return;
+                const rows = await res.json();
+                const ids = Array.isArray(rows)
+                    ? rows.map((r: any) => r?.id).filter(Boolean)
+                    : [];
+                // eslint-disable-next-line react-hooks/set-state-in-effect
+                if (!cancelled) setAssetIds(ids);
+            } catch {
+                /* best-effort — nav just doesn't render */
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [apiUrl]);
+
     const critColor = (c: string): StatusBadgeVariant => c === 'HIGH' ? 'error' : c === 'MEDIUM' ? 'warning' : 'success';
 
     const breadcrumbs = [
@@ -160,7 +187,18 @@ export default function AssetDetailPage() {
             activeTab={activeTab}
             onTabChange={(k) => setActiveTab(k)}
 
-            title={<span id="asset-title-heading">{asset.name}</span>}
+            title={
+                <span className="inline-flex items-center gap-2.5">
+                    <span id="asset-title-heading">{asset.name}</span>
+                    {/* B5 — step to the prev/next asset in list order. */}
+                    <EntityPrevNextNav
+                        ids={assetIds}
+                        currentId={assetId}
+                        hrefFor={(id) => tenantHref(`/assets/${id}`)}
+                        labelSingular="asset"
+                    />
+                </span>
+            }
             meta={
                 <MetaStrip
                     items={[
