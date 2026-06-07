@@ -105,8 +105,10 @@ export function UndoToast({
                 // Sonner's default toast frame — match its size/padding so
                 // our custom variant doesn't visually jump compared to the
                 // default toast row.
-                "flex w-full max-w-sm flex-col gap-tight rounded-lg border",
-                "border-border-default bg-bg-elevated px-4 py-3 shadow-lg",
+                // B3 — brand-tinted focal-glow texture + elegant border +
+                // glass edge (the class provides bg, border, shadow).
+                "surface-popup-texture flex w-full max-w-sm flex-col gap-tight rounded-lg",
+                "px-4 py-3",
                 "text-sm text-content-default",
             )}>
             <div className="flex items-center justify-between gap-compact">

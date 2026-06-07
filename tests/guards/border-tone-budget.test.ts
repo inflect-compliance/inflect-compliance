@@ -98,7 +98,9 @@ const ROOT = path.resolve(__dirname, '../..');
  * Future PRs continue to ratchet down toward the rough 4:1
  * subtle-to-default target ratio.
  */
-const BORDER_DEFAULT_BUDGET = 115;
+// B3 (2026-06-07): −1 — the undo-toast's `border-border-default` was
+// replaced by the `.surface-popup-texture` class (token-based border).
+const BORDER_DEFAULT_BUDGET = 114;
 
 function countMatches(re: RegExp): number {
     let total = 0;

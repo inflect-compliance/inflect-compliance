@@ -149,7 +149,12 @@ describe('Sheet — token drift sentinel', () => {
         ]) {
             expect(SHEET_SRC).not.toMatch(pattern);
         }
-        for (const token of ['bg-bg-default', 'bg-bg-overlay', 'border-border-subtle', 'text-content-emphasis']) {
+        // B3 (2026-06-07): the sheet CONTENT surface now uses the
+        // token-based `.surface-popup-texture` class (brand-tinted focal
+        // glow) instead of a literal `bg-bg-default` — still semantic, the
+        // tokens resolve inside the class. The overlay + header/footer keep
+        // their literal tokens.
+        for (const token of ['surface-popup-texture', 'bg-bg-overlay', 'border-border-subtle', 'text-content-emphasis']) {
             expect(SHEET_SRC).toContain(token);
         }
     });
