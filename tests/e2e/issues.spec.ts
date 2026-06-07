@@ -292,9 +292,13 @@ test.describe('Issue Management', () => {
         await createIssue(authedPage, isolatedTenant.tenantSlug);
         await gotoAndVerify(authedPage, `/t/${isolatedTenant.tenantSlug}/tasks`, 'h1');
 
-        await expect(authedPage.locator('#bulk-toolbar')).not.toBeVisible({
-            timeout: 3000,
-        });
+        // B1 (2026-06-07): the bulk-edit form moved from a standalone
+        // `#bulk-toolbar` card into the DataTable's header-row selection
+        // toolbar (`[data-testid="selection-toolbar"]`), which is always in
+        // the DOM but FADES IN (opacity 0 → 1) on selection. Playwright's
+        // toBeVisible ignores opacity, so we assert computed opacity.
+        const toolbar = authedPage.locator('[data-testid="selection-toolbar"]');
+        await expect(toolbar).toHaveCSS('opacity', '0', { timeout: 3000 });
 
         // DataTable's built-in selection — the click target is the
         // wrapping `<div title="Select">`.
@@ -304,9 +308,9 @@ test.describe('Issue Management', () => {
         const count = await checkboxes.count();
         if (count > 0) {
             await checkboxes.first().click();
-            await expect(authedPage.locator('#bulk-toolbar')).toBeVisible({
-                timeout: 5000,
-            });
+            // Selecting a row fades the toolbar in (opacity 1); the inline
+            // bulk-action form is now present + interactive.
+            await expect(toolbar).toHaveCSS('opacity', '1', { timeout: 5000 });
             await expect(authedPage.locator('#bulk-action-select')).toBeVisible();
         }
     });
