@@ -91,6 +91,58 @@ When enabled per provider:
 - Default role: **READER** (configurable to EDITOR)
 - **ADMIN role is never auto-provisioned** — this is enforced at schema level
 
+## Microsoft Entra ID — group → role mapping (EI-2/EI-3)
+
+When a tenant signs in via Entra ID, IC can drive each user's role from their
+Entra **security-group** membership. Configure it at **Admin → Entra ID**.
+
+### How role sync works (at every Entra sign-in)
+1. The user's security-group object IDs are resolved from the ID token's
+   `groups` claim — or, for users in **> ~200 groups**, from a Microsoft Graph
+   `/me/memberOf/microsoft.graph.group` fetch (the "overage" path). A Graph
+   outage fails open to "no groups" and never blocks sign-in.
+2. Each group is matched against the tenant's `group → role` mappings.
+3. The **winning** mapping sets the role, and the user's existing membership
+   role is updated to match (audited as `MEMBER_ROLE_CHANGED`,
+   `source: entra_group_sync`).
+
+Role sync only ever **sets** the role to a matched mapping — it never demotes a
+user who matches nothing (use the gate for that). It also never **creates** a
+membership: a user with no membership still needs an invite / SSO-JIT / SCIM
+grant first. **OWNER is exempt** — a mapping can never demote or gate-lock-out a
+tenant owner; ownership stays manually managed.
+
+### Resolution algorithm (multiple matching groups)
+The winner is chosen by, in order:
+1. **Highest `priority`** (the numeric field on the mapping — higher wins);
+2. **Most senior role** (OWNER > ADMIN > EDITOR > READER > AUDITOR);
+3. **Lowest group object ID** (lexicographic — only to guarantee determinism).
+
+Example: a user in two priority-100 groups mapping to ADMIN and READER → ADMIN.
+
+OWNER is **not** a mappable target (only ADMIN / EDITOR / READER / AUDITOR) —
+ownership carries tenant-lifecycle + owner-management authority and must be
+granted by hand.
+
+### Enforce group gate
+When **on**, a user who matches **none** of your mappings is denied access to
+the tenant for that session (they land on `/no-tenant`; any other tenants they
+belong to are unaffected). Caveat: the gate only denies once **at least one
+mapping exists** — with zero mappings configured it is a no-op (so turning the
+gate on before adding mappings does not lock everyone out).
+
+### Claim mode
+Only **Security groups** is supported today. *Application Roles* (`roles` claim)
+is reserved in the config schema for back-compat but is not implemented and is
+no longer offered in the UI.
+
+### Audit trail
+Every mapping change (create / update / delete) and every sign-in role sync is
+written to the tenant audit log (**Admin → Audit Log**) with the before/after
+role and the actor. Operationally, the `auth.entra.role_sync` and
+`auth.entra.group_resolution` OTel metrics surface sync outcomes and Graph
+health; a `gate_denied` spike usually means a misconfigured mapping.
+
 ## Microsoft Entra ID — staging smoke verification
 
 The Entra group-claim pipeline (EI-1) and its observability (EI-4) are
@@ -135,10 +187,12 @@ version.
 **Anchor the fixtures to reality.** While doing (1)/(2), capture — with **all
 GUIDs redacted and no tokens / emails** — (a) the decoded `_claim_names` /
 `_claim_sources` block from an overage token and (b) one
-`GET /me/memberOf?$select=id` JSON page. Commit them under
-`tests/fixtures/entra/` and add an assertion that the recorded response parses
-through `fetchUserGroupsFromGraph`, so a future Graph-shape drift fails CI
-instead of silently breaking production. (Tracked in the EI audit/polish pass.)
+`GET /me/memberOf/microsoft.graph.group?$select=id` JSON page (the typed cast IC
+uses — returns groups only). Commit them under `tests/fixtures/entra/`
+(replacing the documented-shape placeholders verbatim); the existing
+`tests/unit/entra-recorded-fixtures.test.ts` already asserts they parse through
+`fetchUserGroupsFromGraph` + `resolveEntraGroupClaims`, so a future Graph-shape
+drift fails CI instead of silently breaking production.
 
 ## Test IdP Setup
 

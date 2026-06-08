@@ -75,7 +75,9 @@ export function GroupMappingsSection({ apiUrl }: { apiUrl: (path: string) => str
                 setError(
                     res.status === 409
                         ? 'A mapping for this group already exists.'
-                        : 'Add failed — the group ID must be a valid GUID.',
+                        : res.status === 403
+                          ? 'Access denied — only admins can manage mappings.'
+                          : 'Add failed — the group ID must be a valid GUID.',
                 );
                 return;
             }
@@ -97,10 +99,21 @@ export function GroupMappingsSection({ apiUrl }: { apiUrl: (path: string) => str
             triggerUndoToast({
                 message: `Mapping for ${m.aadGroupName ?? m.aadGroupId} removed`,
                 undoMessage: 'Undo',
-                action: () =>
-                    fetch(apiUrl(`/sso/entra/group-mappings/${m.id}`), { method: 'DELETE' }),
+                action: async () => {
+                    const res = await fetch(apiUrl(`/sso/entra/group-mappings/${m.id}`), {
+                        method: 'DELETE',
+                    });
+                    // fetch only rejects on network error — surface HTTP failures
+                    // so onError fires and the optimistic removal is rolled back.
+                    if (!res.ok && res.status !== 404) {
+                        throw new Error(`Delete failed (${res.status})`);
+                    }
+                },
                 undoAction: () => load(),
-                onError: () => load(),
+                onError: () => {
+                    setError('Failed to remove the mapping — it has been restored.');
+                    void load();
+                },
             });
         },
         [apiUrl, triggerUndoToast, load],
@@ -170,7 +183,7 @@ export function GroupMappingsSection({ apiUrl }: { apiUrl: (path: string) => str
                         onChange={(e) => setGroupName(e.target.value)}
                     />
                 </FormField>
-                <FormField label="Role">
+                <FormField label="Role" hint="OWNER is granted manually, not by group.">
                     <Combobox
                         id="entra-mapping-role"
                         options={ROLE_OPTIONS}

@@ -130,11 +130,12 @@ declare module 'next-auth/jwt' {
         orgMembershipsTruncated?: boolean;
         /** Provider name when the user signed in via OAuth. */
         provider?: string;
-        /** EI-1 — AAD security-group Object IDs from the Entra ID token (or
-         *  Graph, on the >200-group overage path). Input to the EI-2 mapper. */
-        aadGroups?: string[];
-        /** EI-1 — telemetry flag: the groups claim overflowed and was resolved
-         *  via a Microsoft Graph `/me/memberOf` fetch instead. */
+        /** EI-1/EI-3 — telemetry flag: the groups claim overflowed (>200 groups)
+         *  and was resolved via a Microsoft Graph `/me/memberOf` fetch instead.
+         *  The resolved group list itself is consumed in-callback by EI-3's role
+         *  sync and is deliberately NOT persisted on the token — an unbounded
+         *  array of group GUIDs would bloat the JWT cookie (worst for the very
+         *  overage population this flag marks) with no downstream reader. */
         aadGroupsOverage?: boolean;
         accessToken?: string;
         refreshToken?: string;
@@ -529,7 +530,11 @@ export const authOptions: NextAuthOptions = {
                         profile,
                         accessToken: account.access_token as string | undefined,
                     });
-                    token.aadGroups = groups;
+                    // The resolved `groups` are consumed in-callback by EI-3's
+                    // role sync (below) — NOT persisted on the token: an
+                    // unbounded array of group GUIDs would bloat the JWT cookie
+                    // for the overage population with no downstream reader. Only
+                    // the bounded overage flag rides along.
                     token.aadGroupsOverage = overage;
 
                     // ── EI-3 — sync the active-tenant membership role from the

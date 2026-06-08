@@ -101,8 +101,12 @@ export async function updateEntraGroupMapping(
                 category: 'entity_lifecycle',
                 entityName: 'TenantEntraGroupMapping',
                 operation: 'updated',
-                before: { role: existing.role, priority: existing.priority },
-                after: { role: row.role, priority: row.priority },
+                before: {
+                    role: existing.role,
+                    priority: existing.priority,
+                    aadGroupName: existing.aadGroupName,
+                },
+                after: { role: row.role, priority: row.priority, aadGroupName: row.aadGroupName },
                 summary: 'Entra group mapping updated',
             },
         });

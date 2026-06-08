@@ -14,15 +14,18 @@ describe('EI-1 Entra group claims', () => {
         expect(read('prisma/schema/enums.prisma')).toMatch(/ENTRA_ID/);
     });
 
-    it('the jwt callback extracts aadGroups for microsoft-entra-id, delegating to the resolver', () => {
+    it('the jwt callback resolves group claims for microsoft-entra-id via the resolver', () => {
         const src = read('src/auth.ts');
         expect(src).toMatch(/account\.provider === 'microsoft-entra-id'/);
-        expect(src).toMatch(/token\.aadGroups/);
-        // The group-resolution decision was extracted to its own module (EI-4)
-        // so it is unit-testable + carries the observability wiring.
+        // The group-resolution decision lives in its own module (EI-4) so it is
+        // unit-testable + carries the observability wiring.
         expect(src).toMatch(/resolveEntraGroupClaims/);
-        // JWT augmentation carries the field
-        expect(src).toMatch(/aadGroups\?: string\[\]/);
+        // The resolved groups feed EI-3's role sync. They are NOT persisted on
+        // the token (audit: the unbounded array bloated the JWT cookie with no
+        // reader) — only the bounded overage flag rides along.
+        expect(src).toMatch(/syncEntraMembershipRole/);
+        expect(src).toMatch(/aadGroupsOverage/);
+        expect(src).not.toMatch(/token\.aadGroups\s*=/);
     });
 
     it('the resolver module owns the overage detection + Graph fetch fallback', () => {

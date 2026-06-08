@@ -50,9 +50,8 @@ describe('Entra recorded fixtures parse through the real code', () => {
 
         const groups = await fetchUserGroupsFromGraph('tok', fetchImpl as unknown as typeof fetch);
 
-        // /me/memberOf is heterogeneous (groups + directoryRoles); the current
-        // code keeps every object carrying an id. If a future change adds
-        // type-filtering, update this expectation + the fixture together.
+        // The `microsoft.graph.group` typed endpoint returns groups only, so
+        // every id in the page is a group id and all are kept.
         expect(groups.map((g) => g.id)).toEqual(expectedIds);
         expect(fetchImpl).toHaveBeenCalledTimes(2);
     });
