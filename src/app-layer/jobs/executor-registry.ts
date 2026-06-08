@@ -593,6 +593,16 @@ executorRegistry.register('subflow-dispatch', async (payload) => {
     return result;
 });
 
+// ── schedule-trigger-sweep (PR-E) ────────────────────────────────────
+// Global sweep — scans every tenant's SCHEDULE rules and enqueues a
+// per-(rule, entity) targeted dispatch (each scoped to the rule's tenantId
+// inside runScheduleTriggerSweep + the dispatch it enqueues).
+executorRegistry.register('schedule-trigger-sweep', async () => {
+    const { runScheduleTriggerSweep } = await import('./schedule-trigger-sweep');
+    const { result } = await runScheduleTriggerSweep(new Date());
+    return result;
+});
+
 // ── compliance-digest ────────────────────────────────────────────────
 
 executorRegistry.register('compliance-digest', async (payload) => {

@@ -74,8 +74,8 @@ describe('Infrastructure Regression Guards', () => {
             }
         });
 
-        test('exactly 14 scheduled jobs exist', () => {
-            expect(SCHEDULED_JOBS).toHaveLength(14);
+        test('exactly 15 scheduled jobs exist', () => {
+            expect(SCHEDULED_JOBS).toHaveLength(15);
         });
 
         test('scheduled job names match expected set', () => {
@@ -102,6 +102,9 @@ describe('Infrastructure Regression Guards', () => {
                 'notification-dispatch',
                 'policy-review-reminder',
                 'retention-sweep',
+                // PR-E — daily sweep firing SCHEDULE automation rules whose
+                // target entity is N days from its due date.
+                'schedule-trigger-sweep',
                 // Automation Epic 5 — every-5-min SLA breach sweep over
                 // RUNNING automation executions.
                 'sla-monitor',

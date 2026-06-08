@@ -24,7 +24,7 @@ export interface EventLabel {
     label: string;
     description: string;
     /** Domain group for the trigger picker. */
-    domain: 'Risk' | 'Control testing' | 'Evidence' | 'Onboarding' | 'Task' | 'Issue';
+    domain: 'Risk' | 'Control testing' | 'Evidence' | 'Schedule' | 'Onboarding' | 'Task' | 'Issue';
     /** Payload fields a condition can filter on. */
     filterFields: ReadonlyArray<FilterFieldDef>;
 }
@@ -145,6 +145,13 @@ export const EVENT_LABELS: Record<AutomationEventName, EventLabel> = {
         label: 'Test evidence unlinked',
         description: 'Evidence is detached from a control test run.',
         domain: 'Control testing',
+        filterFields: [],
+    },
+    [AUTOMATION_EVENTS.SCHEDULE]: {
+        name: AUTOMATION_EVENTS.SCHEDULE,
+        label: 'On a schedule',
+        description: 'Fire N days before a target entity’s due date (evidence retention, control-test due, exception expiry).',
+        domain: 'Schedule',
         filterFields: [],
     },
     [AUTOMATION_EVENTS.EVIDENCE_EXPIRING]: {

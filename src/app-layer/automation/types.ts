@@ -127,6 +127,12 @@ export interface AutomationRuleSlaInput {
     /** PR-F — chain to this rule when the (chained) rule's filter does NOT
      * match the payload (the else / condition-fail branch). */
     elseRuleId?: string | null;
+    /** PR-E — schedule config for time-based (SCHEDULE) triggers. */
+    scheduleConfig?: {
+        kind: 'DATE_RELATIVE';
+        target: 'Evidence' | 'ControlException' | 'ControlTestPlan';
+        offsetDays: number;
+    } | null;
 }
 
 export interface CreateAutomationRuleInput extends AutomationRuleSlaInput {

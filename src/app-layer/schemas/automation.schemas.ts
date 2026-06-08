@@ -95,6 +95,16 @@ const LegacyFlatFilter = z.record(
 
 const TriggerFilter = z.union([FilterGroup, LegacyFlatFilter]).nullable().optional();
 
+// PR-E — time-based trigger schedule (for triggerEvent === 'SCHEDULE').
+const ScheduleConfig = z
+    .object({
+        kind: z.literal('DATE_RELATIVE'),
+        target: z.enum(['Evidence', 'ControlException', 'ControlTestPlan']),
+        offsetDays: z.number().int().min(0).max(365),
+    })
+    .nullable()
+    .optional();
+
 // SLA (Epic 5) + chain (Epic 7) fields — shared by create/update.
 const SlaFields = {
     slaWindowMinutes: z.number().int().min(1).max(525600).nullable().optional(),
@@ -103,6 +113,8 @@ const SlaFields = {
     slaBreachConfig: z.record(z.string(), z.unknown()).nullable().optional(),
     nextRuleId: z.string().min(1).nullable().optional(),
     nextRuleDelay: z.number().int().min(0).max(525600).nullable().optional(),
+    elseRuleId: z.string().min(1).nullable().optional(),
+    scheduleConfig: ScheduleConfig,
 };
 
 export const CreateAutomationRuleSchema = z
