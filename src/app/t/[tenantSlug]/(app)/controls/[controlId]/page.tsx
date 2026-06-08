@@ -34,6 +34,9 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { CopyText } from '@/components/ui/copy-text';
 import dynamic from 'next/dynamic';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
+import { AsidePanel } from '@/components/ui/aside-panel';
+import { AutomationSuggestionsRail } from '@/components/automation/AutomationSuggestionsRail';
+import { Sparkle3 } from '@/components/ui/icons/nucleo/sparkle3';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 
@@ -775,6 +778,16 @@ export default function ControlDetailPage() {
             tabs={tabs}
             activeTab={tab}
             onTabChange={(next) => setTab(next as Tab)}
+            rail={
+                <AsidePanel
+                    title="AI Suggestions"
+                    surfaceKey="controls-detail-ai"
+                    defaultCollapsed
+                    icon={<Sparkle3 className="h-4 w-4" />}
+                >
+                    <AutomationSuggestionsRail />
+                </AsidePanel>
+            }
         >
             {/* Sync state + exception badges (moved out of meta strip
                 in Polish PR-1). Renders inline above tab content. */}

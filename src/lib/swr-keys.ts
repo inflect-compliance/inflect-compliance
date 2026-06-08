@@ -143,6 +143,8 @@ export const CACHE_KEYS = {
         executions: {
             live: () => '/automation/executions/live' as const,
         },
+        // VR-9 — AI rule suggestions (Control-page right rail).
+        suggestions: () => '/ai/automation-suggestions' as const,
     },
 
     // ─── Audit lifecycle ────────────────────────────────────────
