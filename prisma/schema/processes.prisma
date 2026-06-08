@@ -45,6 +45,9 @@ model ProcessMap {
   name            String
   description     String?
   status          ProcessMapStatus @default(DRAFT)
+  /// VR-2 — DOCUMENT (process maps, existing) vs AUTOMATION (visual rule
+  /// editor). Gates the palette, inspector, edge kinds, and toolbar.
+  canvasMode      ProcessCanvasMode @default(DOCUMENT)
   createdByUserId String
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt

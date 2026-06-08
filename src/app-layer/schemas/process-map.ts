@@ -83,6 +83,8 @@ export const CreateProcessMapSchema = z.object({
     name: z.string().min(1).max(200),
     description: z.string().max(2000).optional().nullable(),
     status: ProcessMapStatusSchema.optional(),
+    // VR-2 — DOCUMENT (default) vs AUTOMATION (visual rule editor).
+    canvasMode: z.enum(['DOCUMENT', 'AUTOMATION']).optional(),
 });
 export type CreateProcessMapInput = z.infer<typeof CreateProcessMapSchema>;
 

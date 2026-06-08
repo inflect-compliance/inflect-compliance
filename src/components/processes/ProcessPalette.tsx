@@ -33,11 +33,16 @@
  */
 
 import type { DragEvent } from "react";
-import { NODE_TAXONOMY, NODE_TAXONOMY_ORDER } from "./node-taxonomy";
+import {
+    NODE_TAXONOMY,
+    NODE_TAXONOMY_ORDER,
+    AUTOMATION_NODE_ORDER,
+} from "./node-taxonomy";
 import type {
     NodeCategory,
     ProcessNodeKind,
 } from "./node-taxonomy";
+import { useIsAutomationMode } from "@/lib/processes/canvas-mode-context";
 
 /**
  * Canonical drag-data mime type for palette → canvas transfers.
@@ -69,6 +74,7 @@ const CATEGORY_ORDER: readonly NodeCategory[] = [
 ];
 
 export function ProcessPalette() {
+    const isAutomation = useIsAutomationMode();
     const onDragStart = (
         event: DragEvent<HTMLDivElement>,
         kind: ProcessNodeKind,
@@ -149,6 +155,38 @@ export function ProcessPalette() {
                     </div>
                 );
             })}
+            {/* VR-1/VR-2 — Automation section, AUTOMATION mode only. */}
+            {isAutomation && (
+                <div
+                    className="flex flex-col items-center gap-tight"
+                    data-process-palette-category="automation"
+                >
+                    <span
+                        className="my-1 block h-px w-6 bg-canvas-border"
+                        aria-hidden="true"
+                    />
+                    {AUTOMATION_NODE_ORDER.map((kind) => {
+                        const meta = NODE_TAXONOMY[kind];
+                        const Icon = meta.icon;
+                        return (
+                            <div
+                                key={kind}
+                                role="button"
+                                tabIndex={0}
+                                draggable
+                                onDragStart={(e) => onDragStart(e, kind, meta.label)}
+                                data-palette-item={kind}
+                                data-process-palette-item="true"
+                                title={meta.label}
+                                aria-label={`Drag to add a ${meta.label.toLowerCase()} node`}
+                                className="inline-flex h-8 w-8 cursor-grab items-center justify-center rounded-[8px] border border-canvas-border bg-canvas-node-muted text-content-default transition-colors hover:border-border-emphasis hover:bg-canvas-node hover:text-content-emphasis active:cursor-grabbing"
+                            >
+                                <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
         </aside>
     );
 }

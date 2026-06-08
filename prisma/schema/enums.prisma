@@ -853,6 +853,13 @@ enum ProcessMapStatus {
   ARCHIVED
 }
 
+// VR-2 — canvas surface mode. DOCUMENT = process-map flowcharts (existing);
+// AUTOMATION = the visual rule editor (AutomationRule nodes on canvas).
+enum ProcessCanvasMode {
+  DOCUMENT
+  AUTOMATION
+}
+
 /// Control automation classification (operator-set on the control).
 ///   AUTOMATED            — runs without human action.
 ///   MANUAL               — performed entirely by a person.

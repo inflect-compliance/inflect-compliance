@@ -79,6 +79,11 @@ import {
     AlertTriangle,
     StickyNote,
     Group as GroupIcon,
+    // VR-1 — automation node kinds.
+    Zap,
+    Filter,
+    Play,
+    Timer,
 } from 'lucide-react';
 
 export type ProcessNodeKind =
@@ -89,7 +94,12 @@ export type ProcessNodeKind =
     | 'asset'
     | 'external'
     | 'annotation'
-    | 'group';
+    | 'group'
+    // VR-1 — automation node kinds (visible only in AUTOMATION canvas mode).
+    | 'trigger'
+    | 'condition'
+    | 'action'
+    | 'slaGate';
 
 /**
  * Visual-language accents. Each maps to an IC semantic colour
@@ -280,6 +290,51 @@ export const NODE_TAXONOMY: Record<ProcessNodeKind, NodeTypeMeta> = {
         hasHandles: false,
         defaultLabel: 'Group',
     },
+    // ─── VR-1 — Automation kinds (AUTOMATION canvas mode only) ───
+    trigger: {
+        id: 'trigger',
+        label: 'Trigger',
+        description: 'Entry point — the domain event that fires the rule.',
+        icon: Zap,
+        accent: 'brand',
+        shape: 'rect',
+        category: 'flow',
+        hasHandles: true,
+        defaultLabel: 'When…',
+    },
+    condition: {
+        id: 'condition',
+        label: 'Condition',
+        description: 'Filter gate — passes or blocks based on a DSL expression.',
+        icon: Filter,
+        accent: 'neutral',
+        shape: 'rect',
+        category: 'flow',
+        hasHandles: true,
+        defaultLabel: 'If…',
+    },
+    action: {
+        id: 'action',
+        label: 'Action',
+        description: 'Leaf — runs Notify / Create task / Update status / Webhook.',
+        icon: Play,
+        accent: 'brand-secondary',
+        shape: 'rect',
+        category: 'flow',
+        hasHandles: true,
+        defaultLabel: 'Then…',
+    },
+    slaGate: {
+        id: 'slaGate',
+        label: 'SLA gate',
+        description: 'SLA timer — blocks the chain until a deadline or breaches.',
+        icon: Timer,
+        accent: 'warning',
+        shape: 'rect',
+        category: 'flow',
+        hasHandles: true,
+        defaultLabel: 'SLA',
+    },
 };
 
 /**
@@ -308,6 +363,30 @@ export const NODE_TAXONOMY_ORDER: ProcessNodeKind[] = [
     'group',
     'annotation',
 ];
+
+/**
+ * VR-1 — automation palette order. Kept separate from
+ * `NODE_TAXONOMY_ORDER` so automation kinds never leak into the
+ * DOCUMENT-mode palette; `ProcessPalette` renders this as its own
+ * "Automation" section ONLY when `canvasMode === 'AUTOMATION'` (VR-2).
+ */
+export const AUTOMATION_NODE_ORDER: ProcessNodeKind[] = [
+    'trigger',
+    'condition',
+    'action',
+    'slaGate',
+];
+
+/** The four automation kinds, for mode-gating + guards. */
+export const AUTOMATION_NODE_KINDS: ReadonlyArray<ProcessNodeKind> =
+    AUTOMATION_NODE_ORDER;
+
+export function isAutomationNodeKind(value: unknown): value is ProcessNodeKind {
+    return (
+        typeof value === 'string' &&
+        (AUTOMATION_NODE_KINDS as readonly string[]).includes(value)
+    );
+}
 
 /**
  * Type-guard for runtime payloads. `nodeType` on persisted rows

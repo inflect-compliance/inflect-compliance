@@ -39,6 +39,7 @@ export interface ProcessMapListItem {
     description: string | null;
     status: ProcessMapStatusValue;
     version: number;
+    canvasMode: 'DOCUMENT' | 'AUTOMATION';
     createdAt: Date;
     updatedAt: Date;
     nodeCount: number;
@@ -93,6 +94,7 @@ export class ProcessMapRepository {
                 description: true,
                 status: true,
                 version: true,
+                canvasMode: true,
                 createdAt: true,
                 updatedAt: true,
                 _count: { select: { nodes: true, edges: true } },
@@ -104,6 +106,7 @@ export class ProcessMapRepository {
             description: r.description,
             status: r.status,
             version: r.version,
+            canvasMode: r.canvasMode,
             createdAt: r.createdAt,
             updatedAt: r.updatedAt,
             nodeCount: r._count.nodes,
@@ -175,6 +178,7 @@ export class ProcessMapRepository {
             name: string;
             description?: string | null;
             status?: ProcessMapStatusValue;
+            canvasMode?: 'DOCUMENT' | 'AUTOMATION';
             createdByUserId: string;
         },
     ): Promise<ProcessMapWithGraph> {
@@ -184,6 +188,7 @@ export class ProcessMapRepository {
                 name: input.name,
                 description: input.description ?? null,
                 status: input.status ?? 'DRAFT',
+                canvasMode: input.canvasMode ?? 'DOCUMENT',
                 createdByUserId: input.createdByUserId,
             },
         });

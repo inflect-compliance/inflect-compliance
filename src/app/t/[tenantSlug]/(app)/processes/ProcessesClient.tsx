@@ -33,6 +33,7 @@ import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
 import { RulesTab } from "./RulesTab";
 import { AnalyticsTab } from "./AnalyticsTab";
 import { MonitorTab } from "./MonitorTab";
+import { CanvasModeProvider } from "@/lib/processes/canvas-mode-context";
 // R31 Bundle 3 — page-level Heading + PageBreadcrumbs retired. The
 // document bar inside the canvas now carries the breadcrumbs +
 // document title inline (Figma-style).
@@ -62,6 +63,8 @@ export interface ProcessMapSummary {
     updatedAt: string | Date;
     nodeCount: number;
     edgeCount: number;
+    /** VR-2 — DOCUMENT (process map) vs AUTOMATION (visual rule editor). */
+    canvasMode?: "DOCUMENT" | "AUTOMATION";
 }
 
 interface ProcessesClientProps {
@@ -186,13 +189,19 @@ function CanvasWorkspace({
                 every inner strip to the frame's rounded corners so the
                 composition reads as one deliberate container. */}
             <WorkspaceShell.Body className="overflow-hidden rounded-lg border border-canvas-border bg-canvas-frame">
-                <PersistedProcessCanvas
-                    tenantSlug={tenantSlug}
-                    processes={processes}
-                    activeId={activeId}
-                    onActiveIdChange={setActiveId}
-                    onProcessesChange={setProcesses}
-                />
+                <CanvasModeProvider
+                    mode={
+                        processes.find((p) => p.id === activeId)?.canvasMode ?? "DOCUMENT"
+                    }
+                >
+                    <PersistedProcessCanvas
+                        tenantSlug={tenantSlug}
+                        processes={processes}
+                        activeId={activeId}
+                        onActiveIdChange={setActiveId}
+                        onProcessesChange={setProcesses}
+                    />
+                </CanvasModeProvider>
             </WorkspaceShell.Body>
         </WorkspaceShell>
     );

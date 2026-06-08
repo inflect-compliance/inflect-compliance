@@ -42,6 +42,7 @@ export async function createProcessMap(
             name: input.name,
             description: input.description ?? null,
             status: input.status,
+            canvasMode: input.canvasMode,
             createdByUserId: ctx.userId,
         });
 

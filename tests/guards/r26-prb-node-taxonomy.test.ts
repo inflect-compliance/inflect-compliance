@@ -57,6 +57,15 @@ const CANONICAL_KINDS = [
     // mirror. The ratchet at `r30-group-nodes.test.ts` locks the
     // schema migration + renderer branch + canvas wiring.
     "group",
+    // VR-1 (2026-06-08) — four automation kinds for the Visual Rule
+    // Editor. Visible only in AUTOMATION canvas mode (gated by the
+    // CanvasModeContext); `ProcessPalette` renders them as a separate
+    // "automation" section via AUTOMATION_NODE_ORDER. Locked by
+    // `vr1-vr2-automation-canvas.test.ts`.
+    "trigger",
+    "condition",
+    "action",
+    "slaGate",
 ] as const;
 
 describe("R26-PR-B — node taxonomy", () => {
@@ -104,7 +113,14 @@ describe("R26-PR-B — node taxonomy", () => {
         const items =
             body.match(/['"](\w+)['"]/g)?.map((s) => s.replace(/['"]/g, "")) ??
             [];
-        const palette = CANONICAL_KINDS.filter((k) => k !== "control");
+        // VR-1 — automation kinds live in AUTOMATION_NODE_ORDER (a
+        // separate, mode-gated palette section), NOT NODE_TAXONOMY_ORDER,
+        // so they're excluded from the document palette order alongside
+        // `control`.
+        const AUTOMATION_KINDS = ["trigger", "condition", "action", "slaGate"];
+        const palette = CANONICAL_KINDS.filter(
+            (k) => k !== "control" && !AUTOMATION_KINDS.includes(k),
+        );
         expect(items.sort()).toEqual([...palette].sort());
     });
 
