@@ -78,6 +78,18 @@ function buildFakeEvent(
             };
         case 'TEST_EVIDENCE_UNLINKED':
             return { ...base, event: name, data: { testRunId: 'r' } };
+        case 'EVIDENCE_EXPIRING':
+            return {
+                ...base,
+                event: name,
+                data: { title: 'e', controlId: null, retentionUntil: null },
+            };
+        case 'EVIDENCE_EXPIRED':
+            return {
+                ...base,
+                event: name,
+                data: { title: 'e', controlId: null, expiredAt: null },
+            };
         case 'ONBOARDING_STARTED':
         case 'ONBOARDING_FINISHED':
         case 'ONBOARDING_RESTARTED':

@@ -28,6 +28,15 @@ export const AUTOMATION_EVENTS = {
     TEST_RUN_CREATED: 'TEST_RUN_CREATED',
     TEST_RUN_COMPLETED: 'TEST_RUN_COMPLETED',
     TEST_RUN_FAILED: 'TEST_RUN_FAILED',
+    // Emitted by emitTestEvidenceLinked/Unlinked — now subscribable (was
+    // producer/catalog drift: emitted but absent from the catalog).
+    TEST_EVIDENCE_LINKED: 'TEST_EVIDENCE_LINKED',
+    TEST_EVIDENCE_UNLINKED: 'TEST_EVIDENCE_UNLINKED',
+
+    // ─── Evidence lifecycle (high-value automation: "notify the owner
+    //     when their evidence is about to go stale / has expired") ───
+    EVIDENCE_EXPIRING: 'EVIDENCE_EXPIRING',
+    EVIDENCE_EXPIRED: 'EVIDENCE_EXPIRED',
 
     // ─── Onboarding ───
     ONBOARDING_STARTED: 'ONBOARDING_STARTED',

@@ -24,7 +24,7 @@ export interface EventLabel {
     label: string;
     description: string;
     /** Domain group for the trigger picker. */
-    domain: 'Risk' | 'Control testing' | 'Onboarding' | 'Task' | 'Issue';
+    domain: 'Risk' | 'Control testing' | 'Evidence' | 'Onboarding' | 'Task' | 'Issue';
     /** Payload fields a condition can filter on. */
     filterFields: ReadonlyArray<FilterFieldDef>;
 }
@@ -132,6 +132,38 @@ export const EVENT_LABELS: Record<AutomationEventName, EventLabel> = {
         description: 'A control test run fails.',
         domain: 'Control testing',
         filterFields: [],
+    },
+    [AUTOMATION_EVENTS.TEST_EVIDENCE_LINKED]: {
+        name: AUTOMATION_EVENTS.TEST_EVIDENCE_LINKED,
+        label: 'Test evidence linked',
+        description: 'Evidence is attached to a control test run.',
+        domain: 'Control testing',
+        filterFields: [],
+    },
+    [AUTOMATION_EVENTS.TEST_EVIDENCE_UNLINKED]: {
+        name: AUTOMATION_EVENTS.TEST_EVIDENCE_UNLINKED,
+        label: 'Test evidence unlinked',
+        description: 'Evidence is detached from a control test run.',
+        domain: 'Control testing',
+        filterFields: [],
+    },
+    [AUTOMATION_EVENTS.EVIDENCE_EXPIRING]: {
+        name: AUTOMATION_EVENTS.EVIDENCE_EXPIRING,
+        label: 'Evidence expiring',
+        description: 'Evidence is approaching its retention/expiry date.',
+        domain: 'Evidence',
+        filterFields: [
+            { field: 'controlId', label: 'Linked control', type: 'string' },
+        ],
+    },
+    [AUTOMATION_EVENTS.EVIDENCE_EXPIRED]: {
+        name: AUTOMATION_EVENTS.EVIDENCE_EXPIRED,
+        label: 'Evidence expired',
+        description: 'Evidence has passed its expiry date.',
+        domain: 'Evidence',
+        filterFields: [
+            { field: 'controlId', label: 'Linked control', type: 'string' },
+        ],
     },
     [AUTOMATION_EVENTS.ONBOARDING_STARTED]: {
         name: AUTOMATION_EVENTS.ONBOARDING_STARTED,

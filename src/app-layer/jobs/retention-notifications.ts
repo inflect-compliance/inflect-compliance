@@ -14,6 +14,37 @@ import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/observability/logger';
 import { TERMINAL_WORK_ITEM_STATUSES } from '../domain/work-item-status';
 import { isNotificationsEnabled } from '../notifications/settings';
+import { emitAutomationEvent } from '../automation';
+import type { RequestContext } from '../types';
+
+/** Fire-and-forget automation trigger — never blocks the notification job. */
+function emitEvidenceTrigger(
+    event: 'EVIDENCE_EXPIRING' | 'EVIDENCE_EXPIRED',
+    ev: { id: string; tenantId: string; title: string; controlId: string | null },
+    dateIso: string | null,
+): Promise<void> {
+    // The bus only reads ctx.tenantId + ctx.userId; a full context isn't
+    // needed for a system-initiated event.
+    const ctx = { tenantId: ev.tenantId, userId: null } as unknown as RequestContext;
+    const meta = { entityType: 'Evidence', entityId: ev.id, actorUserId: null };
+    const p =
+        event === 'EVIDENCE_EXPIRING'
+            ? emitAutomationEvent(ctx, {
+                  event: 'EVIDENCE_EXPIRING',
+                  ...meta,
+                  data: { title: ev.title, controlId: ev.controlId, retentionUntil: dateIso },
+                  stableKey: `evidence-expiring-${ev.id}`,
+              })
+            : emitAutomationEvent(ctx, {
+                  event: 'EVIDENCE_EXPIRED',
+                  ...meta,
+                  data: { title: ev.title, controlId: ev.controlId, expiredAt: dateIso },
+                  stableKey: `evidence-expired-${ev.id}`,
+              });
+    return p.catch(() => {
+        /* best-effort: automation emission must never break the notification job */
+    });
+}
 
 export interface RetentionNotificationOptions {
     tenantId?: string;
@@ -159,7 +190,34 @@ export async function runEvidenceRetentionNotifications(
             },
         });
 
+        // Automation trigger — let rules fire on evidence going stale.
+        await emitEvidenceTrigger(
+            'EVIDENCE_EXPIRING',
+            ev,
+            ev.retentionUntil ? new Date(ev.retentionUntil).toISOString() : null,
+        );
+
         tasksCreated++;
+    }
+
+    // Already-expired evidence → EVIDENCE_EXPIRED trigger (separate signal).
+    const expiredWhere: Prisma.EvidenceWhereInput = {
+        deletedAt: null,
+        isArchived: false,
+        expiredAt: { not: null, lt: new Date() },
+    };
+    if (options.tenantId) expiredWhere.tenantId = options.tenantId;
+    const expired = await prisma.evidence.findMany({
+        where: expiredWhere,
+        select: { id: true, tenantId: true, title: true, controlId: true, expiredAt: true },
+        take: 1000,
+    });
+    for (const ev of expired) {
+        await emitEvidenceTrigger(
+            'EVIDENCE_EXPIRED',
+            ev,
+            ev.expiredAt ? new Date(ev.expiredAt).toISOString() : null,
+        );
     }
 
     return { scanned: expiring.length, tasksCreated, skippedDuplicate };

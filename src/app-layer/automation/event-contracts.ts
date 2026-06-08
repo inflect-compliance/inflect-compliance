@@ -82,6 +82,17 @@ export interface TestEvidenceUnlinkedData {
     testRunId: string;
 }
 
+export interface EvidenceExpiringData {
+    title: string;
+    controlId: string | null;
+    retentionUntil: string | null;
+}
+export interface EvidenceExpiredData {
+    title: string;
+    controlId: string | null;
+    expiredAt: string | null;
+}
+
 export interface OnboardingStartedData {
     /** Empty by design — event name carries the meaning. */
     readonly _?: never;
@@ -145,6 +156,8 @@ export type AutomationDomainEvent =
     | (AutomationEventMetadata & { event: 'TEST_RUN_FAILED'; data: TestRunFailedData })
     | (AutomationEventMetadata & { event: 'TEST_EVIDENCE_LINKED'; data: TestEvidenceLinkedData })
     | (AutomationEventMetadata & { event: 'TEST_EVIDENCE_UNLINKED'; data: TestEvidenceUnlinkedData })
+    | (AutomationEventMetadata & { event: 'EVIDENCE_EXPIRING'; data: EvidenceExpiringData })
+    | (AutomationEventMetadata & { event: 'EVIDENCE_EXPIRED'; data: EvidenceExpiredData })
     | (AutomationEventMetadata & { event: 'ONBOARDING_STARTED'; data: OnboardingStartedData })
     | (AutomationEventMetadata & { event: 'ONBOARDING_STEP_COMPLETED'; data: OnboardingStepCompletedData })
     | (AutomationEventMetadata & { event: 'ONBOARDING_FINISHED'; data: OnboardingFinishedData })
