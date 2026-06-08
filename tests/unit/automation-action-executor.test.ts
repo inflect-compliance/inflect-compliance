@@ -7,6 +7,10 @@
  */
 const enqueueMock = jest.fn();
 jest.mock('@/app-layer/jobs/queue', () => ({ enqueue: (...a: unknown[]) => enqueueMock(...a) }));
+const lookupMock = jest.fn((..._a: unknown[]) =>
+    Promise.resolve({ address: '93.184.216.34', family: 4 }),
+);
+jest.mock('node:dns/promises', () => ({ lookup: (...a: unknown[]) => lookupMock(...a) }));
 
 import { executeAction } from '@/app-layer/automation/action-executor';
 
@@ -27,8 +31,12 @@ function makeDb() {
                 (args.where.userId.in as string[]).map((userId: string) => ({ userId })),
             ),
         },
+        tenantNotificationSettings: { findUnique: jest.fn().mockResolvedValue({ enabled: true }) },
         notification: { createMany: jest.fn().mockResolvedValue({ count: 2 }) },
-        task: { create: jest.fn().mockResolvedValue({ id: 'task-1' }) },
+        task: {
+            create: jest.fn().mockResolvedValue({ id: 'task-1' }),
+            findFirst: jest.fn().mockResolvedValue(null),
+        },
         risk: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
     } as any;
 }
@@ -110,5 +118,63 @@ describe('executeAction', () => {
         }, baseEvent);
         expect(res.ok).toBe(false);
         expect(res.summary).toMatch(/failed/i);
+    });
+});
+
+describe('PR-D hardening guards', () => {
+    const ruleOf = (actionType: string, actionConfigJson: unknown) => ({
+        id: 'r1', name: 'R', actionType, createdByUserId: 'u1', actionConfigJson,
+    });
+
+    it('UPDATE_STATUS rejects a non-status field', async () => {
+        const db = makeDb();
+        const res = await executeAction(db, ruleOf('UPDATE_STATUS', {
+            entityType: 'Risk', field: 'treatmentNotes', toStatus: 'pwned',
+        }), baseEvent);
+        expect(res.ok).toBe(false);
+        expect(db.risk.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('UPDATE_STATUS rejects an illegal target status', async () => {
+        const db = makeDb();
+        const res = await executeAction(db, ruleOf('UPDATE_STATUS', {
+            entityType: 'Risk', field: 'status', toStatus: 'banana',
+        }), baseEvent);
+        expect(res.ok).toBe(false);
+        expect(res.summary).toMatch(/illegal/i);
+        expect(db.risk.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('WEBHOOK blocks a non-https URL (no fetch)', async () => {
+        const db = makeDb();
+        const res = await executeAction(db, ruleOf('WEBHOOK', { url: 'http://example.com/h' }), baseEvent);
+        expect(res.ok).toBe(false);
+        expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it('WEBHOOK blocks a host that resolves to a private IP (no fetch)', async () => {
+        const db = makeDb();
+        lookupMock.mockResolvedValueOnce({ address: '10.0.0.5', family: 4 });
+        const res = await executeAction(db, ruleOf('WEBHOOK', { url: 'https://evil.example.com/h' }), baseEvent);
+        expect(res.ok).toBe(false);
+        expect(res.summary).toMatch(/private/i);
+        expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it('CREATE_TASK dedupes against an existing open task', async () => {
+        const db = makeDb();
+        db.task.findFirst.mockResolvedValue({ id: 'existing-task' });
+        const res = await executeAction(db, ruleOf('CREATE_TASK', { title: 'X' }), baseEvent);
+        expect(res.ok).toBe(true);
+        expect(res.detail).toMatchObject({ deduped: true });
+        expect(db.task.create).not.toHaveBeenCalled();
+    });
+
+    it('NOTIFY_USER is suppressed when the tenant disables notifications', async () => {
+        const db = makeDb();
+        db.tenantNotificationSettings.findUnique.mockResolvedValue({ enabled: false });
+        const res = await executeAction(db, ruleOf('NOTIFY_USER', { userIds: ['a'], message: 'x' }), baseEvent);
+        expect(res.ok).toBe(true);
+        expect(db.notification.createMany).not.toHaveBeenCalled();
     });
 });
