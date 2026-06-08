@@ -29,6 +29,7 @@ import {
     recordAuditStreamBufferOverflow,
     recordEntraGroupResolution,
     recordScimAuth,
+    recordEntraRoleSync,
     startQueueDepthReporting,
     startAuditStreamBufferReporting,
     _resetQueueDepthForTesting,
@@ -202,6 +203,22 @@ describe('SCIM auth recording (EI-4)', () => {
         expect(() => recordScimAuth({ outcome: 'success', reason: 'ok' })).not.toThrow();
         expect(() => recordScimAuth({ outcome: 'failure', reason: 'not_found' })).not.toThrow();
         expect(() => recordScimAuth({ outcome: 'failure', reason: 'revoked' })).not.toThrow();
+    });
+});
+
+describe('Entra role-sync recording (EI-3)', () => {
+    it('records every outcome branch without throwing', () => {
+        for (const outcome of [
+            'synced',
+            'unchanged',
+            'gate_denied',
+            'no_membership',
+            'owner_immune',
+            'no_match',
+            'no_mappings',
+        ] as const) {
+            expect(() => recordEntraRoleSync({ outcome })).not.toThrow();
+        }
     });
 });
 
