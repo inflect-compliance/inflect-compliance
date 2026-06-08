@@ -135,6 +135,36 @@ export async function saveProcessMap(
 }
 
 /**
+ * VR / PR-B follow-up — switch an existing map between DOCUMENT (process map)
+ * and AUTOMATION (visual rule editor) without a graph save. Gated on write.
+ */
+export async function setProcessMapCanvasMode(
+    ctx: RequestContext,
+    id: string,
+    canvasMode: 'DOCUMENT' | 'AUTOMATION',
+) {
+    assertCanWrite(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const ok = await ProcessMapRepository.setCanvasMode(db, ctx, id, canvasMode);
+        if (!ok) throw notFound('Process map not found');
+        await logEvent(db, ctx, {
+            action: 'UPDATE',
+            entityType: 'ProcessMap',
+            entityId: id,
+            details: `Set canvas mode: ${canvasMode}`,
+            detailsJson: {
+                category: 'entity_lifecycle',
+                entityName: 'ProcessMap',
+                operation: 'updated',
+                after: { canvasMode },
+                summary: `Canvas mode → ${canvasMode}`,
+            },
+        });
+        return { id, canvasMode };
+    });
+}
+
+/**
  * Epic P2-PR-C — reverse lookup. Returns the process maps + edges
  * referencing a given control. Read-only; surfaces "Where is this
  * control used?" on the Control detail page.

@@ -89,6 +89,7 @@ import { CanvasEmphasisProvider } from "@/lib/processes/canvas-emphasis-context"
 import { inferEdgeKind } from "@/lib/processes/edge-kind-inference";
 import { RunModeProvider, useRunMode } from "@/lib/processes/run-mode-context";
 import { CanvasOverlayProvider } from "@/lib/processes/canvas-execution-overlay";
+import { patchCanvasMode } from "@/lib/processes/switch-canvas-mode";
 import {
     alignNodes,
     distributeNodes,
@@ -972,6 +973,24 @@ function Inner({
         },
         [tenantSlug, processes, onProcessesChange, onActiveIdChange],
     );
+
+    // PR-B follow-up — convert the active map between process-map (DOCUMENT)
+    // and the visual rule editor (AUTOMATION) without a graph save.
+    const handleSwitchMode = useCallback(async () => {
+        if (!activeId || !activeProcess) return;
+        const next =
+            activeProcess.canvasMode === "AUTOMATION" ? "DOCUMENT" : "AUTOMATION";
+        try {
+            await patchCanvasMode(tenantSlug, activeId, next);
+            onProcessesChange(
+                processes.map((p) =>
+                    p.id === activeId ? { ...p, canvasMode: next } : p,
+                ),
+            );
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Mode switch failed");
+        }
+    }, [activeId, activeProcess, tenantSlug, processes, onProcessesChange]);
 
     // ─── Canvas plumbing (xyflow change handlers + drop) ───────────
     //
@@ -1928,6 +1947,7 @@ function Inner({
                     handleUndo,
                     handleRedo,
                     setSnapEnabled,
+                    onSwitchMode: handleSwitchMode,
                 }}
                 exportSlot={
                     activeId && activeProcess ? (

@@ -133,6 +133,14 @@ export function ProcessesClient({
                         </button>
                     );
                 })}
+                {/* PR-B follow-up — cross-map governance meta-graph. */}
+                <a
+                    href={`/t/${tenantSlug}/processes/governance`}
+                    className="ml-auto self-center px-4 py-2 text-sm font-medium text-content-muted hover:text-content-emphasis whitespace-nowrap"
+                    data-testid="governance-graph-link"
+                >
+                    Governance graph →
+                </a>
             </nav>
             <div className="min-h-0 flex-1 pt-3">
                 {tab === "rules" ? (

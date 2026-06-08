@@ -1,14 +1,21 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { getTenantCtx } from '@/app-layer/context';
 import {
     getProcessMap,
     saveProcessMap,
+    setProcessMapCanvasMode,
     deleteProcessMap,
 } from '@/app-layer/usecases/process-map';
 import { withValidatedBody } from '@/lib/validation/route';
 import { SaveProcessMapSchema } from '@/app-layer/schemas/process-map';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
+
+/** PATCH — metadata-only mode switch (no graph save). */
+const PatchProcessMapSchema = z.object({
+    canvasMode: z.enum(['DOCUMENT', 'AUTOMATION']),
+});
 
 export const GET = withApiErrorHandling(
     async (
@@ -34,6 +41,22 @@ export const PUT = withApiErrorHandling(
             const ctx = await getTenantCtx(params, req);
             const map = await saveProcessMap(ctx, params.id, body);
             return jsonResponse(map);
+        },
+    ),
+);
+
+export const PATCH = withApiErrorHandling(
+    withValidatedBody(
+        PatchProcessMapSchema,
+        async (
+            req,
+            { params: paramsPromise }: { params: Promise<{ tenantSlug: string; id: string }> },
+            body,
+        ) => {
+            const params = await paramsPromise;
+            const ctx = await getTenantCtx(params, req);
+            const result = await setProcessMapCanvasMode(ctx, params.id, body.canvasMode);
+            return jsonResponse(result);
         },
     ),
 );

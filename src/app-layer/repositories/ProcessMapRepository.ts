@@ -171,6 +171,23 @@ export class ProcessMapRepository {
         };
     }
 
+    /**
+     * VR / PR-B follow-up — flip a map's canvasMode (DOCUMENT ⇄ AUTOMATION)
+     * without touching the graph. Returns false if no row matched.
+     */
+    static async setCanvasMode(
+        db: PrismaTx,
+        ctx: RequestContext,
+        id: string,
+        canvasMode: 'DOCUMENT' | 'AUTOMATION',
+    ): Promise<boolean> {
+        const res = await db.processMap.updateMany({
+            where: { id, tenantId: ctx.tenantId, deletedAt: null },
+            data: { canvasMode },
+        });
+        return res.count > 0;
+    }
+
     static async create(
         db: PrismaTx,
         ctx: RequestContext,

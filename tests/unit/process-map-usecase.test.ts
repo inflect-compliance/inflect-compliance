@@ -28,6 +28,7 @@ jest.mock('@/app-layer/repositories/ProcessMapRepository', () => ({
         create: jest.fn(),
         replaceGraph: jest.fn(),
         softDelete: jest.fn(),
+        setCanvasMode: jest.fn(),
     },
 }));
 
@@ -44,6 +45,7 @@ import {
     getProcessMap,
     createProcessMap,
     saveProcessMap,
+    setProcessMapCanvasMode,
     deleteProcessMap,
 } from '@/app-layer/usecases/process-map';
 
@@ -295,5 +297,30 @@ describe('deleteProcessMap', () => {
         await expect(deleteProcessMap(writerCtx, 'pm-missing')).rejects.toThrow(
             'Process map not found',
         );
+    });
+});
+
+describe('setProcessMapCanvasMode', () => {
+    it('switches mode + audits when the map exists', async () => {
+        (ProcessMapRepository.setCanvasMode as jest.Mock).mockResolvedValue(true);
+        const res = await setProcessMapCanvasMode(writerCtx, 'pm-1', 'AUTOMATION');
+        expect(res).toEqual({ id: 'pm-1', canvasMode: 'AUTOMATION' });
+        expect(ProcessMapRepository.setCanvasMode).toHaveBeenCalledWith(
+            mockDb, writerCtx, 'pm-1', 'AUTOMATION',
+        );
+        expect(logEvent).toHaveBeenCalled();
+    });
+
+    it('throws notFound when no map matched', async () => {
+        (ProcessMapRepository.setCanvasMode as jest.Mock).mockResolvedValue(false);
+        await expect(
+            setProcessMapCanvasMode(writerCtx, 'pm-missing', 'DOCUMENT'),
+        ).rejects.toThrow('Process map not found');
+    });
+
+    it('rejects a reader (no write permission)', async () => {
+        await expect(
+            setProcessMapCanvasMode(makeCtx('READER'), 'pm-1', 'AUTOMATION'),
+        ).rejects.toBeDefined();
     });
 });

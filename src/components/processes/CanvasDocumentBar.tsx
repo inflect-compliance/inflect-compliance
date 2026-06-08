@@ -73,6 +73,8 @@ export interface CanvasDocumentBarHandlers {
     handleUndo: () => void;
     handleRedo: () => void;
     setSnapEnabled: (next: boolean | ((prev: boolean) => boolean)) => void;
+    /** PR-B follow-up — convert the active map DOCUMENT ⇄ AUTOMATION. */
+    onSwitchMode: () => void | Promise<void>;
 }
 
 export interface CanvasDocumentBarProps {
@@ -140,7 +142,9 @@ export function CanvasDocumentBar({
         handleUndo,
         handleRedo,
         setSnapEnabled,
+        onSwitchMode,
     } = handlers;
+    const currentMode = activeProcess?.canvasMode ?? "DOCUMENT";
 
     return (
         // R31 Bundle 3 (PR 1) — single document bar above the canvas.
@@ -254,6 +258,23 @@ export function CanvasDocumentBar({
                 </Button>
             )}
             <div className="ml-auto flex items-center gap-default">
+                {activeId && (
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={onSwitchMode}
+                        data-testid="canvas-mode-toggle"
+                        title={
+                            currentMode === "AUTOMATION"
+                                ? "Convert to a process map"
+                                : "Convert to an automation workflow"
+                        }
+                    >
+                        {currentMode === "AUTOMATION"
+                            ? "Mode: Automation"
+                            : "Mode: Process map"}
+                    </Button>
+                )}
                 {isAutomation && activeId && (
                     <Button
                         size="sm"

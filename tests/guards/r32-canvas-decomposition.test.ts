@@ -185,13 +185,17 @@ describe("R32-PR10 — canvas decomposition (document bar)", () => {
             //     path so AUTOMATION mode is reachable. ~25 net lines;
             //     the providers/inference already live in helper
             //     modules under src/lib/processes/.
+            //   - 2475 → 2491 (PR-B follow-up) — handleSwitchMode:
+            //     convert an existing map DOCUMENT⇄AUTOMATION from the
+            //     doc bar. ~16 lines; the PATCH itself lives in the
+            //     helper src/lib/processes/switch-canvas-mode.ts.
             // Future P6 follow-ups follow the same helper-module-
             // per-feature pattern.
             const src = read(
                 "src/components/processes/PersistedProcessCanvas.tsx",
             );
             const lines = src.split("\n").length;
-            expect(lines).toBeLessThan(2475);
+            expect(lines).toBeLessThan(2491);
         });
     });
 });
