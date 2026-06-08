@@ -256,6 +256,12 @@ model AutomationRule {
   /// instead of `nextRuleId` (and the rule's action is skipped). This makes
   /// the canvas condition-pass / condition-fail edges executable.
   elseRuleId        String?
+  /// PR-E — schedule config for time-based triggers (triggerEvent = 'SCHEDULE').
+  /// Shape: { kind: 'DATE_RELATIVE', target: 'Evidence'|'ControlException'|
+  /// 'ControlTestPlan', offsetDays: number }. The cron-trigger-sweep fires the
+  /// rule N days before the target entity's due date. null for event-triggered
+  /// rules.
+  scheduleConfigJson Json?
   /// VR-7 — when this rule belongs to a canvas sub-flow group, the enclosing
   /// group's ProcessNode.nodeKey. The governance graph (VR-10) reads this to
   /// draw sub-flow-call relationships between maps. No FK — the group node

@@ -248,6 +248,10 @@ export interface SubflowDispatchPayload {
     data: Record<string, unknown>;
 }
 
+/** PR-E — global cron sweep that fires SCHEDULE rules whose target entity is
+ * due. No payload (scans every tenant's enabled SCHEDULE rules). */
+export type ScheduleTriggerSweepPayload = Record<string, never>;
+
 /** Weekly compliance digest — executive summary email */
 export interface ComplianceDigestPayload {
     tenantId?: string;
@@ -480,6 +484,7 @@ export interface JobPayloadMap {
     'sla-monitor': SlaMonitorPayload;
     'rule-chain-dispatch': RuleChainDispatchPayload;
     'subflow-dispatch': SubflowDispatchPayload;
+    'schedule-trigger-sweep': ScheduleTriggerSweepPayload;
     'compliance-digest': ComplianceDigestPayload;
     'automation-event-dispatch': AutomationEventDispatchPayload;
     'key-rotation': KeyRotationPayload;
@@ -536,6 +541,12 @@ export const JOB_DEFAULTS: Record<JobName, {
         backoff: { type: 'exponential', delay: 5000 },
         removeOnComplete: 500,
         removeOnFail: 1000,
+    },
+    'schedule-trigger-sweep': {
+        attempts: 2,
+        backoff: { type: 'exponential', delay: 10000 },
+        removeOnComplete: 200,
+        removeOnFail: 500,
     },
     'daily-evidence-expiry': {
         attempts: 2,

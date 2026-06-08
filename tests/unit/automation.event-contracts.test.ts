@@ -90,6 +90,12 @@ function buildFakeEvent(
                 event: name,
                 data: { title: 'e', controlId: null, expiredAt: null },
             };
+        case 'SCHEDULE':
+            return {
+                ...base,
+                event: name,
+                data: { target: 'Evidence', dueAt: null, offsetDays: 7 },
+            };
         case 'ONBOARDING_STARTED':
         case 'ONBOARDING_FINISHED':
         case 'ONBOARDING_RESTARTED':

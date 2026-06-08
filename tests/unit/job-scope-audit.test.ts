@@ -54,8 +54,12 @@ describe('Executor Registry — tenantId propagation audit', () => {
             }
             const body = registrySource.slice(start, i - 1);
 
-            // Skip jobs that don't need tenantId (health-check, sync-pull)
-            if (['health-check', 'sync-pull'].includes(jobName)) continue;
+            // Skip jobs that don't need tenantId in the executor: health-check,
+            // sync-pull, and the global cron sweeps that scan every tenant and
+            // scope each query by the row's own tenantId internally (PR-E's
+            // schedule-trigger-sweep scopes by rule.tenantId in its runner +
+            // the per-(rule,entity) dispatch it enqueues).
+            if (['health-check', 'sync-pull', 'schedule-trigger-sweep'].includes(jobName)) continue;
 
             // If the parameter is named _payload, it means tenantId is being ignored
             if (paramName.startsWith('_')) {

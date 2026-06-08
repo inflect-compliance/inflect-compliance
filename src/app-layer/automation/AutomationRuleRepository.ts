@@ -88,6 +88,10 @@ export class AutomationRuleRepository {
                     : Prisma.JsonNull,
                 nextRuleId: input.nextRuleId ?? null,
                 nextRuleDelay: input.nextRuleDelay ?? null,
+                elseRuleId: input.elseRuleId ?? null,
+                scheduleConfigJson: input.scheduleConfig
+                    ? (input.scheduleConfig as Prisma.InputJsonValue)
+                    : Prisma.JsonNull,
                 createdByUserId: ctx.userId,
                 updatedByUserId: ctx.userId,
             },
@@ -147,6 +151,12 @@ export class AutomationRuleRepository {
                 input.elseRuleId === null
                     ? { disconnect: true }
                     : { connect: { id: input.elseRuleId } };
+        }
+        if (input.scheduleConfig !== undefined) {
+            data.scheduleConfigJson =
+                input.scheduleConfig === null
+                    ? Prisma.JsonNull
+                    : (input.scheduleConfig as Prisma.InputJsonValue);
         }
 
         return db.automationRule.update({ where: { id }, data });

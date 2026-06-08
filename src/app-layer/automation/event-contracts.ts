@@ -93,6 +93,15 @@ export interface EvidenceExpiredData {
     expiredAt: string | null;
 }
 
+export interface ScheduleFiredData {
+    /** The allowlisted target entity type that came due. */
+    target: string;
+    /** The entity's due-date field value (ISO). */
+    dueAt: string | null;
+    /** Days-before-due the rule was configured to fire. */
+    offsetDays: number;
+}
+
 export interface OnboardingStartedData {
     /** Empty by design — event name carries the meaning. */
     readonly _?: never;
@@ -158,6 +167,7 @@ export type AutomationDomainEvent =
     | (AutomationEventMetadata & { event: 'TEST_EVIDENCE_UNLINKED'; data: TestEvidenceUnlinkedData })
     | (AutomationEventMetadata & { event: 'EVIDENCE_EXPIRING'; data: EvidenceExpiringData })
     | (AutomationEventMetadata & { event: 'EVIDENCE_EXPIRED'; data: EvidenceExpiredData })
+    | (AutomationEventMetadata & { event: 'SCHEDULE'; data: ScheduleFiredData })
     | (AutomationEventMetadata & { event: 'ONBOARDING_STARTED'; data: OnboardingStartedData })
     | (AutomationEventMetadata & { event: 'ONBOARDING_STEP_COMPLETED'; data: OnboardingStepCompletedData })
     | (AutomationEventMetadata & { event: 'ONBOARDING_FINISHED'; data: OnboardingFinishedData })

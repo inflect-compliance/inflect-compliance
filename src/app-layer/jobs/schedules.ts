@@ -68,6 +68,12 @@ export const SCHEDULED_JOBS: ScheduleDefinition[] = [
         defaultPayload: {},
     },
     {
+        name: 'schedule-trigger-sweep',
+        pattern: '0 7 * * *',     // daily at 07:00 UTC
+        description: 'Fire SCHEDULE automation rules whose target entity is N days from its due date',
+        defaultPayload: {},
+    },
+    {
         name: 'daily-evidence-expiry',
         pattern: '0 6 * * *',     // daily at 06:00 UTC
         description: 'Sweep expiring evidence at 30/7/1 day thresholds + flush outbox',
