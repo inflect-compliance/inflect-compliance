@@ -36,6 +36,16 @@ interface AllowlistedSite {
 
 const ALLOWLISTED_MEMBERSHIP_SITES: ReadonlyArray<AllowlistedSite> = [
     {
+        file: 'src/app-layer/services/entra-group-mapper.ts',
+        reason:
+            'EI-2 Entra group → role provisioning. applyEntraGroupMapping ' +
+            'creates a membership ONLY when the user aadGroups claim matches ' +
+            'an active EntraGroupMapping (highest-priority winner), marking it ' +
+            'provisionedByEntraGroup = true. It NEVER mutates a manually-' +
+            'provisioned membership (the privilege-escalation invariant, ' +
+            'locked by the EI-4 no-manual-override ratchet).',
+    },
+    {
         file: 'src/app-layer/usecases/tenant-invites.ts',
         reason:
             'Epic 1 canonical path. redeemInvite consumes a TenantInvite ' +

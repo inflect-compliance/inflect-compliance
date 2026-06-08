@@ -185,6 +185,126 @@ export default function EntraProviderWizard() {
                     </Button>
                 </div>
             </Card>
+
+            <MappingsCard />
         </div>
+    );
+}
+
+interface Mapping {
+    id: string;
+    aadGroupId: string;
+    aadGroupName: string | null;
+    icRole: string;
+    priority: number;
+    isActive: boolean;
+}
+
+const ROLES = ['OWNER', 'ADMIN', 'EDITOR', 'READER', 'AUDITOR'] as const;
+
+function MappingsCard() {
+    const apiUrl = useTenantApiUrl();
+    const [rows, setRows] = useState<Mapping[]>([]);
+    const [draft, setDraft] = useState({ aadGroupId: '', aadGroupName: '', icRole: 'READER', priority: 0 });
+    const [err, setErr] = useState<string | null>(null);
+
+    const load = useCallback(async () => {
+        try {
+            const res = await fetch(apiUrl('/admin/entra-groups'));
+            if (res.ok) setRows(await res.json());
+        } catch {
+            /* ignore */
+        }
+    }, [apiUrl]);
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    useEffect(() => { void load(); }, [load]);
+
+    const add = useCallback(async () => {
+        setErr(null);
+        const res = await fetch(apiUrl('/admin/entra-groups'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(draft),
+        });
+        if (!res.ok) { setErr('Add failed — group ID must be a GUID and the provider configured.'); return; }
+        setDraft({ aadGroupId: '', aadGroupName: '', icRole: 'READER', priority: 0 });
+        void load();
+    }, [apiUrl, draft, load]);
+
+    const remove = useCallback(async (id: string) => {
+        await fetch(apiUrl(`/admin/entra-groups/${id}`), { method: 'DELETE' });
+        void load();
+    }, [apiUrl, load]);
+
+    return (
+        <Card className="space-y-default p-6">
+            <Heading level={3}>3 · Group → role mappings</Heading>
+            <p className="text-sm text-content-muted">
+                Highest priority wins; ties break by role severity. A manually-assigned
+                membership is never overridden.
+            </p>
+            {err && <InlineNotice variant="error">{err}</InlineNotice>}
+
+            <div className="space-y-tight">
+                {rows.filter((r) => r.isActive).map((r) => (
+                    <div
+                        key={r.id}
+                        className="flex items-center justify-between rounded-[10px] border border-border-subtle px-3 py-2 text-sm"
+                    >
+                        <span className="font-medium text-content-emphasis">
+                            {r.aadGroupName || r.aadGroupId}
+                        </span>
+                        <span className="flex items-center gap-default text-content-muted">
+                            <span>→ {r.icRole}</span>
+                            <span>p{r.priority}</span>
+                            <Button variant="ghost" size="sm" onClick={() => remove(r.id)}>
+                                Remove
+                            </Button>
+                        </span>
+                    </div>
+                ))}
+                {rows.filter((r) => r.isActive).length === 0 && (
+                    <p className="text-sm text-content-subtle">No mappings yet.</p>
+                )}
+            </div>
+
+            <div className="grid grid-cols-1 gap-default md:grid-cols-4">
+                <FormField label="Group Object ID">
+                    <Input
+                        placeholder="GUID"
+                        value={draft.aadGroupId}
+                        onChange={(e) => setDraft((d) => ({ ...d, aadGroupId: e.target.value }))}
+                    />
+                </FormField>
+                <FormField label="Name (optional)">
+                    <Input
+                        value={draft.aadGroupName}
+                        onChange={(e) => setDraft((d) => ({ ...d, aadGroupName: e.target.value }))}
+                    />
+                </FormField>
+                <FormField label="Role">
+                    <ToggleGroup
+                        selected={draft.icRole}
+                        selectAction={(v) => setDraft((d) => ({ ...d, icRole: v }))}
+                        options={ROLES.map((r) => ({ value: r, label: r }))}
+                    />
+                </FormField>
+                <FormField label="Priority">
+                    <Input
+                        inputMode="numeric"
+                        value={String(draft.priority)}
+                        onChange={(e) =>
+                            setDraft((d) => ({ ...d, priority: Number(e.target.value.replace(/\D/g, '')) || 0 }))
+                        }
+                    />
+                </FormField>
+            </div>
+            <div className="flex justify-end">
+                <Button variant="secondary" onClick={add} disabled={!draft.aadGroupId}>
+                    Add mapping
+                </Button>
+            </div>
+        </Card>
     );
 }

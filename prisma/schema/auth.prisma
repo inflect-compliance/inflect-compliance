@@ -143,6 +143,7 @@ model Tenant {
   taskLinks                         TaskLink[]
   taskWatchers                      TaskWatcher[]
   identityProviders                 TenantIdentityProvider[]
+  entraGroupMappings                EntraGroupMapping[]
   invites                           TenantInvite[]
   memberships                       TenantMembership[]
   notificationSettings              TenantNotificationSettings?
@@ -378,6 +379,7 @@ model TenantCustomRole {
   updatedAt       DateTime           @updatedAt
   tenant          Tenant             @relation(fields: [tenantId], references: [id])
   memberships     TenantMembership[]
+  entraGroupMappings EntraGroupMapping[]
 
   @@unique([tenantId, name])
   @@index([tenantId])
@@ -437,6 +439,14 @@ model TenantMembership {
   /// (The deprovision usecase is the canonical cleanup path; the FK
   /// rule is referential-integrity defence-in-depth.)
   provisionedByOrgId    String?
+  /// EI-2 — true when this membership is created/managed by the Entra
+  /// group-mapping engine. When FALSE the membership is manually curated
+  /// and the group evaluator MUST NOT override its role (the
+  /// privilege-escalation invariant, enforced by the EI-4 ratchet).
+  provisionedByEntraGroup Boolean              @default(false)
+  /// The EntraGroupMapping that last set this membership's role. NULL for
+  /// manually-provisioned memberships.
+  lastEntraGroupMappingId String?
   customRole            TenantCustomRole?      @relation(fields: [customRoleId], references: [id], onDelete: SetNull)
   invitedBy             User?                  @relation("MembershipInviter", fields: [invitedByUserId], references: [id])
   tenant                Tenant                 @relation(fields: [tenantId], references: [id])
@@ -452,6 +462,43 @@ model TenantMembership {
   @@index([tenantId, status])
   @@index([customRoleId])
   @@index([provisionedByOrgId])
+}
+
+/// EI-2 — maps an Entra ID Security Group Object ID to an IC role. When a
+/// user signs in via microsoft-entra-id and their aadGroups token claim
+/// contains this group's objectId, they receive the mapped role (or
+/// customRole) in the tenant. The highest-priority matching mapping wins.
+model EntraGroupMapping {
+  id           String   @id @default(cuid())
+  tenantId     String
+  /// FK to the TenantIdentityProvider (type = ENTRA_ID) for this tenant.
+  /// Cascade-delete so mappings can't be orphaned if the provider is removed.
+  providerId   String
+  /// AAD Security Group Object ID (GUID). Unique per tenant so two mappings
+  /// can't race to assign conflicting roles for the same group.
+  aadGroupId   String
+  /// Human-readable name (Graph-populated or admin-typed). Display only —
+  /// evaluation always keys off `aadGroupId`.
+  aadGroupName String?
+  /// Mapped IC base role.
+  icRole       Role     @default(READER)
+  /// Optional mapped custom role — takes precedence over `icRole` when set.
+  customRoleId String?
+  /// Evaluation priority (higher = evaluated first). The highest-priority
+  /// matching mapping wins; ties break by `icRole` severity.
+  priority     Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant     Tenant                 @relation(fields: [tenantId], references: [id])
+  provider   TenantIdentityProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  customRole TenantCustomRole?      @relation(fields: [customRoleId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, aadGroupId])
+  @@index([tenantId, providerId])
+  @@index([tenantId, isActive])
+  @@index([customRoleId])
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -869,6 +916,7 @@ model TenantIdentityProvider {
   updatedAt     DateTime             @updatedAt
   tenant        Tenant               @relation(fields: [tenantId], references: [id])
   identityLinks UserIdentityLink[]
+  entraGroupMappings EntraGroupMapping[]
 
   @@unique([tenantId, name])
   @@index([tenantId])

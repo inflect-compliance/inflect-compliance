@@ -117,6 +117,15 @@ export const ROUTE_PERMISSIONS: readonly RoutePermissionRule[] = [
             "admin.manage — there's no separate `admin.roles` key.",
     },
 
+    // ── EI-2 — Entra group → role mappings ──────────────────────────
+    {
+        path: new RegExp(`^${T}\\/admin\\/entra-groups(\\/.*)?$`),
+        permission: 'admin.manage',
+        note:
+            'CRUD for EntraGroupMapping. admin.manage — same tier as SSO / ' +
+            'custom roles; no separate identity-mapping key.',
+    },
+
     // ── Tenant-wide settings ────────────────────────────────────────
     {
         path: new RegExp(`^${T}\\/admin\\/settings(\\/.*)?$`),

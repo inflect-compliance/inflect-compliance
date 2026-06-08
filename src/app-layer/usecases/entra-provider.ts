@@ -5,10 +5,10 @@
  * `configJson` is the validated `EntraProviderConfig`. One Entra provider per
  * tenant (a fixed `name`). Admin-gated; secrets are masked at the route layer.
  */
-import { prisma } from '@/lib/prisma';
 import { RequestContext } from '../types';
 import { assertCanAdmin } from '../policies/common';
 import { logEvent } from '../events/audit';
+import { runInTenantContext } from '@/lib/db-context';
 import {
     EntraProviderConfigSchema,
     type EntraProviderConfig,
@@ -18,9 +18,11 @@ const ENTRA_PROVIDER_NAME = 'entra-id';
 
 export async function getEntraProvider(ctx: RequestContext) {
     assertCanAdmin(ctx);
-    return prisma.tenantIdentityProvider.findFirst({
-        where: { tenantId: ctx.tenantId, type: 'ENTRA_ID' },
-    });
+    return runInTenantContext(ctx, (db) =>
+        db.tenantIdentityProvider.findFirst({
+            where: { tenantId: ctx.tenantId, type: 'ENTRA_ID' },
+        }),
+    );
 }
 
 export async function upsertEntraProvider(
@@ -30,48 +32,47 @@ export async function upsertEntraProvider(
     assertCanAdmin(ctx);
     const config = EntraProviderConfigSchema.parse(rawConfig);
 
-    const existing = await prisma.tenantIdentityProvider.findFirst({
-        where: { tenantId: ctx.tenantId, type: 'ENTRA_ID' },
-        select: { id: true },
-    });
+    return runInTenantContext(ctx, async (db) => {
+        const existing = await db.tenantIdentityProvider.findFirst({
+            where: { tenantId: ctx.tenantId, type: 'ENTRA_ID' },
+            select: { id: true },
+        });
 
-    const row = existing
-        ? await prisma.tenantIdentityProvider.update({
-              where: { id: existing.id },
-              data: {
-                  configJson: config,
-                  emailDomains: config.allowedDomains ?? [],
-              },
-          })
-        : await prisma.tenantIdentityProvider.create({
-              data: {
-                  tenantId: ctx.tenantId,
-                  name: ENTRA_PROVIDER_NAME,
-                  type: 'ENTRA_ID',
-                  isEnabled: true,
-                  isEnforced: false,
-                  emailDomains: config.allowedDomains ?? [],
-                  configJson: config,
-              },
-          });
+        const row = existing
+            ? await db.tenantIdentityProvider.update({
+                  where: { id: existing.id },
+                  data: { configJson: config, emailDomains: config.allowedDomains ?? [] },
+              })
+            : await db.tenantIdentityProvider.create({
+                  data: {
+                      tenantId: ctx.tenantId,
+                      name: ENTRA_PROVIDER_NAME,
+                      type: 'ENTRA_ID',
+                      isEnabled: true,
+                      isEnforced: false,
+                      emailDomains: config.allowedDomains ?? [],
+                      configJson: config,
+                  },
+              });
 
-    await logEvent(prisma, ctx, {
-        action: 'UPDATE',
-        entityType: 'TenantIdentityProvider',
-        entityId: row.id,
-        details: `${existing ? 'Updated' : 'Configured'} Entra ID provider`,
-        detailsJson: {
-            category: 'entity_lifecycle',
-            entityName: 'TenantIdentityProvider',
-            operation: existing ? 'updated' : 'created',
-            after: {
-                type: 'ENTRA_ID',
-                groupClaimMode: config.groupClaimMode,
-                enforceGroupGate: config.enforceGroupGate,
+        await logEvent(db, ctx, {
+            action: 'UPDATE',
+            entityType: 'TenantIdentityProvider',
+            entityId: row.id,
+            details: `${existing ? 'Updated' : 'Configured'} Entra ID provider`,
+            detailsJson: {
+                category: 'entity_lifecycle',
+                entityName: 'TenantIdentityProvider',
+                operation: existing ? 'updated' : 'created',
+                after: {
+                    type: 'ENTRA_ID',
+                    groupClaimMode: config.groupClaimMode,
+                    enforceGroupGate: config.enforceGroupGate,
+                },
+                summary: `Entra ID provider ${existing ? 'updated' : 'configured'}`,
             },
-            summary: `Entra ID provider ${existing ? 'updated' : 'configured'}`,
-        },
-    });
+        });
 
-    return { id: row.id, config };
+        return { id: row.id, config };
+    });
 }

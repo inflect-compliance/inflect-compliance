@@ -539,6 +539,27 @@ export const authOptions: NextAuthOptions = {
                         token.aadGroups = Array.isArray(p.groups) ? p.groups : [];
                         token.aadGroupsOverage = false;
                     }
+
+                    // ── EI-2 — reconcile the IC role from the group mapping.
+                    //    The mapper never touches a manually-provisioned
+                    //    membership; re-applying claims surfaces any new role
+                    //    on this very token. Never blocks sign-in on failure.
+                    if (token.aadGroups?.length && token.userId && token.tenantId) {
+                        try {
+                            const { applyEntraGroupMapping } = await import(
+                                '@/app-layer/services/entra-group-mapper'
+                            );
+                            await applyEntraGroupMapping(
+                                token.userId,
+                                token.tenantId,
+                                token.aadGroups,
+                                'claim',
+                            );
+                            await applyMembershipClaims(token);
+                        } catch {
+                            /* group mapping is best-effort */
+                        }
+                    }
                 }
 
                 // ── MFA enforcement ──
@@ -607,6 +628,24 @@ export const authOptions: NextAuthOptions = {
             // session-revocation + OAuth-refresh checks below.
             if (trigger === 'update' && token.email) {
                 await applyMembershipClaims(token);
+                // EI-2 — re-evaluate the group mapping on refresh so a role
+                // change in Entra propagates within a token-refresh cycle.
+                if (token.aadGroups?.length && token.userId && token.tenantId) {
+                    try {
+                        const { applyEntraGroupMapping } = await import(
+                            '@/app-layer/services/entra-group-mapper'
+                        );
+                        await applyEntraGroupMapping(
+                            token.userId,
+                            token.tenantId,
+                            token.aadGroups,
+                            'refresh',
+                        );
+                        await applyMembershipClaims(token);
+                    } catch {
+                        /* best-effort */
+                    }
+                }
             }
 
             // Epic C.3 — verify session row still exists + isn't revoked.
