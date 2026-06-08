@@ -26,7 +26,7 @@
  *      not. Verified by re-curl after manually patching the
  *      bundled prod runtime — 0 unnonced scripts, fix confirmed.
  *
- * Fix: apply `patches/next+16.2.6.patch` via `patch-package`
+ * Fix: apply `patches/next+16.2.7.patch` via `patch-package`
  * (`postinstall` hook in package.json). The patch adds
  * `nonce: ctx.nonce` to the `createComponentStylesAndScripts`
  * function in:
@@ -42,7 +42,7 @@
  * Three load-bearing invariants — locked here so a future
  * `npm install` that drops the patch breaks CI:
  *
- *   1. The `patches/next+16.2.6.patch` file exists.
+ *   1. The `patches/next+16.2.7.patch` file exists.
  *   2. The `postinstall` npm script invokes `patch-package`.
  *   3. The unbundled source file contains the `nonce: ctx.nonce`
  *      line. (Verifies the patch actually applied — `npm install`
@@ -56,11 +56,11 @@ import * as path from 'node:path';
 const ROOT = path.resolve(__dirname, '../..');
 
 describe('CSP nonce — Next.js component-script patch', () => {
-    it('patches/next+16.2.6.patch is present in the tree', () => {
+    it('patches/next+16.2.7.patch is present in the tree', () => {
         // The patch is the deliverable. Without it, `npm install`
         // produces an unpatched node_modules and the R16 chart
         // CSP bug returns.
-        const patchPath = path.join(ROOT, 'patches/next+16.2.6.patch');
+        const patchPath = path.join(ROOT, 'patches/next+16.2.7.patch');
         expect(fs.existsSync(patchPath)).toBe(true);
     });
 
@@ -101,10 +101,11 @@ describe('CSP nonce — Next.js component-script patch', () => {
         );
         const bundle = fs.readFileSync(bundlePath, 'utf8');
         // Minified — the var name `a` is `ctx` in the unminified
-        // source. The unique fingerprint is the `script-${t}` key
-        // pattern AND the trailing `nonce:a.nonce`.
+        // source. The index + ctx var names are minifier-assigned and change
+        // between Next releases (16.2.6 used `${t}`/`a.nonce`; 16.2.7 uses
+        // `${r}`/`e.nonce`). Match the structural fingerprint, not the letters.
         expect(bundle).toMatch(
-            /async:!0,key:`script-\$\{t\}`,nonce:a\.nonce/,
+            /async:!0,key:`script-\$\{\w+\}`,nonce:\w+\.nonce/,
         );
     });
 });

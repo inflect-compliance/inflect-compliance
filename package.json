@@ -137,7 +137,7 @@
     "jszip": "^3.10.1",
     "lucide-react": "^1.17.0",
     "motion": "^12.40.0",
-    "next": "16.2.6",
+    "next": "16.2.7",
     "next-auth": "4.24.14",
     "next-intl": "^4.13.0",
     "nodemailer": "^8.0.10",
