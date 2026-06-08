@@ -15,6 +15,7 @@ import { useMemo, useState } from 'react';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { RuleDetailSheet } from '@/components/processes/RuleDetailSheet';
 import { RuleBuilderModal } from '@/components/processes/RuleBuilderModal';
+import { TemplateLibraryModal } from '@/components/processes/TemplateLibraryModal';
 import { Button } from '@/components/ui/button';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { CACHE_KEYS } from '@/lib/swr-keys';
@@ -86,6 +87,7 @@ function RulesTabInner({ tenantSlug }: { tenantSlug: string }) {
     const [sheetOpen, setSheetOpen] = useState(false);
     const [builderOpen, setBuilderOpen] = useState(false);
     const [editRule, setEditRule] = useState<AutomationRuleRow | null>(null);
+    const [templatesOpen, setTemplatesOpen] = useState(false);
 
     const rows = useMemo(() => {
         const all = data ?? [];
@@ -187,6 +189,11 @@ function RulesTabInner({ tenantSlug }: { tenantSlug: string }) {
                 }}
                 filters={{
                     defs: buildRuleFilters(),
+                    toolbarActions: (
+                        <Button variant="secondary" onClick={() => setTemplatesOpen(true)}>
+                            Templates
+                        </Button>
+                    ),
                     toolbarPrimary: (
                         <Button
                             variant="primary"
@@ -237,6 +244,7 @@ function RulesTabInner({ tenantSlug }: { tenantSlug: string }) {
                 setOpen={setBuilderOpen}
                 editRule={editRule}
             />
+            <TemplateLibraryModal open={templatesOpen} setOpen={setTemplatesOpen} />
         </>
     );
 }
