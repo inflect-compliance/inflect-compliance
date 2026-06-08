@@ -32,6 +32,7 @@ import { cn } from "@/lib/cn";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
 import { RulesTab } from "./RulesTab";
 import { AnalyticsTab } from "./AnalyticsTab";
+import { MonitorTab } from "./MonitorTab";
 // R31 Bundle 3 — page-level Heading + PageBreadcrumbs retired. The
 // document bar inside the canvas now carries the breadcrumbs +
 // document title inline (Figma-style).
@@ -89,11 +90,15 @@ export function ProcessesClient({
     // (border-b accent + emphasis text) — the single-tab-pattern ratchet
     // reserves the pill primitive out of app pages. Epic 9 extends this
     // with Analytics; Epic 10 adds Monitor.
-    const [tab, setTab] = useState<"canvas" | "rules" | "analytics">("canvas");
-    const TABS: ReadonlyArray<{ key: "canvas" | "rules" | "analytics"; label: string }> = [
+    const [tab, setTab] = useState<"canvas" | "rules" | "analytics" | "monitor">("canvas");
+    const TABS: ReadonlyArray<{
+        key: "canvas" | "rules" | "analytics" | "monitor";
+        label: string;
+    }> = [
         { key: "canvas", label: "Canvas" },
         { key: "rules", label: "Rules" },
         { key: "analytics", label: "Analytics" },
+        { key: "monitor", label: "Monitor" },
     ];
 
     return (
@@ -131,6 +136,8 @@ export function ProcessesClient({
                     <RulesTab tenantSlug={tenantSlug} />
                 ) : tab === "analytics" ? (
                     <AnalyticsTab />
+                ) : tab === "monitor" ? (
+                    <MonitorTab />
                 ) : (
                     <CanvasWorkspace
                         tenantSlug={tenantSlug}

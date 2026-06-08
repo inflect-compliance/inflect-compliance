@@ -11,6 +11,7 @@ import {
     AutomationExecutionRepository,
     assertCanReadAutomationHistory,
     assertCanExecuteAutomation,
+    matchesFilter,
 } from '../automation';
 import { notFound, badRequest } from '@/lib/errors/types';
 import { runInTenantContext } from '@/lib/db-context';
@@ -63,6 +64,94 @@ export async function listRuleExecutions(
             })),
             nextCursor,
         };
+    });
+}
+
+/**
+ * Live monitor feed (Epic 10): in-flight (RUNNING) executions + a recent
+ * activity tail across all rules, for the operator console.
+ */
+export async function listLiveExecutions(ctx: RequestContext) {
+    assertCanReadAutomationHistory(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const [running, recent] = await Promise.all([
+            db.automationExecution.findMany({
+                where: { tenantId: ctx.tenantId, status: 'RUNNING' },
+                orderBy: { createdAt: 'desc' },
+                take: 100,
+                include: { rule: { select: { name: true } } },
+            }),
+            db.automationExecution.findMany({
+                where: { tenantId: ctx.tenantId },
+                orderBy: { createdAt: 'desc' },
+                take: 50,
+                include: { rule: { select: { name: true } } },
+            }),
+        ]);
+        const shape = (e: (typeof recent)[number]) => ({
+            id: e.id,
+            ruleId: e.ruleId,
+            ruleName: e.rule?.name ?? '(deleted rule)',
+            triggerEvent: e.triggerEvent,
+            status: e.status,
+            triggeredBy: e.triggeredBy,
+            createdAt: e.createdAt,
+        });
+        return { running: running.map(shape), recent: recent.map(shape) };
+    });
+}
+
+/**
+ * Operator interrupt (Epic 10): cancel an in-flight execution by marking it
+ * SKIPPED. Only PENDING/RUNNING executions can be cancelled.
+ */
+export async function cancelExecution(ctx: RequestContext, executionId: string) {
+    assertCanExecuteAutomation(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const exec = await AutomationExecutionRepository.getById(db, ctx, executionId);
+        if (!exec) throw notFound('Execution not found');
+        if (exec.status !== 'RUNNING' && exec.status !== 'PENDING') {
+            throw badRequest('Only in-flight executions can be cancelled');
+        }
+        return AutomationExecutionRepository.recordCompletion(db, ctx, executionId, {
+            status: 'SKIPPED',
+            outcome: { cancelled: true, cancelledBy: ctx.userId },
+            errorMessage: 'Cancelled by operator',
+        });
+    });
+}
+
+/**
+ * Dry run (Epic 10): evaluate a rule's filter against a sample payload
+ * WITHOUT creating an execution or firing the action. Returns whether the
+ * rule would match. Defaults the sample to the rule's most recent payload.
+ */
+export async function dryRunRule(
+    ctx: RequestContext,
+    ruleId: string,
+    sampleData?: Record<string, unknown>,
+) {
+    assertCanExecuteAutomation(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const rule = await AutomationRuleRepository.getById(db, ctx, ruleId);
+        if (!rule) throw notFound('Automation rule not found');
+        const recent = await AutomationExecutionRepository.listForRule(db, ctx, ruleId, 1);
+        const data =
+            sampleData ?? (recent[0]?.triggerPayloadJson as Record<string, unknown>) ?? {};
+        const event = {
+            event: rule.triggerEvent,
+            tenantId: ctx.tenantId,
+            entityType: 'DryRun',
+            entityId: ruleId,
+            actorUserId: ctx.userId,
+            emittedAt: new Date(),
+            data,
+        };
+        const matches = matchesFilter(
+            event as never,
+            (rule.triggerFilterJson as never) ?? null,
+        );
+        return { matches, sampleData: data, triggerEvent: rule.triggerEvent };
     });
 }
 

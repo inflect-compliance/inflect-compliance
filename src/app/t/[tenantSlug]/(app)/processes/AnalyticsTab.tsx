@@ -12,6 +12,7 @@ import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
+import { KPIStat } from '@/components/ui/metric';
 import { MiniAreaChart } from '@/components/ui/mini-area-chart';
 import type { TimeSeriesPoint } from '@/components/ui/charts';
 
@@ -30,12 +31,11 @@ interface Analytics {
 const WINDOWS = [7, 30, 90] as const;
 
 function Stat({ label, value }: { label: string; value: string | number }) {
+    // Numbers flow through KPIStat (locks tabular-nums + the single metric
+    // typographic register — metric-typography ratchet).
     return (
         <Card>
-            <div className="space-y-tight">
-                <p className="text-[11px] uppercase tracking-wide text-content-subtle">{label}</p>
-                <p className="text-2xl font-semibold tabular-nums text-content-emphasis">{value}</p>
-            </div>
+            <KPIStat label={label} value={value} size="md" />
         </Card>
     );
 }
@@ -74,7 +74,7 @@ export function AnalyticsTab() {
                         key={w}
                         type="button"
                         onClick={() => setDays(w)}
-                        className={`rounded-full px-2.5 py-0.5 text-xs ${days === w ? 'bg-bg-brand-subtle text-content-emphasis' : 'bg-bg-muted text-content-muted'}`}
+                        className={`rounded-full px-2.5 py-0.5 text-xs ${days === w ? 'bg-bg-inverted text-content-inverted' : 'bg-bg-muted text-content-muted'}`}
                     >
                         {w}d
                     </button>

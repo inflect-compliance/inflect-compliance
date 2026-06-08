@@ -70,7 +70,7 @@ export function TemplateLibraryModal({ open, setOpen }: TemplateLibraryModalProp
                     <button
                         type="button"
                         onClick={() => setTag(null)}
-                        className={`rounded-full px-2.5 py-0.5 text-xs ${tag === null ? 'bg-bg-brand-subtle text-content-emphasis' : 'bg-bg-muted text-content-muted'}`}
+                        className={`rounded-full px-2.5 py-0.5 text-xs ${tag === null ? 'bg-bg-inverted text-content-inverted' : 'bg-bg-muted text-content-muted'}`}
                     >
                         All
                     </button>
@@ -79,7 +79,7 @@ export function TemplateLibraryModal({ open, setOpen }: TemplateLibraryModalProp
                             key={t}
                             type="button"
                             onClick={() => setTag(t)}
-                            className={`rounded-full px-2.5 py-0.5 text-xs capitalize ${tag === t ? 'bg-bg-brand-subtle text-content-emphasis' : 'bg-bg-muted text-content-muted'}`}
+                            className={`rounded-full px-2.5 py-0.5 text-xs capitalize ${tag === t ? 'bg-bg-inverted text-content-inverted' : 'bg-bg-muted text-content-muted'}`}
                         >
                             {t}
                         </button>
