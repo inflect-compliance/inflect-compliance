@@ -578,7 +578,9 @@ executorRegistry.register('sla-monitor', async (payload) => {
 
 executorRegistry.register('rule-chain-dispatch', async (payload) => {
     const { runRuleChainDispatch } = await import('./rule-chain-dispatch');
-    const { result } = await runRuleChainDispatch(payload);
+    // Tenant scope: payload.tenantId flows through to the chain dispatcher,
+    // which scopes every query by it (and the chained execution rows).
+    const { result } = await runRuleChainDispatch({ ...payload, tenantId: payload.tenantId });
     return result;
 });
 

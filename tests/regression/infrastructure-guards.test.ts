@@ -74,8 +74,8 @@ describe('Infrastructure Regression Guards', () => {
             }
         });
 
-        test('exactly 13 scheduled jobs exist', () => {
-            expect(SCHEDULED_JOBS).toHaveLength(13);
+        test('exactly 14 scheduled jobs exist', () => {
+            expect(SCHEDULED_JOBS).toHaveLength(14);
         });
 
         test('scheduled job names match expected set', () => {
@@ -102,6 +102,9 @@ describe('Infrastructure Regression Guards', () => {
                 'notification-dispatch',
                 'policy-review-reminder',
                 'retention-sweep',
+                // Automation Epic 5 — every-5-min SLA breach sweep over
+                // RUNNING automation executions.
+                'sla-monitor',
                 // In-app TASK_DUE notifications fired one week, one
                 // day, and on the day a task's dueAt falls.
                 'task-due-notification',
