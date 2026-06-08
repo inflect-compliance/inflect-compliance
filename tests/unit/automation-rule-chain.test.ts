@@ -102,4 +102,47 @@ describe('runRuleChainDispatch', () => {
         expect(executionId).toBeNull();
         expect(mockPrisma.automationExecution.create).not.toHaveBeenCalled();
     });
+
+    // ─── PR-F conditional branching ───
+    it('PASS branch: matching filter runs the action + follows nextRuleId', async () => {
+        mockPrisma.automationRule.findFirst.mockResolvedValue({
+            id: 'r2', actionType: 'NOTIFY_USER',
+            triggerFilterJson: { severity: 'HIGH' }, // matches basePayload.data
+            nextRuleId: 'r-pass', elseRuleId: 'r-else',
+        });
+        mockPrisma.automationExecution.create.mockResolvedValue({ id: 'exec-2' });
+
+        await runRuleChainDispatch(basePayload);
+
+        const createArg = mockPrisma.automationExecution.create.mock.calls[0][0];
+        expect(createArg.data.status).toBe('SUCCEEDED');
+        expect(createArg.data.outcomeJson.branch).toBe('pass');
+        expect(enqueueMock).toHaveBeenCalledWith(
+            'rule-chain-dispatch',
+            expect.objectContaining({ ruleId: 'r-pass' }),
+            undefined,
+        );
+    });
+
+    it('ELSE branch: non-matching filter skips the action + follows elseRuleId', async () => {
+        mockPrisma.automationRule.findFirst.mockResolvedValue({
+            id: 'r2', actionType: 'NOTIFY_USER',
+            triggerFilterJson: { severity: 'CRITICAL' }, // does NOT match HIGH
+            nextRuleId: 'r-pass', elseRuleId: 'r-else',
+        });
+        mockPrisma.automationExecution.create.mockResolvedValue({ id: 'exec-2' });
+
+        await runRuleChainDispatch(basePayload);
+
+        const createArg = mockPrisma.automationExecution.create.mock.calls[0][0];
+        expect(createArg.data.status).toBe('SKIPPED');
+        expect(createArg.data.outcomeJson.branch).toBe('else');
+        // action skipped → rule counter not bumped
+        expect(mockPrisma.automationRule.updateMany).not.toHaveBeenCalled();
+        expect(enqueueMock).toHaveBeenCalledWith(
+            'rule-chain-dispatch',
+            expect.objectContaining({ ruleId: 'r-else' }),
+            undefined,
+        );
+    });
 });

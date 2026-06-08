@@ -74,6 +74,23 @@ describe('syncCanvasToRules', () => {
             nextRuleDelay: 15,
         });
     });
+
+    it('PR-F: materializes condition-pass → nextRuleId and condition-fail → elseRuleId', async () => {
+        const db = makeDb(
+            [
+                { nodeKey: 'a1', nodeType: 'action', label: 'A', dataJson: { ruleId: 'r1' } },
+                { nodeKey: 'a2', nodeType: 'action', label: 'B', dataJson: { ruleId: 'r2' } },
+                { nodeKey: 'a3', nodeType: 'action', label: 'C', dataJson: { ruleId: 'r3' } },
+            ],
+            [
+                { sourceKey: 'a1', targetKey: 'a2', edgeKind: 'condition-pass', dataJson: null },
+                { sourceKey: 'a1', targetKey: 'a3', edgeKind: 'condition-fail', dataJson: null },
+            ],
+        );
+        await syncCanvasToRules(db, ctx, 'map-1');
+        expect(repo.update).toHaveBeenCalledWith(db, ctx, 'r1', { nextRuleId: 'r2', nextRuleDelay: null });
+        expect(repo.update).toHaveBeenCalledWith(db, ctx, 'r1', { elseRuleId: 'r3' });
+    });
 });
 
 describe('hydrateCanvasFromRules', () => {

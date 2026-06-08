@@ -124,6 +124,9 @@ export interface AutomationRuleSlaInput {
     /** Epic 7 — chain to this rule after success. */
     nextRuleId?: string | null;
     nextRuleDelay?: number | null;
+    /** PR-F — chain to this rule when the (chained) rule's filter does NOT
+     * match the payload (the else / condition-fail branch). */
+    elseRuleId?: string | null;
 }
 
 export interface CreateAutomationRuleInput extends AutomationRuleSlaInput {

@@ -13,6 +13,7 @@ import { runJob } from '@/lib/observability/job-runner';
 import { prisma } from '@/lib/prisma';
 import type { JobRunResult, RuleChainDispatchPayload } from './types';
 import { executeAction } from '../automation/action-executor';
+import { matchesFilter } from '../automation/filters';
 
 const MAX_CHAIN_DEPTH = 10;
 
@@ -34,26 +35,45 @@ export async function runRuleChainDispatch(
 
             if (rule) {
                 const actionStart = Date.now();
-                const outcome = await executeAction(prisma, rule, {
-                    tenantId,
+                // PR-F — the chained rule's own filter is the branch condition.
+                // Matches → run the action + follow nextRuleId (pass branch).
+                // Doesn't match → skip the action + follow elseRuleId (fail
+                // branch). This makes the canvas condition-pass/fail edges real.
+                const filterEvent = {
                     event: triggerEvent,
-                    data: { ...data, __parentExecutionId: parentExecutionId },
-                });
+                    tenantId,
+                    data,
+                } as unknown as Parameters<typeof matchesFilter>[0];
+                const matched = matchesFilter(
+                    filterEvent,
+                    rule.triggerFilterJson as Parameters<typeof matchesFilter>[1],
+                );
+
+                const outcome = matched
+                    ? await executeAction(prisma, rule, {
+                          tenantId,
+                          event: triggerEvent,
+                          data: { ...data, __parentExecutionId: parentExecutionId },
+                      })
+                    : { ok: true, summary: 'Condition not met — took the else branch' };
+
+                const status = !matched ? 'SKIPPED' : outcome.ok ? 'SUCCEEDED' : 'FAILED';
                 const exec = await prisma.automationExecution.create({
                     data: {
                         tenantId,
                         ruleId: rule.id,
                         triggerEvent,
                         triggerPayloadJson: data as never,
-                        status: outcome.ok ? 'SUCCEEDED' : 'FAILED',
+                        status,
                         triggeredBy: 'chain',
                         parentExecutionId,
-                        errorMessage: outcome.ok ? null : outcome.summary,
+                        errorMessage: !matched || outcome.ok ? null : outcome.summary,
                         outcomeJson: {
                             actionType: rule.actionType,
                             summary: outcome.summary,
                             chainDepth: depth,
-                            ...(outcome.detail ?? {}),
+                            branch: matched ? 'pass' : 'else',
+                            ...(matched ? outcome.detail ?? {} : {}),
                         },
                         durationMs: Date.now() - actionStart,
                         startedAt: new Date(),
@@ -62,26 +82,29 @@ export async function runRuleChainDispatch(
                 });
                 executionId = exec.id;
 
-                await prisma.automationRule.updateMany({
-                    where: { id: rule.id, tenantId },
-                    data: { executionCount: { increment: 1 }, lastTriggeredAt: new Date() },
-                });
+                if (matched) {
+                    await prisma.automationRule.updateMany({
+                        where: { id: rule.id, tenantId },
+                        data: { executionCount: { increment: 1 }, lastTriggeredAt: new Date() },
+                    });
+                }
 
-                // Chain onward.
-                if (rule.nextRuleId) {
+                // Branch onward: pass → nextRuleId, fail → elseRuleId.
+                const branchRuleId = matched ? rule.nextRuleId : rule.elseRuleId;
+                if (branchRuleId) {
                     chained = true;
                     const { enqueue } = await import('./queue');
                     await enqueue(
                         'rule-chain-dispatch',
                         {
                             tenantId,
-                            ruleId: rule.nextRuleId,
+                            ruleId: branchRuleId,
                             parentExecutionId: exec.id,
                             triggerEvent,
                             data,
                             depth: depth + 1,
                         },
-                        rule.nextRuleDelay ? { delay: rule.nextRuleDelay * 60_000 } : undefined,
+                        matched && rule.nextRuleDelay ? { delay: rule.nextRuleDelay * 60_000 } : undefined,
                     );
                 }
             }

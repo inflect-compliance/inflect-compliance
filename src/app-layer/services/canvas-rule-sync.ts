@@ -28,6 +28,8 @@ import { AutomationRuleRepository } from '../automation';
 
 const ACTION_KIND = 'action';
 const CHAIN_EDGE_KIND = 'chain-delay';
+const PASS_EDGE_KIND = 'condition-pass';
+const FAIL_EDGE_KIND = 'condition-fail';
 
 interface GraphNode {
     nodeKey: string;
@@ -67,7 +69,11 @@ export async function syncCanvasToRules(
         select: { nodeKey: true, nodeType: true, label: true, dataJson: true },
     })) as GraphNode[];
     const edges = (await db.processEdge.findMany({
-        where: { processMapId, tenantId: ctx.tenantId, edgeKind: CHAIN_EDGE_KIND },
+        where: {
+            processMapId,
+            tenantId: ctx.tenantId,
+            edgeKind: { in: [CHAIN_EDGE_KIND, PASS_EDGE_KIND, FAIL_EDGE_KIND] },
+        },
         select: { sourceKey: true, targetKey: true, edgeKind: true, dataJson: true },
     })) as GraphEdge[];
 
@@ -101,18 +107,31 @@ export async function syncCanvasToRules(
         });
     }
 
-    // Wire chain topology: chain-delay edge (action → action) sets the source
-    // rule's nextRuleId + delay. Pure structure — no logic copied.
+    // Wire chain topology — pure structure, no node logic copied:
+    //   chain-delay     → nextRuleId (+ delay)   [linear next]
+    //   condition-pass  → nextRuleId             [branch: filter matched]
+    //   condition-fail  → elseRuleId             [branch: filter did not match]
+    // The dispatcher (rule-chain-dispatch) evaluates the target rule's filter
+    // at run time and follows nextRuleId on match / elseRuleId on miss.
     let chainsLinked = 0;
     for (const edge of edges) {
         const sourceRuleId = ruleByNodeKey.get(edge.sourceKey);
         const targetRuleId = ruleByNodeKey.get(edge.targetKey);
         if (!sourceRuleId || !targetRuleId) continue;
-        const delay = (edge.dataJson as { delayMinutes?: unknown } | null)?.delayMinutes;
-        await AutomationRuleRepository.update(db, ctx, sourceRuleId, {
-            nextRuleId: targetRuleId,
-            nextRuleDelay: typeof delay === 'number' ? delay : null,
-        });
+        if (edge.edgeKind === FAIL_EDGE_KIND) {
+            await AutomationRuleRepository.update(db, ctx, sourceRuleId, {
+                elseRuleId: targetRuleId,
+            });
+        } else {
+            const delay =
+                edge.edgeKind === CHAIN_EDGE_KIND
+                    ? (edge.dataJson as { delayMinutes?: unknown } | null)?.delayMinutes
+                    : undefined;
+            await AutomationRuleRepository.update(db, ctx, sourceRuleId, {
+                nextRuleId: targetRuleId,
+                nextRuleDelay: typeof delay === 'number' ? delay : null,
+            });
+        }
         chainsLinked++;
     }
 

@@ -142,6 +142,12 @@ export class AutomationRuleRepository {
                     : { connect: { id: input.nextRuleId } };
         }
         if (input.nextRuleDelay !== undefined) data.nextRuleDelay = input.nextRuleDelay;
+        if (input.elseRuleId !== undefined) {
+            data.elseRule =
+                input.elseRuleId === null
+                    ? { disconnect: true }
+                    : { connect: { id: input.elseRuleId } };
+        }
 
         return db.automationRule.update({ where: { id }, data });
     }
