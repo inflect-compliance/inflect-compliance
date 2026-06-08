@@ -154,21 +154,12 @@ export default function EntraProviderWizard() {
                         }
                     />
                 </FormField>
-                <FormField label="Group claim mode">
-                    <ToggleGroup
-                        selected={config.groupClaimMode}
-                        selectAction={(v) =>
-                            setConfig((c) => ({ ...c, groupClaimMode: v as EntraConfig['groupClaimMode'] }))
-                        }
-                        options={[
-                            { value: 'securityGroup', label: 'Security groups' },
-                            { value: 'applicationRole', label: 'Application roles' },
-                        ]}
-                    />
-                </FormField>
+                {/* Group claim mode is fixed to Security groups — Application
+                    Roles aren't supported yet (the resolver reads the `groups`
+                    claim only); the schema keeps the value for back-compat. */}
                 <FormField
                     label="Enforce group gate"
-                    hint="When on, a user must belong to at least one mapped group to gain access."
+                    hint="When on, a user who matches none of your group → role mappings is denied access. Only takes effect once you've added at least one mapping below."
                 >
                     <ToggleGroup
                         selected={config.enforceGroupGate ? 'on' : 'off'}

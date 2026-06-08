@@ -9,8 +9,9 @@ Files (currently seeded from Microsoft's **documented** shapes — no live captu
 was available; replace each verbatim with a redacted real capture when one is,
 per the EI audit/polish pass. Each carries a `_fixture_note` saying so):
 
-- `memberOf-page.json` — a `GET /me/memberOf?$select=id` response page.
-  Confirms `value: [{ "id", "@odata.type" }]` + the `@odata.nextLink` key.
+- `memberOf-page.json` — a `GET /me/memberOf/microsoft.graph.group?$select=id`
+  response page (the typed cast we use — returns groups only). Confirms
+  `value: [{ "id", "@odata.type" }]` + the `@odata.nextLink` key.
 - `overage-claim-names.json` — the `_claim_names` / `_claim_sources` block from a
   decoded ID token of a user in > ~200 groups (the overage marker).
 

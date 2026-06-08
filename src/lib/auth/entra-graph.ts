@@ -8,8 +8,13 @@
  * exhaustively unit-testable without network.
  */
 
+// Typed `microsoft.graph.group` cast on the memberOf collection so Graph
+// returns ONLY security/M365 groups — `/me/memberOf` is heterogeneous and would
+// otherwise mix in directoryRoles + administrativeUnits, whose ids would then
+// leak into the group list. Server-side filtering beats a client `@odata.type`
+// guess (which `$select=id` can omit).
 const GRAPH_MEMBER_OF =
-    'https://graph.microsoft.com/v1.0/me/memberOf?$select=id&$top=500';
+    'https://graph.microsoft.com/v1.0/me/memberOf/microsoft.graph.group?$select=id&$top=999';
 const GRAPH_GROUP =
     'https://graph.microsoft.com/v1.0/groups';
 
@@ -25,10 +30,11 @@ interface GraphMemberOfPage {
 }
 
 /**
- * Fetch the signed-in user's full security-group membership via Graph.
- * Follows `@odata.nextLink` cursor pagination and de-duplicates ids. Only
- * directory groups are returned (directory roles / other directory objects
- * that `memberOf` can surface are filtered out by the `id` presence guard).
+ * Fetch the signed-in user's full group membership via Graph.
+ * Follows `@odata.nextLink` cursor pagination and de-duplicates ids. The
+ * `microsoft.graph.group` cast in the URL makes Graph return ONLY groups —
+ * directoryRoles / administrativeUnits that the bare `memberOf` collection
+ * surfaces are excluded server-side, so their ids never leak into the list.
  *
  * Returns `[]` on any non-OK response or transport error — a Graph outage must
  * never block sign-in; the caller treats an empty list as "no groups resolved".

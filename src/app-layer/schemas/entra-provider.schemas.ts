@@ -12,8 +12,13 @@ export const EntraProviderConfigSchema = z.object({
     /** App-registration client ID used for the group-claims assignment. */
     clientId: z.string().uuid(),
     /**
-     * 'securityGroup'   → all security-group OIDs in the `groups` claim
-     * 'applicationRole' → App Roles (requires App Role assignment in Entra)
+     * 'securityGroup'   → security-group OIDs in the `groups` claim (the only
+     *                     mode the resolver implements today).
+     * 'applicationRole' → RESERVED, not yet implemented. The value is kept in
+     *                     the enum for stored-config back-compat, but the admin
+     *                     UI no longer offers it and nothing reads it — the
+     *                     resolver always reads the `groups` claim. Wire App
+     *                     Role (`roles` claim) handling before exposing it.
      */
     groupClaimMode: z.enum(['securityGroup', 'applicationRole']).default('securityGroup'),
     /**
