@@ -7,12 +7,13 @@
  * execution via `parentExecutionId` — so a sub-flow's runs roll up to their
  * caller in the execution history + governance graph.
  *
- * Action handlers remain stubbed at the foundation level (record intent),
- * consistent with automation-event-dispatch + rule-chain-dispatch.
+ * The entry rule's action executes for real via `executeAction`, consistent
+ * with automation-event-dispatch + rule-chain-dispatch.
  */
 import { runJob } from '@/lib/observability/job-runner';
 import { prisma } from '@/lib/prisma';
 import type { JobRunResult, SubflowDispatchPayload } from './types';
+import { executeAction } from '../automation/action-executor';
 
 export async function runSubflowDispatch(
     payload: SubflowDispatchPayload,
@@ -36,21 +37,29 @@ export async function runSubflowDispatch(
 
         let executionId: string | null = null;
         if (entry) {
+            const actionStart = Date.now();
+            const outcome = await executeAction(prisma, entry, {
+                tenantId,
+                event: triggerEvent,
+                data: { ...data, __parentExecutionId: parentExecutionId },
+            });
             const exec = await prisma.automationExecution.create({
                 data: {
                     tenantId,
                     ruleId: entry.id,
                     triggerEvent,
                     triggerPayloadJson: data as never,
-                    status: 'SUCCEEDED',
+                    status: outcome.ok ? 'SUCCEEDED' : 'FAILED',
                     triggeredBy: 'subflow',
                     parentExecutionId,
+                    errorMessage: outcome.ok ? null : outcome.summary,
                     outcomeJson: {
                         actionType: entry.actionType,
-                        note: 'sub-flow entry execution (action handlers register in a later epic)',
+                        summary: outcome.summary,
                         subFlowGroupId: targetGroupId,
+                        ...(outcome.detail ?? {}),
                     },
-                    durationMs: 0,
+                    durationMs: Date.now() - actionStart,
                     startedAt: new Date(),
                     completedAt: new Date(),
                 },

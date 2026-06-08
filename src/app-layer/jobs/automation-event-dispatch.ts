@@ -32,6 +32,7 @@ import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/observability/logger';
 import { runJob } from '@/lib/observability/job-runner';
 import { matchesFilter } from '../automation/filters';
+import { executeAction } from '../automation/action-executor';
 import type {
     AutomationDomainEvent,
     AutomationEventMetadata,
@@ -216,22 +217,33 @@ export async function runAutomationEventDispatch(
 
                 const startedAt = Date.now();
                 try {
-                    // === Action handlers would plug in here ===
-                    // For the foundation epic, we record what would
-                    // have fired so the dispatch pipeline is observable
-                    // even before action handlers exist.
+                    // Execute the rule's action for real. The row stays RUNNING
+                    // for the duration of the action (so a slow WEBHOOK is
+                    // observable by the SLA sweep); the result settles it
+                    // SUCCEEDED or FAILED.
+                    const outcome = await executeAction(prisma, rule, {
+                        tenantId: event.tenantId,
+                        event: event.event,
+                        entityType: event.entityType,
+                        entityId: event.entityId,
+                        actorUserId: event.actorUserId,
+                        data: event.data as Record<string, unknown> | undefined,
+                    });
                     await prisma.automationExecution.update({
                         where: { id: executionId },
                         data: {
-                            status: 'SUCCEEDED',
+                            status: outcome.ok ? 'SUCCEEDED' : 'FAILED',
                             outcomeJson: {
                                 actionType: rule.actionType,
-                                note: 'no-op: action handlers register in a later epic',
+                                summary: outcome.summary,
+                                ...(outcome.detail ?? {}),
                             },
+                            errorMessage: outcome.ok ? null : outcome.summary,
                             durationMs: Date.now() - startedAt,
                             completedAt: new Date(),
                         },
                     });
+                    if (!outcome.ok) result.executionsFailed++;
 
                     // 5. Counter bump on the rule — non-audit,
                     //    dispatcher-only mutation.

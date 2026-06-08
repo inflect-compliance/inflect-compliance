@@ -6,13 +6,13 @@
  * itself chains onward — enqueues the next step after its delay.
  *
  * Cycle backstop: `depth` is capped (a rule mis-configured into a loop
- * despite the create-time DFS guard can't run forever). Action handlers are
- * still stubbed at the foundation level, so this records intent consistently
- * with automation-event-dispatch.
+ * despite the create-time DFS guard can't run forever). Each link executes its
+ * action for real via `executeAction`, consistent with automation-event-dispatch.
  */
 import { runJob } from '@/lib/observability/job-runner';
 import { prisma } from '@/lib/prisma';
 import type { JobRunResult, RuleChainDispatchPayload } from './types';
+import { executeAction } from '../automation/action-executor';
 
 const MAX_CHAIN_DEPTH = 10;
 
@@ -33,21 +33,29 @@ export async function runRuleChainDispatch(
             });
 
             if (rule) {
+                const actionStart = Date.now();
+                const outcome = await executeAction(prisma, rule, {
+                    tenantId,
+                    event: triggerEvent,
+                    data: { ...data, __parentExecutionId: parentExecutionId },
+                });
                 const exec = await prisma.automationExecution.create({
                     data: {
                         tenantId,
                         ruleId: rule.id,
                         triggerEvent,
                         triggerPayloadJson: data as never,
-                        status: 'SUCCEEDED',
+                        status: outcome.ok ? 'SUCCEEDED' : 'FAILED',
                         triggeredBy: 'chain',
                         parentExecutionId,
+                        errorMessage: outcome.ok ? null : outcome.summary,
                         outcomeJson: {
                             actionType: rule.actionType,
-                            note: 'chained execution (action handlers register in a later epic)',
+                            summary: outcome.summary,
                             chainDepth: depth,
+                            ...(outcome.detail ?? {}),
                         },
-                        durationMs: 0,
+                        durationMs: Date.now() - actionStart,
                         startedAt: new Date(),
                         completedAt: new Date(),
                     },

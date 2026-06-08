@@ -122,6 +122,48 @@ describeFn('Automation event flow — emit → dispatch → execution row', () =
         expect(after?.lastTriggeredAt).toBeInstanceOf(Date);
     });
 
+    test('NOTIFY_USER actually creates a Notification row for a real member', async () => {
+        // Real recipient — a user who is a member of the firing tenant.
+        const user = await prisma.user.create({
+            data: { email: `notify-${TEST_PREFIX}@example.com`, name: 'Notify Target' },
+        });
+        await prisma.tenantMembership.create({
+            data: { tenantId, userId: user.id, role: 'EDITOR', status: 'ACTIVE' },
+        });
+        const rule = await prisma.automationRule.create({
+            data: {
+                tenantId,
+                name: `${TEST_PREFIX}-rule-notify`,
+                triggerEvent: 'RISK_CREATED',
+                actionType: 'NOTIFY_USER',
+                actionConfigJson: { userIds: [user.id], message: 'a risk needs you' },
+                status: 'ENABLED',
+                priority: 0,
+            },
+        });
+
+        const result = await runAutomationEventDispatch(buildEventPayload());
+        expect(result.executionsFailed).toBe(0);
+
+        // The action executed for real — a Notification row exists.
+        const notes = await prisma.notification.findMany({
+            where: { tenantId, userId: user.id },
+        });
+        expect(notes).toHaveLength(1);
+        expect(notes[0]).toMatchObject({ message: 'a risk needs you', title: rule.name });
+
+        const exec = await prisma.automationExecution.findFirst({
+            where: { tenantId, ruleId: rule.id },
+        });
+        expect(exec?.status).toBe('SUCCEEDED');
+        expect(exec?.outcomeJson).toMatchObject({ notified: 1 });
+
+        // Cleanup the extra rows this test created.
+        await prisma.notification.deleteMany({ where: { tenantId, userId: user.id } });
+        await prisma.tenantMembership.deleteMany({ where: { userId: user.id } });
+        await prisma.user.delete({ where: { id: user.id } });
+    });
+
     test('non-matching filter does not create an execution row', async () => {
         await prisma.automationRule.create({
             data: {
