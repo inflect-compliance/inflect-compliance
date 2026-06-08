@@ -13,6 +13,7 @@ import { ToggleGroup } from '@/components/ui/toggle-group';
 import { InlineNotice } from '@/components/ui/inline-notice';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { GroupMappingsSection } from './GroupMappingsSection';
 
 interface EntraConfig {
     aadTenantId: string;
@@ -185,6 +186,9 @@ export default function EntraProviderWizard() {
                     </Button>
                 </div>
             </Card>
+
+            {/* Step 3 — group → role mappings (EI-2) */}
+            <GroupMappingsSection apiUrl={apiUrl} />
         </div>
     );
 }

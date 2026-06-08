@@ -143,6 +143,7 @@ model Tenant {
   taskLinks                         TaskLink[]
   taskWatchers                      TaskWatcher[]
   identityProviders                 TenantIdentityProvider[]
+  entraGroupMappings                TenantEntraGroupMapping[]
   invites                           TenantInvite[]
   memberships                       TenantMembership[]
   notificationSettings              TenantNotificationSettings?
@@ -871,6 +872,30 @@ model TenantIdentityProvider {
   identityLinks UserIdentityLink[]
 
   @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+/// EI-2 — maps an Entra ID security-group object id to an IC role. At sign-in
+/// (EI-3) a user's resolved `aadGroups` are matched against these rows to sync
+/// their tenant-membership role. `priority` breaks ties when a user is in
+/// several mapped groups (higher wins). OWNER is intentionally not a permitted
+/// target — ownership stays manually granted (see the Zod schema).
+model TenantEntraGroupMapping {
+  id              String   @id @default(cuid())
+  tenantId        String
+  /// Entra security-group object id (GUID).
+  aadGroupId      String
+  /// Cached Graph display name, for the admin UI only (never load-bearing).
+  aadGroupName    String?
+  role            Role
+  /// Higher wins when a user matches multiple mappings.
+  priority        Int      @default(0)
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, aadGroupId])
   @@index([tenantId])
 }
 

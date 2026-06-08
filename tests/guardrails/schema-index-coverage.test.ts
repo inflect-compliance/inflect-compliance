@@ -442,6 +442,8 @@ const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
         'filtered only by tenantId plus leading-indexed FK / status columns — Layers A/B cover its query shapes; no curated composite index needed today.',
     TenantCustomRole:
         'filtered only by tenantId plus leading-indexed FK / status columns — Layers A/B cover its query shapes; no curated composite index needed today.',
+    TenantEntraGroupMapping:
+        'listed by tenantId only (ordered by priority/createdAt, take 500); @@index([tenantId]) + @@unique([tenantId, aadGroupId]) — Layers A/B cover its query shapes; no curated composite index needed today.',
     TenantIdentityProvider:
         'filtered only by tenantId plus leading-indexed FK / status columns — Layers A/B cover its query shapes; no curated composite index needed today.',
     TenantInvite:
