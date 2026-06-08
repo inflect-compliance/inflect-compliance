@@ -12,8 +12,12 @@
  * dispatcher regresses to a hardcoded outcome note.
  */
 import { createHmac } from 'node:crypto';
+import { lookup } from 'node:dns/promises';
 import type { PrismaClient } from '@prisma/client';
 import { enqueue } from '../jobs/queue';
+import { checkWebhookUrl, isPrivateAddress } from './webhook-safety';
+import { isNotificationsEnabled } from '../notifications/settings';
+import { TERMINAL_WORK_ITEM_STATUSES } from '../domain/work-item-status';
 import type {
     NotifyUserActionConfig,
     CreateTaskActionConfig,
@@ -52,6 +56,26 @@ type Db = PrismaClient | Record<string, any>; // eslint-disable-line @typescript
 const WEBHOOK_TIMEOUT_MS = 8000;
 
 /**
+ * UPDATE_STATUS transition allowlist — an automation rule may only write the
+ * canonical `status` field, and only to a legal value for that entity. Without
+ * this a rule config could write any column to any string.
+ */
+const STATUS_ALLOWLIST: Record<string, { field: string; values: ReadonlySet<string> }> = {
+    Risk: { field: 'status', values: new Set(['OPEN', 'MITIGATING', 'MITIGATED', 'ACCEPTED', 'CLOSED']) },
+    Task: {
+        field: 'status',
+        values: new Set(['OPEN', 'TRIAGED', 'IN_PROGRESS', 'BLOCKED', 'RESOLVED', 'CLOSED', 'CANCELED']),
+    },
+    Control: {
+        field: 'status',
+        values: new Set([
+            'NOT_STARTED', 'PLANNED', 'IN_PROGRESS', 'IMPLEMENTING',
+            'IMPLEMENTED', 'NEEDS_REVIEW', 'NOT_APPLICABLE',
+        ]),
+    },
+};
+
+/**
  * Execute a rule's action. Never throws — failures are returned as
  * `{ ok: false }` so the dispatcher records a clean FAILED row.
  */
@@ -87,6 +111,10 @@ async function notifyUser(db: Db, rule: ExecutableRule, event: ActionEvent): Pro
     const cfg = rule.actionConfigJson as NotifyUserActionConfig;
     const requested = Array.isArray(cfg?.userIds) ? cfg.userIds.filter(Boolean) : [];
     if (requested.length === 0) return { ok: true, summary: 'No recipients configured', detail: { notified: 0 } };
+    // Respect the tenant's notification kill-switch (mirrors the retention job).
+    if (!(await isNotificationsEnabled(db as never, event.tenantId))) {
+        return { ok: true, summary: 'Notifications disabled for tenant', detail: { notified: 0 } };
+    }
     // Only notify actual members of the firing tenant — drops stale/foreign ids
     // (tenant-isolation safety + avoids a dangling-FK insert).
     const members = await db.tenantMembership.findMany({
@@ -118,6 +146,22 @@ async function createTask(db: Db, rule: ExecutableRule, event: ActionEvent): Pro
         cfg.linkEntityType === 'Control' && cfg.linkEntityIdField
             ? (event.data?.[cfg.linkEntityIdField] as string | undefined) ?? null
             : null;
+    // Dedupe: a rule firing repeatedly on the same entity shouldn't spawn a new
+    // task each time. Skip if a non-terminal task with the deterministic
+    // automation key already exists.
+    const dedupeKey = `auto:${rule.id}:${event.entityId ?? 'noentity'}`;
+    const existing = await db.task.findFirst({
+        where: {
+            tenantId: event.tenantId,
+            key: dedupeKey,
+            status: { notIn: [...TERMINAL_WORK_ITEM_STATUSES] },
+            deletedAt: null,
+        },
+        select: { id: true },
+    });
+    if (existing) {
+        return { ok: true, summary: `Task already open (${existing.id})`, detail: { taskId: existing.id, deduped: true } };
+    }
     const task = await db.task.create({
         data: {
             tenantId: event.tenantId,
@@ -127,6 +171,7 @@ async function createTask(db: Db, rule: ExecutableRule, event: ActionEvent): Pro
             priority: cfg.priority ?? 'P2',
             status: 'OPEN',
             source: 'INTEGRATION',
+            key: dedupeKey,
             createdByUserId,
             assigneeUserId: cfg.assigneeUserId ?? null,
             controlId,
@@ -138,8 +183,17 @@ async function createTask(db: Db, rule: ExecutableRule, event: ActionEvent): Pro
 async function updateStatus(db: Db, rule: ExecutableRule, event: ActionEvent): Promise<ActionResult> {
     const cfg = rule.actionConfigJson as UpdateStatusActionConfig;
     if (!event.entityId) return { ok: false, summary: 'Event carries no entityId to update' };
+    // Allowlist: only the canonical `status` field, only a legal target value.
+    const allow = STATUS_ALLOWLIST[cfg?.entityType];
+    if (!allow) return { ok: false, summary: `Unsupported entityType: ${cfg?.entityType}` };
+    if (cfg.field !== allow.field) {
+        return { ok: false, summary: `Field ${cfg.field} is not writable by automation` };
+    }
+    if (!allow.values.has(cfg.toStatus)) {
+        return { ok: false, summary: `Illegal ${cfg.entityType} status: ${cfg.toStatus}` };
+    }
     const where = { id: event.entityId, tenantId: event.tenantId };
-    const data = { [cfg.field]: cfg.toStatus };
+    const data = { [allow.field]: cfg.toStatus };
     // Explicit per-model dispatch (no dynamic index) so the model name can
     // never be attacker-influenced and the call stays type-checked.
     let updated: number;
@@ -171,6 +225,19 @@ async function updateStatus(db: Db, rule: ExecutableRule, event: ActionEvent): P
 async function fireWebhook(rule: ExecutableRule, event: ActionEvent): Promise<ActionResult> {
     const cfg = rule.actionConfigJson as WebhookActionConfig;
     if (!cfg?.url) return { ok: false, summary: 'No webhook URL configured' };
+    // SSRF guard: https-only + block private/loopback/metadata. The structural
+    // check blocks literal private hosts; we then resolve DNS and re-check the
+    // actual IP so a public name pointing at private space is also rejected.
+    const verdict = checkWebhookUrl(cfg.url);
+    if (!verdict.ok) return { ok: false, summary: `Webhook blocked: ${verdict.reason}` };
+    try {
+        const { address } = await lookup(verdict.host!);
+        if (isPrivateAddress(address)) {
+            return { ok: false, summary: `Webhook blocked: ${verdict.host} resolves to private ${address}` };
+        }
+    } catch {
+        return { ok: false, summary: `Webhook blocked: cannot resolve ${verdict.host}` };
+    }
     const body = JSON.stringify({
         rule: { id: rule.id, name: rule.name },
         event: { name: event.event, entityType: event.entityType, entityId: event.entityId },
