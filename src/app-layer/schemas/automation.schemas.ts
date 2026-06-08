@@ -44,6 +44,11 @@ const WebhookConfig = z.object({
     secretRef: z.string().optional(),
 });
 
+// VR-7 — invoke a sub-flow group's entry rule.
+const InvokeSubflowConfig = z.object({
+    targetGroupId: z.string().min(1),
+});
+
 /**
  * A rule's `(actionType, actionConfig)` pair must agree. We validate the
  * config shape against the declared action type via `superRefine` so a
@@ -54,6 +59,7 @@ const ACTION_CONFIG_BY_TYPE = {
     CREATE_TASK: CreateTaskConfig,
     UPDATE_STATUS: UpdateStatusConfig,
     WEBHOOK: WebhookConfig,
+    INVOKE_SUBFLOW: InvokeSubflowConfig,
 } as const;
 
 // Filter DSL v2 (Epic 4) — a recursive FilterGroup, OR the legacy flat

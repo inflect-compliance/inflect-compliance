@@ -46,9 +46,10 @@ describe('Automation schema — enum integrity (Prisma ↔ TypeScript)', () => {
         );
     });
 
-    test('AutomationActionType has exactly the 4 expected members', () => {
+    test('AutomationActionType has exactly the 5 expected members', () => {
         expect(Object.keys(AutomationActionType).sort()).toEqual(
-            ['CREATE_TASK', 'NOTIFY_USER', 'UPDATE_STATUS', 'WEBHOOK'].sort()
+            // VR-7 added INVOKE_SUBFLOW.
+            ['CREATE_TASK', 'INVOKE_SUBFLOW', 'NOTIFY_USER', 'UPDATE_STATUS', 'WEBHOOK'].sort()
         );
     });
 });

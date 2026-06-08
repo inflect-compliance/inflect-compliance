@@ -750,6 +750,9 @@ enum AutomationActionType {
   CREATE_TASK
   UPDATE_STATUS
   WEBHOOK
+  // VR-7 — invoke a sub-flow (a self-contained automation group's trigger
+  // rule), linking child executions to the parent via parentExecutionId.
+  INVOKE_SUBFLOW
 }
 
 /// Epic G-4 — Access Review Campaigns (SOC 2 CC6.2).

@@ -584,6 +584,15 @@ executorRegistry.register('rule-chain-dispatch', async (payload) => {
     return result;
 });
 
+// ── subflow-dispatch (Visual Rule Editor VR-7) ───────────────────────
+executorRegistry.register('subflow-dispatch', async (payload) => {
+    const { runSubflowDispatch } = await import('./subflow-dispatcher');
+    // Tenant scope: payload.tenantId scopes the entry-rule lookup + the child
+    // execution rows.
+    const { result } = await runSubflowDispatch({ ...payload, tenantId: payload.tenantId });
+    return result;
+});
+
 // ── compliance-digest ────────────────────────────────────────────────
 
 executorRegistry.register('compliance-digest', async (payload) => {

@@ -251,6 +251,11 @@ model AutomationRule {
   /// usecase prevents loops. `null` = terminal rule.
   nextRuleId        String?
   nextRuleDelay     Int?
+  /// VR-7 — when this rule belongs to a canvas sub-flow group, the enclosing
+  /// group's ProcessNode.nodeKey. The governance graph (VR-10) reads this to
+  /// draw sub-flow-call relationships between maps. No FK — the group node
+  /// lives in a ProcessMap, not a constrainable table.
+  subFlowGroupId    String?
   createdByUserId   String?
   updatedByUserId   String?
   createdAt         DateTime             @default(now())
@@ -271,6 +276,7 @@ model AutomationRule {
   @@index([tenantId, deletedAt])
   @@index([tenantId, triggerEvent, status])
   @@index([nextRuleId])
+  @@index([tenantId, subFlowGroupId])
 }
 
 model AutomationExecution {

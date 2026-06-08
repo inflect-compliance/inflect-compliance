@@ -236,6 +236,18 @@ export interface RuleChainDispatchPayload {
     depth: number;
 }
 
+/** VR-7 — sub-flow invocation: run a sub-flow group's entry rule, linked to
+ * the invoking execution via parentExecutionId. */
+export interface SubflowDispatchPayload {
+    tenantId: string;
+    /** The enclosing sub-flow group's ProcessNode.nodeKey (rules carry it as subFlowGroupId). */
+    targetGroupId: string;
+    /** The execution that invoked the sub-flow (lineage). */
+    parentExecutionId: string;
+    triggerEvent: string;
+    data: Record<string, unknown>;
+}
+
 /** Weekly compliance digest — executive summary email */
 export interface ComplianceDigestPayload {
     tenantId?: string;
@@ -467,6 +479,7 @@ export interface JobPayloadMap {
     'compliance-snapshot': ComplianceSnapshotPayload;
     'sla-monitor': SlaMonitorPayload;
     'rule-chain-dispatch': RuleChainDispatchPayload;
+    'subflow-dispatch': SubflowDispatchPayload;
     'compliance-digest': ComplianceDigestPayload;
     'automation-event-dispatch': AutomationEventDispatchPayload;
     'key-rotation': KeyRotationPayload;
@@ -513,6 +526,12 @@ export const JOB_DEFAULTS: Record<JobName, {
         removeOnFail: 500,
     },
     'rule-chain-dispatch': {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 5000 },
+        removeOnComplete: 500,
+        removeOnFail: 1000,
+    },
+    'subflow-dispatch': {
         attempts: 3,
         backoff: { type: 'exponential', delay: 5000 },
         removeOnComplete: 500,
