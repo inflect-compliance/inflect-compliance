@@ -193,12 +193,17 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
         const points = trendsQuery.data?.dataPoints ?? [];
         const series = (pick: (d: TrendPayload['dataPoints'][number]) => number): TimeSeriesPoint[] =>
             points.map((d) => ({ date: new Date(d.date), value: pick(d) }));
-        return {
-            total: series((d) => d.assetsTotal),
-            active: series((d) => d.assetsActive),
-            critical: series((d) => d.assetsHighCriticality),
-            retired: series((d) => d.assetsRetired),
-        };
+        const total = series((d) => d.assetsTotal);
+        const active = series((d) => d.assetsActive);
+        const critical = series((d) => d.assetsHighCriticality);
+        const retired = series((d) => d.assetsRetired);
+        // Shared 0-anchored domain so the four sparklines are comparable on
+        // absolute scale: `total` rides high, `retired` sits low, instead of
+        // each auto-fitting its own range (which made them all look alike).
+        // `total` is the superset, so its max is the global max.
+        const globalMax = Math.max(1, ...total.map((p) => p.value));
+        const sparklineDomain: [number, number] = [0, globalMax];
+        return { total, active, critical, retired, sparklineDomain };
     }, [trendsQuery.data]);
 
     const assetKpiDefs: ReadonlyArray<KpiFilterDef<AssetKpiId>> = useMemo(
@@ -408,6 +413,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                                 value={c.value}
                                 accent={c.accent}
                                 sparkline={c.sparkline}
+                                sparklineDomain={assetTrends.sparklineDomain}
                                 onClick={() =>
                                     toggleAssetKpi(card.id as AssetKpiId)
                                 }

@@ -69,6 +69,14 @@ interface MiniAreaChartProps {
     curve?: boolean;
     /** Padding around the drawable area (in px). */
     padding?: Partial<typeof DEFAULT_PADDING>;
+    /**
+     * Explicit y-axis domain `[min, max]`. By default each sparkline auto-fits
+     * its OWN [min, max], which shows relative shape but hides absolute scale —
+     * so a flat-at-2 and a flat-at-90 series render identically. Pass a SHARED
+     * domain (e.g. `[0, maxAcrossAllCards]`) across a row of cards to make them
+     * comparable: a small series sits low, a large one high.
+     */
+    yDomain?: [number, number];
     /** Accessible label. Sparklines *must* carry one — the caller owns the meaning. */
     "aria-label": string;
     /** Extra classes on the outer wrapper. */
@@ -85,6 +93,36 @@ const VARIANT_TEXT: Record<MiniAreaChartVariant, string> = {
     info: "text-content-info",
     neutral: "text-content-muted",
 };
+
+// ─── Y-domain resolution ─────────────────────────────────────────────
+
+/**
+ * Resolve the sparkline's y-axis `[min, max]` domain.
+ *
+ * - With an explicit `override` (a SHARED domain across a row of cards), use
+ *   it verbatim — absolute scale is preserved, so a flat-at-2 series sits low
+ *   and a flat-at-90 series sits high.
+ * - Otherwise auto-fit the series' own `[min, max]` (relative shape only).
+ * - A constant series (`min === max`, and no override) gets a small synthetic
+ *   range so it draws a centred horizontal line rather than a point.
+ *
+ * Exported + pure so the scale logic is unit-testable without DOM layout
+ * (`<ParentSize>` renders 0×0 under jsdom).
+ */
+export function resolveYDomain(
+    values: number[],
+    override?: [number, number],
+): [number, number] {
+    if (override) return override;
+    let minY = values[0];
+    let maxY = values[0];
+    for (const v of values) {
+        if (v < minY) minY = v;
+        if (v > maxY) maxY = v;
+    }
+    if (minY === maxY) return [minY - 1, maxY + 1];
+    return [minY, maxY];
+}
 
 // ─── Component ───────────────────────────────────────────────────────
 
@@ -106,6 +144,7 @@ function MiniAreaChartInner({
     variant = "brand",
     curve = true,
     padding: paddingProp,
+    yDomain,
     "aria-label": ariaLabel,
 }: MiniAreaChartProps & { width: number; height: number }) {
     const padding = { ...DEFAULT_PADDING, ...paddingProp };
@@ -133,19 +172,10 @@ function MiniAreaChartInner({
                 }),
             };
         }
-        const values = data.map(({ value }) => value);
-        let minY = values[0];
-        let maxY = values[0];
-        for (const v of values) {
-            if (v < minY) minY = v;
-            if (v > maxY) maxY = v;
-        }
-        // Constant-value data gets a small synthetic range so the
-        // sparkline draws a horizontal line rather than a point.
-        if (minY === maxY) {
-            maxY = minY + 1;
-            minY = minY - 1;
-        }
+        const [minY, maxY] = resolveYDomain(
+            data.map(({ value }) => value),
+            yDomain,
+        );
 
         const dateTimes = data.map(({ date }) => date.getTime());
         const minDate = new Date(Math.min(...dateTimes));

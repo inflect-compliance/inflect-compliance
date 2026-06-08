@@ -80,6 +80,13 @@ export interface KpiFilterCardProps {
      */
     sparklineVariant?: MiniAreaChartVariant;
     /**
+     * Optional shared y-domain `[min, max]` for the sparkline. Pass the same
+     * `[0, maxAcrossCards]` to every card in a row so their sparklines become
+     * comparable on absolute scale instead of each auto-fitting its own range
+     * (which makes differently-valued-but-similarly-shaped series look alike).
+     */
+    sparklineDomain?: [number, number];
+    /**
      * KPI colour accent — gives the headline value a gradient (the
      * dashboard `<KpiCard>` look) and supplies the default sparkline
      * colour. The shared palette in `kpi-accent.ts` keeps every list
@@ -160,6 +167,7 @@ export function KpiFilterCard({
     trend,
     sparkline,
     sparklineVariant,
+    sparklineDomain,
     accent,
     tone,
     onClick,
@@ -217,6 +225,7 @@ export function KpiFilterCard({
                     <MiniAreaChart
                         data={sparkline}
                         variant={effectiveSparklineVariant}
+                        yDomain={sparklineDomain}
                         aria-label={sparkLabel}
                         className="h-full w-full"
                     />
