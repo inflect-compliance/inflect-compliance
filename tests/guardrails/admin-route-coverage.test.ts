@@ -31,6 +31,8 @@ import * as path from 'path';
  */
 const ADMIN_ONLY_ROUTES = [
     // /admin/* routes
+    'admin/entra-groups/route.ts',
+    'admin/entra-groups/[id]/route.ts',
     'admin/members/route.ts',
     'admin/members/[membershipId]/route.ts',
     'admin/members/[membershipId]/deactivate/route.ts',
