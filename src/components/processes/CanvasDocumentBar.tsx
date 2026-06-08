@@ -33,6 +33,8 @@
 
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { useRunMode } from "@/lib/processes/run-mode-context";
+import { useIsAutomationMode } from "@/lib/processes/canvas-mode-context";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import type { ProcessMapSummary } from "@/app/t/[tenantSlug]/(app)/processes/ProcessesClient";
 
@@ -97,6 +99,10 @@ export function CanvasDocumentBar({
     handlers,
     exportSlot,
 }: CanvasDocumentBarProps) {
+    // VR-6 — Run Mode toggle (automation canvases only). Flips the canvas
+    // between Design (edit) and Live (overlay live execution state on nodes).
+    const isAutomation = useIsAutomationMode();
+    const { isRunMode, setRunMode } = useRunMode();
     const {
         activeId,
         processes,
@@ -248,6 +254,16 @@ export function CanvasDocumentBar({
                 </Button>
             )}
             <div className="ml-auto flex items-center gap-default">
+                {isAutomation && activeId && (
+                    <Button
+                        size="sm"
+                        variant={isRunMode ? "primary" : "secondary"}
+                        onClick={() => setRunMode(!isRunMode)}
+                        data-testid="run-mode-toggle"
+                    >
+                        {isRunMode ? "Live" : "Design"}
+                    </Button>
+                )}
                 {/* R28 — undo / redo. Pure icon buttons live in the
                     toolbar's right-side cluster so the keyboard-bind
                     discovery (Cmd+Z / Cmd+Shift+Z) is mirrored

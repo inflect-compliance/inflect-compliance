@@ -178,13 +178,20 @@ describe("R32-PR10 — canvas decomposition (document bar)", () => {
             //     import + force-algorithm options) sits in
             //     canvas-auto-layout.ts to keep the bundle impact
             //     off the canvas's static chunk.
+            //   - 2450 → 2475 (PR-B visual-editor reachability) —
+            //     wired the dead VR-5/VR-6 code: RunMode+Overlay
+            //     provider mount + OverlayBridge, inferEdgeKind on
+            //     onConnect, and a "New automation workflow" create
+            //     path so AUTOMATION mode is reachable. ~25 net lines;
+            //     the providers/inference already live in helper
+            //     modules under src/lib/processes/.
             // Future P6 follow-ups follow the same helper-module-
             // per-feature pattern.
             const src = read(
                 "src/components/processes/PersistedProcessCanvas.tsx",
             );
             const lines = src.split("\n").length;
-            expect(lines).toBeLessThan(2450);
+            expect(lines).toBeLessThan(2475);
         });
     });
 });
