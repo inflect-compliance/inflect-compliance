@@ -33,6 +33,10 @@ import { memo, useCallback, type MouseEvent } from "react";
 import { ChevronRight } from "@/components/ui/icons/nucleo/chevron-right";
 import { cn } from "@/lib/cn";
 import {
+    useNodeOverlayStatus,
+    overlayClassFor,
+} from "@/lib/processes/canvas-execution-overlay";
+import {
     NODE_TAXONOMY,
     NODE_ACCENT_BORDER,
     NODE_ACCENT_ICON_TONE,
@@ -130,6 +134,16 @@ function ProcessTypedNodeImpl({ id, data, selected }: NodeProps) {
     const kind: ProcessNodeKind = isProcessNodeKind(nodeData.kind)
         ? nodeData.kind
         : "processStep";
+    // VR-6 — Run Mode overlay. The chassis paints live execution state
+    // (pulsing ring while RUNNING, success/error ring, dim when SKIPPED). The
+    // status is read from the canvas-level overlay context — empty (no
+    // overlay) unless a CanvasOverlayProvider is mounted in Run Mode, so the
+    // node still renders standalone.
+    const ruleId =
+        typeof (nodeData as { ruleId?: unknown }).ruleId === "string"
+            ? ((nodeData as { ruleId?: string }).ruleId as string)
+            : undefined;
+    const overlayClass = overlayClassFor(useNodeOverlayStatus(ruleId));
     // PR-B polish — collapsed flag (groups only). The toggle handler
     // mutates this on click via xyflow's `setNodes`. Runtime-only
     // today: reloading the canvas brings groups back expanded (the
@@ -249,6 +263,7 @@ function ProcessTypedNodeImpl({ id, data, selected }: NodeProps) {
                 sizeClasses,
                 radiusClass,
                 surfaceClasses,
+                overlayClass,
                 selected
                     ? SELECTED_CHROME
                     : `${accentBorder} hover:border-border-emphasis`,
