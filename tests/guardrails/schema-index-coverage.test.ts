@@ -350,6 +350,12 @@ const LIST_QUERY_INDEXES: readonly CompositeIndex[] = [
 // curated composite index is needed."
 
 const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
+    // EI-3 — SCIM groups are listed per tenant (SCIM GET + the per-user
+    // reconcile lookup). `@@index([tenantId])` covers the tenant prefix; the
+    // per-tenant group count is small and the memberIds `has` filter is an
+    // in-memory-small array containment over that bounded set.
+    ScimGroup:
+        'tenantId index covers the SCIM list + reconcile reads; per-tenant group count is small.',
     // EI-2 — group mappings are listed per tenant (admin CRUD) and per tenant
     // + isActive (the sign-in evaluator). `@@index([tenantId, isActive])` covers
     // both; the priority/createdAt ordering is over a tenant-bounded, small set.

@@ -144,6 +144,7 @@ model Tenant {
   taskWatchers                      TaskWatcher[]
   identityProviders                 TenantIdentityProvider[]
   entraGroupMappings                EntraGroupMapping[]
+  scimGroups                        ScimGroup[]
   invites                           TenantInvite[]
   memberships                       TenantMembership[]
   notificationSettings              TenantNotificationSettings?
@@ -499,6 +500,30 @@ model EntraGroupMapping {
   @@index([tenantId, providerId])
   @@index([tenantId, isActive])
   @@index([customRoleId])
+}
+
+/// EI-3 — SCIM 2.0 Group resource. One row per group Entra has pushed to IC
+/// via SCIM provisioning. The authoritative SCIM-layer group registry; the IC
+/// role mapping is stored on EntraGroupMapping (linked via aadGroupId =
+/// externalId). Member changes (PATCH add/remove) reconcile memberships
+/// through applyEntraGroupMapping for near-real-time (de)provisioning.
+model ScimGroup {
+  id          String   @id @default(cuid())
+  tenantId    String
+  /// Entra's externalId for this group (the AAD Object ID).
+  externalId  String
+  displayName String
+  /// Denormalised member list — IC User.id values. Updated by PATCH.
+  memberIds   String[] @default([])
+  /// Cached member list with externalIds for SCIM GET responses.
+  membersJson Json     @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, externalId])
+  @@index([tenantId])
 }
 
 // ─────────────────────────────────────────────────────────────────
