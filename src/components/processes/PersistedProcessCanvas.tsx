@@ -86,6 +86,9 @@ import { useCanvasHistory } from "@/lib/processes/use-canvas-history";
 import { useCanvasAutosave } from "@/lib/processes/use-canvas-autosave";
 import { useCanvasChangeEmitter } from "@/lib/processes/canvas-change-events";
 import { CanvasEmphasisProvider } from "@/lib/processes/canvas-emphasis-context";
+import { inferEdgeKind } from "@/lib/processes/edge-kind-inference";
+import { RunModeProvider, useRunMode } from "@/lib/processes/run-mode-context";
+import { CanvasOverlayProvider } from "@/lib/processes/canvas-execution-overlay";
 import {
     alignNodes,
     distributeNodes,
@@ -285,11 +288,25 @@ interface PersistedProcessCanvasProps {
     onProcessesChange: (next: ProcessMapSummary[]) => void;
 }
 
+/**
+ * VR-6 — bridges Run Mode → live-execution overlay. Reads the run-mode flag
+ * and only then turns on the 3s overlay poll, distributing the status map to
+ * every node via context.
+ */
+function OverlayBridge({ children }: { children: React.ReactNode }) {
+    const { isRunMode } = useRunMode();
+    return <CanvasOverlayProvider enabled={isRunMode}>{children}</CanvasOverlayProvider>;
+}
+
 export function PersistedProcessCanvas(props: PersistedProcessCanvasProps) {
     return (
-        <ReactFlowProvider>
-            <Inner {...props} />
-        </ReactFlowProvider>
+        <RunModeProvider>
+            <OverlayBridge>
+                <ReactFlowProvider>
+                    <Inner {...props} />
+                </ReactFlowProvider>
+            </OverlayBridge>
+        </RunModeProvider>
     );
 }
 
@@ -910,37 +927,51 @@ function Inner({
 
     // ─── Create new process ────────────────────────────────────────
 
-    const handleNew = useCallback(async () => {
-        setCreating(true);
-        setError(null);
-        try {
-            const name = `Untitled process ${processes.length + 1}`;
-            const res = await fetch(`/api/t/${tenantSlug}/processes`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name }),
-            });
-            if (!res.ok) throw new Error(`Create failed (${res.status})`);
-            const data = await res.json();
-            const summary: ProcessMapSummary = {
-                id: data.id,
-                name: data.name,
-                description: data.description,
-                status: data.status,
-                version: data.version,
-                createdAt: data.createdAt,
-                updatedAt: data.updatedAt,
-                nodeCount: 0,
-                edgeCount: 0,
-            };
-            onProcessesChange([summary, ...processes]);
-            onActiveIdChange(data.id);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : "Create failed");
-        } finally {
-            setCreating(false);
-        }
-    }, [tenantSlug, processes, onProcessesChange, onActiveIdChange]);
+    const handleNew = useCallback(
+        // VR-2/VR-3 — `canvasMode` makes AUTOMATION-mode maps creatable from the
+        // UI (the visual rule editor was previously reachable only by a raw API
+        // call). DOCUMENT stays the default for the plain "New process" action.
+        async (canvasMode: "DOCUMENT" | "AUTOMATION" = "DOCUMENT") => {
+            setCreating(true);
+            setError(null);
+            try {
+                // Normalise — call sites that pass handleNew directly to an
+                // onClick hand us an event object; only an explicit
+                // 'AUTOMATION' flips the mode.
+                const mode = canvasMode === "AUTOMATION" ? "AUTOMATION" : "DOCUMENT";
+                const isAuto = mode === "AUTOMATION";
+                const name = isAuto
+                    ? `Untitled workflow ${processes.length + 1}`
+                    : `Untitled process ${processes.length + 1}`;
+                const res = await fetch(`/api/t/${tenantSlug}/processes`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name, canvasMode: mode }),
+                });
+                if (!res.ok) throw new Error(`Create failed (${res.status})`);
+                const data = await res.json();
+                const summary: ProcessMapSummary = {
+                    id: data.id,
+                    name: data.name,
+                    description: data.description,
+                    status: data.status,
+                    version: data.version,
+                    canvasMode: data.canvasMode ?? mode,
+                    createdAt: data.createdAt,
+                    updatedAt: data.updatedAt,
+                    nodeCount: 0,
+                    edgeCount: 0,
+                };
+                onProcessesChange([summary, ...processes]);
+                onActiveIdChange(data.id);
+            } catch (err) {
+                setError(err instanceof Error ? err.message : "Create failed");
+            } finally {
+                setCreating(false);
+            }
+        },
+        [tenantSlug, processes, onProcessesChange, onActiveIdChange],
+    );
 
     // ─── Canvas plumbing (xyflow change handlers + drop) ───────────
     //
@@ -997,8 +1028,23 @@ function Inner({
         (c: Connection) => {
             history.push({ nodes, edges });
             autosave.markDirty();
+            // VR-5 — infer the semantic automation edge-kind from the endpoint
+            // node kinds (trigger→condition = trigger-flow, action→action =
+            // chain-delay, …). Non-automation pairs infer 'flow' and carry no
+            // edgeKind, so document maps are unaffected.
+            const srcKind = nodes.find((n) => n.id === c.source)?.data?.kind as
+                | string
+                | undefined;
+            const tgtKind = nodes.find((n) => n.id === c.target)?.data?.kind as
+                | string
+                | undefined;
+            const inferred = inferEdgeKind(srcKind, tgtKind);
+            const data = inferred !== "flow" ? { edgeKind: inferred } : undefined;
             setEdges((eds) =>
-                addEdge({ ...c, type: PROCESS_EDGE_TYPE, id: `edge-${Date.now()}` }, eds),
+                addEdge(
+                    { ...c, type: PROCESS_EDGE_TYPE, id: `edge-${Date.now()}`, data },
+                    eds,
+                ),
             );
         },
         [nodes, edges, history, autosave],
@@ -1655,7 +1701,14 @@ function Inner({
                     label: "New process",
                     description: "Start an empty process map",
                     disabled: creating,
-                    onSelect: handleNew,
+                    onSelect: () => handleNew("DOCUMENT"),
+                },
+                {
+                    id: "new-automation",
+                    label: "New automation workflow",
+                    description: "Start a visual rule editor (automation) canvas",
+                    disabled: creating,
+                    onSelect: () => handleNew("AUTOMATION"),
                 },
             ],
         },
