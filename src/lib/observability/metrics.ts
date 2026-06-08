@@ -70,6 +70,14 @@
  *     stale-connector signal; `revoked` rising means an IdP is still
  *     pushing with a rotated token.
  *
+ * ── ENTRA ROLE-SYNC METRICS (EI-3) ──
+ *   auth.entra.role_sync           — Counter   (outcome)
+ *     One record per entra-id sign-in that reaches `syncEntraMembershipRole`.
+ *     `outcome` ∈ synced / unchanged / gate_denied / no_membership /
+ *     owner_immune / no_match / no_mappings. A `gate_denied` spike means a
+ *     tenant's `enforceGroupGate` is locking users out (often a misconfigured
+ *     mapping).
+ *
  * CARDINALITY SAFETY:
  *   Route labels are normalized via `normalizeRoute()` to collapse dynamic
  *   segments (UUIDs, slugs) into placeholder tokens. This prevents
@@ -605,6 +613,52 @@ export function recordScimAuth(attrs: {
     reason: 'ok' | 'missing_header' | 'empty_token' | 'not_found' | 'revoked';
 }): void {
     getScimAuth().add(1, { outcome: attrs.outcome, reason: attrs.reason });
+}
+
+// ── Entra group → role sync metrics (EI-3) ────────────────────────────
+
+let _entraRoleSync: ReturnType<ReturnType<typeof getMeter>['createCounter']> | null = null;
+
+function getEntraRoleSync() {
+    if (!_entraRoleSync) {
+        _entraRoleSync = getMeter().createCounter('auth.entra.role_sync', {
+            description: 'Entra group → IC-role sync decisions at sign-in, by outcome',
+            unit: '1',
+        });
+    }
+    return _entraRoleSync;
+}
+
+/**
+ * Record one Entra group → role sync decision — called once per
+ * `microsoft-entra-id` sign-in that reaches `syncEntraMembershipRole`.
+ *
+ * `outcome`:
+ *   - `synced`        — the member's role was changed to the mapped role.
+ *   - `unchanged`     — a mapping matched but the role already matched.
+ *   - `gate_denied`   — `enforceGroupGate` on + no mapped group → access denied.
+ *   - `no_membership` — a role mapped but the user has no ACTIVE membership to
+ *                       sync (membership creation stays on the Epic 1 paths).
+ *   - `owner_immune`  — the member is an OWNER; sync + gate are skipped so a
+ *                       misconfigured mapping can never demote / lock out an owner.
+ *   - `no_match`      — mappings exist but none matched the user's groups (gate off).
+ *   - `no_mappings`   — the tenant has no group mappings configured.
+ *
+ * A `gate_denied` spike means a tenant's gate is denying logins (often a
+ * misconfigured mapping). No tenantId/userId label — fleet-health signal;
+ * per-tenant detail lives in the audit row written on `synced`.
+ */
+export function recordEntraRoleSync(attrs: {
+    outcome:
+        | 'synced'
+        | 'unchanged'
+        | 'gate_denied'
+        | 'no_membership'
+        | 'owner_immune'
+        | 'no_match'
+        | 'no_mappings';
+}): void {
+    getEntraRoleSync().add(1, { outcome: attrs.outcome });
 }
 
 let _auditStreamBufferGaugeStarted = false;

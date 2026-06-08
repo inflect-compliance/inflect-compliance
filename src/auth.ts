@@ -531,6 +531,30 @@ export const authOptions: NextAuthOptions = {
                     });
                     token.aadGroups = groups;
                     token.aadGroupsOverage = overage;
+
+                    // ── EI-3 — sync the active-tenant membership role from the
+                    //    tenant's group → role mappings, and enforce the group
+                    //    gate. Scoped to the primary tenant (the session's
+                    //    active tenant). A failure here must never block
+                    //    sign-in, so it's best-effort.
+                    if (token.tenantId && token.userId) {
+                        try {
+                            const { syncEntraMembershipRole, applyEntraSyncToToken } =
+                                await import('@/lib/auth/entra-group-sync');
+                            const activeTenantId = token.tenantId;
+                            const result = await syncEntraMembershipRole({
+                                userId: token.userId,
+                                tenantId: activeTenantId,
+                                aadGroups: groups,
+                            });
+                            applyEntraSyncToToken(token, activeTenantId, result);
+                        } catch (err) {
+                            edgeLogger.error('Entra group role-sync failed', {
+                                component: 'entra',
+                                error: err instanceof Error ? err.message : String(err),
+                            });
+                        }
+                    }
                 }
 
                 // ── MFA enforcement ──
