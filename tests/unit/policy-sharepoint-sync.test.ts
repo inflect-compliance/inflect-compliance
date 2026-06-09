@@ -28,6 +28,11 @@ jest.mock('@/app-layer/usecases/policy', () => ({
     __esModule: true,
     createPolicyVersion: (...a: unknown[]) => mockCreateVersion(...a),
 }));
+jest.mock('@/app-layer/integrations/providers/sharepoint/docx', () => ({
+    __esModule: true,
+    isDocxItem: (name?: string) => !!name && /\.docx$/i.test(name),
+    docxToPolicyHtml: jest.fn(async () => '<h1>from docx</h1>'),
+}));
 jest.mock('@/app-layer/events/audit', () => ({ __esModule: true, logEvent: jest.fn() }));
 jest.mock('@/env', () => ({ __esModule: true, env: { APP_URL: 'https://ic.example' } }));
 jest.mock('@/lib/observability/edge-logger', () => ({
@@ -107,6 +112,15 @@ describe('pushPolicyToSharePoint', () => {
         await pushPolicyToSharePoint(ctx, 'p1');
         expect(mockClient.uploadItemContent).not.toHaveBeenCalled();
     });
+
+    it('SP-F3 — skips push for a Word-linked policy (SharePoint-authoritative)', async () => {
+        mockDb.policy.findFirst.mockResolvedValueOnce({
+            spDriveId: 'd1', spItemId: 'i1', spConnectionId: 'c1', currentVersion: { contentText: '# body' },
+        });
+        mockClient.getItem.mockResolvedValueOnce({ name: 'Policy.docx', eTag: 'e1' });
+        await pushPolicyToSharePoint(ctx, 'p1');
+        expect(mockClient.uploadItemContent).not.toHaveBeenCalled();
+    });
 });
 
 describe('pullPolicyFromSharePoint', () => {
@@ -126,6 +140,18 @@ describe('pullPolicyFromSharePoint', () => {
         const r = await pullPolicyFromSharePoint(ctx, { driveId: 'd1', itemId: 'i1' });
         expect(r.pulled).toBe(false);
         expect(mockCreateVersion).not.toHaveBeenCalled();
+    });
+
+    it('SP-F3 — a Word file pulls as an HTML version (mammoth)', async () => {
+        mockDb.policy.findFirst.mockResolvedValueOnce({ id: 'p1' });
+        mockClient.getItem.mockResolvedValueOnce({ name: 'Policy.docx', eTag: 'e1' });
+        const r = await pullPolicyFromSharePoint(ctx, { driveId: 'd1', itemId: 'i1' });
+        expect(r.pulled).toBe(true);
+        expect(mockCreateVersion).toHaveBeenCalledWith(
+            ctx,
+            'p1',
+            expect.objectContaining({ contentType: 'HTML', changeSummary: 'Synced from SharePoint (Word)' }),
+        );
     });
 });
 

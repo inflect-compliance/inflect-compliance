@@ -29,6 +29,7 @@ import {
     listSharePointConnections,
 } from '../integrations/providers/sharepoint';
 import type { SharePointClient } from '../integrations/providers/sharepoint/client';
+import { isDocxItem, docxToPolicyHtml } from '../integrations/providers/sharepoint/docx';
 
 const SP_NOTIFICATION_PATH = '/api/webhooks/sharepoint';
 const SUBSCRIPTION_TTL_MS = 2 * 24 * 60 * 60 * 1000; // 2 days (Graph max ~4230 min)
@@ -167,6 +168,16 @@ export async function pushPolicyToSharePoint(ctx: RequestContext, policyId: stri
     const content = policy.currentVersion?.contentText ?? '';
 
     const client = await resolveClient(ctx, policy.spConnectionId ?? undefined);
+    // SP-F3 — Word-linked policies are SharePoint-authoritative (pull-only).
+    // Writing markdown bytes into a .docx would corrupt the document, so skip.
+    const linked = await client.getItem(policy.spDriveId, policy.spItemId);
+    if (isDocxItem(linked.name)) {
+        edgeLogger.info('Policy push skipped — Word-linked policy is SharePoint-authoritative', {
+            component: 'sharepoint',
+            policyId,
+        });
+        return;
+    }
     const updated = await client.uploadItemContent(policy.spDriveId, policy.spItemId, content, 'text/markdown');
 
     await runInTenantContext(ctx, async (db) => {
@@ -197,14 +208,22 @@ export async function pullPolicyFromSharePoint(
     const client = await resolveClient(ctx, policy.spConnectionId ?? undefined);
     const item = await client.getItem(input.driveId, input.itemId);
     const ab = await client.downloadItemContent(input.driveId, input.itemId);
-    const contentText = new TextDecoder().decode(ab);
 
-    // createPolicyVersion sanitises + audits + reverts the policy to DRAFT.
-    await createPolicyVersion(ctx, policy.id, {
-        contentType: 'MARKDOWN',
-        contentText,
-        changeSummary: 'Synced from SharePoint',
-    });
+    // SP-F3 — Word docs convert to HTML (mammoth); everything else is treated
+    // as markdown text. createPolicyVersion sanitises + audits + reverts to DRAFT.
+    if (isDocxItem(item.name)) {
+        await createPolicyVersion(ctx, policy.id, {
+            contentType: 'HTML',
+            contentText: await docxToPolicyHtml(ab),
+            changeSummary: 'Synced from SharePoint (Word)',
+        });
+    } else {
+        await createPolicyVersion(ctx, policy.id, {
+            contentType: 'MARKDOWN',
+            contentText: new TextDecoder().decode(ab),
+            changeSummary: 'Synced from SharePoint',
+        });
+    }
 
     await runInTenantContext(ctx, async (db) => {
         await db.policy.update({ where: { id: policy.id }, data: { spItemETag: item.eTag ?? null } });
