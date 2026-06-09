@@ -35,6 +35,7 @@ jest.mock('@/lib/observability/edge-logger', () => ({
     edgeLogger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
 
+import { getSharePointClient } from '@/app-layer/integrations/providers/sharepoint';
 import {
     linkPolicyToSharePoint,
     unlinkPolicyFromSharePoint,
@@ -74,7 +75,7 @@ describe('linkPolicyToSharePoint', () => {
             }),
         );
         const data = mockDb.policy.update.mock.calls[0][0].data;
-        expect(data).toMatchObject({ spDriveId: 'd1', spItemId: 'i1', spItemETag: 'etag-1', spSubscriptionId: 'sub-1' });
+        expect(data).toMatchObject({ spDriveId: 'd1', spItemId: 'i1', spItemETag: 'etag-1', spSubscriptionId: 'sub-1', spConnectionId: 'c1' });
     });
 
     it('still links if subscription creation fails (manual sync remains)', async () => {
@@ -91,10 +92,13 @@ describe('pushPolicyToSharePoint', () => {
         mockDb.policy.findFirst.mockResolvedValueOnce({
             spDriveId: 'd1',
             spItemId: 'i1',
+            spConnectionId: 'conn-X',
             currentVersion: { contentText: '# body' },
         });
         await pushPolicyToSharePoint(ctx, 'p1');
         expect(mockClient.uploadItemContent).toHaveBeenCalledWith('d1', 'i1', '# body', 'text/markdown');
+        // SP-F1 — resolves the policy's OWN connection, not just the first.
+        expect(getSharePointClient).toHaveBeenCalledWith(ctx, 'conn-X');
         expect(mockDb.policy.update.mock.calls[0][0].data.spItemETag).toBe('etag-2');
     });
 

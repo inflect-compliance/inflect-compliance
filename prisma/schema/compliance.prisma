@@ -849,6 +849,9 @@ model Policy {
   spWebUrl             String?
   /// Active Graph change-notification subscription id (null when unlinked).
   spSubscriptionId     String?
+  /// SP-F1 — the IntegrationConnection backing this link (multi-connection
+  /// tenants). Null on pre-SP-F1 links → resolve the tenant's first connection.
+  spConnectionId       String?
   currentVersion       PolicyVersion?      @relation("CurrentVersion", fields: [currentVersionId], references: [id])
   owner                User?               @relation("PolicyOwner", fields: [ownerUserId], references: [id])
   tenant               Tenant              @relation(fields: [tenantId], references: [id])

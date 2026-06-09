@@ -93,6 +93,7 @@ export async function linkPolicyToSharePoint(
                 spItemETag: item.eTag ?? null,
                 spWebUrl: item.webUrl ?? null,
                 spSubscriptionId: subscriptionId ?? null,
+                spConnectionId: input.connectionId,
             },
         });
         await logEvent(db, ctx, {
@@ -117,14 +118,14 @@ export async function unlinkPolicyFromSharePoint(ctx: RequestContext, policyId: 
     const policy = await runInTenantContext(ctx, (db) =>
         db.policy.findFirst({
             where: { id: policyId, tenantId: ctx.tenantId },
-            select: { id: true, spSubscriptionId: true },
+            select: { id: true, spSubscriptionId: true, spConnectionId: true },
         }),
     );
     if (!policy) throw notFound('Policy not found');
 
     if (policy.spSubscriptionId) {
         try {
-            const client = await resolveClient(ctx);
+            const client = await resolveClient(ctx, policy.spConnectionId ?? undefined);
             await client.deleteSubscription(policy.spSubscriptionId);
         } catch (err) {
             edgeLogger.warn('SharePoint subscription delete failed (unlink continues)', {
@@ -157,6 +158,7 @@ export async function pushPolicyToSharePoint(ctx: RequestContext, policyId: stri
             select: {
                 spDriveId: true,
                 spItemId: true,
+                spConnectionId: true,
                 currentVersion: { select: { contentText: true } },
             },
         }),
@@ -164,7 +166,7 @@ export async function pushPolicyToSharePoint(ctx: RequestContext, policyId: stri
     if (!policy?.spDriveId || !policy.spItemId) return; // not linked → nothing to push
     const content = policy.currentVersion?.contentText ?? '';
 
-    const client = await resolveClient(ctx);
+    const client = await resolveClient(ctx, policy.spConnectionId ?? undefined);
     const updated = await client.uploadItemContent(policy.spDriveId, policy.spItemId, content, 'text/markdown');
 
     await runInTenantContext(ctx, async (db) => {
@@ -187,12 +189,12 @@ export async function pullPolicyFromSharePoint(
     const policy = await runInTenantContext(ctx, (db) =>
         db.policy.findFirst({
             where: { tenantId: ctx.tenantId, spDriveId: input.driveId, spItemId: input.itemId },
-            select: { id: true },
+            select: { id: true, spConnectionId: true },
         }),
     );
     if (!policy) return { pulled: false };
 
-    const client = await resolveClient(ctx);
+    const client = await resolveClient(ctx, policy.spConnectionId ?? undefined);
     const item = await client.getItem(input.driveId, input.itemId);
     const ab = await client.downloadItemContent(input.driveId, input.itemId);
     const contentText = new TextDecoder().decode(ab);
@@ -235,11 +237,11 @@ export async function getPolicySharePointConflict(ctx: RequestContext, policyId:
     const policy = await runInTenantContext(ctx, (db) =>
         db.policy.findFirst({
             where: { id: policyId, tenantId: ctx.tenantId },
-            select: { spDriveId: true, spItemId: true, spItemETag: true },
+            select: { spDriveId: true, spItemId: true, spItemETag: true, spConnectionId: true },
         }),
     );
     if (!policy?.spDriveId || !policy.spItemId) return false;
-    const client = await resolveClient(ctx);
+    const client = await resolveClient(ctx, policy.spConnectionId ?? undefined);
     const item = await client.getItem(policy.spDriveId, policy.spItemId);
     return !!item.eTag && item.eTag !== policy.spItemETag;
 }
@@ -252,13 +254,13 @@ export async function getPolicySharePointStatus(
     const policy = await runInTenantContext(ctx, (db) =>
         db.policy.findFirst({
             where: { id: policyId, tenantId: ctx.tenantId },
-            select: { spDriveId: true, spItemId: true, spItemETag: true, spWebUrl: true },
+            select: { spDriveId: true, spItemId: true, spItemETag: true, spWebUrl: true, spConnectionId: true },
         }),
     );
     if (!policy?.spDriveId || !policy.spItemId) return { linked: false, webUrl: null, conflict: false };
     let conflict = false;
     try {
-        const client = await resolveClient(ctx);
+        const client = await resolveClient(ctx, policy.spConnectionId ?? undefined);
         const item = await client.getItem(policy.spDriveId, policy.spItemId);
         conflict = !!item.eTag && item.eTag !== policy.spItemETag;
     } catch {

@@ -63,12 +63,17 @@ export function SharePointFilePicker({
     connectionId,
     multiple = true,
     onConfirm,
+    folderSelect = false,
+    onConfirmFolder,
 }: {
     showModal: boolean;
     setShowModal: Dispatch<SetStateAction<boolean>>;
     connectionId: string;
     multiple?: boolean;
     onConfirm: (items: SpPickedItem[]) => void;
+    /** SP-F1 — pick a destination FOLDER (files render read-only). */
+    folderSelect?: boolean;
+    onConfirmFolder?: (sel: { driveId: string; folderId?: string; folderName: string }) => void;
 }) {
     const apiUrl = useTenantApiUrl();
     const [sites, setSites] = useState<Opt[]>([]);
@@ -169,6 +174,11 @@ export function SharePointFilePicker({
         setSelected({});
         setShowModal(false);
     };
+    const confirmFolder = () => {
+        const cur = path[path.length - 1];
+        onConfirmFolder?.({ driveId, folderId: cur.id, folderName: cur.name });
+        setShowModal(false);
+    };
 
     return (
         <Modal showModal={showModal} setShowModal={setShowModal} size="lg" title="Import from SharePoint">
@@ -245,17 +255,24 @@ export function SharePointFilePicker({
                             ))}
                             {files.map((f) => (
                                 <li key={f.id}>
-                                    <label className="flex cursor-pointer items-center gap-default px-4 py-default hover:bg-bg-muted/50">
-                                        <Checkbox checked={!!selected[f.id]} onCheckedChange={() => toggle(f)} />
-                                        <FileContent className="size-4 text-content-muted" />
-                                        <span className="flex-1 truncate text-sm">{f.name}</span>
-                                        {f.mimeType && <StatusBadge variant="neutral">{shortType(f.mimeType)}</StatusBadge>}
-                                        {f.lastModified && (
-                                            <span className="w-24 text-right text-xs text-content-muted">
-                                                {formatDate(f.lastModified)}
-                                            </span>
-                                        )}
-                                    </label>
+                                    {folderSelect ? (
+                                        <div className="flex items-center gap-default px-4 py-default opacity-60">
+                                            <FileContent className="size-4 text-content-muted" />
+                                            <span className="flex-1 truncate text-sm">{f.name}</span>
+                                        </div>
+                                    ) : (
+                                        <label className="flex cursor-pointer items-center gap-default px-4 py-default hover:bg-bg-muted/50">
+                                            <Checkbox checked={!!selected[f.id]} onCheckedChange={() => toggle(f)} />
+                                            <FileContent className="size-4 text-content-muted" />
+                                            <span className="flex-1 truncate text-sm">{f.name}</span>
+                                            {f.mimeType && <StatusBadge variant="neutral">{shortType(f.mimeType)}</StatusBadge>}
+                                            {f.lastModified && (
+                                                <span className="w-24 text-right text-xs text-content-muted">
+                                                    {formatDate(f.lastModified)}
+                                                </span>
+                                            )}
+                                        </label>
+                                    )}
                                 </li>
                             ))}
                             {folders.length === 0 && files.length === 0 && (
@@ -266,11 +283,23 @@ export function SharePointFilePicker({
                 </div>
             </Modal.Body>
             <Modal.Footer>
-                <span className="mr-auto text-sm text-content-muted">{selectedCount} selected</span>
-                <Button variant="ghost" onClick={() => setShowModal(false)}>Cancel</Button>
-                <Button variant="primary" onClick={confirm} disabled={selectedCount === 0}>
-                    {multiple ? `Import ${selectedCount || ''}`.trim() : 'Select'}
-                </Button>
+                {folderSelect ? (
+                    <>
+                        <span className="mr-auto truncate text-sm text-content-muted">
+                            Destination: {path[path.length - 1].name}
+                        </span>
+                        <Button variant="ghost" onClick={() => setShowModal(false)}>Cancel</Button>
+                        <Button variant="primary" onClick={confirmFolder} disabled={!driveId}>Use this folder</Button>
+                    </>
+                ) : (
+                    <>
+                        <span className="mr-auto text-sm text-content-muted">{selectedCount} selected</span>
+                        <Button variant="ghost" onClick={() => setShowModal(false)}>Cancel</Button>
+                        <Button variant="primary" onClick={confirm} disabled={selectedCount === 0}>
+                            {multiple ? `Import ${selectedCount || ''}`.trim() : 'Select'}
+                        </Button>
+                    </>
+                )}
             </Modal.Footer>
         </Modal>
     );
