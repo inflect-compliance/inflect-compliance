@@ -19,6 +19,7 @@ import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
+import { SharePointCard } from './SharePointCard';
 
 interface ConnectionDTO {
     id: string;
@@ -194,6 +195,10 @@ export default function AdminIntegrationsPage() {
                     />
                     <Heading level={1}>Integrations</Heading>
                 </div>
+
+                {/* SP-1 — SharePoint connection (delegated consent, separate
+                    from the generic config-field connections below). */}
+                <SharePointCard />
 
                 {/* Message banner */}
                 {message && (

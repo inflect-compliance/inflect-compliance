@@ -1,0 +1,154 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- test-mock pattern. */
+/**
+ * SP-1 — SharePointClient Graph wrappers, exercised hermetically with a mocked
+ * fetch (no network). Locks the endpoint shapes, pagination, delta-token
+ * extraction, and the testConnection status branches.
+ */
+import {
+    SharePointClient,
+    encodeRemoteId,
+    decodeRemoteId,
+    extractDeltaToken,
+    type SharePointConnectionConfig,
+} from '@/app-layer/integrations/providers/sharepoint/client';
+
+const jsonRes = (body: unknown, ok = true, status = 200): Response =>
+    ({ ok, status, json: async () => body, arrayBuffer: async () => new ArrayBuffer(8) }) as unknown as Response;
+
+function client(fetchImpl: any, over: Partial<SharePointConnectionConfig> = {}) {
+    const config: SharePointConnectionConfig = {
+        aadTenantId: 'tid',
+        allowedSiteIds: ['site-1'],
+        accessToken: 'tok',
+        ...over,
+    };
+    return new SharePointClient(config, fetchImpl as typeof fetch);
+}
+
+describe('remoteId codec + delta token', () => {
+    it('encodes/decodes driveId:itemId', () => {
+        expect(encodeRemoteId('d1', 'i1')).toBe('d1:i1');
+        expect(decodeRemoteId('d1:i1')).toEqual({ driveId: 'd1', itemId: 'i1' });
+    });
+    it('decode tolerates colons in the itemId', () => {
+        expect(decodeRemoteId('d1:a:b')).toEqual({ driveId: 'd1', itemId: 'a:b' });
+    });
+    it('decode throws on a malformed id', () => {
+        expect(() => decodeRemoteId('nope')).toThrow();
+    });
+    it('extractDeltaToken pulls the token query param', () => {
+        expect(extractDeltaToken('https://graph/delta?token=ABC123')).toBe('ABC123');
+        expect(extractDeltaToken('https://graph/delta')).toBeUndefined();
+    });
+});
+
+describe('SharePointClient — auth + endpoints', () => {
+    it('sends the bearer token on every Graph call', async () => {
+        const f = jest.fn().mockResolvedValue(jsonRes({ value: [] }));
+        await client(f).listSites();
+        expect(f.mock.calls[0][1].headers.Authorization).toBe('Bearer tok');
+    });
+
+    it('listSites hits /sites?search=* and returns value[]', async () => {
+        const f = jest.fn().mockResolvedValue(jsonRes({ value: [{ id: 's1' }, { id: 's2' }] }));
+        const sites = await client(f).listSites();
+        expect(f.mock.calls[0][0]).toContain('/sites?search=*');
+        expect(sites.map((s) => s.id)).toEqual(['s1', 's2']);
+    });
+
+    it('listDrives hits the site drives endpoint', async () => {
+        const f = jest.fn().mockResolvedValue(jsonRes({ value: [{ id: 'drv1' }] }));
+        await client(f).listDrives('site-1');
+        expect(f.mock.calls[0][0]).toContain('/sites/site-1/drives');
+    });
+
+    it('listChildren returns items + nextLink for the root and a folder', async () => {
+        const f = jest
+            .fn()
+            .mockResolvedValueOnce(jsonRes({ value: [{ id: 'a' }], '@odata.nextLink': 'https://graph/next' }));
+        const page = await client(f).listChildren('drv1');
+        expect(f.mock.calls[0][0]).toContain('/drives/drv1/root/children');
+        expect(page.items.map((i) => i.id)).toEqual(['a']);
+        expect(page.nextLink).toBe('https://graph/next');
+
+        const f2 = jest.fn().mockResolvedValue(jsonRes({ value: [] }));
+        await client(f2).listChildren('drv1', 'item9');
+        expect(f2.mock.calls[0][0]).toContain('/drives/drv1/items/item9/children');
+    });
+
+    it('downloadItemContent returns the file bytes', async () => {
+        const f = jest.fn().mockResolvedValue(jsonRes({}, true));
+        const buf = await client(f).downloadItemContent('drv1', 'item1');
+        expect(f.mock.calls[0][0]).toContain('/drives/drv1/items/item1/content');
+        expect(buf.byteLength).toBe(8);
+    });
+
+    it('getDelta follows nextLink to the deltaLink and returns the new token', async () => {
+        const f = jest
+            .fn()
+            .mockResolvedValueOnce(jsonRes({ value: [{ id: 'a' }], '@odata.nextLink': 'https://graph/p2' }))
+            .mockResolvedValueOnce(jsonRes({ value: [{ id: 'b' }], '@odata.deltaLink': 'https://graph/delta?token=TK9' }));
+        const res = await client(f).getDelta('drv1');
+        expect(res.items.map((i) => i.id)).toEqual(['a', 'b']);
+        expect(res.deltaToken).toBe('TK9');
+        expect(f).toHaveBeenCalledTimes(2);
+    });
+
+    it('getDelta resumes from a stored token', async () => {
+        const f = jest.fn().mockResolvedValue(jsonRes({ value: [], '@odata.deltaLink': 'https://graph/delta?token=NEW' }));
+        await client(f).getDelta('drv1', 'OLD');
+        expect(f.mock.calls[0][0]).toContain('token=OLD');
+    });
+
+    it('throws on a non-OK Graph GET', async () => {
+        const f = jest.fn().mockResolvedValue(jsonRes({}, false, 500));
+        await expect(client(f).listSites()).rejects.toThrow(/500/);
+    });
+});
+
+describe('SharePointClient — testConnection branches', () => {
+    it('ok when the configured site resolves', async () => {
+        const f = jest.fn().mockResolvedValue(jsonRes({ id: 's1', displayName: 'Compliance' }));
+        const r = await client(f).testConnection();
+        expect(r.ok).toBe(true);
+        expect(r.message).toContain('Compliance');
+        expect(f.mock.calls[0][0]).toContain('/sites/site-1');
+    });
+    it('probes /sites/root when no allowed site is configured', async () => {
+        const f = jest.fn().mockResolvedValue(jsonRes({ id: 'root' }));
+        await client(f, { allowedSiteIds: [] }).testConnection();
+        expect(f.mock.calls[0][0]).toContain('/sites/root');
+    });
+    it('maps 401/403/404 to actionable messages', async () => {
+        for (const [status, re] of [
+            [401, /invalid or expired/i],
+            [403, /consent/i],
+            [404, /not found/i],
+        ] as const) {
+            const f = jest.fn().mockResolvedValue(jsonRes({}, false, status));
+            const r = await client(f).testConnection();
+            expect(r.ok).toBe(false);
+            expect(r.message).toMatch(re);
+        }
+    });
+    it('fails gracefully on a transport throw', async () => {
+        const f = jest.fn().mockRejectedValue(new Error('network'));
+        const r = await client(f).testConnection();
+        expect(r.ok).toBe(false);
+    });
+});
+
+describe('SharePointClient — generic CRUD contract', () => {
+    it('getRemoteObject resolves a DriveItem and null on failure', async () => {
+        const f = jest.fn().mockResolvedValue(jsonRes({ id: 'i1', name: 'doc.pdf', lastModifiedDateTime: '2026-01-01T00:00:00Z' }));
+        const obj = await client(f).getRemoteObject('drv1:i1');
+        expect(obj?.remoteId).toBe('drv1:i1');
+        const bad = jest.fn().mockResolvedValue(jsonRes({}, false, 404));
+        expect(await client(bad).getRemoteObject('drv1:i1')).toBeNull();
+    });
+    it('create/update throw (use SP-4 upload)', async () => {
+        const c = client(jest.fn());
+        await expect(c.createRemoteObject({})).rejects.toThrow();
+        await expect(c.updateRemoteObject('x', {})).rejects.toThrow();
+    });
+});

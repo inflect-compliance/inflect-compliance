@@ -1,0 +1,219 @@
+'use client';
+
+/* TODO(swr-migration): fetch-on-mount + setState, matching the parent
+ * integrations page. Migrate together to useTenantSWR. */
+
+import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { Combobox } from '@/components/ui/combobox';
+import { InlineNotice } from '@/components/ui/inline-notice';
+import { Heading } from '@/components/ui/typography';
+import { useTenantApiUrl } from '@/lib/tenant-context-provider';
+import { useToastWithUndo } from '@/components/ui/hooks';
+
+interface SpConnection {
+    id: string;
+    name: string;
+    isEnabled: boolean;
+    configJson: { allowedSiteIds?: string[] } | null;
+    lastTestedAt: string | null;
+    lastTestStatus: string | null;
+}
+interface SpSite {
+    id: string;
+    displayName?: string;
+    webUrl?: string;
+}
+
+/**
+ * SP-1 — SharePoint connection card on Admin → Integrations.
+ * Connect (delegated consent), test, choose allowed sites, disconnect.
+ */
+export function SharePointCard() {
+    const apiUrl = useTenantApiUrl();
+    const searchParams = useSearchParams();
+    const triggerUndoToast = useToastWithUndo();
+
+    const [connections, setConnections] = useState<SpConnection[]>([]);
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [testResult, setTestResult] = useState<Record<string, string>>({});
+    const [sitesFor, setSitesFor] = useState<string | null>(null);
+    const [sites, setSites] = useState<SpSite[]>([]);
+    const [selectedSites, setSelectedSites] = useState<string[]>([]);
+
+    const spStatus = searchParams.get('sp');
+
+    const load = useCallback(async () => {
+        try {
+            const res = await fetch(apiUrl('/admin/integrations/sharepoint'));
+            if (res.ok) setConnections(await res.json());
+        } catch {
+            /* read-only load */
+        }
+    }, [apiUrl]);
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    useEffect(() => { void load(); }, [load]);
+
+    const connect = useCallback(async () => {
+        setBusy(true);
+        setError(null);
+        try {
+            const res = await fetch(apiUrl('/admin/integrations/sharepoint/connect'), { method: 'POST' });
+            if (!res.ok) {
+                setError('Could not start the SharePoint consent flow.');
+                return;
+            }
+            const { authorizeUrl } = await res.json();
+            window.location.href = authorizeUrl; // hand off to Microsoft consent
+        } catch {
+            setError('Could not start the SharePoint consent flow.');
+        } finally {
+            setBusy(false);
+        }
+    }, [apiUrl]);
+
+    const test = useCallback(
+        async (id: string) => {
+            setTestResult((r) => ({ ...r, [id]: 'Testing…' }));
+            try {
+                const res = await fetch(apiUrl('/admin/integrations/sharepoint/test'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ connectionId: id }),
+                });
+                const data = await res.json();
+                setTestResult((r) => ({ ...r, [id]: data.message ?? (data.ok ? 'OK' : 'Failed') }));
+                void load();
+            } catch {
+                setTestResult((r) => ({ ...r, [id]: 'Test failed' }));
+            }
+        },
+        [apiUrl, load],
+    );
+
+    const openSites = useCallback(
+        async (conn: SpConnection) => {
+            setSitesFor(conn.id);
+            setSelectedSites(conn.configJson?.allowedSiteIds ?? []);
+            try {
+                const res = await fetch(apiUrl(`/admin/integrations/sharepoint/sites?connectionId=${conn.id}`));
+                if (res.ok) setSites(await res.json());
+            } catch {
+                /* ignore */
+            }
+        },
+        [apiUrl],
+    );
+
+    const saveSites = useCallback(
+        async (id: string) => {
+            setBusy(true);
+            try {
+                await fetch(apiUrl(`/admin/integrations/sharepoint/sites?connectionId=${id}`), {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ siteIds: selectedSites }),
+                });
+                setSitesFor(null);
+                void load();
+            } finally {
+                setBusy(false);
+            }
+        },
+        [apiUrl, selectedSites, load],
+    );
+
+    const disconnect = useCallback(
+        (conn: SpConnection) => {
+            setConnections((cs) => cs.filter((c) => c.id !== conn.id)); // optimistic
+            triggerUndoToast({
+                message: `${conn.name} disconnected`,
+                undoMessage: 'Undo',
+                action: async () => {
+                    const res = await fetch(apiUrl(`/admin/integrations/sharepoint?connectionId=${conn.id}`), {
+                        method: 'DELETE',
+                    });
+                    if (!res.ok && res.status !== 404) throw new Error(`Disconnect failed (${res.status})`);
+                },
+                undoAction: () => load(),
+                onError: () => {
+                    setError('Failed to disconnect — restored.');
+                    void load();
+                },
+            });
+        },
+        [apiUrl, triggerUndoToast, load],
+    );
+
+    const siteOptions = sites.map((s) => ({ value: s.id, label: s.displayName ?? s.webUrl ?? s.id }));
+
+    return (
+        <Card className="space-y-default p-6">
+            <div className="flex items-center justify-between">
+                <Heading level={2}>Microsoft SharePoint</Heading>
+                {connections.length === 0 && (
+                    <Button variant="primary" onClick={connect} disabled={busy}>
+                        {busy ? 'Connecting…' : 'Connect'}
+                    </Button>
+                )}
+            </div>
+            <p className="text-sm text-content-muted">
+                Source compliance evidence from SharePoint document libraries and keep
+                policies in sync. Connecting grants IC delegated read access to the
+                sites you choose.
+            </p>
+
+            {spStatus === 'connected' && <InlineNotice variant="success">SharePoint connected.</InlineNotice>}
+            {spStatus === 'declined' && <InlineNotice variant="warning">Consent was declined.</InlineNotice>}
+            {spStatus === 'error' && <InlineNotice variant="error">SharePoint connection failed — try again.</InlineNotice>}
+            {error && <InlineNotice variant="error">{error}</InlineNotice>}
+
+            {connections.map((conn) => (
+                <div key={conn.id} className="rounded-md border border-border-subtle p-4 space-y-default">
+                    <div className="flex items-center gap-default">
+                        <span className="font-medium text-content-default">{conn.name}</span>
+                        <StatusBadge variant={conn.lastTestStatus === 'error' ? 'error' : 'success'}>
+                            {conn.lastTestStatus === 'error' ? 'Error' : 'Connected'}
+                        </StatusBadge>
+                        <span className="text-xs text-content-muted">
+                            {conn.configJson?.allowedSiteIds?.length ?? 0} site(s) allowed
+                        </span>
+                        <div className="ml-auto flex gap-tight">
+                            <Button variant="ghost" size="sm" onClick={() => test(conn.id)}>Test</Button>
+                            <Button variant="ghost" size="sm" onClick={() => openSites(conn)}>Sites</Button>
+                            <Button variant="ghost" size="sm" onClick={() => disconnect(conn)}>Disconnect</Button>
+                        </div>
+                    </div>
+                    {testResult[conn.id] && (
+                        <p className="text-xs text-content-muted">{testResult[conn.id]}</p>
+                    )}
+                    {sitesFor === conn.id && (
+                        <div className="space-y-default border-t border-border-subtle pt-default">
+                            <p className="text-sm text-content-muted">Choose which sites IC may access:</p>
+                            <Combobox
+                                id={`sp-sites-${conn.id}`}
+                                multiple
+                                options={siteOptions}
+                                selected={siteOptions.filter((o) => selectedSites.includes(o.value))}
+                                setSelected={(opts) => setSelectedSites(opts.map((o) => o.value))}
+                                placeholder="Select sites…"
+                                matchTriggerWidth
+                            />
+                            <div className="flex justify-end gap-tight">
+                                <Button variant="ghost" size="sm" onClick={() => setSitesFor(null)}>Cancel</Button>
+                                <Button variant="secondary" size="sm" onClick={() => saveSites(conn.id)} disabled={busy}>
+                                    Save sites
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            ))}
+        </Card>
+    );
+}

@@ -18,6 +18,8 @@ import { GitHubProvider } from './providers/github';
 import { GitHubClient } from './providers/github-client';
 import { GitHubBranchProtectionMapper } from './providers/github-mapper';
 import { GitHubSyncOrchestrator } from './providers/github/sync';
+import { SharePointClient } from './providers/sharepoint/client';
+import { SharePointMapper } from './providers/sharepoint/mapper';
 
 // ─── ProviderRegistry: Automation Key Routing ────────────────────────
 
@@ -39,6 +41,17 @@ integrationRegistry.register({
     clientClass: GitHubClient,
     mapperClass: GitHubBranchProtectionMapper,
     orchestratorClass: GitHubSyncOrchestrator,
+});
+
+// SharePoint — document libraries: evidence import + policy sync (SP-1).
+// No orchestratorClass yet — the sync orchestrator lands in SP-3.
+integrationRegistry.register({
+    name: 'sharepoint',
+    type: 'document',
+    displayName: 'Microsoft SharePoint',
+    description: 'SharePoint document libraries — evidence import, policy sync, audit-pack export',
+    clientClass: SharePointClient,
+    mapperClass: SharePointMapper,
 });
 
 // Future bundles:

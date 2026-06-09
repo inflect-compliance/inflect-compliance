@@ -1,0 +1,262 @@
+/**
+ * SharePoint Integration Client (SP-1).
+ *
+ * Wraps the Microsoft Graph SharePoint endpoints behind the
+ * `BaseIntegrationClient` contract. SharePoint's verbs (browse sites / drives /
+ * folders, download, delta change-tracking, change-notification subscriptions)
+ * don't map onto the generic CRUD contract, so the abstract CRUD methods are
+ * implemented thinly (getRemoteObject → getItem, listRemoteObjects → listSites)
+ * and the real surface is the SharePoint-specific methods below.
+ *
+ * Auth: the caller injects a valid Graph `accessToken` in the config (obtained
+ * + refreshed by `sharepoint-token.ts` from the connection's encrypted secret).
+ * The client itself is stateless w.r.t. the token lifecycle — it just sends the
+ * bearer token it was given, so it stays pure + hermetically testable.
+ *
+ * @module integrations/providers/sharepoint/client
+ */
+import {
+    BaseIntegrationClient,
+    type BaseConnectionConfig,
+    type ConnectionTestResult,
+    type RemoteObject,
+    type RemoteListQuery,
+    type RemoteListResult,
+} from '../../base-client';
+import type {
+    SpSite,
+    SpDrive,
+    SpDriveItem,
+    SpChildrenPage,
+    SpDeltaPage,
+    SpSubscription,
+} from './types';
+
+const GRAPH = 'https://graph.microsoft.com/v1.0';
+
+export interface SharePointConnectionConfig extends BaseConnectionConfig {
+    /** AAD directory tenant ID (from the EI-1 Entra provider). */
+    aadTenantId: string;
+    /** Graph Site IDs the tenant admin approved IC may access. */
+    allowedSiteIds: string[];
+    /** Default document library for evidence imports. */
+    defaultDriveId?: string;
+    /** Delegated Graph access token (injected per-request by the caller). */
+    accessToken: string;
+    [key: string]: unknown;
+}
+
+/** Build `driveId:itemId` ↔ split helpers for the generic-CRUD remoteId. */
+export function encodeRemoteId(driveId: string, itemId: string): string {
+    return `${driveId}:${itemId}`;
+}
+export function decodeRemoteId(remoteId: string): { driveId: string; itemId: string } {
+    const idx = remoteId.indexOf(':');
+    if (idx < 0) throw new Error(`Invalid SharePoint remoteId: ${remoteId}`);
+    return { driveId: remoteId.slice(0, idx), itemId: remoteId.slice(idx + 1) };
+}
+
+export class SharePointClient extends BaseIntegrationClient<SharePointConnectionConfig> {
+    readonly providerId = 'sharepoint';
+    readonly displayName = 'Microsoft SharePoint';
+
+    private get headers(): Record<string, string> {
+        return {
+            Authorization: `Bearer ${this.config.accessToken}`,
+            Accept: 'application/json',
+        };
+    }
+
+    /** GET a Graph URL (absolute or path under /v1.0) and parse JSON. */
+    private async graphGet<T>(urlOrPath: string): Promise<T> {
+        const url = urlOrPath.startsWith('http') ? urlOrPath : `${GRAPH}${urlOrPath}`;
+        const res = await this.request(url, { headers: this.headers });
+        if (!res.ok) {
+            throw new Error(`Graph GET ${url} → ${res.status}`);
+        }
+        return (await res.json()) as T;
+    }
+
+    // ── BaseIntegrationClient contract ──
+
+    async testConnection(): Promise<ConnectionTestResult> {
+        const start = Date.now();
+        try {
+            // Cheapest authenticated probe that also confirms SP reach: resolve
+            // the first allowed site (or /sites/root if none configured yet).
+            const siteId = this.config.allowedSiteIds[0];
+            const path = siteId ? `/sites/${encodeURIComponent(siteId)}` : '/sites/root';
+            const res = await this.request(`${GRAPH}${path}`, { headers: this.headers });
+            if (res.ok) {
+                const site = (await res.json()) as SpSite;
+                return {
+                    ok: true,
+                    message: `Connected to ${site.displayName ?? site.webUrl ?? 'SharePoint'}`,
+                    latencyMs: Date.now() - start,
+                    meta: { siteId: site.id },
+                };
+            }
+            if (res.status === 401) return { ok: false, message: 'Access token invalid or expired — reconnect' };
+            if (res.status === 403) return { ok: false, message: 'Token lacks Sites.Read.All / Files.Read.All consent' };
+            if (res.status === 404) return { ok: false, message: 'Configured site not found' };
+            return { ok: false, message: `Graph returned status ${res.status}` };
+        } catch (err) {
+            return { ok: false, message: `Connection failed: ${err instanceof Error ? err.message : String(err)}` };
+        }
+    }
+
+    async getRemoteObject(remoteId: string): Promise<RemoteObject | null> {
+        const { driveId, itemId } = decodeRemoteId(remoteId);
+        try {
+            const item = await this.getItem(driveId, itemId);
+            return {
+                remoteId,
+                data: item as unknown as Record<string, unknown>,
+                remoteUpdatedAt: item.lastModifiedDateTime ? new Date(item.lastModifiedDateTime) : undefined,
+            };
+        } catch {
+            return null;
+        }
+    }
+
+    async listRemoteObjects(_query?: RemoteListQuery): Promise<RemoteListResult> {
+        const sites = await this.listSites();
+        return { items: sites.map((s) => ({ remoteId: s.id, data: s as unknown as Record<string, unknown> })) };
+    }
+
+    async createRemoteObject(): Promise<RemoteObject> {
+        throw new Error('SharePoint create is not supported via the generic CRUD contract — use uploadItemContent (SP-4)');
+    }
+
+    async updateRemoteObject(): Promise<RemoteObject> {
+        throw new Error('SharePoint update is not supported via the generic CRUD contract — use uploadItemContent (SP-4)');
+    }
+
+    // ── SharePoint-specific surface ──
+
+    /** List sites the connection can reach (admin site-selection). */
+    async listSites(): Promise<SpSite[]> {
+        const body = await this.graphGet<{ value?: SpSite[] }>('/sites?search=*');
+        return body.value ?? [];
+    }
+
+    async getSite(siteId: string): Promise<SpSite> {
+        return this.graphGet<SpSite>(`/sites/${encodeURIComponent(siteId)}`);
+    }
+
+    /** List document libraries (drives) for a site. */
+    async listDrives(siteId: string): Promise<SpDrive[]> {
+        const body = await this.graphGet<{ value?: SpDrive[] }>(
+            `/sites/${encodeURIComponent(siteId)}/drives`,
+        );
+        return body.value ?? [];
+    }
+
+    /**
+     * List one page of children of a folder (root when `itemId` omitted).
+     * Returns the Graph `@odata.nextLink` so the browse route can paginate.
+     */
+    async listChildren(
+        driveId: string,
+        itemId?: string,
+        pageUrl?: string,
+    ): Promise<SpChildrenPage> {
+        const path = pageUrl
+            ? pageUrl
+            : itemId
+              ? `/drives/${encodeURIComponent(driveId)}/items/${encodeURIComponent(itemId)}/children`
+              : `/drives/${encodeURIComponent(driveId)}/root/children`;
+        const body = await this.graphGet<{ value?: SpDriveItem[]; '@odata.nextLink'?: string }>(path);
+        return { items: body.value ?? [], nextLink: body['@odata.nextLink'] };
+    }
+
+    async getItem(driveId: string, itemId: string): Promise<SpDriveItem> {
+        return this.graphGet<SpDriveItem>(
+            `/drives/${encodeURIComponent(driveId)}/items/${encodeURIComponent(itemId)}`,
+        );
+    }
+
+    /** Download a file's bytes. (ArrayBuffer — SP-3 wraps it as a File.) */
+    async downloadItemContent(driveId: string, itemId: string): Promise<ArrayBuffer> {
+        const url = `${GRAPH}/drives/${encodeURIComponent(driveId)}/items/${encodeURIComponent(itemId)}/content`;
+        const res = await this.request(url, { headers: this.headers });
+        if (!res.ok) throw new Error(`Graph download ${itemId} → ${res.status}`);
+        return res.arrayBuffer();
+    }
+
+    /**
+     * Walk the Graph delta for a drive, following `@odata.nextLink` until the
+     * terminal `@odata.deltaLink`, accumulating changed items. Returns the new
+     * delta token to persist for the next incremental sync.
+     */
+    async getDelta(driveId: string, deltaToken?: string, maxPages = 50): Promise<SpDeltaPage> {
+        let url = deltaToken
+            ? `${GRAPH}/drives/${encodeURIComponent(driveId)}/root/delta?token=${encodeURIComponent(deltaToken)}`
+            : `${GRAPH}/drives/${encodeURIComponent(driveId)}/root/delta`;
+        const items: SpDriveItem[] = [];
+        let newToken: string | undefined;
+        for (let pages = 0; url && pages < maxPages; pages++) {
+            const body = await this.graphGet<{
+                value?: SpDriveItem[];
+                '@odata.nextLink'?: string;
+                '@odata.deltaLink'?: string;
+            }>(url);
+            for (const it of body.value ?? []) items.push(it);
+            if (body['@odata.deltaLink']) {
+                newToken = extractDeltaToken(body['@odata.deltaLink']);
+                break;
+            }
+            url = body['@odata.nextLink'] ?? '';
+        }
+        return { items, deltaToken: newToken };
+    }
+
+    // ── Graph change-notification subscriptions (SP-4) ──
+
+    async createSubscription(input: {
+        driveId: string;
+        notificationUrl: string;
+        clientState: string;
+        expirationDateTime: string;
+    }): Promise<SpSubscription> {
+        const res = await this.request(`${GRAPH}/subscriptions`, {
+            method: 'POST',
+            headers: { ...this.headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                changeType: 'updated',
+                notificationUrl: input.notificationUrl,
+                resource: `/drives/${input.driveId}/root`,
+                expirationDateTime: input.expirationDateTime,
+                clientState: input.clientState,
+            }),
+        });
+        if (!res.ok) throw new Error(`Graph subscription create → ${res.status}`);
+        return (await res.json()) as SpSubscription;
+    }
+
+    async renewSubscription(subscriptionId: string, expirationDateTime: string): Promise<SpSubscription> {
+        const res = await this.request(`${GRAPH}/subscriptions/${encodeURIComponent(subscriptionId)}`, {
+            method: 'PATCH',
+            headers: { ...this.headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ expirationDateTime }),
+        });
+        if (!res.ok) throw new Error(`Graph subscription renew → ${res.status}`);
+        return (await res.json()) as SpSubscription;
+    }
+
+    async deleteSubscription(subscriptionId: string): Promise<void> {
+        const res = await this.request(`${GRAPH}/subscriptions/${encodeURIComponent(subscriptionId)}`, {
+            method: 'DELETE',
+            headers: this.headers,
+        });
+        if (res.status !== 204 && res.status !== 404 && !res.ok) {
+            throw new Error(`Graph subscription delete → ${res.status}`);
+        }
+    }
+}
+
+/** Pull the opaque `token` query param out of a Graph deltaLink URL. */
+export function extractDeltaToken(deltaLink: string): string | undefined {
+    const m = deltaLink.match(/[?&]token=([^&]+)/);
+    return m ? decodeURIComponent(m[1]) : undefined;
+}
