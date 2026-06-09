@@ -11,7 +11,8 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { Combobox } from '@/components/ui/combobox';
 import { InlineNotice } from '@/components/ui/inline-notice';
 import { Heading } from '@/components/ui/typography';
-import { useTenantApiUrl } from '@/lib/tenant-context-provider';
+import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
+import Link from 'next/link';
 import { useToastWithUndo } from '@/components/ui/hooks';
 
 interface SpConnection {
@@ -34,6 +35,7 @@ interface SpSite {
  */
 export function SharePointCard() {
     const apiUrl = useTenantApiUrl();
+    const tenantHref = useTenantHref();
     const searchParams = useSearchParams();
     const triggerUndoToast = useToastWithUndo();
 
@@ -156,11 +158,18 @@ export function SharePointCard() {
         <Card className="space-y-default p-6">
             <div className="flex items-center justify-between">
                 <Heading level={2}>Microsoft SharePoint</Heading>
-                {connections.length === 0 && (
-                    <Button variant="primary" onClick={connect} disabled={busy}>
-                        {busy ? 'Connecting…' : 'Connect'}
-                    </Button>
-                )}
+                <div className="flex items-center gap-default">
+                    {connections.length > 0 && (
+                        <Link href={tenantHref('/admin/integrations/sharepoint-health')} className="text-sm text-content-link">
+                            Sync health →
+                        </Link>
+                    )}
+                    {connections.length === 0 && (
+                        <Button variant="primary" onClick={connect} disabled={busy}>
+                            {busy ? 'Connecting…' : 'Connect'}
+                        </Button>
+                    )}
+                </div>
             </div>
             <p className="text-sm text-content-muted">
                 Source compliance evidence from SharePoint document libraries and keep

@@ -15,6 +15,7 @@ import { useCelebration } from '@/components/ui/hooks';
 import { scopedMilestone } from '@/lib/celebrations';
 import { Package } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { SharePointExportButton } from './SharePointExportButton';
 import { Heading } from '@/components/ui/typography';
 import { MetaStrip } from '@/components/ui/meta-strip';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
@@ -204,6 +205,11 @@ export default function PackDetailPage() {
                                 icon={<AppIcon name="refresh" size={16} />}
                                 label="Clone for retest"
                             />
+                        </RequirePermission>
+                    )}
+                    {isFrozen && (
+                        <RequirePermission resource="audits" action="manage">
+                            <SharePointExportButton packId={packId} />
                         </RequirePermission>
                     )}
                 </>

@@ -41,4 +41,6 @@ export {
     SP_IMPORT_MAX_ITEMS,
 } from './import';
 export type { SpImportInput, SpImportResult, SpDeltaSyncResult } from './import';
+export { getSharePointHealth } from './health';
+export type { SharePointHealth } from './health';
 export type * from './types';

@@ -216,6 +216,28 @@ export class SharePointClient extends BaseIntegrationClient<SharePointConnection
         return { items, deltaToken: newToken };
     }
 
+    /**
+     * Create a NEW file under a folder (SP-5 audit-pack export). `parentItemId`
+     * may be `'root'` for the drive root. Returns the created item.
+     */
+    async uploadNewFile(
+        driveId: string,
+        parentItemId: string,
+        name: string,
+        body: ArrayBuffer | Uint8Array,
+        contentType: string,
+    ): Promise<SpDriveItem> {
+        const parent = parentItemId === 'root' ? 'root' : `items/${encodeURIComponent(parentItemId)}`;
+        const url = `${GRAPH}/drives/${encodeURIComponent(driveId)}/${parent}:/${encodeURIComponent(name)}:/content`;
+        const res = await this.request(url, {
+            method: 'PUT',
+            headers: { ...this.headers, 'Content-Type': contentType },
+            body: body as BodyInit,
+        });
+        if (!res.ok) throw new Error(`Graph upload new file ${name} → ${res.status}`);
+        return (await res.json()) as SpDriveItem;
+    }
+
     /** Replace a file's content (SP-4 policy push). Returns the updated item. */
     async uploadItemContent(
         driveId: string,

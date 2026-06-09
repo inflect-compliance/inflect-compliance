@@ -197,6 +197,10 @@ model AuditPack {
   updatedAt       DateTime            @updatedAt
   deletedAt       DateTime?
   deletedByUserId String?
+  /// SP-5 — last SharePoint export of this (frozen) pack.
+  spExportItemId  String?
+  spExportWebUrl  String?
+  spExportedAt    DateTime?
   cycle           AuditCycle          @relation(fields: [auditCycleId], references: [id])
   frozenBy        User?               @relation("AuditPackFrozenBy", fields: [frozenByUserId], references: [id])
   tenant          Tenant              @relation(fields: [tenantId], references: [id])
