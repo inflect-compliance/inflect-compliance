@@ -31,5 +31,8 @@ export {
     updateSharePointAllowedSites,
     disconnectSharePoint,
     listSharePointConnections,
+    getSharePointSitesAndDrives,
+    browseSharePoint,
 } from './service';
+export type { SpBrowseItem } from './service';
 export type * from './types';

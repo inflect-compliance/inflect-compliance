@@ -206,6 +206,60 @@ export async function disconnectSharePoint(ctx: RequestContext, connectionId: st
     });
 }
 
+// ─── SP-2 — browse (practitioner-facing; no admin gate) ──────────────
+
+/** A folder/file row for the picker (flattened from a Graph DriveItem). */
+export interface SpBrowseItem {
+    id: string;
+    name: string;
+    isFolder: boolean;
+    hasChildren: boolean;
+    webUrl?: string;
+    size?: number;
+    mimeType?: string;
+    lastModified?: string;
+}
+
+/** Resolve the allowed sites + their drives for the picker's selectors. */
+export async function getSharePointSitesAndDrives(
+    ctx: RequestContext,
+    connectionId: string,
+    deps: { fetchImpl?: typeof fetch } = {},
+): Promise<{ sites: Array<{ id: string; name: string }>; drives: Record<string, Array<{ id: string; name: string }>> }> {
+    const client = await getSharePointClient(ctx, connectionId, deps);
+    const sites: Array<{ id: string; name: string }> = [];
+    const drives: Record<string, Array<{ id: string; name: string }>> = {};
+    for (const siteId of client.allowedSiteIds) {
+        const site = await client.getSite(siteId);
+        sites.push({ id: site.id, name: site.displayName ?? site.name ?? site.webUrl ?? site.id });
+        const ds = await client.listDrives(siteId);
+        drives[site.id] = ds.map((d) => ({ id: d.id, name: d.name ?? 'Documents' }));
+    }
+    return { sites, drives };
+}
+
+/** List one page of a drive folder for the picker (lazy tree expansion). */
+export async function browseSharePoint(
+    ctx: RequestContext,
+    input: { connectionId: string; driveId: string; itemId?: string; pageToken?: string },
+    deps: { fetchImpl?: typeof fetch } = {},
+): Promise<{ items: SpBrowseItem[]; nextPageToken?: string }> {
+    if (!input.driveId) throw badRequest('driveId is required');
+    const client = await getSharePointClient(ctx, input.connectionId, deps);
+    const page = await client.listChildren(input.driveId, input.itemId, input.pageToken);
+    const items: SpBrowseItem[] = page.items.map((it) => ({
+        id: it.id,
+        name: it.name ?? '(unnamed)',
+        isFolder: !!it.folder,
+        hasChildren: (it.folder?.childCount ?? 0) > 0,
+        webUrl: it.webUrl,
+        size: it.size,
+        mimeType: it.file?.mimeType,
+        lastModified: it.lastModifiedDateTime,
+    }));
+    return { items, nextPageToken: page.nextLink };
+}
+
 /** List SharePoint connections for the tenant (no secrets). */
 export async function listSharePointConnections(ctx: RequestContext) {
     return runInTenantContext(ctx, (db) =>
