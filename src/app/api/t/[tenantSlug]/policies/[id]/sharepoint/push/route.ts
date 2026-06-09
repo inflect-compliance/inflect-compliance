@@ -6,10 +6,10 @@ import { pushPolicyToSharePoint } from '@/app-layer/usecases/policy-sharepoint-s
 
 /** SP-4 — manual push of the current policy content to SharePoint. policies.edit. */
 export const POST = withApiErrorHandling(
-    requirePermission<{ tenantSlug: string; policyId: string }>(
+    requirePermission<{ tenantSlug: string; id: string }>(
         'policies.edit',
         async (_req: NextRequest, { params }, ctx) => {
-            await pushPolicyToSharePoint(ctx, params.policyId);
+            await pushPolicyToSharePoint(ctx, params.id);
             return jsonResponse({ ok: true });
         },
     ),

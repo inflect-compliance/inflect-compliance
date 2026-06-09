@@ -6,10 +6,10 @@ import { pullPolicyByIdFromSharePoint } from '@/app-layer/usecases/policy-sharep
 
 /** SP-4 — manual pull: create a new policy version from SharePoint. policies.edit. */
 export const POST = withApiErrorHandling(
-    requirePermission<{ tenantSlug: string; policyId: string }>(
+    requirePermission<{ tenantSlug: string; id: string }>(
         'policies.edit',
         async (_req: NextRequest, { params }, ctx) => {
-            return jsonResponse(await pullPolicyByIdFromSharePoint(ctx, params.policyId));
+            return jsonResponse(await pullPolicyByIdFromSharePoint(ctx, params.id));
         },
     ),
 );
