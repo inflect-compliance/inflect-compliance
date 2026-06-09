@@ -60,6 +60,11 @@ export class SharePointClient extends BaseIntegrationClient<SharePointConnection
     readonly providerId = 'sharepoint';
     readonly displayName = 'Microsoft SharePoint';
 
+    /** Site IDs the tenant admin approved (read-only view of the config). */
+    get allowedSiteIds(): string[] {
+        return this.config.allowedSiteIds;
+    }
+
     private get headers(): Record<string, string> {
         return {
             Authorization: `Bearer ${this.config.accessToken}`,
