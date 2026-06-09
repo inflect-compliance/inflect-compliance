@@ -1,0 +1,7 @@
+{
+  "_comment": "SP-F4 — DOCUMENTED Graph shape for GET /sites/{id}/drives (synthetic).",
+  "value": [
+    { "id": "b!aBcDeFgHiJkLmNoPqRsTuVwXyZ012345", "name": "Documents", "driveType": "documentLibrary", "webUrl": "https://contoso.sharepoint.com/sites/compliance/Shared%20Documents" },
+    { "id": "b!zYxWvUtSrQpOnMlKjIhGfEdCbA543210", "name": "Policies", "driveType": "documentLibrary", "webUrl": "https://contoso.sharepoint.com/sites/compliance/Policies" }
+  ]
+}

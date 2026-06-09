@@ -1,0 +1,7 @@
+{
+  "_comment": "SP-F4 — DOCUMENTED Graph shape for GET /sites?search=* (synthetic, not a real capture). Replace with a redacted real capture to lock the parser against drift.",
+  "value": [
+    { "id": "contoso.sharepoint.com,2c5f9b1a-1111-4aaa-9bbb-0123456789ab,7d8e6f2b-2222-4ccc-8ddd-abcdef012345", "displayName": "Compliance", "name": "compliance", "webUrl": "https://contoso.sharepoint.com/sites/compliance" },
+    { "id": "contoso.sharepoint.com,3d6e0c2b-3333-4eee-9fff-1123456789ac,8e9f7g3c-4444-4ddd-7eee-bcdef0123456", "displayName": "Audit", "name": "audit", "webUrl": "https://contoso.sharepoint.com/sites/audit" }
+  ]
+}

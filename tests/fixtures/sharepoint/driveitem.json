@@ -1,0 +1,12 @@
+{
+  "_comment": "SP-F4 — DOCUMENTED Graph shape for GET /drives/{id}/items/{itemId} (synthetic single driveItem).",
+  "id": "01FILE001BBBBBBBBBBBBBBBBBBBBBBBBB",
+  "name": "SOC2-evidence.pdf",
+  "webUrl": "https://contoso.sharepoint.com/sites/compliance/Shared%20Documents/SOC2-evidence.pdf",
+  "eTag": "\"{GUID},3\"",
+  "cTag": "\"c:{GUID},2\"",
+  "size": 482311,
+  "lastModifiedDateTime": "2026-05-30T14:22:09Z",
+  "file": { "mimeType": "application/pdf" },
+  "parentReference": { "driveId": "b!aBcDeFgHiJkLmNoPqRsTuVwXyZ012345", "id": "01ROOTAAAAAAAAAAAAAAAAAAAAAAAAAAA" }
+}

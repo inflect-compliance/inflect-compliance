@@ -1,0 +1,8 @@
+{
+  "_comment": "SP-F4 — DOCUMENTED Graph shape for GET /drives/{id}/root/delta (synthetic): one changed file, one deleted.",
+  "value": [
+    { "id": "01FILE001BBBBBBBBBBBBBBBBBBBBBBBBB", "name": "SOC2-evidence.pdf", "eTag": "\"{GUID},4\"", "cTag": "\"c:{GUID},3\"", "size": 491022, "lastModifiedDateTime": "2026-06-02T09:10:00Z", "file": { "mimeType": "application/pdf" } },
+    { "id": "01FILE002CCCCCCCCCCCCCCCCCCCCCCCCC", "name": "old-policy.docx", "deleted": { "state": "deleted" } }
+  ],
+  "@odata.deltaLink": "https://graph.microsoft.com/v1.0/drives/b!aBcDeFgHiJkLmNoPqRsTuVwXyZ012345/root/delta?token=NEWDELTATOKEN123"
+}
