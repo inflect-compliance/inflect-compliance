@@ -350,6 +350,13 @@ const LIST_QUERY_INDEXES: readonly CompositeIndex[] = [
 // curated composite index is needed."
 
 const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
+    // RQ-2 — breach history lists by tenantId ordered by detectedAt;
+    // covered by @@index([tenantId, detectedAt]).
+    RiskAppetiteBreach:
+        'RQ-2 listBreaches filters by tenantId, orders by detectedAt DESC — covered by @@index([tenantId, detectedAt]); bounded take:200.',
+    // RQ-2 — one config row per tenant, fetched by tenantId (unique).
+    RiskAppetiteConfig:
+        'RQ-2 single per-tenant config fetched by tenantId — covered by the @@unique([tenantId]) / @@index([tenantId]); never a multi-row list.',
     // SP-3 — delta sync lists mappings by [tenantId, provider, connectionId];
     // covered by @@index([tenantId, provider]) + @@index([connectionId]).
     IntegrationSyncMapping:

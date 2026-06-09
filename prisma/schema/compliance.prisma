@@ -332,6 +332,8 @@ model Risk {
   // Evidence attached directly to this risk (Evidence Library tag +
   // the risk Evidence tab). Mirrors Control/Task.
   evidence        Evidence[]
+  // RQ-2 — appetite breaches attributed to this risk.
+  appetiteBreaches RiskAppetiteBreach[]
 
   /// Composite parent key — supports the
   /// `RiskTreatmentPlan.(riskId, tenantId) → Risk.(id, tenantId)`
@@ -433,6 +435,58 @@ model RiskMatrixConfig {
   tenant              Tenant   @relation(fields: [tenantId], references: [id])
 
   @@index([tenantId])
+}
+
+/// RQ-2 — board-approved risk appetite. One row per tenant; absent row
+/// means no appetite configured (UI shows a "Configure" CTA).
+model RiskAppetiteConfig {
+  id                    String        @id @default(cuid())
+  tenantId              String        @unique
+  /// Max acceptable total ALE across all active risks (Σ ALE/year).
+  totalAleThreshold     Float?
+  /// Max acceptable ALE for any single risk.
+  singleRiskAleMax      Float?
+  /// Max acceptable qualitative score (likelihood × impact).
+  qualScoreMax          Int?
+  /// category → { totalAleMax, singleAleMax, qualScoreMax } overrides.
+  categoryOverridesJson Json?
+  /// Board-approved narrative statement.
+  appetiteStatement     String?
+  approvedByUserId      String?
+  approvedAt            DateTime?
+  reviewCadence         ReviewCadence @default(ANNUALLY)
+  nextReviewAt          DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  tenant                Tenant        @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+}
+
+/// RQ-2 — a point-in-time record of an appetite threshold breach.
+/// Created by the monitor job / write-path checks; resolved when the
+/// value drops back under threshold.
+model RiskAppetiteBreach {
+  id                  String    @id @default(cuid())
+  tenantId            String
+  breachType          String // PORTFOLIO_ALE | SINGLE_RISK_ALE | QUAL_SCORE | CATEGORY_ALE
+  riskId              String?
+  category            String?
+  thresholdValue      Float
+  actualValue         Float
+  notifiedUserIds     Json?
+  detectedAt          DateTime  @default(now())
+  resolvedAt          DateTime?
+  acknowledgedAt      DateTime?
+  acknowledgedBy      String?
+  acknowledgementNote String?
+  tenant              Tenant    @relation(fields: [tenantId], references: [id])
+  risk                Risk?     @relation(fields: [riskId], references: [id])
+
+  @@index([tenantId, detectedAt])
+  @@index([tenantId, breachType])
+  @@index([tenantId, resolvedAt])
+  @@index([riskId])
 }
 
 model RiskSuggestionSession {

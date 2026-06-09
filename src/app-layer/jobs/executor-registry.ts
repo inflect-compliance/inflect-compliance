@@ -849,3 +849,17 @@ executorRegistry.register('sharepoint-subscription-renew', async (payload) => {
     });
 });
 
+// RQ-2 — daily cross-tenant risk-appetite breach monitor.
+executorRegistry.register('risk-appetite-monitor', async (payload) => {
+    const startedAt = new Date().toISOString();
+    const startMs = performance.now();
+    const { runRiskAppetiteMonitor } = await import('./risk-appetite-jobs');
+    const r = await runRiskAppetiteMonitor(payload);
+    return makeResult('risk-appetite-monitor', startedAt, startMs, r.scanned, r.newBreaches, 0, {
+        tenants: r.tenants,
+        scanned: r.scanned,
+        newBreaches: r.newBreaches,
+        resolved: r.resolved,
+    });
+});
+
