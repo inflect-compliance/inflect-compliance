@@ -196,6 +196,15 @@ export const BARE_ROUTE_EXEMPTIONS: ReadonlyArray<BareRouteExemption> = [
             'processing failure to avoid Stripe retry storms.',
     },
     {
+        file: 'webhooks/sharepoint/route.ts',
+        category: 'external_webhook',
+        reason:
+            'SP-4 Microsoft Graph change-notification receiver. Returns the ' +
+            'validationToken as text/plain on the subscription handshake and ' +
+            '200 on notifications (Graph retries otherwise); verifies clientState ' +
+            'against policy.spSubscriptionId before enqueuing a pull.',
+    },
+    {
         file: 'storage/av-webhook/route.ts',
         category: 'external_webhook',
         reason:

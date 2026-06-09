@@ -503,7 +503,7 @@ export async function publishPolicy(
 ) {
     assertCanAdmin(ctx);
 
-    return runInTenantContext(ctx, async (db) => {
+    const published = await runInTenantContext(ctx, async (db) => {
         const policy = await PolicyRepository.getById(db, ctx, policyId);
         if (!policy) throw notFound('Policy not found');
 
@@ -568,6 +568,23 @@ export async function publishPolicy(
 
         return PolicyRepository.getById(db, ctx, policyId);
     });
+
+    // SP-4 — push the freshly-published content to a linked SharePoint file.
+    // Best-effort + OUTSIDE the publish transaction (the sync opens its own):
+    // a SharePoint hiccup must never fail or roll back the publish.
+    try {
+        const { pushPolicyToSharePoint } = await import('./policy-sharepoint-sync');
+        await pushPolicyToSharePoint(ctx, policyId);
+    } catch (err) {
+        const { edgeLogger } = await import('@/lib/observability/edge-logger');
+        edgeLogger.error('Policy publish: SharePoint push failed', {
+            component: 'sharepoint',
+            policyId,
+            error: err instanceof Error ? err.message : String(err),
+        });
+    }
+
+    return published;
 }
 
 export async function archivePolicy(ctx: RequestContext, policyId: string) {

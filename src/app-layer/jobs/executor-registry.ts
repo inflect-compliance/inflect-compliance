@@ -824,3 +824,28 @@ executorRegistry.register('sharepoint-delta-sync-dispatch', async (payload) => {
     });
 });
 
+// SP-4 — pull a changed policy from SharePoint (webhook-enqueued).
+executorRegistry.register('sharepoint-policy-pull', async (payload) => {
+    const startedAt = new Date().toISOString();
+    const startMs = performance.now();
+    const { runSharePointPolicyPull } = await import('./sharepoint-policy-jobs');
+    const r = await runSharePointPolicyPull(payload);
+    return makeResult('sharepoint-policy-pull', startedAt, startMs, 1, r.pulled ? 1 : 0, r.pulled ? 0 : 1, {
+        tenantId: payload.tenantId,
+        policyId: payload.policyId,
+        pulled: r.pulled,
+    });
+});
+
+// SP-4 — daily renewal of all active policy Graph subscriptions.
+executorRegistry.register('sharepoint-subscription-renew', async (payload) => {
+    const startedAt = new Date().toISOString();
+    const startMs = performance.now();
+    const { runSharePointSubscriptionRenew } = await import('./sharepoint-policy-jobs');
+    const r = await runSharePointSubscriptionRenew(payload);
+    return makeResult('sharepoint-subscription-renew', startedAt, startMs, r.subscriptions, r.renewed, 0, {
+        subscriptions: r.subscriptions,
+        renewed: r.renewed,
+    });
+});
+
