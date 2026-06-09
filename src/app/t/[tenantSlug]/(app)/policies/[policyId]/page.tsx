@@ -31,6 +31,7 @@ import { POLICY_STATUS_VARIANT } from '@/app-layer/domain/entity-status-mapping'
 import { Card, cardVariants } from '@/components/ui/card';
 import { InlineNotice } from '@/components/ui/inline-notice';
 import { cn } from '@/lib/cn';
+import { PolicySharePointSection } from './PolicySharePointSection';
 
 // Lazy-load Tiptap. The editor + ProseMirror chunks land at
 // ~200KB gzipped; deferring the import means the static parts of
@@ -598,6 +599,9 @@ export default function PolicyDetailPage() {
                     )}
                 </div>
             )}
+
+            {/* SP-4 — SharePoint link (renders nothing if SharePoint isn't set up) */}
+            {tab === 'current' && <PolicySharePointSection policyId={policyId} />}
 
             {/* ── Version History ── */}
             {tab === 'versions' && (

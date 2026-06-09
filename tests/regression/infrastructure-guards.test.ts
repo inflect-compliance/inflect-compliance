@@ -74,8 +74,8 @@ describe('Infrastructure Regression Guards', () => {
             }
         });
 
-        test('exactly 16 scheduled jobs exist', () => {
-            expect(SCHEDULED_JOBS).toHaveLength(16);
+        test('exactly 17 scheduled jobs exist', () => {
+            expect(SCHEDULED_JOBS).toHaveLength(17);
         });
 
         test('scheduled job names match expected set', () => {
@@ -108,6 +108,8 @@ describe('Infrastructure Regression Guards', () => {
                 // SP-3 — every-4-hour fan-out: a delta sync per enabled
                 // SharePoint connection (auto-import changed evidence files).
                 'sharepoint-delta-sync-dispatch',
+                // SP-4 — daily renewal of policy Graph change subscriptions.
+                'sharepoint-subscription-renew',
                 // Automation Epic 5 — every-5-min SLA breach sweep over
                 // RUNNING automation executions.
                 'sla-monitor',

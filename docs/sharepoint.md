@@ -33,6 +33,22 @@ On IC's App Registration:
 Access tokens are refreshed on expiry and the rotated pair is re-encrypted
 transparently on the next Graph call.
 
+## SP-4 — Policy document sync (bidirectional)
+
+Link a policy to a SharePoint file on the policy's **Current** tab. Publishing the
+policy **pushes** its content to the file; editing the file in SharePoint fires a
+Graph change-notification that **pulls** a new policy version (DRAFT). A conflict
+banner appears when the SharePoint copy is newer than the last sync — pull first.
+
+> [!WARNING]
+> Auto-pull needs a **publicly reachable** webhook: the Entra App Registration
+> must allow `{APP_URL}/api/webhooks/sharepoint`, and in local dev `APP_URL` must
+> be an `ngrok`/dev-tunnel URL. Linking + manual push/pull work without it; only
+> the automatic pull-on-change requires the webhook + subscription.
+
+Subscriptions are renewed daily by the `sharepoint-subscription-renew` cron
+(Graph caps them at ~3 days). Content syncs as Markdown (DOCX is not supported).
+
 ## Smoke verification (staging — real Graph)
 
 The SP-1 code is unit-tested hermetically (injected `fetch`); the OAuth

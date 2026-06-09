@@ -841,6 +841,14 @@ model Policy {
   deletedAt            DateTime?
   deletedByUserId      String?
   retentionUntil       DateTime?
+  /// SP-4 — SharePoint document link (bidirectional policy sync).
+  spDriveId            String?
+  spItemId             String?
+  /// Last known SharePoint eTag — drives conflict detection on push/pull.
+  spItemETag           String?
+  spWebUrl             String?
+  /// Active Graph change-notification subscription id (null when unlinked).
+  spSubscriptionId     String?
   currentVersion       PolicyVersion?      @relation("CurrentVersion", fields: [currentVersionId], references: [id])
   owner                User?               @relation("PolicyOwner", fields: [ownerUserId], references: [id])
   tenant               Tenant              @relation(fields: [tenantId], references: [id])

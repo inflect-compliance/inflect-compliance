@@ -482,6 +482,18 @@ export interface SharePointDeltaSyncDispatchPayload {
     requestId?: string;
 }
 
+/** SP-4 — pull a changed policy from SharePoint (enqueued by the Graph webhook). */
+export interface SharePointPolicyPullPayload {
+    tenantId: string;
+    policyId: string;
+    requestId?: string;
+}
+
+/** SP-4 — daily cron: renew every active policy Graph subscription (cross-tenant). */
+export interface SharePointSubscriptionRenewPayload {
+    requestId?: string;
+}
+
 export interface JobPayloadMap {
     'health-check': HealthCheckPayload;
     'automation-runner': AutomationRunnerPayload;
@@ -512,6 +524,8 @@ export interface JobPayloadMap {
     'task-due-notification': TaskDueNotificationPayload;
     'sharepoint-delta-sync': SharePointDeltaSyncPayload;
     'sharepoint-delta-sync-dispatch': SharePointDeltaSyncDispatchPayload;
+    'sharepoint-policy-pull': SharePointPolicyPullPayload;
+    'sharepoint-subscription-renew': SharePointSubscriptionRenewPayload;
 }
 
 /** Union of all valid job names */
@@ -610,6 +624,18 @@ export const JOB_DEFAULTS: Record<JobName, {
         removeOnFail: 500,
     },
     'sharepoint-delta-sync-dispatch': {
+        attempts: 1,
+        backoff: { type: 'fixed', delay: 0 },
+        removeOnComplete: 50,
+        removeOnFail: 200,
+    },
+    'sharepoint-policy-pull': {
+        attempts: 2,
+        backoff: { type: 'exponential', delay: 10000 },
+        removeOnComplete: 200,
+        removeOnFail: 500,
+    },
+    'sharepoint-subscription-renew': {
         attempts: 1,
         backoff: { type: 'fixed', delay: 0 },
         removeOnComplete: 50,

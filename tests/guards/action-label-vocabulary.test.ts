@@ -91,8 +91,10 @@ const BASELINE_PLUS_LITERAL_SITES = new Set<string>([
     // labels themselves are unchanged staged debt (see baseline
     // comment); refreshing the anchor positions keeps the
     // baseline honest.
-    'src/app/t/[tenantSlug]/(app)/policies/[policyId]/page.tsx:452',
-    'src/app/t/[tenantSlug]/(app)/policies/[policyId]/page.tsx:753',
+    // SP-4 — shifted +1/+4 when the PolicySharePointSection import + mount
+    // landed; the `+ Version` labels themselves are unchanged staged debt.
+    'src/app/t/[tenantSlug]/(app)/policies/[policyId]/page.tsx:453',
+    'src/app/t/[tenantSlug]/(app)/policies/[policyId]/page.tsx:757',
     // Legacy `'+ Link'` / `'+ Comment'` string literals (the ones the
     // regex catches — JSX text doesn't match, whitespace between `>`
     // and `+`). Line numbers shift whenever this file grows; refreshed

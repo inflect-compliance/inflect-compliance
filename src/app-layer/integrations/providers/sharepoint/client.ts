@@ -216,6 +216,23 @@ export class SharePointClient extends BaseIntegrationClient<SharePointConnection
         return { items, deltaToken: newToken };
     }
 
+    /** Replace a file's content (SP-4 policy push). Returns the updated item. */
+    async uploadItemContent(
+        driveId: string,
+        itemId: string,
+        body: string | ArrayBuffer,
+        contentType: string,
+    ): Promise<SpDriveItem> {
+        const url = `${GRAPH}/drives/${encodeURIComponent(driveId)}/items/${encodeURIComponent(itemId)}/content`;
+        const res = await this.request(url, {
+            method: 'PUT',
+            headers: { ...this.headers, 'Content-Type': contentType },
+            body,
+        });
+        if (!res.ok) throw new Error(`Graph upload ${itemId} → ${res.status}`);
+        return (await res.json()) as SpDriveItem;
+    }
+
     // ── Graph change-notification subscriptions (SP-4) ──
 
     async createSubscription(input: {

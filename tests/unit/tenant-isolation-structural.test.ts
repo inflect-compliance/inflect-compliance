@@ -150,6 +150,10 @@ describe('Structural Guard: Tenant Isolation Conventions', () => {
             'admin', 'auth', 't', 'risk-templates', 'audit', 'staging',
             'health', 'livez', 'readyz', 'stripe', 'security', 'csp-report',
             'storage', 'integrations', 'scim',
+            // SP-4 — external webhook receivers (MS Graph change notifications).
+            // Caller is Graph, not a tenant member; the receiver verifies
+            // clientState + resolves the tenant itself.
+            'webhooks',
             // Epic 1, PR 3 — public invite preview + redemption endpoints.
             // These routes are intentionally outside /api/t/[tenantSlug] because
             // the caller is not yet a tenant member and has no tenantId in scope.
