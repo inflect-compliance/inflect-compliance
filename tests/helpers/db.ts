@@ -19,7 +19,6 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import * as path from 'path';
 import * as fs from 'fs';
-import * as os from 'os';
 import { execSync } from 'child_process';
 
 /**
@@ -64,8 +63,16 @@ export function getBaseTestDatabaseUrl(): string {
 // each worker then targets its own DB. Serial runs (CI) skip this and
 // stay on the shared base DB — that path is unchanged.
 
-/** Cross-process marker written by globalSetup describing the DB mode. */
-export const PER_WORKER_MARKER = path.join(os.tmpdir(), 'inflect-test-perworker.json');
+/**
+ * Cross-process marker written by globalSetup describing the DB mode.
+ * Repo-local (NOT os.tmpdir): a predictable name in the world-writable
+ * temp dir is a symlink-race vector (CodeQL js/insecure-temporary-file).
+ * node_modules/.cache is repo-scoped + gitignored.
+ */
+export const PER_WORKER_MARKER = path.resolve(
+    __dirname,
+    '../../node_modules/.cache/inflect-test-perworker.json',
+);
 
 interface PerWorkerInfo { perWorker: boolean; count: number; baseName: string; baseUrl: string }
 

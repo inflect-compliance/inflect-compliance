@@ -24,10 +24,10 @@ process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgres://user:password
 // runs / CI (marker.perWorker === false) leave DATABASE_URL untouched.
 try {
   const fs = require('fs');
-  const os = require('os');
   const path = require('path');
+  // Repo-local marker path (see PER_WORKER_MARKER in tests/helpers/db.ts).
   const marker = JSON.parse(
-    fs.readFileSync(path.join(os.tmpdir(), 'inflect-test-perworker.json'), 'utf8'),
+    fs.readFileSync(path.join(__dirname, 'node_modules/.cache/inflect-test-perworker.json'), 'utf8'),
   );
   if (marker.perWorker) {
     const u = new URL(marker.baseUrl);

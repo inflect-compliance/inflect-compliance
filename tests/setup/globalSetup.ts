@@ -9,6 +9,7 @@
  * - Writes a marker the worker-side `getTestDatabaseUrl()` reads.
  */
 import * as fs from 'fs';
+import * as path from 'path';
 import { Client } from 'pg';
 import {
     migrateTestDb,
@@ -70,6 +71,7 @@ export default async function globalSetup(globalConfig?: GlobalConfig) {
         }
     }
 
+    fs.mkdirSync(path.dirname(PER_WORKER_MARKER), { recursive: true });
     fs.writeFileSync(PER_WORKER_MARKER, JSON.stringify(marker));
 
     if (!base.includes('test')) {
