@@ -142,6 +142,13 @@ enum TreatmentDecision {
   AVOID
 }
 
+/// RQ-1 — analyst confidence in the FAIR inputs for a risk.
+enum FairConfidence {
+  LOW       // Rough order-of-magnitude — no data
+  MEDIUM    // Some historical / industry-benchmark data
+  HIGH      // Calibrated from internal incident or actuarial data
+}
+
 enum ControlStatus {
   NOT_STARTED
   PLANNED

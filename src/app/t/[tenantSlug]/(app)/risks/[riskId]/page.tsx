@@ -43,6 +43,7 @@ import { RISK_TREATMENT_OPTIONS } from '../_shared/risk-options';
 import { cn } from '@/lib/cn';
 import { cardVariants } from '@/components/ui/card';
 import { EditRiskModal, type EditRiskForm } from './_modals/EditRiskModal';
+import { FairAnalysisPanel } from './FairAnalysisPanel';
 import { InheritedEvidencePanel } from '@/components/InheritedEvidencePanel';
 import { AttachedEvidencePanel } from '@/components/AttachedEvidencePanel';
 import { Heading } from '@/components/ui/typography';
@@ -74,6 +75,21 @@ type Risk = {
     targetDate: string | null;
     createdAt: string;
     updatedAt: string;
+    // RQ-1 FAIR inputs (all nullable).
+    threatEventFrequency: number | null;
+    contactFrequency: number | null;
+    probabilityOfAction: number | null;
+    vulnerabilityProbability: number | null;
+    threatCapability: number | null;
+    controlStrength: number | null;
+    primaryLossMagnitude: number | null;
+    productivityLoss: number | null;
+    responseCost: number | null;
+    replacementCost: number | null;
+    secondaryLossEventFrequency: number | null;
+    secondaryLossMagnitude: number | null;
+    fairConfidence: 'LOW' | 'MEDIUM' | 'HIGH' | null;
+    fairAle: number | null;
 };
 
 // Audit Coherence S1 — MITIGATED sits between MITIGATING and
@@ -128,6 +144,7 @@ export default function RiskDetailPage() {
     // explains where the related-entity surface lives.
     type Tab =
         | 'overview'
+        | 'quantification'
         | 'tasks'
         | 'evidence'
         | 'mappings'
@@ -137,6 +154,7 @@ export default function RiskDetailPage() {
     const [activeTab, setActiveTab] = useState<Tab>('overview');
     const tabs: ReadonlyArray<{ key: Tab; label: string }> = [
         { key: 'overview', label: 'Overview' },
+        { key: 'quantification', label: 'Quantification' },
         { key: 'tasks', label: 'Tasks' },
         { key: 'evidence', label: 'Evidence' },
         { key: 'mappings', label: 'Mappings' },
@@ -417,6 +435,26 @@ export default function RiskDetailPage() {
                     endpoint={apiUrl(`/risks/${riskId}/test-plans`)}
                     tenantHref={href}
                     entityLabel="risk"
+                />
+            )}
+            {activeTab === 'quantification' && risk && (
+                <FairAnalysisPanel
+                    riskId={riskId}
+                    initial={{
+                        threatEventFrequency: risk.threatEventFrequency,
+                        contactFrequency: risk.contactFrequency,
+                        probabilityOfAction: risk.probabilityOfAction,
+                        vulnerabilityProbability: risk.vulnerabilityProbability,
+                        threatCapability: risk.threatCapability,
+                        controlStrength: risk.controlStrength,
+                        primaryLossMagnitude: risk.primaryLossMagnitude,
+                        productivityLoss: risk.productivityLoss,
+                        responseCost: risk.responseCost,
+                        replacementCost: risk.replacementCost,
+                        secondaryLossEventFrequency: risk.secondaryLossEventFrequency,
+                        secondaryLossMagnitude: risk.secondaryLossMagnitude,
+                        fairConfidence: risk.fairConfidence,
+                    }}
                 />
             )}
 

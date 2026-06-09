@@ -6,12 +6,13 @@ import { assertCanRead, assertCanWrite, assertCanAdmin } from '../policies/commo
 import { logEvent } from '../events/audit';
 import { notFound } from '@/lib/errors/types';
 import { calculateRiskScore } from '@/lib/risk-scoring';
-import { runInTenantContext } from '@/lib/db-context';
+import { runInTenantContext, type PrismaTx } from '@/lib/db-context';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { cachedListRead, bumpEntityCacheVersion } from '@/lib/cache/list-cache';
 import { createAssignmentNotification } from '../notifications/assignment';
 import { logger } from '@/lib/observability';
-import type { TreatmentDecision, RiskStatus, TaskLinkEntityType } from '@prisma/client';
+import type { TreatmentDecision, RiskStatus, TaskLinkEntityType, FairConfidence, Prisma } from '@prisma/client';
+import { computeTEF, computeVulnerability, computeLEF, computePLM, computeFairALE } from './fair-calculator';
 
 // Epic D.2 — sanitise optional free-text on UPDATE without disturbing
 // the three-state contract: undefined → don't touch, null → SET NULL,
@@ -375,6 +376,112 @@ export async function updateRisk(ctx: RequestContext, id: string, data: {
         }
     }
     return updated;
+}
+
+// ── RQ-1 FAIR taxonomy ────────────────────────────────────────────────
+
+/** The FAIR input fields a client may set (all optional, all nullable). */
+export interface RiskFairInput {
+    threatEventFrequency?: number | null;
+    contactFrequency?: number | null;
+    probabilityOfAction?: number | null;
+    vulnerabilityProbability?: number | null;
+    threatCapability?: number | null;
+    controlStrength?: number | null;
+    primaryLossMagnitude?: number | null;
+    productivityLoss?: number | null;
+    responseCost?: number | null;
+    replacementCost?: number | null;
+    secondaryLossEventFrequency?: number | null;
+    secondaryLossMagnitude?: number | null;
+    regulatoryFineEstimate?: number | null;
+    reputationDamageEstimate?: number | null;
+    competitiveAdvantageLoss?: number | null;
+    fairConfidence?: FairConfidence | null;
+    fairInputsJson?: Record<string, unknown> | null;
+}
+
+/**
+ * Recompute the stored FAIR derived columns (LEF, fairAle) from the
+ * current inputs. Uses TEF/Vuln directly when set, else derives them
+ * from their sub-factors. Clears the derived columns when there isn't
+ * enough data — so a half-filled FAIR section never leaves a stale ALE.
+ */
+async function recomputeFairDerived(
+    db: PrismaTx,
+    tenantId: string,
+    riskId: string,
+): Promise<void> {
+    const r = await db.risk.findFirst({ where: { id: riskId, tenantId } });
+    if (!r) return;
+    const tef =
+        r.threatEventFrequency ??
+        (r.contactFrequency != null && r.probabilityOfAction != null
+            ? computeTEF(r.contactFrequency, r.probabilityOfAction)
+            : null);
+    const vuln =
+        r.vulnerabilityProbability ??
+        (r.threatCapability != null && r.controlStrength != null
+            ? computeVulnerability(r.threatCapability, r.controlStrength)
+            : null);
+
+    if (tef == null || vuln == null) {
+        // Not enough FAIR data — clear derived so analytics fall back to
+        // legacy SLE×ARO via resolveALE.
+        if (r.lossEventFrequency != null || r.fairAle != null) {
+            await db.risk.update({
+                where: { id: riskId },
+                data: { lossEventFrequency: null, fairAle: null, fairComputedAt: new Date() },
+            });
+        }
+        return;
+    }
+
+    const lef = computeLEF(tef, vuln);
+    const plm = computePLM({
+        productivityLoss: r.productivityLoss,
+        responseCost: r.responseCost,
+        replacementCost: r.replacementCost,
+        flatEstimate: r.primaryLossMagnitude,
+    });
+    const fairAle = computeFairALE({
+        tef,
+        vulnerability: vuln,
+        plm,
+        slef: r.secondaryLossEventFrequency ?? 0,
+        slm: r.secondaryLossMagnitude ?? 0,
+    });
+    await db.risk.update({
+        where: { id: riskId },
+        data: { lossEventFrequency: lef, fairAle, fairComputedAt: new Date() },
+    });
+}
+
+/** Update a risk's FAIR inputs + recompute the derived LEF/ALE. */
+export async function updateRiskFair(ctx: RequestContext, id: string, input: RiskFairInput) {
+    assertCanWrite(ctx);
+    const result = await runInTenantContext(ctx, async (db) => {
+        const existing = await db.risk.findFirst({ where: { id, tenantId: ctx.tenantId }, select: { id: true } });
+        if (!existing) throw notFound('Risk not found');
+        await db.risk.update({
+            where: { id },
+            data: {
+                ...input,
+                fairInputsJson: (input.fairInputsJson ?? undefined) as Prisma.InputJsonValue | undefined,
+            },
+        });
+        await recomputeFairDerived(db, ctx.tenantId, id);
+        await logEvent(db, ctx, {
+            action: 'RISK_FAIR_UPDATED',
+            entityType: 'Risk',
+            entityId: id,
+            details: 'Updated FAIR quantification inputs',
+            detailsJson: { category: 'status_change', summary: 'FAIR inputs updated' },
+        });
+        return db.risk.findFirst({ where: { id, tenantId: ctx.tenantId } });
+    });
+    await bumpEntityCacheVersion(ctx, 'risk');
+    return result;
 }
 
 export async function deleteRisk(ctx: RequestContext, id: string) {

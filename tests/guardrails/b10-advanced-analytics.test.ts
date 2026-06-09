@@ -77,9 +77,13 @@ describe('B10 — advanced analytics', () => {
             expect(src).toMatch(/\.slice\(0,\s*TOP_N\)/);
         });
 
-        it('quantified subset filters NULL sleAmount/aroAmount', () => {
-            expect(src).toMatch(/r\.sleAmount\s*!=\s*null/);
-            expect(src).toMatch(/r\.aroAmount\s*!=\s*null/);
+        it('quantified subset resolves ALE (RQ-1: FAIR ALE → legacy SLE×ARO → null)', () => {
+            // RQ-1 replaced the inline `r.sleAmount != null && r.aroAmount != null`
+            // filter with the unified `resolveALE` resolver, which prefers the
+            // stored FAIR ALE and falls back to legacy SLE×ARO. A risk is in the
+            // quantified subset iff resolveALE yields a finite value.
+            expect(src).toMatch(/resolveALE\(\{[\s\S]*?sleAmount[\s\S]*?aroAmount/);
+            expect(src).toMatch(/ale\s*!=\s*null\s*&&\s*isFinite\(ale\)/);
         });
     });
 

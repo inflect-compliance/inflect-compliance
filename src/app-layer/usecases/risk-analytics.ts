@@ -33,6 +33,7 @@
 import { RequestContext } from '../types';
 import { assertCanRead } from '../policies/common';
 import { runInTenantContext } from '@/lib/db-context';
+import { resolveALE } from './fair-calculator';
 
 export interface QuantitativeRiskTotals {
     /** Every active risk in the tenant. */
@@ -97,28 +98,28 @@ export async function getRiskQuantitativeAnalytics(
                 category: true,
                 sleAmount: true,
                 aroAmount: true,
+                // RQ-1 — FAIR ALE takes precedence over legacy SLE×ARO.
+                fairAle: true,
             },
             // guardrail-allow: unbounded — analytics aggregate over
             // the whole portfolio. A `take:` would silently truncate
             // the totals.
         });
 
-        // Materialise the quantified subset.
+        // Materialise the quantified subset. RQ-1: a risk is "quantified"
+        // if `resolveALE` yields a value — FAIR ALE when present, else
+        // legacy SLE×ARO. FAIR-only risks expose null SLE/ARO (shown as 0).
         const quantified: QuantitativeRiskRow[] = [];
         for (const r of risks) {
-            if (
-                r.sleAmount != null &&
-                r.aroAmount != null &&
-                isFinite(r.sleAmount) &&
-                isFinite(r.aroAmount)
-            ) {
+            const ale = resolveALE({ fairAle: r.fairAle, sleAmount: r.sleAmount, aroAmount: r.aroAmount });
+            if (ale != null && isFinite(ale)) {
                 quantified.push({
                     id: r.id,
                     title: r.title,
                     category: r.category,
-                    sleAmount: r.sleAmount,
-                    aroAmount: r.aroAmount,
-                    ale: r.sleAmount * r.aroAmount,
+                    sleAmount: r.sleAmount ?? 0,
+                    aroAmount: r.aroAmount ?? 0,
+                    ale,
                 });
             }
         }

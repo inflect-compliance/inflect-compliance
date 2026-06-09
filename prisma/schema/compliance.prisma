@@ -277,6 +277,38 @@ model Risk {
   /// usecase materialises ALE per-row at read time.
   sleAmount       Float?
   aroAmount       Float?
+
+  // ── RQ-1 FAIR taxonomy decomposition ──
+  // All nullable + additive: risks with only sleAmount/aroAmount keep
+  // working via `resolveALE` (prefers fairAle → SLE×ARO → null).
+  // Threat Event Frequency (events/year) + its sub-factors.
+  threatEventFrequency        Float?
+  contactFrequency            Float?
+  probabilityOfAction         Float?
+  // Vulnerability (probability a threat event becomes a loss, 0..1) + sub-factors.
+  vulnerabilityProbability    Float?
+  threatCapability            Float?
+  controlStrength             Float?
+  // Primary Loss Magnitude (cost of one loss event) + components.
+  primaryLossMagnitude        Float?
+  productivityLoss            Float?
+  responseCost                Float?
+  replacementCost             Float?
+  // Secondary loss.
+  secondaryLossEventFrequency Float?
+  secondaryLossMagnitude      Float?
+  regulatoryFineEstimate      Float?
+  reputationDamageEstimate    Float?
+  competitiveAdvantageLoss    Float?
+  // Derived (stored for query perf; recomputed on FAIR input change).
+  lossEventFrequency          Float?
+  fairAle                     Float?
+  // Metadata.
+  fairConfidence              FairConfidence?
+  /// PERT distribution triples per factor for Monte Carlo (RQ-3).
+  fairInputsJson              Json?
+  fairComputedAt              DateTime?
+
   status          RiskStatus          @default(OPEN)
   treatment       TreatmentDecision?
   treatmentOwner  String?
@@ -315,6 +347,10 @@ model Risk {
   @@index([tenantId, ownerUserId])
   // GAP-perf — supports `scoreMin`/`scoreMax` range filter
   @@index([tenantId, score])
+  // RQ-1 FAIR — quantitative ranking + filtering
+  @@index([tenantId, fairAle])
+  @@index([tenantId, lossEventFrequency])
+  @@index([tenantId, fairConfidence])
   // GAP-perf — backs the default unpaginated `list()` orderBy:
   // `inherentScore desc`. Without this Postgres sorts the full
   // tenant result set per call.
