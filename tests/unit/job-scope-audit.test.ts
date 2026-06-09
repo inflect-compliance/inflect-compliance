@@ -59,7 +59,10 @@ describe('Executor Registry — tenantId propagation audit', () => {
             // scope each query by the row's own tenantId internally (PR-E's
             // schedule-trigger-sweep scopes by rule.tenantId in its runner +
             // the per-(rule,entity) dispatch it enqueues).
-            if (['health-check', 'sync-pull', 'schedule-trigger-sweep'].includes(jobName)) continue;
+            // sharepoint-delta-sync-dispatch is a global fan-out (SP-3): it scans
+            // every enabled connection across tenants and enqueues a per-connection
+            // (tenant-scoped) sharepoint-delta-sync job that does reference tenantId.
+            if (['health-check', 'sync-pull', 'schedule-trigger-sweep', 'sharepoint-delta-sync-dispatch'].includes(jobName)) continue;
 
             // If the parameter is named _payload, it means tenantId is being ignored
             if (paramName.startsWith('_')) {

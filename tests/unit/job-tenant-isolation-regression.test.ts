@@ -288,7 +288,9 @@ describe('Executor Registry — structural tenant-scope guards', () => {
     const registrySource = readFileSync(registryPath, 'utf8');
 
     // Jobs that are explicitly not tenant-scoped
-    const EXEMPT_JOBS = ['health-check', 'sync-pull', 'schedule-trigger-sweep'];
+    // sharepoint-delta-sync-dispatch (SP-3) is a global cross-tenant fan-out —
+    // it enqueues per-connection, tenant-scoped sharepoint-delta-sync jobs.
+    const EXEMPT_JOBS = ['health-check', 'sync-pull', 'schedule-trigger-sweep', 'sharepoint-delta-sync-dispatch'];
 
     test('no executor uses _payload (unused parameter = ignored tenantId)', () => {
         const pattern = /executorRegistry\.register\('[^']+',\s*async\s*\(_payload\)/g;
@@ -356,7 +358,9 @@ describe('Payload Type Contract — tenantId field audit', () => {
     const typesSource = readFileSync(typesPath, 'utf8');
 
     // Jobs that legitimately don't need tenantId
-    const EXEMPT_PAYLOADS = ['HealthCheckPayload', 'SyncPullPayload', 'ScheduleTriggerSweepPayload'];
+    // SharePointDeltaSyncDispatchPayload (SP-3) is the global fan-out cron — no
+    // single tenantId; it enqueues per-tenant SharePointDeltaSyncPayload jobs.
+    const EXEMPT_PAYLOADS = ['HealthCheckPayload', 'SyncPullPayload', 'ScheduleTriggerSweepPayload', 'SharePointDeltaSyncDispatchPayload'];
 
     test('every non-exempt payload interface has tenantId field', () => {
         // Extract all payload interfaces
