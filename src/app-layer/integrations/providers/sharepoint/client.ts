@@ -124,11 +124,11 @@ export class SharePointClient extends BaseIntegrationClient<SharePointConnection
         return { items: sites.map((s) => ({ remoteId: s.id, data: s as unknown as Record<string, unknown> })) };
     }
 
-    async createRemoteObject(): Promise<RemoteObject> {
+    async createRemoteObject(_data: Record<string, unknown>): Promise<RemoteObject> {
         throw new Error('SharePoint create is not supported via the generic CRUD contract — use uploadItemContent (SP-4)');
     }
 
-    async updateRemoteObject(): Promise<RemoteObject> {
+    async updateRemoteObject(_remoteId: string, _changes: Record<string, unknown>): Promise<RemoteObject> {
         throw new Error('SharePoint update is not supported via the generic CRUD contract — use uploadItemContent (SP-4)');
     }
 
