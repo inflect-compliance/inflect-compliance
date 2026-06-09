@@ -72,7 +72,7 @@ export interface UserMenuProps {
 // motion — visual styles the avatar primitive deliberately does not
 // carry.
 const AVATAR_BUTTON_CLASS =
-    `inline-flex h-8 w-8 items-center justify-center rounded-full transition-[filter] duration-150 ease-out hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-bg-page ${NAV_BAR_SLOT_PRESS}`;
+    `inline-flex h-7 w-7 items-center justify-center rounded-full transition-[filter] duration-150 ease-out hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-bg-page ${NAV_BAR_SLOT_PRESS}`;
 
 const MENU_ROW_CLASS =
     'flex w-full cursor-pointer select-none items-center gap-compact rounded-md px-2.5 py-1.5 text-left text-sm text-content-default transition-colors duration-100 ease-out hover:bg-bg-muted hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]';
@@ -182,7 +182,7 @@ export function UserMenu({
             >
                 <InitialsAvatar
                     value={effectiveName}
-                    size="md"
+                    size="nav"
                     imageUrl={displayImage}
                 />
             </button>

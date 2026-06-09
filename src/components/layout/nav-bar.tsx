@@ -359,8 +359,9 @@ export const NAV_BAR_SLOT_RIGHT =
  * h1 for SEO" PR has to argue against it.
  */
 export const NAV_BAR_BRAND_CLASS = [
-    // Geometry
-    'relative w-8 h-8 rounded-lg flex-shrink-0',
+    // Geometry — 28px navbar control footprint (one step below the
+    // legacy 32px; matches the bell / user-menu / mobile-menu controls).
+    'relative w-7 h-7 rounded-lg flex-shrink-0',
     // Flex / type
     'flex items-center justify-center',
     'text-content-inverted text-[11px] font-bold',
@@ -434,11 +435,11 @@ export function NavBarMobileMenu({
         <button
             type="button"
             onClick={onClick}
-            className={`md:hidden inline-flex items-center justify-center h-8 w-8 rounded-lg text-content-muted transition-colors hover:bg-bg-muted hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] ${NAV_BAR_SLOT_PRESS}`}
+            className={`md:hidden inline-flex items-center justify-center h-7 w-7 rounded-lg text-content-muted transition-colors hover:bg-bg-muted hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] ${NAV_BAR_SLOT_PRESS}`}
             aria-label={ariaLabel}
             data-testid={dataTestId}
         >
-            <Menu className="h-5 w-5" aria-hidden="true" />
+            <Menu className="h-4 w-4" aria-hidden="true" />
         </button>
     );
 }
