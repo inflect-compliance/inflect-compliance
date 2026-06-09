@@ -15,6 +15,16 @@
  * pure-node environment too.
  */
 
+// Default per-test timeout for BOTH projects (the jsdom project's
+// `tests/rendered/setup.ts` imports this file). Jest's 5s default is
+// too tight for DB-backed integration tests and heavy render tests
+// under full-suite parallel load — they pass solo but starve when the
+// whole suite runs. 30s gives realistic headroom without masking a
+// genuine hang. A project-level `testTimeout` in jest.config is
+// IGNORED, so it must be set here. Per-file `jest.setTimeout(...)`
+// (e.g. framework-import-cli's CLI spawn) still overrides this.
+jest.setTimeout(30_000);
+
 if (typeof window !== 'undefined') {
     // motion-dom's KeyframesResolver.measureAllKeyframes probes
     // `window.scrollTo` on each animation-frame tick. jsdom's default

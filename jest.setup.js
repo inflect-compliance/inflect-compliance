@@ -15,6 +15,28 @@ if (!process.env.DATABASE_URL) {
   } catch { /* no .env — fall through to dummy */ }
 }
 process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgres://user:password@localhost:5432/testdb';
+
+// Per-worker DB isolation (flake fix): when globalSetup created one DB
+// per Jest worker, repoint THIS worker's DATABASE_URL at its own clone
+// so the app's prisma client and the test prisma client (db.ts
+// getTestDatabaseUrl) connect to the SAME isolated DB. Without this the
+// app writes to the base DB while the test reads the worker DB. Serial
+// runs / CI (marker.perWorker === false) leave DATABASE_URL untouched.
+try {
+  const fs = require('fs');
+  const os = require('os');
+  const path = require('path');
+  const marker = JSON.parse(
+    fs.readFileSync(path.join(os.tmpdir(), 'inflect-test-perworker.json'), 'utf8'),
+  );
+  if (marker.perWorker) {
+    const u = new URL(marker.baseUrl);
+    const wid = process.env.JEST_WORKER_ID || '1';
+    u.pathname = '/' + marker.baseName + '_w' + wid;
+    process.env.DATABASE_URL = u.toString();
+    process.env.DIRECT_DATABASE_URL = u.toString();
+  }
+} catch { /* no marker → shared-DB mode, leave DATABASE_URL as resolved */ }
 process.env.AUTH_SECRET = 'supersecretstringthatis16charplus'; // pragma: allowlist secret -- test fixture
 process.env.JWT_SECRET = 'supersecretstringthatis16charplus'; // pragma: allowlist secret -- test fixture
 process.env.GOOGLE_CLIENT_ID = 'test-google-id';

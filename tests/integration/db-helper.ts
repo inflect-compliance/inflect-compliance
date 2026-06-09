@@ -11,6 +11,7 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
+import { getTestDatabaseUrl } from '../helpers/db';
 
 const ROOT = path.resolve(__dirname, '../..');
 
@@ -29,8 +30,20 @@ function parseEnvKey(filePath: string, key: string): string | undefined {
 
 /**
  * Resolve the database URL for integration tests.
+ *
+ * Delegates to the single source of truth `getTestDatabaseUrl()` so this
+ * resolver can NEVER diverge from the app's prisma client + the test
+ * prisma client: under per-worker isolation all three resolve to THIS
+ * worker's cloned DB; serial/CI resolves to the shared base DB. (A prior
+ * independent resolver here hit the base DB while the app hit the worker
+ * clone — the cross-DB data-race that broke parallel integration runs.)
+ * `parseEnvKey` + the chain below remain only as a non-jest fallback.
  */
 function resolveDbUrl(): string {
+    const fromHelper = getTestDatabaseUrl();
+    if (fromHelper) return fromHelper;
+
+    // ── Fallback chain (non-jest contexts) ──
     // 1. Explicit test env var (highest priority — set by CI scripts)
     if (process.env.DATABASE_URL_TEST) return process.env.DATABASE_URL_TEST;
 
@@ -40,13 +53,13 @@ function resolveDbUrl(): string {
         || parseEnvKey(envTestPath, 'DATABASE_URL');
     if (fromEnvTest) return fromEnvTest;
 
-    // 3. .env file (dev database — standard local dev)
+    // 3. Process env DATABASE_URL
+    if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
+
+    // 4. .env file (dev database — standard local dev, no jest.setup)
     const envPath = path.join(ROOT, '.env');
     const fromEnv = parseEnvKey(envPath, 'DATABASE_URL');
     if (fromEnv) return fromEnv;
-
-    // 4. Process env (CI environments set DATABASE_URL directly)
-    if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
 
     // 5. Hard-coded fallback
     return 'postgresql://user:password@localhost:5432/testdb';

@@ -123,7 +123,15 @@ const T = {
 
 // ─── Benchmarks ─────────────────────────────────────────────────────
 
-describe('Performance — Epic B.1 encryption middleware', () => {
+// Latency budgets are only meaningful when the CPU isn't contended.
+// Under a parallel full-suite run (>1 Jest worker) the numbers are pure
+// noise and flake; skip there. CI runs `--runInBand` (serial), where
+// `isParallelRun()` is false → the benchmarks DO run and gate regressions.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { isParallelRun } = require('../helpers/db');
+const describePerf = isParallelRun() ? describe.skip : describe;
+
+describePerf('Performance — Epic B.1 encryption middleware', () => {
     // Bump Jest timeout enough for the heaviest scenario to finish
     // even on a noisy CI runner.
     jest.setTimeout(30_000);

@@ -70,6 +70,9 @@ const nodeProject = {
     displayName: 'node',
     preset: 'ts-jest',
     testEnvironment: 'node',
+    // NOTE: the default test timeout is set via `jest.setTimeout()` in
+    // the setupFilesAfterEnv files below — Jest ignores a project-level
+    // `testTimeout`, so it MUST go through a setup file (or root config).
     setupFiles: ['<rootDir>/jest.setup.js'],
     // - `jsdom-shims.ts` covers the handful of node-project tests that
     //   opt into jsdom via per-file `@jest-environment jsdom`
@@ -190,6 +193,8 @@ const jsdomProject = {
     displayName: 'jsdom',
     preset: 'ts-jest',
     testEnvironment: 'jsdom',
+    // Default test timeout set via `jest.setTimeout()` in
+    // tests/rendered/setup.ts (project-level testTimeout is ignored).
     setupFiles: ['<rootDir>/jest.setup.js'],
     setupFilesAfterEnv: ['<rootDir>/tests/rendered/setup.ts'],
     moduleNameMapper: {

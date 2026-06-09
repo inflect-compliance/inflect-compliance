@@ -30,11 +30,18 @@ interface RunResult {
     stderr: string;
 }
 
+// Call the resolved `tsx` binary directly instead of `npx tsx`. `npx`
+// adds a binary-resolution layer (cache/registry lookup) that, under
+// full-suite parallel load, can add seconds of cold-start on top of
+// tsx's own TS compile — a real flake contributor. The direct bin
+// skips that layer.
+const TSX_BIN = path.join(REPO_ROOT, 'node_modules', '.bin', 'tsx');
+
 function runCli(args: string[]): RunResult {
     const databaseUrl = getTestDatabaseUrl();
     const result = spawnSync(
-        'npx',
-        ['tsx', 'scripts/framework-import.ts', ...args],
+        TSX_BIN,
+        ['scripts/framework-import.ts', ...args],
         {
             cwd: REPO_ROOT,
             encoding: 'utf8',
@@ -44,7 +51,9 @@ function runCli(args: string[]): RunResult {
                 DIRECT_DATABASE_URL: databaseUrl,
                 SKIP_ENV_VALIDATION: '1',
             },
-            timeout: 60000,
+            // 120s: cold tsx compile + Prisma import + the DB work, with
+            // generous slack for CPU starvation when the full suite runs.
+            timeout: 120000,
         },
     );
     return {
@@ -54,12 +63,11 @@ function runCli(args: string[]): RunResult {
     };
 }
 
-// `runCli` shells out to `npx tsx scripts/framework-import.ts`; cold
-// `npx`+`tsx` startup easily eats the default 5 s Jest test timeout
-// under parallel load, even though the inner `spawnSync` budget is
-// 60 s. Bump the per-test budget to match. The internal subprocess
-// timeout still backstops a genuinely-hung run.
-jest.setTimeout(60_000);
+// `runCli` shells out to the `tsx` binary; cold `tsx` startup +
+// Prisma import easily eats the default Jest timeout under parallel
+// load. The per-test budget must exceed the 120s subprocess timeout
+// so Jest doesn't kill the test before the spawn's own backstop fires.
+jest.setTimeout(150_000);
 
 const describeFn = DB_AVAILABLE ? describe : describe.skip;
 
