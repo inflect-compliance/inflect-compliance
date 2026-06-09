@@ -489,6 +489,40 @@ model RiskAppetiteBreach {
   @@index([riskId])
 }
 
+/// RQ-3 — a single Monte Carlo simulation execution. Immutable after
+/// completion; re-running creates a new row.
+model RiskSimulationRun {
+  id                 String    @id @default(cuid())
+  tenantId           String
+  triggeredBy        String    @default("manual") // manual | scheduled | scenario
+  createdByUserId    String?
+  iterations         Int       @default(10000)
+  confidenceLevels   Json      @default("[0.90, 0.95, 0.99]")
+  seed               Int?
+  riskFilterJson     Json?
+  correlationId      String?
+  // ── Results ──
+  portfolioMean      Float?
+  portfolioP50       Float?
+  portfolioP90       Float?
+  portfolioP95       Float?
+  portfolioP99       Float?
+  portfolioStdDev    Float?
+  perRiskResultsJson Json?
+  lecPointsJson      Json?
+  convergenceDelta   Float?
+  executionMs        Int?
+  status             String    @default("RUNNING") // RUNNING | COMPLETED | FAILED
+  errorMessage       String?
+  startedAt          DateTime  @default(now())
+  completedAt        DateTime?
+  createdAt          DateTime  @default(now())
+  tenant             Tenant    @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, status])
+}
+
 model RiskSuggestionSession {
   id              String                  @id @default(cuid())
   tenantId        String
