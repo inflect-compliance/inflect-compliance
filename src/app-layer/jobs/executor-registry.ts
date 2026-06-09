@@ -798,3 +798,29 @@ executorRegistry.register('evidence-import', async (payload, ctx) => {
     );
 });
 
+// SP-3 — SharePoint delta sync (one connection).
+executorRegistry.register('sharepoint-delta-sync', async (payload) => {
+    const startedAt = new Date().toISOString();
+    const startMs = performance.now();
+    const { runSharePointDeltaSyncJob } = await import('./sharepoint-delta-sync');
+    const r = await runSharePointDeltaSyncJob(payload);
+    return makeResult('sharepoint-delta-sync', startedAt, startMs, r.drivesSynced, r.reimported, r.staled, {
+        tenantId: payload.tenantId,
+        connectionId: payload.connectionId,
+        reimported: r.reimported,
+        staled: r.staled,
+    });
+});
+
+// SP-3 — daily fan-out across all enabled SharePoint connections.
+executorRegistry.register('sharepoint-delta-sync-dispatch', async (payload) => {
+    const startedAt = new Date().toISOString();
+    const startMs = performance.now();
+    const { runSharePointDeltaSyncDispatch } = await import('./sharepoint-delta-sync');
+    const r = await runSharePointDeltaSyncDispatch(payload);
+    return makeResult('sharepoint-delta-sync-dispatch', startedAt, startMs, r.connections, r.dispatched, 0, {
+        connections: r.connections,
+        dispatched: r.dispatched,
+    });
+});
+

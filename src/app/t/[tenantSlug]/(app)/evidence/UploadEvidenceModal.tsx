@@ -45,6 +45,10 @@
 
 import { useSWRConfig } from 'swr';
 import {
+    SharePointFilePicker,
+    type SpPickedItem,
+} from '@/components/integrations/sharepoint/SharePointFilePicker';
+import {
     useCallback,
     useEffect,
     useMemo,
@@ -130,6 +134,53 @@ export function UploadEvidenceModal({
     const [error, setError] = useState('');
     const [queuedCount, setQueuedCount] = useState(0);
     const [uploadingAll, setUploadingAll] = useState(false);
+    // SP-3 — SharePoint import. spConnId is the first available connection
+    // (null = SharePoint not connected → the button stays hidden).
+    const [spConnId, setSpConnId] = useState<string | null>(null);
+    const [spPickerOpen, setSpPickerOpen] = useState(false);
+
+    useEffect(() => {
+        if (!open) return;
+        let cancelled = false;
+        void (async () => {
+            try {
+                const res = await fetch(apiUrl('/integrations/sharepoint/connections'));
+                if (!res.ok) return;
+                const conns = (await res.json()) as Array<{ id: string }>;
+                if (!cancelled) setSpConnId(conns[0]?.id ?? null);
+            } catch {
+                /* SharePoint optional — ignore */
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [open, apiUrl]);
+
+    const handleSpImport = useCallback(
+        async (items: SpPickedItem[]) => {
+            if (!spConnId || items.length === 0) return;
+            try {
+                const res = await fetch(apiUrl('/integrations/sharepoint/import'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        connectionId: spConnId,
+                        items: items.map((i) => ({ driveId: i.driveId, itemId: i.itemId, name: i.name })),
+                        controlId: controlId || undefined,
+                    }),
+                });
+                if (!res.ok) {
+                    setError('SharePoint import failed.');
+                    return;
+                }
+                const prefix = apiUrl(CACHE_KEYS.evidence.list());
+                await swrMutate((key) => typeof key === 'string' && key.startsWith(prefix));
+                setOpen(false);
+            } catch {
+                setError('SharePoint import failed — network error.');
+            }
+        },
+        [apiUrl, spConnId, controlId, swrMutate, setOpen],
+    );
 
     // Reset on every open so a previous cancel doesn't leak state.
     useEffect(() => {
@@ -389,6 +440,16 @@ export function UploadEvidenceModal({
     const submitDisabled = queuedCount === 0 || uploadingAll;
 
     return (
+        <>
+        {spConnId && (
+            <SharePointFilePicker
+                showModal={spPickerOpen}
+                setShowModal={setSpPickerOpen}
+                connectionId={spConnId}
+                multiple
+                onConfirm={handleSpImport}
+            />
+        )}
         <Modal
             showModal={open}
             setShowModal={setOpen}
@@ -436,6 +497,20 @@ export function UploadEvidenceModal({
                                 onAllSettled={onAllSettled}
                                 hint={`PDF, Office, CSV, image, JSON, or ZIP — up to ${MAX_FILE_SIZE_MB} MB per file`}
                             />
+                            {spConnId && (
+                                <div className="mt-default flex items-center gap-default">
+                                    <span className="text-xs text-content-muted">or</span>
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={() => setSpPickerOpen(true)}
+                                        disabled={uploadingAll}
+                                    >
+                                        Import from SharePoint
+                                    </Button>
+                                </div>
+                            )}
                         </div>
 
                         <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
@@ -588,5 +663,6 @@ export function UploadEvidenceModal({
                 </Modal.Actions>
             </Modal.Form>
         </Modal>
+        </>
     );
 }

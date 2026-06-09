@@ -192,6 +192,9 @@ model IntegrationSyncMapping {
   localUpdatedAt    DateTime?
   remoteUpdatedAt   DateTime?
   remoteDataJson    Json?
+  /// SP-3 — remote accessible URL (e.g. SharePoint DriveItem webUrl) for a
+  /// "View in source" link on the local entity. Provider-agnostic.
+  sourceUrl         String?
   version           Int                    @default(1)
   errorMessage      String?
   lastSyncedAt      DateTime?

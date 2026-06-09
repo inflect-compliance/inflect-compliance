@@ -467,6 +467,21 @@ export interface SyncPullPayload {
  *   2. Add an entry to this map
  *   3. Register a processor in the worker
  */
+/** SP-3 — delta sync for one SharePoint connection. */
+export interface SharePointDeltaSyncPayload {
+    tenantId: string;
+    connectionId: string;
+    /** Member to attribute the re-imports to (an admin of the tenant). */
+    actorUserId: string;
+    triggeredBy: 'scheduled' | 'manual';
+    requestId?: string;
+}
+
+/** SP-3 — fan-out cron: enqueue a delta sync per enabled SharePoint connection. */
+export interface SharePointDeltaSyncDispatchPayload {
+    requestId?: string;
+}
+
 export interface JobPayloadMap {
     'health-check': HealthCheckPayload;
     'automation-runner': AutomationRunnerPayload;
@@ -495,6 +510,8 @@ export interface JobPayloadMap {
     'access-review-reminder': AccessReviewReminderPayload;
     'access-review-overdue-escalation': AccessReviewOverdueEscalationPayload;
     'task-due-notification': TaskDueNotificationPayload;
+    'sharepoint-delta-sync': SharePointDeltaSyncPayload;
+    'sharepoint-delta-sync-dispatch': SharePointDeltaSyncDispatchPayload;
 }
 
 /** Union of all valid job names */
@@ -583,6 +600,20 @@ export const JOB_DEFAULTS: Record<JobName, {
         backoff: { type: 'exponential', delay: 5000 },
         removeOnComplete: 200,
         removeOnFail: 500,
+    },
+    'sharepoint-delta-sync': {
+        // One retry on a transient Graph/storage blip; delta tokens make a
+        // re-run idempotent (already-imported eTags are skipped).
+        attempts: 2,
+        backoff: { type: 'exponential', delay: 10000 },
+        removeOnComplete: 200,
+        removeOnFail: 500,
+    },
+    'sharepoint-delta-sync-dispatch': {
+        attempts: 1,
+        backoff: { type: 'fixed', delay: 0 },
+        removeOnComplete: 50,
+        removeOnFail: 200,
     },
     'exception-expiry-monitor': {
         attempts: 2,

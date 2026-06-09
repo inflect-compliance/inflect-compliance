@@ -350,6 +350,10 @@ const LIST_QUERY_INDEXES: readonly CompositeIndex[] = [
 // curated composite index is needed."
 
 const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
+    // SP-3 — delta sync lists mappings by [tenantId, provider, connectionId];
+    // covered by @@index([tenantId, provider]) + @@index([connectionId]).
+    IntegrationSyncMapping:
+        'SP-3 delta sync filters by tenantId + provider + connectionId — covered by @@index([tenantId, provider]) + @@index([connectionId]); no curated composite index needed today.',
     // VR-3 — the canvas-rule sync findMany's a single map's nodes/edges,
     // bounded by processMapId. The `@@index([tenantId, processMapId])`
     // covers the (tenantId, processMapId) prefix; the nodeType/edgeKind

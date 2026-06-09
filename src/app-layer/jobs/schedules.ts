@@ -68,6 +68,12 @@ export const SCHEDULED_JOBS: ScheduleDefinition[] = [
         defaultPayload: {},
     },
     {
+        name: 'sharepoint-delta-sync-dispatch',
+        pattern: '0 */4 * * *',   // every 4 hours
+        description: 'Fan out a SharePoint delta sync per enabled connection (auto-import changed evidence files)',
+        defaultPayload: {},
+    },
+    {
         name: 'schedule-trigger-sweep',
         pattern: '0 7 * * *',     // daily at 07:00 UTC
         description: 'Fire SCHEDULE automation rules whose target entity is N days from its due date',

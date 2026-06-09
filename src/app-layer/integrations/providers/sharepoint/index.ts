@@ -35,4 +35,10 @@ export {
     browseSharePoint,
 } from './service';
 export type { SpBrowseItem } from './service';
+export {
+    importSharePointItems,
+    runSharePointDeltaSync,
+    SP_IMPORT_MAX_ITEMS,
+} from './import';
+export type { SpImportInput, SpImportResult, SpDeltaSyncResult } from './import';
 export type * from './types';
