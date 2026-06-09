@@ -18,6 +18,10 @@ describe('SP-5 SharePoint audit-pack export + health', () => {
         expect(src).toMatch(/JSZip|generateAsync/);
         expect(src).toMatch(/uploadNewFile/);
         expect(src).toMatch(/integrationExecution\.create/);
+        // SP-F2 — bundles evidence binaries under evidence/ (capped + scan-gated).
+        expect(src).toMatch(/bundleEvidenceBinaries/);
+        expect(src).toMatch(/SP_EXPORT_MAX_BYTES/);
+        expect(src).toMatch(/isDownloadAllowed/);
     });
 
     it('AuditPack has the SharePoint export columns + migration', () => {

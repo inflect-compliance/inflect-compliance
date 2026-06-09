@@ -7,14 +7,25 @@
 const mockDb = {
     auditPack: { update: jest.fn() },
     integrationExecution: { create: jest.fn() },
+    evidence: { findMany: jest.fn() },
+    fileRecord: { findMany: jest.fn() },
 };
 const mockClient = { uploadNewFile: jest.fn() };
 const mockGetPack = jest.fn();
 const mockExport = jest.fn();
+const mockReadStream = jest.fn();
 
 jest.mock('@/lib/db-context', () => ({
     __esModule: true,
     runInTenantContext: (_ctx: any, fn: (db: any) => any) => fn(mockDb),
+}));
+jest.mock('@/lib/storage', () => ({
+    __esModule: true,
+    getStorageProvider: () => ({ readStream: (...a: unknown[]) => mockReadStream(...a) }),
+}));
+jest.mock('@/lib/storage/av-scan', () => ({
+    __esModule: true,
+    isDownloadAllowed: (s: string) => s === 'clean',
 }));
 jest.mock('@/app-layer/usecases/audit-readiness/packs', () => ({
     __esModule: true,
@@ -42,6 +53,8 @@ beforeEach(() => {
     mockClient.uploadNewFile.mockResolvedValue({ id: 'sp-item-1', webUrl: 'https://sp/pack.zip' });
     mockDb.auditPack.update.mockResolvedValue({});
     mockDb.integrationExecution.create.mockResolvedValue({});
+    mockDb.evidence.findMany.mockResolvedValue([]);
+    mockDb.fileRecord.findMany.mockResolvedValue([]);
 });
 
 describe('exportAuditPackToSharePoint', () => {
@@ -76,5 +89,32 @@ describe('exportAuditPackToSharePoint', () => {
 
     it('requires a driveId', async () => {
         await expect(exportAuditPackToSharePoint(admin, 'p1', { driveId: '' })).rejects.toBeDefined();
+    });
+
+    it('bundles scanned-clean evidence binaries + skips infected/deleted (SP-F2)', async () => {
+        const { Readable } = await import('node:stream');
+        mockGetPack.mockResolvedValueOnce({
+            id: 'p1', name: 'Q2', status: 'FROZEN', frozenAt: new Date('2026-01-01'),
+            items: [
+                { entityType: 'EVIDENCE', entityId: 'ev1' },
+                { entityType: 'EVIDENCE', entityId: 'ev2' },
+                { entityType: 'CONTROL', entityId: 'c1' },
+            ],
+        });
+        mockDb.evidence.findMany.mockResolvedValueOnce([
+            { fileRecord: { pathKey: 'k1', originalName: 'a.pdf', scanStatus: 'clean', status: 'STORED', deletedAt: null } },
+            { fileRecord: { pathKey: 'k2', originalName: 'b.pdf', scanStatus: 'infected', status: 'STORED', deletedAt: null } },
+        ]);
+        mockReadStream.mockImplementation(() => Readable.from([Buffer.from('PDFDATA')]));
+
+        await exportAuditPackToSharePoint(admin, 'p1', { driveId: 'd1' }, { now: () => new Date('2026-06-09T00:00:00Z') });
+
+        // Only the clean file is read + bundled; the infected one is skipped.
+        expect(mockReadStream).toHaveBeenCalledTimes(1);
+        expect(mockReadStream).toHaveBeenCalledWith('k1');
+        expect(mockDb.integrationExecution.create.mock.calls[0][0].data.resultJson).toMatchObject({
+            evidenceBundled: 1,
+            evidenceSkipped: 1,
+        });
     });
 });

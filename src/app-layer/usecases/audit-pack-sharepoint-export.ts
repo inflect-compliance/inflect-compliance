@@ -1,28 +1,112 @@
 /**
  * SP-5 — export a frozen audit pack to SharePoint.
  *
- * Builds a ZIP ({README.md, pack.json manifest, items.csv}) and uploads it to a
- * chosen SharePoint library folder so auditors can access the pack in their
- * native environment. Records the export on the AuditPack + an
+ * Builds a ZIP ({README.md, pack.json manifest, items.csv, evidence/<files>})
+ * and uploads it to a chosen SharePoint library folder so auditors can access
+ * the pack in their native environment. Records the export on the AuditPack + an
  * IntegrationExecution row (for the sync-health dashboard).
  *
- * Scope note: the ZIP carries the pack MANIFEST (reusing `exportAuditPack`),
- * not the raw evidence binaries — binary bundling is a documented follow-up.
+ * SP-F2: the ZIP now bundles the actual evidence FILE binaries under `evidence/`
+ * (scanned-clean, non-deleted only; capped at SP_EXPORT_MAX_BYTES).
  *
  * @module usecases/audit-pack-sharepoint-export
  */
 import JSZip from 'jszip';
+import type { Readable } from 'node:stream';
 import type { RequestContext } from '../types';
 import { runInTenantContext } from '@/lib/db-context';
 import { Prisma } from '@prisma/client';
 import { badRequest, notFound } from '@/lib/errors/types';
 import { assertCanAdmin } from '../policies/common';
 import { logEvent } from '../events/audit';
+import { edgeLogger } from '@/lib/observability/edge-logger';
+import { getStorageProvider } from '@/lib/storage';
+import { isDownloadAllowed } from '@/lib/storage/av-scan';
 import { getAuditPack, exportAuditPack } from './audit-readiness/packs';
 import {
     getSharePointClient,
     listSharePointConnections,
 } from '../integrations/providers/sharepoint';
+
+/** Total evidence-binary payload cap per export ZIP (manifest is always included). */
+export const SP_EXPORT_MAX_BYTES = 200 * 1024 * 1024;
+
+interface BundleFile { pathKey: string; name: string; scanStatus: string; status: string; deletedAt: Date | null }
+
+/** Collect a storage Readable into a Buffer. */
+function streamToBuffer(stream: Readable): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+        const chunks: Buffer[] = [];
+        stream.on('data', (c: Buffer | string) => chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c)));
+        stream.on('end', () => resolve(Buffer.concat(chunks)));
+        stream.on('error', reject);
+    });
+}
+
+/**
+ * Add the pack's evidence FILE binaries to the ZIP under `evidence/`, skipping
+ * unscanned/deleted files and stopping at SP_EXPORT_MAX_BYTES.
+ */
+async function bundleEvidenceBinaries(
+    ctx: RequestContext,
+    packItems: Array<{ entityType: string; entityId: string }>,
+    zip: JSZip,
+): Promise<{ bundled: number; skipped: number; bytes: number }> {
+    const evidenceIds = packItems.filter((i) => i.entityType === 'EVIDENCE').map((i) => i.entityId);
+    const fileIds = packItems.filter((i) => i.entityType === 'FILE').map((i) => i.entityId);
+    if (evidenceIds.length === 0 && fileIds.length === 0) return { bundled: 0, skipped: 0, bytes: 0 };
+
+    const files: BundleFile[] = await runInTenantContext(ctx, async (db) => {
+        const out: BundleFile[] = [];
+        if (evidenceIds.length) {
+            const ev = await db.evidence.findMany({
+                where: { id: { in: evidenceIds }, tenantId: ctx.tenantId },
+                select: { fileRecord: { select: { pathKey: true, originalName: true, scanStatus: true, status: true, deletedAt: true } } },
+            });
+            for (const e of ev) {
+                if (e.fileRecord) {
+                    const fr = e.fileRecord;
+                    out.push({ pathKey: fr.pathKey, name: fr.originalName, scanStatus: fr.scanStatus, status: fr.status, deletedAt: fr.deletedAt });
+                }
+            }
+        }
+        if (fileIds.length) {
+            const fr = await db.fileRecord.findMany({
+                where: { id: { in: fileIds }, tenantId: ctx.tenantId },
+                select: { pathKey: true, originalName: true, scanStatus: true, status: true, deletedAt: true },
+            });
+            out.push(...fr.map((f) => ({ pathKey: f.pathKey, name: f.originalName, scanStatus: f.scanStatus, status: f.status, deletedAt: f.deletedAt })));
+        }
+        return out;
+    });
+
+    const provider = getStorageProvider();
+    let bundled = 0;
+    let skipped = 0;
+    let bytes = 0;
+    const usedNames = new Set<string>();
+    for (const f of files) {
+        // Only bundle scanned-clean, stored, non-deleted files.
+        if (f.status !== 'STORED' || f.deletedAt || !isDownloadAllowed(f.scanStatus)) { skipped++; continue; }
+        try {
+            const buf = await streamToBuffer(provider.readStream(f.pathKey));
+            if (bytes + buf.byteLength > SP_EXPORT_MAX_BYTES) { skipped++; continue; }
+            let name = f.name || 'file';
+            if (usedNames.has(name)) name = `${bundled + 1}-${name}`; // de-dupe names within the ZIP
+            usedNames.add(name);
+            zip.file(`evidence/${name}`, buf);
+            bundled++;
+            bytes += buf.byteLength;
+        } catch (err) {
+            skipped++;
+            edgeLogger.warn('Audit-pack export: evidence file read failed', {
+                component: 'sharepoint',
+                error: err instanceof Error ? err.message : String(err),
+            });
+        }
+    }
+    return { bundled, skipped, bytes };
+}
 
 export interface SpExportDestination {
     connectionId?: string;
@@ -63,6 +147,8 @@ export async function exportAuditPackToSharePoint(
     );
     zip.file('pack.json', JSON.stringify(json, null, 2));
     zip.file('items.csv', csv.csv);
+    // SP-F2 — bundle the actual evidence binaries.
+    const bundle = await bundleEvidenceBinaries(ctx, pack.items, zip);
     const bytes = await zip.generateAsync({ type: 'uint8array' });
 
     const connectionId =
@@ -92,7 +178,7 @@ export async function exportAuditPackToSharePoint(
                 automationKey: 'sharepoint.audit_pack_export',
                 status: 'PASSED',
                 triggeredBy: 'manual',
-                resultJson: { packId, fileName, spItemId: item.id } as Prisma.InputJsonValue,
+                resultJson: { packId, fileName, spItemId: item.id, evidenceBundled: bundle.bundled, evidenceSkipped: bundle.skipped } as Prisma.InputJsonValue,
                 completedAt: now,
             },
         });
