@@ -237,7 +237,7 @@ export default function OnboardingWizard() {
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-bg-success-emphasis flex items-center justify-center">
                         <CheckCircle2 className="w-8 h-8 text-content-inverted" />
                     </div>
-                    <Heading level={2} className="text-content-inverted mb-2">Onboarding Complete!</Heading>
+                    <Heading level={2} className="text-content-emphasis mb-2">Onboarding Complete!</Heading>
                     <p className="text-content-muted text-sm">Your workspace is ready. Redirecting to dashboard...</p>
                     <div className="mt-4">
                         <Loader2 className="w-5 h-5 mx-auto text-brand-400 animate-spin" />
@@ -255,7 +255,7 @@ export default function OnboardingWizard() {
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[var(--brand-default)] flex items-center justify-center">
                         <Sparkles className="w-8 h-8 text-content-inverted" />
                     </div>
-                    <Heading level={2} className="text-content-inverted mb-2">Welcome! Let&apos;s set up your workspace.</Heading>
+                    <Heading level={2} className="text-content-emphasis mb-2">Welcome! Let&apos;s set up your workspace.</Heading>
                     <p className="text-content-muted text-sm mb-6">This wizard will guide you through configuring your compliance platform in just a few steps.</p>
                     <Button variant="primary" size="lg" onClick={handleStart} disabled={saving}>
                         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
@@ -274,7 +274,7 @@ export default function OnboardingWizard() {
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-bg-success-emphasis flex items-center justify-center">
                         <CheckCircle2 className="w-8 h-8 text-content-inverted" />
                     </div>
-                    <Heading level={2} className="text-content-inverted mb-2">Onboarding Complete</Heading>
+                    <Heading level={2} className="text-content-emphasis mb-2">Onboarding Complete</Heading>
                     <p className="text-content-muted text-sm mb-6">Your workspace has been configured. You can always update settings from the admin panel.</p>
                     <Button variant="primary" size="lg" onClick={() => router.push(tenantHref('/dashboard'))}>
                         Go to Dashboard
@@ -305,7 +305,7 @@ export default function OnboardingWizard() {
                 <div className={cn(cardVariants({ density: 'compact' }), 'border-border-error text-sm text-content-error flex items-center gap-tight')}>
                     <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                     {error}
-                    <button onClick={() => setError(null)} className="ml-auto text-content-error hover:text-content-inverted text-xs">&times;</button>
+                    <button onClick={() => setError(null)} className="ml-auto text-content-error hover:text-content-emphasis text-xs">&times;</button>
                 </div>
             )}
 
@@ -332,7 +332,7 @@ export default function OnboardingWizard() {
                                     onClick={() => setActiveStepIdx(i)}
                                     data-testid={`step-nav-${step.key}`}
                                     className={`w-full flex items-center gap-compact px-3 py-2.5 rounded-lg text-sm transition-colors duration-150 ease-out ${
-                                        active ? 'bg-brand-subtle text-content-inverted font-medium' : 'text-content-muted hover:text-content-emphasis hover:bg-bg-muted/50'
+                                        active ? 'bg-brand-subtle text-content-emphasis font-medium' : 'text-content-muted hover:text-content-emphasis hover:bg-bg-muted/50'
                                     }`}
                                 >
                                     <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
@@ -360,7 +360,7 @@ export default function OnboardingWizard() {
                                 <currentStep.icon className="w-4.5 h-4.5 text-content-inverted" />
                             </div>
                             <div>
-                                <Heading level={2} className="text-content-inverted">{currentStep.label}</Heading>
+                                <Heading level={2} className="text-content-emphasis">{currentStep.label}</Heading>
                                 <p className="text-xs text-content-muted">Step {activeStepIdx + 1} of {STEPS.length}</p>
                             </div>
                             {isComplete(currentStep.key) && (
@@ -537,7 +537,7 @@ function FrameworkSelectionStep({ data, onUpdate }: { data: StepData; onUpdate: 
                             }`}
                         >
                             <div className="flex items-center justify-between mb-2">
-                                <span className="font-semibold text-content-inverted text-sm">{fw.name}</span>
+                                <span className="font-semibold text-content-emphasis text-sm">{fw.name}</span>
                                 {fw.badge && <StatusBadge variant="info" size="sm">{fw.badge}</StatusBadge>}
                             </div>
                             <p className="text-xs text-content-muted leading-relaxed">{fw.desc}</p>
@@ -646,7 +646,7 @@ function RiskRegisterStep({ data, onUpdate }: { data: StepData; onUpdate: (d: St
             <div className="p-4 rounded-lg bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-border-warning">
                 <div className="flex items-center gap-compact mb-3">
                     <AlertTriangle className="w-5 h-5 text-content-warning" />
-                    <span className="font-medium text-content-inverted text-sm">Starter Risk Register</span>
+                    <span className="font-medium text-content-emphasis text-sm">Starter Risk Register</span>
                 </div>
                 <p className="text-xs text-content-muted leading-relaxed">We&apos;ll generate common information security risks based on industry best practices. You can customize, add, or remove risks later.</p>
             </div>
