@@ -50,15 +50,16 @@ describe('Risks list — Epic 44.4 column + matrix wiring', () => {
         expect(clientSrc).toContain('RISK_API_TRANSFORMS');
     });
 
-    it('adds the Owner column with sensible fallback chain (user → email → treatmentOwner → —)', () => {
+    it('adds the Owner column as name-only (ownerDisplayName → treatmentOwner → —, no email)', () => {
         expect(clientSrc).toContain("id: 'owner'");
         expect(clientSrc).toContain("header: 'Owner'");
-        // The accessor function carries the documented fallback
-        // chain; locking it stops a refactor from silently dropping
-        // the legacy treatmentOwner read path.
+        // UI-14: name (or email local-part as username) via ownerDisplayName,
+        // then the legacy treatmentOwner read path. The full email is NOT
+        // displayed (it stays on the row only for the owner filter).
         expect(clientSrc).toMatch(
-            /r\.owner\?\.name\s*\?\?\s*r\.owner\?\.email\s*\?\?\s*r\.treatmentOwner/,
+            /ownerDisplayName\(r\.owner\?\.name,\s*r\.owner\?\.email\)\s*\?\?\s*r\.treatmentOwner/,
         );
+        expect(clientSrc).not.toMatch(/r\.owner\?\.email\s*\?\?\s*r\.treatmentOwner/);
     });
 
     it('adds the workflow Status column with badge classes per RiskStatus value', () => {

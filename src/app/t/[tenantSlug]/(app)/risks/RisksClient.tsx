@@ -9,6 +9,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
+import { ownerDisplayName } from '@/lib/owner-display';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import type { CappedList } from '@/lib/list-backfill-cap';
 import { TruncationBanner } from '@/components/ui/TruncationBanner';
@@ -312,6 +313,10 @@ function RisksPageInner({
     // All filtered rows render at once; the card scrolls.
     const riskColumns = useMemo(
         () => [
+            // Code is off by default (toggle on via the gear). The column def
+            // still leads (table-unification first-column rule); only its
+            // default visibility is off.
+            { id: 'code', label: 'Code', defaultVisible: false },
             { id: 'title', label: 'Title' },
             { id: 'asset', label: 'Asset' },
             { id: 'threat', label: 'Threat' },
@@ -549,7 +554,7 @@ function RisksPageInner({
             accessorFn: (r) => r.inherentScore,
             cell: ({ getValue }) => {
                 const level = getRiskLevel(getValue<number>());
-                return <StatusBadge variant={level.class}>{level.label}</StatusBadge>;
+                return <StatusBadge variant={level.class} size="sm">{level.label}</StatusBadge>;
             },
         },
         {
@@ -559,7 +564,7 @@ function RisksPageInner({
             cell: ({ row }) => {
                 const status = row.original.status ?? 'OPEN';
                 return (
-                    <StatusBadge variant={STATUS_CLASS[status] ?? 'neutral'} data-testid={`risk-status-${row.original.id}`}>
+                    <StatusBadge variant={STATUS_CLASS[status] ?? 'neutral'} size="sm" data-testid={`risk-status-${row.original.id}`}>
                         {status}
                     </StatusBadge>
                 );
@@ -568,19 +573,17 @@ function RisksPageInner({
         {
             id: 'owner',
             header: 'Owner',
-            // Owner display preference: real user (name → email) →
-            // legacy free-text `treatmentOwner` → em-dash. Keeping
-            // both signals visible avoids the empty-cell footgun
-            // when only one of the two is populated.
+            // Owner display: name (or email local-part as a username) →
+            // legacy free-text `treatmentOwner` → em-dash. The full email is
+            // intentionally NOT shown; it stays on the row for the owner filter.
             accessorFn: (r) =>
-                r.owner?.name ??
-                r.owner?.email ??
+                ownerDisplayName(r.owner?.name, r.owner?.email) ??
                 r.treatmentOwner ??
                 '—',
             cell: ({ row }) => {
                 const r = row.original;
                 const display =
-                    r.owner?.name ?? r.owner?.email ?? r.treatmentOwner ?? null;
+                    ownerDisplayName(r.owner?.name, r.owner?.email) ?? r.treatmentOwner ?? null;
                 return (
                     <span
                         className="text-xs text-content-muted"

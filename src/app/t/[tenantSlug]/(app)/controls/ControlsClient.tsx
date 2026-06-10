@@ -19,6 +19,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { NewControlModal } from './NewControlModal';
 import { ControlDetailSheet } from './ControlDetailSheet';
 import { queryKeys } from '@/lib/queryKeys';
+import { ownerDisplayName } from '@/lib/owner-display';
 import { AppIcon } from '@/components/icons/AppIcon';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { Paperclip, CheckCircle2, AlertTriangle, X } from 'lucide-react';
@@ -406,7 +407,7 @@ function ControlsPageInner({
     // (ListPageShell.Body + DataTable fillBody) shows all rows.
     const controlColumnList = useMemo(
         () => [
-            { id: 'code', label: 'Code' },
+            { id: 'code', label: 'Code', defaultVisible: false },
             { id: 'name', label: 'Title' },
             // Framework + Category, split into two columns (2026-06-07).
             // Both derived per-control via `categorizeControl` (ISO 27001
@@ -603,7 +604,7 @@ function ControlsPageInner({
                 if (!cat) {
                     return <span className="text-xs text-content-subtle">—</span>;
                 }
-                return <StatusBadge>{cat.category}</StatusBadge>;
+                return <StatusBadge size="sm">{cat.category}</StatusBadge>;
             },
         },
         {
@@ -622,6 +623,7 @@ function ControlsPageInner({
                     <StatusBadge
                         id={`status-pill-${c.id}`}
                         variant={STATUS_BADGE[c.status] || 'neutral'}
+                        size="sm"
                     >
                         {STATUS_LABELS[c.status] || c.status}
                     </StatusBadge>
@@ -642,6 +644,7 @@ function ControlsPageInner({
                     <StatusBadge
                         id={`applicability-pill-${c.id}`}
                         variant={c.applicability === 'NOT_APPLICABLE' ? 'warning' : 'success'}
+                        size="sm"
                     >
                         {c.applicability === 'NOT_APPLICABLE' ? 'N/A' : 'Yes'}
                     </StatusBadge>
@@ -651,13 +654,15 @@ function ControlsPageInner({
         {
             id: 'owner',
             header: 'Owner',
-            accessorFn: (c) => c.owner?.name || c.owner?.email || '—',
+            accessorFn: (c) => ownerDisplayName(c.owner?.name, c.owner?.email) || '—',
             cell: ({ row }) => {
                 const c = row.original;
-                if (!c.owner) {
+                // Name-only (or email local-part as username) — the full email
+                // address is no longer shown in the Owner column.
+                const display = ownerDisplayName(c.owner?.name, c.owner?.email);
+                if (!display) {
                     return <span className="text-xs text-content-subtle">—</span>;
                 }
-                const display = c.owner.name ?? c.owner.email ?? '?';
                 const initial = display.charAt(0).toUpperCase();
                 return (
                     <span
@@ -672,13 +677,8 @@ function ControlsPageInner({
                         </span>
                         <span className="min-w-0 leading-tight">
                             <span className="block truncate text-xs text-content-emphasis">
-                                {c.owner.name ?? c.owner.email}
+                                {display}
                             </span>
-                            {c.owner.name && c.owner.email && (
-                                <span className="block truncate text-[10px] text-content-subtle">
-                                    {c.owner.email}
-                                </span>
-                            )}
                         </span>
                     </span>
                 );

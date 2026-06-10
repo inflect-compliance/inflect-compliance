@@ -503,7 +503,7 @@ function TasksPageInner({
                 accessorKey: 'severity',
                 header: 'Severity',
                 cell: ({ row }) => (
-                    <StatusBadge variant={SEVERITY_BADGE[row.original.severity] || 'neutral'}>
+                    <StatusBadge variant={SEVERITY_BADGE[row.original.severity] || 'neutral'} size="sm">
                         {row.original.severity}
                     </StatusBadge>
                 ),
@@ -512,7 +512,7 @@ function TasksPageInner({
                 accessorKey: 'status',
                 header: 'Status',
                 cell: ({ row }) => (
-                    <StatusBadge variant={STATUS_BADGE[row.original.status] || 'neutral'}>
+                    <StatusBadge variant={STATUS_BADGE[row.original.status] || 'neutral'} size="sm">
                         {STATUS_LABELS[row.original.status] || row.original.status}
                     </StatusBadge>
                 ),

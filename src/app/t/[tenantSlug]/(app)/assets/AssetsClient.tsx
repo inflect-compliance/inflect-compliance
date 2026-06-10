@@ -253,9 +253,9 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
     const assetColumnList = useMemo(
         () => [
             // First-column rule (Risk/Controls parity) — the
-            // per-tenant `AST-N` Code leads, so the list scans by
-            // canonical identifier first and Name second.
-            { id: 'code', label: 'Code' },
+            // per-tenant `AST-N` Code leads the column DEFS, but is off by
+            // default — toggle it on via the gear. Name is the default lead.
+            { id: 'code', label: 'Code', defaultVisible: false },
             { id: 'name', label: 'Name' },
             { id: 'type', label: 'Type' },
             { id: 'classification', label: 'Classification' },
@@ -313,7 +313,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
         {
             accessorKey: 'type',
             header: t.type,
-            cell: ({ getValue }: any) => <StatusBadge variant="info">{String(getValue()).replace(/_/g, ' ')}</StatusBadge>,
+            cell: ({ getValue }: any) => <StatusBadge variant="info" size="sm">{String(getValue()).replace(/_/g, ' ')}</StatusBadge>,
         },
         {
             id: 'classification',

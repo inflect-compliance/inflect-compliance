@@ -35,15 +35,16 @@ const source = readFileSync(CONTROLS_CLIENT, 'utf8');
 
 describe('Controls list — UX polish', () => {
     describe('Owner column', () => {
-        it('renders a chip with name + email + initial avatar', () => {
+        it('renders a name-only chip with initial avatar (no email)', () => {
             // Avatar circle uses the first character of the display
             // string; locking this so a future "tidy-up" can't drop
             // the avatar back to a plain text cell.
             expect(source).toContain("data-testid={`control-owner-${c.id}`}");
             expect(source).toMatch(/charAt\(0\)\.toUpperCase\(\)/);
-            // Name + email both render when available; em-dash for
-            // unowned controls.
-            expect(source).toMatch(/c\.owner\.name\s*\?\?\s*c\.owner\.email/);
+            // UI-14: name-only via ownerDisplayName (name → email local-part as
+            // username); the full email address is no longer rendered.
+            expect(source).toMatch(/ownerDisplayName\(c\.owner\?\.name,\s*c\.owner\?\.email\)/);
+            expect(source).not.toMatch(/\{c\.owner\.email\}/);
             expect(source).toContain('text-content-subtle');
         });
     });
