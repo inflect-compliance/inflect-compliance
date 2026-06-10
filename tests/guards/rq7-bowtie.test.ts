@@ -30,4 +30,13 @@ describe('RQ-7 bow-tie', () => {
         expect(page).toMatch(/BowTiePanel/);
         expect(page).toMatch(/'bowtie'/);
     });
+
+    it('the interactive xyflow canvas is wired (the RQ-7 deferred follow-up)', () => {
+        expect(exists('src/app/t/[tenantSlug]/(app)/risks/[riskId]/BowTieCanvas.tsx')).toBe(true);
+        expect(exists('src/app/t/[tenantSlug]/(app)/risks/[riskId]/BowTieNode.tsx')).toBe(true);
+        const canvas = read('src/app/t/[tenantSlug]/(app)/risks/[riskId]/BowTieCanvas.tsx');
+        expect(canvas).toMatch(/@xyflow\/react/);
+        expect(canvas).toMatch(/elementsSelectable=\{false\}/); // read-only projection
+        expect(read('src/app/t/[tenantSlug]/(app)/risks/[riskId]/BowTiePanel.tsx')).toMatch(/BowTieCanvas/);
+    });
 });
