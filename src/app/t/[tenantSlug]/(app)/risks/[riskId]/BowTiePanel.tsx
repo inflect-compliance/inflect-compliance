@@ -1,17 +1,26 @@
 'use client';
 
 /* RQ-7 — Bow-tie analysis: threat → event → consequence with control barriers.
-   A read-time projection (no stored graph) rendered as the classic bow-tie
-   three-column layout. */
+   A read-time projection rendered either as an interactive xyflow canvas
+   (default) or the accessible column list. */
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { ShieldCheck } from '@/components/ui/icons/nucleo/shield-check';
 import { Bolt } from '@/components/ui/icons/nucleo/bolt';
 import { TriangleWarning } from '@/components/ui/icons/nucleo/triangle-warning';
 import { CurrencyDollar } from '@/components/ui/icons/nucleo/currency-dollar';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { useTenantApiUrl } from '@/lib/tenant-context-provider';
+import type { BowTieGraph } from './BowTieCanvas';
+
+// xyflow is client-only + heavy — load the canvas on demand.
+const BowTieCanvas = dynamic(() => import('./BowTieCanvas').then((m) => m.BowTieCanvas), {
+    ssr: false,
+    loading: () => <div className="h-[480px] w-full rounded-md border border-border-default bg-bg-muted/20" />,
+});
 
 interface Barrier { controlId: string; title: string; status: string; effectiveness: number | null }
 interface Projection {
@@ -38,10 +47,14 @@ function BarrierChip({ b }: { b: Barrier }) {
 export function BowTiePanel({ riskId }: { riskId: string }) {
     const apiUrl = useTenantApiUrl();
     const [p, setP] = useState<Projection | null>(null);
+    const [graph, setGraph] = useState<BowTieGraph | null>(null);
+    const [view, setView] = useState<'canvas' | 'list'>('canvas');
 
     useEffect(() => {
         let live = true;
-        fetch(apiUrl(`/risks/${riskId}/bowtie`)).then((r) => (r.ok ? r.json() : null)).then((d) => { if (live && d) setP(d.projection); }).catch(() => {});
+        fetch(apiUrl(`/risks/${riskId}/bowtie`)).then((r) => (r.ok ? r.json() : null)).then((d) => {
+            if (live && d) { setP(d.projection); setGraph(d.graph ?? null); }
+        }).catch(() => {});
         return () => { live = false; };
     }, [apiUrl, riskId]);
 
@@ -49,8 +62,18 @@ export function BowTiePanel({ riskId }: { riskId: string }) {
 
     return (
         <Card className="space-y-default p-6" data-testid="risk-bowtie">
-            <Heading level={2}>Bow-Tie Analysis</Heading>
+            <div className="flex flex-wrap items-center justify-between gap-default">
+                <Heading level={2}>Bow-Tie Analysis</Heading>
+                <span className="flex gap-tight">
+                    <Button size="sm" variant={view === 'canvas' ? 'primary' : 'secondary'} onClick={() => setView('canvas')}>Diagram</Button>
+                    <Button size="sm" variant={view === 'list' ? 'primary' : 'secondary'} onClick={() => setView('list')}>List</Button>
+                </span>
+            </div>
             <p className="text-xs text-content-muted">Threats (left) → preventive barriers → the risk event → mitigating barriers → consequences (right). Barrier colour = control effectiveness.</p>
+
+            {view === 'canvas' && graph && <BowTieCanvas graph={graph} />}
+
+            {view === 'list' && (
             <div className="grid grid-cols-1 gap-section lg:grid-cols-5">
                 {/* Threats */}
                 <div className="space-y-tight">
@@ -90,6 +113,7 @@ export function BowTiePanel({ riskId }: { riskId: string }) {
                     ))}
                 </div>
             </div>
+            )}
         </Card>
     );
 }
