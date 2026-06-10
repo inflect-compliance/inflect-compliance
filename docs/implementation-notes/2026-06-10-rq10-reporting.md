@@ -58,3 +58,14 @@ generateReport / the download route / the reports page all carry PDF | CSV |
 PPTX. Note: pptxgenjs's `write()` lazy-imports jszip via a native dynamic import
 that Jest's CJS VM can't execute, so the unit test locks the wiring + format
 contract rather than the zip bytes (real generation runs in the Node runtime).
+
+## Follow-up (2026-06-10) — scheduled delivery wiring
+
+The report-delivery cron now actually delivers: after generating the run it
+emails the artefact to the schedule's recipients as an **attachment**
+(`deliverReportByEmail` + `readReportArtefact`). The mailer gained an
+`attachments` field (nodemailer passes them through; the stub records them).
+SharePoint push to `sharePointFolderId` remains deferred — the SP-3 Graph infra
+is download-only (delta sync); an outbound drive-upload primitive is the next
+piece. Email delivery is verified by an integration test (stub mailer captures
+the attachment + recipients).

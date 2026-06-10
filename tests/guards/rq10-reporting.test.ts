@@ -46,6 +46,13 @@ describe('RQ-10 reporting & BIA', () => {
         expect(read('src/app-layer/jobs/schedules.ts')).toMatch(/'report-delivery'/);
     });
 
+    it('the delivery cron actually emails the artefact (RQ-10 follow-up)', () => {
+        // The mailer carries attachments + the cron emails the generated report.
+        expect(read('src/lib/mailer.ts')).toMatch(/attachments\?: EmailAttachment\[\]/);
+        expect(read('src/app-layer/usecases/risk-report.ts')).toMatch(/export async function deliverReportByEmail/);
+        expect(read('src/app-layer/jobs/report-delivery-jobs.ts')).toMatch(/deliverReportByEmail/);
+    });
+
     it('routes + reports page', () => {
         expect(exists('src/app/api/t/[tenantSlug]/risks/reports/route.ts')).toBe(true);
         expect(exists('src/app/api/t/[tenantSlug]/risks/reports/[reportId]/download/route.ts')).toBe(true);

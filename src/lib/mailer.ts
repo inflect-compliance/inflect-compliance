@@ -11,6 +11,12 @@ import nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
 import { logger } from '@/lib/observability/logger';
 
+export interface EmailAttachment {
+    filename: string;
+    content: Buffer;
+    contentType?: string;
+}
+
 export interface EmailMessage {
     to: string;
     subject: string;
@@ -18,6 +24,7 @@ export interface EmailMessage {
     html?: string;
     from?: string;   // Override default sender
     bcc?: string;    // Compliance mailbox BCC
+    attachments?: EmailAttachment[];  // RQ-10 — e.g. a generated report artefact
 }
 
 export interface EmailProvider {
@@ -35,6 +42,7 @@ export class ConsoleEmailProvider implements EmailProvider {
             bodyPreview: msg.text.substring(0, 200),
             ...(msg.from && { from: msg.from }),
             ...(msg.bcc && { bcc: msg.bcc }),
+            ...(msg.attachments?.length ? { attachments: msg.attachments.map((a) => a.filename) } : {}),
         });
     }
 }
@@ -66,6 +74,7 @@ export class NodemailerProvider implements EmailProvider {
             text: msg.text,
             ...(msg.html ? { html: msg.html } : {}),
             ...(msg.bcc ? { bcc: msg.bcc } : {}),
+            ...(msg.attachments ? { attachments: msg.attachments } : {}),
         });
     }
 }

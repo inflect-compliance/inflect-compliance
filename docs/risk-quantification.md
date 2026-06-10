@@ -59,6 +59,7 @@ Three daily fan-out jobs (cross-tenant, each builds a per-tenant context):
   factors are comonotonic (documented simplification vs a per-factor Cholesky).
 - **RQ-7 bow-tie** ships as a five-column card layout; `toXyFlowGraph` is ready
   for an interactive ReactFlow upgrade.
-- **RQ-10 PPTX** export landed via `pptxgenjs` (board slide deck: title + VaR
-  KPIs + top-risks table). Email/SharePoint delivery of scheduled artefacts is
-  still logged pending the outbound wiring.
+- **RQ-10 PPTX** export landed via `pptxgenjs` (board slide deck). **Scheduled
+  delivery** now emails the generated artefact to recipients as an attachment
+  (mailer gained an `attachments` field). SharePoint push to `sharePointFolderId`
+  still awaits a Graph drive-upload primitive (the SP-3 infra is download-only today).

@@ -18,6 +18,7 @@ import { getLatestSimulation } from './monte-carlo';
 import { getAppetiteStatus } from './risk-appetite';
 import { renderCsv, renderPdf, renderPptx, type ReportData } from '../reports/risk-report-render';
 import { getStorageProvider, generatePathKey } from '@/lib/storage';
+import { sendEmail } from '@/lib/mailer';
 
 export type ReportFormat = 'PDF' | 'CSV' | 'PPTX';
 
@@ -135,6 +136,36 @@ export async function getReport(ctx: RequestContext, reportRunId: string) {
     const r = await runInTenantContext(ctx, (db) => db.reportRun.findFirst({ where: { id: reportRunId, tenantId: ctx.tenantId } }));
     if (!r) throw notFound('Report run not found');
     return r;
+}
+
+/** Read a COMPLETED report's stored artefact into a Buffer. */
+export async function readReportArtefact(outputPath: string): Promise<Buffer> {
+    const stream = getStorageProvider().readStream(outputPath);
+    const chunks: Buffer[] = [];
+    for await (const c of stream) chunks.push(Buffer.from(c as Buffer));
+    return Buffer.concat(chunks);
+}
+
+/**
+ * RQ-10 delivery — email a generated report to its schedule recipients as an
+ * attachment. No-op if the run isn't COMPLETED or there are no recipients.
+ * Returns the number of recipients the email was addressed to.
+ */
+export async function deliverReportByEmail(
+    run: { id: string; outputPath: string | null; format: string; status: string },
+    recipients: string[],
+    label: string,
+): Promise<number> {
+    if (run.status !== 'COMPLETED' || !run.outputPath || recipients.length === 0) return 0;
+    const meta = FORMAT_META[run.format as ReportFormat] ?? FORMAT_META.PDF;
+    const content = await readReportArtefact(run.outputPath);
+    await sendEmail({
+        to: recipients.join(', '),
+        subject: `Scheduled risk report — ${label}`,
+        text: `Your scheduled risk report "${label}" is attached (report-${run.id}.${meta.ext}).`,
+        attachments: [{ filename: `risk-report-${run.id}.${meta.ext}`, content, contentType: meta.mime }],
+    });
+    return recipients.length;
 }
 
 export async function listReports(ctx: RequestContext, opts: { limit?: number } = {}) {
