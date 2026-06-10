@@ -45,24 +45,22 @@ import { StatusBadge } from '@/components/ui/status-badge';
 // `tests/guards/nav-item-geometry-discipline.test.ts`.
 
 /**
- * **44px minimum row height.** WCAG 2.5.5 (Target Size) recommends a
- * 44×44 CSS-pixel minimum for touch targets. The number isn't a
- * suggestion — anything tighter feels mean on iPad and slows
- * desktop pointer-aim too. Pair with `py-2.5` (10px vertical
- * padding) to land the typical row at exactly 44px while leaving
- * room for badge ascenders.
+ * **Row height — 44px touch / 34px desktop.** WCAG 2.5.5 (Target Size)
+ * wants a 44×44 CSS-px minimum for TOUCH; NavItem renders in the mobile
+ * drawer, so the base stays `min-h-[44px]`. On desktop (`md:`) the nav is
+ * pointer-driven, where 44px reads as oversized — `md:min-h-[34px]` tightens
+ * the sidebar rows (Board / Asset / Risk / …) without sacrificing the mobile
+ * touch target.
  */
-export const NAV_ITEM_HEIGHT_MIN = 'min-h-[44px]';
+export const NAV_ITEM_HEIGHT_MIN = 'min-h-[44px] md:min-h-[34px]';
 
 /**
- * **px-3 py-2.5** — 12px horizontal, 10px vertical.
- * Horizontal: the active state's 2px brand left-edge eats 2px of
- * left padding so the content still sits at the geometric 12px
- * — symmetry the eye reads as "settled". Vertical: 10px keeps
- * row baseline aligned with `min-h-[44px]` when a single line of
- * 14px text + an 18px icon is the content.
+ * **px-3, py-2.5 touch / py-1.5 desktop.** Horizontal: the active state's 2px
+ * brand left-edge eats 2px of left padding so content still sits at the
+ * geometric 12px. Vertical: 10px on touch keeps the row at the 44px target;
+ * on desktop `md:py-1.5` (6px) pairs with `md:min-h-[34px]` for a compact row.
  */
-export const NAV_ITEM_PADDING = 'px-3 py-2.5';
+export const NAV_ITEM_PADDING = 'px-3 py-2.5 md:py-1.5';
 
 /**
  * **gap-compact** — 8px between icon and label.
