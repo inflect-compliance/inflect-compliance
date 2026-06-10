@@ -52,14 +52,14 @@ Three daily fan-out jobs (cross-tenant, each builds a per-tenant context):
   per UTC day) + prune beyond retention.
 - `report-delivery` (06:00) — generate due scheduled reports + advance `nextRunAt`.
 
-## Conscious scope decisions (documented follow-ups)
+## Scope notes (all deferred follow-ups now shipped)
 
-- **RQ-8 correlated sampling** now draws the FULL FAIR factor set per risk from
-  the Cholesky-correlated uniform (`sampleFairALEFromUniform`); within-risk
-  factors are comonotonic (documented simplification vs a per-factor Cholesky).
-- **RQ-7 bow-tie** ships as a five-column card layout; `toXyFlowGraph` is ready
-  for an interactive ReactFlow upgrade.
+- **RQ-8 correlated sampling** draws the FULL FAIR factor set per risk from the
+  Cholesky-correlated uniform (`sampleFairALEFromUniform`); within-risk factors
+  are comonotonic (documented simplification vs a per-factor Cholesky).
+- **RQ-7 bow-tie** renders as an interactive xyflow canvas (`BowTieCanvas`,
+  read-only — drag/zoom) with a List toggle preserving the accessible columns.
 - **RQ-10 PPTX** export landed via `pptxgenjs` (board slide deck). **Scheduled
-  delivery** now emails the generated artefact to recipients as an attachment
-  (mailer gained an `attachments` field). SharePoint push to `sharePointFolderId`
-  still awaits a Graph drive-upload primitive (the SP-3 infra is download-only today).
+  delivery** emails the artefact to recipients as an attachment AND pushes it to
+  a SharePoint drive folder (`deliverReportToSharePoint` via the SP-3 Graph
+  client `uploadNewFile`; `ReportSchedule.sharePointDriveId` + `sharePointFolderId`).

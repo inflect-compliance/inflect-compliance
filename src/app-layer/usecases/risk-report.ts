@@ -19,6 +19,7 @@ import { getAppetiteStatus } from './risk-appetite';
 import { renderCsv, renderPdf, renderPptx, type ReportData } from '../reports/risk-report-render';
 import { getStorageProvider, generatePathKey } from '@/lib/storage';
 import { sendEmail } from '@/lib/mailer';
+import { getSharePointClient, listSharePointConnections } from '../integrations/providers/sharepoint';
 
 export type ReportFormat = 'PDF' | 'CSV' | 'PPTX';
 
@@ -168,6 +169,31 @@ export async function deliverReportByEmail(
     return recipients.length;
 }
 
+/**
+ * RQ-10 delivery — push a generated report to a SharePoint drive folder via the
+ * SP-3 Graph client (`uploadNewFile`). No-op if the run isn't COMPLETED, no
+ * driveId is configured, or the tenant has no SharePoint connection. Returns the
+ * created drive-item id, or null if nothing was pushed.
+ */
+export async function deliverReportToSharePoint(
+    ctx: RequestContext,
+    run: { id: string; outputPath: string | null; format: string; status: string },
+    driveId: string | null,
+    folderId: string | null,
+    label: string,
+    deps: { fetchImpl?: typeof fetch } = {},
+): Promise<string | null> {
+    if (run.status !== 'COMPLETED' || !run.outputPath || !driveId) return null;
+    const connectionId = (await listSharePointConnections(ctx))[0]?.id;
+    if (!connectionId) return null;
+    const client = await getSharePointClient(ctx, connectionId, deps);
+    const meta = FORMAT_META[run.format as ReportFormat] ?? FORMAT_META.PDF;
+    const content = await readReportArtefact(run.outputPath);
+    const safe = label.replace(/[^\w.-]+/g, '-');
+    const item = await client.uploadNewFile(driveId, folderId ?? 'root', `${safe}-${run.id}.${meta.ext}`, content, meta.mime);
+    return item.id;
+}
+
 export async function listReports(ctx: RequestContext, opts: { limit?: number } = {}) {
     assertCanRead(ctx);
     return runInTenantContext(ctx, (db) => db.reportRun.findMany({ where: { tenantId: ctx.tenantId }, orderBy: { createdAt: 'desc' }, take: Math.min(opts.limit ?? 50, 200) }));
@@ -184,17 +210,18 @@ export function computeNextRun(cadence: string, from: Date): Date {
     return d;
 }
 
-export interface CreateScheduleInput { templateId: string; cadence: 'WEEKLY' | 'MONTHLY' | 'QUARTERLY'; format?: ReportFormat; recipients: string[]; parameters?: ReportParameters; deliveryDay?: number }
+export interface CreateScheduleInput { templateId: string; cadence: 'WEEKLY' | 'MONTHLY' | 'QUARTERLY'; format?: ReportFormat; recipients: string[]; parameters?: ReportParameters; deliveryDay?: number; sharePointDriveId?: string | null; sharePointFolderId?: string | null }
 
 export async function createSchedule(ctx: RequestContext, input: CreateScheduleInput) {
     assertCanWrite(ctx);
-    if (!input.recipients?.length) throw badRequest('At least one recipient is required');
+    if (!input.recipients?.length && !input.sharePointDriveId) throw badRequest('A schedule needs at least one recipient or a SharePoint destination');
     return runInTenantContext(ctx, (db) =>
         db.reportSchedule.create({
             data: {
                 tenantId: ctx.tenantId, templateId: input.templateId, cadence: input.cadence, format: input.format ?? 'PDF',
                 recipientsJson: input.recipients as unknown as Prisma.InputJsonValue, parametersJson: (input.parameters ?? {}) as unknown as Prisma.InputJsonValue,
                 deliveryDay: input.deliveryDay ?? null, isActive: true, nextRunAt: computeNextRun(input.cadence, new Date()),
+                sharePointDriveId: input.sharePointDriveId ?? null, sharePointFolderId: input.sharePointFolderId ?? null,
             },
         }),
     );

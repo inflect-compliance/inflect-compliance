@@ -69,3 +69,12 @@ SharePoint push to `sharePointFolderId` remains deferred — the SP-3 Graph infr
 is download-only (delta sync); an outbound drive-upload primitive is the next
 piece. Email delivery is verified by an integration test (stub mailer captures
 the attachment + recipients).
+
+## Follow-up (2026-06-10) — SharePoint push (delivery complete)
+
+The last deferred piece: scheduled reports now also push to SharePoint.
+`deliverReportToSharePoint` reads the artefact + uploads it via the existing
+SP-3 Graph client (`getSharePointClient` → `uploadNewFile`), reusing the
+audit-pack-export pattern. `ReportSchedule` gained `sharePointDriveId` (folderId
+already existed); the cron pushes after emailing and reports `pushed` in its
+result. No-op when no driveId is set or the tenant has no SharePoint connection.

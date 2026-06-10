@@ -53,6 +53,14 @@ describe('RQ-10 reporting & BIA', () => {
         expect(read('src/app-layer/jobs/report-delivery-jobs.ts')).toMatch(/deliverReportByEmail/);
     });
 
+    it('the delivery cron pushes to SharePoint via the SP-3 Graph client (RQ-10 follow-up)', () => {
+        expect(read('prisma/schema/compliance.prisma')).toMatch(/sharePointDriveId\s+String\?/);
+        const s = read('src/app-layer/usecases/risk-report.ts');
+        expect(s).toMatch(/export async function deliverReportToSharePoint/);
+        expect(s).toMatch(/uploadNewFile/);
+        expect(read('src/app-layer/jobs/report-delivery-jobs.ts')).toMatch(/deliverReportToSharePoint/);
+    });
+
     it('routes + reports page', () => {
         expect(exists('src/app/api/t/[tenantSlug]/risks/reports/route.ts')).toBe(true);
         expect(exists('src/app/api/t/[tenantSlug]/risks/reports/[reportId]/download/route.ts')).toBe(true);
