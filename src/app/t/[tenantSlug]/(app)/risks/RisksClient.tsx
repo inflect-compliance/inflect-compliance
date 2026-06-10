@@ -21,7 +21,7 @@ import { TruncationBanner } from '@/components/ui/TruncationBanner';
 import { NewRiskModal } from './NewRiskModal';
 import { Button } from '@/components/ui/button';
 import { Tooltip } from '@/components/ui/tooltip';
-import { AppIcon } from '@/components/icons/AppIcon';
+import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
 import { IconAction } from '@/components/ui/icon-action';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
 import { buttonVariants } from '@/components/ui/button-variants';
@@ -152,6 +152,20 @@ export function RisksClient(props: RisksClientProps) {
         </FilterProvider>
     );
 }
+
+/**
+ * Risk-quantification analytical views (RQ-3…RQ-10) surfaced as icon-only
+ * links in the risks header, to the left of the matrix toggle. Each routes to
+ * its standalone page; read-only so they show for every role.
+ */
+const RISK_VIEW_LINKS: ReadonlyArray<{ href: string; label: string; icon: AppIconName }> = [
+    { href: '/risks/dashboard', label: 'Risk dashboard', icon: 'activity' },
+    { href: '/risks/scenarios', label: 'Scenarios', icon: 'preview' },
+    { href: '/risks/hierarchy', label: 'Hierarchy', icon: 'share' },
+    { href: '/risks/kri', label: 'Key risk indicators', icon: 'alertCircle' },
+    { href: '/risks/correlations', label: 'Correlations', icon: 'mappings' },
+    { href: '/risks/reports', label: 'Reports', icon: 'fileSpreadsheet' },
+];
 
 function RisksPageInner({
     initialRisks,
@@ -651,6 +665,17 @@ function RisksPageInner({
                         )}
                     </div>
                     <div className="flex gap-tight">
+                        {RISK_VIEW_LINKS.map((v) => (
+                            <Tooltip key={v.href} content={v.label}>
+                                <Link
+                                    href={tenantHref(v.href)}
+                                    aria-label={v.label}
+                                    className={buttonVariants({ variant: 'secondary', size: 'icon' })}
+                                >
+                                    <AppIcon name={v.icon} size={16} />
+                                </Link>
+                            </Tooltip>
+                        ))}
                         <IconAction
                             variant="secondary"
                             onClick={() => setView(view === 'register' ? 'heatmap' : 'register')}
