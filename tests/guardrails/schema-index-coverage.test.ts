@@ -372,6 +372,9 @@ const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
     // RQ-6 — readings fetched by kriId+recordedAt (history/sparkline).
     KriReading:
         'RQ-6 getReadings/listKris filter by tenantId + kriId, order by recordedAt — covered by @@index([kriId, recordedAt]) + @@index([tenantId, kriId]); bounded take.',
+    // RQ-8 — all correlation pairs for a tenant (matrix build / suggestions).
+    RiskCorrelation:
+        'RQ-8 getCorrelationMatrix/suggestCorrelations fetch all pairs by tenantId — covered by @@index([tenantId]); bounded take.',
     // SP-3 — delta sync lists mappings by [tenantId, provider, connectionId];
     // covered by @@index([tenantId, provider]) + @@index([connectionId]).
     IntegrationSyncMapping:

@@ -338,6 +338,9 @@ model Risk {
   hierarchyLinks   RiskHierarchyLink[]
   // RQ-6 — key risk indicators linked to this risk.
   kris             KeyRiskIndicator[]
+  // RQ-8 — pairwise correlations (this risk on either side of the pair).
+  correlationsA    RiskCorrelation[]   @relation("CorrelationA")
+  correlationsB    RiskCorrelation[]   @relation("CorrelationB")
 
   /// Composite parent key — supports the
   /// `RiskTreatmentPlan.(riskId, tenantId) → Risk.(id, tenantId)`
@@ -638,6 +641,31 @@ model KriReading {
   @@index([kriId, recordedAt])
   @@index([tenantId, recordedAt])
   @@index([tenantId, kriId])
+}
+
+/// RQ-8 — pairwise correlation between two risks, used by the Monte
+/// Carlo engine (RQ-3) to generate correlated loss samples via Cholesky.
+/// Normalised so riskAId < riskBId (one row per unordered pair).
+model RiskCorrelation {
+  id              String   @id @default(cuid())
+  tenantId        String
+  riskAId         String
+  riskBId         String
+  /// Pearson coefficient (-1.0 .. 1.0). Positive = co-materialise.
+  coefficient     Float
+  rationale       String?
+  source          String   @default("MANUAL") // MANUAL | AUTO_SUGGESTED | HISTORICAL
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  riskA           Risk     @relation("CorrelationA", fields: [riskAId], references: [id], onDelete: Cascade)
+  riskB           Risk     @relation("CorrelationB", fields: [riskBId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, riskAId, riskBId])
+  @@index([tenantId])
+  @@index([riskAId])
+  @@index([riskBId])
 }
 
 model RiskSuggestionSession {

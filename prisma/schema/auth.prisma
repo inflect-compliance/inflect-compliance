@@ -146,6 +146,7 @@ model Tenant {
   riskHierarchyLinks                RiskHierarchyLink[]
   keyRiskIndicators                 KeyRiskIndicator[]
   kriReadings                       KriReading[]
+  riskCorrelations                  RiskCorrelation[]
   tasks                             Task[]
   taskComments                      TaskComment[]
   taskLinks                         TaskLink[]

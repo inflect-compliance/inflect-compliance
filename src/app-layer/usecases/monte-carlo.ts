@@ -15,6 +15,7 @@
 import type { RequestContext } from '../types';
 import { runInTenantContext } from '@/lib/db-context';
 import { Prisma } from '@prisma/client';
+import { badRequest } from '@/lib/errors/types';
 import { assertCanRead } from '../policies/common';
 import {
     seededRng,
@@ -59,6 +60,68 @@ export interface SimulationConfig {
     iterations?: number;
     confidenceLevels?: number[];
     seed?: number;
+    /** RQ-8 — NxN correlation matrix aligned to `risks` order. When set,
+     *  each iteration draws correlated uniforms (Cholesky) and samples every
+     *  risk's ALE via the single-uniform PERT path. */
+    correlationMatrix?: number[][];
+}
+
+// ── RQ-8 — correlated sampling (Cholesky) ─────────────────────────────
+
+/** Standard-normal CDF (Abramowitz–Stegun 7.1.26 erf approximation). */
+function normalCdf(x: number): number {
+    const t = 1 / (1 + 0.2316419 * Math.abs(x));
+    const d = 0.3989422804014327 * Math.exp(-x * x / 2);
+    const p = d * t * (0.31938153 + t * (-0.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429))));
+    return x >= 0 ? 1 - p : p;
+}
+
+/**
+ * Cholesky decomposition of a symmetric positive-definite matrix Σ → lower
+ * triangular L with L·Lᵀ = Σ. Throws if the matrix is not positive-definite.
+ */
+export function choleskyDecompose(matrix: number[][]): number[][] {
+    const n = matrix.length;
+    const L: number[][] = Array.from({ length: n }, () => new Array(n).fill(0));
+    for (let i = 0; i < n; i++) {
+        for (let j = 0; j <= i; j++) {
+            let sum = 0;
+            for (let k = 0; k < j; k++) sum += L[i][k] * L[j][k];
+            if (i === j) {
+                const d = matrix[i][i] - sum;
+                if (d <= 1e-12) throw badRequest('Matrix is not positive-definite (Cholesky failed)');
+                L[i][j] = Math.sqrt(d);
+            } else {
+                L[i][j] = (matrix[i][j] - sum) / L[j][j];
+            }
+        }
+    }
+    return L;
+}
+
+/** Two independent standard normals via Box–Muller. */
+function boxMuller(rng: () => number): [number, number] {
+    const u1 = Math.max(rng(), 1e-12);
+    const u2 = rng();
+    const r = Math.sqrt(-2 * Math.log(u1));
+    return [r * Math.cos(2 * Math.PI * u2), r * Math.sin(2 * Math.PI * u2)];
+}
+
+/**
+ * Generate a vector of correlated uniform variates from a Cholesky factor L:
+ * draw independent normals Z, correlate via X = L·Z, map to uniforms via Φ.
+ */
+export function generateCorrelatedUniforms(L: number[][], rng: () => number): number[] {
+    const n = L.length;
+    const z: number[] = [];
+    while (z.length < n) { const [a, b] = boxMuller(rng); z.push(a); if (z.length < n) z.push(b); }
+    const u: number[] = [];
+    for (let i = 0; i < n; i++) {
+        let x = 0;
+        for (let k = 0; k <= i; k++) x += L[i][k] * z[k];
+        u.push(normalCdf(x));
+    }
+    return u;
 }
 
 export interface SimulationResult {
@@ -98,13 +161,28 @@ export function simulatePortfolio(risks: SimRisk[], config: SimulationConfig = {
     const tail = Math.min(1000, iterations);
     let tailSum = 0;
 
+    // RQ-8 — when a correlation matrix is supplied (and well-formed), use the
+    // single-uniform PERT path driven by Cholesky-correlated uniforms so risks
+    // co-materialise. Falls back to independent sampling if Cholesky fails.
+    let cholesky: number[][] | null = null;
+    if (config.correlationMatrix && config.correlationMatrix.length === risks.length && risks.length > 0) {
+        try { cholesky = choleskyDecompose(config.correlationMatrix); } catch { cholesky = null; }
+    }
+    const pertOf = (risk: SimRisk): PertDistribution =>
+        risk.distributions
+            ? { min: risk.distributions.plm.min, mode: risk.distributions.plm.mode, max: risk.distributions.plm.max }
+            : pointToPert(risk.pointAle, 0.2);
+
     for (let i = 0; i < iterations; i++) {
         let loss = 0;
+        const u = cholesky ? generateCorrelatedUniforms(cholesky, rng) : null;
         for (let r = 0; r < risks.length; r++) {
             const risk = risks[r];
-            const ale = risk.distributions
-                ? sampleFairALE(risk.distributions, rng)
-                : samplePert(pointToPert(risk.pointAle, 0.2), rng());
+            const ale = u
+                ? samplePert(pertOf(risk), u[r])
+                : risk.distributions
+                    ? sampleFairALE(risk.distributions, rng)
+                    : samplePert(pointToPert(risk.pointAle, 0.2), rng());
             loss += ale;
             perRiskSum[r] += ale;
             if (keepPerRisk) perRiskSamples[r].push(ale);
