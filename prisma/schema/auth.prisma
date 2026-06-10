@@ -144,6 +144,8 @@ model Tenant {
   riskScenarios                     RiskScenario[]
   riskHierarchyNodes                RiskHierarchyNode[]
   riskHierarchyLinks                RiskHierarchyLink[]
+  keyRiskIndicators                 KeyRiskIndicator[]
+  kriReadings                       KriReading[]
   tasks                             Task[]
   taskComments                      TaskComment[]
   taskLinks                         TaskLink[]
@@ -636,6 +638,7 @@ model User {
   updatedAt                     DateTime                     @updatedAt
   sessionVersion                Int                          @default(0)
   accounts                      Account[]
+  ownedKris                     KeyRiskIndicator[]           @relation("KriOwner")
   ownedAssets                   Asset[]                      @relation("AssetOwner")
   assetRiskLinksCreated         AssetRiskLink[]              @relation("AssetRiskCreator")
   auditCyclesCreated            AuditCycle[]
