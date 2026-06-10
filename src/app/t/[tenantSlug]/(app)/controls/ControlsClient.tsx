@@ -22,7 +22,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { ownerDisplayName } from '@/lib/owner-display';
 import { AppIcon } from '@/components/icons/AppIcon';
 import { Plus } from '@/components/ui/icons/nucleo';
-import { Paperclip, CheckCircle2, AlertTriangle, X } from 'lucide-react';
+import { Paperclip, CheckCircle2, AlertTriangle, X, ChevronDown, ChevronLeft } from 'lucide-react';
 import {
     createColumns,
     useColumnsDropdown,
@@ -855,19 +855,30 @@ function ControlsPageInner({
                     </p>
                 ) : (
                     <>
-                        <div className="flex justify-end">
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setOpenSections(
-                                        allExpanded ? [] : allSectionKeys,
-                                    )
-                                }
-                                className="rounded-md px-2 py-1 text-xs font-medium text-content-muted hover:bg-bg-muted/50 hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                data-testid="controls-browse-expand-all"
+                        {/* UI-13: the "Expand all / Collapse all" text button is
+                            now a single left-aligned chevron toggle — points DOWN
+                            when every section is expanded, LEFT when collapsed.
+                            Canonical Tooltip carries the hint (not a popover
+                            trigger, so a plain wrap is safe). */}
+                        <div className="flex justify-start">
+                            <Tooltip
+                                content={allExpanded ? 'Collapse all' : 'Expand all'}
                             >
-                                {allExpanded ? 'Collapse all' : 'Expand all'}
-                            </button>
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setOpenSections(
+                                            allExpanded ? [] : allSectionKeys,
+                                        )
+                                    }
+                                    className="flex items-center justify-center rounded-md p-1 text-content-muted hover:bg-bg-muted/50 hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:h-4 [&_svg]:w-4"
+                                    data-testid="controls-browse-expand-all"
+                                    aria-label={allExpanded ? 'Collapse all' : 'Expand all'}
+                                    aria-expanded={allExpanded}
+                                >
+                                    {allExpanded ? <ChevronDown /> : <ChevronLeft />}
+                                </button>
+                            </Tooltip>
                         </div>
                         {/* Scroll stays INSIDE the browse box (viewport-
                             clamped) so an all-expanded rail doesn't push
