@@ -20,11 +20,14 @@ import { assertCanRead } from '../policies/common';
 import {
     seededRng,
     sampleFairALE,
+    computeFairALE,
     pointToPert,
     resolveALE,
     type FairDistributions,
     type PertDistribution,
 } from './fair-calculator';
+
+const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
 
 export const MAX_ITERATIONS = 100_000;
 export const DEFAULT_ITERATIONS = 10_000;
@@ -124,6 +127,29 @@ export function generateCorrelatedUniforms(L: number[][], rng: () => number): nu
     return u;
 }
 
+/**
+ * RQ-8 — sample a FULL FAIR ALE (all five factors, not just PLM) from a
+ * single correlated uniform `u`. Each factor is drawn via the triangular
+ * inverse-CDF at `u`, then `computeFairALE` combines them.
+ *
+ * This is a one-common-factor Gaussian copula: the cross-risk dependence is
+ * carried by `u` (from the Cholesky factor), while the factors WITHIN a risk
+ * move comonotonically with that risk's draw. That within-risk comonotonicity
+ * is a deliberate simplification — it preserves the full TEF×Vuln×PLM + SLEF×SLM
+ * structure (strictly more complete than the previous PLM-only correlated path)
+ * without a per-(risk×factor) Cholesky. A future factor model could decompose
+ * each loss into systematic + idiosyncratic to also preserve marginals exactly.
+ */
+export function sampleFairALEFromUniform(d: FairDistributions, u: number): number {
+    return computeFairALE({
+        tef: samplePert(d.tef, u),
+        vulnerability: clamp01(samplePert(d.vulnerability, u)),
+        plm: samplePert(d.plm, u),
+        slef: clamp01(samplePert(d.slef, u)),
+        slm: samplePert(d.slm, u),
+    });
+}
+
 export interface SimulationResult {
     portfolioAle: { mean: number; median: number; p90: number; p95: number; p99: number; stdDev: number; min: number; max: number };
     perRisk: Array<{ riskId: string; title: string; aleMean: number; aleP95: number; contribution: number }>;
@@ -161,17 +187,15 @@ export function simulatePortfolio(risks: SimRisk[], config: SimulationConfig = {
     const tail = Math.min(1000, iterations);
     let tailSum = 0;
 
-    // RQ-8 — when a correlation matrix is supplied (and well-formed), use the
-    // single-uniform PERT path driven by Cholesky-correlated uniforms so risks
-    // co-materialise. Falls back to independent sampling if Cholesky fails.
+    // RQ-8 — when a correlation matrix is supplied (and well-formed), drive each
+    // risk's draw from a Cholesky-correlated uniform so risks co-materialise.
+    // FAIR risks sample their FULL factor set from that uniform
+    // (sampleFairALEFromUniform); point-only risks use the single-uniform PERT.
+    // Falls back to independent sampling if Cholesky fails.
     let cholesky: number[][] | null = null;
     if (config.correlationMatrix && config.correlationMatrix.length === risks.length && risks.length > 0) {
         try { cholesky = choleskyDecompose(config.correlationMatrix); } catch { cholesky = null; }
     }
-    const pertOf = (risk: SimRisk): PertDistribution =>
-        risk.distributions
-            ? { min: risk.distributions.plm.min, mode: risk.distributions.plm.mode, max: risk.distributions.plm.max }
-            : pointToPert(risk.pointAle, 0.2);
 
     for (let i = 0; i < iterations; i++) {
         let loss = 0;
@@ -179,7 +203,9 @@ export function simulatePortfolio(risks: SimRisk[], config: SimulationConfig = {
         for (let r = 0; r < risks.length; r++) {
             const risk = risks[r];
             const ale = u
-                ? samplePert(pertOf(risk), u[r])
+                ? risk.distributions
+                    ? sampleFairALEFromUniform(risk.distributions, u[r])
+                    : samplePert(pointToPert(risk.pointAle, 0.2), u[r])
                 : risk.distributions
                     ? sampleFairALE(risk.distributions, rng)
                     : samplePert(pointToPert(risk.pointAle, 0.2), rng());

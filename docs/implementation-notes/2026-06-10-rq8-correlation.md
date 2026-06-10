@@ -45,3 +45,15 @@ underestimates tail risk.
 | `prisma/schema/compliance.prisma` + migration | RiskCorrelation + RLS. |
 | `api/t/[slug]/risks/correlations/**` | matrix + suggest routes. |
 | `risks/correlations/page.tsx` | matrix editor. |
+
+## Follow-up (2026-06-10) — full-factor correlated sampling
+
+The deferred upgrade landed: the correlated path no longer samples PLM-only.
+`sampleFairALEFromUniform(dists, u)` (monte-carlo) draws every FAIR factor
+(TEF, vulnerability, PLM, SLEF, SLM) from the risk's Cholesky-correlated uniform
+`u` and combines them via `computeFairALE` — the full TEF×Vuln×PLM + SLEF×SLM
+structure, with cross-risk dependence carried by the Gaussian-copula uniform.
+The factors WITHIN a risk move comonotonically with that risk's draw (a
+documented simplification vs a per-(risk×factor) Cholesky); point-only risks
+keep the single-uniform PERT. A future factor model could split each loss into
+systematic + idiosyncratic to also preserve marginals exactly.

@@ -54,9 +54,9 @@ Three daily fan-out jobs (cross-tenant, each builds a per-tenant context):
 
 ## Conscious scope decisions (documented follow-ups)
 
-- **RQ-8 correlated sampling** uses the single-uniform PERT path (standard
-  Cholesky→Φ→inverse-CDF); FAIR multi-factor sampling is bypassed when a
-  correlation matrix is supplied.
+- **RQ-8 correlated sampling** now draws the FULL FAIR factor set per risk from
+  the Cholesky-correlated uniform (`sampleFairALEFromUniform`); within-risk
+  factors are comonotonic (documented simplification vs a per-factor Cholesky).
 - **RQ-7 bow-tie** ships as a five-column card layout; `toXyFlowGraph` is ready
   for an interactive ReactFlow upgrade.
 - **RQ-10 PPTX** export is deferred (no `pptxgenjs` dependency yet); PDF + CSV

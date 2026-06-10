@@ -23,6 +23,9 @@ describe('RQ-8 correlation', () => {
         expect(src).toMatch(/export function choleskyDecompose/);
         expect(src).toMatch(/export function generateCorrelatedUniforms/);
         expect(src).toMatch(/correlationMatrix/);
+        // RQ-8 follow-up: correlated path samples the FULL FAIR factor set.
+        expect(src).toMatch(/export function sampleFairALEFromUniform/);
+        expect(src).toMatch(/sampleFairALEFromUniform\(risk\.distributions/);
     });
 
     it('the service exposes PSD + CRUD + suggestions', () => {

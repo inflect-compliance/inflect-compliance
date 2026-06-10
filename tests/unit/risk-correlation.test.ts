@@ -2,8 +2,9 @@
  * RQ-8 — correlation math (pure): Cholesky, PSD, correlated uniforms,
  * and shared-asset/control suggestions. No DB.
  */
-import { choleskyDecompose, generateCorrelatedUniforms, createPRNG } from '@/app-layer/usecases/monte-carlo';
+import { choleskyDecompose, generateCorrelatedUniforms, createPRNG, sampleFairALEFromUniform } from '@/app-layer/usecases/monte-carlo';
 import { validatePSD, computeSuggestions } from '@/app-layer/usecases/risk-correlation';
+import type { FairDistributions } from '@/app-layer/usecases/fair-calculator';
 
 // Pearson correlation of two equal-length samples.
 function pearson(a: number[], b: number[]): number {
@@ -82,5 +83,32 @@ describe('computeSuggestions', () => {
         const many = Array.from({ length: 10 }, (_, i) => `x${i}`);
         const s = computeSuggestions([R('a', many, []), R('b', many, [])]);
         expect(s[0].suggestedCoefficient).toBeLessThanOrEqual(0.8);
+    });
+});
+
+describe('sampleFairALEFromUniform (RQ-8 full-factor correlated FAIR)', () => {
+    const dist: FairDistributions = {
+        tef: { min: 1, mode: 2, max: 3 },
+        vulnerability: { min: 0.2, mode: 0.4, max: 0.6 },
+        plm: { min: 100, mode: 200, max: 300 },
+        slef: { min: 0.1, mode: 0.2, max: 0.3 },
+        slm: { min: 50, mode: 100, max: 150 },
+    };
+    it('u=0 → all factors at min (LEF×(PLM + SLEF×SLM))', () => {
+        // tef1×vuln0.2 = LEF 0.2; ALE = 0.2×(100 + 0.1×50) = 21
+        expect(sampleFairALEFromUniform(dist, 0)).toBeCloseTo(21, 5);
+    });
+    it('u=1 → all factors at max', () => {
+        // tef3×vuln0.6 = LEF 1.8; ALE = 1.8×(300 + 0.3×150) = 621
+        expect(sampleFairALEFromUniform(dist, 1)).toBeCloseTo(621, 5);
+    });
+    it('is monotonic in u and uses the SECONDARY loss (not PLM-only)', () => {
+        const lo = sampleFairALEFromUniform(dist, 0);
+        const mid = sampleFairALEFromUniform(dist, 0.5);
+        const hi = sampleFairALEFromUniform(dist, 1);
+        expect(lo).toBeLessThan(mid);
+        expect(mid).toBeLessThan(hi);
+        // PLM-only at u=0 would be 0.2×100 = 20; full FAIR includes SLEF×SLM → 21.
+        expect(lo).toBeGreaterThan(20);
     });
 });
