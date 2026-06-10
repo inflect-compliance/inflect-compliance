@@ -30,6 +30,7 @@ import {
 import { createPortal } from "react-dom";
 import { Drawer } from "vaul";
 import { useMediaQuery } from "./hooks";
+import { Tooltip } from "./tooltip";
 
 export type PopoverProps = PropsWithChildren<{
   content: ReactNode | string;
@@ -48,6 +49,13 @@ export type PopoverProps = PropsWithChildren<{
   onWheel?: WheelEventHandler;
   sideOffset?: number;
   anchor?: ReactNode;
+  /**
+   * Canonical hover hint for the trigger. When set, the trigger child is wrapped
+   * in `<Tooltip>` INSIDE the asChild Trigger so the popover-open click and the
+   * tooltip hover both land on the same element (Radix Slot merges them). Use
+   * this instead of a native `title=` on a popover trigger.
+   */
+  triggerTooltip?: string;
 }>;
 
 function PopoverRoot({
@@ -68,15 +76,26 @@ function PopoverRoot({
   onWheel,
   sideOffset = 8,
   anchor,
+  triggerTooltip,
 }: PopoverProps) {
   const { isMobile } = useMediaQuery();
+  // When a trigger tooltip is requested, wrap the whole Radix Trigger ELEMENT
+  // (not the inner button) in <Tooltip>. Order matters: Tooltip OUTER →
+  // Popover.Trigger INNER → button. The inner Popover.Trigger's asChild Slot
+  // owns the open-onClick on the button, and the outer Tooltip's hover props
+  // merge through it — so the popover still opens. The reverse nesting (Tooltip
+  // inside the Trigger) swallowed the click: the old "gear doesn't open" bug.
+  const withTooltip = (el: ReactNode) =>
+    triggerTooltip ? <Tooltip content={triggerTooltip}>{el}</Tooltip> : el;
 
   if (!forceDropdown && (mobileOnly || isMobile)) {
     return (
       <Drawer.Root open={openPopover} onOpenChange={setOpenPopover}>
-        <Drawer.Trigger className="sm:hidden" asChild>
-          {children}
-        </Drawer.Trigger>
+        {withTooltip(
+          <Drawer.Trigger className="sm:hidden" asChild>
+            {children}
+          </Drawer.Trigger>,
+        )}
         <Drawer.Portal>
           <Drawer.Overlay className="bg-bg-subtle fixed inset-0 z-50 bg-opacity-10 backdrop-blur" />
           <Drawer.Content
@@ -123,9 +142,11 @@ function PopoverRoot({
           <PopoverPrimitive.Anchor asChild>{anchor}</PopoverPrimitive.Anchor>,
           document.body,
         )}
-      <PopoverPrimitive.Trigger className="sm:inline-flex" asChild>
-        {children}
-      </PopoverPrimitive.Trigger>
+      {withTooltip(
+        <PopoverPrimitive.Trigger className="sm:inline-flex" asChild>
+          {children}
+        </PopoverPrimitive.Trigger>,
+      )}
       <PopoverPrimitive.Portal>
         <PopoverPrimitive.Content
           sideOffset={sideOffset}

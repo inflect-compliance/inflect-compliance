@@ -17,10 +17,12 @@
  * rows sort below with no number. Selecting a row calls `onToggle(id)` —
  * the owning hook appends/removes the id and renumbers.
  *
- * The trigger is deliberately NOT wrapped in `<Tooltip>` — that swallows
- * Radix `Popover.Trigger.asChild`'s injected props (the old "gear doesn't
- * open" bug). `title` gives the hover hint; `aria-label` gives the SR name.
- * Locked by `edit-columns-no-tooltip-wrap` + `checklist-gear-primitive`.
+ * The hover hint is the canonical `<Tooltip>`, wired via the Popover's
+ * `triggerTooltip` prop. The Popover nests it as Tooltip OUTER → Popover.Trigger
+ * INNER → button, so the inner Trigger's asChild Slot keeps the popover-open
+ * click on the button while the tooltip hover merges through it. This replaced
+ * the old native `title=` workaround (the reverse nesting swallowed the click —
+ * the "gear doesn't open" bug). `aria-label` gives the SR name.
  */
 import { Command } from 'cmdk';
 import { GripVertical, RotateCcw } from 'lucide-react';
@@ -82,6 +84,7 @@ export function ChecklistGearButton({
         <Popover
             openPopover={open}
             setOpenPopover={setOpen}
+            triggerTooltip={title}
             align="end"
             content={
                 <ScrollContainer className="max-h-[50vh]">
@@ -230,7 +233,6 @@ export function ChecklistGearButton({
                 )}
                 variant="secondary"
                 icon={icon}
-                title={title}
                 aria-label={title}
                 data-testid={testId}
                 id={id}

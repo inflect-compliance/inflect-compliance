@@ -15,9 +15,12 @@ const PRIMITIVE = fs.readFileSync(
 );
 
 describe('ChecklistGearButton — structural locks', () => {
-    it('forwards test-id + title + aria-label + icon to the trigger', () => {
+    it('forwards test-id + aria-label + icon to the trigger; hint via triggerTooltip', () => {
         expect(PRIMITIVE).toMatch(/data-testid=\{testId\}/);
-        expect(PRIMITIVE).toMatch(/title=\{title\}/);
+        // UI-20: the hover hint is now the canonical Tooltip, composed via the
+        // Popover's `triggerTooltip` prop (not a native `title=` on the button).
+        expect(PRIMITIVE).toMatch(/triggerTooltip=\{title\}/);
+        expect(PRIMITIVE).not.toMatch(/title=\{title\}/);
         expect(PRIMITIVE).toMatch(/aria-label=\{title\}/);
         expect(PRIMITIVE).toMatch(/icon=\{icon\}/);
     });

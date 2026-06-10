@@ -143,15 +143,13 @@ export function EditColumnsButton<T>({
         </ScrollContainer>
       }
       align="end"
+      triggerTooltip={title}
     >
-      {/* Edit columns trigger.
-          Tooltip is intentionally NOT wrapping this button — same
-          rationale as columns-dropdown.tsx: nesting `<Tooltip>`
-          inside `<Popover.Trigger asChild>` swallows the parent's
-          injected props (onClick / aria-expanded / data-state)
-          and leaves the trigger functionally dead. `title`
-          provides the native hover hint; `aria-label` provides
-          the screen-reader name. */}
+      {/* Edit columns trigger. The canonical hover hint is the Popover's
+          `triggerTooltip` — it composes <Tooltip> + Popover.Trigger on this
+          one Button (Radix Slot merges the open click with the hover), so the
+          tooltip no longer swallows the trigger's injected props. `aria-label`
+          provides the screen-reader name. */}
       <Button
         type="button"
         className={cn(
@@ -161,7 +159,6 @@ export function EditColumnsButton<T>({
         )}
         variant="secondary"
         icon={<Settings className="h-4 w-4 shrink-0" />}
-        title={title}
         aria-label={title}
         data-testid="edit-columns-button"
       />
