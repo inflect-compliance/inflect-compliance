@@ -8,8 +8,9 @@ import { randomUUID } from 'crypto';
 import { DB_URL, DB_AVAILABLE } from './db-helper';
 import { hashForLookup } from '@/lib/security/encryption';
 import { makeRequestContext } from '../helpers/make-context';
-import { listTemplates, generateReport, getReport } from '@/app-layer/usecases/risk-report';
+import { listTemplates, generateReport, getReport, deliverReportByEmail } from '@/app-layer/usecases/risk-report';
 import { getStorageProvider } from '@/lib/storage';
+import { setEmailProvider, StubEmailProvider } from '@/lib/mailer';
 
 const globalPrisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: DB_URL }) });
 const describeFn = DB_AVAILABLE ? describe : describe.skip;
@@ -68,5 +69,31 @@ describeFn('RQ-10 — report generation (integration)', () => {
 
     it('an unknown template → not found', async () => {
         await expect(generateReport(ctx, 'does-not-exist', {}, 'CSV')).rejects.toThrow();
+    });
+
+    it('deliverReportByEmail emails the artefact as an attachment (RQ-10 delivery)', async () => {
+        const stub = new StubEmailProvider();
+        setEmailProvider(stub);
+        const templates = await listTemplates(ctx);
+        const run = await generateReport(ctx, templates.find((t) => t.type === 'PORTFOLIO_SUMMARY')!.id, {}, 'CSV');
+
+        const sent = await deliverReportByEmail(run, ['ciso@example.test', 'cfo@example.test'], 'Portfolio Risk Summary');
+        expect(sent).toBe(2);
+        expect(stub.sentMessages).toHaveLength(1);
+        const msg = stub.sentMessages[0];
+        expect(msg.to).toContain('ciso@example.test');
+        expect(msg.to).toContain('cfo@example.test');
+        expect(msg.attachments).toHaveLength(1);
+        expect(msg.attachments![0].filename).toMatch(/\.csv$/);
+        expect(msg.attachments![0].content.length).toBeGreaterThan(0);
+        expect(msg.attachments![0].content.toString('utf8')).toContain('Metric,Value');
+    });
+
+    it('deliverReportByEmail is a no-op with no recipients', async () => {
+        const stub = new StubEmailProvider();
+        setEmailProvider(stub);
+        const run = { id: 'x', outputPath: 'whatever', format: 'CSV', status: 'COMPLETED' };
+        expect(await deliverReportByEmail(run, [], 'X')).toBe(0);
+        expect(stub.sentMessages).toHaveLength(0);
     });
 });
