@@ -35,6 +35,9 @@ import Link from 'next/link';
 import type { CSSProperties } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Tooltip } from '@/components/ui/tooltip';
+import { cn } from '@/lib/cn';
+import { useSidebarCollapsed } from './sidebar-collapse-context';
 
 // ─── Geometry tokens (R12-PR2) ─────────────────────────────────────
 //
@@ -589,13 +592,24 @@ export function NavItem({ href, icon: Icon, label, active, badge, onClick }: Nav
         '--nav-breath-delay': `${breathDelayMs}ms`,
     } as CSSProperties;
 
-    return (
+    // Collapsed (desktop icon-rail) — center the icon, drop the label + badge
+    // chip, and surface the label as a right-side tooltip so the rail stays
+    // navigable. `useSidebarCollapsed` is `false` in the mobile drawer + when no
+    // provider is mounted, so the expanded path is the default.
+    const collapsed = useSidebarCollapsed();
+
+    const link = (
         <Link
             href={href}
             onClick={onClick}
-            className={`${NAV_ITEM_BASE} ${active ? NAV_ITEM_ACTIVE : NAV_ITEM_DEFAULT}`}
+            className={cn(
+                NAV_ITEM_BASE,
+                active ? NAV_ITEM_ACTIVE : NAV_ITEM_DEFAULT,
+                collapsed && 'justify-center',
+            )}
             data-testid={`nav-${slug}`}
             style={driftStyle}
+            aria-label={collapsed ? label : undefined}
         >
             <Icon className={NAV_ITEM_ICON_CLASS} aria-hidden="true" />
             {/* R15-PR8 — magnetic letter spacing. The label
@@ -611,14 +625,24 @@ export function NavItem({ href, icon: Icon, label, active, badge, onClick }: Nav
                 band's reveal tempo. The shape is opacity + tone
                 language inside the row's content — no transform,
                 no scale, no translate. */}
-            <span className="truncate tracking-normal transition-[letter-spacing] duration-200 ease-out group-hover:tracking-wide">
-                {label}
-            </span>
-            {badge != null && (
+            {!collapsed && (
+                <span className="truncate tracking-normal transition-[letter-spacing] duration-200 ease-out group-hover:tracking-wide">
+                    {label}
+                </span>
+            )}
+            {!collapsed && badge != null && (
                 <StatusBadge variant="info" size="sm" className={NAV_ITEM_BADGE}>
                     {badge}
                 </StatusBadge>
             )}
         </Link>
+    );
+
+    return collapsed ? (
+        <Tooltip content={label} side="right">
+            {link}
+        </Tooltip>
+    ) : (
+        link
     );
 }

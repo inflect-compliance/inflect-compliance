@@ -221,8 +221,11 @@ describe('Roadmap-12 PR-10 — NavItem bundle discipline (capstone)', () => {
 
     describe('NavItem JSX consumes the consts (no parallel hand-roll)', () => {
         it('Link className composes BASE + DEFAULT/ACTIVE', () => {
+            // Composed via cn(...) so the collapsed icon-rail can append
+            // `justify-center` (centred icon when the labels are hidden).
+            // The first two args remain BASE + the active ternary.
             expect(SRC).toMatch(
-                /className=\{`\$\{NAV_ITEM_BASE\}\s+\$\{active\s*\?\s*NAV_ITEM_ACTIVE\s*:\s*NAV_ITEM_DEFAULT\}`\}/,
+                /className=\{cn\(\s*NAV_ITEM_BASE,\s*active\s*\?\s*NAV_ITEM_ACTIVE\s*:\s*NAV_ITEM_DEFAULT/,
             );
         });
 
