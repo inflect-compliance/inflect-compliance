@@ -26,13 +26,12 @@ describe('Dashboard page token migration', () => {
         '\n' +
         read('app/t/[tenantSlug]/(app)/dashboard/DashboardClient.tsx');
 
-    it('imports buttonVariants', () => {
-        expect(src).toContain("from '@/components/ui/button-variants'");
-        expect(src).toContain('buttonVariants');
+    it('UI-15: no longer imports buttonVariants (notif ghost link removed)', () => {
+        expect(src).not.toContain("from '@/components/ui/button-variants'");
     });
 
-    it('imports StatusBadge', () => {
-        expect(src).toContain("from '@/components/ui/status-badge'");
+    it('UI-15: no longer imports StatusBadge (notif badge removed)', () => {
+        expect(src).not.toContain("from '@/components/ui/status-badge'");
     });
 
     it('uses an EmptyState pattern (component or inline) for the trends empty case', () => {
@@ -58,13 +57,13 @@ describe('Dashboard page token migration', () => {
         expect(src).toContain('text-content-default');
     });
 
-    it('uses buttonVariants for Link elements (post v2-PR-11)', () => {
-        // The 6 secondary `buttonVariants({ variant: 'secondary' })`
-        // Quick-Actions buttons were retired in v2-PR-11; the
-        // dashboard now renders a `<NextBestActionCard>` + the
-        // notifications-bell ghost link in the header. Only the
-        // `ghost` Link remains.
-        expect(src).toContain("buttonVariants({ variant: 'ghost'");
+    it('UI-15: the dashboard notifications-bell ghost link was removed', () => {
+        // The 6 secondary Quick-Actions buttons were retired in v2-PR-11; the
+        // notifications-bell ghost link was the last buttonVariants Link and is
+        // removed in UI-15 (the top-bar bell is the canonical affordance). The
+        // dashboard no longer imports buttonVariants.
+        expect(src).not.toContain("buttonVariants({ variant: 'ghost'");
+        expect(src).not.toContain("href={href('/notifications')}");
     });
 
     it('does not use legacy badge CSS classes', () => {

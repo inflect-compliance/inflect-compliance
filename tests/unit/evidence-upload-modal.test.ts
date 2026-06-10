@@ -305,14 +305,15 @@ describe('NewEvidenceTextModal — shared Modal composition', () => {
 // ─── 6. EvidenceClient wiring ─────────────────────────────────
 
 describe('EvidenceClient — modal entry points', () => {
-    it('imports both modals', () => {
+    it('imports the Upload-a-file modal (the unified +Evidence flow, UI-18)', () => {
         // Accept both static and dynamic imports (lazy-loading via next/dynamic)
         const hasUpload = /from ['"]\.\/UploadEvidenceModal['"]/.test(CLIENT_SRC) ||
             /import\(['"]\.\/UploadEvidenceModal['"]\)/.test(CLIENT_SRC);
         expect(hasUpload).toBe(true);
+        // UI-18: the text-only modal is no longer imported by the client.
         const hasText = /from ['"]\.\/NewEvidenceTextModal['"]/.test(CLIENT_SRC) ||
             /import\(['"]\.\/NewEvidenceTextModal['"]\)/.test(CLIENT_SRC);
-        expect(hasText).toBe(true);
+        expect(hasText).toBe(false);
     });
 
     it('mounts <UploadEvidenceModal> with tenant helpers and controls', () => {
@@ -324,23 +325,23 @@ describe('EvidenceClient — modal entry points', () => {
         expect(CLIENT_SRC).toMatch(/controls=\{controls\}/);
     });
 
-    it('mounts <NewEvidenceTextModal> with controlled state', () => {
-        expect(CLIENT_SRC).toMatch(/<NewEvidenceTextModal\b/);
-        expect(CLIENT_SRC).toMatch(/open=\{showTextForm\}/);
-        expect(CLIENT_SRC).toMatch(/setOpen=\{setShowTextForm\}/);
+    it('UI-18: the text + bulk-import modals are no longer mounted in the client', () => {
+        // The +Evidence flow was unified onto the Upload-a-file modal; the
+        // text-only + ZIP-import surfaces were removed from the page header.
+        expect(CLIENT_SRC).not.toMatch(/<NewEvidenceTextModal\b/);
+        expect(CLIENT_SRC).not.toMatch(/<EvidenceBulkImportModal\b/);
     });
 
-    it('triggers open the modals instead of toggling inline forms', () => {
-        // The trigger buttons may render id/onClick in either order;
-        // we only care that each button wires its setter and its id.
+    it('UI-18: a single +Evidence button opens the Upload-a-file modal', () => {
+        // One primary button → setShowUpload; the separate "Upload file" +
+        // "Import ZIP" icon buttons were removed.
+        expect(CLIENT_SRC).toMatch(/<UploadEvidenceModal\b/);
         expect(CLIENT_SRC).toMatch(
             /onClick=\{\(\)\s*=>\s*setShowUpload\(true\)\}/,
         );
-        expect(CLIENT_SRC).toMatch(/id=["']upload-evidence-btn["']/);
-        expect(CLIENT_SRC).toMatch(
-            /onClick=\{\(\)\s*=>\s*setShowTextForm\(true\)\}/,
-        );
-        expect(CLIENT_SRC).toMatch(/id=["']add-text-evidence-btn["']/);
+        expect(CLIENT_SRC).toMatch(/id=["']add-evidence-btn["']/);
+        expect(CLIENT_SRC).not.toMatch(/id=["']bulk-import-evidence-btn["']/);
+        expect(CLIENT_SRC).not.toMatch(/id=["']add-text-evidence-btn["']/);
     });
 
     it('removes the legacy inline forms entirely', () => {

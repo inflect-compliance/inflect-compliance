@@ -79,7 +79,7 @@ test.describe('Core Certification Flow', () => {
             await page.waitForLoadState('networkidle').catch(() => {});
             await page.waitForSelector('h1', { timeout: 60000 });
 
-            await page.click('#upload-evidence-btn');
+            await page.click('#add-evidence-btn');
             await page.waitForSelector('#upload-form', { timeout: 5000 });
 
             await page.locator('#file-input').setInputFiles(EVIDENCE_FIXTURE);
