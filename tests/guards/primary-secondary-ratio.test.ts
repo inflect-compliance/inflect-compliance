@@ -131,7 +131,11 @@ const MIN_SECONDARY_TO_PRIMARY_RATIO = 0.9;
 // + the explainer-modal "Import framework" primary (two distinct
 // visual regions, modal-mounted on demand). Measured = 118;
 // ceiling at 119 keeps one slot of headroom.
-const MAX_PRIMARY_COUNT = 119;
+// RQ (2026-06-10) — bumped 119 → 121 for the risk-quantification
+// surfaces: the KRI "Create" CTA (risks/kri) is a genuine page primary,
+// matching the scenario/hierarchy create buttons. Measured = 120;
+// ceiling at 121 keeps one slot of headroom.
+const MAX_PRIMARY_COUNT = 121;
 
 describe("primary:secondary ratio direction", () => {
     const counts = (() => {

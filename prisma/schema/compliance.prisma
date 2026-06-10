@@ -336,6 +336,8 @@ model Risk {
   appetiteBreaches RiskAppetiteBreach[]
   // RQ-5 — hierarchy node memberships.
   hierarchyLinks   RiskHierarchyLink[]
+  // RQ-6 — key risk indicators linked to this risk.
+  kris             KeyRiskIndicator[]
 
   /// Composite parent key — supports the
   /// `RiskTreatmentPlan.(riskId, tenantId) → Risk.(id, tenantId)`
@@ -587,6 +589,55 @@ model RiskHierarchyLink {
   @@index([tenantId, nodeId])
   @@index([tenantId, riskId])
   @@index([nodeId])
+}
+
+/// RQ-6 — a leading/lagging indicator that signals whether a risk is
+/// trending toward materialisation. RAG-thresholded; readings tracked.
+model KeyRiskIndicator {
+  id               String       @id @default(cuid())
+  tenantId         String
+  riskId           String?
+  name             String
+  description      String?
+  unit             String?
+  direction        String       @default("HIGHER_IS_WORSE") // HIGHER_IS_WORSE | LOWER_IS_WORSE
+  greenMax         Float?
+  amberMax         Float?
+  frequency        String       @default("MONTHLY") // DAILY | WEEKLY | MONTHLY | QUARTERLY
+  ownerUserId      String?
+  isActive         Boolean      @default(true)
+  automationRuleId String?
+  targetValue      Float?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  tenant           Tenant       @relation(fields: [tenantId], references: [id])
+  risk             Risk?        @relation(fields: [riskId], references: [id])
+  owner            User?        @relation("KriOwner", fields: [ownerUserId], references: [id])
+  readings         KriReading[]
+
+  @@index([tenantId])
+  @@index([tenantId, riskId])
+  @@index([tenantId, isActive])
+  @@index([riskId])
+  @@index([ownerUserId])
+}
+
+/// RQ-6 — a single KRI measurement; RAG computed at write time.
+model KriReading {
+  id         String           @id @default(cuid())
+  tenantId   String
+  kriId      String
+  value      Float
+  ragStatus  String? // GREEN | AMBER | RED
+  recordedAt DateTime         @default(now())
+  recordedBy String?
+  note       String?
+  kri        KeyRiskIndicator @relation(fields: [kriId], references: [id], onDelete: Cascade)
+  tenant     Tenant           @relation(fields: [tenantId], references: [id])
+
+  @@index([kriId, recordedAt])
+  @@index([tenantId, recordedAt])
+  @@index([tenantId, kriId])
 }
 
 model RiskSuggestionSession {

@@ -366,6 +366,12 @@ const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
     // RQ-5 — links fetched by tenantId+nodeId (roll-up) and tenantId+riskId (risk form).
     RiskHierarchyLink:
         'RQ-5 loadTree filters by tenantId + nodeId, getRiskNodes by tenantId + riskId — covered by @@index([tenantId, nodeId]) + @@index([tenantId, riskId]); bounded take.',
+    // RQ-6 — KRIs listed by tenantId (+ optional riskId/isActive) ordered by createdAt.
+    KeyRiskIndicator:
+        'RQ-6 listKris filters by tenantId (+ optional riskId/isActive) — covered by @@index([tenantId]) + @@index([tenantId, riskId]) + @@index([tenantId, isActive]); bounded take:500.',
+    // RQ-6 — readings fetched by kriId+recordedAt (history/sparkline).
+    KriReading:
+        'RQ-6 getReadings/listKris filter by tenantId + kriId, order by recordedAt — covered by @@index([kriId, recordedAt]) + @@index([tenantId, kriId]); bounded take.',
     // SP-3 — delta sync lists mappings by [tenantId, provider, connectionId];
     // covered by @@index([tenantId, provider]) + @@index([connectionId]).
     IntegrationSyncMapping:
