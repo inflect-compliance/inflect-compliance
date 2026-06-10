@@ -12,6 +12,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { SkeletonDashboard } from '@/components/ui/skeleton';
 import { getStatusTone } from '@/lib/design/status-tone';
 import { LossExceedanceCurve } from '@/components/ui/charts';
+import { MonteCarloPanel } from './MonteCarloPanel';
 
 // B10 — Quantitative risk analytics shape. Mirrors the
 // RiskQuantitativeAnalytics interface in
@@ -291,6 +292,9 @@ export default function RiskDashboardPage() {
                     </div>
                 </Card>
             )}
+
+            {/* RQ-3 — Monte Carlo simulation */}
+            <MonteCarloPanel />
 
             {/* Overdue */}
             {overdueRisks.length > 0 && (
