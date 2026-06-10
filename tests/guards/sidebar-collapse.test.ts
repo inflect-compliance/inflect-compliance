@@ -36,9 +36,9 @@ describe('sidebar collapse / icon rail', () => {
         const src = read('src/components/layout/AppShell.tsx');
         expect(src).toMatch(/useLocalStorage\(\s*['"]inflect:sidebar-collapsed['"]/);
         expect(src).toMatch(/SidebarCollapseProvider/);
-        // collapsed → narrow rail (w-14), expanded → thinner sidebar (w-52).
+        // collapsed → narrow rail (w-14), expanded → thinner sidebar (180px).
         expect(src).toMatch(/md:w-14/);
-        expect(src).toMatch(/md:w-52/);
+        expect(src).toMatch(/md:w-\[180px\]/);
         // mobile drawer is never collapsed.
         expect(src).toMatch(/SidebarCollapseProvider collapsed=\{false\}/);
     });

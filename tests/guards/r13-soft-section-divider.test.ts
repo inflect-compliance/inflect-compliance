@@ -137,13 +137,14 @@ describe('Roadmap-13 PR-10 — section divider as soft gradient', () => {
     });
 
     describe('preserved R12-PR3 invariants', () => {
-        it('still spaced 8px from previous content (mt-2 pt-2)', () => {
-            // The breathing-room around the divider stays. The
-            // R12 spacing rhythm reads as "section break" — drop
-            // it and sections feel crammed together.
+        it('keeps breathing-room around the divider (mt-1.5 pt-1.5)', () => {
+            // The divider still has space above + below the hairline so it
+            // reads as a "section break" — tightened from mt-2/pt-2 to
+            // mt-1.5/pt-1.5 (with the header's pt-4→pt-1.5) to pull the section
+            // names up to the line and kill the dead gap between groups.
             const recipe = dividerRecipe();
-            expect(recipe).toMatch(/\bmt-2\b/);
-            expect(recipe).toMatch(/\bpt-2\b/);
+            expect(recipe).toMatch(/\bmt-1\.5\b/);
+            expect(recipe).toMatch(/\bpt-1\.5\b/);
         });
 
         it('isFirst still suppresses the divider', () => {

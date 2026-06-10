@@ -180,7 +180,7 @@ export function AppShell({
             <aside
                 className={cn(
                     'hidden md:flex bg-bg-default border-r border-border-subtle flex-col flex-shrink-0 transition-[width] duration-200 ease-out',
-                    sidebarCollapsed ? 'md:w-14' : 'md:w-52',
+                    sidebarCollapsed ? 'md:w-14' : 'md:w-[180px]',
                 )}
                 data-collapsed={sidebarCollapsed ? 'true' : 'false'}
             >

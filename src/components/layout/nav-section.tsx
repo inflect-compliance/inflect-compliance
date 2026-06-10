@@ -67,8 +67,10 @@ export interface NavSectionProps {
 }
 
 /** Section header — the recipe locked by R12-PR3. */
+// pt-1.5 (was pt-4) — the section name sits just under the divider hairline
+// instead of floating ~24px below it, killing the dead space between groups.
 export const NAV_SECTION_HEADER =
-    'block px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-subtle select-none';
+    'block px-3 pt-1.5 pb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-subtle select-none';
 
 /**
  * Soft-gradient hairline above the section (skipped on the first
@@ -98,7 +100,7 @@ export const NAV_SECTION_HEADER =
  *     (undivided) and later sections (divided).
  */
 export const NAV_SECTION_DIVIDER =
-    'relative mt-2 pt-2 before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:bg-[linear-gradient(90deg,_transparent,_var(--border-subtle),_transparent)]';
+    'relative mt-1.5 pt-1.5 before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:bg-[linear-gradient(90deg,_transparent,_var(--border-subtle),_transparent)]';
 
 export function NavSection({ title, isFirst = false, children }: NavSectionProps) {
     // Collapsed icon-rail: drop the text header (it would overflow the narrow

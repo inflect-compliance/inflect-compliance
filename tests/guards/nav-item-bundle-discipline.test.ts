@@ -250,7 +250,7 @@ describe('Roadmap-12 PR-10 — NavItem bundle discipline (capstone)', () => {
             ['NAV_ITEM_PADDING', 'px-3 py-2.5 md:py-1.5'],
             ['NAV_ITEM_GAP', 'gap-compact'],
             ['NAV_ITEM_RADIUS', 'rounded-lg'],
-            ['NAV_ITEM_ICON_SIZE', 'w-[18px] h-[18px]'],
+            ['NAV_ITEM_ICON_SIZE', 'h-7 w-7'],
         ])('%s = "%s"', (name, value) => {
             const pattern = new RegExp(
                 `export\\s+const\\s+${name}\\s*=\\s*['"]${value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"]`,

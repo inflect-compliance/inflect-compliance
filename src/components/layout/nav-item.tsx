@@ -82,13 +82,11 @@ export const NAV_ITEM_GAP = 'gap-compact';
 export const NAV_ITEM_RADIUS = 'rounded-lg';
 
 /**
- * **18×18 icon.** Lucide's stroke-1.5 vocabulary looks fragile at
- * 14/16 (the strokes start dropping anti-aliased pixels on
- * non-Retina screens) and oversized at 20+ (steals visual weight
- * from the label). 18 is the sweet spot every premium dense-nav
- * design ends up at — Linear, Notion, Vercel all converge here.
+ * **28×28 icon.** Sized up from 18 so the glyph carries the row (the labels
+ * shrank with the compact rows) and, crucially, fills the collapsed icon-rail
+ * properly — an 18px icon looked lost in the 56px rail. 28px = `h-7 w-7`.
  */
-export const NAV_ITEM_ICON_SIZE = 'w-[18px] h-[18px]';
+export const NAV_ITEM_ICON_SIZE = 'h-7 w-7';
 
 /**
  * Icon class — full recipe. (R12-PR9 lock.)
