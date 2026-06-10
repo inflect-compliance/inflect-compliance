@@ -10,7 +10,7 @@
 import prisma from '@/lib/prisma';
 import type { RequestContext } from '@/app-layer/types';
 import { getPermissionsForRole } from '@/lib/permissions';
-import { generateReport, deliverReportByEmail, computeNextRun, type ReportFormat } from '@/app-layer/usecases/risk-report';
+import { generateReport, deliverReportByEmail, deliverReportToSharePoint, computeNextRun, type ReportFormat } from '@/app-layer/usecases/risk-report';
 import { logger } from '@/lib/observability/logger';
 import type { ReportDeliveryPayload } from './types';
 
@@ -37,20 +37,24 @@ export async function runReportDelivery(_payload: ReportDeliveryPayload) {
     const now = new Date();
     const due = await prisma.reportSchedule.findMany({
         where: { isActive: true, nextRunAt: { lte: now } },
-        select: { id: true, tenantId: true, templateId: true, format: true, cadence: true, parametersJson: true, recipientsJson: true, template: { select: { name: true } } },
+        select: { id: true, tenantId: true, templateId: true, format: true, cadence: true, parametersJson: true, recipientsJson: true, sharePointDriveId: true, sharePointFolderId: true, template: { select: { name: true } } },
         take: 1000,
     });
-    let generated = 0, delivered = 0, failed = 0;
+    let generated = 0, delivered = 0, pushed = 0, failed = 0;
     for (const s of due) {
         const ctx = await buildCtx(s.tenantId);
         if (!ctx) continue;
         try {
             const run = await generateReport(ctx, s.templateId, (s.parametersJson ?? {}) as Record<string, unknown>, (s.format as ReportFormat) ?? 'PDF');
             generated++;
-            const sent = await deliverReportByEmail(run, asRecipients(s.recipientsJson), s.template?.name ?? 'Risk report');
+            const label = s.template?.name ?? 'Risk report';
+            const sent = await deliverReportByEmail(run, asRecipients(s.recipientsJson), label);
             if (sent > 0) delivered++;
-            logger.info('report-delivery: generated + emailed scheduled report', {
-                component: 'report-delivery', tenantId: s.tenantId, scheduleId: s.id, runId: run.id, recipients: sent,
+            const spItemId = await deliverReportToSharePoint(ctx, run, s.sharePointDriveId, s.sharePointFolderId, label);
+            if (spItemId) pushed++;
+            logger.info('report-delivery: generated + delivered scheduled report', {
+                component: 'report-delivery', tenantId: s.tenantId, scheduleId: s.id, runId: run.id,
+                recipients: sent, sharePoint: spItemId ? 'pushed' : 'skipped',
             });
         } catch (err) {
             failed++;
@@ -64,5 +68,5 @@ export async function runReportDelivery(_payload: ReportDeliveryPayload) {
             data: { lastRunAt: now, nextRunAt: computeNextRun(s.cadence, now) },
         });
     }
-    return { due: due.length, generated, delivered, failed };
+    return { due: due.length, generated, delivered, pushed, failed };
 }

@@ -787,6 +787,7 @@ model ReportSchedule {
   cadence            String // WEEKLY | MONTHLY | QUARTERLY
   deliveryDay        Int?
   recipientsJson     Json
+  sharePointDriveId  String?
   sharePointFolderId String?
   isActive           Boolean        @default(true)
   nextRunAt          DateTime?

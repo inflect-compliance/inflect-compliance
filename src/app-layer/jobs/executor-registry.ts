@@ -856,7 +856,7 @@ executorRegistry.register('report-delivery', async (payload) => {
     const { runReportDelivery } = await import('./report-delivery-jobs');
     const r = await runReportDelivery(payload);
     return makeResult('report-delivery', startedAt, startMs, r.due, r.generated, r.failed, {
-        due: r.due, generated: r.generated, delivered: r.delivered, failed: r.failed,
+        due: r.due, generated: r.generated, delivered: r.delivered, pushed: r.pushed, failed: r.failed,
     });
 });
 
