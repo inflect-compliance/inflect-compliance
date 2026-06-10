@@ -18,7 +18,7 @@ export const GET = withApiErrorHandling(
 
 const GenSchema = z.object({
     templateId: z.string().min(1),
-    format: z.enum(['PDF', 'CSV']),
+    format: z.enum(['PDF', 'CSV', 'PPTX']),
     parameters: z.object({ confidenceLevel: z.number().optional(), riskId: z.string().optional() }).optional(),
 });
 

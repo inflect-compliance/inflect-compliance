@@ -21,15 +21,23 @@ describe('RQ-10 reporting & BIA', () => {
         expect(read(mig)).toMatch(/CREATE POLICY tenant_isolation ON %I|tenant_isolation ON "ReportTemplate"|FOREACH t/);
     });
 
-    it('renderers (CSV pure + PDF) + report service', () => {
+    it('renderers (CSV pure + PDF + PPTX) + report service', () => {
         const r = read('src/app-layer/reports/risk-report-render.ts');
         expect(r).toMatch(/export function renderCsv/);
         expect(r).toMatch(/export async function renderPdf/);
+        // RQ-10 follow-up: PPTX export landed (pptxgenjs).
+        expect(r).toMatch(/export async function renderPptx/);
         const s = read('src/app-layer/usecases/risk-report.ts');
         expect(s).toMatch(/export function computeNextRun/);
+        expect(s).toMatch(/PPTX:.*presentationml/); // FORMAT_META wires the PPTX mime
         for (const fn of ['assembleReportData', 'generateReport', 'listTemplates', 'getReport', 'listReports', 'createSchedule', 'listSchedules']) {
             expect(s).toContain(`export async function ${fn}`);
         }
+    });
+
+    it('pptxgenjs is a declared dependency', () => {
+        const pkg = JSON.parse(read('package.json'));
+        expect(pkg.dependencies?.pptxgenjs ?? pkg.devDependencies?.pptxgenjs).toBeTruthy();
     });
 
     it('the delivery cron is registered + scheduled', () => {

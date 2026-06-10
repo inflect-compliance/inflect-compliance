@@ -1,12 +1,13 @@
 /**
- * RQ-10 — report renderers (CSV + PDF). PPTX is a documented follow-up
- * (no pptxgenjs dependency yet).
+ * RQ-10 — report renderers (CSV + PDF + PPTX).
  *
- * `renderCsv` is pure (deterministic Buffer from the assembled data);
- * `renderPdf` reuses the branded `src/lib/pdf` pipeline.
+ * `renderCsv` is pure (deterministic Buffer); `renderPdf` reuses the branded
+ * `src/lib/pdf` pipeline; `renderPptx` produces a board slide deck via
+ * pptxgenjs.
  *
  * @module reports/risk-report-render
  */
+import PptxGenJS from 'pptxgenjs';
 import { createPdfDocument } from '@/lib/pdf/pdfKitFactory';
 import { addCoverPage, applyHeadersAndFooters } from '@/lib/pdf/layout';
 import { addSectionTitle, addSummaryMetrics } from '@/lib/pdf/sections';
@@ -95,4 +96,55 @@ function docToBuffer(doc: PDFKit.PDFDocument): Promise<Buffer> {
         doc.on('error', reject);
         doc.end();
     });
+}
+
+/** PPTX export — a board slide deck: title, portfolio VaR KPIs, top risks. */
+export async function renderPptx(data: ReportData): Promise<Buffer> {
+    const pptx = new PptxGenJS();
+    pptx.defineLayout({ name: 'WIDE', width: 13.33, height: 7.5 });
+    pptx.layout = 'WIDE';
+
+    // ── Title slide ──
+    const title = pptx.addSlide();
+    title.addText(data.title, { x: 0.6, y: 2.4, w: 12, h: 1, fontSize: 32, bold: true });
+    title.addText(`${data.tenantName} · ${data.generatedAt.slice(0, 10)}`, { x: 0.6, y: 3.5, w: 12, h: 0.5, fontSize: 16, color: '6B7280' });
+
+    // ── Portfolio VaR KPIs ──
+    const kpis = pptx.addSlide();
+    kpis.addText('Portfolio summary', { x: 0.6, y: 0.4, w: 12, h: 0.6, fontSize: 24, bold: true });
+    const cards: Array<[string, string]> = [
+        ['Total risks', String(data.totals.totalRiskCount)],
+        ['Quantified', String(data.totals.quantifiedCount)],
+        ['Total ALE', money(data.totals.totalAle)],
+        ['Max single ALE', money(data.totals.maxAle)],
+    ];
+    if (data.var) { cards.push(['VaR-95', money(data.var.p95)]); cards.push(['VaR-99', money(data.var.p99)]); }
+    if (data.appetite) cards.push(['Appetite', data.appetite.status]);
+    cards.push(['Revenue at risk', money(data.bia.totalRevenueAtRisk)]);
+    cards.forEach(([label, value], i) => {
+        const col = i % 4, row = Math.floor(i / 4);
+        const x = 0.6 + col * 3.1, y = 1.5 + row * 1.7;
+        kpis.addText(value, { x, y, w: 2.9, h: 0.7, fontSize: 22, bold: true });
+        kpis.addText(label, { x, y: y + 0.7, w: 2.9, h: 0.4, fontSize: 12, color: '6B7280' });
+    });
+
+    // ── Top risks table ──
+    const top = pptx.addSlide();
+    top.addText('Top risks by ALE', { x: 0.6, y: 0.4, w: 12, h: 0.6, fontSize: 24, bold: true });
+    const rows: PptxGenJS.TableRow[] = [
+        [
+            { text: 'Risk', options: { bold: true } },
+            { text: 'Category', options: { bold: true } },
+            { text: 'ALE', options: { bold: true, align: 'right' } },
+        ],
+        ...data.topRisks.map((r): PptxGenJS.TableRow => [
+            { text: r.title },
+            { text: r.category ?? '—' },
+            { text: money(r.ale), options: { align: 'right' } },
+        ]),
+    ];
+    top.addTable(rows, { x: 0.6, y: 1.3, w: 12, fontSize: 12, border: { type: 'solid', color: 'E5E7EB', pt: 1 } });
+
+    const out = await pptx.write({ outputType: 'nodebuffer' });
+    return out as Buffer;
 }

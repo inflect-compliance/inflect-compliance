@@ -25,7 +25,7 @@ export default function RiskReportsPage() {
     }, [apiUrl]);
     useEffect(() => { void load(); }, [load]);
 
-    const generate = async (templateId: string, format: 'PDF' | 'CSV') => {
+    const generate = async (templateId: string, format: 'PDF' | 'CSV' | 'PPTX') => {
         setBusy(true);
         try {
             await fetch(apiUrl('/risks/reports'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ templateId, format }) });
@@ -51,6 +51,7 @@ export default function RiskReportsPage() {
                                 {t.description && <div className="text-xs text-content-muted">{t.description}</div>}
                             </div>
                             <Button size="sm" variant="primary" onClick={() => generate(t.id, 'PDF')} disabled={busy}>Generate PDF</Button>
+                            <Button size="sm" variant="secondary" onClick={() => generate(t.id, 'PPTX')} disabled={busy}>PPTX</Button>
                             <Button size="sm" variant="secondary" onClick={() => generate(t.id, 'CSV')} disabled={busy}>CSV</Button>
                         </li>
                     ))}

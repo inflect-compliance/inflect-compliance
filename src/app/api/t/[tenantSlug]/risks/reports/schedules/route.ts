@@ -18,7 +18,7 @@ export const GET = withApiErrorHandling(
 const CreateSchema = z.object({
     templateId: z.string().min(1),
     cadence: z.enum(['WEEKLY', 'MONTHLY', 'QUARTERLY']),
-    format: z.enum(['PDF', 'CSV']).optional(),
+    format: z.enum(['PDF', 'CSV', 'PPTX']).optional(),
     recipients: z.array(z.string().email()).min(1),
     deliveryDay: z.number().int().optional(),
 });
