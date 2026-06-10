@@ -35,6 +35,8 @@ const MIGRATED_PAGES = [
     'risks/kri/page.tsx',
     // RQ-8 — correlation matrix; semantic tokens + Card/Button/Input + heat bands.
     'risks/correlations/page.tsx',
+    // RQ-10 — reports; semantic tokens + Card/Button/StatusBadge only.
+    'risks/reports/page.tsx',
     'dashboard/page.tsx',
     // Epic 69 split the dashboard into a thin server shell + a
     // `'use client'` component owning the card composition. Both

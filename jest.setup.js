@@ -44,6 +44,10 @@ process.env.GOOGLE_CLIENT_SECRET = 'test-google-secret'; // pragma: allowlist se
 process.env.MICROSOFT_CLIENT_ID = 'test-ms-id';
 process.env.MICROSOFT_CLIENT_SECRET = 'test-ms-secret';
 process.env.UPLOAD_DIR = 'uploads';
+// Tests use local filesystem storage, never s3 (the default would require an
+// S3_BUCKET). Root stays UPLOAD_DIR ('uploads') so storage tests' path
+// expectations hold.
+process.env.STORAGE_PROVIDER = process.env.STORAGE_PROVIDER || 'local';
 process.env.CORS_ALLOWED_ORIGINS = 'http://localhost:3000';
 
 // Note: tests/unit/env.test.ts clears this and runs in a separate process

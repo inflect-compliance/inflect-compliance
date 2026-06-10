@@ -135,7 +135,10 @@ const MIN_SECONDARY_TO_PRIMARY_RATIO = 0.9;
 // surfaces: the KRI "Create" CTA (risks/kri) is a genuine page primary,
 // matching the scenario/hierarchy create buttons. Measured = 120;
 // ceiling at 121 keeps one slot of headroom.
-const MAX_PRIMARY_COUNT = 121;
+// RQ-10 (2026-06-10) — bumped 121 → 123 for the reports surface: the
+// "Generate PDF" template CTA (risks/reports) is a genuine page primary.
+// Measured = 122; ceiling at 123 keeps one slot of headroom.
+const MAX_PRIMARY_COUNT = 123;
 
 describe("primary:secondary ratio direction", () => {
     const counts = (() => {

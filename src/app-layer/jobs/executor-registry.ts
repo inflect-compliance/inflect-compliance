@@ -849,6 +849,17 @@ executorRegistry.register('sharepoint-subscription-renew', async (payload) => {
     });
 });
 
+// RQ-10 — daily cross-tenant scheduled-report delivery.
+executorRegistry.register('report-delivery', async (payload) => {
+    const startedAt = new Date().toISOString();
+    const startMs = performance.now();
+    const { runReportDelivery } = await import('./report-delivery-jobs');
+    const r = await runReportDelivery(payload);
+    return makeResult('report-delivery', startedAt, startMs, r.due, r.generated, r.failed, {
+        due: r.due, generated: r.generated, failed: r.failed,
+    });
+});
+
 // RQ-2 — daily cross-tenant risk-appetite breach monitor.
 executorRegistry.register('risk-appetite-monitor', async (payload) => {
     const startedAt = new Date().toISOString();

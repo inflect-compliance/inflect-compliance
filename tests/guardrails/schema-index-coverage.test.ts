@@ -381,6 +381,15 @@ const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
     // RQ-9 — portfolio trend fetched by tenantId ordered by snapshotAt.
     PortfolioSnapshot:
         'RQ-9 getPortfolioTrend filters by tenantId, orders by snapshotAt — covered by @@index([tenantId, snapshotAt]); bounded take.',
+    // RQ-10 — report templates listed by tenantId.
+    ReportTemplate:
+        'RQ-10 listTemplates filters by tenantId — covered by @@index([tenantId]); bounded take:200.',
+    // RQ-10 — report runs listed by tenantId ordered by createdAt.
+    ReportRun:
+        'RQ-10 listReports filters by tenantId, orders by createdAt DESC — covered by @@index([tenantId, createdAt]); bounded take.',
+    // RQ-10 — schedules listed by tenantId + due-scan by (nextRunAt, isActive).
+    ReportSchedule:
+        'RQ-10 listSchedules filters by tenantId; the delivery cron scans (nextRunAt, isActive) — covered by @@index([tenantId]) + @@index([nextRunAt, isActive]); bounded take.',
     // SP-3 — delta sync lists mappings by [tenantId, provider, connectionId];
     // covered by @@index([tenantId, provider]) + @@index([connectionId]).
     IntegrationSyncMapping:

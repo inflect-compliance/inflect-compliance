@@ -74,8 +74,8 @@ describe('Infrastructure Regression Guards', () => {
             }
         });
 
-        test('exactly 19 scheduled jobs exist', () => {
-            expect(SCHEDULED_JOBS).toHaveLength(19);
+        test('exactly 20 scheduled jobs exist', () => {
+            expect(SCHEDULED_JOBS).toHaveLength(20);
         });
 
         test('scheduled job names match expected set', () => {
@@ -101,6 +101,8 @@ describe('Infrastructure Regression Guards', () => {
                 'exception-expiry-monitor',
                 'notification-dispatch',
                 'policy-review-reminder',
+                // RQ-10 — daily cross-tenant scheduled-report delivery.
+                'report-delivery',
                 'retention-sweep',
                 // RQ-2 — daily cross-tenant risk-appetite breach monitor.
                 'risk-appetite-monitor',
