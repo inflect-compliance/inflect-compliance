@@ -350,6 +350,10 @@ const LIST_QUERY_INDEXES: readonly CompositeIndex[] = [
 // curated composite index is needed."
 
 const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
+    // EI-3 — SCIM Groups listed/looked-up by tenantId (+ unique externalId);
+    // covered by @@index([tenantId]) + @@unique([tenantId, externalId]); bounded take:200.
+    ScimGroup:
+        'EI-3 scimListGroups filters by tenantId (take:200); reconcile looks up by [tenantId, memberIds has] — @@index([tenantId]) + @@unique([tenantId, externalId]) suffice.',
     // RQ-2 — breach history lists by tenantId ordered by detectedAt;
     // covered by @@index([tenantId, detectedAt]).
     RiskAppetiteBreach:

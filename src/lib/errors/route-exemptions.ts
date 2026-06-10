@@ -240,6 +240,20 @@ export const BARE_ROUTE_EXEMPTIONS: ReadonlyArray<BareRouteExemption> = [
             'SCIM 2.0 Users resource. Same RFC 7644 error contract as ' +
             'the collection endpoint.',
     },
+    {
+        file: 'scim/v2/Groups/route.ts',
+        category: 'scim_2_0',
+        reason:
+            'EI-3 SCIM 2.0 Groups collection. RFC 7644 error shape, same as ' +
+            'the Users endpoints — not compatible with ApiErrorResponse.',
+    },
+    {
+        file: 'scim/v2/Groups/[id]/route.ts',
+        category: 'scim_2_0',
+        reason:
+            'EI-3 SCIM 2.0 Groups resource. Same RFC 7644 error contract as ' +
+            'the collection endpoint.',
+    },
 
     // ─── Epic G-3 — public vendor questionnaire ───
     //

@@ -72,6 +72,10 @@ describe('CI Guard: No direct prisma in tenant-scoped code', () => {
     const USECASE_ALLOWLIST: string[] = [
         'sso.ts', 'mfa.ts', 'mfa-enrollment.ts', 'mfa-challenge.ts',
         'session-security.ts', 'webhook-processor.ts', 'scim-users.ts',
+        // EI-3 — scim-groups resolves SCIM externalIds → IC users via a global
+        // userIdentityLink lookup (cross-context, like scim-users); group
+        // mutations themselves run inside runInTenantContext.
+        'scim-groups.ts',
         'framework.ts', 'audit-hardening.ts',
         // Epic 1, PR 3 — redeemInvite and previewInviteByToken operate without
         // a tenant-scoped RequestContext (the caller is not yet a tenant member),

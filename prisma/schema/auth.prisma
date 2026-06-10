@@ -163,6 +163,7 @@ model Tenant {
   notificationSettings              TenantNotificationSettings?
   onboarding                        TenantOnboarding?
   scimTokens                        TenantScimToken[]
+  scimGroups                        ScimGroup[]
   securitySettings                  TenantSecuritySettings?
   identityLinks                     UserIdentityLink[]
   mfaEnrollments                    UserMfaEnrollment[]
@@ -911,6 +912,26 @@ model TenantEntraGroupMapping {
   tenant          Tenant   @relation(fields: [tenantId], references: [id])
 
   @@unique([tenantId, aadGroupId])
+  @@index([tenantId])
+}
+
+/// EI-3 — SCIM 2.0 Group registry. Entra pushes group lifecycle + membership
+/// here; member changes reconcile each user's role via the EI-2 engine.
+model ScimGroup {
+  id          String   @id @default(cuid())
+  tenantId    String
+  /// SCIM externalId (the Entra group object id).
+  externalId  String
+  displayName String
+  /// Resolved IC User ids for the group's members (via UserIdentityLink).
+  memberIds   String[] @default([])
+  /// Raw SCIM members array as pushed (audit / round-trip fidelity).
+  membersJson Json     @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, externalId])
   @@index([tenantId])
 }
 
