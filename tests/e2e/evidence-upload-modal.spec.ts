@@ -23,11 +23,11 @@ test.describe('Epic 54 — Evidence upload modal', () => {
         isolatedTenant,
     }) => {
         await safeGoto(authedPage, `/t/${isolatedTenant.tenantSlug}/evidence`);
-        await authedPage.waitForSelector('#upload-evidence-btn', { timeout: 15000 });
+        await authedPage.waitForSelector('#add-evidence-btn', { timeout: 15000 });
         await authedPage.waitForLoadState('networkidle').catch(() => {});
         const listUrl = authedPage.url();
 
-        await authedPage.click('#upload-evidence-btn');
+        await authedPage.click('#add-evidence-btn');
 
         await expect(authedPage.locator('#upload-form')).toBeVisible({
             timeout: 10000,
@@ -44,7 +44,7 @@ test.describe('Epic 54 — Evidence upload modal', () => {
     }) => {
         await safeGoto(authedPage, `/t/${isolatedTenant.tenantSlug}/evidence`);
         await authedPage.reload({ waitUntil: 'domcontentloaded' });
-        const openBtn = authedPage.locator('#upload-evidence-btn').first();
+        const openBtn = authedPage.locator('#add-evidence-btn').first();
         await openBtn.waitFor({ state: 'visible', timeout: 15_000 });
         await authedPage.waitForLoadState('networkidle').catch(() => {});
         await openBtn.click();
@@ -64,7 +64,7 @@ test.describe('Epic 54 — Evidence upload modal', () => {
     }) => {
         await safeGoto(authedPage, `/t/${isolatedTenant.tenantSlug}/evidence`);
         await authedPage.reload({ waitUntil: 'domcontentloaded' });
-        const openBtn = authedPage.locator('#upload-evidence-btn').first();
+        const openBtn = authedPage.locator('#add-evidence-btn').first();
         await openBtn.waitFor({ state: 'visible', timeout: 15_000 });
         await authedPage.waitForLoadState('networkidle').catch(() => {});
         await openBtn.click();
@@ -114,7 +114,7 @@ test.describe('Epic 54 — Evidence upload modal', () => {
     }) => {
         await safeGoto(authedPage, `/t/${isolatedTenant.tenantSlug}/evidence`);
         await authedPage.reload({ waitUntil: 'domcontentloaded' });
-        const openBtn = authedPage.locator('#upload-evidence-btn').first();
+        const openBtn = authedPage.locator('#add-evidence-btn').first();
         await openBtn.waitFor({ state: 'visible', timeout: 15_000 });
         await authedPage.waitForLoadState('networkidle').catch(() => {});
         await openBtn.click();
@@ -129,101 +129,3 @@ test.describe('Epic 54 — Evidence upload modal', () => {
     });
 });
 
-test.describe('Epic 54 — Add text evidence modal', () => {
-    test('clicking Add Evidence opens the text-evidence modal', async ({
-        authedPage,
-        isolatedTenant,
-    }) => {
-        await safeGoto(authedPage, `/t/${isolatedTenant.tenantSlug}/evidence`);
-        await authedPage.waitForSelector('#add-text-evidence-btn', {
-            timeout: 15000,
-        });
-
-        await authedPage.click('#add-text-evidence-btn');
-
-        await expect(authedPage.locator('#text-evidence-form')).toBeVisible({
-            timeout: 30_000,
-        });
-        await expect(
-            authedPage.locator('#text-evidence-title-input'),
-        ).toBeFocused({ timeout: 10_000 });
-
-        await authedPage.click('#text-evidence-cancel-btn');
-        await expect(authedPage.locator('#text-evidence-form')).toBeHidden({
-            timeout: 5000,
-        });
-    });
-
-    test('create button is disabled until title is filled', async ({
-        authedPage,
-        isolatedTenant,
-    }) => {
-        await safeGoto(authedPage, `/t/${isolatedTenant.tenantSlug}/evidence`);
-        await authedPage.reload({ waitUntil: 'domcontentloaded' });
-        const textBtn = authedPage.locator('#add-text-evidence-btn').first();
-        await textBtn.waitFor({ state: 'visible', timeout: 15_000 });
-        await authedPage.waitForLoadState('networkidle').catch(() => {});
-        await textBtn.click();
-        await expect(authedPage.locator('#text-evidence-form')).toBeVisible({
-            timeout: 60_000,
-        });
-
-        await expect(
-            authedPage.locator('#create-text-evidence-btn'),
-        ).toBeDisabled();
-        await authedPage.fill('#text-evidence-title-input', 'T');
-        await expect(
-            authedPage.locator('#create-text-evidence-btn'),
-        ).toBeEnabled();
-        await authedPage.fill('#text-evidence-title-input', '');
-        await expect(
-            authedPage.locator('#create-text-evidence-btn'),
-        ).toBeDisabled();
-
-        await authedPage.click('#text-evidence-cancel-btn');
-        await expect(authedPage.locator('#text-evidence-form')).toBeHidden({
-            timeout: 5000,
-        });
-    });
-
-    test('submitting creates evidence and refreshes the list', async ({
-        authedPage,
-        isolatedTenant,
-    }) => {
-        await safeGoto(authedPage, `/t/${isolatedTenant.tenantSlug}/evidence`);
-        await authedPage.reload({ waitUntil: 'domcontentloaded' });
-        const textBtn = authedPage.locator('#add-text-evidence-btn').first();
-        await textBtn.waitFor({ state: 'visible', timeout: 15_000 });
-        await authedPage.waitForLoadState('networkidle').catch(() => {});
-        await textBtn.click();
-        await expect(authedPage.locator('#text-evidence-form')).toBeVisible({
-            timeout: 60_000,
-        });
-
-        const uid = Date.now().toString(36);
-        const title = `Modal Text Evidence ${uid}`;
-        await authedPage.fill('#text-evidence-title-input', title);
-        await authedPage.fill(
-            '#text-evidence-content-input',
-            'Narrative captured via modal.',
-        );
-
-        const [response] = await Promise.all([
-            authedPage.waitForResponse(
-                (r) =>
-                    r.url().includes('/api/t/') &&
-                    r.url().endsWith('/evidence') &&
-                    r.request().method() === 'POST',
-            ),
-            authedPage.click('#create-text-evidence-btn'),
-        ]);
-        expect(response.status(), 'POST /evidence succeeded').toBeLessThan(400);
-
-        await expect(authedPage.locator('#text-evidence-form')).toBeHidden({
-            timeout: 10000,
-        });
-        await expect(authedPage.locator('#evidence-table')).toContainText(title, {
-            timeout: 15000,
-        });
-    });
-});

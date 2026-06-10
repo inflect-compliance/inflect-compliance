@@ -247,8 +247,10 @@ describe('Dashboard Empty State Handling', () => {
         expect(content).toContain('alerts.length === 0');
     });
 
-    test('notification bell only shows with unread count > 0', () => {
-        expect(readAll()).toContain('unreadNotifications > 0');
+    test('UI-15: dashboard no longer renders a notifications bell button', () => {
+        // The top-bar notifications bell is the single canonical affordance;
+        // the dashboard header no longer shows its own on unread > 0.
+        expect(readAll()).not.toContain("href={href('/notifications')}");
     });
 
     test('trend fetch failure degrades gracefully (catch path on the server)', () => {

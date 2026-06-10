@@ -1046,11 +1046,6 @@ function ControlsPageInner({
                                         <AppIcon name="dashboard" size={16} />
                                     </Link>
                                 </Tooltip>
-                                <Tooltip content="Frameworks">
-                                    <Link href={tenantHref('/frameworks')} aria-label="Frameworks" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="frameworks-btn">
-                                        <AppIcon name="frameworks" size={16} />
-                                    </Link>
-                                </Tooltip>
                                 <Tooltip content="Install from templates">
                                     <Link href={tenantHref('/controls/templates')} aria-label="Install from templates" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="install-templates-btn">
                                         <AppIcon name="templates" size={16} />

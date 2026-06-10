@@ -53,7 +53,6 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import {
     ShieldCheck,
@@ -61,7 +60,6 @@ import {
     Paperclip,
     CheckCircle2,
     Bug,
-    Bell,
     FileText,
     TrendingUp,
 } from 'lucide-react';
@@ -80,8 +78,6 @@ import { TrendCard } from '@/components/ui/TrendCard';
 import { StatusBreakdown } from '@/components/ui/status-breakdown';
 import { RiskMatrix } from '@/components/ui/RiskMatrix';
 import ExpiryCalendar from '@/components/ui/ExpiryCalendar';
-import { StatusBadge } from '@/components/ui/status-badge';
-import { buttonVariants } from '@/components/ui/button-variants';
 import { cn } from '@/lib/cn';
 
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
@@ -195,17 +191,10 @@ export default function DashboardClient({
     const exec = execFromCache ?? initialExec;
     const trendBundle = deriveTrendBundle(trends ?? initialTrends ?? undefined);
 
-    const headerActions = exec.stats.unreadNotifications > 0 ? (
-        <Link
-            href={href('/notifications')}
-            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}
-        >
-            <Bell className="w-4 h-4" aria-hidden="true" />
-            <StatusBadge variant="error" icon={null} size="sm">
-                {exec.stats.unreadNotifications}
-            </StatusBadge>
-        </Link>
-    ) : undefined;
+    // UI-15: the dashboard no longer surfaces a notifications button on a new
+    // notification — the top-bar notifications bell is the single canonical
+    // affordance. Header carries no extra action here.
+    const headerActions = undefined;
 
     // v2-PR-10 — masthead hero metric. Single 72px control-coverage
     // figure as the user's first verdict on the page. Trend delta

@@ -48,8 +48,8 @@ describe('icon-only action discipline', () => {
         { file: `${APP}/audits/packs/[packId]/page.tsx`, label: 'Clone for retest' },
         { file: `${APP}/controls/dashboard/page.tsx`, label: 'Consistency check' },
         { file: `${APP}/tests/due/page.tsx`, label: 'Run due planning' },
-        { file: `${APP}/evidence/EvidenceClient.tsx`, label: 'Upload file' },
-        { file: `${APP}/evidence/EvidenceClient.tsx`, label: 'Import ZIP' },
+        // UI-18: the evidence "Upload file" + "Import ZIP" icon buttons were
+        // removed — the +Evidence button opens the upload modal directly.
         { file: `${APP}/tasks/TasksClient.tsx`, label: 'Apply' },
     ];
 

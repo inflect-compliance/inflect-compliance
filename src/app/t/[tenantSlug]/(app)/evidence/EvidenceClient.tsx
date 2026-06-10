@@ -15,13 +15,9 @@ import { useHydratedNow } from '@/lib/hooks/use-hydrated-now';
 // the chunk finished compiling). Static imports — the bundle cost is
 // acceptable and the E2E suite becomes deterministic.
 import { UploadEvidenceModal } from './UploadEvidenceModal';
-import { NewEvidenceTextModal } from './NewEvidenceTextModal';
-import { EvidenceBulkImportModal } from './EvidenceBulkImportModal';
 import { EvidenceDetailSheet } from './EvidenceDetailSheet';
 import { EditEvidenceModal } from './EditEvidenceModal';
 import { Button } from '@/components/ui/button';
-import { IconAction } from '@/components/ui/icon-action';
-import { AppIcon } from '@/components/icons/AppIcon';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
@@ -201,8 +197,6 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     const viewMode: 'list' | 'gallery' =
         filters.view === 'gallery' ? 'gallery' : 'list';
     const [showUpload, setShowUpload] = useState(false);
-    const [showTextForm, setShowTextForm] = useState(false);
-    const [showBulkImport, setShowBulkImport] = useState(false);
 
     // B5 — row-click detail sheet + edit modal.
     const [detailSheetOpen, setDetailSheetOpen] = useState(false);
@@ -860,25 +854,15 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                     </div>
                     {permissions.canWrite && (
                         <div className="flex gap-tight">
-                            <IconAction
-                                variant="secondary"
-                                onClick={() => setShowUpload(true)}
-                                id="upload-evidence-btn"
-                                icon={<AppIcon name="upload" size={16} />}
-                                label="Upload file"
-                            />
-                            <IconAction
-                                variant="secondary"
-                                onClick={() => setShowBulkImport(true)}
-                                id="bulk-import-evidence-btn"
-                                icon={<AppIcon name="fileArchive" size={16} />}
-                                label="Import ZIP"
-                            />
+                            {/* UI-18: a single +Evidence button that opens the
+                                Upload-a-file modal directly. The separate
+                                "Upload file" + "Import ZIP" icon buttons (and the
+                                text-only evidence modal) were removed. */}
                             <Button
                                 variant="primary"
                                 icon={<Plus className="-ml-0.5 -mr-2.5" />}
-                                onClick={() => setShowTextForm(true)}
-                                id="add-text-evidence-btn"
+                                onClick={() => setShowUpload(true)}
+                                id="add-evidence-btn"
                             >
                                 {t.addEvidence}
                             </Button>
@@ -895,19 +879,6 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                         tenantSlug={tenantSlug}
                         apiUrl={apiUrl}
                         controls={controls}
-                    />
-                    <NewEvidenceTextModal
-                        open={showTextForm}
-                        setOpen={setShowTextForm}
-                        tenantSlug={tenantSlug}
-                        apiUrl={apiUrl}
-                        controls={controls}
-                    />
-                    <EvidenceBulkImportModal
-                        open={showBulkImport}
-                        setOpen={setShowBulkImport}
-                        tenantSlug={tenantSlug}
-                        apiUrl={apiUrl}
                     />
                 </>
             )}
@@ -943,7 +914,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             />
 
             {/* B8 follow-up — shared folder-suggestions datalist.
-                The NewEvidenceTextModal + UploadEvidenceModal both
+                The UploadEvidenceModal references
                 reference `list="evidence-folder-suggestions"` so
                 the user converges on a small named set of folders.
                 Mounting the datalist here means a single source of

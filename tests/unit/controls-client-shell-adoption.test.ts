@@ -89,7 +89,8 @@ describe('ControlsClient — EntityListPage adoption', () => {
         // both correctly hide the actions when the permission is false.
         expect(source).toMatch(/appPermissions\.controls\.create\s*[?&]/);
         expect(source).toContain('controls-dashboard-btn');
-        expect(source).toContain('frameworks-btn');
+        // UI-15: the standalone "Frameworks" header button was removed.
+        expect(source).not.toContain('frameworks-btn');
         expect(source).toContain('install-templates-btn');
         expect(source).toContain('new-control-btn');
     });
