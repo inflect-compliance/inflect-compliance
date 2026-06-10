@@ -27,6 +27,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
+import { firstAssetDataIndex } from '@/lib/assets/asset-sparkline';
 import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
 import { Plus } from '@/components/ui/icons/nucleo';
 import type { TrendPayload } from '@/app-layer/usecases/compliance-trends';
@@ -193,10 +194,21 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
         const points = trendsQuery.data?.dataPoints ?? [];
         const series = (pick: (d: TrendPayload['dataPoints'][number]) => number): TimeSeriesPoint[] =>
             points.map((d) => ({ date: new Date(d.date), value: pick(d) }));
-        const total = series((d) => d.assetsTotal);
-        const active = series((d) => d.assetsActive);
-        const critical = series((d) => d.assetsHighCriticality);
-        const retired = series((d) => d.assetsRetired);
+        const totalRaw = series((d) => d.assetsTotal);
+        const activeRaw = series((d) => d.assetsActive);
+        const criticalRaw = series((d) => d.assetsHighCriticality);
+        const retiredRaw = series((d) => d.assetsRetired);
+        // Trim the leading defaulted-zero prefix: the ComplianceSnapshot asset
+        // columns are @default(0) and shipped 2026-06-07, so snapshots from
+        // before then read 0 for every asset metric — a FALSE history that made
+        // the retired curve a fake "ramp from 0" instead of a truthful flat
+        // value. Slice all four series by the SAME index (gated on total>0) so
+        // they stay date-aligned and start where real data begins.
+        const start = firstAssetDataIndex(totalRaw);
+        const total = totalRaw.slice(start);
+        const active = activeRaw.slice(start);
+        const critical = criticalRaw.slice(start);
+        const retired = retiredRaw.slice(start);
         // Shared 0-anchored domain so the four sparklines are comparable on
         // absolute scale: `total` rides high, `retired` sits low, instead of
         // each auto-fitting its own range (which made them all look alike).
