@@ -29,6 +29,8 @@ const MIGRATED_PAGES = [
     'admin/risk-appetite/page.tsx',
     // RQ-4 — risk scenarios; semantic tokens + Card/Input/Button/StatusBadge only.
     'risks/scenarios/page.tsx',
+    // RQ-5 — risk hierarchy; semantic tokens + Card/Button/Input/ProgressBar only.
+    'risks/hierarchy/page.tsx',
     'dashboard/page.tsx',
     // Epic 69 split the dashboard into a thin server shell + a
     // `'use client'` component owning the card composition. Both

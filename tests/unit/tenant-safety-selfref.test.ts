@@ -442,6 +442,16 @@ describe('GUARDRAIL: Prisma schema has no unregistered self-referencing models',
     test('no model has a FK pointing to itself', () => {
         const schemaContent = readPrismaSchema();
 
+        // Models with a deliberate self-referencing FK that are NOT part of
+        // the export/import system — so the import-ordering concern this
+        // guard protects (parent-before-child topo sort) does not apply.
+        // Tenant-safety is still enforced by RLS + the app-layer same-tenant
+        // checks on the owning usecase.
+        const EXEMPT_SELF_REF = new Set<string>([
+            // RQ-5 — org hierarchy tree; not exportable, RLS-isolated.
+            'RiskHierarchyNode',
+        ]);
+
         // Parse model blocks
         const modelRegex = /model\s+(\w+)\s*\{([^}]+)\}/g;
         let match;
@@ -458,7 +468,7 @@ describe('GUARDRAIL: Prisma schema has no unregistered self-referencing models',
 
             while ((fieldMatch = fieldRegex.exec(body)) !== null) {
                 const referencedModel = fieldMatch[2];
-                if (referencedModel === modelName) {
+                if (referencedModel === modelName && !EXEMPT_SELF_REF.has(modelName)) {
                     selfRefModels.push(`${modelName}.${fieldMatch[3]} → ${modelName}`);
                 }
             }

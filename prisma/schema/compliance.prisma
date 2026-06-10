@@ -334,6 +334,8 @@ model Risk {
   evidence        Evidence[]
   // RQ-2 — appetite breaches attributed to this risk.
   appetiteBreaches RiskAppetiteBreach[]
+  // RQ-5 — hierarchy node memberships.
+  hierarchyLinks   RiskHierarchyLink[]
 
   /// Composite parent key — supports the
   /// `RiskTreatmentPlan.(riskId, tenantId) → Risk.(id, tenantId)`
@@ -547,6 +549,44 @@ model RiskScenario {
   @@index([tenantId])
   @@index([tenantId, status])
   @@index([tenantId, createdAt])
+}
+
+/// RQ-5 — a node in a tenant-defined org hierarchy for risk aggregation.
+/// Parallel trees per `type` (BU / geography / asset class / custom).
+model RiskHierarchyNode {
+  id           String              @id @default(cuid())
+  tenantId     String
+  name         String
+  type         String // BUSINESS_UNIT | GEOGRAPHY | ASSET_CLASS | CUSTOM
+  parentId     String?
+  sortOrder    Int                 @default(0)
+  metadataJson Json?
+  parent       RiskHierarchyNode?  @relation("HierarchyTree", fields: [parentId], references: [id])
+  children     RiskHierarchyNode[] @relation("HierarchyTree")
+  riskLinks    RiskHierarchyLink[]
+  tenant       Tenant              @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, type, name])
+  @@index([tenantId, type])
+  @@index([tenantId, parentId])
+  @@index([parentId])
+}
+
+/// RQ-5 — M:N join: a risk can sit in multiple hierarchy nodes.
+model RiskHierarchyLink {
+  id        String            @id @default(cuid())
+  tenantId  String
+  riskId    String
+  nodeId    String
+  createdAt DateTime          @default(now())
+  risk      Risk              @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  node      RiskHierarchyNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  tenant    Tenant            @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, riskId, nodeId])
+  @@index([tenantId, nodeId])
+  @@index([tenantId, riskId])
+  @@index([nodeId])
 }
 
 model RiskSuggestionSession {

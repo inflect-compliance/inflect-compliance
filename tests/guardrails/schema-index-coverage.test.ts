@@ -360,6 +360,12 @@ const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
     // RQ-4 — scenarios listed by tenantId (+ optional status) ordered by createdAt.
     RiskScenario:
         'RQ-4 listScenarios filters by tenantId (+ optional status), orders by createdAt DESC — covered by @@index([tenantId, createdAt]) + @@index([tenantId, status]); bounded take:200.',
+    // RQ-5 — hierarchy nodes fetched by tenantId+type for tree/treemap.
+    RiskHierarchyNode:
+        'RQ-5 getTree/loadTree filters by tenantId + type — covered by @@index([tenantId, type]); bounded take:5000.',
+    // RQ-5 — links fetched by tenantId+nodeId (roll-up) and tenantId+riskId (risk form).
+    RiskHierarchyLink:
+        'RQ-5 loadTree filters by tenantId + nodeId, getRiskNodes by tenantId + riskId — covered by @@index([tenantId, nodeId]) + @@index([tenantId, riskId]); bounded take.',
     // SP-3 — delta sync lists mappings by [tenantId, provider, connectionId];
     // covered by @@index([tenantId, provider]) + @@index([connectionId]).
     IntegrationSyncMapping:
