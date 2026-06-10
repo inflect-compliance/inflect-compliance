@@ -16,10 +16,16 @@ import { assertCanRead, assertCanWrite } from '../policies/common';
 import { resolveALE } from './fair-calculator';
 import { getLatestSimulation } from './monte-carlo';
 import { getAppetiteStatus } from './risk-appetite';
-import { renderCsv, renderPdf, type ReportData } from '../reports/risk-report-render';
+import { renderCsv, renderPdf, renderPptx, type ReportData } from '../reports/risk-report-render';
 import { getStorageProvider, generatePathKey } from '@/lib/storage';
 
-export type ReportFormat = 'PDF' | 'CSV';
+export type ReportFormat = 'PDF' | 'CSV' | 'PPTX';
+
+export const FORMAT_META: Record<ReportFormat, { ext: string; mime: string }> = {
+    PDF: { ext: 'pdf', mime: 'application/pdf' },
+    CSV: { ext: 'csv', mime: 'text/csv' },
+    PPTX: { ext: 'pptx', mime: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' },
+};
 
 export interface ReportParameters {
     confidenceLevel?: number;
@@ -109,10 +115,10 @@ export async function generateReport(ctx: RequestContext, templateId: string, pa
 
     try {
         const data = await assembleReportData(ctx, template.name);
-        const buffer = format === 'CSV' ? renderCsv(data) : await renderPdf(data);
-        const ext = format === 'CSV' ? 'csv' : 'pdf';
+        const buffer = format === 'CSV' ? renderCsv(data) : format === 'PPTX' ? await renderPptx(data) : await renderPdf(data);
+        const { ext, mime } = FORMAT_META[format];
         const pathKey = generatePathKey(ctx.tenantId, `report-${run.id}.${ext}`);
-        await getStorageProvider().write(pathKey, buffer, { mimeType: format === 'CSV' ? 'text/csv' : 'application/pdf' });
+        await getStorageProvider().write(pathKey, buffer, { mimeType: mime });
         return runInTenantContext(ctx, (db) =>
             db.reportRun.update({ where: { id: run.id }, data: { status: 'COMPLETED', outputPath: pathKey, outputSizeBytes: buffer.length, completedAt: new Date() } }),
         );

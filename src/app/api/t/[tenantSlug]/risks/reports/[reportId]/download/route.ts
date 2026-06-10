@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTenantCtx } from '@/app-layer/context';
-import { getReport } from '@/app-layer/usecases/risk-report';
+import { getReport, FORMAT_META, type ReportFormat } from '@/app-layer/usecases/risk-report';
 import { getStorageProvider } from '@/lib/storage';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { badRequest } from '@/lib/errors/types';
@@ -16,7 +16,7 @@ export const GET = withApiErrorHandling(
         const chunks: Buffer[] = [];
         for await (const c of stream) chunks.push(Buffer.from(c as Buffer));
         const buf = Buffer.concat(chunks);
-        const mime = run.format === 'CSV' ? 'text/csv' : 'application/pdf';
+        const mime = (FORMAT_META[run.format as ReportFormat] ?? FORMAT_META.PDF).mime;
         return new NextResponse(buf as unknown as BodyInit, {
             headers: { 'Content-Type': mime, 'Content-Disposition': `attachment; filename="report-${run.id}.${run.format.toLowerCase()}"` },
         });

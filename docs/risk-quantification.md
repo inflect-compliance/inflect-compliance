@@ -59,6 +59,6 @@ Three daily fan-out jobs (cross-tenant, each builds a per-tenant context):
   factors are comonotonic (documented simplification vs a per-factor Cholesky).
 - **RQ-7 bow-tie** ships as a five-column card layout; `toXyFlowGraph` is ready
   for an interactive ReactFlow upgrade.
-- **RQ-10 PPTX** export is deferred (no `pptxgenjs` dependency yet); PDF + CSV
-  ship. Email/SharePoint delivery of scheduled artefacts is logged pending the
-  outbound wiring.
+- **RQ-10 PPTX** export landed via `pptxgenjs` (board slide deck: title + VaR
+  KPIs + top-risks table). Email/SharePoint delivery of scheduled artefacts is
+  still logged pending the outbound wiring.

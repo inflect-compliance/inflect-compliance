@@ -1,8 +1,8 @@
 /**
  * RQ-10 — report renderers + schedule cadence (pure). No DB.
  */
-import { renderCsv, type ReportData } from '@/app-layer/reports/risk-report-render';
-import { computeNextRun } from '@/app-layer/usecases/risk-report';
+import { renderCsv, renderPptx, type ReportData } from '@/app-layer/reports/risk-report-render';
+import { computeNextRun, FORMAT_META } from '@/app-layer/usecases/risk-report';
 
 const data: ReportData = {
     title: 'Portfolio Risk Summary',
@@ -28,6 +28,22 @@ describe('renderCsv', () => {
     it('quotes a value containing a comma', () => {
         const d = { ...data, topRisks: [{ title: 'Breach, major', category: 'X', ale: 1 }] };
         expect(renderCsv(d).toString('utf8')).toContain('"Breach, major",X,1');
+    });
+});
+
+describe('PPTX export wiring', () => {
+    // pptxgenjs's write() lazy-imports jszip via a native dynamic import, which
+    // Jest's CJS VM can't execute ("dynamic import callback without
+    // --experimental-vm-modules"). The actual zip is produced in the Node/Next
+    // runtime; here we lock the wiring + format contract.
+    it('renderPptx is exported', () => {
+        expect(typeof renderPptx).toBe('function');
+    });
+    it('FORMAT_META.PPTX carries the OOXML mime + ext', () => {
+        expect(FORMAT_META.PPTX).toEqual({
+            ext: 'pptx',
+            mime: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        });
     });
 });
 

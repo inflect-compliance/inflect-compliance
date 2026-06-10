@@ -48,3 +48,13 @@ risk-quantification surface (RQ-1…RQ-9), plus Business Impact Analysis fields.
 | `prisma/schema/{compliance,auth}.prisma` + migration | BIA + 3 models + RLS. |
 | `api/t/[slug]/risks/reports/**` | generate / download / schedules. |
 | `risks/reports/page.tsx` | reports UI. |
+
+## Follow-up (2026-06-10) — PPTX export
+
+PPTX landed (the deferred dep decision): `pptxgenjs@4.0.1` (0 production-dep
+vulnerabilities) powers `renderPptx` — a board deck (title slide · portfolio VaR
+KPI grid · top-risks table). `FORMAT_META` centralises ext+mime per format;
+generateReport / the download route / the reports page all carry PDF | CSV |
+PPTX. Note: pptxgenjs's `write()` lazy-imports jszip via a native dynamic import
+that Jest's CJS VM can't execute, so the unit test locks the wiring + format
+contract rather than the zip bytes (real generation runs in the Node runtime).
