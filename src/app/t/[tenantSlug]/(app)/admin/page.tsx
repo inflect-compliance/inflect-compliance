@@ -1,5 +1,5 @@
 import { getTranslations } from 'next-intl/server';
-import { Shield, CreditCard, KeyRound, ShieldCheck, ShieldPlus, Users, UserCog, CloudCog, Plug, Palette, Grid3x3, Bell, ScrollText } from 'lucide-react';
+import { Shield, CreditCard, KeyRound, ShieldCheck, ShieldPlus, Users, UserCog, CloudCog, Plug, Palette, Grid3x3, Gauge, Bell, ScrollText } from 'lucide-react';
 import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
@@ -136,6 +136,14 @@ export default async function AdminPage({
                 >
                     <Grid3x3 className="w-3.5 h-3.5" />
                     Risk Matrix
+                </Link>
+                <Link
+                    href={tenantHref('/admin/risk-appetite')}
+                    className={buttonVariants({ variant: 'secondary' })}
+                    id="risk-appetite-pill-btn"
+                >
+                    <Gauge className="w-3.5 h-3.5" />
+                    Risk Appetite
                 </Link>
                 <Link
                     href={tenantHref('/admin/notifications')}

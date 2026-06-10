@@ -25,6 +25,8 @@ const MIGRATED_PAGES = [
     'admin/entra/page.tsx',
     // SP-5 — SharePoint sync-health dashboard; semantic tokens + KPIStat only.
     'admin/integrations/sharepoint-health/page.tsx',
+    // RQ-2 — risk appetite config; semantic tokens + Card/Input/Textarea only.
+    'admin/risk-appetite/page.tsx',
     'dashboard/page.tsx',
     // Epic 69 split the dashboard into a thin server shell + a
     // `'use client'` component owning the card composition. Both

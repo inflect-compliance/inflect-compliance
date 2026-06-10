@@ -494,6 +494,11 @@ export interface SharePointSubscriptionRenewPayload {
     requestId?: string;
 }
 
+/** RQ-2 — daily cron: scan every tenant's portfolio for appetite breaches (cross-tenant). */
+export interface RiskAppetiteMonitorPayload {
+    requestId?: string;
+}
+
 export interface JobPayloadMap {
     'health-check': HealthCheckPayload;
     'automation-runner': AutomationRunnerPayload;
@@ -526,6 +531,7 @@ export interface JobPayloadMap {
     'sharepoint-delta-sync-dispatch': SharePointDeltaSyncDispatchPayload;
     'sharepoint-policy-pull': SharePointPolicyPullPayload;
     'sharepoint-subscription-renew': SharePointSubscriptionRenewPayload;
+    'risk-appetite-monitor': RiskAppetiteMonitorPayload;
 }
 
 /** Union of all valid job names */
@@ -636,6 +642,12 @@ export const JOB_DEFAULTS: Record<JobName, {
         removeOnFail: 500,
     },
     'sharepoint-subscription-renew': {
+        attempts: 1,
+        backoff: { type: 'fixed', delay: 0 },
+        removeOnComplete: 50,
+        removeOnFail: 200,
+    },
+    'risk-appetite-monitor': {
         attempts: 1,
         backoff: { type: 'fixed', delay: 0 },
         removeOnComplete: 50,

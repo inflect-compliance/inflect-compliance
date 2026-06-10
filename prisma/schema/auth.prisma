@@ -138,6 +138,8 @@ model Tenant {
   riskSuggestionItems               RiskSuggestionItem[]
   riskSuggestionSessions            RiskSuggestionSession[]
   riskMatrixConfig                  RiskMatrixConfig?
+  riskAppetiteConfig                RiskAppetiteConfig?
+  riskAppetiteBreaches              RiskAppetiteBreach[]
   tasks                             Task[]
   taskComments                      TaskComment[]
   taskLinks                         TaskLink[]
