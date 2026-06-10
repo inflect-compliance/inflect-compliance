@@ -303,15 +303,15 @@ export const NAV_BAR_SLOT_RIGHT =
 /**
  * **The brand mark recipe.**
  *
- * 32×32 rounded square containing the product's two-letter initials
+ * 22×22 rounded square containing the product's two-letter initials
  * over a 3-stop brand gradient. The visual signature of the chrome.
  *
  * Six load-bearing tokens, each documented:
  *
- *   (1) `w-8 h-8` — 32×32 footprint. Pairs with the 64px bar height
- *       (R14-PR2) — 32px = half-bar, leaving 16px of breath above
- *       + below. Smaller (24px) reads as an avatar, not a brand;
- *       larger (40px) starts dominating the breadcrumbs slot.
+ *   (1) `h-[22px] w-[22px]` — 22×22 footprint. The compact navbar
+ *       control size (stepped 32 → 28 → 22), matched across brand /
+ *       bell / user-menu / mobile-menu / tenant-switcher so the
+ *       controls read as one tight set within the 64px bar.
  *
  *   (2) `rounded-lg` — 8px corner radius. Parity with `<NavItem>`
  *       and the `<Button>` primitive (both rounded-lg). Mixing
@@ -361,7 +361,7 @@ export const NAV_BAR_SLOT_RIGHT =
 export const NAV_BAR_BRAND_CLASS = [
     // Geometry — 28px navbar control footprint (one step below the
     // legacy 32px; matches the bell / user-menu / mobile-menu controls).
-    'relative w-7 h-7 rounded-lg flex-shrink-0',
+    'relative h-[22px] w-[22px] rounded-lg flex-shrink-0',
     // Flex / type
     'flex items-center justify-center',
     'text-content-inverted text-[11px] font-bold',
@@ -435,7 +435,7 @@ export function NavBarMobileMenu({
         <button
             type="button"
             onClick={onClick}
-            className={`md:hidden inline-flex items-center justify-center h-7 w-7 rounded-lg text-content-muted transition-colors hover:bg-bg-muted hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] ${NAV_BAR_SLOT_PRESS}`}
+            className={`md:hidden inline-flex items-center justify-center h-[22px] w-[22px] rounded-lg text-content-muted transition-colors hover:bg-bg-muted hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] ${NAV_BAR_SLOT_PRESS}`}
             aria-label={ariaLabel}
             data-testid={dataTestId}
         >

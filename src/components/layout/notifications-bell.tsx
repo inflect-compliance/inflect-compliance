@@ -80,7 +80,7 @@ const NOTIFICATIONS_FALLBACK_POLL_INTERVAL_MS = 5 * 60_000;
 // ─── Recipes ───────────────────────────────────────────────────────
 
 const BELL_BUTTON_CLASS =
-    `relative inline-flex items-center justify-center h-7 w-7 rounded-full text-content-muted transition-colors hover:bg-bg-muted/50 hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] ${NAV_BAR_SLOT_PRESS}`;
+    `relative inline-flex items-center justify-center h-[22px] w-[22px] rounded-full text-content-muted transition-colors hover:bg-bg-muted/50 hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] ${NAV_BAR_SLOT_PRESS}`;
 
 const BADGE_OVERLAY_CLASS =
     // Pill chip pinned to the bell's top-right corner. Negative

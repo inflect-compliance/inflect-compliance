@@ -96,14 +96,14 @@ describe('Roadmap-14 PR-5 — UserMenu discipline', () => {
             );
         });
 
-        it('renders 28×28 round avatar through the shared <InitialsAvatar>', () => {
+        it('renders 22×22 round avatar through the shared <InitialsAvatar>', () => {
             // Avatar roadmap P4 — the user-menu avatar trigger routes
             // through the shared primitive. The button owns the round
             // click target + hover/focus chrome; the avatar owns
-            // initials, fill, and image fallback. Footprint is the 28px
-            // navbar control size (`size="nav"`) — one step below the
-            // legacy 32px, matched across the bar's controls.
-            expect(USER_MENU_SRC).toMatch(/h-7\s+w-7/);
+            // initials, fill, and image fallback. Footprint is the 22px
+            // navbar control size (`size="nav"`) — stepped 32 → 28 → 22,
+            // matched across the bar's controls.
+            expect(USER_MENU_SRC).toMatch(/h-\[22px\]\s+w-\[22px\]/);
             expect(USER_MENU_SRC).toMatch(/rounded-full/);
             expect(USER_MENU_SRC).toMatch(
                 /<InitialsAvatar[\s\S]*?value=\{effectiveName\}[\s\S]*?size="nav"[\s\S]*?imageUrl=\{displayImage\}/,

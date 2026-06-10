@@ -107,7 +107,7 @@ const SWITCHER_PILL_CLASS =
     // crowd the bell + avatar. Users on those viewports can
     // switch workspaces via the `/tenants` picker page (linked
     // from the user menu footer).
-    `hidden sm:inline-flex items-center gap-tight rounded-full border border-border-subtle bg-bg-default px-3 py-1 text-xs font-medium text-content-muted transition-colors hover:bg-bg-muted/50 hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] ${NAV_BAR_SLOT_PRESS}`;
+    `hidden sm:inline-flex h-[22px] items-center gap-tight rounded-full border border-border-subtle bg-bg-default px-3 text-xs font-medium text-content-muted transition-colors hover:bg-bg-muted/50 hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] ${NAV_BAR_SLOT_PRESS}`;
 
 const MENU_ROW_CLASS =
     'flex w-full cursor-pointer select-none items-center justify-between gap-default rounded-md px-2.5 py-1.5 text-left text-sm text-content-default transition-colors duration-100 ease-out hover:bg-bg-muted hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]';

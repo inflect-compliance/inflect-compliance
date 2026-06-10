@@ -71,13 +71,13 @@ describe('Roadmap-14 PR-3 — NavBar brand mark discipline', () => {
             expect(brandRegion).toMatch(/\[\s*$|\[\s*\n/);
         });
 
-        it('footprint is 28×28 (`w-7 h-7`)', () => {
-            // 28px navbar control footprint — one step below the legacy
-            // 32px, matched across brand / bell / user-menu / mobile-menu
-            // so the controls read as one set. Still leaves generous
-            // breath in the 64px bar.
-            expect(brandRegion).toContain('w-7');
-            expect(brandRegion).toContain('h-7');
+        it('footprint is 22×22 (`h-[22px] w-[22px]`)', () => {
+            // 22px navbar control footprint — stepped 32 → 28 → 22,
+            // matched across brand / bell / user-menu / mobile-menu /
+            // tenant-switcher so the controls read as one tight set
+            // within the 64px bar.
+            expect(brandRegion).toContain('w-[22px]');
+            expect(brandRegion).toContain('h-[22px]');
         });
 
         it('corner radius is `rounded-lg`', () => {

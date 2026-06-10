@@ -53,13 +53,13 @@ export function getInitials(
 // ─── Component ──────────────────────────────────────────────────────
 
 /**
- * Size presets — `sm` is the inline pill avatar, `nav` the 28px navbar
+ * Size presets — `sm` is the inline pill avatar, `nav` the 22px navbar
  * user-menu trigger, `md` the 32px members-list avatar, `lg` the
  * account-profile-page preview (avatar roadmap P3).
  */
 const SIZE_CLASS = {
     sm: 'h-5 w-5 text-[10px]',
-    nav: 'h-7 w-7 text-[11px]',
+    nav: 'h-[22px] w-[22px] text-[10px]',
     md: 'h-8 w-8 text-[11px]',
     lg: 'h-16 w-16 text-xl',
 } as const;
