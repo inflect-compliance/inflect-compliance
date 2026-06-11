@@ -13,6 +13,7 @@ import { SkeletonDashboard } from '@/components/ui/skeleton';
 import { getStatusTone } from '@/lib/design/status-tone';
 import { LossExceedanceCurve } from '@/components/ui/charts';
 import { formatCompactCurrency, type CoherenceReport } from '@/lib/risk-coherence';
+import type { StalenessReport } from '@/app-layer/usecases/risk-staleness';
 import { MonteCarloPanel } from './MonteCarloPanel';
 import { VelocityCard } from './VelocityCard';
 
@@ -99,12 +100,21 @@ export default function RiskDashboardPage() {
     const [coherence, setCoherence] = useState<CoherenceReport | null>(null);
     // RQ2-6 — appetite config + live status for the LEC markers.
     const [appetite, setAppetite] = useState<AppetitePayload | null>(null);
+    // RQ2-8 — staleness report, failure-soft like the others.
+    const [staleness, setStaleness] = useState<StalenessReport | null>(null);
 
     useEffect(() => {
         fetch(apiUrl('/risks/coherence'))
             .then((r) => (r.ok ? r.json() : null))
             .then((data) => setCoherence(data as CoherenceReport | null))
             .catch(() => setCoherence(null));
+    }, [apiUrl]);
+
+    useEffect(() => {
+        fetch(apiUrl('/risks/staleness'))
+            .then((r) => (r.ok ? r.json() : null))
+            .then((data) => setStaleness(data as StalenessReport | null))
+            .catch(() => setStaleness(null));
     }, [apiUrl]);
 
     useEffect(() => {
@@ -400,6 +410,38 @@ export default function RiskDashboardPage() {
                             </div>
                         </>
                     )}
+                </Card>
+            )}
+
+            {/* RQ2-8 — stale assessments. Renders only when rot
+                exists; an all-fresh register stays quiet. */}
+            {staleness && staleness.staleCount > 0 && (
+                <Card data-testid="risk-staleness-widget">
+                    <Heading level={2} className="mb-2">Stale assessments</Heading>
+                    <p className="text-sm text-content-muted mb-default">
+                        {staleness.staleCount} of {staleness.totalCount} risks carry an
+                        assessment the world may have moved past — overdue review,
+                        untouched for {staleness.maxAssessmentAgeDays}+ days, or control
+                        tests newer than the residual.
+                    </p>
+                    <div className="space-y-tight">
+                        {staleness.staleRisks.slice(0, 10).map((r) => (
+                            <Link
+                                key={r.riskId}
+                                href={href(`/risks/${r.riskId}`)}
+                                className="flex items-center justify-between gap-default p-2 rounded text-sm hover:bg-bg-muted/50 transition-colors duration-100 ease-out"
+                                data-testid={`risk-stale-row-${r.riskId}`}
+                            >
+                                <span className="truncate text-content-emphasis">{r.title}</span>
+                                <span className="shrink-0 text-xs text-content-muted">{r.description}</span>
+                            </Link>
+                        ))}
+                        {staleness.staleRisks.length > 10 && (
+                            <p className="text-xs text-content-subtle">
+                                + {staleness.staleRisks.length - 10} more
+                            </p>
+                        )}
+                    </div>
                 </Card>
             )}
 
