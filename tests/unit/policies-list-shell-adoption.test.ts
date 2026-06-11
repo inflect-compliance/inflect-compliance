@@ -84,17 +84,15 @@ describe('Policies list — Epic 45.1 shell + column wiring', () => {
         expect(clientSrc).toContain('data-testid={`policy-version-${row.original.id}`}');
     });
 
-    it('upgrades the Owner column to a chip with avatar + name + email', () => {
-        // Same shape we landed for controls in PR #94.
+    it('Owner column is a name-only avatar chip (UI-14 capstone — no raw email)', () => {
         expect(clientSrc).toContain('charAt(0).toUpperCase()');
         expect(clientSrc).toContain('data-testid={`policy-owner-${p.id}`}');
-        // Either form of the fallback chain is acceptable — the
-        // accessorFn uses `||` (legacy) and the cell uses `??` after
-        // an explicit null-check. Both are equivalent for the
-        // operator-visible behaviour.
+        // UI-14 (capstone): name-only via ownerDisplayName (name → email
+        // local-part as username), never the full email address.
         expect(clientSrc).toMatch(
-            /p\.owner\??\.name\s*(?:\?\?|\|\|)\s*p\.owner\??\.email/,
+            /ownerDisplayName\(p\.owner\?\.name, p\.owner\?\.email\)/,
         );
+        expect(clientSrc).not.toMatch(/\{p\.owner\.email\}/);
     });
 
     it('Status column reads labels from POLICY_STATUS_LABELS (single source of truth)', () => {
