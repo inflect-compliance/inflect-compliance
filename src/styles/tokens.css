@@ -262,7 +262,10 @@
    * EDGE finish): this is the solid body fill, so the white label stays
    * crisp on top. (Reverted from the brief symmetric light-dark-light
    * experiment; softened by pushing the secondary ramp 45%→60%.) */
-  --btn-gradient-primary: linear-gradient(135deg, var(--brand-default) 0%, var(--brand-default) 60%, #3b82f6 100%);
+  /* UI-11: create-button gradient — brand holds the first half, then a SUBTLE
+     cool tail (softer/lighter blue, was the darker #3b82f6) so the far corner
+     isn't too dark. Transition starts at 50% ("after 1/2"), not 60%. */
+  --btn-gradient-primary: linear-gradient(135deg, var(--brand-default) 0%, var(--brand-default) 50%, #6ea6ea 100%);
 
   /* ── R20 aura wash (DARK theme) ─────────────────────────────────────
    * The soft brand-tinted halo a primary button casts on hover, as a
@@ -739,7 +742,9 @@
    * navy (#1e3a8a) corner in the final stretch (135°). See the
    * dark-theme token above for the rationale (solid body fill, crisp
    * white label, distinct from the 1px iridescent EDGE). */
-  --btn-gradient-primary: linear-gradient(135deg, var(--brand-default) 0%, var(--brand-default) 60%, #1e3a8a 100%);
+  /* UI-11: see dark-theme note. Light-theme cool tail lightened from the very
+     dark navy #1e3a8a to a soft periwinkle, transition starting at 50%. */
+  --btn-gradient-primary: linear-gradient(135deg, var(--brand-default) 0%, var(--brand-default) 50%, #5e7fc0 100%);
 
   /* ── R20 aura wash (LIGHT theme) ───────────────────────────────────
    * Brand orange for primary; warm-neutral for secondary. Outer
