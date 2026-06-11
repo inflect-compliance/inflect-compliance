@@ -849,6 +849,10 @@ function RisksPageInner({
                         config={matrixConfig}
                         cells={matrixCells}
                         movements={matrixMovements}
+                        // polish #13 — per-tenant storage so a
+                        // multi-tenant operator's mode preference
+                        // doesn't leak across tenants.
+                        storageKey={`inflect:risk-matrix:${tenantSlug}`}
                         title={t.heatmapTitle}
                         mode="bubble"
                         onCellClick={(cell) => {

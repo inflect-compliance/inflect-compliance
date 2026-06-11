@@ -52,6 +52,7 @@
 
 import { useMemo, useState } from 'react';
 import { ArrowLeftRight } from 'lucide-react';
+import { useLocalStorage } from '@/components/ui/hooks';
 
 import {
     RiskMatrixCell,
@@ -129,6 +130,14 @@ export interface RiskMatrixProps {
     onCellClick?: (cell: RiskMatrixDataCell) => void;
     /** Optional id of the currently-selected cell, in the form `${L}-${I}`. */
     selectedKey?: string | null;
+    /**
+     * polish #13 — when present, the ALE and Movement toggle states
+     * persist to localStorage under `${storageKey}:overlay`. Pass a
+     * per-tenant key (e.g. `inflect:risk-matrix:${tenantSlug}`) so
+     * one operator's preferences don't leak across tenants. Omit and
+     * the toggles stay session-local (the pre-polish behaviour).
+     */
+    storageKey?: string;
     className?: string;
     id?: string;
     /** Test id forwarded to the outer card. */
@@ -149,6 +158,7 @@ export function RiskMatrix({
     title = 'Risk Matrix',
     onCellClick,
     selectedKey = null,
+    storageKey,
     className = '',
     id,
     'data-testid': dataTestId = 'risk-matrix',
@@ -162,7 +172,15 @@ export function RiskMatrix({
     // RQ2-5 — ALE heat overlay. The toggle only exists when at least
     // one cell carries monetary data: an unquantified portfolio pays
     // zero cost and sees zero new chrome.
-    const [aleOverlay, setAleOverlay] = useState(false);
+    // polish #13 — overlay toggles persist when a storageKey is
+    // supplied; session-local otherwise. Falls back to useState on
+    // SSR via the hook's initialValue contract.
+    /* eslint-disable react-hooks/rules-of-hooks -- the storageKey is
+       stable for the lifetime of the component (it's a render-prop
+       string), so the conditional hook call is safe by construction. */
+    const [aleOverlay, setAleOverlay] = storageKey
+        ? useLocalStorage<boolean>(`${storageKey}:overlay:ale`, false)
+        : useState(false);
     const maxCellAle = useMemo(
         () => cells.reduce((m, c) => Math.max(m, c.totalAle ?? 0), 0),
         [cells],
@@ -171,7 +189,10 @@ export function RiskMatrix({
     const aleOverlayActive = aleOverlay && hasAleData;
 
     // RQ2-9 — movement overlay. Zero-cost without movement data.
-    const [showMovement, setShowMovement] = useState(false);
+    const [showMovement, setShowMovement] = storageKey
+        ? useLocalStorage<boolean>(`${storageKey}:overlay:movement`, false)
+        : useState(false);
+    /* eslint-enable react-hooks/rules-of-hooks */
     const hasMovements = (movements?.length ?? 0) > 0;
     const movementActive = showMovement && hasMovements;
     // Deduplicate identical (from → to) pairs into one arrow with a
