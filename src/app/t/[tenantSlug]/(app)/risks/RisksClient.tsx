@@ -577,7 +577,7 @@ function RisksPageInner({
                     // RQ2-3 — every score chip explains itself; the
                     // popover lazy-fetches on open (no per-row cost).
                     <span className="inline-flex items-center gap-tight">
-                        <RiskScoreExplainer tenantSlug={tenantSlug} riskId={row.original.id}>
+                        <RiskScoreExplainer tenantSlug={tenantSlug} riskId={row.original.id} label={`${score} · ${band.name}`}>
                             <span
                                 className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 font-bold tabular-nums text-content-emphasis"
                                 style={{

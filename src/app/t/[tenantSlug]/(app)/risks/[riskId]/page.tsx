@@ -335,7 +335,7 @@ export default function RiskDetailPage() {
                             label: 'Inherent Score',
                             // RQ2-3 — the header score explains itself.
                             value: (
-                                <RiskScoreExplainer tenantSlug={tenant.tenantSlug} riskId={riskId}>
+                                <RiskScoreExplainer tenantSlug={tenant.tenantSlug} riskId={riskId} label={`${risk.inherentScore} · ${band.label}`}>
                                     {`${risk.inherentScore} · ${band.label}`}
                                 </RiskScoreExplainer>
                             ),

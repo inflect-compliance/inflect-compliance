@@ -39,10 +39,17 @@ const SOURCE_LABEL: Record<string, string> = {
 export function RiskScoreExplainer({
     tenantSlug,
     riskId,
+    label,
     children,
 }: {
     tenantSlug: string;
     riskId: string;
+    /**
+     * Visible chip content (e.g. `"20 · High"`) — used to compose the
+     * trigger's aria-label so screen-reader users hear the number and
+     * band before "explain", not just the bare verb.
+     */
+    label?: string;
     children: React.ReactNode;
 }) {
     const [open, setOpen] = useState(false);
@@ -162,7 +169,7 @@ export function RiskScoreExplainer({
             <button
                 type="button"
                 className="cursor-help bg-transparent border-0 p-0 text-inherit"
-                aria-label="Explain this score"
+                aria-label={label ? `${label}, explain` : 'Explain this score'}
             >
                 {children}
             </button>
