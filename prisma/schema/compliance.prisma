@@ -523,6 +523,11 @@ model RiskAppetiteBreach {
   acknowledgedAt      DateTime?
   acknowledgedBy      String?
   acknowledgementNote String?
+  /// RQ2-6 — the remediation task spawned from this breach (one per
+  /// breach, claimed via conditional update). Soft reference by
+  /// design: deleting the task leaves a dangling id the UI treats
+  /// as "no task"; breach telemetry never blocks task lifecycle.
+  remediationTaskId   String?
   tenant              Tenant    @relation(fields: [tenantId], references: [id])
   risk                Risk?     @relation(fields: [riskId], references: [id])
 

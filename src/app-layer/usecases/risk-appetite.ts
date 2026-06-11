@@ -13,9 +13,12 @@
 import type { RequestContext } from '../types';
 import { runInTenantContext } from '@/lib/db-context';
 import { Prisma } from '@prisma/client';
-import { assertCanRead, assertCanAdmin } from '../policies/common';
+import { assertCanRead, assertCanAdmin, assertCanWrite } from '../policies/common';
+import { notFound, badRequest } from '@/lib/errors/types';
 import { logEvent } from '../events/audit';
 import { resolveALE } from './fair-calculator';
+import { formatCompactCurrency } from '@/lib/risk-coherence';
+import { createTask, addTaskLink } from './task';
 
 export type BreachType = 'PORTFOLIO_ALE' | 'SINGLE_RISK_ALE' | 'QUAL_SCORE' | 'CATEGORY_ALE';
 
@@ -263,6 +266,101 @@ export async function acknowledgeBreach(ctx: RequestContext, breachId: string, n
             data: { acknowledgedAt: new Date(), acknowledgedBy: ctx.userId, acknowledgementNote: note ?? null },
         }),
     );
+}
+
+// ── Breach → remediation task (RQ2-6) ────────────────────────────────
+
+const BREACH_TASK_TITLE: Record<BreachType, (b: { thresholdValue: number; actualValue: number; category: string | null }) => string> = {
+    PORTFOLIO_ALE: (b) =>
+        `Bring portfolio ALE back within appetite (${formatCompactCurrency(b.actualValue)} over the ${formatCompactCurrency(b.thresholdValue)} ceiling)`,
+    SINGLE_RISK_ALE: (b) =>
+        `Remediate appetite breach: risk ALE ${formatCompactCurrency(b.actualValue)} exceeds the ${formatCompactCurrency(b.thresholdValue)} per-risk cap`,
+    QUAL_SCORE: (b) =>
+        `Remediate appetite breach: risk score ${Math.round(b.actualValue)} exceeds the ${Math.round(b.thresholdValue)} cap`,
+    CATEGORY_ALE: (b) =>
+        `Bring ${b.category ?? 'category'} ALE back within appetite (${formatCompactCurrency(b.actualValue)} over the ${formatCompactCurrency(b.thresholdValue)} ceiling)`,
+};
+
+/**
+ * Spawn a remediation task from an open appetite breach.
+ *
+ * Idempotent: each breach claims at most ONE task — the claim is a
+ * conditional update (`remediationTaskId: null` → task id), so a
+ * double-click or a concurrent admin gets the existing task back
+ * instead of a duplicate. The task is linked to the breached risk
+ * (TaskLink RISK) when the breach is risk-attributed; portfolio /
+ * category breaches produce an unlinked task. Composes the existing
+ * `createTask` / `addTaskLink` usecases — no parallel task-creation
+ * path.
+ */
+export async function createBreachRemediationTask(
+    ctx: RequestContext,
+    breachId: string,
+): Promise<{ taskId: string; created: boolean }> {
+    assertCanWrite(ctx);
+
+    const breach = await runInTenantContext(ctx, (db) =>
+        db.riskAppetiteBreach.findFirst({
+            where: { id: breachId, tenantId: ctx.tenantId },
+        }),
+    );
+    if (!breach) throw notFound('Breach not found');
+    if (breach.resolvedAt) {
+        throw badRequest('Breach is already resolved — nothing to remediate');
+    }
+    if (breach.remediationTaskId) {
+        return { taskId: breach.remediationTaskId, created: false };
+    }
+
+    const title = BREACH_TASK_TITLE[breach.breachType as BreachType]?.(breach)
+        ?? `Remediate risk-appetite breach (${breach.breachType})`;
+    const task = await createTask(ctx, {
+        title,
+        type: 'TASK',
+        priority: 'HIGH',
+        source: 'risk_appetite_breach',
+        description:
+            `Spawned from appetite breach ${breach.id} (${breach.breachType}, ` +
+            `detected ${breach.detectedAt.toISOString().slice(0, 10)}). ` +
+            `Threshold ${breach.thresholdValue}, actual ${breach.actualValue}.`,
+    });
+    if (breach.riskId) {
+        await addTaskLink(ctx, task.id, 'RISK', breach.riskId);
+    }
+
+    // Atomic claim — loser of a race gets the winner's task id.
+    const claimed = await runInTenantContext(ctx, (db) =>
+        db.riskAppetiteBreach.updateMany({
+            where: { id: breachId, tenantId: ctx.tenantId, remediationTaskId: null },
+            data: { remediationTaskId: task.id },
+        }),
+    );
+    if (claimed.count === 0) {
+        const winner = await runInTenantContext(ctx, (db) =>
+            db.riskAppetiteBreach.findFirst({
+                where: { id: breachId, tenantId: ctx.tenantId },
+                select: { remediationTaskId: true },
+            }),
+        );
+        return { taskId: winner?.remediationTaskId ?? task.id, created: false };
+    }
+
+    await runInTenantContext(ctx, (db) =>
+        logEvent(db, ctx, {
+            action: 'BREACH_REMEDIATION_TASK_CREATED',
+            entityType: 'RiskAppetiteBreach',
+            entityId: breachId,
+            details: `Remediation task created for ${breach.breachType} breach`,
+            detailsJson: {
+                category: 'custom',
+                event: 'breach_remediation_task_created',
+                taskId: task.id,
+                breachType: breach.breachType,
+            },
+        }),
+    );
+
+    return { taskId: task.id, created: true };
 }
 
 /** Dashboard badge status: within / approaching (>80% of ceiling) / breached. */

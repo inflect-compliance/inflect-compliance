@@ -24,6 +24,8 @@ interface Config {
 interface Breach {
     id: string; breachType: string; thresholdValue: number; actualValue: number;
     detectedAt: string; resolvedAt: string | null; acknowledgedAt: string | null; riskId: string | null; category: string | null;
+    /** RQ2-6 — the remediation task spawned from this breach. */
+    remediationTaskId: string | null;
 }
 const money = (n: number | null) => (n == null ? '—' : `$${Math.round(n).toLocaleString()}`);
 
@@ -72,6 +74,19 @@ export default function RiskAppetitePage() {
         await load();
     };
 
+    // RQ2-6 — spawn THE remediation task for a breach (idempotent
+    // server-side; a second click just re-fetches the same task).
+    const [spawningTaskFor, setSpawningTaskFor] = useState<string | null>(null);
+    const createRemediationTask = async (id: string) => {
+        setSpawningTaskFor(id);
+        try {
+            await fetch(apiUrl(`/risk-appetite/breaches/${id}/remediation-task`), { method: 'POST' });
+            await load();
+        } finally {
+            setSpawningTaskFor(null);
+        }
+    };
+
     const statusVariant = status?.status === 'BREACHED' ? 'error' : status?.status === 'APPROACHING' ? 'warning' : 'success';
 
     return (
@@ -118,6 +133,26 @@ export default function RiskAppetitePage() {
                                 {!b.resolvedAt && !b.acknowledgedAt && (
                                     <Button size="sm" variant="ghost" onClick={() => acknowledge(b.id)}>Acknowledge</Button>
                                 )}
+                                {/* RQ2-6 — breach → remediation task. */}
+                                {b.remediationTaskId ? (
+                                    <a
+                                        href={tenantHref(`/tasks/${b.remediationTaskId}`)}
+                                        className="text-xs underline text-content-default"
+                                        data-testid={`breach-task-link-${b.id}`}
+                                    >
+                                        View task
+                                    </a>
+                                ) : !b.resolvedAt ? (
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => createRemediationTask(b.id)}
+                                        disabled={spawningTaskFor === b.id}
+                                        data-testid={`breach-task-create-${b.id}`}
+                                    >
+                                        {spawningTaskFor === b.id ? 'Creating…' : 'Create task'}
+                                    </Button>
+                                ) : null}
                             </li>
                         ))}
                     </ul>

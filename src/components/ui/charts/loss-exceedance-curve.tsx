@@ -46,6 +46,20 @@ export interface LossExceedancePoint {
     exceedanceFraction: number;
 }
 
+/**
+ * RQ2-6 — a vertical appetite/tolerance marker drawn at a loss
+ * threshold. The x-domain stretches to include every line so a
+ * cap sitting beyond the worst observed loss stays visible.
+ */
+export interface LossReferenceLine {
+    /** Loss threshold (same currency unit as the data). */
+    value: number;
+    /** Short label rendered beside the line (e.g. "Per-risk appetite"). */
+    label: string;
+    /** CSS color. Defaults to the chart's critical tone. */
+    color?: string;
+}
+
 export interface LossExceedanceCurveProps {
     data: ReadonlyArray<LossExceedancePoint>;
     /** Optional explicit height. Defaults to 240px. */
@@ -58,6 +72,8 @@ export interface LossExceedanceCurveProps {
     testId?: string;
     /** Optional currency-prefix formatter for axis ticks. */
     formatThreshold?: (value: number) => string;
+    /** RQ2-6 — appetite thresholds drawn as dashed vertical lines. */
+    referenceLines?: ReadonlyArray<LossReferenceLine>;
 }
 
 const DEFAULT_HEIGHT = 240;
@@ -82,6 +98,7 @@ function LossExceedanceInner({
     formatThreshold = defaultFormatThreshold,
     testId,
     className,
+    referenceLines,
 }: InnerProps) {
     // The usecase emits the points in DESCENDING threshold order
     // (rank 1 = largest loss). For an LEC chart we want ASCENDING
@@ -94,9 +111,12 @@ function LossExceedanceInner({
     const xMax = Math.max(0, width - MARGIN.left - MARGIN.right);
     const yMax = Math.max(0, height - MARGIN.top - MARGIN.bottom);
 
-    const maxThreshold = ordered.length
-        ? Math.max(...ordered.map((p) => p.threshold))
-        : 1;
+    // RQ2-6 — stretch the x-domain to keep every reference line on
+    // canvas, even when the appetite cap exceeds the worst loss.
+    const maxThreshold = Math.max(
+        ordered.length ? Math.max(...ordered.map((p) => p.threshold)) : 1,
+        ...(referenceLines ?? []).map((l) => l.value),
+    );
 
     const xScale = useMemo(
         () =>
@@ -153,6 +173,36 @@ function LossExceedanceInner({
                     strokeWidth={2}
                     strokeOpacity={0.95}
                 />
+                {/* RQ2-6 — appetite markers. Dashed verticals with a
+                    rotated-free label at the top; rendered after the
+                    curve so the line reads above the area fill. */}
+                {(referenceLines ?? []).map((line) => {
+                    const x = xScale(line.value) ?? 0;
+                    const color = line.color ?? 'var(--content-error, #ef4444)';
+                    return (
+                        <g key={`${line.label}-${line.value}`} data-testid="lec-reference-line">
+                            <line
+                                x1={x}
+                                x2={x}
+                                y1={0}
+                                y2={yMax}
+                                stroke={color}
+                                strokeWidth={1.5}
+                                strokeDasharray="4 3"
+                                strokeOpacity={0.85}
+                            />
+                            <text
+                                x={x}
+                                y={-4}
+                                fontSize={9}
+                                textAnchor="middle"
+                                fill={color}
+                            >
+                                {line.label} ({formatThreshold(line.value)})
+                            </text>
+                        </g>
+                    );
+                })}
                 <AxisBottom
                     top={yMax}
                     scale={xScale}

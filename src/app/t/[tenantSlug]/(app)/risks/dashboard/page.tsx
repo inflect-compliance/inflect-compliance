@@ -50,6 +50,19 @@ function formatMoney(v: number | null): string {
     return `$${v.toFixed(0)}`;
 }
 
+// RQ2-6 — appetite payload from GET /risk-appetite (config + status).
+type AppetitePayload = {
+    config: {
+        totalAleThreshold: number | null;
+        singleRiskAleMax: number | null;
+    } | null;
+    status: {
+        status: 'NONE' | 'WITHIN' | 'APPROACHING' | 'BREACHED';
+        portfolioAle: number;
+        activeBreaches: number;
+    } | null;
+};
+
 type Risk = {
     id: string;
     title: string;
@@ -84,12 +97,21 @@ export default function RiskDashboardPage() {
     const [analytics, setAnalytics] = useState<QuantitativeAnalytics | null>(null);
     // RQ2-5 — coherence report, failure-soft like analytics.
     const [coherence, setCoherence] = useState<CoherenceReport | null>(null);
+    // RQ2-6 — appetite config + live status for the LEC markers.
+    const [appetite, setAppetite] = useState<AppetitePayload | null>(null);
 
     useEffect(() => {
         fetch(apiUrl('/risks/coherence'))
             .then((r) => (r.ok ? r.json() : null))
             .then((data) => setCoherence(data as CoherenceReport | null))
             .catch(() => setCoherence(null));
+    }, [apiUrl]);
+
+    useEffect(() => {
+        fetch(apiUrl('/risk-appetite'))
+            .then((r) => (r.ok ? r.json() : null))
+            .then((data) => setAppetite(data as AppetitePayload | null))
+            .catch(() => setAppetite(null));
     }, [apiUrl]);
 
     useEffect(() => {
@@ -298,7 +320,40 @@ export default function RiskDashboardPage() {
                                 data={analytics.lecPoints}
                                 testId="risk-loss-exceedance-curve"
                                 ariaLabel="Risk portfolio loss exceedance curve"
+                                // RQ2-6 — the per-risk appetite cap is a
+                                // genuine x-threshold on this curve:
+                                // every step right of the line is a risk
+                                // outside appetite.
+                                referenceLines={
+                                    appetite?.config?.singleRiskAleMax != null
+                                        ? [
+                                              {
+                                                  value: appetite.config.singleRiskAleMax,
+                                                  label: 'Per-risk appetite',
+                                              },
+                                          ]
+                                        : undefined
+                                }
                             />
+                            {/* The portfolio ceiling is a Σ-constraint,
+                                not a per-risk x-threshold — drawing it
+                                on the curve would lie. It gets an
+                                honest utilisation line instead. */}
+                            {appetite?.config?.totalAleThreshold != null && appetite.status && (
+                                <p
+                                    className="mt-tight text-xs text-content-muted tabular-nums"
+                                    data-testid="lec-portfolio-appetite-note"
+                                >
+                                    Portfolio ALE {formatMoney(appetite.status.portfolioAle)} of{' '}
+                                    {formatMoney(appetite.config.totalAleThreshold)} ceiling (
+                                    {Math.round(
+                                        (appetite.status.portfolioAle /
+                                            appetite.config.totalAleThreshold) *
+                                            100,
+                                    )}
+                                    %).
+                                </p>
+                            )}
                         </div>
                     </div>
                 </Card>
