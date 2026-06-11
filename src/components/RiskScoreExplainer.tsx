@@ -25,6 +25,7 @@
 
 import { useState } from 'react';
 import { Popover } from '@/components/ui/popover';
+import { useKeyboardShortcut } from '@/lib/hooks/use-keyboard-shortcut';
 import { formatDateTime } from '@/lib/format-date';
 import type { ScoreExplanation } from '@/app-layer/usecases/risk-score-explanation';
 
@@ -48,6 +49,18 @@ export function RiskScoreExplainer({
     const [open, setOpen] = useState(false);
     const [data, setData] = useState<ScoreExplanation | null>(null);
     const [state, setState] = useState<'idle' | 'loading' | 'error'>('idle');
+
+    // polish #14 — Escape closes the open popover. The underlying
+    // Popover primitive registers Escape on its content layer, but
+    // when focus is still on the trigger button (the common case for
+    // a click-open) the event never reaches the layer. Route through
+    // the shared Epic 57 registry — single window listener, scoped to
+    // 'overlay' so a parent modal's Escape can still outrank ours.
+    useKeyboardShortcut(['Escape'], () => setOpen(false), {
+        enabled: open,
+        scope: 'overlay',
+        description: 'Close the risk score explainer',
+    });
 
     const onOpenChange = (next: boolean) => {
         setOpen(next);
