@@ -1,0 +1,79 @@
+/**
+ * RQ2-3 — score-explainer presence + contract ratchet.
+ *
+ * A risk score chip that renders bare is the regression this guards:
+ * the number goes back to being unexplainable, and the RQ2-1/RQ2-2
+ * provenance work becomes invisible plumbing. Structural checks:
+ *
+ *   1. The two canonical score surfaces (risks list, risk detail
+ *      MetaStrip) mount `RiskScoreExplainer` around their chips.
+ *   2. The component lazy-fetches on OPEN — never eagerly. List
+ *      pages render hundreds of chips; an eager fetch per chip is a
+ *      self-inflicted N+1 against our own API.
+ *   3. The popover labels MIGRATION provenance honestly instead of
+ *      hiding or aliasing it.
+ *   4. The aggregator stays read-bounded: events take-5, breaches
+ *      filtered to unresolved, breaches take-bounded.
+ *   5. The API surface is GET-only (read-only contract — an
+ *      explanation endpoint must never grow a mutation verb).
+ */
+
+import * as fs from 'fs';
+import * as path from 'path';
+
+const ROOT = path.resolve(__dirname, '../..');
+const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf-8');
+
+const component = read('src/components/RiskScoreExplainer.tsx');
+const usecase = read('src/app-layer/usecases/risk-score-explanation.ts');
+const route = read('src/app/api/t/[tenantSlug]/risks/[id]/score-explanation/route.ts');
+const risksClient = read('src/app/t/[tenantSlug]/(app)/risks/RisksClient.tsx');
+const riskDetail = read('src/app/t/[tenantSlug]/(app)/risks/[riskId]/page.tsx');
+
+describe('RQ2-3 — score chips explain themselves', () => {
+    test('risks list mounts the explainer around the score chip', () => {
+        expect(risksClient).toMatch(/import \{ RiskScoreExplainer \} from '@\/components\/RiskScoreExplainer'/);
+        expect(risksClient).toMatch(/<RiskScoreExplainer/);
+    });
+
+    test('risk detail page mounts the explainer', () => {
+        expect(riskDetail).toMatch(/import \{ RiskScoreExplainer \} from '@\/components\/RiskScoreExplainer'/);
+        expect(riskDetail).toMatch(/<RiskScoreExplainer/);
+    });
+
+    test('the explainer lazy-fetches on open — no eager per-chip fetch', () => {
+        // The fetch lives inside the open-change handler…
+        const handler = component.slice(
+            component.indexOf('const onOpenChange'),
+            component.indexOf('return ('),
+        );
+        expect(handler).toMatch(/fetch\(/);
+        // …and nowhere else (a useEffect-fetch on mount would fire
+        // once per rendered chip).
+        expect(component).not.toMatch(/useEffect/);
+        const fetches = component.match(/fetch\(/g) ?? [];
+        expect(fetches).toHaveLength(1);
+    });
+
+    test('MIGRATION provenance is labelled honestly in the popover', () => {
+        expect(component).toMatch(/MIGRATION:\s*'pre-provenance backfill'/);
+    });
+
+    test('the aggregator stays read-bounded (events take-5, breaches unresolved + bounded)', () => {
+        expect(usecase).toMatch(/take:\s*5/);
+        expect(usecase).toMatch(/resolvedAt:\s*null/);
+        expect(usecase).toMatch(/take:\s*10/);
+    });
+
+    test('the API surface is GET-only and routes through the aggregator', () => {
+        expect(route).toMatch(/export const GET = withApiErrorHandling/);
+        expect(route).toMatch(/getScoreExplanation\(ctx, params\.id\)/);
+        for (const verb of ['POST', 'PUT', 'PATCH', 'DELETE']) {
+            expect(route).not.toMatch(new RegExp(`export const ${verb}`));
+        }
+    });
+
+    test('actor names resolve via one batched lookup (no per-event query)', () => {
+        expect(usecase).toMatch(/id:\s*\{\s*in:\s*actorIds\s*\}/);
+    });
+});

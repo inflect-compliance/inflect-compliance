@@ -63,6 +63,7 @@ import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
 import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { Plus } from '@/components/ui/icons/nucleo';
+import { RiskScoreExplainer } from '@/components/RiskScoreExplainer';
 
 interface RiskListItem {
     id: string;
@@ -529,22 +530,26 @@ function RisksPageInner({
                 //     designed-for-contrast neutral, ~16:1 against
                 //     either palette).
                 return (
-                    <span
-                        className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 font-bold tabular-nums text-content-emphasis"
-                        style={{
-                            backgroundColor: `${band.color}33`, // 20% alpha
-                        }}
-                        title={`${band.name} (${score})`}
-                        data-band={band.name}
-                        data-testid={`risk-score-${row.original.id}`}
-                    >
+                    // RQ2-3 — every score chip explains itself; the
+                    // popover lazy-fetches on open (no per-row cost).
+                    <RiskScoreExplainer tenantSlug={tenantSlug} riskId={row.original.id}>
                         <span
-                            aria-hidden="true"
-                            className="inline-block w-1.5 h-1.5 rounded-full"
-                            style={{ backgroundColor: band.color }}
-                        />
-                        {score}
-                    </span>
+                            className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 font-bold tabular-nums text-content-emphasis"
+                            style={{
+                                backgroundColor: `${band.color}33`, // 20% alpha
+                            }}
+                            title={`${band.name} (${score})`}
+                            data-band={band.name}
+                            data-testid={`risk-score-${row.original.id}`}
+                        >
+                            <span
+                                aria-hidden="true"
+                                className="inline-block w-1.5 h-1.5 rounded-full"
+                                style={{ backgroundColor: band.color }}
+                            />
+                            {score}
+                        </span>
+                    </RiskScoreExplainer>
                 );
             },
         },
