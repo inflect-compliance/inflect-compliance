@@ -224,6 +224,7 @@
     "hono": "^4.12.23",
     "tmp": "^0.2.6",
     "postcss": "$postcss",
+    "@grpc/grpc-js": "^1.14.4",
     "@visx/axis": {
       "react": "$react",
       "react-dom": "$react-dom"
