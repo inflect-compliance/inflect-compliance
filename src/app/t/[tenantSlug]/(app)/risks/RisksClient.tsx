@@ -620,15 +620,24 @@ function RisksPageInner({
             accessorFn: (r) => r.inherentScore,
             cell: ({ getValue }) => {
                 const band = getRiskBand(getValue<number>());
+                // polish #9 — denser dot+name renders faster than the
+                // old StatusBadge; the Epic 56 Tooltip carries the
+                // score range so the band → range mapping reads on
+                // hover/focus without leaving the row.
                 return (
-                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-content-default" data-band={band.name}>
+                    <Tooltip content={`${band.name} · score ${band.minScore}–${band.maxScore}`}>
                         <span
-                            aria-hidden="true"
-                            className="inline-block w-1.5 h-1.5 rounded-full"
-                            style={{ backgroundColor: band.color }}
-                        />
-                        {band.name}
-                    </span>
+                            className="inline-flex items-center gap-1.5 text-xs font-medium text-content-default cursor-help"
+                            data-band={band.name}
+                        >
+                            <span
+                                aria-hidden="true"
+                                className="inline-block w-1.5 h-1.5 rounded-full"
+                                style={{ backgroundColor: band.color }}
+                            />
+                            {band.name}
+                        </span>
+                    </Tooltip>
                 );
             },
         },
