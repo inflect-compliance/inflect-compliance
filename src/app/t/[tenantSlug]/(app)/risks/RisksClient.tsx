@@ -5,7 +5,7 @@
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
 /* eslint-disable react-hooks/exhaustive-deps -- Various useMemo dep arrays in this file deliberately omit identity-unstable callbacks (handlers/derived arrays recreated each render). The proper structural fix is wrapping parent-level callbacks in useCallback. Tracked as follow-up; existing per-line eslint-disable-next-line markers preserved. */
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
@@ -475,12 +475,14 @@ function RisksPageInner({
         [risks],
     );
 
-    const getRiskLevel = (score: number): { label: string; class: StatusBadgeVariant } => {
-        if (score <= 5) return { label: t.low, class: 'success' };
-        if (score <= 12) return { label: t.medium, class: 'warning' };
-        if (score <= 18) return { label: t.high, class: 'error' };
-        return { label: t.critical, class: 'error' };
-    };
+    // RQ2-10 — the Level column reads the TENANT'S OWN bands (the
+    // same resolveBandForScore the score chip, matrix, and explainer
+    // use) instead of a second hardcoded threshold set that drifted
+    // from the configured matrix.
+    const getRiskBand = useCallback(
+        (score: number) => resolveBandForScore(score, matrixConfig.bands),
+        [matrixConfig.bands],
+    );
 
     // Workflow-status variants (Epic 44.4). The label set mirrors
     // `RiskStatus` in the schema. Audit S1 (2026-05-24) added
@@ -617,8 +619,17 @@ function RisksPageInner({
             header: t.level,
             accessorFn: (r) => r.inherentScore,
             cell: ({ getValue }) => {
-                const level = getRiskLevel(getValue<number>());
-                return <StatusBadge variant={level.class} size="sm">{level.label}</StatusBadge>;
+                const band = getRiskBand(getValue<number>());
+                return (
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-content-default" data-band={band.name}>
+                        <span
+                            aria-hidden="true"
+                            className="inline-block w-1.5 h-1.5 rounded-full"
+                            style={{ backgroundColor: band.color }}
+                        />
+                        {band.name}
+                    </span>
+                );
             },
         },
         {
@@ -695,7 +706,7 @@ function RisksPageInner({
                 );
             },
         },
-    ]), [t, getRiskLevel, matrixConfig]);
+    ]), [t, getRiskBand, matrixConfig]);
 
     // Right-rail Phase 3 — the AI assist co-pilot rail. A persistent,
     // co-resident entry point to the AI risk-assessment flow that

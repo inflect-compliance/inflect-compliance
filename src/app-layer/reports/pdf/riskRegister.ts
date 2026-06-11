@@ -7,6 +7,8 @@
 import crypto from 'crypto';
 import type { RequestContext } from '@/app-layer/types';
 import { getReports } from '@/app-layer/usecases/report';
+import { getRiskMatrixConfig } from '@/app-layer/usecases/risk-matrix-config';
+import { resolveBandForScore } from '@/lib/risk-matrix/scoring';
 import { createPdfDocument } from '@/lib/pdf/pdfKitFactory';
 import { addCoverPage, addMetadataPage, applyHeadersAndFooters } from '@/lib/pdf/layout';
 import { renderTable, autoColumnWidths } from '@/lib/pdf/table';
@@ -28,15 +30,26 @@ export async function generateRiskRegisterPdf(
     });
 
     // ─── Compute summary stats ───
+    // RQ2-10 — severity buckets come from the TENANT'S OWN matrix
+    // bands (the same resolveBandForScore the UI uses), not a second
+    // hardcoded ≥15/8–14/<8 threshold set that silently disagreed
+    // with the configured matrix the moment a tenant customised it.
+    const matrix = await getRiskMatrixConfig(ctx);
     const totalRisks = risks.length;
-    const highSeverity = risks.filter(r => r.score >= 15).length;
-    const mediumSeverity = risks.filter(r => r.score >= 8 && r.score < 15).length;
-    const lowSeverity = risks.filter(r => r.score < 8).length;
+    const bandCounts = matrix.bands.map((band) => ({
+        band,
+        count: risks.filter(
+            (r) => resolveBandForScore(r.score, matrix.bands).name === band.name,
+        ).length,
+    }));
     const untreated = risks.filter(r => r.treatment === 'Untreated').length;
 
     // ─── Content hash ───
     const dataHash = crypto.createHash('sha256')
-        .update(JSON.stringify({ count: totalRisks, high: highSeverity, med: mediumSeverity, low: lowSeverity }))
+        .update(JSON.stringify({
+            count: totalRisks,
+            bands: bandCounts.map((b) => ({ name: b.band.name, count: b.count })),
+        }))
         .digest('hex');
 
     // ─── Meta ───
@@ -70,9 +83,12 @@ export async function generateRiskRegisterPdf(
     addSectionTitle(doc, 'Risk Summary');
     addSummaryMetrics(doc, [
         { label: 'Total Risks', value: totalRisks },
-        { label: 'High (≥15)', value: highSeverity },
-        { label: 'Medium (8-14)', value: mediumSeverity },
-        { label: 'Low (<8)', value: lowSeverity },
+        // Tenant-band buckets, severity-descending (bands are stored
+        // ascending by score range).
+        ...[...bandCounts].reverse().map((b) => ({
+            label: `${b.band.name} (${b.band.minScore}–${b.band.maxScore})`,
+            value: b.count,
+        })),
         { label: 'Untreated', value: untreated },
     ]);
 
