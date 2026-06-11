@@ -39,6 +39,7 @@ import {
     assertCanWrite,
 } from '../policies/common';
 import { logEvent } from '../events/audit';
+import { recordScoreEvent } from './risk-score-events';
 import { runInTenantContext } from '@/lib/db-context';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { badRequest, notFound } from '@/lib/errors/types';
@@ -561,6 +562,22 @@ export async function completePlan(
                     residualScoreSetAt: now,
                 },
             });
+            // RQ2-1 — RESIDUAL ledger entry with PLAN provenance.
+            // Dimensions are 0/0 sentinels: the divisor formula
+            // produces only a rolled-up score (RQ2-2 replaces it
+            // with a decomposed control-effectiveness derivation).
+            if (riskBefore.residualScore !== newResidualScore) {
+                await recordScoreEvent(db, ctx.tenantId, {
+                    riskId: plan.riskId,
+                    kind: 'RESIDUAL',
+                    likelihood: 0,
+                    impact: 0,
+                    score: newResidualScore,
+                    source: 'PLAN',
+                    justification: `Treatment plan ${treatmentPlanId} completed (strategy: ${plan.strategy})`,
+                    createdByUserId: ctx.userId,
+                });
+            }
             await logEvent(db, ctx, {
                 action: 'RISK_STATUS_CHANGED_BY_TREATMENT_PLAN',
                 entityType: 'Risk',

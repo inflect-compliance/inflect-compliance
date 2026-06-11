@@ -382,6 +382,9 @@ const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
     // RQ-9 — per-risk history + velocity fetched by tenantId+riskId+snapshotAt.
     RiskSnapshot:
         'RQ-9 getRiskHistory/computeVelocity filter by tenantId + riskId, order by snapshotAt — covered by @@index([tenantId, riskId, snapshotAt]); bounded take.',
+    // RQ2-1 — provenance trail fetched by tenantId+riskId ordered by createdAt.
+    RiskScoreEvent:
+        'RQ2-1 listScoreEvents filters by tenantId + riskId, orders by createdAt — covered by @@index([tenantId, riskId, createdAt]); take clamped to 200.',
     // RQ-9 — portfolio trend fetched by tenantId ordered by snapshotAt.
     PortfolioSnapshot:
         'RQ-9 getPortfolioTrend filters by tenantId, orders by snapshotAt — covered by @@index([tenantId, snapshotAt]); bounded take.',

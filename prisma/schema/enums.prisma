@@ -144,9 +144,9 @@ enum TreatmentDecision {
 
 /// RQ-1 — analyst confidence in the FAIR inputs for a risk.
 enum FairConfidence {
-  LOW       // Rough order-of-magnitude — no data
-  MEDIUM    // Some historical / industry-benchmark data
-  HIGH      // Calibrated from internal incident or actuarial data
+  LOW // Rough order-of-magnitude — no data
+  MEDIUM // Some historical / industry-benchmark data
+  HIGH // Calibrated from internal incident or actuarial data
 }
 
 enum ControlStatus {
@@ -889,4 +889,27 @@ enum ControlMitigationType {
   DETERRENT
   CORRECTIVE
   COMPENSATING
+}
+
+/// RQ2-1 — what a RiskScoreEvent records.
+///   INHERENT — the pre-controls likelihood/impact assessment.
+///   RESIDUAL — the post-controls assessment (asserted or derived).
+enum RiskScoreEventKind {
+  INHERENT
+  RESIDUAL
+}
+
+/// RQ2-1 — provenance of a score change. Distinguishable forever:
+///   USER      — a human entered/edited the values directly.
+///   DERIVED   — the system computed it (e.g. control-effectiveness
+///               suggestion accepted as-is, RQ2-2).
+///   PLAN      — written by treatment-plan completion.
+///   AI        — accepted from an AI suggestion.
+///   MIGRATION — backfilled from pre-provenance data.
+enum RiskScoreEventSource {
+  USER
+  DERIVED
+  PLAN
+  AI
+  MIGRATION
 }

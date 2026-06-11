@@ -50,6 +50,13 @@ jest.mock('@/app-layer/events/audit', () => ({
     logEvent: jest.fn().mockResolvedValue(undefined),
 }));
 
+// RQ2-1 — completePlan appends a RESIDUAL provenance event (source:
+// PLAN) alongside the residualScore write. Mocked here; behavior is
+// covered by tests/unit/risk-score-events.test.ts.
+jest.mock('@/app-layer/usecases/risk-score-events', () => ({
+    recordScoreEvent: jest.fn().mockResolvedValue(undefined),
+}));
+
 jest.mock('@/lib/security/sanitize', () => ({
     sanitizePlainText: jest.fn((s: string) => `SANITISED(${s})`),
 }));

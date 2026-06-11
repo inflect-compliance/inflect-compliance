@@ -68,6 +68,13 @@ jest.mock('@/app-layer/repositories/RiskTemplateRepository', () => ({
     },
 }));
 
+// RQ2-1 — create/update/template paths now append provenance ledger
+// entries inside the same transaction. Mock the seam; the dedicated
+// suite (risk-score-events.test.ts) covers its behavior.
+jest.mock('@/app-layer/usecases/risk-score-events', () => ({
+    recordScoreEvent: jest.fn(),
+}));
+
 jest.mock('@/lib/risk-scoring', () => ({
     calculateRiskScore: jest.fn((l: number, i: number, m: number) => l * i * (m / 5)),
 }));

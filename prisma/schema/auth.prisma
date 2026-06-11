@@ -148,6 +148,7 @@ model Tenant {
   kriReadings                       KriReading[]
   riskCorrelations                  RiskCorrelation[]
   riskSnapshots                     RiskSnapshot[]
+  riskScoreEvents                   RiskScoreEvent[]
   portfolioSnapshots                PortfolioSnapshot[]
   reportTemplates                   ReportTemplate[]
   reportRuns                        ReportRun[]

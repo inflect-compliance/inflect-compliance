@@ -4,7 +4,7 @@ import { WorkItemRepository } from '../repositories/WorkItemRepository';
 import { RiskTemplateRepository } from '../repositories/RiskTemplateRepository';
 import { assertCanRead, assertCanWrite, assertCanAdmin } from '../policies/common';
 import { logEvent } from '../events/audit';
-import { notFound } from '@/lib/errors/types';
+import { notFound, badRequest } from '@/lib/errors/types';
 import { calculateRiskScore } from '@/lib/risk-scoring';
 import { runInTenantContext, type PrismaTx } from '@/lib/db-context';
 import { sanitizePlainText } from '@/lib/security/sanitize';
@@ -13,6 +13,7 @@ import { createAssignmentNotification } from '../notifications/assignment';
 import { logger } from '@/lib/observability';
 import type { TreatmentDecision, RiskStatus, TaskLinkEntityType, FairConfidence, Prisma } from '@prisma/client';
 import { computeTEF, computeVulnerability, computeLEF, computePLM, computeFairALE } from './fair-calculator';
+import { recordScoreEvent } from './risk-score-events';
 
 // Epic D.2 — sanitise optional free-text on UPDATE without disturbing
 // the three-state contract: undefined → don't touch, null → SET NULL,
@@ -193,6 +194,18 @@ export async function createRisk(ctx: RequestContext, data: {
             nextReviewAt: data.nextReviewAt ? new Date(data.nextReviewAt) : null,
         });
 
+        // RQ2-1 — opening INHERENT ledger entry, same transaction as
+        // the row write so provenance can never drift from state.
+        await recordScoreEvent(db, ctx.tenantId, {
+            riskId: risk.id,
+            kind: 'INHERENT',
+            likelihood: data.likelihood ?? 3,
+            impact: data.impact ?? 3,
+            score: inherentScore,
+            source: 'USER',
+            createdByUserId: ctx.userId,
+        });
+
         await logEvent(db, ctx, {
             action: 'CREATE',
             entityType: 'Risk',
@@ -261,6 +274,19 @@ export async function createRiskFromTemplate(ctx: RequestContext, templateId: st
             nextReviewAt: overrides.nextReviewAt ? new Date(overrides.nextReviewAt) : null,
         });
 
+        // RQ2-1 — opening INHERENT ledger entry (template-accepted
+        // values are a human decision → USER source).
+        await recordScoreEvent(db, ctx.tenantId, {
+            riskId: risk.id,
+            kind: 'INHERENT',
+            likelihood,
+            impact,
+            score,
+            source: 'USER',
+            justification: `Created from template: ${template.title}`,
+            createdByUserId: ctx.userId,
+        });
+
         await logEvent(db, ctx, {
             action: 'CREATE',
             entityType: 'Risk',
@@ -283,6 +309,14 @@ export async function updateRisk(ctx: RequestContext, id: string, data: {
     vulnerability?: string;
     impact?: number;
     likelihood?: number;
+    /// RQ2-1 — direct residual assessment. Both must be supplied
+    /// together; residualScore is DERIVED from them (never accepted
+    /// raw) and the write lands a RESIDUAL ledger event.
+    residualLikelihood?: number;
+    residualImpact?: number;
+    /// Optional rationale recorded on the ledger event (override
+    /// reasons etc.). Ignored when no score dimension changes.
+    scoreJustification?: string | null;
     treatment?: string | null;
     treatmentOwner?: string | null;
     treatmentNotes?: string | null;
@@ -300,6 +334,19 @@ export async function updateRisk(ctx: RequestContext, id: string, data: {
         const inherentScore = data.likelihood && data.impact
             ? calculateRiskScore(data.likelihood, data.impact, maxScale)
             : undefined;
+
+        // RQ2-1 — residual decomposition: both-or-neither, derived
+        // rollup. An incomplete pair is a caller bug, not a partial
+        // write.
+        if ((data.residualLikelihood === undefined) !== (data.residualImpact === undefined)) {
+            throw badRequest(
+                'residualLikelihood and residualImpact must be supplied together',
+            );
+        }
+        const residualScore =
+            data.residualLikelihood !== undefined && data.residualImpact !== undefined
+                ? calculateRiskScore(data.residualLikelihood, data.residualImpact, maxScale)
+                : undefined;
 
         // Capture the prior owner so the assignment notification only
         // fires on an actual change (not on every unrelated risk edit).
@@ -331,11 +378,41 @@ export async function updateRisk(ctx: RequestContext, id: string, data: {
             nextReviewAt: data.nextReviewAt ? new Date(data.nextReviewAt) : undefined,
             inherentScore,
             score: inherentScore,
+            residualLikelihood: data.residualLikelihood,
+            residualImpact: data.residualImpact,
+            residualScore,
+            residualScoreSetAt: residualScore !== undefined ? new Date() : undefined,
 
             status: data.status as RiskStatus | undefined,
         });
 
         if (!risk) throw notFound('Risk not found');
+
+        // RQ2-1 — ledger entries, same transaction as the row write.
+        if (inherentScore !== undefined) {
+            await recordScoreEvent(db, ctx.tenantId, {
+                riskId: id,
+                kind: 'INHERENT',
+                likelihood: data.likelihood as number,
+                impact: data.impact as number,
+                score: inherentScore,
+                source: 'USER',
+                justification: data.scoreJustification ?? null,
+                createdByUserId: ctx.userId,
+            });
+        }
+        if (residualScore !== undefined) {
+            await recordScoreEvent(db, ctx.tenantId, {
+                riskId: id,
+                kind: 'RESIDUAL',
+                likelihood: data.residualLikelihood as number,
+                impact: data.residualImpact as number,
+                score: residualScore,
+                source: 'USER',
+                justification: data.scoreJustification ?? null,
+                createdByUserId: ctx.userId,
+            });
+        }
 
         await logEvent(db, ctx, {
             action: 'UPDATE',

@@ -83,13 +83,23 @@ export const UpdateRiskSchema = z.object({
     vulnerability: z.string().optional(),
     impact: z.coerce.number().int().min(1).max(10).optional(),
     likelihood: z.coerce.number().int().min(1).max(10).optional(),
+    // RQ2-1 — direct residual assessment (both-or-neither; the
+    // usecase derives residualScore and rejects an incomplete pair).
+    residualLikelihood: z.coerce.number().int().min(1).max(10).optional(),
+    residualImpact: z.coerce.number().int().min(1).max(10).optional(),
+    // RQ2-1 — optional rationale recorded on the score-provenance
+    // ledger event when a score dimension changes.
+    scoreJustification: z.string().max(2000).optional().nullable(),
     treatment: z.string().optional().nullable(),
     treatmentOwner: z.string().optional().nullable(),
     treatmentNotes: z.string().optional().nullable(),
     ownerUserId: z.string().optional().nullable(),    // Real user reference — "Assigned to"
     targetDate: z.string().optional().nullable(),
-}).strip().openapi('RiskUpdateRequest', {
-    description: 'Partial update for a risk. All fields optional.',
+}).strip().refine(
+    (d) => (d.residualLikelihood === undefined) === (d.residualImpact === undefined),
+    { message: 'residualLikelihood and residualImpact must be supplied together' },
+).openapi('RiskUpdateRequest', {
+    description: 'Partial update for a risk. All fields optional. residualLikelihood/residualImpact must be supplied together; residualScore is derived server-side and every score change lands a provenance event (RQ2-1).',
 });
 
 export const LinkRiskControlSchema = z.object({
