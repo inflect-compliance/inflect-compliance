@@ -106,6 +106,13 @@ export function RiskAssessmentPanel({
     const [overriding, setOverriding] = useState(false);
     const [savingResidual, setSavingResidual] = useState(false);
     const [accepting, setAccepting] = useState(false);
+    // polish #15 — when inherent saves while a manual residual draft
+    // is open, the draft now applies to a DIFFERENT inherent
+    // baseline. The user gets an in-line warning until they save or
+    // cancel the draft; silently rebasing would corrupt the
+    // conclusion. State lives above the early-returns to keep the
+    // hook order stable across loading/loaded transitions.
+    const [residualBaselineDirty, setResidualBaselineDirty] = useState(false);
 
     const loadSuggestion = useCallback(async () => {
         const res = await fetch(apiUrl(`/risks/${riskId}/residual-suggestion`));
@@ -153,6 +160,7 @@ export function RiskAssessmentPanel({
                 body: JSON.stringify({ likelihood, impact }),
             });
             if (!res.ok) throw new Error(`Failed to save assessment (${res.status})`);
+            if (overriding) setResidualBaselineDirty(true);
             onRiskUpdated();
             await loadSuggestion();
         } catch (err) {
@@ -198,6 +206,7 @@ export function RiskAssessmentPanel({
             });
             if (!res.ok) throw new Error(`Failed to save residual (${res.status})`);
             setOverriding(false);
+            setResidualBaselineDirty(false);
             onRiskUpdated();
             await loadSuggestion();
         } catch (err) {
@@ -364,6 +373,16 @@ export function RiskAssessmentPanel({
                 )}
                 {canWrite && overriding && (
                     <div className="space-y-default border-t border-border-subtle pt-4">
+                        {residualBaselineDirty && (
+                            <div
+                                className="rounded-md border border-border-warning bg-bg-warning/20 p-2 text-xs text-content-warning"
+                                data-testid="residual-baseline-warning"
+                            >
+                                Inherent has changed since you opened the residual
+                                draft — your residual now applies to L={risk.likelihood} × I={risk.impact}.
+                                Re-check the dimensions before saving.
+                            </div>
+                        )}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-default">
                             <div>
                                 <Eyebrow>Residual {config.axisLikelihoodLabel || 'likelihood'}</Eyebrow>
@@ -404,7 +423,15 @@ export function RiskAssessmentPanel({
                             />
                         </FormField>
                         <div className="flex gap-tight justify-end">
-                            <Button variant="secondary" onClick={() => setOverriding(false)}>Cancel</Button>
+                            <Button
+                                variant="secondary"
+                                onClick={() => {
+                                    setOverriding(false);
+                                    setResidualBaselineDirty(false);
+                                }}
+                            >
+                                Cancel
+                            </Button>
                             <Button
                                 variant="secondary"
                                 id="save-residual-btn"
