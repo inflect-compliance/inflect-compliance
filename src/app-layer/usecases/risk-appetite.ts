@@ -319,10 +319,15 @@ export async function createBreachRemediationTask(
         type: 'TASK',
         priority: 'HIGH',
         source: 'risk_appetite_breach',
+        // polish #12 — the description carries an admin-page deep
+        // link to the originating breach row (the admin page anchors
+        // each row by id), so the assignee can verify the breach
+        // shape without grepping the table.
         description:
             `Spawned from appetite breach ${breach.id} (${breach.breachType}, ` +
             `detected ${breach.detectedAt.toISOString().slice(0, 10)}). ` +
-            `Threshold ${breach.thresholdValue}, actual ${breach.actualValue}.`,
+            `Threshold ${breach.thresholdValue}, actual ${breach.actualValue}. ` +
+            `See /admin/risk-appetite#breach-${breach.id}.`,
     });
     if (breach.riskId) {
         await addTaskLink(ctx, task.id, 'RISK', breach.riskId);

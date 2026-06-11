@@ -125,7 +125,11 @@ export default function RiskAppetitePage() {
                 ) : (
                     <ul className="divide-y divide-border-subtle">
                         {breaches.map((b) => (
-                            <li key={b.id} className="flex flex-wrap items-center gap-default py-default text-sm">
+                            // polish #12 — the row anchors itself by
+                            // breach id so a remediation task's
+                            // /admin/risk-appetite#breach-{id} link
+                            // scrolls the assignee to the source row.
+                            <li key={b.id} id={`breach-${b.id}`} className="flex flex-wrap items-center gap-default py-default text-sm scroll-mt-default target:bg-bg-muted/50">
                                 <StatusBadge variant={b.resolvedAt ? 'success' : 'error'}>{b.resolvedAt ? 'Resolved' : 'Active'}</StatusBadge>
                                 <span className="font-mono text-xs">{b.breachType}</span>
                                 <span className="text-content-muted">threshold {money(b.thresholdValue)} · actual {money(b.actualValue)}</span>
