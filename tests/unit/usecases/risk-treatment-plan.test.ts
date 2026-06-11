@@ -57,6 +57,21 @@ jest.mock('@/app-layer/usecases/risk-score-events', () => ({
     recordScoreEvent: jest.fn().mockResolvedValue(undefined),
 }));
 
+// RQ2-2 — completePlan derives the post-plan residual from linked-
+// control effectiveness via this loader (divisors are gone). Default:
+// no derivable suggestion (no controls with signals); individual
+// tests override via mockLoadResidualSuggestion.
+const mockLoadResidualSuggestion = jest.fn();
+jest.mock('@/app-layer/usecases/risk-residual-suggestion', () => ({
+    loadResidualSuggestion: (...args: unknown[]) => mockLoadResidualSuggestion(...args),
+}));
+const NO_SUGGESTION = {
+    risk: {},
+    combined: { likelihoodReduction: 0, impactReduction: 0, contributions: [], participatingCount: 0 },
+    suggestion: null,
+    maxScale: 5,
+};
+
 jest.mock('@/lib/security/sanitize', () => ({
     sanitizePlainText: jest.fn((s: string) => `SANITISED(${s})`),
 }));
@@ -88,6 +103,8 @@ const PAST = new Date(Date.now() - 86400000);
 beforeEach(() => {
     jest.clearAllMocks();
     mockSanitize.mockImplementation((s: any) => `SANITISED(${s})`);
+    // RQ2-2 default: no derivable control suggestion.
+    mockLoadResidualSuggestion.mockResolvedValue(NO_SUGGESTION);
 });
 
 function fakeDb(overrides: Record<string, any> = {}) {
@@ -629,25 +646,23 @@ describe('completePlan — ADMIN-gated close + strategy→RiskStatus mapping', (
         // `MITIGATED` value distinguishes "controls implemented, residual
         // accepted" from "risk eliminated".
         expect(result.newRiskStatus).toBe('MITIGATED');
-        // Audit S1 — residual score = floor(20 / 5) = 4. Written
-        // alongside the status update, with `residualScoreSetAt` timestamp.
+        // RQ2-2 — with no derivable control signal, NO residual is
+        // fabricated (the divisor-era floor(20/5)=4 is gone): the
+        // write carries the status flip only.
         expect(db.risk.update).toHaveBeenCalledWith({
             where: { id: 'r1' },
-            data: {
-                status: 'MITIGATED',
-                residualScore: 4,
-                residualScoreSetAt: expect.any(Date),
-            },
+            data: { status: 'MITIGATED' },
         });
         const actions = mockLog.mock.calls.map((c) => (c[2] as any).action);
         expect(actions).toContain('RISK_STATUS_CHANGED_BY_TREATMENT_PLAN');
         expect(actions).toContain('TREATMENT_PLAN_COMPLETED');
-        // The status-change audit row carries the residual score
-        // pair so an auditor can reconstruct the before/after.
+        // The status-change audit row reports the (unchanged) residual
+        // so an auditor can reconstruct the before/after.
         const statusEvent = mockLog.mock.calls
             .map((c) => c[2] as any)
             .find((e) => e.action === 'RISK_STATUS_CHANGED_BY_TREATMENT_PLAN');
-        expect(statusEvent.detailsJson.after.residualScore).toBe(4);
+        expect(statusEvent.detailsJson.after.residualScore).toBeNull();
+        expect(statusEvent.detailsJson.after.residualDerivation).toBeNull();
         expect(statusEvent.detailsJson.after.residualScoreBefore).toBeNull();
         expect(statusEvent.detailsJson.after.inheritedScore).toBe(20);
     });
@@ -676,15 +691,13 @@ describe('completePlan — ADMIN-gated close + strategy→RiskStatus mapping', (
             closingRemark: 'formally accepted',
         });
 
-        // ACCEPT → ACCEPTED unchanged; residual = score (no controls).
+        // ACCEPT → ACCEPTED; RQ2-2 — accepting the inherent level
+        // writes NO residual (the divisor-era residual=score copy is
+        // gone).
         expect(result.newRiskStatus).toBe('ACCEPTED');
         expect(db.risk.update).toHaveBeenCalledWith({
             where: { id: 'r1' },
-            data: {
-                status: 'ACCEPTED',
-                residualScore: 15,
-                residualScoreSetAt: expect.any(Date),
-            },
+            data: { status: 'ACCEPTED' },
         });
     });
 
@@ -698,8 +711,8 @@ describe('completePlan — ADMIN-gated close + strategy→RiskStatus mapping', (
             milestones: [],
         });
         mockRepo.markCompleted.mockResolvedValueOnce(1 as never);
-        // TRANSFER → CLOSED, residual = floor(8/10) = 0; the risk is
-        // ALREADY CLOSED with residualScore = 0. No-op.
+        // TRANSFER → CLOSED with no auto-residual (RQ2-2); the risk
+        // is ALREADY CLOSED. Status + residual both unchanged → no-op.
         db.risk.findUniqueOrThrow.mockResolvedValueOnce({
             status: 'CLOSED',
             score: 8,
@@ -790,46 +803,67 @@ describe('completePlan — residual score (Audit S1)', () => {
         return db;
     }
 
-    it('MITIGATE strategy → residual = floor(score / 5), floor at 1', async () => {
+    // RQ2-2 — divisor-era expectations (floor(score/5), floor(score/10))
+    // are gone. Residual now derives from linked-control effectiveness
+    // (mockLoadResidualSuggestion) or is honestly not written.
+
+    it('MITIGATE with a derivable control suggestion → writes the decomposed derived residual', async () => {
+        const db = setup('MITIGATE', 25);
+        mockLoadResidualSuggestion.mockResolvedValueOnce({
+            ...NO_SUGGESTION,
+            combined: { likelihoodReduction: 0.6, impactReduction: 0.5, contributions: [], participatingCount: 2 },
+            suggestion: { residualLikelihood: 2, residualImpact: 3, residualScore: 6, likelihoodReduction: 0.6, impactReduction: 0.5 },
+        });
+        await completePlan(makeRequestContext('ADMIN'), 'plan-1', { closingRemark: 'done' });
+        const data = db.risk.update.mock.calls[0][0].data;
+        expect(data.residualLikelihood).toBe(2);
+        expect(data.residualImpact).toBe(3);
+        expect(data.residualScore).toBe(6);
+        expect(data.residualScoreSetAt).toBeInstanceOf(Date);
+    });
+
+    it('MITIGATE with NO control signal → status flip only, no fabricated residual', async () => {
         const db = setup('MITIGATE', 25);
         await completePlan(makeRequestContext('ADMIN'), 'plan-1', { closingRemark: 'done' });
-        // 25 / 5 = 5
-        expect(db.risk.update.mock.calls[0][0].data.residualScore).toBe(5);
+        const data = db.risk.update.mock.calls[0][0].data;
+        expect(data).toEqual({ status: 'MITIGATED' });
     });
 
-    it('MITIGATE with very low score (1) → residual floor at 1 (never zero for MITIGATE)', async () => {
-        const db = setup('MITIGATE', 1);
-        await completePlan(makeRequestContext('ADMIN'), 'plan-1', { closingRemark: 'done' });
-        // floor(1/5) = 0, but Math.max(1, ...) = 1
-        expect(db.risk.update.mock.calls[0][0].data.residualScore).toBe(1);
-    });
-
-    it('ACCEPT strategy → residual = score (no controls, no reduction)', async () => {
+    it('ACCEPT strategy → no residual write (accepting the inherent level)', async () => {
         const db = setup('ACCEPT', 15);
         await completePlan(makeRequestContext('ADMIN'), 'plan-1', { closingRemark: 'accepted' });
-        expect(db.risk.update.mock.calls[0][0].data.residualScore).toBe(15);
+        const data = db.risk.update.mock.calls[0][0].data;
+        expect(data.residualScore).toBeUndefined();
+        // The derivation loader isn't even consulted for ACCEPT.
+        expect(mockLoadResidualSuggestion).not.toHaveBeenCalled();
     });
 
-    it('TRANSFER strategy → residual = floor(score / 10), can be 0', async () => {
+    it('TRANSFER strategy → no auto-write (controls do not model contractual transfer)', async () => {
         const db = setup('TRANSFER', 25);
         await completePlan(makeRequestContext('ADMIN'), 'plan-1', { closingRemark: 'insured' });
-        expect(db.risk.update.mock.calls[0][0].data.residualScore).toBe(2);
+        const data = db.risk.update.mock.calls[0][0].data;
+        expect(data.residualScore).toBeUndefined();
+        expect(mockLoadResidualSuggestion).not.toHaveBeenCalled();
     });
 
-    it('AVOID strategy → residual = 0 (activity gone)', async () => {
+    it('AVOID strategy → semantic zero (0/0 dims, score 0)', async () => {
         const db = setup('AVOID', 30);
         await completePlan(makeRequestContext('ADMIN'), 'plan-1', { closingRemark: 'eliminated' });
-        expect(db.risk.update.mock.calls[0][0].data.residualScore).toBe(0);
+        const data = db.risk.update.mock.calls[0][0].data;
+        expect(data.residualLikelihood).toBe(0);
+        expect(data.residualImpact).toBe(0);
+        expect(data.residualScore).toBe(0);
+        expect(data.residualScoreSetAt).toBeInstanceOf(Date);
     });
 
-    it('residual write carries `residualScoreSetAt` timestamp', async () => {
-        const db = setup('MITIGATE', 20);
-        await completePlan(makeRequestContext('ADMIN'), 'plan-1', { closingRemark: 'done' });
-        expect(db.risk.update.mock.calls[0][0].data.residualScoreSetAt).toBeInstanceOf(Date);
-    });
-
-    it('emits the residual-pair (before/after) in the status-change audit row', async () => {
+    it('emits the residual-pair (before/after) + derivation in the status-change audit row', async () => {
         setup('MITIGATE', 20, 8 /* prior residual from an earlier plan */);
+        // RQ2-2 — a derivable suggestion supersedes the prior residual.
+        mockLoadResidualSuggestion.mockResolvedValueOnce({
+            ...NO_SUGGESTION,
+            combined: { likelihoodReduction: 0.6, impactReduction: 0.5, contributions: [], participatingCount: 2 },
+            suggestion: { residualLikelihood: 2, residualImpact: 2, residualScore: 4, likelihoodReduction: 0.6, impactReduction: 0.5 },
+        });
         await completePlan(makeRequestContext('ADMIN'), 'plan-1', { closingRemark: 'second pass' });
         const statusEvent = mockLog.mock.calls
             .map((c) => c[2] as any)
@@ -837,6 +871,7 @@ describe('completePlan — residual score (Audit S1)', () => {
         expect(statusEvent.detailsJson.after.residualScore).toBe(4);
         expect(statusEvent.detailsJson.after.residualScoreBefore).toBe(8);
         expect(statusEvent.detailsJson.after.inheritedScore).toBe(20);
+        expect(statusEvent.detailsJson.after.residualDerivation).toBeTruthy();
     });
 });
 

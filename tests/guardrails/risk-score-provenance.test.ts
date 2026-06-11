@@ -94,3 +94,41 @@ describe('RQ2-1 — every score write is paired with a provenance event', () => 
         expect(eventsUsecase).not.toMatch(/from '@\/lib\/prisma'/);
     });
 });
+
+describe('RQ2-2 — control-derived residual (divisors stay dead)', () => {
+    const residualLib = read('src/lib/risk-residual.ts');
+    const suggestionUsecase = read('src/app-layer/usecases/risk-residual-suggestion.ts');
+    const route = read('src/app/api/t/[tenantSlug]/risks/[id]/residual-suggestion/route.ts');
+
+    test('the divisor-era formula cannot return', () => {
+        // Identifier gone…
+        expect(planUsecase).not.toMatch(/residualScoreForCompletedStrategy/);
+        // …and the arbitrary-constant shapes too.
+        expect(planUsecase).not.toMatch(/Math\.floor\([A-Za-z.]+ \/ 5\)/);
+        expect(planUsecase).not.toMatch(/Math\.floor\([A-Za-z.]+ \/ 10\)/);
+        // completePlan derives via the shared loader instead.
+        expect(planUsecase).toMatch(/loadResidualSuggestion/);
+    });
+
+    test('accepted suggestions land as DERIVED-source ledger events', () => {
+        expect(suggestionUsecase).toMatch(/source:\s*'DERIVED'/);
+    });
+
+    test('accept recomputes server-side — the route body carries no score values', () => {
+        // The POST schema accepts ONLY a justification; any future
+        // field that smells like a client-asserted number fails here.
+        expect(route).toMatch(/justification:\s*z\.string\(\)/);
+        for (const banned of ['residualScore', 'residualLikelihood', 'residualImpact', 'effectiveness']) {
+            expect(route).not.toMatch(new RegExp(`${banned}\\s*:\\s*z\\.`));
+        }
+    });
+
+    test('the combination formula is layered (1 − ∏(1 − e)) with the documented cap', () => {
+        expect(residualLib).toMatch(/MAX_REDUCTION = 0\.8/);
+        expect(residualLib).toMatch(/Survival \*= 1 - e/);
+    });
+
+    test('the derived rollup goes through calculateRiskScore (one scoring seam)', () => {
+        expect(residualLib).toMatch(/calculateRiskScore\(residualLikelihood,\s*residualImpact,\s*maxScale\)/);
+    });
+});

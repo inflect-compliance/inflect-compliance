@@ -40,6 +40,8 @@ import {
 } from '../policies/common';
 import { logEvent } from '../events/audit';
 import { recordScoreEvent } from './risk-score-events';
+import { loadResidualSuggestion } from './risk-residual-suggestion';
+import { describeCombination } from '@/lib/risk-residual';
 import { runInTenantContext } from '@/lib/db-context';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { badRequest, notFound } from '@/lib/errors/types';
@@ -91,35 +93,50 @@ function riskStatusForCompletedStrategy(
 }
 
 /**
- * Residual score after a treatment plan completes.
+ * RQ2-2 — residual after a treatment plan completes.
  *
- * Inputs:
- *   `inheritedScore` is the risk's `score` at completion time (the
- *   "current" value — already reflects any likelihood/impact edits
- *   the owner made along the way).
- *   `strategy` drives the reduction factor.
+ * The divisor-era formula (MITIGATE → score/5, TRANSFER → score/10)
+ * is gone: those constants were arbitrary, never recalculated, and
+ * ignored the controls actually linked to the risk. The residual now
+ * comes from the risk's control stack via the shared derivation in
+ * `@/lib/risk-residual` — or is honestly NOT written at all:
  *
- * Reductions (rough alignment with ISO 27005 informal practice):
- *   MITIGATE  — divide by 5, floor at 1 (controls reduce the risk
- *               substantially but rarely to zero).
- *   ACCEPT    — unchanged (no controls implemented; residual = inherent).
- *   TRANSFER  — divide by 10, floor at 0 (third-party absorbs most of it).
- *   AVOID     — 0 (the activity creating the risk is gone).
+ *   AVOID     — semantic zero (the activity creating the risk is
+ *               gone): residual 0, dimensions 0/0 sentinel.
+ *   MITIGATE  — derived from linked-control effectiveness when at
+ *               least one control carries a signal; otherwise NO
+ *               residual is fabricated — the risk owner asserts it
+ *               via the assessment flow instead.
+ *   TRANSFER  — controls don't model contractual transfer; NO
+ *               auto-write. The owner asserts the post-transfer
+ *               residual with a justification.
+ *   ACCEPT    — accepting the inherent level; NO residual write.
+ *
+ * Returns null when nothing should be written.
  */
-function residualScoreForCompletedStrategy(
-    inheritedScore: number,
+async function residualForCompletedStrategy(
+    db: Parameters<typeof loadResidualSuggestion>[0],
+    tenantId: string,
+    riskId: string,
     strategy: TreatmentStrategy,
-): number {
-    switch (strategy) {
-        case 'MITIGATE':
-            return Math.max(1, Math.floor(inheritedScore / 5));
-        case 'ACCEPT':
-            return inheritedScore;
-        case 'TRANSFER':
-            return Math.max(0, Math.floor(inheritedScore / 10));
-        case 'AVOID':
-            return 0;
+): Promise<{ residualLikelihood: number; residualImpact: number; residualScore: number; derivation: string } | null> {
+    if (strategy === 'AVOID') {
+        return {
+            residualLikelihood: 0,
+            residualImpact: 0,
+            residualScore: 0,
+            derivation: 'Risk avoided — the activity creating the risk no longer exists',
+        };
     }
+    if (strategy !== 'MITIGATE') return null;
+    const { suggestion, combined } = await loadResidualSuggestion(db, tenantId, riskId);
+    if (!suggestion) return null;
+    return {
+        residualLikelihood: suggestion.residualLikelihood,
+        residualImpact: suggestion.residualImpact,
+        residualScore: suggestion.residualScore,
+        derivation: describeCombination(combined),
+    };
 }
 
 // ─── Read paths ───────────────────────────────────────────────────────
@@ -542,39 +559,44 @@ export async function completePlan(
             where: { id: plan.riskId },
             select: { status: true, score: true, residualScore: true },
         });
-        // Audit S1 — residual score reflects the post-controls risk
-        // posture. Re-computed at every plan completion (subsequent
-        // plans on the same risk overwrite the prior residual; the
-        // audit trail records each change).
-        const newResidualScore = residualScoreForCompletedStrategy(
-            riskBefore.score,
+        // RQ2-2 — residual derives from the risk's linked-control
+        // effectiveness (or the AVOID semantic zero); strategies with
+        // nothing derivable write NO residual rather than fabricating
+        // one. See residualForCompletedStrategy.
+        const derived = await residualForCompletedStrategy(
+            db,
+            ctx.tenantId,
+            plan.riskId,
             plan.strategy as TreatmentStrategy,
         );
-        if (
-            riskBefore.status !== newRiskStatus ||
-            riskBefore.residualScore !== newResidualScore
-        ) {
+        const residualChanged =
+            derived !== null && riskBefore.residualScore !== derived.residualScore;
+        if (riskBefore.status !== newRiskStatus || residualChanged) {
             await db.risk.update({
                 where: { id: plan.riskId },
                 data: {
                     status: newRiskStatus,
-                    residualScore: newResidualScore,
-                    residualScoreSetAt: now,
+                    ...(residualChanged
+                        ? {
+                              residualLikelihood: derived.residualLikelihood,
+                              residualImpact: derived.residualImpact,
+                              residualScore: derived.residualScore,
+                              residualScoreSetAt: now,
+                          }
+                        : {}),
                 },
             });
-            // RQ2-1 — RESIDUAL ledger entry with PLAN provenance.
-            // Dimensions are 0/0 sentinels: the divisor formula
-            // produces only a rolled-up score (RQ2-2 replaces it
-            // with a decomposed control-effectiveness derivation).
-            if (riskBefore.residualScore !== newResidualScore) {
+            // RQ2-1 — RESIDUAL ledger entry with PLAN provenance,
+            // carrying the control-derivation narrative.
+            if (residualChanged) {
                 await recordScoreEvent(db, ctx.tenantId, {
                     riskId: plan.riskId,
                     kind: 'RESIDUAL',
-                    likelihood: 0,
-                    impact: 0,
-                    score: newResidualScore,
+                    likelihood: derived.residualLikelihood,
+                    impact: derived.residualImpact,
+                    score: derived.residualScore,
                     source: 'PLAN',
-                    justification: `Treatment plan ${treatmentPlanId} completed (strategy: ${plan.strategy})`,
+                    justification: `Treatment plan ${treatmentPlanId} completed (strategy: ${plan.strategy}) — ${derived.derivation}`,
                     createdByUserId: ctx.userId,
                 });
             }
@@ -591,9 +613,10 @@ export async function completePlan(
                     after: {
                         treatmentPlanId,
                         strategy: plan.strategy,
-                        residualScore: newResidualScore,
+                        residualScore: derived?.residualScore ?? riskBefore.residualScore,
                         residualScoreBefore: riskBefore.residualScore,
                         inheritedScore: riskBefore.score,
+                        residualDerivation: derived?.derivation ?? null,
                     },
                 },
             });
