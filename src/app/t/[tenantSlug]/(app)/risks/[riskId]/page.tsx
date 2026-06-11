@@ -344,11 +344,26 @@ export default function RiskDetailPage() {
                         // RQ2-5 — qual ↔ quant side by side: the
                         // quantified header carries the compact ALE
                         // next to the score chip.
+                        // polish #11 — the ALE chip drills into the
+                        // FAIR tab, closing the loop from glance →
+                        // inputs. Bare-text fallback when canWrite is
+                        // off keeps the value visible without faking
+                        // an affordance.
                         ...(riskAleValue !== null
                             ? [
                                   {
                                       label: 'ALE',
-                                      value: formatCompactCurrency(riskAleValue),
+                                      value: (
+                                          <button
+                                              type="button"
+                                              className="cursor-pointer bg-transparent border-0 p-0 text-inherit underline underline-offset-2 decoration-dotted"
+                                              onClick={() => setActiveTab('quantification')}
+                                              aria-label={`Annualised loss expectancy ${formatCompactCurrency(riskAleValue)} — open the quantification tab`}
+                                              data-testid="meta-ale-link"
+                                          >
+                                              {formatCompactCurrency(riskAleValue)}
+                                          </button>
+                                      ),
                                   } as const,
                               ]
                             : []),
