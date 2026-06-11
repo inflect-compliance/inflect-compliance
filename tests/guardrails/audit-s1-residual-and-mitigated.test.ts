@@ -61,9 +61,17 @@ describe('Audit S1 — Risk lifecycle & treatment plans', () => {
             );
         });
 
-        it('residualScoreForCompletedStrategy is defined and covers all 4 strategies', () => {
-            expect(src).toMatch(/function residualScoreForCompletedStrategy/);
-            // Each case present in the switch.
+        it('residualForCompletedStrategy is defined and covers all 4 strategies (RQ2-2 derivation)', () => {
+            // RQ2-2 replaced the divisor-era
+            // `residualScoreForCompletedStrategy` with the control-
+            // derived `residualForCompletedStrategy`: AVOID → semantic
+            // zero, MITIGATE → derived from linked-control
+            // effectiveness, TRANSFER/ACCEPT → no auto-write (null).
+            expect(src).toMatch(/function residualForCompletedStrategy/);
+            expect(src).toMatch(/strategy === 'AVOID'/);
+            expect(src).toMatch(/strategy !== 'MITIGATE'/);
+            expect(src).toMatch(/loadResidualSuggestion/);
+            // Status mapping still covers all four strategies.
             expect(src).toMatch(/case\s+['"]MITIGATE['"]/);
             expect(src).toMatch(/case\s+['"]ACCEPT['"]/);
             expect(src).toMatch(/case\s+['"]TRANSFER['"]/);
@@ -77,8 +85,10 @@ describe('Audit S1 — Risk lifecycle & treatment plans', () => {
             expect(src).toMatch(/residualScore:\s*true/);
         });
 
-        it('completePlan writes residualScore + residualScoreSetAt on the risk update', () => {
-            expect(src).toMatch(/residualScore:\s*newResidualScore/);
+        it('completePlan writes the derived decomposed residual + residualScoreSetAt on the risk update', () => {
+            expect(src).toMatch(/residualLikelihood:\s*derived\.residualLikelihood/);
+            expect(src).toMatch(/residualImpact:\s*derived\.residualImpact/);
+            expect(src).toMatch(/residualScore:\s*derived\.residualScore/);
             expect(src).toMatch(/residualScoreSetAt:\s*now/);
         });
 
