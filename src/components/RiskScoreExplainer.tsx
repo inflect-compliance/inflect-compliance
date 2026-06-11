@@ -29,13 +29,30 @@ import { useKeyboardShortcut } from '@/lib/hooks/use-keyboard-shortcut';
 import { formatDateTime } from '@/lib/format-date';
 import type { ScoreExplanation } from '@/app-layer/usecases/risk-score-explanation';
 
-const SOURCE_LABEL: Record<string, string> = {
-    USER: 'manual assessment',
-    DERIVED: 'accepted control derivation',
-    PLAN: 'treatment-plan completion',
-    AI: 'accepted AI suggestion',
-    MIGRATION: 'pre-provenance backfill',
-};
+/**
+ * Plain-language attribution for a provenance event. The grammar
+ * varies by source — AI suggestions read "AI suggestion · accepted
+ * by Alice" rather than "(accepted AI suggestion) by Alice", which
+ * made the human assessor sound incidental to the machine.
+ */
+function describeProvenance(source: string, actorName: string | null): string {
+    const by = actorName ? ` by ${actorName}` : '';
+    switch (source) {
+        case 'USER':
+            return actorName ? `manual assessment${by}` : 'manual assessment';
+        case 'DERIVED':
+            return actorName ? `accepted control derivation${by}` : 'accepted control derivation';
+        case 'PLAN':
+            return actorName ? `treatment-plan completion${by}` : 'treatment-plan completion';
+        case 'AI':
+            // The assessor is the decision; the AI is the proposer.
+            return actorName ? `AI suggestion · accepted${by}` : 'AI suggestion';
+        case 'MIGRATION':
+            return 'pre-provenance backfill';
+        default:
+            return source;
+    }
+}
 
 export function RiskScoreExplainer({
     tenantSlug,
@@ -166,8 +183,8 @@ export function RiskScoreExplainer({
                                         {data.recentEvents.map((e, i) => (
                                             <li key={i} className="text-content-muted">
                                                 {e.kind === 'INHERENT' ? 'Inherent' : 'Residual'} → {e.score}{' '}
-                                                ({SOURCE_LABEL[e.source] ?? e.source})
-                                                {e.actorName ? ` by ${e.actorName}` : ''} ·{' '}
+                                                ({describeProvenance(e.source, e.actorName)})
+                                                {' · '}
                                                 {formatDateTime(e.createdAt)}
                                             </li>
                                         ))}

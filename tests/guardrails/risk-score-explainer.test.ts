@@ -56,7 +56,7 @@ describe('RQ2-3 — score chips explain themselves', () => {
     });
 
     test('MIGRATION provenance is labelled honestly in the popover', () => {
-        expect(component).toMatch(/MIGRATION:\s*'pre-provenance backfill'/);
+        expect(component).toMatch(/case 'MIGRATION':\s*\n\s*return 'pre-provenance backfill'/);
     });
 
     test('the aggregator stays read-bounded (events take-5, breaches unresolved + bounded)', () => {
