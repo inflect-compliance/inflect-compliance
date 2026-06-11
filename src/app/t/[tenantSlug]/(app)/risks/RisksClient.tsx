@@ -102,6 +102,10 @@ interface RiskListItem {
     sleAmount?: number | null;
     aroAmount?: number | null;
     fairAle?: number | null;
+    /** RQ2-9 — decomposed residual dims for the movement view. */
+    residualLikelihood?: number | null;
+    residualImpact?: number | null;
+    residualScore?: number | null;
 }
 
 interface RisksClientProps {
@@ -450,6 +454,26 @@ function RisksPageInner({
         }
         return Array.from(lookup.values());
     }, [risks]);
+
+    // RQ2-9 — inherent → residual movements for the matrix overlay.
+    // Only decomposed residuals (RQ2-1 dims) qualify: a legacy
+    // undecomposed score has no destination cell, and inventing one
+    // would draw a lie.
+    const matrixMovements = useMemo(
+        () =>
+            risks
+                .filter(
+                    (r) =>
+                        r.residualLikelihood != null && r.residualImpact != null,
+                )
+                .map((r) => ({
+                    riskId: r.id,
+                    title: r.title,
+                    from: { likelihood: r.likelihood, impact: r.impact },
+                    to: { likelihood: r.residualLikelihood as number, impact: r.residualImpact as number },
+                })),
+        [risks],
+    );
 
     const getRiskLevel = (score: number): { label: string; class: StatusBadgeVariant } => {
         if (score <= 5) return { label: t.low, class: 'success' };
@@ -813,6 +837,7 @@ function RisksPageInner({
                     <RiskMatrix
                         config={matrixConfig}
                         cells={matrixCells}
+                        movements={matrixMovements}
                         title={t.heatmapTitle}
                         mode="bubble"
                         onCellClick={(cell) => {
