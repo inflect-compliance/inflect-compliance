@@ -103,6 +103,11 @@ async function teardown() {
     await globalPrisma.riskTreatmentPlan.deleteMany({
         where: { tenantId: { in: tenantIds } },
     });
+    // RQ2-2 — the derivation test seeds a Control + RiskControl link;
+    // deleting controls cascades the link rows.
+    await globalPrisma.control.deleteMany({
+        where: { tenantId: { in: tenantIds } },
+    });
     await globalPrisma.risk.deleteMany({
         where: { tenantId: { in: tenantIds } },
     });
@@ -355,7 +360,7 @@ describeFn('Epic G-7 — risk treatment plan usecases', () => {
 
     // ── 6. completePlan happy path + risk-status mapping ───────────
 
-    it('MITIGATE plan completion → risk goes to MITIGATED + residual score written (Audit S1)', async () => {
+    it('MITIGATE plan completion → MITIGATED; with NO effectiveness-bearing controls the residual is honestly NOT written (RQ2-2)', async () => {
         const { treatmentPlanId } = await createTreatmentPlan(
             ctxAs(Role.ADMIN, admin.userId),
             {
@@ -386,13 +391,64 @@ describeFn('Epic G-7 — risk treatment plan usecases', () => {
             where: { id: RISK_ID },
         });
         expect(risk.status).toBe('MITIGATED');
-        // Residual score = floor(risk.score / 5), minimum 1.
-        expect(risk.residualScore).not.toBeNull();
-        expect(risk.residualScore).toBeGreaterThanOrEqual(1);
-        expect(risk.residualScore).toBeLessThanOrEqual(
-            Math.max(1, Math.floor(risk.score / 5)),
+        // RQ2-2 — the divisor-era fabrication is gone: with no linked
+        // control carrying an effectiveness signal, NO residual is
+        // invented. The owner asserts it via the assessment flow.
+        expect(risk.residualScore).toBeNull();
+        expect(risk.residualScoreSetAt).toBeNull();
+    });
+
+    it('MITIGATE completion with an effective linked control → control-derived residual + PLAN-source ledger event (RQ2-2)', async () => {
+        // Self-contained risk + control so earlier tests cannot bleed in.
+        const risk = await globalPrisma.risk.create({
+            data: {
+                tenantId: TENANT_ID,
+                title: 'Derivable risk',
+                status: 'OPEN',
+                likelihood: 4,
+                impact: 5,
+                score: 20,
+                inherentScore: 20,
+            },
+        });
+        const control = await globalPrisma.control.create({
+            data: {
+                tenantId: TENANT_ID,
+                name: 'MFA everywhere',
+                mitigationType: 'PREVENTIVE',
+                effectiveness: 60,
+            },
+        });
+        await globalPrisma.riskControl.create({
+            data: { tenantId: TENANT_ID, riskId: risk.id, controlId: control.id },
+        });
+
+        const { treatmentPlanId } = await createTreatmentPlan(
+            ctxAs(Role.ADMIN, admin.userId),
+            {
+                riskId: risk.id,
+                strategy: 'MITIGATE',
+                ownerUserId: admin.userId,
+                targetDate: futureDate(90),
+            },
         );
-        expect(risk.residualScoreSetAt).not.toBeNull();
+        await completePlan(ctxAs(Role.ADMIN, admin.userId), treatmentPlanId, {
+            closingRemark: 'controls operating',
+        });
+
+        const after = await globalPrisma.risk.findUniqueOrThrow({ where: { id: risk.id } });
+        // 60% PREVENTIVE → likelihood 4 × 0.4 = 1.6 → ceil 2; impact
+        // untouched at 5; rollup derived 2 × 5 = 10.
+        expect(after.residualLikelihood).toBe(2);
+        expect(after.residualImpact).toBe(5);
+        expect(after.residualScore).toBe(10);
+        expect(after.residualScoreSetAt).not.toBeNull();
+
+        const planEvents = await globalPrisma.riskScoreEvent.findMany({
+            where: { tenantId: TENANT_ID, riskId: risk.id, kind: 'RESIDUAL', source: 'PLAN' },
+        });
+        expect(planEvents).toHaveLength(1);
+        expect(planEvents[0].score).toBe(10);
     });
 
     it('ACCEPT plan completion → risk goes to ACCEPTED', async () => {
