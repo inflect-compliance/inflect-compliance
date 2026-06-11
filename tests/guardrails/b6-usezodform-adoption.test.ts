@@ -76,14 +76,14 @@ describe('B6 — Phase 3 useZodForm adoption', () => {
             'activity',
             'tests',
         ] as const;
+        // RQ2-4: Risks left the canonical 7-tab club — its IA is now
+        // assessment-centric (Overview · Assessment · Quantification ·
+        // Bow-Tie · History · Tasks · Evidence · Traceability), locked
+        // by tests/guards/rq2-4-assessment-ia.test.ts.
         const PAGES: Array<{ label: string; file: string }> = [
             {
                 label: 'Controls (canonical)',
                 file: 'src/app/t/[tenantSlug]/(app)/controls/[controlId]/page.tsx',
-            },
-            {
-                label: 'Risks',
-                file: 'src/app/t/[tenantSlug]/(app)/risks/[riskId]/page.tsx',
             },
             {
                 label: 'Assets',

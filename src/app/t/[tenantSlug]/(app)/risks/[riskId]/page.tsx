@@ -11,7 +11,6 @@ import { useParams } from 'next/navigation';
 import { useTenantContext, useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import dynamic from 'next/dynamic';
 import LinkedTasksPanel from '@/components/LinkedTasksPanel';
-import { EmptyState } from '@/components/ui/empty-state';
 import { Eyebrow } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
 import { MetaStrip } from '@/components/ui/meta-strip';
@@ -44,6 +43,7 @@ import { RISK_TREATMENT_OPTIONS } from '../_shared/risk-options';
 import { cn } from '@/lib/cn';
 import { cardVariants } from '@/components/ui/card';
 import { EditRiskModal, type EditRiskForm } from './_modals/EditRiskModal';
+import { RiskAssessmentPanel } from './RiskAssessmentPanel';
 import { FairAnalysisPanel } from './FairAnalysisPanel';
 import { BowTiePanel } from './BowTiePanel';
 import { RiskHistoryPanel } from './RiskHistoryPanel';
@@ -74,6 +74,9 @@ type Risk = {
     impact: number;
     score: number;
     inherentScore: number;
+    residualLikelihood: number | null;
+    residualImpact: number | null;
+    residualScore: number | null;
     nextReviewAt: string | null;
     targetDate: string | null;
     createdAt: string;
@@ -140,34 +143,32 @@ export default function RiskDetailPage() {
     const [editing, setEditing] = useState(false);
     const [saving, setSaving] = useState(false);
 
-    // B6 +1 — every detail page wears the canonical 7-tab strip
-    // first introduced on the Controls detail surface. Overview holds
-    // the existing risk body; the other six are inline-routed to the
-    // already-mounted panels or stubbed with an EmptyState that
-    // explains where the related-entity surface lives.
+    // RQ2-4 — the 10-tab bar is rationalized to 8. `assessment` is
+    // the new guided inherent → controls → residual surface. The
+    // former `mappings` and `tests` tabs were both inherited-via-
+    // controls panels — they now live as sections under Traceability
+    // (where the control links themselves are managed). The former
+    // `activity` tab was an EmptyState stub; score provenance now
+    // lives in the RQ2-3 explainer + History.
     type Tab =
         | 'overview'
+        | 'assessment'
         | 'quantification'
         | 'bowtie'
         | 'history'
         | 'tasks'
         | 'evidence'
-        | 'mappings'
-        | 'traceability'
-        | 'activity'
-        | 'tests';
+        | 'traceability';
     const [activeTab, setActiveTab] = useState<Tab>('overview');
     const tabs: ReadonlyArray<{ key: Tab; label: string }> = [
         { key: 'overview', label: 'Overview' },
+        { key: 'assessment', label: 'Assessment' },
         { key: 'quantification', label: 'Quantification' },
         { key: 'bowtie', label: 'Bow-Tie' },
         { key: 'history', label: 'History' },
         { key: 'tasks', label: 'Tasks' },
         { key: 'evidence', label: 'Evidence' },
-        { key: 'mappings', label: 'Mappings' },
         { key: 'traceability', label: 'Traceability' },
-        { key: 'activity', label: 'Activity' },
-        { key: 'tests', label: 'Tests' },
     ];
     const [editForm, setEditForm] = useState<EditRiskForm>({});
 
@@ -396,13 +397,34 @@ export default function RiskDetailPage() {
                 </div>
             )}
             {activeTab === 'traceability' && (
-                <TraceabilityPanel
-                    apiBase={apiUrl('')}
-                    entityType="risk"
-                    entityId={riskId}
-                    canWrite={canWrite}
-                    tenantHref={href}
-                />
+                <div className="space-y-section">
+                    <TraceabilityPanel
+                        apiBase={apiUrl('')}
+                        entityType="risk"
+                        entityId={riskId}
+                        canWrite={canWrite}
+                        tenantHref={href}
+                    />
+                    {/* RQ2-4 — the former Mappings + Tests tabs were
+                        both inherited-via-controls surfaces; they now
+                        sit where the control links are managed. */}
+                    <div className="space-y-default">
+                        <Heading level={3}>Inherited mappings</Heading>
+                        <InheritedMappingsPanel
+                            endpoint={apiUrl(`/risks/${riskId}/mappings`)}
+                            tenantHref={href}
+                            entityLabel="risk"
+                        />
+                    </div>
+                    <div className="space-y-default">
+                        <Heading level={3}>Inherited test plans</Heading>
+                        <InheritedTestPlansPanel
+                            endpoint={apiUrl(`/risks/${riskId}/test-plans`)}
+                            tenantHref={href}
+                            entityLabel="risk"
+                        />
+                    </div>
+                </div>
             )}
             {activeTab === 'evidence' && (
                 <div className="space-y-section">
@@ -427,26 +449,21 @@ export default function RiskDetailPage() {
                     </div>
                 </div>
             )}
-            {activeTab === 'mappings' && (
-                <InheritedMappingsPanel
-                    endpoint={apiUrl(`/risks/${riskId}/mappings`)}
-                    tenantHref={href}
-                    entityLabel="risk"
-                />
-            )}
-            {activeTab === 'activity' && (
-                <EmptyState
-                    size="sm"
-                    variant="no-records"
-                    title="Risk activity log"
-                    description="A dedicated activity feed for this risk is on the roadmap. Tenant-wide audit log is available from Admin → Audit Log."
-                />
-            )}
-            {activeTab === 'tests' && (
-                <InheritedTestPlansPanel
-                    endpoint={apiUrl(`/risks/${riskId}/test-plans`)}
-                    tenantHref={href}
-                    entityLabel="risk"
+            {activeTab === 'assessment' && (
+                <RiskAssessmentPanel
+                    riskId={riskId}
+                    risk={{
+                        likelihood: risk.likelihood,
+                        impact: risk.impact,
+                        inherentScore: risk.inherentScore,
+                        residualLikelihood: risk.residualLikelihood,
+                        residualImpact: risk.residualImpact,
+                        residualScore: risk.residualScore,
+                    }}
+                    canWrite={canWrite}
+                    onRiskUpdated={fetchRisk}
+                    onQuantify={() => setActiveTab('quantification')}
+                    onLinkControls={() => setActiveTab('traceability')}
                 />
             )}
             {activeTab === 'quantification' && risk && (
