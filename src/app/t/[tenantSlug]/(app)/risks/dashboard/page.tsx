@@ -256,7 +256,21 @@ export default function RiskDashboardPage() {
             {/* B10 — Quantitative analytics. Renders only when the
                 tenant has at least one quantified risk (SLE + ARO
                 populated). The block is laid out as: KPI strip
-                (totals), top-10 ALE table, loss-exceedance curve. */}
+                (totals), top-10 ALE table, loss-exceedance curve.
+                polish #10 — the un-quantified case used to vanish
+                silently; a one-line empty-state tells the user
+                WHY there's no curve. */}
+            {analytics && analytics.totals.quantifiedCount === 0 && analytics.totals.totalCount > 0 && (
+                <Card data-testid="risk-quant-empty-hint">
+                    <Heading level={2} className="mb-2">Quantitative analytics</Heading>
+                    <p className="text-sm text-content-muted">
+                        No risks quantified yet — open a risk and set SLE × ARO
+                        on the overview, or fill the FAIR inputs on the
+                        Quantification tab, to populate the loss-exceedance
+                        curve and top-by-ALE table here.
+                    </p>
+                </Card>
+            )}
             {analytics && analytics.totals.quantifiedCount > 0 && (
                 <Card data-testid="risk-quant-analytics">
                     <Heading level={2} className="mb-2">Quantitative analytics</Heading>
