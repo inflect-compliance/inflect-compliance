@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
+import { useTenantApiUrl, useTenantHref, useTenantContext, useMoneyFormatter } from '@/lib/tenant-context-provider';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBreakdown } from '@/components/ui/status-breakdown';
 import { Heading } from '@/components/ui/typography';
@@ -12,7 +12,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { SkeletonDashboard } from '@/components/ui/skeleton';
 import { getStatusTone } from '@/lib/design/status-tone';
 import { LossExceedanceCurve } from '@/components/ui/charts';
-import { formatCompactCurrency, type CoherenceReport } from '@/lib/risk-coherence';
+import type { CoherenceReport } from '@/lib/risk-coherence';
 import type { StalenessReport } from '@/app-layer/usecases/risk-staleness';
 import { MonteCarloPanel } from './MonteCarloPanel';
 import { VelocityCard } from './VelocityCard';
@@ -82,6 +82,8 @@ export default function RiskDashboardPage() {
     const href = useTenantHref();
     const tenant = useTenantContext();
     const t = useTranslations('riskManager');
+    // RQ3-OB-A — every monetary figure speaks the tenant's currency.
+    const money = useMoneyFormatter();
 
     const [risks, setRisks] = useState<Risk[]>([]);
     const [loading, setLoading] = useState(true);
@@ -280,20 +282,20 @@ export default function RiskDashboardPage() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-default mb-default">
                         <div className="rounded-md bg-bg-muted/30 px-default py-default" data-testid="risk-quant-tile-total">
                             <KPIStat
-                                value={formatCompactCurrency(analytics.totals.totalAle)}
+                                value={money(analytics.totals.totalAle)}
                                 label="Total ALE / year"
                             />
                         </div>
                         <div className="rounded-md bg-bg-muted/30 px-default py-default" data-testid="risk-quant-tile-avg">
                             <KPIStat
-                                value={formatCompactCurrency(analytics.totals.avgAle)}
+                                value={money(analytics.totals.avgAle)}
                                 label="Average ALE"
                                 tone="attention"
                             />
                         </div>
                         <div className="rounded-md bg-bg-muted/30 px-default py-default" data-testid="risk-quant-tile-max">
                             <KPIStat
-                                value={formatCompactCurrency(analytics.totals.maxAle)}
+                                value={money(analytics.totals.maxAle)}
                                 label="Max single ALE"
                                 tone="critical"
                             />
@@ -320,7 +322,7 @@ export default function RiskDashboardPage() {
                                             {row.title}
                                         </span>
                                         <span className="tabular-nums text-content-muted">
-                                            {formatCompactCurrency(row.ale)}
+                                            {money(row.ale)}
                                         </span>
                                     </Link>
                                 ))}
@@ -361,8 +363,8 @@ export default function RiskDashboardPage() {
                                     className="mt-tight text-xs text-content-muted tabular-nums"
                                     data-testid="lec-portfolio-appetite-note"
                                 >
-                                    Portfolio ALE {formatCompactCurrency(appetite.status.portfolioAle)} of{' '}
-                                    {formatCompactCurrency(appetite.config.totalAleThreshold)} ceiling (
+                                    Portfolio ALE {money(appetite.status.portfolioAle)} of{' '}
+                                    {money(appetite.config.totalAleThreshold)} ceiling (
                                     {Math.round(
                                         (appetite.status.portfolioAle /
                                             appetite.config.totalAleThreshold) *
@@ -425,8 +427,8 @@ export default function RiskDashboardPage() {
                                             </span>
                                             <span className="shrink-0 tabular-nums text-content-muted">
                                                 {moneyBigger
-                                                    ? `score ${f.score} vs ${formatCompactCurrency(f.ale)} — losses say this is bigger`
-                                                    : `score ${f.score} vs ${formatCompactCurrency(f.ale)} — losses say this is smaller`}
+                                                    ? `score ${f.score} vs ${money(f.ale)} — losses say this is bigger`
+                                                    : `score ${f.score} vs ${money(f.ale)} — losses say this is smaller`}
                                             </span>
                                         </Link>
                                     );

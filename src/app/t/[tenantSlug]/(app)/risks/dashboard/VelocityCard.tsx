@@ -7,17 +7,18 @@ import { PercentageArrowDown } from '@/components/ui/icons/nucleo/percentage-arr
 import { Card } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
-import { useTenantApiUrl } from '@/lib/tenant-context-provider';
+import { useTenantApiUrl, useMoneyFormatter } from '@/lib/tenant-context-provider';
 
 interface Vel { riskId: string; title: string; deltaPercent: number }
 interface VelocityResult {
     topRising: Vel[]; topFalling: Vel[];
     portfolioVelocity: { currentTotalAle: number; previousTotalAle: number; deltaPercent: number; trend: string };
 }
-const money = (n: number) => `$${Math.round(n).toLocaleString()}`;
+// RQ3-OB-A — money speaks the tenant's currency (useMoneyFormatter).
 
 export function VelocityCard() {
     const apiUrl = useTenantApiUrl();
+    const money = useMoneyFormatter();
     const [v, setV] = useState<VelocityResult | null>(null);
 
     useEffect(() => {

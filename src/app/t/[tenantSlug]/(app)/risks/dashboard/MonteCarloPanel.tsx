@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { KPIStat } from '@/components/ui/metric';
 import { Heading } from '@/components/ui/typography';
 import { LossExceedanceCurve } from '@/components/ui/charts';
-import { useTenantApiUrl } from '@/lib/tenant-context-provider';
+import { useTenantApiUrl, useMoneyFormatter } from '@/lib/tenant-context-provider';
 import { formatDateTime } from '@/lib/format-date';
 
 interface Run {
@@ -21,10 +21,11 @@ interface Run {
     lecPointsJson: Array<{ threshold: number; probability: number }> | null;
     perRiskResultsJson: Array<{ riskId: string; title: string; aleMean: number; contribution: number }> | null;
 }
-const money = (n: number | null) => (n == null ? '—' : `$${Math.round(n).toLocaleString()}`);
+// RQ3-OB-A — money speaks the tenant's currency (useMoneyFormatter).
 
 export function MonteCarloPanel() {
     const apiUrl = useTenantApiUrl();
+    const money = useMoneyFormatter();
     const [run, setRun] = useState<Run | null>(null);
     const [running, setRunning] = useState(false);
 

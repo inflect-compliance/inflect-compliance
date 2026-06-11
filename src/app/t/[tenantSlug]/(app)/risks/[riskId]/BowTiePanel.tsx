@@ -13,7 +13,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
-import { useTenantApiUrl } from '@/lib/tenant-context-provider';
+import { useTenantApiUrl, useMoneyFormatter } from '@/lib/tenant-context-provider';
 import type { BowTieGraph } from './BowTieCanvas';
 
 // xyflow is client-only + heavy — load the canvas on demand.
@@ -30,7 +30,7 @@ interface Projection {
     consequences: Array<{ id: string; label: string; magnitude: number | null; type: string }>;
     mitigatingBarriers: Barrier[];
 }
-const money = (n: number | null) => (n == null ? '—' : `$${Math.round(n).toLocaleString()}`);
+// RQ3-OB-A — money speaks the tenant's currency (useMoneyFormatter).
 const effVariant = (e: number | null) => (e == null ? 'neutral' : e >= 70 ? 'success' : e >= 40 ? 'warning' : 'error');
 
 function BarrierChip({ b }: { b: Barrier }) {
@@ -46,6 +46,7 @@ function BarrierChip({ b }: { b: Barrier }) {
 
 export function BowTiePanel({ riskId }: { riskId: string }) {
     const apiUrl = useTenantApiUrl();
+    const money = useMoneyFormatter();
     const [p, setP] = useState<Projection | null>(null);
     const [graph, setGraph] = useState<BowTieGraph | null>(null);
     const [view, setView] = useState<'canvas' | 'list'>('canvas');

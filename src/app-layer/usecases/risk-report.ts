@@ -48,7 +48,7 @@ export async function assembleReportData(ctx: RequestContext, title: string): Pr
         getLatestSimulation(ctx),
         getAppetiteStatus(ctx),
         // Tenant is global (no RLS) — resolve the display name for the report header.
-        runInTenantContext(ctx, (db) => db.tenant.findUnique({ where: { id: ctx.tenantId }, select: { name: true } })),
+        runInTenantContext(ctx, (db) => db.tenant.findUnique({ where: { id: ctx.tenantId }, select: { name: true, currencySymbol: true } })),
     ]);
 
     let totalAle = 0, quantifiedCount = 0, maxAle = 0, withRto = 0, withRpo = 0, totalRevenueAtRisk = 0;
@@ -65,6 +65,7 @@ export async function assembleReportData(ctx: RequestContext, title: string): Pr
     return {
         title,
         tenantName: tenant?.name ?? ctx.tenantId,
+        currencySymbol: tenant?.currencySymbol ?? '€',
         generatedAt: new Date().toISOString(),
         totals: { totalRiskCount: risks.length, quantifiedCount, totalAle, avgAle: quantifiedCount > 0 ? totalAle / quantifiedCount : null, maxAle: quantifiedCount > 0 ? maxAle : null },
         var: latestSim ? { mean: latestSim.portfolioMean, p95: latestSim.portfolioP95, p99: latestSim.portfolioP99 } : null,

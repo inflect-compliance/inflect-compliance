@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { InlineNotice } from '@/components/ui/inline-notice';
 import { Heading } from '@/components/ui/typography';
-import { useTenantApiUrl } from '@/lib/tenant-context-provider';
+import { useTenantApiUrl, useMoneyFormatter } from '@/lib/tenant-context-provider';
 import {
     computeTEF,
     computeVulnerability,
@@ -49,7 +49,7 @@ export interface FairInitial {
 
 type FieldKey = Exclude<keyof FairInitial, 'fairConfidence'>;
 const N = (v: string): number | null => (v.trim() === '' ? null : Number(v));
-const money = (n: number) => `$${Math.round(n).toLocaleString()}`;
+// RQ3-OB-A — money speaks the tenant's currency (useMoneyFormatter).
 
 export function FairAnalysisPanel({
     riskId,
@@ -62,6 +62,7 @@ export function FairAnalysisPanel({
     category?: string | null;
 }) {
     const apiUrl = useTenantApiUrl();
+    const money = useMoneyFormatter();
     const [v, setV] = useState<FairInitial>(initial);
     const [conf, setConf] = useState<Conf | null>(initial.fairConfidence);
     const [saving, setSaving] = useState(false);

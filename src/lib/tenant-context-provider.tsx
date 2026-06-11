@@ -10,6 +10,8 @@ export interface TenantContextValue {
     tenantId: string;
     tenantSlug: string;
     tenantName: string;
+    /** RQ3-OB-A — display currency for monetary surfaces (default €). */
+    currencySymbol?: string;
     role: Role;
     plan?: string;
     permissions: {
@@ -71,4 +73,19 @@ export function useTenantApiUrl() {
         (path: string) => `/api/t/${tenantSlug}${path.startsWith('/') ? path : `/${path}`}`,
         [tenantSlug]
     );
+}
+
+// ─── RQ3-OB-A — tenant-bound money formatter ─────────────────────────
+//
+// One symbol per tenant, one formatter per product. Components call
+// `useMoneyFormatter()` instead of importing formatCompactCurrency
+// with a hardcoded symbol — the hook closes over the tenant's
+// configured currencySymbol (default €).
+
+import { formatCompactCurrency } from '@/lib/risk-coherence';
+
+export function useMoneyFormatter(): (v: number | null | undefined) => string {
+    const ctx = useTenantContext();
+    const symbol = ctx.currencySymbol ?? '€';
+    return useCallback((v: number | null | undefined) => formatCompactCurrency(v, symbol), [symbol]);
 }

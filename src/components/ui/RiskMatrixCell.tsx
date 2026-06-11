@@ -40,6 +40,7 @@ import {
     bandRangeLabel,
 } from '@/lib/risk-matrix/scoring';
 import { formatCompactCurrency } from '@/lib/risk-coherence';
+import { pluralize } from '@/lib/pluralize';
 import type { RiskMatrixConfigShape } from '@/lib/risk-matrix/types';
 
 // ─── Props ──────────────────────────────────────────────────────────
@@ -132,9 +133,7 @@ function readableTextOnHex(hex: string): string {
     return lum > 0.55 ? 'rgb(15, 23, 42)' : 'rgb(255, 255, 255)';
 }
 
-function pluralize(n: number, singular: string): string {
-    return n === 1 ? singular : `${singular}s`;
-}
+// RQ3-OB-A — pluralization moved to the shared helper.
 
 // ─── Component ──────────────────────────────────────────────────────
 

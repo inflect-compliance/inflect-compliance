@@ -12,8 +12,11 @@ import { createPdfDocument } from '@/lib/pdf/pdfKitFactory';
 import { addCoverPage, applyHeadersAndFooters } from '@/lib/pdf/layout';
 import { addSectionTitle, addSummaryMetrics } from '@/lib/pdf/sections';
 import { renderTable, autoColumnWidths } from '@/lib/pdf/table';
+import { formatCompactCurrency } from '@/lib/risk-coherence';
 
 export interface ReportData {
+    /** RQ3-OB-A — tenant display currency (default €). */
+    currencySymbol?: string;
     title: string;
     tenantName: string;
     generatedAt: string;
@@ -24,7 +27,10 @@ export interface ReportData {
     bia: { withRto: number; withRpo: number; totalRevenueAtRisk: number };
 }
 
-const money = (n: number | null | undefined) => (n == null ? '—' : `$${Math.round(n).toLocaleString()}`);
+// RQ3-OB-A — reports speak the tenant's currency via the canonical
+// formatter; callers thread `currencySymbol` on ReportData.
+const moneyFor = (data: ReportData) => (n: number | null | undefined) =>
+    formatCompactCurrency(n, data.currencySymbol ?? '€');
 const csvCell = (v: string | number | null | undefined) => {
     const s = v == null ? '' : String(v);
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
@@ -32,6 +38,7 @@ const csvCell = (v: string | number | null | undefined) => {
 
 /** CSV export — portfolio KPIs + top risks. Deterministic. */
 export function renderCsv(data: ReportData): Buffer {
+    const money = moneyFor(data);
     const lines: string[] = [];
     lines.push(`Report,${csvCell(data.title)}`);
     lines.push(`Generated,${csvCell(data.generatedAt)}`);
@@ -59,6 +66,7 @@ export function renderCsv(data: ReportData): Buffer {
 
 /** PDF export — branded cover + KPI summary + top-risks table. */
 export async function renderPdf(data: ReportData): Promise<Buffer> {
+    const money = moneyFor(data);
     const meta = { tenantName: data.tenantName, reportTitle: data.title, reportSubtitle: 'Risk quantification report', generatedAt: data.generatedAt };
     const doc = createPdfDocument(meta);
     addCoverPage(doc, meta);
@@ -100,6 +108,7 @@ function docToBuffer(doc: PDFKit.PDFDocument): Promise<Buffer> {
 
 /** PPTX export — a board slide deck: title, portfolio VaR KPIs, top risks. */
 export async function renderPptx(data: ReportData): Promise<Buffer> {
+    const money = moneyFor(data);
     const pptx = new PptxGenJS();
     pptx.defineLayout({ name: 'WIDE', width: 13.33, height: 7.5 });
     pptx.layout = 'WIDE';

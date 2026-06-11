@@ -88,7 +88,7 @@ describe('resolveTenantBySlug', () => {
         });
         expect(mockPrisma.tenant.findUnique).toHaveBeenCalledWith({
             where: { slug: 'acme-corp' },
-            select: { id: true, slug: true, name: true },
+            select: { id: true, slug: true, name: true, currencySymbol: true },
         });
     });
 
@@ -100,7 +100,7 @@ describe('resolveTenantBySlug', () => {
         ).rejects.toThrow('Tenant not found');
     });
 
-    it('only selects id, slug, name (no overfetch)', async () => {
+    it('only selects id, slug, name, currencySymbol (no overfetch)', async () => {
         mockPrisma.tenant.findUnique.mockResolvedValue({
             id: 'tenant-1',
             slug: 'acme-corp',
@@ -110,7 +110,7 @@ describe('resolveTenantBySlug', () => {
         await resolveTenantBySlug('acme-corp');
 
         const call = mockPrisma.tenant.findUnique.mock.calls[0][0];
-        expect(call.select).toEqual({ id: true, slug: true, name: true });
+        expect(call.select).toEqual({ id: true, slug: true, name: true, currencySymbol: true });
     });
 });
 
@@ -132,6 +132,8 @@ describe('getTenantServerContext', () => {
             id: 'tenant-1',
             slug: 'acme-corp',
             name: 'Acme Corp',
+            // RQ3-OB-A — mock tenants without the column fall back to €.
+            currencySymbol: '€',
         });
         expect(ctx.role).toBe('ADMIN');
         expect(ctx.permissions.canRead).toBe(true);
@@ -191,7 +193,7 @@ describe('getTenantServerContext', () => {
         // The tenant field must be a plain object, not a Prisma model.
         // It should only contain id, slug, name — no createdAt, updatedAt, etc.
         const tenantKeys = Object.keys(ctx.tenant).sort();
-        expect(tenantKeys).toEqual(['id', 'name', 'slug']);
+        expect(tenantKeys).toEqual(['currencySymbol', 'id', 'name', 'slug']);
 
         // Should be JSON-safe (no Date objects or circular refs)
         expect(() => JSON.stringify(ctx)).not.toThrow();

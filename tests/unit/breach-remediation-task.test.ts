@@ -15,6 +15,10 @@ const mockDb = {
         findFirst: jest.fn(),
         updateMany: jest.fn(),
     },
+    // RQ3-OB-A — the task title speaks the tenant's currency.
+    tenant: {
+        findUnique: jest.fn().mockResolvedValue({ currencySymbol: '€' }),
+    },
 } as any;
 
 jest.mock('@/lib/db-context', () => ({

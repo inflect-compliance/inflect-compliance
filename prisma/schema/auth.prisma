@@ -38,6 +38,10 @@ model Tenant {
   /// its tenants with it — orphaned tenants behave like the legacy
   /// pre-org model.
   organizationId                    String?
+  /// RQ3-OB-A — the tenant's display currency for every monetary
+  /// surface (ALE chips, LEC ticks, breach tasks, PDFs). One symbol
+  /// per tenant; the canonical formatter takes it as its symbol arg.
+  currencySymbol                    String                             @default("€")
   industry                          String?
   scope                             String?
   context                           String?

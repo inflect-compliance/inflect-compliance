@@ -10,6 +10,7 @@ import { Bolt } from '@/components/ui/icons/nucleo/bolt';
 import { TriangleWarning } from '@/components/ui/icons/nucleo/triangle-warning';
 import { CurrencyDollar } from '@/components/ui/icons/nucleo/currency-dollar';
 import { cn } from '@/lib/cn';
+import { useMoneyFormatter } from '@/lib/tenant-context-provider';
 
 export const BOWTIE_NODE_TYPES = {
     bowTieThreat: 'bowTieThreat',
@@ -19,11 +20,14 @@ export const BOWTIE_NODE_TYPES = {
     bowTieMitigatingBarrier: 'bowTieMitigatingBarrier',
 } as const;
 
-const money = (n: number | null | undefined) => (n == null ? '' : `$${Math.round(n).toLocaleString()}`);
+// RQ3-OB-A — money speaks the tenant's currency. Nodes render
+// inside the tenant provider tree, so the bound hook applies.
+
 const effTone = (e: number | null | undefined) =>
     e == null ? 'border-border-subtle' : e >= 70 ? 'border-border-success' : e >= 40 ? 'border-border-warning' : 'border-border-error';
 
 function BowTieNodeImpl({ type, data }: NodeProps) {
+    const money = useMoneyFormatter();
     const d = data as Record<string, unknown>;
     const label = String(d.title ?? d.label ?? '');
 

@@ -41,7 +41,9 @@ describe('LossExceedanceCurve — appetite reference lines', () => {
         const markers = screen.getAllByTestId('lec-reference-line');
         expect(markers).toHaveLength(1);
         expect(markers[0].querySelector('line')).toHaveAttribute('stroke-dasharray', '4 3');
-        expect(markers[0].textContent).toContain('Per-risk appetite ($750k)');
+        // RQ3-OB-A — the default tick formatter is now the canonical
+        // formatCompactCurrency (one voice), so the label reads €750K.
+        expect(markers[0].textContent).toContain('Per-risk appetite (€750K)');
     });
 
     it('stretches the x-domain so an over-the-max cap stays on canvas', () => {
