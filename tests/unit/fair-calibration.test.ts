@@ -47,7 +47,8 @@ describe('reflectFrequency / reflectProbability', () => {
         [0.25, 'a 1-in-4 chance (25%)'],
         [0.01, 'a 1-in-100 chance (1%)'],
         [1, 'certain (100% chance)'],
-        [0, 'impossible (0% chance)'],
+        // polish #8 — exact zero gets a typo-trap nudge.
+        [0, '0% — impossible by your model; did you mean 0.5?'],
     ])('probability %d → %s', (input, expected) => {
         expect(reflectProbability(input)).toBe(expected);
     });
