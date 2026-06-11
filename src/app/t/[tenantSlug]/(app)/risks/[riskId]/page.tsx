@@ -15,6 +15,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Eyebrow } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
 import { MetaStrip } from '@/components/ui/meta-strip';
+import { RiskScoreExplainer } from '@/components/RiskScoreExplainer';
 import {
     RISK_STATUS_VARIANT,
     getRiskScoreBand,
@@ -320,7 +321,12 @@ export default function RiskDetailPage() {
                         {
                             kind: 'status',
                             label: 'Inherent Score',
-                            value: `${risk.inherentScore} · ${band.label}`,
+                            // RQ2-3 — the header score explains itself.
+                            value: (
+                                <RiskScoreExplainer tenantSlug={tenant.tenantSlug} riskId={riskId}>
+                                    {`${risk.inherentScore} · ${band.label}`}
+                                </RiskScoreExplainer>
+                            ),
                             variant: band.variant,
                         },
                         ...(risk.treatmentOwner
