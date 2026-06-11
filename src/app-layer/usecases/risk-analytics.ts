@@ -34,6 +34,7 @@ import { RequestContext } from '../types';
 import { assertCanRead } from '../policies/common';
 import { runInTenantContext } from '@/lib/db-context';
 import { resolveALE } from './fair-calculator';
+import { detectIncoherence, type CoherenceReport } from '@/lib/risk-coherence';
 
 export interface QuantitativeRiskTotals {
     /** Every active risk in the tenant. */
@@ -180,5 +181,48 @@ export async function getRiskQuantitativeAnalytics(
         }
 
         return { totals, topByAle, byCategory, lecPoints };
+    });
+}
+
+/**
+ * RQ2-5 — qual ↔ quant coherence report.
+ *
+ * Thin loader over the pure `detectIncoherence`: one narrow scan of
+ * the live portfolio (id/title/score + the three ALE inputs), rank
+ * disagreement computed in memory. Read-only; recomputed per call so
+ * the report always reflects the current scores + quant inputs.
+ */
+export async function getRiskCoherence(
+    ctx: RequestContext,
+): Promise<CoherenceReport> {
+    assertCanRead(ctx);
+
+    return runInTenantContext(ctx, async (db) => {
+        const risks = await db.risk.findMany({
+            where: { tenantId: ctx.tenantId, deletedAt: null },
+            select: {
+                id: true,
+                title: true,
+                inherentScore: true,
+                sleAmount: true,
+                aroAmount: true,
+                fairAle: true,
+            },
+            // guardrail-allow: unbounded — coherence ranks the whole
+            // portfolio; truncating would corrupt the percentiles.
+        });
+
+        return detectIncoherence(
+            risks.map((r) => ({
+                id: r.id,
+                title: r.title,
+                score: r.inherentScore,
+                ale: resolveALE({
+                    fairAle: r.fairAle,
+                    sleAmount: r.sleAmount,
+                    aroAmount: r.aroAmount,
+                }),
+            })),
+        );
     });
 }

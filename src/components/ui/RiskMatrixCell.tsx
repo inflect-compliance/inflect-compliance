@@ -39,6 +39,7 @@ import {
     resolveCell,
     bandRangeLabel,
 } from '@/lib/risk-matrix/scoring';
+import { formatCompactCurrency } from '@/lib/risk-coherence';
 import type { RiskMatrixConfigShape } from '@/lib/risk-matrix/types';
 
 // ─── Props ──────────────────────────────────────────────────────────
@@ -83,6 +84,18 @@ export interface RiskMatrixCellProps {
     onClick?: () => void;
     /** Visual emphasis when this is the active cell. */
     selected?: boolean;
+    /**
+     * RQ2-5 — ALE heat overlay. When enabled the cell's paint
+     * intensity tracks `aleShare` (this cell's summed ALE as a
+     * fraction of the largest cell's), so the matrix reads monetary
+     * concentration instead of just counts. `totalAle` renders as a
+     * compact € line under the count and joins the tooltip.
+     */
+    aleOverlay?: boolean;
+    /** Summed ALE of this cell's risks (currency). */
+    totalAle?: number;
+    /** This cell's ALE ÷ the max cell ALE (0..1). */
+    aleShare?: number;
     /** Stable DOM id (E2E hook). */
     id?: string;
     /** Test id forwarded to the cell wrapper. */
@@ -136,6 +149,9 @@ export function RiskMatrixCell({
     description,
     onClick,
     selected = false,
+    aleOverlay = false,
+    totalAle,
+    aleShare,
     id,
     'data-testid': dataTestId,
     className = '',
@@ -147,10 +163,14 @@ export function RiskMatrixCell({
     const { score, band, likelihoodLabel, impactLabel } = resolved;
     const isEmpty = count <= 0;
 
+    const hasAle = typeof totalAle === 'number' && totalAle > 0;
     const ariaLabel =
         `${config.axisLikelihoodLabel} ${likelihoodLabel} × ` +
         `${config.axisImpactLabel} ${impactLabel} = ${score} (${band.name})` +
-        ` — ${count} ${pluralize(count, 'risk')}`;
+        ` — ${count} ${pluralize(count, 'risk')}` +
+        (aleOverlay && hasAle
+            ? ` — annualised loss expectancy ${formatCompactCurrency(totalAle)}`
+            : '');
 
     const tooltipContent = (
         <div className="space-y-0.5 text-xs">
@@ -163,6 +183,11 @@ export function RiskMatrixCell({
             <p className="text-content-default">
                 {count} {pluralize(count, 'risk')}
             </p>
+            {hasAle && (
+                <p className="text-content-default">
+                    ALE {formatCompactCurrency(totalAle)}
+                </p>
+            )}
             {description && (
                 <p className="pt-1 text-content-muted">{description}</p>
             )}
@@ -198,6 +223,7 @@ export function RiskMatrixCell({
             data-band={band.name}
             data-score={score}
             data-count={count}
+            data-ale={aleOverlay && hasAle ? Math.round(totalAle) : undefined}
             onClick={interactive ? onClick : undefined}
             onKeyDown={
                 interactive
@@ -246,7 +272,14 @@ export function RiskMatrixCell({
                           // editor; no dark-mode coupling required.
                           backgroundColor: band.color,
                           color: fg,
-                          opacity: 0.92,
+                          // RQ2-5 — in ALE-overlay mode the paint
+                          // intensity tracks monetary concentration:
+                          // the heaviest cell stays fully saturated,
+                          // unquantified cells fade. Count mode keeps
+                          // the classic flat 0.92.
+                          opacity: aleOverlay
+                              ? 0.2 + 0.72 * Math.min(Math.max(aleShare ?? 0, 0), 1)
+                              : 0.92,
                       }
             }
         >
@@ -258,8 +291,16 @@ export function RiskMatrixCell({
                 aria-hidden={isEmpty}
             />
             {!isEmpty && mode === 'count' && (
-                <span className="absolute inset-0 flex items-center justify-center">
+                <span className="absolute inset-0 flex flex-col items-center justify-center leading-tight">
                     {count}
+                    {aleOverlay && hasAle && (
+                        <span
+                            className="text-[9px] font-medium"
+                            data-testid="risk-matrix-cell-ale"
+                        >
+                            {formatCompactCurrency(totalAle)}
+                        </span>
+                    )}
                 </span>
             )}
             {!isEmpty && mode === 'bubble' && (

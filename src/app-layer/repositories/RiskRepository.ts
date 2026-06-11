@@ -41,6 +41,11 @@ const riskListSelect = {
     nextReviewAt: true,
     category: true,
     ownerUserId: true,
+    // RQ2-5 — quant inputs for the list-side ALE chip + the matrix
+    // ALE heat overlay (`resolveALE` runs client-side on these).
+    sleAmount: true,
+    aroAmount: true,
+    fairAle: true,
     // `createdAt` is required by the cursor-pagination helper
     // (`computePageInfo`) — it's not rendered in the table.
     createdAt: true,

@@ -44,6 +44,8 @@ import { cn } from '@/lib/cn';
 import { cardVariants } from '@/components/ui/card';
 import { EditRiskModal, type EditRiskForm } from './_modals/EditRiskModal';
 import { RiskAssessmentPanel } from './RiskAssessmentPanel';
+import { resolveALE } from '@/app-layer/usecases/fair-calculator';
+import { formatCompactCurrency } from '@/lib/risk-coherence';
 import { FairAnalysisPanel } from './FairAnalysisPanel';
 import { BowTiePanel } from './BowTiePanel';
 import { RiskHistoryPanel } from './RiskHistoryPanel';
@@ -96,6 +98,9 @@ type Risk = {
     secondaryLossMagnitude: number | null;
     fairConfidence: 'LOW' | 'MEDIUM' | 'HIGH' | null;
     fairAle: number | null;
+    // RQ2-5 — legacy quant inputs feed `resolveALE` for the header chip.
+    sleAmount: number | null;
+    aroAmount: number | null;
 };
 
 // Audit Coherence S1 — MITIGATED sits between MITIGATING and
@@ -299,6 +304,12 @@ export default function RiskDetailPage() {
     }
 
     const band = getRiskScoreBand(risk.inherentScore);
+    // RQ2-5 — resolved ALE for the header chip (null = not quantified).
+    const riskAleValue = resolveALE({
+        fairAle: risk.fairAle,
+        sleAmount: risk.sleAmount,
+        aroAmount: risk.aroAmount,
+    });
     const overdue = isOverdue(risk.nextReviewAt);
 
     return (
@@ -330,6 +341,17 @@ export default function RiskDetailPage() {
                             ),
                             variant: band.variant,
                         },
+                        // RQ2-5 — qual ↔ quant side by side: the
+                        // quantified header carries the compact ALE
+                        // next to the score chip.
+                        ...(riskAleValue !== null
+                            ? [
+                                  {
+                                      label: 'ALE',
+                                      value: formatCompactCurrency(riskAleValue),
+                                  } as const,
+                              ]
+                            : []),
                         ...(risk.treatmentOwner
                             ? [
                                   {

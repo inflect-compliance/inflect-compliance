@@ -27,6 +27,7 @@ import { loadResidualSuggestion } from './risk-residual-suggestion';
 import { describeCombination } from '@/lib/risk-residual';
 import { getRiskMatrixConfig } from './risk-matrix-config';
 import { resolveBandForScore } from '@/lib/risk-matrix/scoring';
+import { formatCompactCurrency } from '@/lib/risk-coherence';
 
 export interface ScoreExplanationEvent {
     kind: 'INHERENT' | 'RESIDUAL';
@@ -189,9 +190,6 @@ export async function getScoreExplanation(
     });
 }
 
-/** Compact currency for popover lines (€1.2M, €430K, €900). */
-export function formatCompactCurrency(v: number): string {
-    if (v >= 1_000_000) return `€${(v / 1_000_000).toFixed(1)}M`;
-    if (v >= 1_000) return `€${(v / 1_000).toFixed(0)}K`;
-    return `€${Math.round(v)}`;
-}
+// Compact currency moved to its canonical pure home in RQ2-5;
+// re-exported so existing imports (and the unit suite) stay stable.
+export { formatCompactCurrency } from '@/lib/risk-coherence';

@@ -64,6 +64,17 @@ import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { RiskScoreExplainer } from '@/components/RiskScoreExplainer';
+import { resolveALE } from '@/app-layer/usecases/fair-calculator';
+import { formatCompactCurrency } from '@/lib/risk-coherence';
+
+/** RQ2-5 — resolved ALE for a list row (null = not quantified). */
+function riskAle(r: RiskListItem): number | null {
+    return resolveALE({
+        fairAle: r.fairAle ?? null,
+        sleAmount: r.sleAmount ?? null,
+        aroAmount: r.aroAmount ?? null,
+    });
+}
 
 interface RiskListItem {
     id: string;
@@ -87,6 +98,10 @@ interface RiskListItem {
     /** B7 — unified linked-task counts (TaskLink RISK), supplied by listRisks. */
     taskTotal?: number;
     taskDone?: number;
+    /** RQ2-5 — quant inputs for the ALE chip + matrix heat overlay. */
+    sleAmount?: number | null;
+    aroAmount?: number | null;
+    fairAle?: number | null;
 }
 
 interface RisksClientProps {
@@ -415,7 +430,7 @@ function RisksPageInner({
     const matrixCells = useMemo(() => {
         const lookup = new Map<
             string,
-            { likelihood: number; impact: number; count: number; risks: { id: string; title: string }[] }
+            { likelihood: number; impact: number; count: number; totalAle: number; risks: { id: string; title: string }[] }
         >();
         for (const r of risks) {
             const key = `${r.likelihood}-${r.impact}`;
@@ -424,9 +439,12 @@ function RisksPageInner({
                 likelihood: r.likelihood,
                 impact: r.impact,
                 count: 0,
+                // RQ2-5 — summed ALE powers the heat overlay toggle.
+                totalAle: 0,
                 risks: [],
             };
             cell.count += 1;
+            cell.totalAle += riskAle(r) ?? 0;
             cell.risks.push({ id: r.id, title: r.title });
             lookup.set(key, cell);
         }
@@ -532,24 +550,41 @@ function RisksPageInner({
                 return (
                     // RQ2-3 — every score chip explains itself; the
                     // popover lazy-fetches on open (no per-row cost).
-                    <RiskScoreExplainer tenantSlug={tenantSlug} riskId={row.original.id}>
-                        <span
-                            className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 font-bold tabular-nums text-content-emphasis"
-                            style={{
-                                backgroundColor: `${band.color}33`, // 20% alpha
-                            }}
-                            title={`${band.name} (${score})`}
-                            data-band={band.name}
-                            data-testid={`risk-score-${row.original.id}`}
-                        >
+                    <span className="inline-flex items-center gap-tight">
+                        <RiskScoreExplainer tenantSlug={tenantSlug} riskId={row.original.id}>
                             <span
-                                aria-hidden="true"
-                                className="inline-block w-1.5 h-1.5 rounded-full"
-                                style={{ backgroundColor: band.color }}
-                            />
-                            {score}
-                        </span>
-                    </RiskScoreExplainer>
+                                className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 font-bold tabular-nums text-content-emphasis"
+                                style={{
+                                    backgroundColor: `${band.color}33`, // 20% alpha
+                                }}
+                                title={`${band.name} (${score})`}
+                                data-band={band.name}
+                                data-testid={`risk-score-${row.original.id}`}
+                            >
+                                <span
+                                    aria-hidden="true"
+                                    className="inline-block w-1.5 h-1.5 rounded-full"
+                                    style={{ backgroundColor: band.color }}
+                                />
+                                {score}
+                            </span>
+                        </RiskScoreExplainer>
+                        {/* RQ2-5 — qual ↔ quant side by side: the
+                            quantified rows carry their compact ALE
+                            beside the score chip. */}
+                        {(() => {
+                            const ale = riskAle(row.original);
+                            return ale !== null ? (
+                                <span
+                                    className="text-[10px] tabular-nums text-content-muted"
+                                    title="Annualised loss expectancy"
+                                    data-testid={`risk-ale-${row.original.id}`}
+                                >
+                                    {formatCompactCurrency(ale)}
+                                </span>
+                            ) : null;
+                        })()}
+                    </span>
                 );
             },
         },

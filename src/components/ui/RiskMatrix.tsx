@@ -77,6 +77,12 @@ export interface RiskMatrixDataCell {
      * render scenario chips; harmless to ship even in count mode.
      */
     risks?: ReadonlyArray<CellRisk>;
+    /**
+     * RQ2-5 — summed resolved ALE of this cell's risks. Enables the
+     * ALE heat overlay toggle; omit (or 0) everywhere and the matrix
+     * behaves exactly as before — the toggle never renders.
+     */
+    totalAle?: number;
 }
 
 export interface RiskMatrixProps {
@@ -132,6 +138,17 @@ export function RiskMatrix({
     // pin the value without us flickering on first render.
     const [internalSwap, setInternalSwap] = useState(false);
     const swapAxes = swapAxesProp ?? internalSwap;
+
+    // RQ2-5 — ALE heat overlay. The toggle only exists when at least
+    // one cell carries monetary data: an unquantified portfolio pays
+    // zero cost and sees zero new chrome.
+    const [aleOverlay, setAleOverlay] = useState(false);
+    const maxCellAle = useMemo(
+        () => cells.reduce((m, c) => Math.max(m, c.totalAle ?? 0), 0),
+        [cells],
+    );
+    const hasAleData = maxCellAle > 0;
+    const aleOverlayActive = aleOverlay && hasAleData;
 
     const lookup = useMemo(() => {
         const m = new Map<string, RiskMatrixDataCell>();
@@ -193,6 +210,7 @@ export function RiskMatrix({
             data-testid={dataTestId}
             data-swap-axes={swapAxes ? 'true' : 'false'}
             data-mode={mode}
+            data-ale-overlay={aleOverlayActive ? 'true' : 'false'}
             className={cn(cardVariants(), className)}
         >
             {showHeader && (
@@ -201,6 +219,23 @@ export function RiskMatrix({
                         {title}
                     </Heading>
                     <div className="flex items-center gap-compact">
+                        {hasAleData && (
+                            <button
+                                type="button"
+                                onClick={() => setAleOverlay((p) => !p)}
+                                aria-pressed={aleOverlay}
+                                className={cn(
+                                    'inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] transition-colors',
+                                    aleOverlay
+                                        ? 'border-border-emphasis text-content-emphasis'
+                                        : 'border-border-subtle text-content-muted hover:border-border-emphasis hover:text-content-emphasis',
+                                )}
+                                aria-label="Toggle ALE heat overlay"
+                                data-testid="risk-matrix-ale-toggle"
+                            >
+                                € ALE heat
+                            </button>
+                        )}
                         {showSwapToggle && swapAxesProp === undefined && (
                             <button
                                 type="button"
@@ -282,6 +317,13 @@ export function RiskMatrix({
                                             mode={mode}
                                             bubbleLimit={bubbleLimit}
                                             config={config}
+                                            aleOverlay={aleOverlayActive}
+                                            totalAle={cell.totalAle}
+                                            aleShare={
+                                                aleOverlayActive && maxCellAle > 0
+                                                    ? (cell.totalAle ?? 0) / maxCellAle
+                                                    : undefined
+                                            }
                                             selected={selectedKey === cellKey}
                                             onClick={
                                                 onCellClick

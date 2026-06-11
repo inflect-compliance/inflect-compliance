@@ -12,6 +12,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { SkeletonDashboard } from '@/components/ui/skeleton';
 import { getStatusTone } from '@/lib/design/status-tone';
 import { LossExceedanceCurve } from '@/components/ui/charts';
+import { formatCompactCurrency, type CoherenceReport } from '@/lib/risk-coherence';
 import { MonteCarloPanel } from './MonteCarloPanel';
 import { VelocityCard } from './VelocityCard';
 
@@ -81,6 +82,15 @@ export default function RiskDashboardPage() {
     // risk list. Failure-soft: a failed analytics load just hides
     // the section without breaking the dashboard.
     const [analytics, setAnalytics] = useState<QuantitativeAnalytics | null>(null);
+    // RQ2-5 — coherence report, failure-soft like analytics.
+    const [coherence, setCoherence] = useState<CoherenceReport | null>(null);
+
+    useEffect(() => {
+        fetch(apiUrl('/risks/coherence'))
+            .then((r) => (r.ok ? r.json() : null))
+            .then((data) => setCoherence(data as CoherenceReport | null))
+            .catch(() => setCoherence(null));
+    }, [apiUrl]);
 
     useEffect(() => {
         fetch(apiUrl('/risks'))
@@ -291,6 +301,50 @@ export default function RiskDashboardPage() {
                             />
                         </div>
                     </div>
+                </Card>
+            )}
+
+            {/* RQ2-5 — qual ↔ quant coherence. Renders only when the
+                detector has enough quantified risks to rank; an
+                agreeing portfolio gets a one-line all-clear. */}
+            {coherence && coherence.quantifiedCount >= coherence.minRequired && (
+                <Card data-testid="risk-coherence-widget">
+                    <Heading level={2} className="mb-2">Qual ↔ quant coherence</Heading>
+                    {coherence.flags.length === 0 ? (
+                        <p className="text-sm text-content-muted">
+                            Qualitative scores and loss estimates agree across the{' '}
+                            {coherence.quantifiedCount} quantified risks — no rank
+                            contradictions detected.
+                        </p>
+                    ) : (
+                        <>
+                            <p className="text-sm text-content-muted mb-default">
+                                {coherence.flags.length} risk
+                                {coherence.flags.length > 1 ? 's' : ''} where the
+                                matrix and the money disagree — one of the two
+                                assessments is probably wrong.
+                            </p>
+                            <div className="space-y-tight">
+                                {coherence.flags.map((f) => (
+                                    <Link
+                                        key={f.riskId}
+                                        href={href(`/risks/${f.riskId}`)}
+                                        className="flex items-center justify-between gap-default p-2 rounded text-sm hover:bg-bg-muted/50 transition-colors duration-100 ease-out"
+                                        data-testid={`risk-coherence-row-${f.riskId}`}
+                                    >
+                                        <span className="truncate text-content-emphasis">
+                                            {f.title}
+                                        </span>
+                                        <span className="shrink-0 tabular-nums text-content-muted">
+                                            {f.direction === 'QUANT_HIGH_QUAL_LOW'
+                                                ? `score ${f.score} vs ${formatCompactCurrency(f.ale)} — losses say this is bigger`
+                                                : `score ${f.score} vs ${formatCompactCurrency(f.ale)} — losses say this is smaller`}
+                                        </span>
+                                    </Link>
+                                ))}
+                            </div>
+                        </>
+                    )}
                 </Card>
             )}
 
