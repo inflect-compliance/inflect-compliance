@@ -22,6 +22,12 @@ import {
     computePLM,
     computeFairALE,
 } from '@/app-layer/usecases/fair-calculator';
+import {
+    reflectFairInput,
+    validateFairInputs,
+    getCategoryPrior,
+    type FairFieldKey,
+} from '@/lib/fair-calibration';
 
 type Conf = 'LOW' | 'MEDIUM' | 'HIGH';
 
@@ -45,7 +51,16 @@ type FieldKey = Exclude<keyof FairInitial, 'fairConfidence'>;
 const N = (v: string): number | null => (v.trim() === '' ? null : Number(v));
 const money = (n: number) => `$${Math.round(n).toLocaleString()}`;
 
-export function FairAnalysisPanel({ riskId, initial }: { riskId: string; initial: FairInitial }) {
+export function FairAnalysisPanel({
+    riskId,
+    initial,
+    category = null,
+}: {
+    riskId: string;
+    initial: FairInitial;
+    /** RQ2-7 — drives the per-category calibration prior hints. */
+    category?: string | null;
+}) {
     const apiUrl = useTenantApiUrl();
     const [v, setV] = useState<FairInitial>(initial);
     const [conf, setConf] = useState<Conf | null>(initial.fairConfidence);
@@ -87,18 +102,38 @@ export function FairAnalysisPanel({ riskId, initial }: { riskId: string; initial
         }
     }, [apiUrl, riskId, v, conf]);
 
-    const field = (label: string, k: FieldKey, hint?: string) => (
-        <label className="block">
-            <span className="text-xs text-content-muted">{label}{hint ? ` (${hint})` : ''}</span>
-            <Input type="text" inputMode="decimal" value={v[k] ?? ''} onChange={set(k)} />
-        </label>
-    );
-    const group = (title: string, children: React.ReactNode) => (
+    // RQ2-7 — every numeric input carries a live plain-language
+    // reflection of what the entered number MEANS, so a mis-scaled
+    // value reads wrong immediately (calibration aid, never a gate).
+    const field = (label: string, k: FieldKey, hint?: string) => {
+        const reflection = reflectFairInput(k as FairFieldKey, v[k]);
+        return (
+            <label className="block">
+                <span className="text-xs text-content-muted">{label}{hint ? ` (${hint})` : ''}</span>
+                <Input type="text" inputMode="decimal" value={v[k] ?? ''} onChange={set(k)} />
+                {reflection && (
+                    <span className="mt-0.5 block text-[10px] text-content-subtle" data-testid={`fair-reflection-${k}`}>
+                        {reflection}
+                    </span>
+                )}
+            </label>
+        );
+    };
+    const group = (title: string, children: React.ReactNode, ghost?: string | null) => (
         <div className="space-y-tight rounded-md border border-border-subtle p-3">
             <p className="text-xs font-medium text-content-emphasis">{title}</p>
+            {ghost && (
+                <p className="text-[10px] italic text-content-subtle" data-testid="fair-prior-hint">
+                    {ghost}
+                </p>
+            )}
             {children}
         </div>
     );
+
+    // RQ2-7 — warn-only sanity checks + category reference anchors.
+    const warnings = useMemo(() => validateFairInputs(v), [v]);
+    const prior = getCategoryPrior(category);
 
     return (
         <Card className="space-y-default p-6">
@@ -112,7 +147,7 @@ export function FairAnalysisPanel({ riskId, initial }: { riskId: string; initial
                     {field('Contact frequency', 'contactFrequency', '/yr')}
                     {field('P(action)', 'probabilityOfAction', '0–1')}
                     {field('TEF (override)', 'threatEventFrequency', '/yr')}
-                </>)}
+                </>, prior?.tefHint)}
                 {group('Vulnerability', <>
                     {field('Threat capability', 'threatCapability', '1–10')}
                     {field('Control strength', 'controlStrength', '1–10')}
@@ -123,7 +158,7 @@ export function FairAnalysisPanel({ riskId, initial }: { riskId: string; initial
                     {field('Response', 'responseCost', '$')}
                     {field('Replacement', 'replacementCost', '$')}
                     {field('PLM (flat override)', 'primaryLossMagnitude', '$')}
-                </>)}
+                </>, prior?.lossHint)}
                 {group('Secondary Loss', <>
                     {field('SLEF', 'secondaryLossEventFrequency', '0–1')}
                     {field('SLM', 'secondaryLossMagnitude', '$')}
@@ -143,6 +178,18 @@ export function FairAnalysisPanel({ riskId, initial }: { riskId: string; initial
                 <span>LEF: <span className="font-semibold tabular-nums">{derived.lef != null ? `${derived.lef.toFixed(2)}/yr` : '—'}</span></span>
                 <span className="ml-auto">FAIR ALE: <span className="font-semibold tabular-nums text-content-emphasis">{derived.ale != null ? `${money(derived.ale)}/yr` : '—'}</span></span>
             </div>
+
+            {/* RQ2-7 — reasonableness warnings. Advisory by contract:
+                they never disable the save button. */}
+            {warnings.length > 0 && (
+                <InlineNotice variant="warning" data-testid="fair-calibration-warnings">
+                    <ul className="list-disc pl-4">
+                        {warnings.map((w) => (
+                            <li key={`${w.field}-${w.message}`}>{w.message}</li>
+                        ))}
+                    </ul>
+                </InlineNotice>
+            )}
 
             {msg && <InlineNotice variant={msg.includes('saved') ? 'success' : 'error'}>{msg}</InlineNotice>}
             <div className="flex justify-end">

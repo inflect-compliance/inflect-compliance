@@ -1,0 +1,249 @@
+/**
+ * RQ2-7 — FAIR calibration aids (pure).
+ *
+ * Martin-Vegue's calibration discipline applied to the RQ-1 FAIR
+ * inputs: raw floats get three kinds of feedback, none of which
+ * ever blocks a save —
+ *
+ *   reflections — plain-language mirror of what the number MEANS
+ *     ("TEF 0.1 ≈ one threat event every 10 years"), rendered live
+ *     beside the input so a typo'd order of magnitude reads wrong
+ *     immediately;
+ *   warnings — reasonableness checks (probability outside 0–1,
+ *     inverted PERT ranges, magnitude ranges spanning >3 orders of
+ *     magnitude). Warn-only by contract: calibration is judgement,
+ *     and the assessor may know something the validator doesn't;
+ *   priors — a small static library of per-category reference
+ *     ranges shown as ghost text ("typical ransomware TEF for a
+ *     mid-size org: 0.05–0.5/yr"). Anchors, not answers.
+ *
+ * Pure module — no DB, no ctx — mirroring `@/lib/risk-residual`.
+ */
+
+import { formatCompactCurrency } from '@/lib/risk-coherence';
+
+// ─── Reflections ─────────────────────────────────────────────────────
+
+export type FairFieldKey =
+    | 'contactFrequency'
+    | 'probabilityOfAction'
+    | 'threatEventFrequency'
+    | 'threatCapability'
+    | 'controlStrength'
+    | 'vulnerabilityProbability'
+    | 'productivityLoss'
+    | 'responseCost'
+    | 'replacementCost'
+    | 'primaryLossMagnitude'
+    | 'secondaryLossEventFrequency'
+    | 'secondaryLossMagnitude';
+
+/** "0.1/yr" → "about once every 10 years"; "12/yr" → "about 12×/year". */
+export function reflectFrequency(perYear: number): string {
+    if (perYear <= 0) return 'never (zero events expected)';
+    if (perYear >= 1) {
+        const n = Math.round(perYear * 10) / 10;
+        return `about ${n}× per year`;
+    }
+    const years = 1 / perYear;
+    const rounded = years >= 10 ? Math.round(years) : Math.round(years * 10) / 10;
+    return `about one event every ${rounded} years`;
+}
+
+/** "0.25" → "1-in-4 chance". */
+export function reflectProbability(p: number): string {
+    if (p <= 0) return 'impossible (0% chance)';
+    if (p >= 1) return 'certain (100% chance)';
+    const oneIn = 1 / p;
+    const rounded = oneIn >= 10 ? Math.round(oneIn) : Math.round(oneIn * 10) / 10;
+    return `a 1-in-${rounded} chance (${Math.round(p * 100)}%)`;
+}
+
+/**
+ * Plain-language mirror for one FAIR input. Null when the value is
+ * absent — the UI renders nothing rather than a placeholder.
+ */
+export function reflectFairInput(key: FairFieldKey, value: number | null): string | null {
+    if (value === null || Number.isNaN(value)) return null;
+    switch (key) {
+        case 'contactFrequency':
+            return `threat contacts the asset ${reflectFrequency(value)}`;
+        case 'threatEventFrequency':
+            return `a threat event ${value >= 1 ? 'occurs' : 'is expected'} ${reflectFrequency(value)}`;
+        case 'probabilityOfAction':
+            return `when in contact, the threat acts with ${reflectProbability(value)}`;
+        case 'vulnerabilityProbability':
+            return `an attempted event succeeds with ${reflectProbability(value)}`;
+        case 'secondaryLossEventFrequency':
+            return `secondary losses (fines, churn, lawsuits) follow ${reflectProbability(value)} of primary events`;
+        case 'threatCapability':
+            return `threat skill ${value}/10 — ${value >= 8 ? 'nation-state / top-percentile attacker' : value >= 5 ? 'capable, resourced attacker' : 'commodity / opportunistic attacker'}`;
+        case 'controlStrength':
+            return `controls resist ${value}/10 — ${value >= 8 ? 'hardened, defence-in-depth' : value >= 5 ? 'solid baseline controls' : 'thin or unproven controls'}`;
+        case 'productivityLoss':
+        case 'responseCost':
+        case 'replacementCost':
+            return `${formatCompactCurrency(value)} per loss event`;
+        case 'primaryLossMagnitude':
+            return `each primary loss event costs about ${formatCompactCurrency(value)}`;
+        case 'secondaryLossMagnitude':
+            return `each secondary fallout costs about ${formatCompactCurrency(value)}`;
+    }
+}
+
+// ─── Reasonableness warnings ─────────────────────────────────────────
+
+export interface CalibrationWarning {
+    field: FairFieldKey | 'pertRange';
+    message: string;
+}
+
+export interface FairPointValues {
+    contactFrequency: number | null;
+    probabilityOfAction: number | null;
+    threatEventFrequency: number | null;
+    threatCapability: number | null;
+    controlStrength: number | null;
+    vulnerabilityProbability: number | null;
+    productivityLoss: number | null;
+    responseCost: number | null;
+    replacementCost: number | null;
+    primaryLossMagnitude: number | null;
+    secondaryLossEventFrequency: number | null;
+    secondaryLossMagnitude: number | null;
+}
+
+const PROBABILITY_FIELDS: ReadonlyArray<FairFieldKey> = [
+    'probabilityOfAction',
+    'vulnerabilityProbability',
+    'secondaryLossEventFrequency',
+];
+const SCALE_1_10_FIELDS: ReadonlyArray<FairFieldKey> = [
+    'threatCapability',
+    'controlStrength',
+];
+const MONEY_FIELDS: ReadonlyArray<FairFieldKey> = [
+    'productivityLoss',
+    'responseCost',
+    'replacementCost',
+    'primaryLossMagnitude',
+    'secondaryLossMagnitude',
+];
+
+/**
+ * Warn-only sanity checks on the point estimates. NEVER blocks —
+ * the return feeds an advisory notice, not validation errors.
+ */
+export function validateFairInputs(v: FairPointValues): CalibrationWarning[] {
+    const warnings: CalibrationWarning[] = [];
+    for (const f of PROBABILITY_FIELDS) {
+        const val = v[f];
+        if (val !== null && (val < 0 || val > 1)) {
+            warnings.push({ field: f, message: `${f} is a probability — expected 0–1, got ${val}` });
+        }
+    }
+    for (const f of SCALE_1_10_FIELDS) {
+        const val = v[f];
+        if (val !== null && (val < 1 || val > 10)) {
+            warnings.push({ field: f, message: `${f} is on the FAIR 1–10 scale, got ${val}` });
+        }
+    }
+    for (const f of MONEY_FIELDS) {
+        const val = v[f];
+        if (val !== null && val < 0) {
+            warnings.push({ field: f, message: `${f} is a loss amount — negative values invert the model` });
+        }
+    }
+    if (v.threatEventFrequency !== null && v.threatEventFrequency < 0) {
+        warnings.push({ field: 'threatEventFrequency', message: 'TEF cannot be negative' });
+    }
+    if (v.contactFrequency !== null && v.contactFrequency < 0) {
+        warnings.push({ field: 'contactFrequency', message: 'Contact frequency cannot be negative' });
+    }
+    if (
+        v.threatEventFrequency !== null &&
+        v.contactFrequency !== null &&
+        v.probabilityOfAction !== null &&
+        v.threatEventFrequency > v.contactFrequency * v.probabilityOfAction * 10
+    ) {
+        warnings.push({
+            field: 'threatEventFrequency',
+            message:
+                'TEF override is far above contact × P(action) — one of the three is probably mis-scaled',
+        });
+    }
+    return warnings;
+}
+
+/** A PERT triple as stored in fairInputsJson. */
+export interface PertTriple {
+    min: number;
+    mode: number;
+    max: number;
+}
+
+/**
+ * Warn-only checks on a PERT range: inverted ordering and magnitude
+ * ranges spanning more than three orders (a €1K–€10M "estimate" is
+ * not an estimate — it's an unanchored guess that will dominate the
+ * simulation tails).
+ */
+export function validatePertTriple(label: string, t: PertTriple): CalibrationWarning[] {
+    const warnings: CalibrationWarning[] = [];
+    if (!(t.min <= t.mode && t.mode <= t.max)) {
+        warnings.push({
+            field: 'pertRange',
+            message: `${label}: range is inverted (expected min ≤ mode ≤ max, got ${t.min}/${t.mode}/${t.max})`,
+        });
+    }
+    if (t.min > 0 && t.max / t.min > 1000) {
+        warnings.push({
+            field: 'pertRange',
+            message: `${label}: range spans more than 3 orders of magnitude (${t.min} → ${t.max}) — consider calibrating with a reference event`,
+        });
+    }
+    return warnings;
+}
+
+// ─── Category priors ─────────────────────────────────────────────────
+
+export interface CategoryPrior {
+    /** Ghost-text hint shown beside the TEF group. */
+    tefHint: string;
+    /** Ghost-text hint shown beside the loss-magnitude group. */
+    lossHint: string;
+}
+
+/**
+ * Small static reference library — anchors for the categories the
+ * NewRiskModal offers. Deliberately coarse public-report-scale
+ * figures: the value is the ORDER OF MAGNITUDE anchor, not the
+ * decimal. Unknown categories return null and the UI shows nothing.
+ */
+export const CATEGORY_PRIORS: Readonly<Record<string, CategoryPrior>> = {
+    Technical: {
+        tefHint: 'Reference: ransomware/intrusion attempts for a mid-size org typically land at TEF 0.05–0.5/yr',
+        lossHint: 'Reference: single-incident response + recovery commonly runs €50K–€500K',
+    },
+    Operational: {
+        tefHint: 'Reference: significant process/outage events typically 0.5–4/yr',
+        lossHint: 'Reference: per-incident operational losses commonly €10K–€250K',
+    },
+    Compliance: {
+        tefHint: 'Reference: regulator findings/audit events typically 0.1–1/yr',
+        lossHint: 'Reference: fines + remediation commonly €25K–€2M depending on regime',
+    },
+    Financial: {
+        tefHint: 'Reference: material financial-control failures typically 0.1–0.5/yr',
+        lossHint: 'Reference: single-event financial losses commonly €50K–€1M',
+    },
+    Reputational: {
+        tefHint: 'Reference: public-trust incidents typically 0.05–0.3/yr',
+        lossHint: 'Reference: churn + PR response commonly €100K–€5M (hardest to calibrate — use customer-lifetime maths)',
+    },
+};
+
+export function getCategoryPrior(category: string | null | undefined): CategoryPrior | null {
+    if (!category) return null;
+    return CATEGORY_PRIORS[category] ?? null;
+}

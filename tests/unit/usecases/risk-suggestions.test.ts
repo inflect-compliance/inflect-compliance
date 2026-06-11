@@ -263,6 +263,8 @@ describe('applySession — idempotency + state guard', () => {
                 },
                 riskSuggestionItem: { update: itemUpdate },
                 tenant: { findUnique: jest.fn().mockResolvedValue({ maxRiskScale: 5 }) },
+                // RQ2-7 — accepted AI suggestions land an AI-source ledger event.
+                riskScoreEvent: { create: jest.fn().mockResolvedValue({ id: 'evt-ai' }) },
                 risk: {
                     findFirst: jest.fn().mockResolvedValue({ id: 'existing-risk' }),
                     create: riskCreate,
@@ -310,6 +312,8 @@ describe('applySession — idempotency + state guard', () => {
                 },
                 riskSuggestionItem: { update: itemUpdate },
                 tenant: { findUnique: jest.fn().mockResolvedValue({ maxRiskScale: 5 }) },
+                // RQ2-7 — accepted AI suggestions land an AI-source ledger event.
+                riskScoreEvent: { create: jest.fn().mockResolvedValue({ id: 'evt-ai' }) },
                 risk: {
                     findFirst: jest.fn().mockResolvedValue(null),
                     create: jest.fn().mockResolvedValue({ id: 'r-new' }),
@@ -333,6 +337,45 @@ describe('applySession — idempotency + state guard', () => {
         ]));
     });
 
+    it('accepted suggestions land an AI-source inherent ledger event (RQ2-7)', async () => {
+        const scoreEventCreate = jest.fn().mockResolvedValue({ id: 'evt-ai' });
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({
+                riskSuggestionSession: {
+                    findFirst: jest.fn().mockResolvedValue({
+                        id: 's1', status: 'GENERATED', provider: 'm', modelName: 'm',
+                        items: [{
+                            id: 'i1', title: 't1', status: 'PENDING',
+                            likelihoodSuggested: 4, impactSuggested: 5,
+                            rationale: 'phishing precedent in sector',
+                        }],
+                    }),
+                    update: jest.fn().mockResolvedValue({}),
+                },
+                riskSuggestionItem: { update: jest.fn().mockResolvedValue({}) },
+                tenant: { findUnique: jest.fn().mockResolvedValue({ maxRiskScale: 5 }) },
+                riskScoreEvent: { create: scoreEventCreate },
+                risk: {
+                    findFirst: jest.fn().mockResolvedValue(null),
+                    create: jest.fn().mockResolvedValue({ id: 'r-new' }),
+                },
+            } as never),
+        );
+
+        await applySession(makeRequestContext('ADMIN'), 's1', { acceptedItemIds: ['i1'] });
+
+        expect(scoreEventCreate).toHaveBeenCalledTimes(1);
+        const data = scoreEventCreate.mock.calls[0][0].data;
+        expect(data).toMatchObject({
+            riskId: 'r-new',
+            kind: 'INHERENT',
+            likelihood: 4,
+            impact: 5,
+            source: 'AI',
+            justification: 'phishing precedent in sector',
+        });
+    });
+
     it('invalidates the risk list cache after creating risks', async () => {
         mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
             fn({
@@ -345,6 +388,8 @@ describe('applySession — idempotency + state guard', () => {
                 },
                 riskSuggestionItem: { update: jest.fn() },
                 tenant: { findUnique: jest.fn().mockResolvedValue({ maxRiskScale: 5 }) },
+                // RQ2-7 — accepted AI suggestions land an AI-source ledger event.
+                riskScoreEvent: { create: jest.fn().mockResolvedValue({ id: 'evt-ai' }) },
                 risk: {
                     findFirst: jest.fn().mockResolvedValue(null),
                     create: jest.fn().mockResolvedValue({ id: 'r-new' }),
@@ -374,6 +419,8 @@ describe('applySession — idempotency + state guard', () => {
                 },
                 riskSuggestionItem: { update: jest.fn() },
                 tenant: { findUnique: jest.fn().mockResolvedValue({ maxRiskScale: 5 }) },
+                // RQ2-7 — accepted AI suggestions land an AI-source ledger event.
+                riskScoreEvent: { create: jest.fn().mockResolvedValue({ id: 'evt-ai' }) },
                 risk: { findFirst: jest.fn(), create: jest.fn() },
             } as never),
         );

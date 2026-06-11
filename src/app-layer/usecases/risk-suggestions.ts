@@ -10,6 +10,7 @@
  * Audit: Every generate/apply/dismiss action is logged with full context.
  */
 import { runInTenantContext } from '@/lib/db-context';
+import { recordScoreEvent } from './risk-score-events';
 import { logEvent } from '@/app-layer/events/audit';
 import type { RequestContext } from '@/app-layer/types';
 import { getProvider } from '@/app-layer/ai/risk-assessment';
@@ -271,6 +272,20 @@ export async function applySession(ctx: RequestContext, sessionId: string, input
                         status: 'OPEN',
                         createdByUserId: ctx.userId,
                     },
+                });
+
+                // RQ2-7 — accepted AI suggestions land with honest
+                // provenance: the inherent anchor is an AI-source
+                // ledger event (RQ2-1), not an unattributed write.
+                await recordScoreEvent(db, ctx.tenantId, {
+                    riskId: risk.id,
+                    kind: 'INHERENT',
+                    likelihood,
+                    impact,
+                    score,
+                    source: 'AI',
+                    justification: item.rationale ?? null,
+                    createdByUserId: ctx.userId,
                 });
 
                 await db.riskSuggestionItem.update({
