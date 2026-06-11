@@ -135,4 +135,16 @@ describe('formatCompactCurrency', () => {
     ])('%d → %s', (input, expected) => {
         expect(formatCompactCurrency(input)).toBe(expected);
     });
+
+    // polish #6 — the dashboard's old formatMoney was a parallel
+    // implementation that took null and a $ symbol; the unified
+    // signature collapses both into this one fn.
+    it('null and undefined render the em-dash placeholder', () => {
+        expect(formatCompactCurrency(null)).toBe('—');
+        expect(formatCompactCurrency(undefined)).toBe('—');
+    });
+    it('accepts an optional symbol arg (the dashboard reads $ today)', () => {
+        expect(formatCompactCurrency(1_250_000, '$')).toBe('$1.3M');
+        expect(formatCompactCurrency(null, '$')).toBe('—');
+    });
 });

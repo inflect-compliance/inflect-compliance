@@ -44,13 +44,6 @@ type QuantitativeAnalytics = {
     }>;
 };
 
-function formatMoney(v: number | null): string {
-    if (v == null) return '—';
-    if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(2)}M`;
-    if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}k`;
-    return `$${v.toFixed(0)}`;
-}
-
 // RQ2-6 — appetite payload from GET /risk-appetite (config + status).
 type AppetitePayload = {
     config: {
@@ -273,20 +266,20 @@ export default function RiskDashboardPage() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-default mb-default">
                         <div className="rounded-md bg-bg-muted/30 px-default py-default" data-testid="risk-quant-tile-total">
                             <KPIStat
-                                value={formatMoney(analytics.totals.totalAle)}
+                                value={formatCompactCurrency(analytics.totals.totalAle)}
                                 label="Total ALE / year"
                             />
                         </div>
                         <div className="rounded-md bg-bg-muted/30 px-default py-default" data-testid="risk-quant-tile-avg">
                             <KPIStat
-                                value={formatMoney(analytics.totals.avgAle)}
+                                value={formatCompactCurrency(analytics.totals.avgAle)}
                                 label="Average ALE"
                                 tone="attention"
                             />
                         </div>
                         <div className="rounded-md bg-bg-muted/30 px-default py-default" data-testid="risk-quant-tile-max">
                             <KPIStat
-                                value={formatMoney(analytics.totals.maxAle)}
+                                value={formatCompactCurrency(analytics.totals.maxAle)}
                                 label="Max single ALE"
                                 tone="critical"
                             />
@@ -313,7 +306,7 @@ export default function RiskDashboardPage() {
                                             {row.title}
                                         </span>
                                         <span className="tabular-nums text-content-muted">
-                                            {formatMoney(row.ale)}
+                                            {formatCompactCurrency(row.ale)}
                                         </span>
                                     </Link>
                                 ))}
@@ -354,8 +347,8 @@ export default function RiskDashboardPage() {
                                     className="mt-tight text-xs text-content-muted tabular-nums"
                                     data-testid="lec-portfolio-appetite-note"
                                 >
-                                    Portfolio ALE {formatMoney(appetite.status.portfolioAle)} of{' '}
-                                    {formatMoney(appetite.config.totalAleThreshold)} ceiling (
+                                    Portfolio ALE {formatCompactCurrency(appetite.status.portfolioAle)} of{' '}
+                                    {formatCompactCurrency(appetite.config.totalAleThreshold)} ceiling (
                                     {Math.round(
                                         (appetite.status.portfolioAle /
                                             appetite.config.totalAleThreshold) *
