@@ -491,6 +491,7 @@ export default function RiskDetailPage() {
             {activeTab === 'quantification' && risk && (
                 <FairAnalysisPanel
                     riskId={riskId}
+                    category={risk.category}
                     initial={{
                         threatEventFrequency: risk.threatEventFrequency,
                         contactFrequency: risk.contactFrequency,
