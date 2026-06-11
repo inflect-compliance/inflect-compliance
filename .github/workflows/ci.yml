@@ -926,6 +926,20 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # Issue #1005 — reclaim runner disk space. ubuntu-latest ships
+      # ~14 GB free; the multi-stage image build plus Trivy's
+      # uncompressed-image copy to /tmp need more, and 2026-06-11
+      # logged seven 'no space left on device' flakes across Docker
+      # Build + Trivy on otherwise-green runs. Dropping the unused
+      # preinstalled toolchains reclaims ~25-30 GB. Inline rm -rf of
+      # documented runner-image paths only — deliberately NOT a
+      # third-party action (supply-chain surface).
+      - name: Free runner disk space (issue #1005)
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force 2>/dev/null || true
+          df -h /
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
@@ -962,6 +976,20 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+
+      # Issue #1005 — reclaim runner disk space. ubuntu-latest ships
+      # ~14 GB free; the multi-stage image build plus Trivy's
+      # uncompressed-image copy to /tmp need more, and 2026-06-11
+      # logged seven 'no space left on device' flakes across Docker
+      # Build + Trivy on otherwise-green runs. Dropping the unused
+      # preinstalled toolchains reclaims ~25-30 GB. Inline rm -rf of
+      # documented runner-image paths only — deliberately NOT a
+      # third-party action (supply-chain surface).
+      - name: Free runner disk space (issue #1005)
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force 2>/dev/null || true
+          df -h /
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
