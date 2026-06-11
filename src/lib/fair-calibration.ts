@@ -52,7 +52,13 @@ export function reflectFrequency(perYear: number): string {
 
 /** "0.25" → "1-in-4 chance". */
 export function reflectProbability(p: number): string {
-    if (p <= 0) return 'impossible (0% chance)';
+    // polish #8 — an exact 0 is rarely intentional on a FAIR
+    // probability input; it collapses ALE to zero and silently
+    // removes the risk from the simulation. The "did you mean" nudge
+    // shifts the user from "I'm done" to "wait, is that right?"
+    // without forcing a value.
+    if (p === 0) return '0% — impossible by your model; did you mean 0.5?';
+    if (p < 0) return 'negative — probabilities live on 0..1';
     if (p >= 1) return 'certain (100% chance)';
     const oneIn = 1 / p;
     const rounded = oneIn >= 10 ? Math.round(oneIn) : Math.round(oneIn * 10) / 10;
