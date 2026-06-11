@@ -943,6 +943,7 @@ function ControlsPageInner({
                                                             : c.name}
                                                     </span>
                                                     <StatusBadge
+                                                        size="sm"
                                                         variant={
                                                             STATUS_BADGE[c.status] ||
                                                             'neutral'

@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
+import { ownerDisplayName } from '@/lib/owner-display';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
@@ -174,7 +175,7 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
             // Prefer the assignee (the canonical owner relation); fall
             // back to the legacy free-text `owner` for older findings.
             accessorFn: (f: any) =>
-                f.assignee?.name || f.assignee?.email || f.owner || '—',
+                ownerDisplayName(f.assignee?.name, f.assignee?.email) ?? f.owner ?? '—',
 
             cell: ({ getValue }: any) => <span className="text-xs">{getValue()}</span>,
         },

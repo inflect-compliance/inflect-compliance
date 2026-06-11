@@ -9,6 +9,7 @@ import { NewPolicyModal } from './NewPolicyModal';
 import { Button } from '@/components/ui/button';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
+import { ownerDisplayName } from '@/lib/owner-display';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import type { CappedList } from '@/lib/list-backfill-cap';
 import { TruncationBanner } from '@/components/ui/TruncationBanner';
@@ -309,19 +310,18 @@ function PoliciesPageInner({
         {
             id: 'owner',
             header: 'Owner',
-            // Avatar chip — same pattern landed for controls in the
-            // recent UX-polish PR. Falls back to em-dash when no
-            // ownerUser is set on the policy.
+            // UI-14 (capstone): name-only via ownerDisplayName — name, or the
+            // email local-part as a username, never the full email address.
             accessorFn: (p: any) =>
-                p.owner?.name || p.owner?.email || '—',
+                ownerDisplayName(p.owner?.name, p.owner?.email) ?? '—',
             cell: ({ row }: any) => {
                 const p = row.original;
-                if (!p.owner) {
+                const display = ownerDisplayName(p.owner?.name, p.owner?.email);
+                if (!display) {
                     return (
                         <span className="text-xs text-content-subtle">—</span>
                     );
                 }
-                const display = p.owner.name ?? p.owner.email ?? '?';
                 const initial = display.charAt(0).toUpperCase();
                 return (
                     <span
@@ -336,13 +336,8 @@ function PoliciesPageInner({
                         </span>
                         <span className="min-w-0 leading-tight">
                             <span className="block truncate text-xs text-content-emphasis">
-                                {p.owner.name ?? p.owner.email}
+                                {display}
                             </span>
-                            {p.owner.name && p.owner.email && (
-                                <span className="block truncate text-[10px] text-content-subtle">
-                                    {p.owner.email}
-                                </span>
-                            )}
                         </span>
                     </span>
                 );
