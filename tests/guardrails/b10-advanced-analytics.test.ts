@@ -8,14 +8,18 @@
  *      both `ADD COLUMN` statements with `DOUBLE PRECISION`.
  *   3. Analytics usecase exists at the canonical path, asserts
  *      read permission, and emits the documented shape (totals +
- *      topByAle + byCategory + lecPoints).
+ *      topByAle + byCategory + coverageSketch — the latter renamed
+ *      from `lecPoints` by the RQ3-1 demotion: it is a rank-based
+ *      coverage statement, not a loss distribution).
  *   4. The API route `GET /api/t/<slug>/risks/analytics`
  *      delegates to the usecase.
  *   5. The `<LossExceedanceCurve>` chart primitive exists and is
  *      re-exported via the chart barrel.
  *   6. Risk dashboard mounts the quantitative analytics block
- *      gated on `analytics.totals.quantifiedCount > 0` and embeds
- *      the LossExceedanceCurve.
+ *      gated on `analytics.totals.quantifiedCount > 0`. RQ3-1:
+ *      the dashboard's loss exceedance curve is the SIMULATED one
+ *      inside MonteCarloPanel — see
+ *      `tests/guards/rq3-1-simulated-lec.test.ts` for that ratchet.
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -65,11 +69,11 @@ describe('B10 — advanced analytics', () => {
             expect(src).toMatch(/assertCanRead\(ctx\)/);
         });
 
-        it('emits the documented shape — totals + topByAle + byCategory + lecPoints', () => {
+        it('emits the documented shape — totals + topByAle + byCategory + coverageSketch', () => {
             expect(src).toMatch(/totals:/);
             expect(src).toMatch(/topByAle:/);
             expect(src).toMatch(/byCategory:/);
-            expect(src).toMatch(/lecPoints:/);
+            expect(src).toMatch(/coverageSketch:/);
         });
 
         it('top-N is capped to 10 entries', () => {
@@ -137,12 +141,6 @@ describe('B10 — advanced analytics', () => {
             'src/app/t/[tenantSlug]/(app)/risks/dashboard/page.tsx',
         );
 
-        it('imports LossExceedanceCurve from the chart barrel', () => {
-            expect(src).toMatch(
-                /import\s*\{[\s\S]{0,80}LossExceedanceCurve[\s\S]{0,80}\}\s*from\s*['"]@\/components\/ui\/charts['"]/,
-            );
-        });
-
         it('fetches /risks/analytics', () => {
             expect(src).toMatch(/apiUrl\(['"]\/risks\/analytics['"]\)/);
         });
@@ -153,13 +151,13 @@ describe('B10 — advanced analytics', () => {
             );
         });
 
-        it('mounts the LossExceedanceCurve inside the analytics card', () => {
+        it('keeps the analytics card + mounts the simulated LEC stage (RQ3-1)', () => {
             expect(src).toMatch(/data-testid="risk-quant-analytics"/);
-            expect(src).toMatch(/<LossExceedanceCurve\b/);
-            // The primitive carries the testId via its `testId` prop;
-            // the dashboard threads "risk-loss-exceedance-curve" so
-            // E2E specs can target the rendered SVG.
-            expect(src).toMatch(/testId="risk-loss-exceedance-curve"/);
+            // RQ3-1 — the page no longer renders a rank-based curve;
+            // the simulated LEC lives in MonteCarloPanel, which gets
+            // the appetite payload for its threshold lines.
+            expect(src).toMatch(/<MonteCarloPanel appetite=\{appetite\}/);
+            expect(src).not.toMatch(/<LossExceedanceCurve\b/);
         });
     });
 });

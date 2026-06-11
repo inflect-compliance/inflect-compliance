@@ -212,6 +212,7 @@ export { LossExceedanceCurve } from './loss-exceedance-curve';
 export type {
     LossExceedancePoint as LossExceedanceChartPoint,
     LossExceedanceCurveProps,
+    LossReferenceLine,
 } from './loss-exceedance-curve';
 
 // ─── Shared scale / layout helpers (Epic 59) ─────────────────────────
