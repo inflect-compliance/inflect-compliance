@@ -134,11 +134,18 @@ export function detectIncoherence(risks: CoherenceInput[]): CoherenceReport {
 }
 
 /**
- * Compact currency for chips and matrix cells (€1.2M, €430K, €900).
- * Canonical home — the RQ2-3 explainer re-exports this.
+ * Compact currency for chips, matrix cells, and analytics tiles
+ * (€1.2M, €430K, €900). Canonical home — the RQ2-3 explainer
+ * re-exports this; the dashboard's old `formatMoney` was a parallel
+ * implementation that drifted on currency symbol and rounding.
+ *
+ * `nullish` returns the em-dash placeholder so caller sites that
+ * previously wrote `v == null ? '—' : formatMoney(v)` collapse to
+ * one call.
  */
-export function formatCompactCurrency(v: number): string {
-    if (v >= 1_000_000) return `€${(v / 1_000_000).toFixed(1)}M`;
-    if (v >= 1_000) return `€${(v / 1_000).toFixed(0)}K`;
-    return `€${Math.round(v)}`;
+export function formatCompactCurrency(v: number | null | undefined, symbol = '€'): string {
+    if (v == null) return '—';
+    if (v >= 1_000_000) return `${symbol}${(v / 1_000_000).toFixed(1)}M`;
+    if (v >= 1_000) return `${symbol}${(v / 1_000).toFixed(0)}K`;
+    return `${symbol}${Math.round(v)}`;
 }
