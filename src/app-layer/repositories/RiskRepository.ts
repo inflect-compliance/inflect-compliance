@@ -46,6 +46,11 @@ const riskListSelect = {
     sleAmount: true,
     aroAmount: true,
     fairAle: true,
+    // RQ2-9 — decomposed residual dims power the matrix movement
+    // view (inherent → residual arrows). Null for legacy rows.
+    residualLikelihood: true,
+    residualImpact: true,
+    residualScore: true,
     // `createdAt` is required by the cursor-pagination helper
     // (`computePageInfo`) — it's not rendered in the table.
     createdAt: true,

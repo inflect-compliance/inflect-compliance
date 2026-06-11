@@ -85,11 +85,30 @@ export interface RiskMatrixDataCell {
     totalAle?: number;
 }
 
+/**
+ * RQ2-9 — one inherent → residual movement. Only risks with a
+ * DECOMPOSED residual (RQ2-1 dims) can draw an arrow; legacy
+ * undecomposed rows have no destination cell and are excluded by
+ * the caller.
+ */
+export interface RiskMovement {
+    riskId: string;
+    title: string;
+    from: { likelihood: number; impact: number };
+    to: { likelihood: number; impact: number };
+}
+
 export interface RiskMatrixProps {
     /** Effective config for this tenant. */
     config: RiskMatrixConfigShape;
     /** Sparse list of cells with risks. Cells absent from the list render as empty (count=0). */
     cells: ReadonlyArray<RiskMatrixDataCell>;
+    /**
+     * RQ2-9 — inherent → residual movements. Enables the movement
+     * toggle; omit (or empty) and the matrix behaves exactly as
+     * before — the toggle never renders.
+     */
+    movements?: ReadonlyArray<RiskMovement>;
     /** Render mode. Default: 'count'. */
     mode?: 'count' | 'bubble';
     /** Max risks per cell in bubble mode before "+N more". Default: 3. */
@@ -121,6 +140,7 @@ export interface RiskMatrixProps {
 export function RiskMatrix({
     config,
     cells,
+    movements,
     mode = 'count',
     bubbleLimit = 3,
     swapAxes: swapAxesProp,
@@ -149,6 +169,26 @@ export function RiskMatrix({
     );
     const hasAleData = maxCellAle > 0;
     const aleOverlayActive = aleOverlay && hasAleData;
+
+    // RQ2-9 — movement overlay. Zero-cost without movement data.
+    const [showMovement, setShowMovement] = useState(false);
+    const hasMovements = (movements?.length ?? 0) > 0;
+    const movementActive = showMovement && hasMovements;
+    // Deduplicate identical (from → to) pairs into one arrow with a
+    // count — ten risks taking the same path is one fat arrow, not
+    // ten overdrawn ones. Same-cell pairs (no movement) are skipped.
+    const movementArrows = useMemo(() => {
+        if (!movements) return [];
+        const byPath = new Map<string, { from: { likelihood: number; impact: number }; to: { likelihood: number; impact: number }; count: number }>();
+        for (const m of movements) {
+            if (m.from.likelihood === m.to.likelihood && m.from.impact === m.to.impact) continue;
+            const key = `${m.from.likelihood}-${m.from.impact}>${m.to.likelihood}-${m.to.impact}`;
+            const cur = byPath.get(key);
+            if (cur) cur.count += 1;
+            else byPath.set(key, { from: m.from, to: m.to, count: 1 });
+        }
+        return Array.from(byPath.values());
+    }, [movements]);
 
     const lookup = useMemo(() => {
         const m = new Map<string, RiskMatrixDataCell>();
@@ -211,6 +251,7 @@ export function RiskMatrix({
             data-swap-axes={swapAxes ? 'true' : 'false'}
             data-mode={mode}
             data-ale-overlay={aleOverlayActive ? 'true' : 'false'}
+            data-movement={movementActive ? 'true' : 'false'}
             className={cn(cardVariants(), className)}
         >
             {showHeader && (
@@ -219,6 +260,23 @@ export function RiskMatrix({
                         {title}
                     </Heading>
                     <div className="flex items-center gap-compact">
+                        {hasMovements && (
+                            <button
+                                type="button"
+                                onClick={() => setShowMovement((p) => !p)}
+                                aria-pressed={showMovement}
+                                className={cn(
+                                    'inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] transition-colors',
+                                    showMovement
+                                        ? 'border-border-emphasis text-content-emphasis'
+                                        : 'border-border-subtle text-content-muted hover:border-border-emphasis hover:text-content-emphasis',
+                                )}
+                                aria-label="Toggle inherent to residual movement overlay"
+                                data-testid="risk-matrix-movement-toggle"
+                            >
+                                → Movement
+                            </button>
+                        )}
                         {hasAleData && (
                             <button
                                 type="button"
@@ -276,7 +334,7 @@ export function RiskMatrix({
                         role="grid"
                         aria-label={`${yAxisLabel} by ${xAxisLabel} matrix`}
                         data-testid="risk-matrix-grid"
-                        className="grid gap-[3px]"
+                        className="relative grid gap-[3px]"
                         style={{
                             gridTemplateColumns: `24px repeat(${xLevels}, 1fr)`,
                             gridTemplateRows: `repeat(${yLevels}, 1fr) 20px`,
@@ -335,6 +393,76 @@ export function RiskMatrix({
                                 })}
                             </div>
                         ))}
+
+                        {/* RQ2-9 — movement overlay. Absolutely
+                            positioned over the data-cell area only
+                            (header column + footer row excluded), so
+                            percentage coordinates in the NxN space
+                            map 1:1 onto cell centres. Decorative —
+                            the per-risk story lives in the
+                            assessment tab; aria summarises. */}
+                        {movementActive && (
+                            <svg
+                                viewBox="0 0 100 100"
+                                preserveAspectRatio="none"
+                                role="img"
+                                aria-label={`${movementArrows.reduce((sum, a) => sum + a.count, 0)} risks moved from inherent to residual position`}
+                                data-testid="risk-matrix-movement-overlay"
+                                className="pointer-events-none"
+                                style={{
+                                    position: 'absolute',
+                                    left: 27,
+                                    top: 0,
+                                    right: 0,
+                                    bottom: 23,
+                                    width: 'calc(100% - 27px)',
+                                    height: 'calc(100% - 23px)',
+                                }}
+                            >
+                                {movementArrows.map((a) => {
+                                    const px = (p: { likelihood: number; impact: number }) => {
+                                        const xVal = swapAxes ? p.likelihood : p.impact;
+                                        const yVal = swapAxes ? p.impact : p.likelihood;
+                                        return {
+                                            x: ((xVal - 0.5) / xLevels) * 100,
+                                            y: ((yLevels - yVal + 0.5) / yLevels) * 100,
+                                        };
+                                    };
+                                    const from = px(a.from);
+                                    const to = px(a.to);
+                                    const key = `${a.from.likelihood}-${a.from.impact}>${a.to.likelihood}-${a.to.impact}`;
+                                    return (
+                                        <g key={key} data-testid="risk-matrix-movement-arrow" data-count={a.count}>
+                                            <line
+                                                x1={from.x}
+                                                y1={from.y}
+                                                x2={to.x}
+                                                y2={to.y}
+                                                stroke="var(--content-emphasis, #0f172a)"
+                                                strokeWidth={a.count > 1 ? 1.2 : 0.7}
+                                                strokeOpacity={0.75}
+                                            />
+                                            {/* origin ring + destination dot — the
+                                                pair reads direction without an
+                                                aspect-distorted arrowhead. */}
+                                            <circle cx={from.x} cy={from.y} r={1.6} fill="none" stroke="var(--content-emphasis, #0f172a)" strokeWidth={0.5} strokeOpacity={0.75} />
+                                            <circle cx={to.x} cy={to.y} r={1.6} fill="var(--content-emphasis, #0f172a)" fillOpacity={0.9} />
+                                            {a.count > 1 && (
+                                                <text
+                                                    x={(from.x + to.x) / 2}
+                                                    y={(from.y + to.y) / 2 - 1.5}
+                                                    fontSize={4}
+                                                    textAnchor="middle"
+                                                    fill="var(--content-emphasis, #0f172a)"
+                                                >
+                                                    ×{a.count}
+                                                </text>
+                                            )}
+                                        </g>
+                                    );
+                                })}
+                            </svg>
+                        )}
 
                         {/* X-axis numeric labels (footer row). */}
                         <div role="row" style={{ display: 'contents' }}>
