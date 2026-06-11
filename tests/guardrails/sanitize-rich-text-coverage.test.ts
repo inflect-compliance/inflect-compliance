@@ -75,6 +75,9 @@ const RICH_TEXT_COVERAGE: Readonly<
     AccessReview: { usecases: ['src/app-layer/usecases/access-review.ts'], sanitizer: 'sanitizePlainText' },
     AccessReviewDecision: { usecases: ['src/app-layer/usecases/access-review.ts'], sanitizer: 'sanitizePlainText' },
     ControlException: { usecases: ['src/app-layer/usecases/control-exception.ts'], sanitizer: 'sanitizePlainText' },
+    // RQ2-1/RQ2-2 — score-change justification narrative; sanitised
+    // at the single recordScoreEvent write seam.
+    RiskScoreEvent: { usecases: ['src/app-layer/usecases/risk-score-events.ts'], sanitizer: 'sanitizePlainText' },
     RiskTreatmentPlan: { usecases: ['src/app-layer/usecases/risk-treatment-plan.ts'], sanitizer: 'sanitizePlainText' },
     TreatmentMilestone: { usecases: ['src/app-layer/usecases/risk-treatment-plan.ts'], sanitizer: 'sanitizePlainText' },
 };

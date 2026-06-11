@@ -26,6 +26,7 @@ import type { PrismaTx } from '@/lib/db-context';
 import { RequestContext } from '../types';
 import { assertCanRead } from '../policies/common';
 import { runInTenantContext } from '@/lib/db-context';
+import { sanitizePlainText } from '@/lib/security/sanitize';
 
 export interface RecordScoreEventInput {
     riskId: string;
@@ -58,7 +59,14 @@ export async function recordScoreEvent(
             impact: input.impact,
             score: input.score,
             source: input.source,
-            justification: input.justification ?? null,
+            // Epic D.2 — justification is user-supplied free text on
+            // an encrypted column; sanitise at the single write seam
+            // so every caller (USER edit, DERIVED accept, PLAN
+            // completion, AI) is covered before persistence.
+            justification:
+                input.justification != null && input.justification !== ''
+                    ? sanitizePlainText(input.justification)
+                    : null,
             createdByUserId: input.createdByUserId ?? null,
         },
     });

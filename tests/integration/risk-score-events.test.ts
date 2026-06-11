@@ -150,8 +150,14 @@ describeFn('RQ2-1 — score provenance (DB)', () => {
         expect(residualEvents[0]).toMatchObject({
             score: 6,
             source: 'USER',
-            justification: 'controls in place',
         });
+        // Epic B — `justification` is in the encrypted-fields
+        // manifest: the RAW row holds ciphertext…
+        expect(residualEvents[0].justification).toMatch(/^v[12]:/);
+        // …and the usecase read path decrypts transparently.
+        const viaUsecase = await listScoreEvents(ctxAs('EDITOR', editor.userId), riskId);
+        const decrypted = viaUsecase.find((e) => e.kind === 'RESIDUAL');
+        expect(decrypted?.justification).toBe('controls in place');
     });
 
     it('incomplete residual pair is rejected with no partial write', async () => {

@@ -172,6 +172,8 @@ jest.mock('@/lib/db-context', () => ({
     runInTenantContext: jest.fn(async (_ctx, fn) =>
         fn({
             tenant: { findUnique: (...a: unknown[]) => mockTenantFindUnique(...a) },
+            // RQ2-1 — score writes append a ledger event on the same tx.
+            riskScoreEvent: { create: async () => ({ id: 'evt-1' }) },
         }),
     ),
 }));

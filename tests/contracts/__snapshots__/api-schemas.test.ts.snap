@@ -3570,6 +3570,23 @@ exports[`API contract — per-schema snapshots schema: RiskUpdateRequest 1`] = `
       "minimum": 1,
       "maximum": 10
     },
+    "residualLikelihood": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10
+    },
+    "residualImpact": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10
+    },
+    "scoreJustification": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 2000
+    },
     "treatment": {
       "type": [
         "string",
@@ -3601,7 +3618,7 @@ exports[`API contract — per-schema snapshots schema: RiskUpdateRequest 1`] = `
       ]
     }
   },
-  "description": "Partial update for a risk. All fields optional."
+  "description": "Partial update for a risk. All fields optional. residualLikelihood/residualImpact must be supplied together; residualScore is derived server-side and every score change lands a provenance event (RQ2-1)."
 }"
 `;
 

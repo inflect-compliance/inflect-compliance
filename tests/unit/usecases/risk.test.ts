@@ -96,6 +96,10 @@ function dbWithTenant(maxRiskScale: number | null = 5) {
         tenant: {
             findUnique: jest.fn().mockResolvedValue({ maxRiskScale }),
         },
+        // RQ2-1 — every score-changing write appends a ledger event.
+        riskScoreEvent: {
+            create: jest.fn().mockResolvedValue({ id: 'evt-1' }),
+        },
     };
 }
 

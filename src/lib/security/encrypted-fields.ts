@@ -181,6 +181,18 @@ export const ENCRYPTED_FIELDS: Readonly<Record<string, readonly string[]>> = {
     //  internal users / systems, so they're encrypted at rest.
     ControlException: ['justification', 'rejectionReason'],
 
+    // ─── RQ2-1 risk score provenance ───────────────────
+    //  `justification` carries the assessor's narrative for a score
+    //  change ("transferred via cyber insurance", "pen-test found
+    //  the control bypassed") — business free-text that may name
+    //  internal systems / vendors / people. Encrypted at rest like
+    //  every other rationale column. The explicit entry also keeps
+    //  the manifest aligned with the fan-out write path, which
+    //  already encrypts any field NAMED `justification` (it appears
+    //  on ControlException) — without this entry the encryption
+    //  would be incidental rather than declared.
+    RiskScoreEvent: ['justification'],
+
     // ─── Epic G-7 risk treatment plans ─────────────────
     //  Both columns can name internal systems / vendors / users:
     //    - RiskTreatmentPlan.closingRemark — narrative rationale

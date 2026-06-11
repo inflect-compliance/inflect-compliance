@@ -17,6 +17,10 @@ const mockDb = {
     tenant: {
         findUnique: jest.fn().mockResolvedValue({ id: 'tenant-1', maxRiskScale: 5 }),
     },
+    // RQ2-1 — every score-changing write appends a ledger event.
+    riskScoreEvent: {
+        create: jest.fn().mockResolvedValue({ id: 'evt-1' }),
+    },
 } as any;
 
 // Mock withTenantDb/runInTenantContext to eagerly call the callback with mockDb
