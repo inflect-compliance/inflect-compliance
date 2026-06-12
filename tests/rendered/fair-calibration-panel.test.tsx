@@ -10,6 +10,10 @@ import * as React from 'react';
 
 jest.mock('@/lib/tenant-context-provider', () => ({
     useTenantApiUrl: () => (p: string) => `/api/t/acme${p}`,
+    // RQ3-OB-A — delegate to the real canonical formatter so the
+    // assertions track the one compact-currency voice.
+    useMoneyFormatter: () => (v: number | null | undefined) =>
+        jest.requireActual('@/lib/risk-coherence').formatCompactCurrency(v),
 }));
 
 import { FairAnalysisPanel, type FairInitial } from '@/app/t/[tenantSlug]/(app)/risks/[riskId]/FairAnalysisPanel';

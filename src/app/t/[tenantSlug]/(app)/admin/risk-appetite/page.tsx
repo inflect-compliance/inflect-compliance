@@ -10,7 +10,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { InlineNotice } from '@/components/ui/inline-notice';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
-import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
+import { useTenantApiUrl, useTenantHref, useMoneyFormatter } from '@/lib/tenant-context-provider';
 import { formatDate } from '@/lib/format-date';
 
 type Cadence = 'MONTHLY' | 'QUARTERLY' | 'SEMI_ANNUALLY' | 'ANNUALLY';
@@ -27,11 +27,13 @@ interface Breach {
     /** RQ2-6 — the remediation task spawned from this breach. */
     remediationTaskId: string | null;
 }
-const money = (n: number | null) => (n == null ? '—' : `$${Math.round(n).toLocaleString()}`);
+// RQ3-OB-A — the local $-formatter is dead; money speaks the
+// tenant's currency via the canonical formatter.
 
 export default function RiskAppetitePage() {
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
+    const money = useMoneyFormatter();
     const [cfg, setCfg] = useState<Config>({ totalAleThreshold: null, singleRiskAleMax: null, qualScoreMax: null, appetiteStatement: null, reviewCadence: 'ANNUALLY' });
     const [status, setStatus] = useState<{ status: string; portfolioAle: number; activeBreaches: number } | null>(null);
     const [breaches, setBreaches] = useState<Breach[]>([]);

@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
-import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
+import { useTenantApiUrl, useTenantHref, useMoneyFormatter } from '@/lib/tenant-context-provider';
 
 interface Scenario { id: string; name: string; status: string; investmentCost: number | null; computedRoi: number | null; createdAt: string }
 interface Comparison {
@@ -17,11 +17,12 @@ interface Comparison {
     delta: { meanAleDelta: number; varP95Delta: number; varP99Delta: number; roi: number | null };
     perRiskDeltas: Array<{ riskId: string; title: string; baselineAle: number; scenarioAle: number; deltaPercent: number }>;
 }
-const money = (n: number) => `$${Math.round(n).toLocaleString()}`;
-const signed = (n: number) => `${n < 0 ? '−' : '+'}${money(Math.abs(n))}`;
+// RQ3-OB-A — money speaks the tenant's currency (useMoneyFormatter).
 
 export default function RiskScenariosPage() {
     const apiUrl = useTenantApiUrl();
+    const money = useMoneyFormatter();
+    const signed = (n: number) => `${n < 0 ? '−' : '+'}${money(Math.abs(n))}`;
     const tenantHref = useTenantHref();
     const [scenarios, setScenarios] = useState<Scenario[]>([]);
     const [name, setName] = useState('');

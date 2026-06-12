@@ -24,6 +24,8 @@
  */
 
 /** Six months — past this, an untouched assessment is suspect. */
+import { countNoun } from '@/lib/pluralize';
+
 export const MAX_ASSESSMENT_AGE_DAYS = 180;
 
 export type StalenessReason =
@@ -94,7 +96,7 @@ export function describeStaleness(verdict: StalenessVerdict): string | null {
         if (r === 'REVIEW_OVERDUE') parts.push('review date has passed');
         if (r === 'ASSESSMENT_AGED')
             parts.push(
-                `last assessed ${verdict.assessmentAgeDays} days ago`,
+                `last assessed ${countNoun(verdict.assessmentAgeDays ?? 0, 'day')} ago`,
             );
         if (r === 'CONTROLS_MOVED_SINCE')
             parts.push('control test results changed since the residual was set');

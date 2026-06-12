@@ -12,6 +12,8 @@
 
 const mockDb = {
     risk: { findFirst: jest.fn() },
+    // RQ3-OB-A — quant line speaks the tenant's currency.
+    tenant: { findUnique: jest.fn().mockResolvedValue({ currencySymbol: '€' }) },
     riskScoreEvent: { findMany: jest.fn() },
     riskAppetiteBreach: { findMany: jest.fn() },
     user: { findMany: jest.fn() },

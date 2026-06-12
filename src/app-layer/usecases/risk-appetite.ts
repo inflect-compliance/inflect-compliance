@@ -18,6 +18,7 @@ import { notFound, badRequest } from '@/lib/errors/types';
 import { logEvent } from '../events/audit';
 import { resolveALE } from './fair-calculator';
 import { formatCompactCurrency } from '@/lib/risk-coherence';
+import { formatDate } from '@/lib/format-date';
 import { createTask, addTaskLink } from './task';
 
 export type BreachType = 'PORTFOLIO_ALE' | 'SINGLE_RISK_ALE' | 'QUAL_SCORE' | 'CATEGORY_ALE';
@@ -270,15 +271,15 @@ export async function acknowledgeBreach(ctx: RequestContext, breachId: string, n
 
 // ── Breach → remediation task (RQ2-6) ────────────────────────────────
 
-const BREACH_TASK_TITLE: Record<BreachType, (b: { thresholdValue: number; actualValue: number; category: string | null }) => string> = {
-    PORTFOLIO_ALE: (b) =>
-        `Bring portfolio ALE back within appetite (${formatCompactCurrency(b.actualValue)} over the ${formatCompactCurrency(b.thresholdValue)} ceiling)`,
-    SINGLE_RISK_ALE: (b) =>
-        `Remediate appetite breach: risk ALE ${formatCompactCurrency(b.actualValue)} exceeds the ${formatCompactCurrency(b.thresholdValue)} per-risk cap`,
+const BREACH_TASK_TITLE: Record<BreachType, (b: { thresholdValue: number; actualValue: number; category: string | null }, sym: string) => string> = {
+    PORTFOLIO_ALE: (b, sym) =>
+        `Bring portfolio ALE back within appetite (${formatCompactCurrency(b.actualValue, sym)} over the ${formatCompactCurrency(b.thresholdValue, sym)} ceiling)`,
+    SINGLE_RISK_ALE: (b, sym) =>
+        `Remediate appetite breach: risk ALE ${formatCompactCurrency(b.actualValue, sym)} exceeds the ${formatCompactCurrency(b.thresholdValue, sym)} per-risk cap`,
     QUAL_SCORE: (b) =>
         `Remediate appetite breach: risk score ${Math.round(b.actualValue)} exceeds the ${Math.round(b.thresholdValue)} cap`,
-    CATEGORY_ALE: (b) =>
-        `Bring ${b.category ?? 'category'} ALE back within appetite (${formatCompactCurrency(b.actualValue)} over the ${formatCompactCurrency(b.thresholdValue)} ceiling)`,
+    CATEGORY_ALE: (b, sym) =>
+        `Bring ${b.category ?? 'category'} ALE back within appetite (${formatCompactCurrency(b.actualValue, sym)} over the ${formatCompactCurrency(b.thresholdValue, sym)} ceiling)`,
 };
 
 /**
@@ -312,7 +313,14 @@ export async function createBreachRemediationTask(
         return { taskId: breach.remediationTaskId, created: false };
     }
 
-    const title = BREACH_TASK_TITLE[breach.breachType as BreachType]?.(breach)
+    // RQ3-OB-A — the task speaks the tenant's currency and the
+    // product's one date voice (formatDate, not raw ISO slices).
+    const tenantRow = await runInTenantContext(ctx, (db) =>
+        db.tenant.findUnique({ where: { id: ctx.tenantId }, select: { currencySymbol: true } }),
+    );
+    const sym = tenantRow?.currencySymbol ?? '€';
+
+    const title = BREACH_TASK_TITLE[breach.breachType as BreachType]?.(breach, sym)
         ?? `Remediate risk-appetite breach (${breach.breachType})`;
     const task = await createTask(ctx, {
         title,
@@ -325,7 +333,7 @@ export async function createBreachRemediationTask(
         // shape without grepping the table.
         description:
             `Spawned from appetite breach ${breach.id} (${breach.breachType}, ` +
-            `detected ${breach.detectedAt.toISOString().slice(0, 10)}). ` +
+            `detected ${formatDate(breach.detectedAt)}). ` +
             `Threshold ${breach.thresholdValue}, actual ${breach.actualValue}. ` +
             `See /admin/risk-appetite#breach-${breach.id}.`,
     });

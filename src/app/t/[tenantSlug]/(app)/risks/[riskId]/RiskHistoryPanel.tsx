@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Heading } from '@/components/ui/typography';
-import { useTenantApiUrl } from '@/lib/tenant-context-provider';
+import { useTenantApiUrl, useMoneyFormatter } from '@/lib/tenant-context-provider';
 import { formatDate } from '@/lib/format-date';
 
 interface Snap { id: string; score: number; ale: number | null; snapshotAt: string }
@@ -14,10 +14,11 @@ function sparkline(values: number[]): string {
     const min = Math.min(...values); const max = Math.max(...values); const span = max - min || 1;
     return values.map((v) => SPARK[Math.min(SPARK.length - 1, Math.floor(((v - min) / span) * (SPARK.length - 1)))]).join('');
 }
-const money = (n: number | null) => (n == null ? '—' : `$${Math.round(n).toLocaleString()}`);
+// RQ3-OB-A — money speaks the tenant's currency (useMoneyFormatter).
 
 export function RiskHistoryPanel({ riskId }: { riskId: string }) {
     const apiUrl = useTenantApiUrl();
+    const money = useMoneyFormatter();
     const [history, setHistory] = useState<Snap[] | null>(null);
 
     useEffect(() => {

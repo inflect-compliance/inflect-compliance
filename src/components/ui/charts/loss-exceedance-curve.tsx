@@ -36,6 +36,7 @@ import { LinePath, Area } from '@visx/shape';
 import { AxisBottom, AxisLeft } from '@visx/axis';
 import { scaleLinear } from '@visx/scale';
 import { curveStepAfter } from '@visx/curve';
+import { formatCompactCurrency } from '@/lib/risk-coherence';
 
 export interface LossExceedancePoint {
     /** Loss threshold (currency, same unit as the source ALE). */
@@ -79,10 +80,11 @@ export interface LossExceedanceCurveProps {
 const DEFAULT_HEIGHT = 240;
 const MARGIN = { top: 16, right: 24, bottom: 32, left: 56 };
 
+// RQ3-OB-A — axis ticks default to the canonical formatter (€) so
+// the chart never disagrees with the figures around it; pages with a
+// tenant symbol pass their bound formatter via `formatThreshold`.
 function defaultFormatThreshold(v: number): string {
-    if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
-    if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}k`;
-    return `$${Math.round(v)}`;
+    return formatCompactCurrency(v);
 }
 
 interface InnerProps extends LossExceedanceCurveProps {

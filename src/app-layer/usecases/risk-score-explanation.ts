@@ -113,6 +113,13 @@ export async function getScoreExplanation(
         });
         if (!risk) throw notFound('Risk not found');
 
+        // RQ3-OB-A — the quant line speaks the tenant's currency.
+        const tenantRow = await db.tenant.findUnique({
+            where: { id: ctx.tenantId },
+            select: { currencySymbol: true },
+        });
+        const sym = tenantRow?.currencySymbol ?? '€';
+
         const [events, breaches, residualSuggestion] = await Promise.all([
             db.riskScoreEvent.findMany({
                 where: { tenantId: ctx.tenantId, riskId },
@@ -172,7 +179,7 @@ export async function getScoreExplanation(
                 ale !== null
                     ? {
                           ale,
-                          line: `Annualised loss expectancy ≈ ${formatCompactCurrency(ale)}`,
+                          line: `Annualised loss expectancy ≈ ${formatCompactCurrency(ale, sym)}`,
                       }
                     : null,
             openBreaches: breaches,

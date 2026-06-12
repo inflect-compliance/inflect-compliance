@@ -32,6 +32,8 @@ export interface TenantRecord {
     slug: string;
     /** Display name */
     name: string;
+    /** RQ3-OB-A — display currency for monetary surfaces (default €). */
+    currencySymbol: string;
 }
 
 /**
@@ -68,7 +70,7 @@ export interface TenantServerContext {
 export async function resolveTenantBySlug(slug: string): Promise<TenantRecord> {
     const tenant = await prisma.tenant.findUnique({
         where: { slug },
-        select: { id: true, slug: true, name: true },
+        select: { id: true, slug: true, name: true, currencySymbol: true },
     });
     if (!tenant) {
         throw notFound('Tenant not found');
@@ -121,6 +123,7 @@ export async function getTenantServerContext(params: {
             id: ctx.tenant.id,
             slug: ctx.tenant.slug,
             name: ctx.tenant.name,
+            currencySymbol: ctx.tenant.currencySymbol ?? '€',
         },
         role: ctx.role,
         permissions: ctx.permissions,

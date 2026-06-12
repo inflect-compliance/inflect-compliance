@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
-import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
+import { useTenantApiUrl, useTenantHref, useMoneyFormatter } from '@/lib/tenant-context-provider';
 
 interface Agg { nodeId: string; nodeName: string; riskCount: number; totalAle: number; children: Agg[] }
 const TYPES = [
@@ -17,9 +17,10 @@ const TYPES = [
     { value: 'ASSET_CLASS', label: 'Asset Class' },
     { value: 'CUSTOM', label: 'Custom' },
 ];
-const money = (n: number) => `$${Math.round(n).toLocaleString()}`;
+// RQ3-OB-A — money speaks the tenant's currency (useMoneyFormatter).
 
 function TreeRow({ node, depth, max }: { node: Agg; depth: number; max: number }) {
+    const money = useMoneyFormatter();
     return (
         <>
             <div className="flex items-center gap-default py-tight text-sm" style={{ paddingLeft: `${depth * 16}px` }}>
@@ -37,6 +38,7 @@ function TreeRow({ node, depth, max }: { node: Agg; depth: number; max: number }
 
 export default function RiskHierarchyPage() {
     const apiUrl = useTenantApiUrl();
+    const money = useMoneyFormatter();
     const tenantHref = useTenantHref();
     const [type, setType] = useState('BUSINESS_UNIT');
     const [treemap, setTreemap] = useState<Agg[]>([]);

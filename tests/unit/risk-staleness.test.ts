@@ -98,6 +98,15 @@ describe('describeStaleness', () => {
         expect(describeStaleness({ stale: false, reasons: [], assessmentAgeDays: 12 })).toBeNull();
     });
 
+    it('n=1 never reads "1 days ago" (RQ3-OB-A grammar)', () => {
+        const text = describeStaleness({
+            stale: true,
+            reasons: ['ASSESSMENT_AGED'],
+            assessmentAgeDays: 1,
+        });
+        expect(text).toBe('last assessed 1 day ago');
+    });
+
     it('joins reason sentences', () => {
         const text = describeStaleness({
             stale: true,
