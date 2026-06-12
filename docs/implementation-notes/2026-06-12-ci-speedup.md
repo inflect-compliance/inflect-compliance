@@ -1,6 +1,6 @@
-# 2026-06-12 — CI speedup: shard Test + E2E, skip Coverage on PR, composite setup, larger-runner toggle
+# 2026-06-12 — CI speedup: shard Test, skip Coverage on PR, composite setup, larger-runner toggle
 
-**Commit:** _(see PR — `ci: shard Test + E2E into parallel matrices; skip Coverage on PR; composite Node/Prisma setup; LARGE_RUNNER toggle`)_
+**Commit:** _(see PR — `ci: shard Test into 4 parallel jobs; skip Coverage on PR; composite Node+Prisma setup; LARGE_RUNNER toggle`)_
 
 ## Design
 
@@ -20,25 +20,28 @@ worker" invariant. The architectural-guards + API-contract sub-steps
 pin to shard 1 (`if: matrix.shard == 1`) so they execute exactly
 once per CI run.
 
-### 2. Shard the E2E job (3-way matrix)
+### 2. Summary job for the Test matrix
 
-`matrix.shard: [1, 2, 3]` × `playwright test --shard=K/3`.
-Playwright's native shard contract is FILE-level — specs that share
-seeded-tenant state stay on the same shard; `isolatedTenant` fixtures
-are per-test, so cross-shard contamination is structurally impossible.
-Each shard runs its OWN postgres service container, seed, build, and
-`next start`. The a11y axe gate (`tests/e2e/a11y.spec.ts`) pins to
-shard 1.
+A new `test-summary` (named `Test`) aggregates the matrix shards via
+`needs.test.result`. Branch protection's required check keeps the
+stable name "Test" — a future shard-count change touches only
+`matrix.shard` and `matrix.total`, no admin update.
 
-### 3. Summary jobs for stable branch-protection names
+### NOT in this PR: E2E sharding
 
-A new `test-summary` (named `Test`) and `e2e-summary` (named `E2E`)
-aggregate their respective matrices via `needs.X.result`. Branch
-protection's required checks keep stable names — a future
-shard-count change touches only `matrix.shard` and `matrix.total`,
-no admin update.
+A 3-way E2E matrix was attempted and reverted in the same PR: the
+first sharded run surfaced a real cross-shard state coupling on one
+shard's spec slice (Playwright shard 2 of 3 failed deterministically
+even with the built-in 2-retry budget). The 2-of-3 green signal
+proves Playwright's `--shard=K/N` partitions specs correctly, but
+the test suite relies on seeded-tenant state that needs per-shard
+investigation before the matrix is safe to enable. Future follow-up
+— a dedicated PR can either pin state-dependent specs to shard 1 or
+rework the global-setup to be idempotent per-shard. The current PR
+keeps E2E single-job (~17 min) — still a meaningful overall
+speedup because Test is no longer the dominant pole.
 
-### 4. Skip Coverage on PR
+### 3. Skip Coverage on PR
 
 Coverage gated to `push` to main + the weekly `schedule`
 (`if: github.event_name == 'push' || github.event_name == 'schedule'`).
@@ -47,7 +50,7 @@ every PR re-executes the same suite a second time for a duplicate
 signal at the PR level. Coverage regressions only land via merge
 anyway — main-push + nightly catch them within one merge.
 
-### 5. `LARGE_RUNNER` repo variable
+### 4. `LARGE_RUNNER` repo variable
 
 Heavy jobs (test shards, coverage, e2e shards, build, docker, trivy,
 load-smoke) read `runs-on: ${{ vars.LARGE_RUNNER || 'ubuntu-latest' }}`.
@@ -61,7 +64,7 @@ external accounts).
 Lint / Typecheck / Security / CodeQL stay on the small runner —
 they're <3 min and don't benefit from more vCPUs.
 
-### 6. Composite action for Node + Prisma setup
+### 5. Composite action for Node + Prisma setup
 
 `.github/actions/setup-node-prisma/action.yml` deduplicates the
 seven copies of `setup-node` + `npm ci` + `prisma generate` (with
@@ -74,12 +77,13 @@ upstream Prisma can be removed here without touching seven copies.
 | Job                | Before  | After (free) | After (4-vCPU `LARGE_RUNNER`) |
 | ------------------ | ------: | -----------: | ----------------------------: |
 | Test (critical)    | 30 min  | ~8 min       | ~4-5 min                      |
-| E2E                | 17 min  | ~9 min       | ~5-6 min                      |
 | Coverage per PR    | 33 min  | **skipped**  | **skipped**                   |
 | Build              |  4 min  |  ~4 min      | ~2 min                        |
+| E2E                | 17 min  | ~17 min      | ~9-10 min (LARGE_RUNNER only) |
 
-End-to-end PR wall-clock: **~33 min → ~9-10 min (free) → ~5-6 min
-(with `LARGE_RUNNER`)**.
+End-to-end PR wall-clock: **~33 min → ~17 min (free) → ~10-12 min
+(with `LARGE_RUNNER`)**. With E2E sharding as a follow-up that
+improves further to ~9-10 min / ~5-6 min respectively.
 
 Trade-off note: runner-MINUTES go up (4 shards × the per-shard setup
 overhead vs 1 job × setup) for the parallelism win. That's the right
