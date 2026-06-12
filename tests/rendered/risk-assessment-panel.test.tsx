@@ -86,7 +86,7 @@ const BASE_RISK: AssessmentRisk = {
 
 let fetchMock: jest.Mock;
 
-function mockFetchRoutes(over: { suggestion?: unknown } = {}) {
+function mockFetchRoutes(over: { suggestion?: unknown; kriBreaches?: unknown[] } = {}) {
     fetchMock = jest.fn(async (url: string, init?: RequestInit) => {
         if (url.includes('/risk-matrix-config')) {
             return { ok: true, json: async () => MATRIX };
@@ -96,6 +96,10 @@ function mockFetchRoutes(over: { suggestion?: unknown } = {}) {
                 return { ok: true, json: async () => ({ success: true }) };
             }
             return { ok: true, json: async () => over.suggestion ?? SUGGESTION };
+        }
+        // RQ3-7 — the KRI breach signal for the re-assess nudge.
+        if (url.includes('/kri-breaches')) {
+            return { ok: true, json: async () => ({ breaches: over.kriBreaches ?? [] }) };
         }
         if (init?.method === 'PUT') {
             return { ok: true, json: async () => ({ success: true }) };
@@ -220,5 +224,35 @@ describe('RiskAssessmentPanel — bridges', () => {
         await renderPanel({ onLinkControls });
         fireEvent.click(screen.getByText('Link controls in Traceability'));
         expect(onLinkControls).toHaveBeenCalled();
+    });
+});
+
+describe('RiskAssessmentPanel — RQ3-7 re-assess nudge', () => {
+    it('renders the nudge when a linked KRI is breached (RED)', async () => {
+        mockFetchRoutes({
+            kriBreaches: [{ kriId: 'k-1', name: 'Phishing click rate', value: 18 }],
+        });
+        await renderPanel();
+        const nudge = await screen.findByTestId('kri-reassess-nudge');
+        expect(nudge.textContent).toMatch(/Phishing click rate/);
+        expect(nudge.textContent).toMatch(/re-assess/i);
+    });
+
+    it('renders NO nudge when there is no live breach (un-breach is silent)', async () => {
+        mockFetchRoutes({ kriBreaches: [] });
+        await renderPanel();
+        expect(screen.queryByTestId('kri-reassess-nudge')).toBeNull();
+    });
+
+    it('pluralises the headline for multiple breached KRIs', async () => {
+        mockFetchRoutes({
+            kriBreaches: [
+                { kriId: 'k-1', name: 'Phishing click rate', value: 18 },
+                { kriId: 'k-2', name: 'Patch latency', value: 40 },
+            ],
+        });
+        await renderPanel();
+        const nudge = await screen.findByTestId('kri-reassess-nudge');
+        expect(nudge.textContent).toMatch(/2 key risk indicators are breached/);
     });
 });

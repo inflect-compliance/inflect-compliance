@@ -2,6 +2,7 @@
 
 /* RQ-6 — Key Risk Indicators: RAG cards + sparkline + record reading. */
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +14,8 @@ import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 interface Kri {
     id: string; name: string; unit: string | null; direction: string; greenMax: number | null; amberMax: number | null;
     frequency: string; targetValue: number | null; isActive: boolean;
+    /** RQ3-7 — the linked risk (null = orphaned KRI). Drives the deep-link. */
+    riskId: string | null;
     latestReading: { value: number; ragStatus: string | null } | null; sparkline: number[];
 }
 const SPARK = '▁▂▃▄▅▆▇█';
@@ -87,6 +90,21 @@ export default function KriPage() {
                             <p className="text-xs text-content-muted">
                                 {k.targetValue != null ? `Target ${k.targetValue}${k.unit ?? ''} · ` : ''}{k.frequency.toLowerCase()} · green ≤ {k.greenMax ?? '—'} · amber ≤ {k.amberMax ?? '—'}
                             </p>
+                            {/* RQ3-7 — when a KRI is breached (RED) and
+                                linked to a risk, deep-link straight to
+                                that risk's Assessment tab. Closes the
+                                sensor → belief loop: the breach is one
+                                click from the re-assessment it should
+                                trigger. */}
+                            {k.riskId && k.latestReading?.ragStatus === 'RED' && (
+                                <Link
+                                    href={tenantHref(`/risks/${k.riskId}?tab=assessment`)}
+                                    className="inline-flex items-center gap-1 text-xs font-medium text-content-error underline underline-offset-2"
+                                    data-testid={`kri-reassess-link-${k.id}`}
+                                >
+                                    Re-assess the linked risk →
+                                </Link>
+                            )}
                             <RecordInline onRecord={(v) => record(k.id, v)} />
                         </Card>
                     ))}

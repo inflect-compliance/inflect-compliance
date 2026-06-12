@@ -8,7 +8,8 @@ import { randomUUID } from 'crypto';
 import { DB_URL, DB_AVAILABLE } from './db-helper';
 import { hashForLookup } from '@/lib/security/encryption';
 import { makeRequestContext } from '../helpers/make-context';
-import { createKri, recordReading, batchRecordReadings, getReadings } from '@/app-layer/usecases/key-risk-indicator';
+import { createKri, recordReading, batchRecordReadings, getReadings, getRiskKriBreaches } from '@/app-layer/usecases/key-risk-indicator';
+import { getRiskStaleness } from '@/app-layer/usecases/risk-staleness';
 
 const globalPrisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: DB_URL }) });
 const describeFn = DB_AVAILABLE ? describe : describe.skip;
@@ -31,7 +32,7 @@ describeFn('RQ-6 — KRI readings (integration)', () => {
 
     afterAll(async () => {
         const t = { tenantId: TENANT_ID };
-        for (const m of ['kriReading', 'keyRiskIndicator', 'auditLog', 'tenantMembership'] as const) {
+        for (const m of ['kriReading', 'keyRiskIndicator', 'riskScoreEvent', 'risk', 'auditLog', 'tenantMembership'] as const) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             try { await (globalPrisma as any)[m].deleteMany({ where: t }); } catch { /* best effort */ }
         }
@@ -71,5 +72,44 @@ describeFn('RQ-6 — KRI readings (integration)', () => {
         expect(out).toHaveLength(2);
         const reads = await getReadings(ctx, a.id);
         expect(reads[0].recordedBy).toBe('system');
+    });
+
+    // ── RQ3-7 — the KRI ⇄ staleness loop ──────────────────────────
+
+    it('getRiskKriBreaches returns a risk-linked KRI whose latest reading is RED, and clears on recovery', async () => {
+        const risk = await globalPrisma.risk.create({ data: { tenantId: TENANT_ID, title: 'Phishing exposure' } });
+        const kri = await createKri(ctx, { name: 'Click rate', riskId: risk.id, direction: 'HIGHER_IS_WORSE', greenMax: 5, amberMax: 10 });
+        await recordReading(ctx, kri.id, { value: 3 });   // GREEN
+        await recordReading(ctx, kri.id, { value: 12 });  // → RED
+
+        const breached = await getRiskKriBreaches(ctx, risk.id);
+        expect(breached).toHaveLength(1);
+        expect(breached[0]).toMatchObject({ kriId: kri.id, ragStatus: 'RED', value: 12 });
+
+        // Recovery: a later GREEN reading flips the latest band → no breach.
+        await recordReading(ctx, kri.id, { value: 1 });
+        const recovered = await getRiskKriBreaches(ctx, risk.id);
+        expect(recovered).toHaveLength(0);
+    });
+
+    it('a RED KRI surfaces SIGNAL_MOVED on the risk staleness report (loop closed)', async () => {
+        const risk = await globalPrisma.risk.create({ data: { tenantId: TENANT_ID, title: 'Vendor outage exposure' } });
+        // Seed an assessment event in the past so the breach is "newer".
+        await globalPrisma.riskScoreEvent.create({
+            data: {
+                tenantId: TENANT_ID, riskId: risk.id, kind: 'INHERENT', source: 'USER',
+                likelihood: 3, impact: 3, score: 9,
+                createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+            },
+        });
+        const kri = await createKri(ctx, { name: 'Uptime', riskId: risk.id, direction: 'HIGHER_IS_WORSE', greenMax: 5, amberMax: 10 });
+        await recordReading(ctx, kri.id, { value: 3 });
+        await recordReading(ctx, kri.id, { value: 15 }); // → RED, now
+
+        const report = await getRiskStaleness(ctx);
+        const row = report.staleRisks.find((r) => r.riskId === risk.id);
+        expect(row).toBeDefined();
+        expect(row!.reasons).toContain('SIGNAL_MOVED');
+        expect(row!.description).toMatch(/key risk indicator breached/);
     });
 });

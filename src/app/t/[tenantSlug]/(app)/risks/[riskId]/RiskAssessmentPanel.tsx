@@ -93,6 +93,10 @@ export function RiskAssessmentPanel({
     const [config, setConfig] = useState<RiskMatrixConfigShape | null>(null);
     const [suggestion, setSuggestion] = useState<ResidualSuggestionPayload | null>(null);
     const [error, setError] = useState<string | null>(null);
+    // RQ3-7 — currently-breached KRIs for this risk. Drives the
+    // re-assess nudge: a sensor fired, the conclusion should catch
+    // up. Failure-soft — a failed load just hides the nudge.
+    const [kriBreaches, setKriBreaches] = useState<Array<{ kriId: string; name: string; value: number }>>([]);
 
     // Step 1 draft state.
     const [likelihood, setLikelihood] = useState(risk.likelihood);
@@ -137,6 +141,18 @@ export function RiskAssessmentPanel({
         })();
         return () => { cancelled = true; };
     }, [apiUrl, loadSuggestion]);
+
+    // RQ3-7 — load the KRI breach signal independently (failure-soft:
+    // never blocks the panel, just hides the nudge on error).
+    useEffect(() => {
+        let cancelled = false;
+        fetch(apiUrl(`/risks/${riskId}/kri-breaches`))
+            .then((r) => (r.ok ? r.json() : null))
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            .then((d) => { if (!cancelled) setKriBreaches(d?.breaches ?? []); })
+            .catch(() => { if (!cancelled) setKriBreaches([]); });
+        return () => { cancelled = true; };
+    }, [apiUrl, riskId]);
 
     if (error) {
         return <div className={cn(cardVariants({ density: 'compact' }), 'border-border-error text-content-error text-sm')}>{error}</div>;
@@ -221,6 +237,30 @@ export function RiskAssessmentPanel({
 
     return (
         <div className="space-y-section" id="risk-assessment-panel">
+            {/* RQ3-7 — re-assess nudge. A linked KRI's latest reading
+                sits in RED: the sensor moved, the conclusion should
+                catch up. Closes the KRI ⇄ assessment loop — sensors
+                that change no conclusion are decoration. Disappears
+                automatically once the KRI recovers (latest reading no
+                longer RED). */}
+            {kriBreaches.length > 0 && (
+                <div
+                    className="rounded-md border border-border-warning bg-bg-warning/15 p-3 text-sm text-content-warning"
+                    data-testid="kri-reassess-nudge"
+                >
+                    <p className="font-medium">
+                        {kriBreaches.length === 1
+                            ? `Key risk indicator "${kriBreaches[0].name}" is breached (RED).`
+                            : `${kriBreaches.length} key risk indicators are breached (RED).`}
+                    </p>
+                    <p className="mt-0.5 text-content-muted">
+                        A leading signal has moved since this risk was last assessed —
+                        re-assess the likelihood and impact below to bring the conclusion
+                        in line with the indicator.
+                    </p>
+                </div>
+            )}
+
             {/* ── Step 1 — Inherent ─────────────────────────────── */}
             <div className={cn(cardVariants(), 'space-y-default')}>
                 <div className="flex items-center justify-between">

@@ -129,6 +129,68 @@ export async function batchRecordReadings(ctx: RequestContext, readings: Array<{
     return out;
 }
 
+/**
+ * RQ3-7 — the KRI-breach signal for ONE risk, for the assessment
+ * tab's re-assess nudge. Returns the active KRIs linked to the risk
+ * whose latest reading is RED (currently breached), newest breach
+ * first. Empty array = no live signal → no nudge. Pure read; a
+ * recovery (later non-RED reading) drops the KRI from the list with
+ * no extra bookkeeping.
+ */
+export interface RiskKriBreach {
+    kriId: string;
+    name: string;
+    ragStatus: 'RED';
+    value: number;
+    breachedAt: Date;
+}
+
+export async function getRiskKriBreaches(
+    ctx: RequestContext,
+    riskId: string,
+): Promise<RiskKriBreach[]> {
+    assertCanRead(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const kris = await db.keyRiskIndicator.findMany({
+            where: { tenantId: ctx.tenantId, riskId, isActive: true },
+            select: { id: true, name: true },
+        });
+        if (kris.length === 0) return [];
+        const kriIds = kris.map((k) => k.id);
+        const nameByKri = new Map(kris.map((k) => [k.id, k.name]));
+        const newest = await db.kriReading.groupBy({
+            by: ['kriId'],
+            where: { tenantId: ctx.tenantId, kriId: { in: kriIds } },
+            _max: { recordedAt: true },
+        });
+        const newestAtByKri = new Map<string, Date>();
+        for (const n of newest) {
+            if (n._max.recordedAt) newestAtByKri.set(n.kriId, n._max.recordedAt);
+        }
+        const latest = await db.kriReading.findMany({
+            where: {
+                tenantId: ctx.tenantId,
+                kriId: { in: kriIds },
+                recordedAt: { in: [...newestAtByKri.values()] },
+            },
+            select: { kriId: true, ragStatus: true, value: true, recordedAt: true },
+        });
+        const out: RiskKriBreach[] = [];
+        for (const r of latest) {
+            if (newestAtByKri.get(r.kriId)?.getTime() !== r.recordedAt.getTime()) continue;
+            if (r.ragStatus !== 'RED') continue;
+            out.push({
+                kriId: r.kriId,
+                name: nameByKri.get(r.kriId) ?? 'Key risk indicator',
+                ragStatus: 'RED',
+                value: r.value,
+                breachedAt: r.recordedAt,
+            });
+        }
+        return out.sort((a, b) => b.breachedAt.getTime() - a.breachedAt.getTime());
+    });
+}
+
 export async function getReadings(ctx: RequestContext, kriId: string, opts: { since?: Date; limit?: number } = {}) {
     assertCanRead(ctx);
     return runInTenantContext(ctx, (db) =>

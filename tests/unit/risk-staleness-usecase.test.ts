@@ -11,6 +11,9 @@ const mockDb = {
     riskScoreEvent: { groupBy: jest.fn() },
     riskControl: { findMany: jest.fn() },
     controlTestRun: { groupBy: jest.fn() },
+    // RQ3-7 — KRI breach signal source.
+    keyRiskIndicator: { findMany: jest.fn() },
+    kriReading: { groupBy: jest.fn(), findMany: jest.fn() },
 } as any;
 
 jest.mock('@/lib/db-context', () => ({
@@ -29,6 +32,9 @@ beforeEach(() => {
     (mockDb.riskScoreEvent.groupBy as jest.Mock).mockResolvedValue([]);
     (mockDb.riskControl.findMany as jest.Mock).mockResolvedValue([]);
     (mockDb.controlTestRun.groupBy as jest.Mock).mockResolvedValue([]);
+    (mockDb.keyRiskIndicator.findMany as jest.Mock).mockResolvedValue([]);
+    (mockDb.kriReading.groupBy as jest.Mock).mockResolvedValue([]);
+    (mockDb.kriReading.findMany as jest.Mock).mockResolvedValue([]);
 });
 
 describe('getRiskStaleness', () => {
@@ -79,6 +85,52 @@ describe('getRiskStaleness', () => {
         await getRiskStaleness(readerCtx);
         const q = (mockDb.controlTestRun.groupBy as jest.Mock).mock.calls[0][0];
         expect(q.where.status).toBe('COMPLETED');
+    });
+
+    it('a RED-latest KRI reading newer than the last assessment flags SIGNAL_MOVED (RQ3-7)', async () => {
+        (mockDb.risk.findMany as jest.Mock).mockResolvedValue([
+            { id: 'sig', title: 'Sig', nextReviewAt: daysAgo(-30), residualScoreSetAt: daysAgo(2) },
+        ]);
+        (mockDb.riskScoreEvent.groupBy as jest.Mock).mockResolvedValue([
+            { riskId: 'sig', _max: { createdAt: daysAgo(30) } },
+        ]);
+        (mockDb.keyRiskIndicator.findMany as jest.Mock).mockResolvedValue([
+            { id: 'k-1', riskId: 'sig' },
+        ]);
+        (mockDb.kriReading.groupBy as jest.Mock).mockResolvedValue([
+            { kriId: 'k-1', _max: { recordedAt: daysAgo(2) } },
+        ]);
+        (mockDb.kriReading.findMany as jest.Mock).mockResolvedValue([
+            { kriId: 'k-1', ragStatus: 'RED', recordedAt: daysAgo(2) },
+        ]);
+
+        const report = await getRiskStaleness(readerCtx);
+        const sig = report.staleRisks.find((r) => r.riskId === 'sig')!;
+        expect(sig).toBeDefined();
+        expect(sig.reasons).toContain('SIGNAL_MOVED');
+        expect(sig.description).toMatch(/key risk indicator breached/);
+    });
+
+    it('a recovered KRI (latest reading not RED) raises no SIGNAL_MOVED — un-breach is silent', async () => {
+        (mockDb.risk.findMany as jest.Mock).mockResolvedValue([
+            { id: 'ok', title: 'OK', nextReviewAt: daysAgo(-30), residualScoreSetAt: daysAgo(2) },
+        ]);
+        (mockDb.riskScoreEvent.groupBy as jest.Mock).mockResolvedValue([
+            { riskId: 'ok', _max: { createdAt: daysAgo(30) } },
+        ]);
+        (mockDb.keyRiskIndicator.findMany as jest.Mock).mockResolvedValue([
+            { id: 'k-2', riskId: 'ok' },
+        ]);
+        (mockDb.kriReading.groupBy as jest.Mock).mockResolvedValue([
+            { kriId: 'k-2', _max: { recordedAt: daysAgo(1) } },
+        ]);
+        // Latest reading recovered to GREEN — no live signal.
+        (mockDb.kriReading.findMany as jest.Mock).mockResolvedValue([
+            { kriId: 'k-2', ragStatus: 'GREEN', recordedAt: daysAgo(1) },
+        ]);
+
+        const report = await getRiskStaleness(readerCtx);
+        expect(report.staleCount).toBe(0);
     });
 
     it('orders rot-first: more reasons, then older assessments', async () => {

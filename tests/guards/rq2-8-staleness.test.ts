@@ -43,10 +43,38 @@ describe('RQ2-8 — staleness engine', () => {
     test('the loader stays batched — groupBy + in-memory maps, no per-risk reads', () => {
         expect(usecase).toMatch(/riskScoreEvent\.groupBy/);
         expect(usecase).toMatch(/controlTestRun\.groupBy/);
+        expect(usecase).toMatch(/kriReading\.groupBy/); // RQ3-7 batched KRI read
         expect(usecase).toMatch(/_max/);
         // The only loops are over in-memory arrays; no awaited query
-        // inside a for-loop.
-        expect(usecase).not.toMatch(/for \([^)]*\) \{[\s\S]*?await db\./);
+        // INSIDE a loop body. The check brace-matches each `for (...)`
+        // header to the end of ITS block and asserts no `await db.`
+        // inside — the prior `[\s\S]*?await db\.` form false-flagged a
+        // file with two functions that each legitimately batch THEN
+        // loop (RQ3-7 added the second). This brace-aware form only
+        // catches a genuine read inside the loop.
+        const NO_AWAIT_DB_IN_LOOP = (src: string): boolean => {
+            // Match loop HEADERS only (`for (` / `while (`), not the
+            // word "for" in prose comments.
+            const headerRe = /\b(?:for|while)\s*\(/g;
+            let m: RegExpExecArray | null;
+            while ((m = headerRe.exec(src)) !== null) {
+                const i = m.index;
+                const brace = src.indexOf('{', i);
+                if (brace === -1) break;
+                // Walk to the matching close brace.
+                let depth = 1;
+                let j = brace + 1;
+                for (; j < src.length && depth > 0; j++) {
+                    if (src[j] === '{') depth++;
+                    else if (src[j] === '}') depth--;
+                }
+                const body = src.slice(brace + 1, j - 1);
+                if (/await\s+db\./.test(body)) return false;
+                headerRe.lastIndex = brace + 1;
+            }
+            return true;
+        };
+        expect(NO_AWAIT_DB_IN_LOOP(usecase)).toBe(true);
     });
 
     test('the endpoint stays GET-only', () => {

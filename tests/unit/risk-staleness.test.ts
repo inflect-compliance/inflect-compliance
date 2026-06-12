@@ -16,6 +16,7 @@ const signals = (over: Partial<StalenessSignals> = {}): StalenessSignals => ({
     lastAssessedAt: null,
     lastResidualAt: null,
     latestControlTestAt: null,
+    latestKriBreachAt: null,
     ...over,
 });
 
@@ -75,13 +76,46 @@ describe('assessStaleness — the three rot classes', () => {
         expect(v.stale).toBe(false);
     });
 
-    it('reasons stack', () => {
+    it('a KRI breach AFTER the last assessment flags SIGNAL_MOVED (RQ3-7)', () => {
+        const v = assessStaleness(
+            signals({ lastAssessedAt: daysAgo(30), latestKriBreachAt: daysAgo(2) }),
+            NOW,
+        );
+        expect(v.reasons).toEqual(['SIGNAL_MOVED']);
+    });
+
+    it('a KRI breach BEFORE the last assessment does not flag (belief already caught up)', () => {
+        const v = assessStaleness(
+            signals({ lastAssessedAt: daysAgo(2), latestKriBreachAt: daysAgo(30) }),
+            NOW,
+        );
+        expect(v.stale).toBe(false);
+    });
+
+    it('a KRI breach on a never-assessed risk still flags SIGNAL_MOVED', () => {
+        const v = assessStaleness(
+            signals({ lastAssessedAt: null, latestKriBreachAt: daysAgo(1) }),
+            NOW,
+        );
+        expect(v.reasons).toEqual(['SIGNAL_MOVED']);
+    });
+
+    it('no KRI breach clears the signal (un-breach = no noise)', () => {
+        const v = assessStaleness(
+            signals({ lastAssessedAt: daysAgo(30), latestKriBreachAt: null }),
+            NOW,
+        );
+        expect(v.stale).toBe(false);
+    });
+
+    it('reasons stack — all four', () => {
         const v = assessStaleness(
             signals({
                 nextReviewAt: daysAgo(10),
                 lastAssessedAt: daysAgo(400),
                 lastResidualAt: daysAgo(400),
                 latestControlTestAt: daysAgo(2),
+                latestKriBreachAt: daysAgo(1),
             }),
             NOW,
         );
@@ -89,6 +123,7 @@ describe('assessStaleness — the three rot classes', () => {
             'REVIEW_OVERDUE',
             'ASSESSMENT_AGED',
             'CONTROLS_MOVED_SINCE',
+            'SIGNAL_MOVED',
         ]);
     });
 });
@@ -114,5 +149,14 @@ describe('describeStaleness', () => {
             assessmentAgeDays: 200,
         });
         expect(text).toBe('review date has passed; last assessed 200 days ago');
+    });
+
+    it('describes the SIGNAL_MOVED reason (RQ3-7)', () => {
+        const text = describeStaleness({
+            stale: true,
+            reasons: ['SIGNAL_MOVED'],
+            assessmentAgeDays: null,
+        });
+        expect(text).toBe('a key risk indicator breached since the last assessment');
     });
 });

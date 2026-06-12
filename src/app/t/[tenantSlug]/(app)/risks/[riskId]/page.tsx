@@ -7,7 +7,7 @@
 import { formatDate } from '@/lib/format-date';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { useEffect, useState, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useTenantContext, useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import dynamic from 'next/dynamic';
 import LinkedTasksPanel from '@/components/LinkedTasksPanel';
@@ -167,7 +167,16 @@ export default function RiskDetailPage() {
         | 'tasks'
         | 'evidence'
         | 'traceability';
-    const [activeTab, setActiveTab] = useState<Tab>('overview');
+    // RQ3-7 — honour a `?tab=<key>` deep-link on first mount (the KRI
+    // breach card links straight to `?tab=assessment`). Only a valid
+    // tab key is accepted; anything else falls back to overview.
+    const searchParams = useSearchParams();
+    const initialTab = ((): Tab => {
+        const t = searchParams?.get('tab');
+        const valid: Tab[] = ['overview', 'assessment', 'quantification', 'bowtie', 'history', 'tasks', 'evidence', 'traceability'];
+        return t && (valid as string[]).includes(t) ? (t as Tab) : 'overview';
+    })();
+    const [activeTab, setActiveTab] = useState<Tab>(initialTab);
     const tabs: ReadonlyArray<{ key: Tab; label: string }> = [
         { key: 'overview', label: 'Overview' },
         { key: 'assessment', label: 'Assessment' },
