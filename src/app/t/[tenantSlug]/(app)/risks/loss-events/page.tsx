@@ -21,6 +21,9 @@ import { InlineNotice } from '@/components/ui/inline-notice';
 import { Heading } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { ProgressBar } from '@/components/ui/progress-bar';
+import { DatePicker } from '@/components/ui/date-picker/date-picker';
+import { type DateValue } from '@/components/ui/date-picker/types';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { useTenantApiUrl, useTenantHref, useMoneyFormatter } from '@/lib/tenant-context-provider';
 import { formatDate } from '@/lib/format-date';
@@ -66,7 +69,10 @@ export default function LossEventsPage() {
     const [msg, setMsg] = useState<string | null>(null);
 
     // Form state.
-    const [occurredAt, setOccurredAt] = useState(() => new Date().toISOString().slice(0, 10));
+    const [occurredAt, setOccurredAt] = useState<DateValue>(() => {
+        const now = new Date();
+        return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    });
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
     const [source, setSource] = useState<Source>('USER');
@@ -87,14 +93,14 @@ export default function LossEventsPage() {
 
     const record = async () => {
         const amt = Number(amount);
-        if (!Number.isFinite(amt) || amt < 0) return;
+        if (!Number.isFinite(amt) || amt < 0 || occurredAt == null) return;
         setBusy(true); setMsg(null);
         try {
             const res = await fetch(apiUrl('/loss-events'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    occurredAt: new Date(occurredAt).toISOString(),
+                    occurredAt: occurredAt.toISOString(),
                     amount: amt,
                     description: description.trim() || null,
                     source,
@@ -164,24 +170,16 @@ export default function LossEventsPage() {
                         <div className="mt-default space-y-tight" data-testid="loss-events-by-year">
                             {agg.byYear.map((y) => (
                                 <div key={y.year} className="flex items-center gap-default text-sm">
-                                    <span className="w-12 text-content-emphasis tabular-nums">{y.year}</span>
+                                    <span className="w-12 shrink-0 text-content-emphasis tabular-nums">{y.year}</span>
                                     <div className="flex-1">
-                                        <div
-                                            role="progressbar"
-                                            aria-valuemin={0}
-                                            aria-valuemax={yearMax || 1}
-                                            aria-valuenow={Math.round(y.total)}
+                                        <ProgressBar
+                                            value={y.total}
+                                            max={yearMax || 1}
                                             aria-label={`Actual losses in ${y.year}: ${money(y.total)}`}
-                                            className="h-3 w-full overflow-hidden rounded-sm bg-bg-subtle"
-                                        >
-                                            <div
-                                                className="h-full bg-content-error"
-                                                style={{ width: `${yearMax ? Math.max(2, (y.total / yearMax) * 100) : 0}%` }}
-                                            />
-                                        </div>
+                                        />
                                     </div>
-                                    <span className="w-32 text-right tabular-nums text-content-muted">{money(y.total)}</span>
-                                    <span className="w-16 text-right tabular-nums text-content-subtle">{y.count}</span>
+                                    <span className="w-24 shrink-0 text-right tabular-nums text-content-muted">{money(y.total)}</span>
+                                    <span className="w-12 shrink-0 text-right tabular-nums text-content-subtle">{y.count}</span>
                                 </div>
                             ))}
                         </div>
@@ -200,14 +198,14 @@ export default function LossEventsPage() {
             <Card className="space-y-default p-6" data-testid="loss-events-form">
                 <Heading level={2}>Record loss</Heading>
                 <div className="flex flex-wrap items-end gap-default">
-                    <label className="block">
-                        <span className="text-xs text-content-muted">Date</span>
-                        <Input
-                            type="date"
+                    <div className="block">
+                        <span className="mb-0.5 block text-xs text-content-muted">Date</span>
+                        <DatePicker
                             value={occurredAt}
-                            onChange={(e) => setOccurredAt(e.target.value)}
+                            onChange={setOccurredAt}
+                            placeholder="When did it occur"
                         />
-                    </label>
+                    </div>
                     <label className="block">
                         <span className="text-xs text-content-muted">Amount</span>
                         <Input

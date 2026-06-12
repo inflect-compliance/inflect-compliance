@@ -376,6 +376,11 @@ const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
     // RQ-6 — readings fetched by kriId+recordedAt (history/sparkline).
     KriReading:
         'RQ-6 getReadings/listKris filter by tenantId + kriId, order by recordedAt — covered by @@index([kriId, recordedAt]) + @@index([tenantId, kriId]); bounded take.',
+    // RQ3-6 — loss events listed by tenantId (+ optional riskId) ordered by occurredAt;
+    // aggregate scans by tenantId. Covered by @@index([tenantId, occurredAt]) +
+    // @@index([tenantId, riskId, occurredAt]); cursor-paginated take:500.
+    LossEvent:
+        'RQ3-6 listLossEvents filters by tenantId (+ optional riskId), orders by occurredAt DESC; getLossEventAggregate scans by tenantId ordered by occurredAt — covered by @@index([tenantId, occurredAt]) + @@index([tenantId, riskId, occurredAt]); bounded take:500.',
     // RQ-8 — all correlation pairs for a tenant (matrix build / suggestions).
     RiskCorrelation:
         'RQ-8 getCorrelationMatrix/suggestCorrelations fetch all pairs by tenantId — covered by @@index([tenantId]); bounded take.',
