@@ -28,6 +28,8 @@ import { describeCombination } from '@/lib/risk-residual';
 import { getRiskMatrixConfig } from './risk-matrix-config';
 import { resolveBandForScore } from '@/lib/risk-matrix/scoring';
 import { formatCompactCurrency } from '@/lib/risk-coherence';
+import { formatTailAwareAle } from '@/lib/tail-language';
+import { getPerRiskPercentiles } from './monte-carlo';
 
 export interface ScoreExplanationEvent {
     kind: 'INHERENT' | 'RESIDUAL';
@@ -94,6 +96,8 @@ export async function getScoreExplanation(
     // Tenant matrix config — outside the main transaction (it has its
     // own read path + defaults for unconfigured tenants).
     const matrix = await getRiskMatrixConfig(ctx);
+    // RQ3-4 — the per-risk tail cache (RQ3-1); null when no run.
+    const tailSnapshot = await getPerRiskPercentiles(ctx);
 
     return runInTenantContext(ctx, async (db) => {
         const risk = await db.risk.findFirst({
@@ -179,7 +183,12 @@ export async function getScoreExplanation(
                 ale !== null
                     ? {
                           ale,
-                          line: `Annualised loss expectancy ≈ ${formatCompactCurrency(ale, sym)}`,
+                          // RQ3-4 — the quant line speaks both
+                          // registers through the one tail formatter.
+                          line:
+                              formatTailAwareAle(ale, tailSnapshot?.byRisk[riskId]?.aleP90 ?? null, {
+                                  money: (v) => formatCompactCurrency(v, sym),
+                              }) ?? `${formatCompactCurrency(ale, sym)}/yr`,
                       }
                     : null,
             openBreaches: breaches,

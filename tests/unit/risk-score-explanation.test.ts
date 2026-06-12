@@ -14,6 +14,9 @@ const mockDb = {
     risk: { findFirst: jest.fn() },
     // RQ3-OB-A — quant line speaks the tenant's currency.
     tenant: { findUnique: jest.fn().mockResolvedValue({ currencySymbol: '€' }) },
+    // RQ3-4 — getPerRiskPercentiles reads the latest run; null = no
+    // simulation, so the quant line renders the mean register.
+    riskSimulationRun: { findFirst: jest.fn().mockResolvedValue(null) },
     riskScoreEvent: { findMany: jest.fn() },
     riskAppetiteBreach: { findMany: jest.fn() },
     user: { findMany: jest.fn() },
@@ -146,12 +149,26 @@ describe('getScoreExplanation — residual semantics', () => {
 });
 
 describe('getScoreExplanation — quant, breaches, events', () => {
-    it('quant line renders compact currency when ALE resolves', async () => {
+    it('quant line speaks the mean register (with the honest suffix) when no simulation exists', async () => {
         (mockDb.risk.findFirst as jest.Mock).mockResolvedValue(baseRisk());
         (resolveALE as jest.Mock).mockReturnValue(1_250_000);
 
         const e = await getScoreExplanation(readerCtx, 'r-1');
-        expect(e.quant).toEqual({ ale: 1_250_000, line: 'Annualised loss expectancy ≈ €1.3M' });
+        // RQ3-4 — the quant line routes through the one tail formatter.
+        expect(e.quant).toEqual({ ale: 1_250_000, line: '€1.3M/yr (mean — run a simulation for tails)' });
+    });
+
+    it('quant line speaks both registers when the percentile cache has this risk (RQ3-4)', async () => {
+        (mockDb.risk.findFirst as jest.Mock).mockResolvedValue(baseRisk());
+        (resolveALE as jest.Mock).mockReturnValue(1_250_000);
+        (mockDb.riskSimulationRun.findFirst as jest.Mock).mockResolvedValueOnce({
+            id: 'run-1',
+            completedAt: new Date(),
+            perRiskResultsJson: [{ riskId: 'r-1', aleMean: 1_250_000, aleP90: 4_000_000 }],
+        });
+
+        const e = await getScoreExplanation(readerCtx, 'r-1');
+        expect(e.quant?.line).toBe('expected €1.3M · bad year €4.0M (P90)');
     });
 
     it('filters breaches to unresolved rows for THIS risk', async () => {

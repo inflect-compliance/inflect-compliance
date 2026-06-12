@@ -66,6 +66,7 @@ import { Plus } from '@/components/ui/icons/nucleo';
 import { RiskScoreExplainer } from '@/components/RiskScoreExplainer';
 import { resolveALE } from '@/app-layer/usecases/fair-calculator';
 import { formatCompactCurrency } from '@/lib/risk-coherence';
+import { formatTailAwareAle } from '@/lib/tail-language';
 
 /** RQ2-5 — resolved ALE for a list row (null = not quantified). */
 function riskAle(r: RiskListItem): number | null {
@@ -199,6 +200,16 @@ function RisksPageInner({
     const apiUrl = (path: string) => `/api/t/${tenantSlug}${path}`;
     const tenantHref = (path: string) => `/t/${tenantSlug}${path}`;
     const router = useRouter();
+    // RQ3-4 — per-risk tail percentiles (RQ3-1 cache); failure-soft:
+    // without a run the chips render the mean register.
+    const [tailByRisk, setTailByRisk] = useState<Record<string, { aleMean: number; aleP90: number }> | null>(null);
+    useEffect(() => {
+        fetch(`/api/t/${tenantSlug}/risks/tail-percentiles`)
+            .then((r) => (r.ok ? r.json() : null))
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            .then((d) => setTailByRisk(d?.snapshot?.byRisk ?? null))
+            .catch(() => setTailByRisk(null));
+    }, [tenantSlug]);
     const [view, setView] = useState<'register' | 'heatmap'>('register');
 
     // Epic 54 — create-risk modal. Also auto-opens on `?create=1`, which
@@ -595,18 +606,25 @@ function RisksPageInner({
                                 {score}
                             </span>
                         </RiskScoreExplainer>
-                        {/* RQ2-5 — qual ↔ quant side by side: the
-                            quantified rows carry their compact ALE
-                            beside the score chip. */}
+                        {/* RQ2-5 / RQ3-4 — qual ↔ quant side by
+                            side: quantified rows carry the compact
+                            tail register beside the score chip
+                            ("€120K · bad yr €1.4M" when the RQ3-1
+                            cache has tails; the bare mean otherwise). */}
                         {(() => {
                             const ale = riskAle(row.original);
-                            return ale !== null ? (
+                            const label = formatTailAwareAle(
+                                ale,
+                                tailByRisk?.[row.original.id]?.aleP90 ?? null,
+                                { money: formatCompactCurrency, compact: true },
+                            );
+                            return label !== null ? (
                                 <span
                                     className="text-[10px] tabular-nums text-content-muted"
                                     title="Annualised loss expectancy"
                                     data-testid={`risk-ale-${row.original.id}`}
                                 >
-                                    {formatCompactCurrency(ale)}
+                                    {label}
                                 </span>
                             ) : null;
                         })()}
@@ -715,7 +733,7 @@ function RisksPageInner({
                 );
             },
         },
-    ]), [t, getRiskBand, matrixConfig]);
+    ]), [t, getRiskBand, matrixConfig, tailByRisk]);
 
     // Right-rail Phase 3 — the AI assist co-pilot rail. A persistent,
     // co-resident entry point to the AI risk-assessment flow that

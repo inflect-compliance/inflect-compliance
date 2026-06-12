@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useTenantApiUrl, useTenantHref, useTenantContext, useMoneyFormatter } from '@/lib/tenant-context-provider';
@@ -14,6 +14,7 @@ import { getStatusTone } from '@/lib/design/status-tone';
 import type { CoherenceReport } from '@/lib/risk-coherence';
 import type { StalenessReport } from '@/app-layer/usecases/risk-staleness';
 import { InfoTooltip } from '@/components/ui/tooltip';
+import { formatTailAwareAle } from '@/lib/tail-language';
 import { MonteCarloPanel, type AppetitePayload, type SimulationRun } from './MonteCarloPanel';
 import { VelocityCard } from './VelocityCard';
 
@@ -121,6 +122,15 @@ export default function RiskDashboardPage() {
         } catch { /* failure-soft like the other widgets */ }
     }, [apiUrl]);
     useEffect(() => { void loadSimRun(); }, [loadSimRun]);
+    // RQ3-4 — per-risk P90s from the lifted run (RQ3-1 cache); the
+    // top-10 and coherence rows speak the tail register through it.
+    const tailByRisk = useMemo(() => {
+        const map: Record<string, number> = {};
+        for (const e of simRun?.perRiskResultsJson ?? []) {
+            if (e.aleP90 != null) map[e.riskId] = e.aleP90;
+        }
+        return map;
+    }, [simRun]);
 
     useEffect(() => {
         fetch(apiUrl('/risks/analytics'))
@@ -348,7 +358,7 @@ export default function RiskDashboardPage() {
                                             {row.title}
                                         </span>
                                         <span className="tabular-nums text-content-muted">
-                                            {money(row.ale)}
+                                            {formatTailAwareAle(row.ale, tailByRisk[row.id] ?? null, { money, compact: true })}
                                         </span>
                                     </Link>
                                 ))}
@@ -435,8 +445,8 @@ export default function RiskDashboardPage() {
                                             </span>
                                             <span className="shrink-0 tabular-nums text-content-muted">
                                                 {moneyBigger
-                                                    ? `score ${f.score} vs ${money(f.ale)} — losses say this is bigger`
-                                                    : `score ${f.score} vs ${money(f.ale)} — losses say this is smaller`}
+                                                    ? `score ${f.score} vs ${formatTailAwareAle(f.ale, tailByRisk[f.riskId] ?? null, { money, compact: true })} — losses say this is bigger`
+                                                    : `score ${f.score} vs ${formatTailAwareAle(f.ale, tailByRisk[f.riskId] ?? null, { money, compact: true })} — losses say this is smaller`}
                                             </span>
                                         </Link>
                                     );

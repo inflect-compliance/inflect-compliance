@@ -41,7 +41,7 @@ export async function assembleReportData(ctx: RequestContext, title: string): Pr
         runInTenantContext(ctx, (db) =>
             db.risk.findMany({
                 where: { tenantId: ctx.tenantId, deletedAt: null },
-                select: { title: true, category: true, fairAle: true, sleAmount: true, aroAmount: true, rtoHours: true, rpoHours: true, revenueAtRisk: true },
+                select: { id: true, title: true, category: true, fairAle: true, sleAmount: true, aroAmount: true, rtoHours: true, rpoHours: true, revenueAtRisk: true },
                 take: 10000,
             }),
         ),
@@ -51,11 +51,21 @@ export async function assembleReportData(ctx: RequestContext, title: string): Pr
         runInTenantContext(ctx, (db) => db.tenant.findUnique({ where: { id: ctx.tenantId }, select: { name: true, currencySymbol: true } })),
     ]);
 
+    // RQ3-4 — per-risk P90s from the latest run's cached results.
+    const tailByRisk = new Map<string, number>();
+    if (Array.isArray(latestSim?.perRiskResultsJson)) {
+        for (const e of latestSim.perRiskResultsJson as Array<Record<string, unknown>>) {
+            if (typeof e?.riskId === 'string' && typeof e?.aleP90 === 'number') {
+                tailByRisk.set(e.riskId, e.aleP90);
+            }
+        }
+    }
+
     let totalAle = 0, quantifiedCount = 0, maxAle = 0, withRto = 0, withRpo = 0, totalRevenueAtRisk = 0;
-    const quantified: Array<{ title: string; category: string | null; ale: number }> = [];
+    const quantified: Array<{ title: string; category: string | null; ale: number; aleP90: number | null }> = [];
     for (const r of risks) {
         const ale = resolveALE({ fairAle: r.fairAle, sleAmount: r.sleAmount, aroAmount: r.aroAmount });
-        if (ale != null) { totalAle += ale; quantifiedCount++; if (ale > maxAle) maxAle = ale; quantified.push({ title: r.title, category: r.category, ale }); }
+        if (ale != null) { totalAle += ale; quantifiedCount++; if (ale > maxAle) maxAle = ale; quantified.push({ title: r.title, category: r.category, ale, aleP90: tailByRisk.get(r.id) ?? null }); }
         if (r.rtoHours != null) withRto++;
         if (r.rpoHours != null) withRpo++;
         if (r.revenueAtRisk != null) totalRevenueAtRisk += r.revenueAtRisk;

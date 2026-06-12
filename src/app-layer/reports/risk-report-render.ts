@@ -13,6 +13,7 @@ import { addCoverPage, applyHeadersAndFooters } from '@/lib/pdf/layout';
 import { addSectionTitle, addSummaryMetrics } from '@/lib/pdf/sections';
 import { renderTable, autoColumnWidths } from '@/lib/pdf/table';
 import { formatCompactCurrency } from '@/lib/risk-coherence';
+import { formatTailAwareAle } from '@/lib/tail-language';
 
 export interface ReportData {
     /** RQ3-OB-A — tenant display currency (default €). */
@@ -23,7 +24,8 @@ export interface ReportData {
     totals: { totalRiskCount: number; quantifiedCount: number; totalAle: number; avgAle: number | null; maxAle: number | null };
     var: { mean: number | null; p95: number | null; p99: number | null } | null;
     appetite: { status: string; portfolioAle: number } | null;
-    topRisks: Array<{ title: string; category: string | null; ale: number }>;
+    /** RQ3-4 — aleP90 from the per-risk percentile cache (null = no tail data). */
+    topRisks: Array<{ title: string; category: string | null; ale: number; aleP90: number | null }>;
     bia: { withRto: number; withRpo: number; totalRevenueAtRisk: number };
 }
 
@@ -59,8 +61,17 @@ export function renderCsv(data: ReportData): Buffer {
     lines.push(`BIA: total revenue at risk,${Math.round(data.bia.totalRevenueAtRisk)}`);
     lines.push('');
     lines.push('Top risks by ALE');
-    lines.push('Risk,Category,ALE');
-    for (const r of data.topRisks) lines.push([csvCell(r.title), csvCell(r.category), Math.round(r.ale)].join(','));
+    // RQ3-4 — the bad-year column ships raw (CSV is data, not prose);
+    // empty when no simulation tail exists for the risk.
+    lines.push('Risk,Category,ALE,Bad year (P90)');
+    for (const r of data.topRisks) {
+        lines.push([
+            csvCell(r.title),
+            csvCell(r.category),
+            Math.round(r.ale),
+            r.aleP90 != null && r.aleP90 > r.ale ? Math.round(r.aleP90) : '',
+        ].join(','));
+    }
     return Buffer.from(lines.join('\n'), 'utf8');
 }
 
@@ -88,7 +99,12 @@ export async function renderPdf(data: ReportData): Promise<Buffer> {
         { key: 'category', header: 'Category', width: widths[1] },
         { key: 'ale', header: 'ALE', width: widths[2], align: 'right' as const },
     ];
-    const rows = data.topRisks.map((r) => ({ title: r.title, category: r.category ?? '—', ale: money(r.ale) }));
+    // RQ3-4 — each row speaks both registers through the one formatter.
+    const rows = data.topRisks.map((r) => ({
+        title: r.title,
+        category: r.category ?? '—',
+        ale: formatTailAwareAle(r.ale, r.aleP90, { money, compact: true }) ?? money(r.ale),
+    }));
     renderTable(doc, columns, rows);
 
     applyHeadersAndFooters(doc, meta);
@@ -149,7 +165,8 @@ export async function renderPptx(data: ReportData): Promise<Buffer> {
         ...data.topRisks.map((r): PptxGenJS.TableRow => [
             { text: r.title },
             { text: r.category ?? '—' },
-            { text: money(r.ale), options: { align: 'right' } },
+            // RQ3-4 — board deck rows carry the bad-year register.
+            { text: formatTailAwareAle(r.ale, r.aleP90, { money, compact: true }) ?? money(r.ale), options: { align: 'right' } },
         ]),
     ];
     top.addTable(rows, { x: 0.6, y: 1.3, w: 12, fontSize: 12, border: { type: 'solid', color: 'E5E7EB', pt: 1 } });

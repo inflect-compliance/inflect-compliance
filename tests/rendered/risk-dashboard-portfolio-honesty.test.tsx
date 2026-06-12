@@ -36,7 +36,9 @@ const renderPage = () =>
 
 const ANALYTICS = {
     totals: { totalCount: 3, quantifiedCount: 2, totalAle: 300_000, avgAle: 150_000, maxAle: 200_000 },
-    topByAle: [],
+    topByAle: [
+        { id: 'r1', title: 'Data breach', category: 'Technical', sleAmount: 0, aroAmount: 0, ale: 200_000 },
+    ],
     byCategory: [{ category: 'Technical', count: 2, totalAle: 300_000 }],
 };
 
@@ -46,7 +48,9 @@ const RUN = {
     portfolioStdDev: 120_000, iterations: 10_000, executionMs: 42,
     completedAt: '2026-06-12T00:00:00.000Z',
     lecPointsJson: [{ threshold: 380_000, probability: 0.5 }],
-    perRiskResultsJson: [],
+    perRiskResultsJson: [
+        { riskId: 'r1', title: 'Data breach', aleMean: 200_000, aleP90: 950_000, contribution: 0.6 },
+    ],
 };
 
 function mockFetch(run: typeof RUN | null) {
@@ -74,6 +78,8 @@ describe('Risk dashboard — portfolio honesty (RQ3-3)', () => {
         expect(screen.queryByTestId('risk-quant-tile-total')).toBeNull();
         expect(screen.getByTestId('risk-quant-sum-line').textContent).toContain('€300K');
         expect(screen.queryByTestId('risk-quant-sum-nudge')).toBeNull();
+        // RQ3-4 — the top-10 row speaks the compact tail register.
+        expect(screen.getByTestId('risk-quant-top-row-r1').textContent).toContain('€200K · bad yr €950K');
     });
 
     it('without a run, Σ tiles survive with the run-a-simulation nudge', async () => {

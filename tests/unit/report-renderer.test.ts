@@ -11,7 +11,11 @@ const data: ReportData = {
     totals: { totalRiskCount: 5, quantifiedCount: 3, totalAle: 1_500_000, avgAle: 500_000, maxAle: 800_000 },
     var: { mean: 1_440_000, p95: 2_810_000, p99: 3_920_000 },
     appetite: { status: 'BREACHED', portfolioAle: 1_500_000 },
-    topRisks: [{ title: 'Data breach', category: 'Technical', ale: 800_000 }, { title: 'Ransomware', category: null, ale: 700_000 }],
+    topRisks: [
+        // RQ3-4 — one row with tail data, one without (mean-only).
+        { title: 'Data breach', category: 'Technical', ale: 800_000, aleP90: 2_400_000 },
+        { title: 'Ransomware', category: null, ale: 700_000, aleP90: null },
+    ],
     bia: { withRto: 2, withRpo: 1, totalRevenueAtRisk: 3_000_000 },
 };
 
@@ -22,11 +26,14 @@ describe('renderCsv', () => {
         expect(csv).toContain('Metric,Value');
         expect(csv).toContain('Total ALE,1500000');
         expect(csv).toContain('VaR-95,2810000');
-        expect(csv).toContain('Risk,Category,ALE');
-        expect(csv).toContain('Data breach,Technical,800000');
+        expect(csv).toContain('Risk,Category,ALE,Bad year (P90)');
+        // RQ3-4 — tail row carries the raw P90; the mean-only row's
+        // bad-year cell is empty, never a duplicated mean.
+        expect(csv).toContain('Data breach,Technical,800000,2400000');
+        expect(csv).toContain('Ransomware,,700000,');
     });
     it('quotes a value containing a comma', () => {
-        const d = { ...data, topRisks: [{ title: 'Breach, major', category: 'X', ale: 1 }] };
+        const d = { ...data, topRisks: [{ title: 'Breach, major', category: 'X', ale: 1, aleP90: null }] };
         expect(renderCsv(d).toString('utf8')).toContain('"Breach, major",X,1');
     });
 });

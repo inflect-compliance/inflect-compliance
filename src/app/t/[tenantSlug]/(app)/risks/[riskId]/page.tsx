@@ -46,6 +46,7 @@ import { EditRiskModal, type EditRiskForm } from './_modals/EditRiskModal';
 import { RiskAssessmentPanel } from './RiskAssessmentPanel';
 import { resolveALE } from '@/app-layer/usecases/fair-calculator';
 import { formatCompactCurrency } from '@/lib/risk-coherence';
+import { formatTailAwareAle } from '@/lib/tail-language';
 import { FairAnalysisPanel } from './FairAnalysisPanel';
 import { BowTiePanel } from './BowTiePanel';
 import { RiskHistoryPanel } from './RiskHistoryPanel';
@@ -198,6 +199,17 @@ export default function RiskDetailPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { fetchRisk(); }, [fetchRisk]);
 
+    // RQ3-4 — this risk's tail percentile (RQ3-1 cache). Failure-soft:
+    // the header chip renders the mean register without it.
+    const [tailP90, setTailP90] = useState<number | null>(null);
+    useEffect(() => {
+        fetch(apiUrl('/risks/tail-percentiles'))
+            .then((r) => (r.ok ? r.json() : null))
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            .then((d) => setTailP90(d?.snapshot?.byRisk?.[riskId]?.aleP90 ?? null))
+            .catch(() => setTailP90(null));
+    }, [apiUrl, riskId]);
+
     const startEditing = () => {
         if (!risk) return;
         setEditForm({
@@ -312,6 +324,12 @@ export default function RiskDetailPage() {
         sleAmount: risk.sleAmount,
         aroAmount: risk.aroAmount,
     });
+    // RQ3-4 — the chip speaks the compact tail register when the
+    // simulation cache has this risk's P90.
+    const riskAleLabel = formatTailAwareAle(riskAleValue, tailP90, {
+        money: formatCompactCurrency,
+        compact: true,
+    });
     const overdue = isOverdue(risk.nextReviewAt);
 
     return (
@@ -360,10 +378,10 @@ export default function RiskDetailPage() {
                                               type="button"
                                               className="cursor-pointer bg-transparent border-0 p-0 text-inherit underline underline-offset-2 decoration-dotted"
                                               onClick={() => setActiveTab('quantification')}
-                                              aria-label={`Annualised loss expectancy ${formatCompactCurrency(riskAleValue)} — open the quantification tab`}
+                                              aria-label={`Annualised loss expectancy ${riskAleLabel} — open the quantification tab`}
                                               data-testid="meta-ale-link"
                                           >
-                                              {formatCompactCurrency(riskAleValue)}
+                                              {riskAleLabel}
                                           </button>
                                       ),
                                   } as const,
