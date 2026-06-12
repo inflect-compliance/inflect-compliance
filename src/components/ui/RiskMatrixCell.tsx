@@ -199,8 +199,8 @@ export function RiskMatrixCell({
                 </p>
             )}
             {hasCollision && (
-                <p className="text-content-default">
-                    ⚠ ALEs in this cell differ ~{Math.round(collisionRatio)}× — the
+                <p className="text-content-warning">
+                    ALEs in this cell differ ~{Math.round(collisionRatio)}× — the
                     matrix compresses them into one box; check the histogram view.
                 </p>
             )}
