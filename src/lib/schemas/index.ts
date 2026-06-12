@@ -161,6 +161,9 @@ export const UpdateControlSchema = z.object({
     automationKey: z.string().optional().nullable(),
     automationType: z.enum(['AUTOMATED', 'MANUAL', 'IT_DEPENDENT_MANUAL']).optional().nullable(),
     mitigationType: z.enum(['PREVENTIVE', 'DETECTIVE', 'DETERRENT', 'CORRECTIVE', 'COMPENSATING']).optional().nullable(),
+    // RQ3-8 — annual cost in the tenant's currency. Float (matches
+    // the existing Risk money-field pattern); null clears the price.
+    annualCost: z.number().nonnegative().optional().nullable(),
 }).strip().openapi('ControlUpdateRequest', {
     description: 'Partial update for a control. Status, applicability, and owner have dedicated focused endpoints; this body covers descriptive metadata only.',
 });
