@@ -11,15 +11,16 @@ import { KPIStat } from '@/components/ui/metric';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { SkeletonDashboard } from '@/components/ui/skeleton';
 import { getStatusTone } from '@/lib/design/status-tone';
-import { LossExceedanceCurve } from '@/components/ui/charts';
 import type { CoherenceReport } from '@/lib/risk-coherence';
 import type { StalenessReport } from '@/app-layer/usecases/risk-staleness';
-import { MonteCarloPanel } from './MonteCarloPanel';
+import { MonteCarloPanel, type AppetitePayload } from './MonteCarloPanel';
 import { VelocityCard } from './VelocityCard';
 
 // B10 — Quantitative risk analytics shape. Mirrors the
 // RiskQuantitativeAnalytics interface in
-// `src/app-layer/usecases/risk-analytics.ts`.
+// `src/app-layer/usecases/risk-analytics.ts`. RQ3-1: the rank-based
+// coverage sketch is NOT consumed here — the dashboard's only loss
+// exceedance curve is the simulated one inside MonteCarloPanel.
 type QuantitativeAnalytics = {
     totals: {
         totalCount: number;
@@ -37,24 +38,6 @@ type QuantitativeAnalytics = {
         ale: number;
     }>;
     byCategory: Array<{ category: string; count: number; totalAle: number }>;
-    lecPoints: Array<{
-        threshold: number;
-        exceedanceCount: number;
-        exceedanceFraction: number;
-    }>;
-};
-
-// RQ2-6 — appetite payload from GET /risk-appetite (config + status).
-type AppetitePayload = {
-    config: {
-        totalAleThreshold: number | null;
-        singleRiskAleMax: number | null;
-    } | null;
-    status: {
-        status: 'NONE' | 'WITHIN' | 'APPROACHING' | 'BREACHED';
-        portfolioAle: number;
-        activeBreaches: number;
-    } | null;
 };
 
 type Risk = {
@@ -328,55 +311,37 @@ export default function RiskDashboardPage() {
                                 ))}
                             </div>
                         </div>
+                        {/* RQ3-1 — the rank-based "LEC" that used to sit
+                            here was a coverage statement wearing a
+                            probability chart's clothes. The simulated
+                            curve below (MonteCarloPanel) is the loss
+                            exceedance curve; this column now answers
+                            the coverage question honestly as a list. */}
                         <div>
-                            <Heading level={3} className="mb-2">Loss exceedance curve</Heading>
-                            <p className="text-xs text-content-subtle mb-tight">
-                                For each loss threshold (x), the curve
-                                shows the share of quantified risks whose
-                                annualised loss is ≥ that threshold.
-                            </p>
-                            <LossExceedanceCurve
-                                data={analytics.lecPoints}
-                                testId="risk-loss-exceedance-curve"
-                                ariaLabel="Risk portfolio loss exceedance curve"
-                                // RQ2-6 — the per-risk appetite cap is a
-                                // genuine x-threshold on this curve:
-                                // every step right of the line is a risk
-                                // outside appetite.
-                                referenceLines={
-                                    appetite?.config?.singleRiskAleMax != null
-                                        ? [
-                                              {
-                                                  value: appetite.config.singleRiskAleMax,
-                                                  label: 'Per-risk appetite',
-                                              },
-                                          ]
-                                        : undefined
-                                }
-                            />
-                            {/* The portfolio ceiling is a Σ-constraint,
-                                not a per-risk x-threshold — drawing it
-                                on the curve would lie. It gets an
-                                honest utilisation line instead. */}
-                            {appetite?.config?.totalAleThreshold != null && appetite.status && (
-                                <p
-                                    className="mt-tight text-xs text-content-muted tabular-nums"
-                                    data-testid="lec-portfolio-appetite-note"
-                                >
-                                    Portfolio ALE {money(appetite.status.portfolioAle)} of{' '}
-                                    {money(appetite.config.totalAleThreshold)} ceiling (
-                                    {Math.round(
-                                        (appetite.status.portfolioAle /
-                                            appetite.config.totalAleThreshold) *
-                                            100,
-                                    )}
-                                    %).
-                                </p>
-                            )}
+                            <Heading level={3} className="mb-2">Exposure by category</Heading>
+                            <div className="space-y-tight" data-testid="risk-quant-by-category">
+                                {analytics.byCategory.slice(0, 10).map((c) => (
+                                    <div
+                                        key={c.category}
+                                        className="flex justify-between gap-default p-2 rounded text-sm"
+                                    >
+                                        <span className="truncate text-content-emphasis">
+                                            {c.category}
+                                        </span>
+                                        <span className="tabular-nums text-content-muted">
+                                            {money(c.totalAle)} · {c.count}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </Card>
             )}
+
+            {/* RQ-3 / RQ3-1 — the portfolio loss exceedance stage:
+                simulated curve, VaR tiles, appetite thresholds. */}
+            <MonteCarloPanel appetite={appetite} />
 
             {/* RQ2-5 — qual ↔ quant coherence. Renders only when the
                 detector has enough quantified risks to rank; an
@@ -483,9 +448,6 @@ export default function RiskDashboardPage() {
                     </div>
                 </Card>
             )}
-
-            {/* RQ-3 — Monte Carlo simulation */}
-            <MonteCarloPanel />
 
             {/* RQ-9 — risk velocity */}
             <VelocityCard />

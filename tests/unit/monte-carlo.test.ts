@@ -68,12 +68,26 @@ describe('simulatePortfolio', () => {
         expect(total).toBeCloseTo(1, 1);
     });
 
-    it('VaR ordering holds: p50 ≤ p95 ≤ p99 ≤ max', () => {
+    it('VaR ordering holds: p50 ≤ p80 ≤ p90 ≤ p95 ≤ p99 ≤ max (RQ3-1 adds p80)', () => {
         const r = simulatePortfolio([pointRisk('a', 100_000)], { iterations: 10_000, seed: 9 });
-        const { median, p95, p99, max } = r.portfolioAle;
-        expect(median).toBeLessThanOrEqual(p95);
+        const { median, p80, p90, p95, p99, max } = r.portfolioAle;
+        expect(median).toBeLessThanOrEqual(p80);
+        expect(p80).toBeLessThanOrEqual(p90);
+        expect(p90).toBeLessThanOrEqual(p95);
         expect(p95).toBeLessThanOrEqual(p99);
         expect(p99).toBeLessThanOrEqual(max);
+        expect(p80).toBeGreaterThan(0);
+    });
+
+    it('RQ3-1 — per-risk tail trio is sampled and ordered: p50 ≤ p90 ≤ p95', () => {
+        const r = simulatePortfolio([pointRisk('a', 200_000), pointRisk('b', 50_000)], { iterations: 5000, seed: 13 });
+        for (const p of r.perRisk) {
+            expect(p.aleP50).toBeLessThanOrEqual(p.aleP90);
+            expect(p.aleP90).toBeLessThanOrEqual(p.aleP95);
+            // A ±20% PERT spread genuinely separates the percentiles —
+            // equal values would mean the trio degraded to the mean.
+            expect(p.aleP90).toBeGreaterThan(p.aleP50);
+        }
     });
 
     it('converges (delta < 5%) at 20k iterations', () => {

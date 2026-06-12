@@ -51,7 +51,7 @@ describe('B10 — getRiskQuantitativeAnalytics', () => {
         expect(out.totals.maxAle).toBeNull();
         expect(out.topByAle).toEqual([]);
         expect(out.byCategory).toEqual([]);
-        expect(out.lecPoints).toEqual([]);
+        expect(out.coverageSketch).toEqual([]);
     });
 
     it('excludes risks without both SLE and ARO from totals', async () => {
@@ -101,11 +101,11 @@ describe('B10 — getRiskQuantitativeAnalytics', () => {
         expect(cats['(uncategorised)'].count).toBe(1);
 
         // LEC: 4 points, all with non-decreasing fraction.
-        expect(out.lecPoints).toHaveLength(4);
-        expect(out.lecPoints[0].exceedanceFraction).toBe(0.25);
-        expect(out.lecPoints[3].exceedanceFraction).toBe(1);
+        expect(out.coverageSketch).toHaveLength(4);
+        expect(out.coverageSketch[0].exceedanceFraction).toBe(0.25);
+        expect(out.coverageSketch[3].exceedanceFraction).toBe(1);
         // First point's threshold == max ALE (curve emitted desc).
-        expect(out.lecPoints[0].threshold).toBe(20_000);
+        expect(out.coverageSketch[0].threshold).toBe(20_000);
     });
 
     it('caps topByAle at 10 entries', async () => {

@@ -151,8 +151,12 @@ export function sampleFairALEFromUniform(d: FairDistributions, u: number): numbe
 }
 
 export interface SimulationResult {
-    portfolioAle: { mean: number; median: number; p90: number; p95: number; p99: number; stdDev: number; min: number; max: number };
-    perRisk: Array<{ riskId: string; title: string; aleMean: number; aleP95: number; contribution: number }>;
+    portfolioAle: { mean: number; median: number; p80: number; p90: number; p95: number; p99: number; stdDev: number; min: number; max: number };
+    /** RQ3-1 — per-risk tail percentiles (P50/P90/P95) are the data
+     *  spine for tail-aware ranking, board reporting, and the
+     *  portfolio percentile views. Sampled when the portfolio is
+     *  ≤ 200 risks; mean-only fallback otherwise. */
+    perRisk: Array<{ riskId: string; title: string; aleMean: number; aleP50: number; aleP90: number; aleP95: number; contribution: number }>;
     lossExceedanceCurve: Array<{ threshold: number; probability: number }>;
     convergenceDelta: number;
     iterationsRun: number;
@@ -173,7 +177,7 @@ export function simulatePortfolio(risks: SimRisk[], config: SimulationConfig = {
 
     if (risks.length === 0) {
         return {
-            portfolioAle: { mean: 0, median: 0, p90: 0, p95: 0, p99: 0, stdDev: 0, min: 0, max: 0 },
+            portfolioAle: { mean: 0, median: 0, p80: 0, p90: 0, p95: 0, p99: 0, stdDev: 0, min: 0, max: 0 },
             perRisk: [], lossExceedanceCurve: [], convergenceDelta: 0, iterationsRun: iterations, executionMs: Date.now() - start,
         };
     }
@@ -225,12 +229,19 @@ export function simulatePortfolio(risks: SimRisk[], config: SimulationConfig = {
 
     const perRisk = risks.map((risk, r) => {
         const aleMean = perRiskSum[r] / iterations;
+        // RQ3-1 — the full tail trio. Mean-only fallback for very
+        // large portfolios keeps memory bounded; consumers treat
+        // p50 === p90 === mean as "no tail data".
+        let aleP50 = aleMean;
+        let aleP90 = aleMean;
         let aleP95 = aleMean;
         if (keepPerRisk) {
             const s = perRiskSamples[r].sort((a, b) => a - b);
+            aleP50 = percentile(s, 0.5);
+            aleP90 = percentile(s, 0.9);
             aleP95 = percentile(s, 0.95);
         }
-        return { riskId: risk.id, title: risk.title, aleMean, aleP95, contribution: mean > 0 ? aleMean / mean : 0 };
+        return { riskId: risk.id, title: risk.title, aleMean, aleP50, aleP90, aleP95, contribution: mean > 0 ? aleMean / mean : 0 };
     }).sort((a, b) => b.aleMean - a.aleMean);
 
     // Loss exceedance curve — 20 thresholds spanning [p50, max].
@@ -251,7 +262,7 @@ export function simulatePortfolio(risks: SimRisk[], config: SimulationConfig = {
 
     return {
         portfolioAle: {
-            mean, median: percentile(sorted, 0.5), p90: percentile(sorted, 0.9),
+            mean, median: percentile(sorted, 0.5), p80: percentile(sorted, 0.8), p90: percentile(sorted, 0.9),
             p95: percentile(sorted, 0.95), p99: percentile(sorted, 0.99), stdDev,
             min: sorted[0], max: sorted[sorted.length - 1],
         },
@@ -307,6 +318,7 @@ export async function runSimulation(
                 seed: config.seed ?? null,
                 portfolioMean: result.portfolioAle.mean,
                 portfolioP50: result.portfolioAle.median,
+                portfolioP80: result.portfolioAle.p80,
                 portfolioP90: result.portfolioAle.p90,
                 portfolioP95: result.portfolioAle.p95,
                 portfolioP99: result.portfolioAle.p99,
@@ -332,4 +344,50 @@ export async function getLatestSimulation(ctx: RequestContext) {
             orderBy: { createdAt: 'desc' },
         }),
     );
+}
+
+// ── RQ3-1 — per-risk tail-percentile cache ────────────────────────────
+
+export interface RiskTailPercentiles {
+    aleMean: number;
+    aleP50: number;
+    aleP90: number;
+    aleP95: number;
+    contribution: number;
+}
+
+export interface PerRiskPercentilesSnapshot {
+    runId: string;
+    completedAt: Date | null;
+    byRisk: Record<string, RiskTailPercentiles>;
+}
+
+/**
+ * The cached per-risk tail percentiles from the latest COMPLETED
+ * simulation run — the data spine for tail-aware ranking (RQ3-4),
+ * portfolio percentile views (RQ3-3), and the board page (RQ3-10).
+ * Pre-RQ3-1 runs (no aleP50/aleP90 in the JSON) degrade gracefully:
+ * missing percentiles fall back to the persisted mean, which
+ * consumers can read as "no tail data, re-run the simulation".
+ * Returns null when no completed run exists.
+ */
+export async function getPerRiskPercentiles(
+    ctx: RequestContext,
+): Promise<PerRiskPercentilesSnapshot | null> {
+    const run = await getLatestSimulation(ctx);
+    if (!run || !Array.isArray(run.perRiskResultsJson)) return null;
+    const byRisk: Record<string, RiskTailPercentiles> = {};
+    for (const entry of run.perRiskResultsJson) {
+        if (!entry || typeof entry !== 'object') continue;
+        const e = entry as Record<string, unknown>;
+        if (typeof e.riskId !== 'string' || typeof e.aleMean !== 'number') continue;
+        byRisk[e.riskId] = {
+            aleMean: e.aleMean,
+            aleP50: typeof e.aleP50 === 'number' ? e.aleP50 : e.aleMean,
+            aleP90: typeof e.aleP90 === 'number' ? e.aleP90 : e.aleMean,
+            aleP95: typeof e.aleP95 === 'number' ? e.aleP95 : e.aleMean,
+            contribution: typeof e.contribution === 'number' ? e.contribution : 0,
+        };
+    }
+    return { runId: run.id, completedAt: run.completedAt, byRisk };
 }

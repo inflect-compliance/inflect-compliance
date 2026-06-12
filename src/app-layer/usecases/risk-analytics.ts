@@ -15,17 +15,21 @@
  *     `Risk.category`. Drives the analytics-tab "where does the
  *     exposure concentrate" chart.
  *
- *   • Loss exceedance curve — a sorted-loss-by-rank emission used
- *     by the `<LossExceedanceCurve>` chart primitive to render
- *     P(loss ≥ X). The simplest interpretation: each quantified
- *     risk contributes one (ALE, fraction) point to the curve.
- *     This is NOT a Monte-Carlo convolution — that would need a
- *     simulation harness; the rank-based curve is the canonical
- *     bootstrap a risk-management dashboard surfaces first.
+ *   • Coverage sketch (RQ3-1 demotion — formerly "lecPoints") — a
+ *     sorted-loss-by-rank emission: each quantified risk
+ *     contributes one (ALE, fraction) point. This is NOT a
+ *     simulated loss distribution — it answers "what share of
+ *     RISKS sit above this loss" (a coverage question), never
+ *     "what is the probability the YEAR'S losses exceed X" (the
+ *     LEC question). The simulation harness now exists
+ *     (usecases/monte-carlo.ts) and its curve is the only loss
+ *     exceedance curve the dashboard may headline; the
+ *     `rq3-1-simulated-lec` ratchet bans this sketch from being
+ *     rendered as an LEC again.
  *
  * The "quantitative" subset is computed inside the function — a
  * risk with NULL `sleAmount` or `aroAmount` contributes to count
- * but NOT to totalAle / avgAle / topByAle / lecPoints. The
+ * but NOT to totalAle / avgAle / topByAle / coverageSketch. The
  * analytics view of qualitative-only portfolios is documented in
  * the UI ("No quantified risks yet — set SLE + ARO on a risk to
  * activate the analytics").
@@ -64,7 +68,14 @@ export interface CategoryDistribution {
     totalAle: number;
 }
 
-export interface LossExceedancePoint {
+/**
+ * RQ3-1 — one point per quantified risk: (its ALE, the share of
+ * risks at or above it). A COVERAGE statement about the register,
+ * not a probability statement about annual loss — see the module
+ * docstring. Render as a ranked list or coverage table, never as a
+ * loss exceedance curve.
+ */
+export interface CoverageSketchPoint {
     /** Loss threshold (currency). */
     threshold: number;
     /** Number of risks whose ALE ≥ threshold. */
@@ -77,7 +88,8 @@ export interface RiskQuantitativeAnalytics {
     totals: QuantitativeRiskTotals;
     topByAle: QuantitativeRiskRow[];
     byCategory: CategoryDistribution[];
-    lecPoints: LossExceedancePoint[];
+    /** RQ3-1 — demoted from `lecPoints`; see CoverageSketchPoint. */
+    coverageSketch: CoverageSketchPoint[];
 }
 
 const TOP_N = 10;
@@ -165,14 +177,14 @@ export async function getRiskQuantitativeAnalytics(
             (a, b) => b.totalAle - a.totalAle,
         );
 
-        // Loss exceedance curve. Sorted-loss-by-rank emission —
-        // each quantified risk contributes one (ALE, fraction)
-        // point. The chart renders these as a step curve.
+        // Coverage sketch. Sorted-loss-by-rank emission — each
+        // quantified risk contributes one (ALE, fraction) point.
+        // NOT an LEC; see the module docstring.
         const sortedAles = quantified.map((r) => r.ale).sort((a, b) => b - a);
-        const lecPoints: LossExceedancePoint[] = [];
+        const coverageSketch: CoverageSketchPoint[] = [];
         if (sortedAles.length > 0) {
             for (let i = 0; i < sortedAles.length; i++) {
-                lecPoints.push({
+                coverageSketch.push({
                     threshold: sortedAles[i],
                     exceedanceCount: i + 1,
                     exceedanceFraction: (i + 1) / sortedAles.length,
@@ -180,7 +192,7 @@ export async function getRiskQuantitativeAnalytics(
             }
         }
 
-        return { totals, topByAle, byCategory, lecPoints };
+        return { totals, topByAle, byCategory, coverageSketch };
     });
 }
 

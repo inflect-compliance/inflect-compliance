@@ -552,6 +552,8 @@ model RiskSimulationRun {
   // ── Results ──
   portfolioMean      Float?
   portfolioP50       Float?
+  /// RQ3-1 — VaR-80: the "likely bad year" marker on the simulated LEC.
+  portfolioP80       Float?
   portfolioP90       Float?
   portfolioP95       Float?
   portfolioP99       Float?

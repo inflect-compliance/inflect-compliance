@@ -1,29 +1,73 @@
 'use client';
 
 /**
- * RQ-3 — Monte Carlo simulation panel on the risk dashboard. Shows the
- * latest run's portfolio VaR + loss-exceedance curve, and runs a new
- * simulation on demand.
+ * RQ-3 / RQ3-1 — the portfolio loss-exceedance stage on the risk
+ * dashboard. Shows the latest simulation's VaR tiles + the SIMULATED
+ * loss-exceedance curve (the only LEC the dashboard headlines —
+ * the rank-based coverage sketch is banned from this slot by the
+ * rq3-1-simulated-lec ratchet), and runs a new simulation on demand.
+ *
+ * Appetite carry-over (RQ2-6, re-grounded for the portfolio axis):
+ * on the simulated curve the x-axis is the YEAR'S TOTAL loss, so the
+ * portfolio ceiling (`totalAleThreshold`) is the genuine x-threshold
+ * — the curve's height at that line IS the probability of breaching
+ * appetite this year. The per-risk cap (`singleRiskAleMax`) is NOT a
+ * portfolio threshold; it gets an honest per-risk note computed from
+ * the cached per-risk P90s instead of a line that would lie.
  */
 import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { KPIStat } from '@/components/ui/metric';
 import { Heading } from '@/components/ui/typography';
-import { LossExceedanceCurve } from '@/components/ui/charts';
+import { LossExceedanceCurve, type LossReferenceLine } from '@/components/ui/charts';
 import { useTenantApiUrl, useMoneyFormatter } from '@/lib/tenant-context-provider';
 import { formatDateTime } from '@/lib/format-date';
 
+/** RQ2-6 — appetite payload from GET /risk-appetite (config + status). */
+export interface AppetitePayload {
+    config: {
+        totalAleThreshold: number | null;
+        singleRiskAleMax: number | null;
+    } | null;
+    status: {
+        status: 'NONE' | 'WITHIN' | 'APPROACHING' | 'BREACHED';
+        portfolioAle: number;
+        activeBreaches: number;
+    } | null;
+}
+
 interface Run {
-    portfolioMean: number | null; portfolioP50: number | null; portfolioP90: number | null;
-    portfolioP95: number | null; portfolioP99: number | null; portfolioStdDev: number | null;
+    portfolioMean: number | null; portfolioP50: number | null; portfolioP80: number | null;
+    portfolioP90: number | null; portfolioP95: number | null; portfolioP99: number | null;
+    portfolioStdDev: number | null;
     iterations: number; executionMs: number | null; completedAt: string | null;
     lecPointsJson: Array<{ threshold: number; probability: number }> | null;
-    perRiskResultsJson: Array<{ riskId: string; title: string; aleMean: number; contribution: number }> | null;
+    perRiskResultsJson: Array<{ riskId: string; title: string; aleMean: number; aleP90?: number; contribution: number }> | null;
 }
-// RQ3-OB-A — money speaks the tenant's currency (useMoneyFormatter).
 
-export function MonteCarloPanel() {
+/**
+ * P(annual loss ≥ threshold) read off the simulated curve — step
+ * semantics matching the engine's emission (first point at or past
+ * the threshold). Clamped to the curve's domain: below the first
+ * point the curve starts at P50, so the answer is "more than
+ * the first point's probability"; past the last point it is ~0.
+ */
+function exceedanceProbabilityAt(
+    points: Array<{ threshold: number; probability: number }>,
+    threshold: number,
+): number | null {
+    if (points.length === 0) return null;
+    const sorted = [...points].sort((a, b) => a.threshold - b.threshold);
+    if (threshold <= sorted[0].threshold) return sorted[0].probability;
+    for (const p of sorted) {
+        if (p.threshold >= threshold) return p.probability;
+    }
+    // Past the simulated maximum — no iteration ever lost this much.
+    return 0;
+}
+
+export function MonteCarloPanel({ appetite }: { appetite?: AppetitePayload | null }) {
     const apiUrl = useTenantApiUrl();
     const money = useMoneyFormatter();
     const [run, setRun] = useState<Run | null>(null);
@@ -48,14 +92,40 @@ export function MonteCarloPanel() {
     const lec = (run?.lecPointsJson ?? []).map((p) => ({ threshold: p.threshold, exceedanceCount: Math.round(p.probability * 100), exceedanceFraction: p.probability }));
     const top = (run?.perRiskResultsJson ?? []).slice(0, 5);
 
+    // RQ3-1 — percentile markers (muted) + the portfolio appetite
+    // ceiling (critical tone) as genuine x-thresholds on the
+    // portfolio-loss axis.
+    const ceiling = appetite?.config?.totalAleThreshold ?? null;
+    const referenceLines: LossReferenceLine[] = [];
+    if (run) {
+        const muted = 'var(--content-subtle, #94a3b8)';
+        if (run.portfolioP50 != null) referenceLines.push({ value: run.portfolioP50, label: 'P50', color: muted });
+        if (run.portfolioP80 != null) referenceLines.push({ value: run.portfolioP80, label: 'P80', color: muted });
+        if (run.portfolioP95 != null) referenceLines.push({ value: run.portfolioP95, label: 'P95', color: muted });
+        if (ceiling != null) referenceLines.push({ value: ceiling, label: 'Portfolio appetite' });
+    }
+    const breachProbability =
+        ceiling != null && run?.lecPointsJson?.length
+            ? exceedanceProbabilityAt(run.lecPointsJson, ceiling)
+            : null;
+
+    // RQ3-1 — the per-risk cap is honest only against per-risk data:
+    // count the risks whose simulated P90 loss exceeds it.
+    const perRiskCap = appetite?.config?.singleRiskAleMax ?? null;
+    const perRiskRows = run?.perRiskResultsJson ?? [];
+    const overCapCount =
+        perRiskCap != null
+            ? perRiskRows.filter((r) => (r.aleP90 ?? r.aleMean) > perRiskCap).length
+            : 0;
+
     return (
         <Card data-testid="risk-monte-carlo">
             <div className="mb-default flex items-center justify-between">
-                <Heading level={2}>Monte Carlo simulation</Heading>
+                <Heading level={2}>Loss exceedance (Monte Carlo)</Heading>
                 <Button variant="primary" size="sm" onClick={runSim} disabled={running}>{running ? 'Running…' : 'Run simulation'}</Button>
             </div>
             {!run ? (
-                <p className="text-sm text-content-muted">No simulation yet — run one to compute portfolio VaR + loss distribution.</p>
+                <p className="text-sm text-content-muted">No simulation yet — run one to compute the portfolio loss distribution, VaR, and the loss exceedance curve.</p>
             ) : (
                 <>
                     <p className="mb-default text-xs text-content-muted">
@@ -69,9 +139,35 @@ export function MonteCarloPanel() {
                     </div>
                     <div className="grid grid-cols-1 gap-section lg:grid-cols-2">
                         <div>
-                            <Heading level={3} className="mb-2">Loss exceedance (Monte Carlo)</Heading>
+                            <p className="mb-tight text-xs text-content-subtle">
+                                For each annual-loss threshold (x), the simulated
+                                probability the year&apos;s total losses are ≥ that
+                                threshold.
+                            </p>
                             {lec.length > 0 && (
-                                <LossExceedanceCurve data={lec} testId="risk-mc-lec" ariaLabel="Monte Carlo loss exceedance curve" />
+                                <LossExceedanceCurve
+                                    data={lec}
+                                    testId="risk-mc-lec"
+                                    ariaLabel="Monte Carlo loss exceedance curve"
+                                    referenceLines={referenceLines.length > 0 ? referenceLines : undefined}
+                                />
+                            )}
+                            {/* RQ3-1 — on the portfolio axis the ceiling
+                                is a genuine x-threshold: the curve's
+                                height there is the breach probability. */}
+                            {ceiling != null && breachProbability != null && (
+                                <p className="mt-tight text-xs text-content-muted tabular-nums" data-testid="lec-portfolio-appetite-note">
+                                    ≈{Math.round(breachProbability * 100)}% chance the year&apos;s
+                                    losses exceed the {money(ceiling)} portfolio appetite.
+                                </p>
+                            )}
+                            {/* The per-risk cap is NOT a portfolio
+                                threshold — it gets a per-risk answer. */}
+                            {perRiskCap != null && perRiskRows.length > 0 && (
+                                <p className="mt-tight text-xs text-content-muted tabular-nums" data-testid="mc-per-risk-appetite-note">
+                                    {overCapCount} of {perRiskRows.length} simulated risks carry a
+                                    P90 loss above the {money(perRiskCap)} per-risk appetite cap.
+                                </p>
                             )}
                         </div>
                         <div>
