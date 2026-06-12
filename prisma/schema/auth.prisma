@@ -153,6 +153,7 @@ model Tenant {
   riskCorrelations                  RiskCorrelation[]
   riskSnapshots                     RiskSnapshot[]
   riskScoreEvents                   RiskScoreEvent[]
+  lossEvents                        LossEvent[]
   portfolioSnapshots                PortfolioSnapshot[]
   reportTemplates                   ReportTemplate[]
   reportRuns                        ReportRun[]

@@ -211,34 +211,34 @@ model IntegrationSyncMapping {
 }
 
 model AutomationRule {
-  id                String               @id @default(cuid())
-  tenantId          String
-  name              String
-  description       String?
+  id                  String                @id @default(cuid())
+  tenantId            String
+  name                String
+  description         String?
   /// The event name this rule subscribes to. Free-form string so new
   /// events can be emitted without a migration; the canonical catalog
   /// lives at src/app-layer/automation/events.ts so typos are caught
   /// at the producer side, not here.
-  triggerEvent      String
+  triggerEvent        String
   /// Optional filter expression (e.g. `{ severity: "CRITICAL" }`).
   /// Evaluated by the dispatcher against the event payload before any
   /// action fires. `null` means "match every event of this type".
-  triggerFilterJson Json?
-  actionType        AutomationActionType
+  triggerFilterJson   Json?
+  actionType          AutomationActionType
   /// Action-specific config. Shape depends on `actionType`:
   ///   NOTIFY_USER       → { userIds: string[], message: string }
   ///   CREATE_TASK       → { title, severity, assigneeUserId? }
   ///   UPDATE_STATUS     → { entityType, field, toStatus }
   ///   WEBHOOK           → { url, method, headers?, secretRef? }
-  actionConfigJson  Json
-  status            AutomationRuleStatus @default(DRAFT)
+  actionConfigJson    Json
+  status              AutomationRuleStatus  @default(DRAFT)
   /// Higher priority runs first when multiple rules match the same
   /// event. Ties broken by `createdAt`.
-  priority          Int                  @default(0)
+  priority            Int                   @default(0)
   /// Cheap dashboard counters. Incremented by the dispatcher; never
   /// the source of truth (AutomationExecution is).
-  executionCount    Int                  @default(0)
-  lastTriggeredAt   DateTime?
+  executionCount      Int                   @default(0)
+  lastTriggeredAt     DateTime?
   /// SLA window (Epic 5): max minutes between an execution starting and
   /// resolving before it's a breach. `null` = no SLA. The sla-monitor job
   /// scans RUNNING executions past this window and fires the breach action.
@@ -252,38 +252,38 @@ model AutomationRule {
   /// Chained workflow (Epic 7): fire `nextRule` after this rule succeeds,
   /// optionally after `nextRuleDelay` minutes. A DFS cycle guard in the
   /// usecase prevents loops. `null` = terminal rule.
-  nextRuleId        String?
-  nextRuleDelay     Int?
+  nextRuleId          String?
+  nextRuleDelay       Int?
   /// PR-F — the ELSE branch. When a chained rule's own `triggerFilter` does
   /// NOT match the payload at chain time, the chain follows `elseRuleId`
   /// instead of `nextRuleId` (and the rule's action is skipped). This makes
   /// the canvas condition-pass / condition-fail edges executable.
-  elseRuleId        String?
+  elseRuleId          String?
   /// PR-E — schedule config for time-based triggers (triggerEvent = 'SCHEDULE').
   /// Shape: { kind: 'DATE_RELATIVE', target: 'Evidence'|'ControlException'|
   /// 'ControlTestPlan', offsetDays: number }. The cron-trigger-sweep fires the
   /// rule N days before the target entity's due date. null for event-triggered
   /// rules.
-  scheduleConfigJson Json?
+  scheduleConfigJson  Json?
   /// VR-7 — when this rule belongs to a canvas sub-flow group, the enclosing
   /// group's ProcessNode.nodeKey. The governance graph (VR-10) reads this to
   /// draw sub-flow-call relationships between maps. No FK — the group node
   /// lives in a ProcessMap, not a constrainable table.
-  subFlowGroupId    String?
-  createdByUserId   String?
-  updatedByUserId   String?
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
+  subFlowGroupId      String?
+  createdByUserId     String?
+  updatedByUserId     String?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
   /// Soft-delete. Archived rules stop firing but their execution
   /// history survives for audit.
-  deletedAt         DateTime?
+  deletedAt           DateTime?
 
-  tenant     Tenant                @relation(fields: [tenantId], references: [id])
-  executions AutomationExecution[]
-  nextRule   AutomationRule?       @relation("RuleChain", fields: [nextRuleId], references: [id])
-  prevRules  AutomationRule[]      @relation("RuleChain")
-  elseRule   AutomationRule?       @relation("RuleElseChain", fields: [elseRuleId], references: [id])
-  elsePrevRules AutomationRule[]   @relation("RuleElseChain")
+  tenant        Tenant                @relation(fields: [tenantId], references: [id])
+  executions    AutomationExecution[]
+  nextRule      AutomationRule?       @relation("RuleChain", fields: [nextRuleId], references: [id])
+  prevRules     AutomationRule[]      @relation("RuleChain")
+  elseRule      AutomationRule?       @relation("RuleElseChain", fields: [elseRuleId], references: [id])
+  elsePrevRules AutomationRule[]      @relation("RuleElseChain")
 
   @@unique([tenantId, name])
   @@index([tenantId])

@@ -191,6 +191,8 @@ const RISK_VIEW_LINKS: ReadonlyArray<{ href: string; label: string; icon: AppIco
     { href: '/risks/hierarchy', label: 'Hierarchy', icon: 'share' },
     { href: '/risks/kri', label: 'Key risk indicators', icon: 'alertCircle' },
     { href: '/risks/correlations', label: 'Correlations', icon: 'mappings' },
+    // RQ3-6 — the loss-event register: forecasts meet reality.
+    { href: '/risks/loss-events', label: 'Loss events', icon: 'fileWarning' },
     { href: '/risks/reports', label: 'Reports', icon: 'fileSpreadsheet' },
 ];
 

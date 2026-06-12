@@ -138,7 +138,13 @@ const MIN_SECONDARY_TO_PRIMARY_RATIO = 0.9;
 // RQ-10 (2026-06-10) — bumped 121 → 123 for the reports surface: the
 // "Generate PDF" template CTA (risks/reports) is a genuine page primary.
 // Measured = 122; ceiling at 123 keeps one slot of headroom.
-const MAX_PRIMARY_COUNT = 123;
+// RQ3-6 (2026-06-12) — bumped 123 → 125 for the loss-event register
+// (risks/loss-events): the "Record" CTA is a genuine page primary,
+// matching the scenario/hierarchy/KRI create buttons. The source-
+// selector + Remove affordances are secondary/ghost, so the page
+// adds exactly +1 primary. Measured = 124; ceiling at 125 keeps one
+// slot of headroom.
+const MAX_PRIMARY_COUNT = 125;
 
 describe("primary:secondary ratio direction", () => {
     const counts = (() => {

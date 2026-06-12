@@ -913,3 +913,14 @@ enum RiskScoreEventSource {
   AI
   MIGRATION
 }
+
+enum LossEventSource {
+  /// Recorded by a person (manual entry on the loss-event register).
+  USER
+  /// Recorded from a finding's close-out — the actual loss that
+  /// finding ended up costing.
+  FINDING
+  /// Recorded from an incident / ticket — the realised cost the
+  /// incident closed at.
+  INCIDENT
+}

@@ -234,10 +234,16 @@ describe('New page token discipline', () => {
         //     utilities — uses content-*/border-*/bg-* tokens + health
         //     ring tokens); in the unmigrated tally only because the
         //     surface is new and not yet promoted to MIGRATED_PAGES.
+        //   - 105 (+1): RQ3-6 — risks/loss-events/page.tsx, the
+        //     loss-event register (predicted-vs-actual). Token-clean
+        //     (content-*/bg-*/border-* semantic tokens only; bars via
+        //     <ProgressBar>, date via <DatePicker>); in the unmigrated
+        //     tally only because the surface is new and not yet
+        //     promoted to MIGRATED_PAGES.
         // Each increment names the epic + page + reason; promotion
         // to MIGRATED_PAGES is the path forward, never silent
         // floor-bumping.
-        expect(unmigrated.length).toBeLessThanOrEqual(104);
+        expect(unmigrated.length).toBeLessThanOrEqual(105);
     });
 
     it('migrated page count is at least 4', () => {

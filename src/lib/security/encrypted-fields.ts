@@ -111,6 +111,12 @@ export const ENCRYPTED_FIELDS: Readonly<Record<string, readonly string[]>> = {
     //  `description` omitted — searched via RiskRepository `contains`.
     Risk: ['treatmentNotes', 'threat', 'vulnerability'],
 
+    // ─── Loss-event register (RQ3-6) ───────────────────
+    //  Loss narratives are confidential business content (customer
+    //  data exposed, settlement amounts, vendor reputation): the
+    //  attacker value if leaked is comparable to the Finding rows.
+    LossEvent: ['description', 'justification'],
+
     // ─── Finding ───────────────────────────────────────
     //  Findings are audit artifacts — attacker value if leaked is high.
     Finding: [

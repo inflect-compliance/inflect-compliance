@@ -62,6 +62,10 @@ const RICH_TEXT_COVERAGE: Readonly<
     },
     Finding: { usecases: ['src/app-layer/usecases/finding.ts'], sanitizer: 'sanitizePlainText' },
     Risk: { usecases: ['src/app-layer/usecases/risk.ts'], sanitizer: 'sanitizePlainText' },
+    // RQ3-6 — loss-event narrative + reviewer justification; sanitised
+    // at the single createLossEvent write seam before the Epic B
+    // middleware persists them.
+    LossEvent: { usecases: ['src/app-layer/usecases/loss-event.ts'], sanitizer: 'sanitizePlainText' },
     Vendor: { usecases: ['src/app-layer/usecases/vendor.ts'], sanitizer: 'sanitizePlainText' },
     VendorDocument: { usecases: ['src/app-layer/usecases/vendor.ts'], sanitizer: 'sanitizePlainText' },
     VendorAssessment: { usecases: ['src/app-layer/usecases/vendor.ts'], sanitizer: 'sanitizePlainText' },
