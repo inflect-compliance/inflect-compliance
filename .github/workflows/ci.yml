@@ -83,27 +83,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v6
+      - name: Setup Node + Prisma client
+        uses: ./.github/actions/setup-node-prisma
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate Prisma client
-        # Roadmap-27 CI hardening — `prisma generate` intermittently
-        # crashes the runner with a V8 SIGILL (exit 132, internal
-        # "Check failed" assertion). Retry up to 3× so a flaky codegen
-        # crash never fails an otherwise-green job. The `if` form is
-        # errexit-safe — a failed attempt does not abort the step.
-        run: |
-          for attempt in 1 2 3; do
-            if ./node_modules/.bin/prisma generate; then exit 0; fi
-            echo "::warning::prisma generate failed (attempt ${attempt}/3) — retrying"
-            sleep 5
-          done
-          exit 1
 
       - name: Run ESLint
         run: npm run lint
@@ -120,27 +103,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v6
+      - name: Setup Node + Prisma client
+        uses: ./.github/actions/setup-node-prisma
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate Prisma client
-        # Roadmap-27 CI hardening — `prisma generate` intermittently
-        # crashes the runner with a V8 SIGILL (exit 132, internal
-        # "Check failed" assertion). Retry up to 3× so a flaky codegen
-        # crash never fails an otherwise-green job. The `if` form is
-        # errexit-safe — a failed attempt does not abort the step.
-        run: |
-          for attempt in 1 2 3; do
-            if ./node_modules/.bin/prisma generate; then exit 0; fi
-            echo "::warning::prisma generate failed (attempt ${attempt}/3) — retrying"
-            sleep 5
-          done
-          exit 1
 
       - name: Run tsc --noEmit
         run: npm run typecheck
@@ -210,27 +176,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v6
+      - name: Setup Node + Prisma client
+        uses: ./.github/actions/setup-node-prisma
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate Prisma client
-        # Roadmap-27 CI hardening — `prisma generate` intermittently
-        # crashes the runner with a V8 SIGILL (exit 132, internal
-        # "Check failed" assertion). Retry up to 3× so a flaky codegen
-        # crash never fails an otherwise-green job. The `if` form is
-        # errexit-safe — a failed attempt does not abort the step.
-        run: |
-          for attempt in 1 2 3; do
-            if ./node_modules/.bin/prisma generate; then exit 0; fi
-            echo "::warning::prisma generate failed (attempt ${attempt}/3) — retrying"
-            sleep 5
-          done
-          exit 1
 
       # ── Quality gate: migrations must exist ──
       - name: "Gate: Prisma migrations exist"
@@ -361,27 +310,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v6
+      - name: Setup Node + Prisma client
+        uses: ./.github/actions/setup-node-prisma
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate Prisma client
-        # Roadmap-27 CI hardening — `prisma generate` intermittently
-        # crashes the runner with a V8 SIGILL (exit 132, internal
-        # "Check failed" assertion). Retry up to 3× so a flaky codegen
-        # crash never fails an otherwise-green job. The `if` form is
-        # errexit-safe — a failed attempt does not abort the step.
-        run: |
-          for attempt in 1 2 3; do
-            if ./node_modules/.bin/prisma generate; then exit 0; fi
-            echo "::warning::prisma generate failed (attempt ${attempt}/3) — retrying"
-            sleep 5
-          done
-          exit 1
 
       # ── Create roles required by RLS migrations ──
       - name: Create PostgreSQL roles for RLS
@@ -439,27 +371,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v6
+      - name: Setup Node + Prisma client
+        uses: ./.github/actions/setup-node-prisma
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate Prisma client
-        # Roadmap-27 CI hardening — `prisma generate` intermittently
-        # crashes the runner with a V8 SIGILL (exit 132, internal
-        # "Check failed" assertion). Retry up to 3× so a flaky codegen
-        # crash never fails an otherwise-green job. The `if` form is
-        # errexit-safe — a failed attempt does not abort the step.
-        run: |
-          for attempt in 1 2 3; do
-            if ./node_modules/.bin/prisma generate; then exit 0; fi
-            echo "::warning::prisma generate failed (attempt ${attempt}/3) — retrying"
-            sleep 5
-          done
-          exit 1
 
       # Env validation is INTENTIONALLY skipped at build time.
       # `SKIP_ENV_VALIDATION: "1"` (workflow-level `env:` above)
@@ -496,16 +411,30 @@ jobs:
   #  Needs: build (validates app compiles before expensive E2E)
   # ═══════════════════════════════════════════════════════════════
   e2e:
-    name: E2E
+    name: "E2E (shard ${{ matrix.shard }}/${{ matrix.total }})"
     needs: [build]
     runs-on: ${{ vars.LARGE_RUNNER || 'ubuntu-latest' }}
-    # The Playwright suite runs serially (workers: 1, fullyParallel:
-    # false — specs share seeded-tenant state) and is ~25 min wall-clock
+    # Sharded across 3 matrix jobs via `playwright test --shard=K/3`.
+    # Each shard runs its OWN postgres service container, seed, build,
+    # and `next start`, then executes ~1/3 of the spec files. Playwright
+    # specs that share seeded-tenant state stay on the same shard (one
+    # spec FILE always lands on a single shard); isolatedTenant fixtures
+    # are per-test, so cross-shard contamination is structurally
+    # impossible. Net wall-clock: ~17 min → ~9 min per PR.
+    #
+    # The Playwright suite still runs serially (workers: 1, fullyParallel:
+    # false — specs share seeded-tenant state) and was ~25 min wall-clock
     # even all-green. 25 was too tight: a single flaky-retry pushed the
     # job past the cap and it died as `cancelled` before Playwright
     # could even print the failure summary. 40 gives real headroom for
     # the 2-retry budget without masking failures behind a timeout.
     timeout-minutes: 40
+
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+        total: [3]
 
     env:
       AUTH_TEST_MODE: "1"
@@ -558,30 +487,13 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
       - name: Setup environment
         run: cp .env.e2e.example .env
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate Prisma client
-        # Roadmap-27 CI hardening — `prisma generate` intermittently
-        # crashes the runner with a V8 SIGILL (exit 132, internal
-        # "Check failed" assertion). Retry up to 3× so a flaky codegen
-        # crash never fails an otherwise-green job. The `if` form is
-        # errexit-safe — a failed attempt does not abort the step.
-        run: |
-          for attempt in 1 2 3; do
-            if ./node_modules/.bin/prisma generate; then exit 0; fi
-            echo "::warning::prisma generate failed (attempt ${attempt}/3) — retrying"
-            sleep 5
-          done
-          exit 1
+      - name: Setup Node + Prisma client
+        uses: ./.github/actions/setup-node-prisma
+        with:
+          node-version: ${{ env.NODE_VERSION }}
 
       # ── Create roles required by RLS migrations ──
       - name: Create PostgreSQL roles for RLS
@@ -640,7 +552,7 @@ jobs:
         if: steps.pw-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
 
-      # ── GAP-20: accessibility gate ──
+      # ── GAP-20: accessibility gate (shard 1 only) ──
       # The a11y spec runs first as a NAMED step so its pass/fail
       # signal is visible at a glance in the CI annotation, separate
       # from the broader functional E2E suite. The spec itself
@@ -650,23 +562,28 @@ jobs:
       # `moderate` and `minor` findings are LOGGED for triage but
       # do not block — the policy is intentional, see the docblock
       # at the top of the spec.
+      # Pinned to shard 1 so it runs exactly once per CI run.
       - name: "Gate: accessibility (axe) — GAP-20"
+        if: matrix.shard == 1
         run: npx playwright test tests/e2e/a11y.spec.ts
         env:
           CI: "true"
 
-      - name: Run E2E tests
-        # Skip the a11y spec here — already executed as the gate above.
-        run: npx playwright test --grep-invert "a11y"
+      - name: Run E2E tests (shard)
+        # Each shard runs ~1/N of the spec files via Playwright's
+        # native `--shard=K/N` (file-level deterministic split).
+        # Skip the a11y spec — pinned to shard 1 as the gate above.
+        run: npx playwright test --grep-invert "a11y" --shard=${{ matrix.shard }}/${{ matrix.total }}
         env:
           CI: "true"
 
       # ── Artifacts (always on non-success) ──
+      # Per-shard artifact names so all shards' reports survive a run.
       - name: Upload Playwright HTML report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report
+          name: playwright-report-shard-${{ matrix.shard }}
           path: playwright-report/
           retention-days: 14
         continue-on-error: true
@@ -675,10 +592,31 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-test-results
+          name: playwright-test-results-shard-${{ matrix.shard }}
           path: test-results/
           retention-days: 14
         continue-on-error: true
+
+  # ═══════════════════════════════════════════════════════════════
+  #  Job 6b: E2E (summary) — single required check for the matrix
+  #
+  #  Branch-protection target. Aggregates the 3 shards into one
+  #  stable check name ("E2E"); see the matching pattern on
+  #  `test-summary` above.
+  # ═══════════════════════════════════════════════════════════════
+  e2e-summary:
+    name: E2E
+    needs: [e2e]
+    runs-on: ubuntu-latest
+    if: ${{ !cancelled() }}
+    steps:
+      - name: Verify every E2E shard succeeded
+        run: |
+          if [ "${{ needs.e2e.result }}" != "success" ]; then
+            echo "::error::One or more E2E shards failed (result=${{ needs.e2e.result }})"
+            exit 1
+          fi
+          echo "All E2E shards passed."
 
   # ═══════════════════════════════════════════════════════════════
   #  Job 6.5: Load Smoke — k6 mutation smoke (10 VUs × 30s)
@@ -748,30 +686,13 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
       - name: Setup environment
         run: cp .env.e2e.example .env
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate Prisma client
-        # Roadmap-27 CI hardening — `prisma generate` intermittently
-        # crashes the runner with a V8 SIGILL (exit 132, internal
-        # "Check failed" assertion). Retry up to 3× so a flaky codegen
-        # crash never fails an otherwise-green job. The `if` form is
-        # errexit-safe — a failed attempt does not abort the step.
-        run: |
-          for attempt in 1 2 3; do
-            if ./node_modules/.bin/prisma generate; then exit 0; fi
-            echo "::warning::prisma generate failed (attempt ${attempt}/3) — retrying"
-            sleep 5
-          done
-          exit 1
+      - name: Setup Node + Prisma client
+        uses: ./.github/actions/setup-node-prisma
+        with:
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Setup k6
         uses: grafana/setup-k6-action@v1
