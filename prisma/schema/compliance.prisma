@@ -377,6 +377,7 @@ model Risk {
   snapshots        RiskSnapshot[]
   // RQ2-1 — per-mutation score provenance ledger.
   scoreEvents      RiskScoreEvent[]
+  lossEvents       LossEvent[]
 
   /// Composite parent key — supports the
   /// `RiskTreatmentPlan.(riskId, tenantId) → Risk.(id, tenantId)`
@@ -782,6 +783,44 @@ model RiskScoreEvent {
   @@index([tenantId, riskId, createdAt])
   @@index([tenantId, createdAt])
   @@index([tenantId, kind, createdAt])
+}
+
+/// RQ3-6 — recorded loss event ("an actual"). The system predicts
+/// losses everywhere (FAIR ALE, Monte Carlo P50/P90, LEC); this
+/// model is where the world's answer comes back, so the forecasting
+/// stack becomes falsifiable. Sources: USER (manual entry), FINDING
+/// (recorded from a finding's close-out), INCIDENT (recorded from
+/// an incident / ticket).
+model LossEvent {
+  id              String          @id @default(cuid())
+  tenantId        String
+  /// Optional risk attribution: a loss can be portfolio-wide (riskId
+  /// null) — the predicted-vs-actual overlay still aggregates it.
+  riskId          String?
+  /// When the loss occurred (calendar date — finance, not telemetry).
+  occurredAt      DateTime
+  /// Realised loss amount, currency = tenant's `currencySymbol` (OB-A).
+  amount          Float
+  /// Short human description ("Customer breach response, vendor X").
+  /// Encrypted at rest via the Epic B manifest (loss narratives are
+  /// confidential business content).
+  description     String?
+  source          LossEventSource @default(USER)
+  /// Free-text rationale (RQ2-1-style provenance): WHY this number,
+  /// WHICH ticket, who the assessor talked to.
+  justification   String?
+  /// Nullable: imported / migrated rows may have no acting user.
+  createdByUserId String?
+  createdAt       DateTime        @default(now())
+  /// Mark-as-resolved style soft delete so historical predictions
+  /// can still see the actual that came in then later got reclassified.
+  deletedAt       DateTime?
+  risk            Risk?           @relation(fields: [riskId], references: [id], onDelete: SetNull)
+  tenant          Tenant          @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, occurredAt])
+  @@index([tenantId, riskId, occurredAt])
+  @@index([tenantId, createdAt])
 }
 
 /// RQ-9 — daily aggregate snapshot of the whole portfolio (one per

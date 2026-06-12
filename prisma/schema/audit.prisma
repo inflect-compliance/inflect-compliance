@@ -162,22 +162,22 @@ model AuditChecklistItem {
 }
 
 model AuditCycle {
-  id               String           @id @default(cuid())
-  tenantId         String
-  frameworkKey     String
-  frameworkVersion String
-  name             String
-  periodStartAt    DateTime?
-  periodEndAt      DateTime?
-  status           AuditCycleStatus @default(PLANNING)
-  createdByUserId  String
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  deletedAt        DateTime?
-  deletedByUserId  String?
-  createdBy        User             @relation(fields: [createdByUserId], references: [id])
-  tenant           Tenant           @relation(fields: [tenantId], references: [id])
-  packs            AuditPack[]
+  id                 String              @id @default(cuid())
+  tenantId           String
+  frameworkKey       String
+  frameworkVersion   String
+  name               String
+  periodStartAt      DateTime?
+  periodEndAt        DateTime?
+  status             AuditCycleStatus    @default(PLANNING)
+  createdByUserId    String
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  deletedAt          DateTime?
+  deletedByUserId    String?
+  createdBy          User                @relation(fields: [createdByUserId], references: [id])
+  tenant             Tenant              @relation(fields: [tenantId], references: [id])
+  packs              AuditPack[]
   readinessSnapshots ReadinessSnapshot[]
 
   @@index([tenantId, frameworkKey, status])
@@ -295,29 +295,29 @@ model AuditorPackAccess {
 /// artefact, not a chartable time series). This model gives the
 /// dashboard a cheap source for the readiness-over-time chart.
 model ReadinessSnapshot {
-  id                 String   @id @default(cuid())
-  tenantId           String
+  id               String   @id @default(cuid())
+  tenantId         String
   /// Which framework was scored. Free string so custom frameworks
   /// (handled by the GENERIC fallback in `audit-readiness-scoring.ts`)
   /// can persist their key here too.
-  frameworkKey       String
+  frameworkKey     String
   /// Audit cycle the snapshot was computed for. NULL when computed
   /// outside a cycle (a tenant-admin "current state" pull).
-  auditCycleId       String?
+  auditCycleId     String?
   /// 0-100 weighted score (rounded to integer to match the API).
-  score              Int
+  score            Int
   /// Full ReadinessBreakdown payload as written by the scoring
   /// engine. Read-side joins this for the trend chart's tooltips.
-  breakdownJson      Json
+  breakdownJson    Json
   /// Count of gaps at snapshot time — surfaces in the chart's
   /// per-point tooltip without re-loading the breakdown.
-  gapCount           Int      @default(0)
-  computedAt         DateTime @default(now())
+  gapCount         Int      @default(0)
+  computedAt       DateTime @default(now())
   /// Caller — NULL for cron-driven sweeps (none today; reserved).
-  computedByUserId   String?
+  computedByUserId String?
 
-  tenant             Tenant     @relation(fields: [tenantId], references: [id])
-  auditCycle         AuditCycle? @relation(fields: [auditCycleId], references: [id], onDelete: SetNull)
+  tenant     Tenant      @relation(fields: [tenantId], references: [id])
+  auditCycle AuditCycle? @relation(fields: [auditCycleId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([tenantId, frameworkKey, computedAt])
