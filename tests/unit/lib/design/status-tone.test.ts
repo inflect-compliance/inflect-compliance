@@ -9,28 +9,9 @@ import {
     bucketIntensity,
 } from '@/lib/design/status-tone';
 
-describe('getStatusTone — score-0-25 scale', () => {
-    it('≤5 returns success tone', () => {
-        expect(getStatusTone(1, 'score-0-25').content).toBe('text-content-success');
-        expect(getStatusTone(5, 'score-0-25').content).toBe('text-content-success');
-    });
-
-    it('6..12 returns attention tone', () => {
-        expect(getStatusTone(6, 'score-0-25').content).toBe('text-content-warning');
-        expect(getStatusTone(12, 'score-0-25').content).toBe('text-content-warning');
-    });
-
-    it('13..18 returns elevated tone (warning/60 bg)', () => {
-        const t = getStatusTone(15, 'score-0-25');
-        expect(t.bg).toContain('bg-bg-warning/60');
-        expect(t.content).toBe('text-content-warning');
-    });
-
-    it('>18 returns critical tone', () => {
-        expect(getStatusTone(20, 'score-0-25').content).toBe('text-content-error');
-        expect(getStatusTone(25, 'score-0-25').content).toBe('text-content-error');
-    });
-});
+// RQ3-9 — the `score-0-25` scale was removed. Risk-score colouring
+// now flows through `resolveBandForScore` (the canonical matrix-
+// config band resolver). The tests below pin the surviving scales.
 
 describe('getStatusTone — pct-0-100 scale', () => {
     it('≥80 returns success', () => {

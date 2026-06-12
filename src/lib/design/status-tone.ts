@@ -75,12 +75,6 @@ const TONE_ATTENTION: ToneBundle = {
     border: 'border-border-warning',
 };
 
-const TONE_ELEVATED: ToneBundle = {
-    bg: 'bg-bg-warning/60',
-    content: 'text-content-warning',
-    border: 'border-border-warning',
-};
-
 const TONE_CRITICAL: ToneBundle = {
     bg: 'bg-bg-error',
     content: 'text-content-error',
@@ -90,8 +84,6 @@ const TONE_CRITICAL: ToneBundle = {
 // ─── Status scale ────────────────────────────────────────────────────
 
 export type StatusScale =
-    /** Risk score 0-25 (5×5 likelihood×impact). */
-    | 'score-0-25'
     /** Coverage / completion 0-100 percentage. */
     | 'pct-0-100'
     /** Pass-rate 0-100 — same thresholds as pct, semantic alias. */
@@ -104,21 +96,22 @@ export type StatusScale =
  * scale.
  *
  * Examples:
- *   getStatusTone(18, 'score-0-25')      // → TONE_CRITICAL
  *   getStatusTone(85, 'pct-0-100')       // → TONE_SUCCESS
  *   getStatusTone(3, { kind: 'count-attention', criticalAt: 5 })
  *                                        // → TONE_ATTENTION
+ *
+ * RQ3-9 — the `score-0-25` scale was REMOVED. Risk-score colouring
+ * now flows through `resolveBandForScore` (the canonical matrix-
+ * config band resolver) so the heatmap, the panel chip, and the
+ * PDF exporter all read the same tenant-bands shape. A hard-coded
+ * 0-25 ladder here was a second source of truth that could drift.
+ *
+ * Use `getStatusTone` for percentage / count-based UX (coverage,
+ * pass-rate, "any > 0 is attention"). For RISK scores reach for
+ * `resolveBandForScore` instead — it returns the canonical band
+ * for the score per the tenant's matrix config.
  */
 export function getStatusTone(value: number, scale: StatusScale): ToneBundle {
-    if (scale === 'score-0-25') {
-        // 5×5 likelihood × impact — same thresholds as the historical
-        // risks/dashboard HEATMAP_COLOR. ≤5 = ok, ≤12 = warn, ≤18 =
-        // elevated, > 18 = critical.
-        if (value <= 5) return TONE_SUCCESS;
-        if (value <= 12) return TONE_ATTENTION;
-        if (value <= 18) return TONE_ELEVATED;
-        return TONE_CRITICAL;
-    }
     if (scale === 'pct-0-100' || scale === 'pass-rate-0-100') {
         // Coverage / pass-rate — ≥80 ok, ≥50 warn, < 50 critical.
         if (value >= 80) return TONE_SUCCESS;
