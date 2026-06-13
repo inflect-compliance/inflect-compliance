@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { AppIcon } from '@/components/icons/AppIcon';
 import { DataTable, createColumns } from '@/components/ui/table';
 
@@ -85,15 +86,13 @@ export default function ControlTemplatesPage() {
 
     return (
         <div className="space-y-6 animate-fadeIn">
+            <BackAffordance />
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold" id="templates-heading"><AppIcon name="templates" className="inline-block mr-2 align-text-bottom" /> Control Templates</h1>
                     <p className="text-content-muted text-sm">Select templates to install as controls in your register</p>
                 </div>
-                <Link href={tenantHref('/controls')} className="btn btn-secondary">
-                    ← Back to Controls
-                </Link>
             </div>
 
             {error && (

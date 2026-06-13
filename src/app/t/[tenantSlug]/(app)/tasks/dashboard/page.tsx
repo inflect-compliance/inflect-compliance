@@ -3,6 +3,7 @@ import { formatDate } from '@/lib/format-date';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import { AppIcon } from '@/components/icons/AppIcon';
 import { User, Link2, AlertOctagon } from 'lucide-react';
@@ -99,13 +100,13 @@ export default function TaskDashboardPage() {
 
     return (
         <div className="space-y-6 animate-fadeIn">
+            <BackAffordance />
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold"><AppIcon name="dashboard" className="inline-block mr-2 align-text-bottom" /> Task Dashboard</h1>
                     <p className="text-content-muted text-sm">{metrics.total} total tasks</p>
                 </div>
-                <Link href={tenantHref('/tasks')} className="btn btn-secondary">← Task Register</Link>
             </div>
 
             {/* KPI Cards */}

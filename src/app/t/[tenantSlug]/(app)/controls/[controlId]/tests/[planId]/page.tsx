@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 
 interface TestPlanDetail {
@@ -132,12 +133,7 @@ export default function TestPlanDetailPage() {
 
     return (
         <div className="space-y-6 animate-fadeIn">
-            {/* Breadcrumb */}
-            <div>
-                <Link href={tenantHref(`/controls/${controlId}`)} className="text-content-muted text-xs hover:text-content-emphasis transition">
-                    ← Back to Control
-                </Link>
-            </div>
+            <BackAffordance />
 
             {/* Header */}
             <div className="flex items-center justify-between">

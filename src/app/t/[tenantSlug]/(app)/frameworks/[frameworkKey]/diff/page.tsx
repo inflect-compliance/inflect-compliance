@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export default function DiffPage() {
@@ -43,10 +44,8 @@ export default function DiffPage() {
     return (
         <div className="space-y-6">
             <div>
-                <Link href={tenantHref(`/frameworks/${frameworkKey}`)} className="text-content-muted hover:text-content-emphasis transition-colors text-sm">
-                    ← Back to {framework?.name || frameworkKey}
-                </Link>
-                <h1 className="text-2xl font-bold text-content-emphasis mt-2" id="diff-heading">
+                <BackAffordance />
+                <h1 className="text-2xl font-bold text-content-emphasis mt-1" id="diff-heading">
                     Requirements Diff
                 </h1>
                 {diff && (

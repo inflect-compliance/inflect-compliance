@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -91,9 +92,9 @@ export default function CreateVendorPage() {
 
     return (
         <div className="max-w-2xl mx-auto space-y-6">
-            <div className="flex items-center gap-3">
-                <Link href={tenantHref('/vendors')} className="text-content-muted hover:text-content-emphasis">← Back</Link>
-                <h1 className="text-2xl font-bold">New Vendor</h1>
+            <div>
+                <BackAffordance />
+                <h1 className="text-2xl font-bold mt-1">New Vendor</h1>
             </div>
 
             {error && (

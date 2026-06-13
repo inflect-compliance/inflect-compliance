@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { UserCombobox } from '@/components/ui/user-combobox';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
@@ -168,7 +169,7 @@ export default function NewTaskPage() {
     return (
         <div className="max-w-2xl mx-auto space-y-6 animate-fadeIn">
             <div>
-                <Link href={tenantHref('/tasks')} className="text-content-muted text-xs hover:text-content-emphasis transition">← Tasks</Link>
+                <BackAffordance />
                 <h1 className="text-2xl font-bold mt-1" id="new-task-heading">New Task</h1>
                 <p className="text-content-muted text-sm">Create a new task to track.</p>
             </div>

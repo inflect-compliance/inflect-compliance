@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 
 const FW_META: Record<string, { icon: AppIconName; label: string }> = {
     ISO27001: { icon: 'shield', label: 'ISO/IEC 27001:2022' },
@@ -69,9 +70,7 @@ export default function CycleDetailPage() {
 
     return (
         <div className="space-y-6 animate-fadeIn">
-            <div className="flex items-center gap-3">
-                <Link href={`/t/${tenantSlug}/audits/cycles`} className="text-content-muted hover:text-content-emphasis transition">← Cycles</Link>
-            </div>
+            <BackAffordance />
 
             <div className="glass-card p-6">
                 <div className="flex items-start justify-between">

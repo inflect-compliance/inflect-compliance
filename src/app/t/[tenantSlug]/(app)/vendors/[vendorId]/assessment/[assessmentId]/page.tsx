@@ -2,6 +2,7 @@
 import { formatDate } from '@/lib/format-date';
 import { useEffect, useState, useCallback, use } from 'react';
 import Link from 'next/link';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { SkeletonDetailPage } from '@/components/ui/skeleton';
 import { Combobox } from '@/components/ui/combobox';
@@ -156,11 +157,7 @@ export default function AssessmentPage(
     return (
         <div className="space-y-6 max-w-3xl mx-auto">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <Link href={tenantHref(`/vendors/${params.vendorId}`)} className="text-content-muted hover:text-content-emphasis">← Back to Vendor</Link>
-                </div>
-            </div>
+            <BackAffordance />
 
             <div className="card p-5 space-y-2">
                 <div className="flex items-center justify-between">

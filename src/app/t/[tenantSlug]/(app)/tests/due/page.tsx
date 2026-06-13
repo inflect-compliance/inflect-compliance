@@ -4,6 +4,7 @@ import { formatDate } from '@/lib/format-date';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { DataTable, createColumns } from '@/components/ui/table';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { ListPageShell } from '@/components/layout/ListPageShell';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 
@@ -82,13 +83,13 @@ export default function DueQueuePage() {
     return (
         <ListPageShell className="animate-fadeIn gap-6">
             <ListPageShell.Header>
-                <div className="flex items-center justify-between">
+                <BackAffordance />
+                <div className="flex items-center justify-between mt-1">
                     <div>
                         <h1 className="text-2xl font-bold" id="due-queue-title">Due Queue</h1>
                         <p className="text-sm text-content-muted mt-1">Test plans due or overdue for execution</p>
                     </div>
                     <div className="flex gap-3">
-                        <Link href={tenantHref('/tests')} className="btn btn-ghost btn-sm">← Tests</Link>
                         <Link href={tenantHref('/tests/dashboard')} className="btn btn-ghost btn-sm">Dashboard</Link>
                         {permissions.canWrite && (
                             <button

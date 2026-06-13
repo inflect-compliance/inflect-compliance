@@ -7,6 +7,7 @@ import { AppIcon } from '@/components/icons/AppIcon';
 import { useTenantContext, useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import dynamic from 'next/dynamic';
 import LinkedTasksPanel from '@/components/LinkedTasksPanel';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -220,9 +221,9 @@ export default function RiskDetailPage() {
         <div className="space-y-6 animate-fadeIn max-w-4xl">
             {/* Header */}
             <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                    <Link href={href('/risks')} className="text-content-muted hover:text-content-emphasis transition text-lg">←</Link>
-                    <div>
+                <div className="min-w-0">
+                    <BackAffordance />
+                    <div className="mt-1">
                         <h1 className="text-2xl font-bold text-content-emphasis" id="risk-title-heading">{risk.title}</h1>
                         <div className="flex items-center gap-2 mt-1">
                             <StatusBadge variant={STATUS_VARIANT[risk.status] || 'neutral'} icon={null}>

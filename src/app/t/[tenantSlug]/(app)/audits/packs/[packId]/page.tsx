@@ -4,6 +4,7 @@ import { formatDateTime } from '@/lib/format-date';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
 import { RequirePermission } from '@/components/require-permission';
 import { UpgradeGate } from '@/components/UpgradeGate';
@@ -80,9 +81,7 @@ export default function PackDetailPage() {
 
     return (
         <div className="space-y-6 animate-fadeIn">
-            <div className="flex items-center gap-3">
-                <Link href={`/t/${tenantSlug}/audits/cycles`} className="text-content-muted hover:text-content-emphasis transition">← Cycles</Link>
-            </div>
+            <BackAffordance />
 
             {/* Header */}
             <div className="glass-card p-6">

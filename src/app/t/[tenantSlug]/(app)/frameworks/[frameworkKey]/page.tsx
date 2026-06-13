@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { RequirePermission } from '@/components/require-permission';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { ProgressBar } from '@/components/ui/progress-bar';
 
 type Tab = 'requirements' | 'packs' | 'coverage';
@@ -79,10 +80,8 @@ export default function FrameworkDetailPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div>
-                    <div className="flex items-center gap-3">
-                        <Link href={tenantHref('/frameworks')} className="text-content-muted hover:text-content-emphasis transition-colors">← Frameworks</Link>
-                    </div>
-                    <h1 className="text-2xl font-bold text-content-emphasis mt-2" id="framework-detail-heading">{framework.name}</h1>
+                    <BackAffordance />
+                    <h1 className="text-2xl font-bold text-content-emphasis mt-1" id="framework-detail-heading">{framework.name}</h1>
                     <div className="flex items-center gap-2 mt-1">
                         {framework.version && <span className="badge badge-primary text-xs">v{framework.version}</span>}
                         {framework.kind && <span className="text-xs text-content-subtle">{framework.kind.replace('_', ' ')}</span>}

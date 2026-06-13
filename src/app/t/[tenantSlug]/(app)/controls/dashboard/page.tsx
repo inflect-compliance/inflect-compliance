@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import type { ControlDashboardDTO, ConsistencyCheckDTO } from '@/lib/dto';
 import { AppIcon } from '@/components/icons/AppIcon';
 import { ProgressBar } from '@/components/ui/progress-bar';
@@ -77,6 +78,7 @@ export default function ControlsDashboard() {
 
     return (
         <div className="space-y-6 animate-fadeIn">
+            <BackAffordance />
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
@@ -89,9 +91,6 @@ export default function ControlsDashboard() {
                             <AppIcon name="search" size={16} className="inline-block" /> Consistency Check
                         </button>
                     )}
-                    <Link href={tenantHref('/controls')} className="btn btn-secondary">
-                        ← Back to Controls
-                    </Link>
                 </div>
             </div>
 

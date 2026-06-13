@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import Link from 'next/link';
 import { Combobox } from '@/components/ui/combobox';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 
 export default function TemplatesPage() {
     const apiUrl = useTenantApiUrl();
@@ -64,12 +65,12 @@ export default function TemplatesPage() {
 
     return (
         <div className="space-y-6 animate-fadeIn">
+            <BackAffordance />
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold">Policy Templates</h1>
                     <p className="text-content-muted text-sm">{templates.length} templates available</p>
                 </div>
-                <Link href={tenantHref('/policies')} className="btn btn-secondary">← Back to Policies</Link>
             </div>
 
             {/* Filters */}

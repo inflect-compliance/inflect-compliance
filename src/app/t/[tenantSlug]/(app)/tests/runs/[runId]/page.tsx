@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Paperclip } from 'lucide-react';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -197,14 +198,7 @@ export default function TestRunPage() {
 
     return (
         <div className="space-y-6 animate-fadeIn">
-            {/* Breadcrumb */}
-            <div className="flex items-center gap-2 text-xs text-content-muted">
-                {run.testPlan && (
-                    <Link href={tenantHref(`/controls/${run.testPlan.controlId}/tests/${run.testPlanId}`)} className="hover:text-content-emphasis transition">
-                        ← {run.testPlan.name}
-                    </Link>
-                )}
-            </div>
+            <BackAffordance />
 
             {/* Header */}
             <div className="flex items-center justify-between">

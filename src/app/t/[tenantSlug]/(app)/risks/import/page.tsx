@@ -3,6 +3,7 @@
 import { useState, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { DataTable, createColumns } from '@/components/ui/table';
 
@@ -124,9 +125,9 @@ export default function RiskImportPage() {
 
     return (
         <div className="space-y-6 animate-fadeIn max-w-4xl">
-            <div className="flex items-center gap-3">
-                <Link href={href('/risks')} className="text-content-muted hover:text-content-emphasis transition">←</Link>
-                <div>
+            <div>
+                <BackAffordance />
+                <div className="mt-1">
                     <h1 className="text-2xl font-bold">{t('importTitle')}</h1>
                     <p className="text-content-muted text-sm">{tenant.tenantName}</p>
                 </div>

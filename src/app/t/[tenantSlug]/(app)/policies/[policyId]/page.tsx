@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import type { PolicyDetailDTO, PolicyVersionDTO, AuditLogEntry } from '@/lib/dto';
 import { DatePicker } from '@/components/ui/date-picker/date-picker';
@@ -377,7 +378,8 @@ export default function PolicyDetailPage() {
             <div className="glass-card p-6">
                 <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-2">
+                        <BackAffordance />
+                        <div className="flex items-center gap-3 mb-2 mt-1">
                             <h1 className="text-xl font-bold truncate" id="policy-title">{policy.title}</h1>
                             <span className={`badge ${STATUS_BADGE[policy.status] || 'badge-neutral'}`} id="policy-status">{policy.status}</span>
                             {isOverdue && <span className="badge badge-danger text-xs">Overdue</span>}

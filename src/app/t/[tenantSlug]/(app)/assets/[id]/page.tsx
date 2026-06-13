@@ -8,6 +8,7 @@ import { AppIcon } from '@/components/icons/AppIcon';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import dynamic from 'next/dynamic';
 import LinkedTasksPanel from '@/components/LinkedTasksPanel';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { CopyText } from '@/components/ui/copy-text';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 
@@ -98,9 +99,9 @@ export default function AssetDetailPage() {
         <div className="space-y-6 animate-fadeIn max-w-4xl">
             {/* Header */}
             <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                    <Link href={tenantHref('/assets')} className="text-content-muted hover:text-content-emphasis transition text-lg">←</Link>
-                    <div>
+                <div className="min-w-0">
+                    <BackAffordance />
+                    <div className="mt-1">
                         <h1 className="text-2xl font-bold" id="asset-title-heading">{asset.name}</h1>
                         <div className="flex items-center gap-2 mt-1">
                             <span className="badge badge-info">{asset.type?.replace(/_/g, ' ')}</span>

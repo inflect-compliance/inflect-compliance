@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { ProgressBar, type ProgressBarVariant } from '@/components/ui/progress-bar';
 import { ProgressCircle } from '@/components/ui/progress-circle';
 
@@ -73,6 +74,7 @@ export default function TestDashboardPage() {
 
     return (
         <div className="space-y-8 animate-fadeIn">
+            <BackAffordance />
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
@@ -80,7 +82,6 @@ export default function TestDashboardPage() {
                     <p className="text-sm text-content-muted mt-1">Testing health and framework readiness</p>
                 </div>
                 <div className="flex gap-3">
-                    <Link href={tenantHref('/tests')} className="btn btn-ghost btn-sm">← Tests</Link>
                     <Link href={tenantHref('/tests/due')} className="btn btn-ghost btn-sm">Due Queue</Link>
                     <div className="flex gap-1 bg-bg-default/50 rounded-lg p-1">
                         {[30, 90].map(d => (

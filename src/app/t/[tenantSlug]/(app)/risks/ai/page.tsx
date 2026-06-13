@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { RequirePermission } from '@/components/require-permission';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 
@@ -237,12 +238,10 @@ export default function AIRiskAssessmentPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <div className="flex items-center gap-3">
-                        <Link href={tenantHref('/risks')} className="text-content-muted hover:text-content-emphasis transition text-lg">←</Link>
-                        <div>
-                            <h1 className="text-2xl font-bold" id="ai-risk-title">AI-Assisted Risk Assessment</h1>
-                            <p className="text-content-muted text-sm">Generate and review AI-suggested risks for your organization</p>
-                        </div>
+                    <BackAffordance />
+                    <div className="mt-1">
+                        <h1 className="text-2xl font-bold" id="ai-risk-title">AI-Assisted Risk Assessment</h1>
+                        <p className="text-content-muted text-sm">Generate and review AI-suggested risks for your organization</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">

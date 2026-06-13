@@ -4,6 +4,7 @@ import { formatDate, formatDateTime } from '@/lib/format-date';
 import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { AppIcon } from '@/components/icons/AppIcon';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { SkeletonLine, SkeletonCard } from '@/components/ui/skeleton';
@@ -258,7 +259,7 @@ export default function TaskDetailPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <Link href={tenantHref('/tasks')} className="text-content-muted text-xs hover:text-content-emphasis transition">← Tasks</Link>
+                    <BackAffordance />
                     <h1 className="text-2xl font-bold mt-1" id="task-title">{task.title}</h1>
                     <div className="flex gap-2 mt-1 flex-wrap items-center">
                         {task.key && (

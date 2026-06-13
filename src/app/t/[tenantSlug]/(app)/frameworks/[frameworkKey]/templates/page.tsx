@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export default function TemplateLibraryPage() {
@@ -119,10 +120,8 @@ export default function TemplateLibraryPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <Link href={tenantHref(`/frameworks/${frameworkKey}`)} className="text-content-muted hover:text-content-emphasis transition-colors text-sm">
-                        ← Back to {framework?.name || frameworkKey}
-                    </Link>
-                    <h1 className="text-2xl font-bold text-content-emphasis mt-2" id="template-library-heading">
+                    <BackAffordance />
+                    <h1 className="text-2xl font-bold text-content-emphasis mt-1" id="template-library-heading">
                         Template Library — {framework?.name}
                     </h1>
                     <div className="flex gap-3 mt-1 text-xs text-content-subtle">

@@ -3,6 +3,7 @@
 import { formatDate } from '@/lib/format-date';
 import { useEffect, useState, useCallback, use } from 'react';
 import Link from 'next/link';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { SkeletonDetailPage } from '@/components/ui/skeleton';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
@@ -178,12 +179,14 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <Link href={tenantHref('/vendors')} className="text-content-muted hover:text-content-emphasis">← Back</Link>
-                    <h1 className="text-2xl font-bold" id="vendor-detail-name">{vendor.name}</h1>
-                    <span className={`badge ${STATUS_BADGE[vendor.status]}`}>{vendor.status}</span>
-                    <span className={`badge ${CRIT_BADGE[vendor.criticality]}`}>{vendor.criticality}</span>
+            <div className="flex items-start justify-between">
+                <div className="min-w-0">
+                    <BackAffordance />
+                    <div className="flex items-center gap-3 mt-1">
+                        <h1 className="text-2xl font-bold" id="vendor-detail-name">{vendor.name}</h1>
+                        <span className={`badge ${STATUS_BADGE[vendor.status]}`}>{vendor.status}</span>
+                        <span className={`badge ${CRIT_BADGE[vendor.criticality]}`}>{vendor.criticality}</span>
+                    </div>
                 </div>
                 <div className="flex gap-2">
                     {canWrite && (vendor.domain || vendor.websiteUrl) && (

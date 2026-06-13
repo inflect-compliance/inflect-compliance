@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { StatusBreakdown, type StatusBreakdownItem } from '@/components/ui/status-breakdown';
 
@@ -61,12 +62,12 @@ export default function VendorDashboardPage() {
 
     return (
         <div className="space-y-6">
+            <BackAffordance />
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold">Vendor Dashboard</h1>
                     <p className="text-content-muted text-sm">{metrics.totalVendors} total vendors</p>
                 </div>
-                <Link href={tenantHref('/vendors')} className="btn btn-secondary">← Register</Link>
             </div>
 
             {/* KPI Cards */}

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
 import { ProgressBar } from '@/components/ui/progress-bar';
 
@@ -57,11 +58,7 @@ export default function CycleReadinessPage() {
 
     return (
         <div className="space-y-6 animate-fadeIn">
-            <div className="flex items-center gap-3">
-                <Link href={`/t/${tenantSlug}/audits/readiness`} className="text-content-muted hover:text-content-emphasis transition">← Readiness</Link>
-                <span className="text-content-subtle">·</span>
-                <Link href={`/t/${tenantSlug}/audits/cycles/${cycleId}`} className="text-content-muted hover:text-content-emphasis transition">{cycle?.name || 'Cycle'}</Link>
-            </div>
+            <BackAffordance />
 
             {/* Score + Breakdown */}
             <div className="glass-card p-6">
