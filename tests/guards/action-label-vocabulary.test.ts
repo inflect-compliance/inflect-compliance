@@ -80,7 +80,7 @@ const BASELINE_PLUS_LITERAL_SITES = new Set<string>([
     'src/app/t/[tenantSlug]/(app)/admin/scim/page.tsx:216',
     'src/app/t/[tenantSlug]/(app)/admin/vendor-templates/[templateId]/VendorTemplateBuilderClient.tsx:584',
     'src/app/t/[tenantSlug]/(app)/admin/vendor-templates/[templateId]/VendorTemplateBuilderClient.tsx:687',
-    'src/app/t/[tenantSlug]/(app)/audits/cycles/[cycleId]/page.tsx:122',
+    'src/app/t/[tenantSlug]/(app)/audits/cycles/[cycleId]/page.tsx:123',
     'src/app/t/[tenantSlug]/(app)/audits/cycles/page.tsx:134',
     'src/app/t/[tenantSlug]/(app)/audits/cycles/page.tsx:207',
     'src/app/t/[tenantSlug]/(app)/audits/cycles/page.tsx:219',
@@ -93,16 +93,22 @@ const BASELINE_PLUS_LITERAL_SITES = new Set<string>([
     // baseline honest.
     // SP-4 — shifted +1/+4 when the PolicySharePointSection import + mount
     // landed; the `+ Version` labels themselves are unchanged staged debt.
-    'src/app/t/[tenantSlug]/(app)/policies/[policyId]/page.tsx:453',
-    'src/app/t/[tenantSlug]/(app)/policies/[policyId]/page.tsx:757',
+    // RQ4-4 — shifted +1 by the `back={{ smart: true }}` prop added
+    // to <EntityDetailLayout>. The plus-literals themselves are unchanged.
+    'src/app/t/[tenantSlug]/(app)/policies/[policyId]/page.tsx:454',
+    'src/app/t/[tenantSlug]/(app)/policies/[policyId]/page.tsx:758',
     // Legacy `'+ Link'` / `'+ Comment'` string literals (the ones the
     // regex catches — JSX text doesn't match, whitespace between `>`
     // and `+`). Line numbers shift whenever this file grows; refreshed
     // after the Evidence tab + edit-modal landed above them. The
     // literals themselves are unchanged staged debt.
-    'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:803',
-    'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:831',
-    'src/app/t/[tenantSlug]/(app)/tests/runs/[runId]/page.tsx:419',
+    // RQ4-4 — shifted +1 by the `back={{ smart: true }}` prop on
+    // <EntityDetailLayout>. The plus-literals are unchanged.
+    'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:804',
+    'src/app/t/[tenantSlug]/(app)/tasks/[taskId]/page.tsx:832',
+    // RQ4-4 — shifted +1 by the `back={{ smart: true }}` prop on
+    // <EntityDetailLayout>.
+    'src/app/t/[tenantSlug]/(app)/tests/runs/[runId]/page.tsx:420',
     'src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx:369',
     'src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx:393',
     'src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx:470',
