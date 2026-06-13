@@ -32,6 +32,7 @@ import { KPIStat } from '@/components/ui/metric';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { SkeletonDashboard } from '@/components/ui/skeleton';
+import { RiskFirstRunEmpty } from '@/components/risks/RiskFirstRunEmpty';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { formatTailAwareAle } from '@/lib/tail-language';
 import { formatCompactCurrency } from '@/lib/risk-coherence';
@@ -246,12 +247,9 @@ export default function RiskBoardPage() {
             <Card data-testid="board-hygiene-card">
                 <Heading level={2} className="mb-2">Hygiene</Heading>
                 {totalCount === 0 ? (
-                    <p
-                        className="text-sm text-content-subtle"
-                        data-testid="board-hygiene-empty"
-                    >
-                        No risks on the register yet.
-                    </p>
+                    <div data-testid="board-hygiene-empty">
+                        <RiskFirstRunEmpty size="sm" />
+                    </div>
                 ) : (
                     <p className="text-sm text-content-default">
                         <strong>{staleCount}</strong> of <strong>{totalCount}</strong> risks carry a stale assessment

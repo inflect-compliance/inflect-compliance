@@ -27,6 +27,7 @@ import { IconAction } from '@/components/ui/icon-action';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { EmptyState } from '@/components/ui/empty-state';
+import { RiskFirstRunEmpty } from '@/components/risks/RiskFirstRunEmpty';
 import {
     DataTable,
     createColumns,
@@ -1083,15 +1084,9 @@ function RisksPageInner({
                                     }}
                                 />
                             ) : (
-                                <EmptyState
+                                <RiskFirstRunEmpty
                                     size="sm"
-                                    variant="no-records"
-                                    title={t.noRisks}
-                                    description="Identify a threat, score its likelihood × impact, and link the controls that mitigate it."
-                                    primaryAction={{
-                                        label: 'Create risk',
-                                        onClick: () => setIsCreateOpen(true),
-                                    }}
+                                    onCreateClick={() => setIsCreateOpen(true)}
                                 />
                             )
                         }
