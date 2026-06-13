@@ -49,6 +49,81 @@ export const BACK_AFFORDANCE_EXEMPT_SUBPAGES: readonly string[] = [
 ] as const;
 
 /**
+ * Subpages that still need `<BackAffordance>` mounted in their page tree.
+ *
+ * These pages don't use `<EntityDetailLayout>` (so RQ4-5/6/7/8's
+ * one-line `back={{ smart: true }}` doesn't apply) and don't yet use
+ * `<PageHeader>` (so the foundations PR's seam doesn't reach them).
+ * Each one needs a manual edit: add the BackAffordance import + mount
+ * the component above the page title.
+ *
+ * The RQ4-10 cohort sweep ratchet treats this list as a temporary
+ * waiver — entries here pass the positive-coverage assertion, but the
+ * ratchet enforces that the list NEVER GROWS. The list is expected to
+ * shrink to `[]` over follow-up PRs; the structural invariant
+ * (mount on every subpage) is the long-term shape.
+ *
+ * To migrate a page off this list:
+ *   1. Add `import { BackAffordance } from '@/components/nav/BackAffordance';`
+ *   2. Render `<BackAffordance />` as the first child of the page's
+ *      outermost wrapper, above the title.
+ *   3. Remove the entry from this list — CI confirms the mount.
+ */
+export const BACK_AFFORDANCE_COHORT_TODO: readonly string[] = [
+    '/admin/audit-log',
+    '/admin/billing',
+    '/admin/entra',
+    '/admin/integrations',
+    '/admin/integrations/sharepoint-health',
+    '/admin/members',
+    '/admin/notifications',
+    '/admin/rbac',
+    '/admin/risk-appetite',
+    '/admin/risk-matrix',
+    '/admin/roles',
+    '/admin/scim',
+    '/admin/security',
+    '/admin/sso',
+    '/admin/vendor-assessment-reviews/[assessmentId]',
+    '/admin/vendor-templates',
+    '/admin/vendor-templates/[templateId]',
+    '/assets/new',
+    '/audits/auditor',
+    '/audits/cycles',
+    '/audits/new',
+    '/audits/readiness',
+    '/controls/[controlId]/tests/[planId]',
+    '/controls/dashboard',
+    '/controls/sankey',
+    '/controls/templates',
+    '/frameworks/[frameworkKey]/diff',
+    '/frameworks/[frameworkKey]/install',
+    '/frameworks/[frameworkKey]/templates',
+    '/policies/new',
+    '/policies/templates',
+    '/processes/governance',
+    '/reports/soa',
+    '/risks/ai',
+    '/risks/board',
+    '/risks/correlations',
+    '/risks/dashboard',
+    '/risks/hierarchy',
+    '/risks/import',
+    '/risks/kri',
+    '/risks/loss-events',
+    '/risks/reports',
+    '/risks/scenarios',
+    '/security/mfa',
+    '/tasks/dashboard',
+    '/tasks/new',
+    '/tests/dashboard',
+    '/tests/due',
+    '/vendors/[vendorId]/assessment/[assessmentId]',
+    '/vendors/dashboard',
+    '/vendors/new',
+] as const;
+
+/**
  * Top-level sidebar destinations. These pages are reached from the primary
  * navigation; they have no parent within the tenant scope. The back
  * affordance is forbidden here.

@@ -9,6 +9,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, cardVariants } from '@/components/ui/card';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import {
     KeyRound, Trash2, Copy, Check,
     Clock, AlertTriangle, Eye, EyeOff,
@@ -494,6 +495,7 @@ export default function ApiKeysPage() {
                         ]}
                         className="mb-1"
                     />
+                    <BackAffordance />
                     <Heading level={1} className="flex items-center gap-tight">
                         <KeyRound className="w-6 h-6 text-[var(--brand-default)]" />
                         API Keys
