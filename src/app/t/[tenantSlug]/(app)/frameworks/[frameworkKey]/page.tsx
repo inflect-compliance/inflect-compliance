@@ -130,6 +130,7 @@ export default function FrameworkDetailPage() {
     return (
         <EntityDetailLayout
             id="framework-detail-page"
+            back={{ smart: true }}
             breadcrumbs={breadcrumbs}
 
             title={<span id="framework-detail-heading">{framework.name}</span>}

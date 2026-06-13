@@ -134,6 +134,7 @@ export default function PackDetailPage() {
     return (
         <EntityDetailLayout
             id="pack-detail-page"
+            back={{ smart: true }}
             breadcrumbs={breadcrumbs}
 
             title={<span id="pack-name">{pack.name}</span>}

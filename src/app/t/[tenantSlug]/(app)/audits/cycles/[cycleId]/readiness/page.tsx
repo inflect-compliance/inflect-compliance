@@ -67,6 +67,7 @@ export default function CycleReadinessPage() {
         return (
             <EntityDetailLayout
                 title=""
+                back={{ smart: true }}
                 breadcrumbs={breadcrumbs}
                 loading
             >
@@ -78,6 +79,7 @@ export default function CycleReadinessPage() {
         return (
             <EntityDetailLayout
                 title=""
+                back={{ smart: true }}
                 breadcrumbs={breadcrumbs}
                 error="Could not compute readiness."
             >
@@ -91,6 +93,7 @@ export default function CycleReadinessPage() {
     return (
         <EntityDetailLayout
             title={`${cycle?.name || 'Cycle'} — Readiness`}
+            back={{ smart: true }}
             breadcrumbs={breadcrumbs}
         >
             {/* Score + Breakdown */}

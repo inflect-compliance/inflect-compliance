@@ -223,6 +223,7 @@ export function AccessReviewDetailClient({
     return (
         <EntityDetailLayout
             id="access-review-detail-page"
+            back={{ smart: true }}
             breadcrumbs={[
                 { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
                 { label: 'Access Reviews', href: `/t/${tenantSlug}/access-reviews` },

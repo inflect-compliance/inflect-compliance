@@ -788,6 +788,7 @@ export default function ControlDetailPage() {
     return (
         <EntityDetailLayout
             id="control-detail-page"
+            back={{ smart: true }}
             breadcrumbs={[
                 { label: 'Dashboard', href: tenantHref('/dashboard') },
                 { label: 'Controls', href: tenantHref('/controls') },

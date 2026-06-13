@@ -503,6 +503,7 @@ export default function TaskDetailPage() {
     return (
         <EntityDetailLayout
             id="task-detail-page"
+            back={{ smart: true }}
             breadcrumbs={breadcrumbs}
 
             title={<span id="task-title">{task.title}</span>}

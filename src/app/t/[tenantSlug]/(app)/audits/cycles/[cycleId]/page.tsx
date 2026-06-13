@@ -96,6 +96,7 @@ export default function CycleDetailPage() {
     return (
         <EntityDetailLayout
             id="cycle-detail-page"
+            back={{ smart: true }}
             breadcrumbs={breadcrumbs}
 
             title={
