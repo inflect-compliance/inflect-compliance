@@ -26,6 +26,7 @@ const route = read('src/app/api/t/[tenantSlug]/risks/coherence/route.ts');
 const risksClient = read('src/app/t/[tenantSlug]/(app)/risks/RisksClient.tsx');
 const riskDetail = read('src/app/t/[tenantSlug]/(app)/risks/[riskId]/page.tsx');
 const dashboard = read('src/app/t/[tenantSlug]/(app)/risks/dashboard/page.tsx');
+const dashboardOrchestrator = read('src/app-layer/usecases/risk-dashboard.ts');
 const matrix = read('src/components/ui/RiskMatrix.tsx');
 const matrixCell = read('src/components/ui/RiskMatrixCell.tsx');
 const repo = read('src/app-layer/repositories/RiskRepository.ts');
@@ -45,7 +46,12 @@ describe('RQ2-5 — both languages on every surface', () => {
     });
 
     test('the dashboard mounts the coherence widget behind the min-quantified gate', () => {
-        expect(dashboard).toMatch(/risks\/coherence/);
+        // RQ3-9 — the dashboard now reads from the orchestrator
+        // (`/risks/dashboard`) rather than firing its own
+        // `/risks/coherence` fetch. The widget still renders from
+        // the `coherence` slot of the payload; the orchestrator
+        // pulls it via getRiskCoherence on the server.
+        expect(dashboardOrchestrator).toMatch(/getRiskCoherence/);
         expect(dashboard).toMatch(/coherence\.quantifiedCount >= coherence\.minRequired/);
         expect(dashboard).toMatch(/risk-coherence-widget/);
     });

@@ -140,9 +140,18 @@ describe('B10 — advanced analytics', () => {
         const src = read(
             'src/app/t/[tenantSlug]/(app)/risks/dashboard/page.tsx',
         );
+        const orchestrator = read(
+            'src/app-layer/usecases/risk-dashboard.ts',
+        );
 
-        it('fetches /risks/analytics', () => {
-            expect(src).toMatch(/apiUrl\(['"]\/risks\/analytics['"]\)/);
+        it('fetches analytics via the RQ3-9 orchestrator (single batched read)', () => {
+            // RQ3-9 — the page no longer fires its own
+            // `/risks/analytics` fetch. The orchestrator pulls
+            // analytics via getRiskQuantitativeAnalytics and the
+            // dashboard reads it from the `analytics` slot of the
+            // payload.
+            expect(orchestrator).toMatch(/getRiskQuantitativeAnalytics/);
+            expect(src).toMatch(/data\?\.analytics/);
         });
 
         it('gates the analytics block on quantifiedCount > 0', () => {

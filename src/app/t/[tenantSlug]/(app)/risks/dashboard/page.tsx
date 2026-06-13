@@ -1,8 +1,9 @@
 'use client';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { useTenantApiUrl, useTenantHref, useTenantContext, useMoneyFormatter } from '@/lib/tenant-context-provider';
+import { useTenantHref, useTenantContext, useMoneyFormatter } from '@/lib/tenant-context-provider';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { StatusBreakdown } from '@/components/ui/status-breakdown';
 import { Heading } from '@/components/ui/typography';
@@ -10,13 +11,13 @@ import { Card } from '@/components/ui/card';
 import { KPIStat } from '@/components/ui/metric';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { SkeletonDashboard } from '@/components/ui/skeleton';
-import { getStatusTone } from '@/lib/design/status-tone';
-import type { CoherenceReport } from '@/lib/risk-coherence';
-import type { StalenessReport } from '@/app-layer/usecases/risk-staleness';
+import { resolveBandForScore } from '@/lib/risk-matrix/scoring';
+import type { RiskMatrixBand } from '@/lib/risk-matrix/types';
 import { InfoTooltip } from '@/components/ui/tooltip';
 import { formatTailAwareAle } from '@/lib/tail-language';
-import { MonteCarloPanel, type AppetitePayload, type SimulationRun } from './MonteCarloPanel';
+import { MonteCarloPanel, type SimulationRun } from './MonteCarloPanel';
 import { VelocityCard } from './VelocityCard';
+import type { DashboardPayload } from '@/app-layer/usecases/risk-dashboard';
 
 // B10 — Quantitative risk analytics shape. Mirrors the
 // RiskQuantitativeAnalytics interface in
@@ -55,73 +56,52 @@ type Risk = {
     nextReviewAt: string | null;
 };
 
-// Polish PR-7 — risk heatmap tone delegates to `getStatusTone` with
-// the `score-0-25` scale (5×5 likelihood × impact).
-const HEATMAP_COLOR = (s: number) => {
-    const tone = getStatusTone(s, 'score-0-25');
-    return `${tone.bg} ${tone.content}`;
+// RQ3-9 — the heatmap reads the tenant's CANONICAL risk-matrix
+// bands (passed down from the orchestrator payload) rather than the
+// hard-coded ladder it used pre-RQ3-9. The band resolver is the
+// same one the risk panel / PDF exporter / score explainer use, so
+// a tone shift here can't disagree with them.
+const heatmapClassForBand = (band: RiskMatrixBand): string => {
+    // Map the band's canonical name to a semantic-token bundle. The
+    // matrix config's `color` field is a CSS hex — threading it
+    // through inline styles would bypass dark-mode + the WCAG-AA
+    // contrast guarantees in our semantic tokens. The band-NAME →
+    // token mapping consults the tenant's CANONICAL band (not a
+    // hard-coded score ladder), so a tenant who customises
+    // thresholds gets the right tone without code changes.
+    switch (band.name) {
+        case 'Low': return 'bg-bg-success text-content-success';
+        case 'Medium': return 'bg-bg-warning text-content-warning';
+        case 'High': return 'bg-bg-warning/60 text-content-warning';
+        case 'Critical': return 'bg-bg-error text-content-error';
+        default: return 'bg-bg-muted/40 text-content-muted';
+    }
 };
 
 export default function RiskDashboardPage() {
-    const apiUrl = useTenantApiUrl();
     const href = useTenantHref();
     const tenant = useTenantContext();
     const t = useTranslations('riskManager');
     // RQ3-OB-A — every monetary figure speaks the tenant's currency.
     const money = useMoneyFormatter();
 
-    const [risks, setRisks] = useState<Risk[]>([]);
-    const [loading, setLoading] = useState(true);
-    // B10 — quantitative analytics, fetched in parallel with the
-    // risk list. Failure-soft: a failed analytics load just hides
-    // the section without breaking the dashboard.
-    const [analytics, setAnalytics] = useState<QuantitativeAnalytics | null>(null);
-    // RQ2-5 — coherence report, failure-soft like analytics.
-    const [coherence, setCoherence] = useState<CoherenceReport | null>(null);
-    // RQ2-6 — appetite config + live status for the LEC markers.
-    const [appetite, setAppetite] = useState<AppetitePayload | null>(null);
-    // RQ2-8 — staleness report, failure-soft like the others.
-    const [staleness, setStaleness] = useState<StalenessReport | null>(null);
+    // RQ3-9 — one orchestrated fetch instead of six. The page no
+    // longer owns a useEffect per widget; the failure-soft contract
+    // is preserved end-to-end (the orchestrator returns null per
+    // slot on a thrown branch, the page treats null as "not ready
+    // yet" exactly as it did before).
+    const { data, isLoading, mutate } = useTenantSWR<DashboardPayload>(
+        '/risks/dashboard',
+    );
 
-    useEffect(() => {
-        fetch(apiUrl('/risks/coherence'))
-            .then((r) => (r.ok ? r.json() : null))
-            .then((data) => setCoherence(data as CoherenceReport | null))
-            .catch(() => setCoherence(null));
-    }, [apiUrl]);
+    const risks = (data?.risks ?? []) as Risk[];
+    const analytics = (data?.analytics ?? null) as QuantitativeAnalytics | null;
+    const coherence = data?.coherence ?? null;
+    const staleness = data?.staleness ?? null;
+    const appetite = data?.appetite ?? null;
+    const simRun = (data?.simulation ?? null) as SimulationRun | null;
+    const matrix = data?.matrix ?? null;
 
-    useEffect(() => {
-        fetch(apiUrl('/risks/staleness'))
-            .then((r) => (r.ok ? r.json() : null))
-            .then((data) => setStaleness(data as StalenessReport | null))
-            .catch(() => setStaleness(null));
-    }, [apiUrl]);
-
-    useEffect(() => {
-        fetch(apiUrl('/risk-appetite'))
-            .then((r) => (r.ok ? r.json() : null))
-            .then((data) => setAppetite(data as AppetitePayload | null))
-            .catch(() => setAppetite(null));
-    }, [apiUrl]);
-
-    useEffect(() => {
-        fetch(apiUrl('/risks'))
-            .then(r => r.json())
-            .then(setRisks)
-            .catch(() => setRisks([]))
-            .finally(() => setLoading(false));
-    }, [apiUrl]);
-
-    // RQ3-3 — the latest simulation run is page-level state: the
-    // quant headline tiles AND the MonteCarloPanel stage read it.
-    const [simRun, setSimRun] = useState<SimulationRun | null>(null);
-    const loadSimRun = useCallback(async () => {
-        try {
-            const r = await fetch(apiUrl('/risks/simulate'));
-            if (r.ok) setSimRun((await r.json()).run);
-        } catch { /* failure-soft like the other widgets */ }
-    }, [apiUrl]);
-    useEffect(() => { void loadSimRun(); }, [loadSimRun]);
     // RQ3-4 — per-risk P90s from the lifted run (RQ3-1 cache); the
     // top-10 and coherence rows speak the tail register through it.
     const tailByRisk = useMemo(() => {
@@ -132,13 +112,15 @@ export default function RiskDashboardPage() {
         return map;
     }, [simRun]);
 
-    useEffect(() => {
-        fetch(apiUrl('/risks/analytics'))
-            .then((r) => (r.ok ? r.json() : null))
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            .then((data) => setAnalytics(data as QuantitativeAnalytics | null))
-            .catch(() => setAnalytics(null));
-    }, [apiUrl]);
+    // MonteCarloPanel can still trigger a fresh load (the "Re-run"
+    // affordance) — surface a callback that re-pulls the whole
+    // orchestrated payload so the panel + tiles + appetite all
+    // refresh in lockstep.
+    const loadSimRun = useCallback(async () => {
+        await mutate();
+    }, [mutate]);
+
+    const loading = isLoading || !data;
 
     // KPIs
     const total = risks.length;
@@ -235,11 +217,15 @@ export default function RiskDashboardPage() {
                                 {[1, 2, 3, 4, 5].map(i => {
                                     const count = heatmapCounts[`${l}-${i}`] || 0;
                                     const s = l * i;
+                                    const band = matrix
+                                        ? resolveBandForScore(s, matrix.bands)
+                                        : { name: '', minScore: 0, maxScore: 0, color: '' };
                                     return (
                                         <div
                                             key={`${l}-${i}`}
-                                            className={`h-10 rounded flex items-center justify-center font-medium transition-colors duration-150 ease-out cursor-default ${HEATMAP_COLOR(s)}`}
-                                            title={`L${l}×I${i} = ${s} (${count})`}
+                                            className={`h-10 rounded flex items-center justify-center font-medium transition-colors duration-150 ease-out cursor-default ${heatmapClassForBand(band)}`}
+                                            title={`L${l}×I${i} = ${s} (${count}) — ${band.name}`}
+                                            data-band={band.name}
                                         >
                                             {count > 0 ? count : ''}
                                         </div>

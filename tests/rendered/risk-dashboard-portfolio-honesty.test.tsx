@@ -24,14 +24,20 @@ jest.mock('@visx/responsive', () => ({
         children({ width: 600 }),
 }));
 
+import { SWRConfig } from 'swr';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import RiskDashboardPage from '@/app/t/[tenantSlug]/(app)/risks/dashboard/page';
 
 const renderPage = () =>
     render(
-        <TooltipProvider delayDuration={0}>
-            <RiskDashboardPage />
-        </TooltipProvider>,
+        // RQ3-9 — wrap in SWRConfig with a fresh Map provider so the
+        // dashboard SWR cache doesn't leak between tests (the second
+        // test would otherwise see the first test's simulation run).
+        <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
+            <TooltipProvider delayDuration={0}>
+                <RiskDashboardPage />
+            </TooltipProvider>
+        </SWRConfig>,
     );
 
 const ANALYTICS = {
@@ -53,17 +59,42 @@ const RUN = {
     ],
 };
 
+const MATRIX = {
+    likelihoodLevels: 5,
+    impactLevels: 5,
+    axisLikelihoodLabel: 'Likelihood',
+    axisImpactLabel: 'Impact',
+    levelLabels: { likelihood: ['1', '2', '3', '4', '5'], impact: ['1', '2', '3', '4', '5'] },
+    bands: [
+        { name: 'Low', minScore: 1, maxScore: 6, color: '#22c55e' },
+        { name: 'Medium', minScore: 7, maxScore: 14, color: '#eab308' },
+        { name: 'High', minScore: 15, maxScore: 19, color: '#f97316' },
+        { name: 'Critical', minScore: 20, maxScore: 25, color: '#ef4444' },
+    ],
+};
+
 function mockFetch(run: typeof RUN | null) {
+    // RQ3-9 — the dashboard now fires ONE batched call to
+    // `/risks/dashboard`. The orchestrator returns every slot in
+    // one payload, so the rendered test mocks the orchestrator
+    // shape rather than five legacy endpoints.
     global.fetch = jest.fn(async (url: RequestInfo | URL) => {
         const u = String(url);
-        const body = u.endsWith('/risks/analytics')
-            ? ANALYTICS
-            : u.endsWith('/risks/simulate')
-              ? { run }
-              : u.endsWith('/risks')
-                ? []
-                : null;
-        return { ok: body !== null, json: async () => body } as Response;
+        if (u.endsWith('/risks/dashboard')) {
+            return {
+                ok: true,
+                json: async () => ({
+                    risks: [],
+                    analytics: ANALYTICS,
+                    coherence: null,
+                    staleness: null,
+                    appetite: null,
+                    simulation: run,
+                    matrix: MATRIX,
+                }),
+            } as Response;
+        }
+        return { ok: false, json: async () => null } as Response;
     }) as unknown as typeof fetch;
 }
 

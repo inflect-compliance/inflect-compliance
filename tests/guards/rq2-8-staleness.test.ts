@@ -23,10 +23,16 @@ const lib = read('src/lib/risk-staleness.ts');
 const usecase = read('src/app-layer/usecases/risk-staleness.ts');
 const route = read('src/app/api/t/[tenantSlug]/risks/staleness/route.ts');
 const dashboard = read('src/app/t/[tenantSlug]/(app)/risks/dashboard/page.tsx');
+const dashboardOrchestrator = read('src/app-layer/usecases/risk-dashboard.ts');
 
 describe('RQ2-8 — staleness engine', () => {
     test('the dashboard mounts the widget behind the rot gate', () => {
-        expect(dashboard).toMatch(/risks\/staleness/);
+        // RQ3-9 — the dashboard now reads from the orchestrator
+        // (`/risks/dashboard`) rather than firing its own
+        // `/risks/staleness` fetch. The widget still renders from
+        // the `staleness` slot of the payload; the orchestrator
+        // pulls it via getRiskStaleness on the server.
+        expect(dashboardOrchestrator).toMatch(/getRiskStaleness/);
         expect(dashboard).toMatch(/staleness\.staleCount > 0/);
         expect(dashboard).toMatch(/risk-staleness-widget/);
     });
