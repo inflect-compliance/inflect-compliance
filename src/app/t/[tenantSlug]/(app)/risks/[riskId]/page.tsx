@@ -350,6 +350,7 @@ export default function RiskDetailPage() {
         <EntityDetailLayout
             id="risk-detail-page"
             breadcrumbs={breadcrumbs}
+            back={{ smart: true }}
             tabs={tabs}
             activeTab={activeTab}
             onTabChange={(k) => setActiveTab(k)}
