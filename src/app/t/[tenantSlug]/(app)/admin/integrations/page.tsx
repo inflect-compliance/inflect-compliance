@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { Combobox } from '@/components/ui/combobox';
 import { Tooltip } from '@/components/ui/tooltip';
 import { DataTable, createColumns } from '@/components/ui/table';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 
 interface ConnectionDTO {
     id: string;
@@ -171,12 +172,8 @@ export default function AdminIntegrationsPage() {
 
     return (
             <div className="space-y-6 animate-fadeIn">
-                <div className="flex items-center gap-3">
-                    <Link href={tenantHref('/admin')} className="btn btn-secondary btn-sm">
-                        <ArrowLeft className="w-3.5 h-3.5" /> Back
-                    </Link>
-                    <h1 className="text-2xl font-bold">Integrations</h1>
-                </div>
+                <BackAffordance />
+                <h1 className="text-2xl font-bold">Integrations</h1>
 
                 {/* Message banner */}
                 {message && (

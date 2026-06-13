@@ -34,6 +34,7 @@ import {
 import { getTenantCtx } from '@/app-layer/context';
 import { getReadinessOverview } from '@/app-layer/usecases/audit-readiness';
 import type { ReadinessResult } from '@/app-layer/usecases/audit-readiness-scoring';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 
 export const dynamic = 'force-dynamic';
 
@@ -100,6 +101,7 @@ export default async function ReadinessOverviewPage({
 
     return (
         <div className="space-y-6 animate-fadeIn">
+            <BackAffordance />
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div>
                     <h1 className="text-2xl font-bold" id="readiness-heading">

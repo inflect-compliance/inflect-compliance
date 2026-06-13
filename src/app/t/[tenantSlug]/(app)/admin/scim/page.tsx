@@ -7,6 +7,7 @@ import { CloudCog, Plus, Trash2, Copy, Check, AlertTriangle, Clock, ExternalLink
 import { toast } from 'sonner';
 import { useCopyToClipboard } from '@/components/ui/hooks';
 import { CopyButton } from '@/components/ui/copy-button';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 
 interface ScimToken {
     id: string;
@@ -101,6 +102,7 @@ export default function ScimAdminPage() {
 
     return (
         <div className="space-y-6 animate-fadeIn max-w-4xl">
+            <BackAffordance />
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>

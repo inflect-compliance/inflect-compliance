@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { StatusBreakdown } from '@/components/ui/status-breakdown';
 
@@ -68,14 +69,13 @@ export default function RiskDashboardPage() {
 
     return (
         <div className="space-y-6 animate-fadeIn">
+            <BackAffordance />
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold">{t('dashboardTitle')}</h1>
                     <p className="text-content-muted text-sm">{tenant.tenantName} — {t('riskCount', { count: total })}</p>
                 </div>
-                <Link href={href('/risks')} className="btn btn-secondary" id="back-to-register">
-                    {t('riskRegister')}
-                </Link>
+                <div />
             </div>
 
             {/* KPI Cards */}

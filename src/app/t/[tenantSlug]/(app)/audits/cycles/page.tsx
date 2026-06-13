@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
@@ -108,6 +109,7 @@ export default function AuditCyclesPage() {
 
     return (
         <div className="space-y-6 animate-fadeIn">
+            <BackAffordance />
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold">Audit Readiness</h1>

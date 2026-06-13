@@ -10,6 +10,7 @@ import {
 import type { Role } from '@prisma/client';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { Tooltip } from '@/components/ui/tooltip';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 
 // ─── Types ───
 
@@ -426,6 +427,7 @@ export default function CustomRolesPage() {
 
     return (
         <div className="space-y-6 animate-fadeIn">
+            <BackAffordance />
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>

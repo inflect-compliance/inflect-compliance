@@ -11,6 +11,7 @@ import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { InfoTooltip, Tooltip } from '@/components/ui/tooltip';
 import { useCopyToClipboard } from '@/components/ui/hooks';
 import { DataTable, createColumns } from '@/components/ui/table';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 // Epic 58 — route through the canonical app-wide formatter so
 // api-keys reads in the same date dialect (UTC, en-GB, em-dash
 // fallback) as every other page. Previously used a local
@@ -460,6 +461,7 @@ export default function ApiKeysPage() {
 
     return (
         <div className="space-y-6 animate-fadeIn">
+            <BackAffordance />
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>

@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { statusBadgeVariants } from '@/components/ui/status-badge';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton, SkeletonButton } from '@/components/ui/skeleton';
 import { Modal } from '@/components/ui/modal';
@@ -335,6 +336,7 @@ export default function MembersAdminPage() {
 
     return (
         <div className="space-y-6 animate-fadeIn">
+            <BackAffordance />
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>

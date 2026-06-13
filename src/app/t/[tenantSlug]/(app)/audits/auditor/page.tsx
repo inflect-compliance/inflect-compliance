@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 
 const FW_META: Record<string, { icon: AppIconName; label: string }> = {
     ISO27001: { icon: 'shield', label: 'ISO/IEC 27001:2022' },
@@ -40,6 +41,7 @@ export default function AuditorPortalPage() {
 
     return (
         <div className="space-y-6 animate-fadeIn">
+            <BackAffordance />
             <div>
                 <h1 className="text-2xl font-bold" id="auditor-heading">Auditor Portal</h1>
                 <p className="text-content-muted text-sm">Review assigned audit packs</p>

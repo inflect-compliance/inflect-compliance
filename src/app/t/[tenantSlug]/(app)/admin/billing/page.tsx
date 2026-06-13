@@ -5,6 +5,7 @@ import { resolveTenantContext } from '@/lib/tenant-context';
 import prisma from '@/lib/prisma';
 import { BillingActions } from './BillingActions';
 import { BillingEventLog } from './BillingEventLog';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,6 +66,7 @@ export default async function BillingPage({
 
     return (
         <div className="space-y-8 animate-fadeIn">
+            <BackAffordance />
             {/* Header */}
             <div>
                 <h1 className="text-2xl font-bold">Billing</h1>

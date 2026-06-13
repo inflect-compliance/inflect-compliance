@@ -1,6 +1,7 @@
 import { getTenantCtx } from '@/app-layer/context';
 import { getSoA } from '@/app-layer/usecases/soa';
 import { SoAClient } from './SoAClient';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +28,7 @@ export default async function SoAPage({
 
     return (
         <div className="space-y-6 animate-fadeIn">
+            <BackAffordance />
             <SoAClient
                 report={JSON.parse(JSON.stringify(report))}
                 controls={JSON.parse(JSON.stringify(controls))}

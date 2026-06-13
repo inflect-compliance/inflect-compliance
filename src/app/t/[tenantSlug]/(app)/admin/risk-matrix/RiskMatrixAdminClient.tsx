@@ -27,6 +27,7 @@ import { toast } from 'sonner';
 
 import { NumberStepper } from '@/components/ui/number-stepper';
 import { RiskMatrix } from '@/components/ui/RiskMatrix';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { DEFAULT_RISK_MATRIX_CONFIG } from '@/lib/risk-matrix/defaults';
 import {
     validateBandsCoverage,
@@ -253,6 +254,7 @@ export function RiskMatrixAdminClient({
             data-testid="risk-matrix-admin"
             className="animate-fadeIn space-y-6 p-6"
         >
+            <BackAffordance />
             <header className="flex flex-wrap items-end justify-between gap-3">
                 <div>
                     <h1 className="text-2xl font-bold text-content-emphasis">

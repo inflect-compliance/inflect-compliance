@@ -5,6 +5,7 @@ import { useTenantApiUrl } from '@/lib/tenant-context-provider';
 import { Shield, CheckCircle, XCircle, AlertTriangle, ExternalLink, Trash2, Save, Eye, EyeOff } from 'lucide-react';
 import { InfoTooltip } from '@/components/ui/tooltip';
 import { ToggleGroup } from '@/components/ui/toggle-group';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 
 interface SsoProvider {
     id: string;
@@ -248,6 +249,7 @@ export default function SsoAdminPage() {
 
     return (
         <div className="space-y-6 animate-fadeIn">
+            <BackAffordance />
             {/* Header */}
             <div>
                 <h1 className="text-2xl font-bold flex items-center gap-2">

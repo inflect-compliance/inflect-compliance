@@ -6,6 +6,7 @@ import { getPermissionsForRole, type PermissionSet } from '@/lib/permissions';
 import prisma from '@/lib/prisma';
 import type { Role } from '@prisma/client';
 import { Check } from 'lucide-react';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,6 +62,7 @@ export default async function RbacPage({
 
     return (
         <div className="space-y-8 animate-fadeIn">
+            <BackAffordance />
             {/* Header */}
             <div>
                 <h1 className="text-2xl font-bold">Roles &amp; Access</h1>

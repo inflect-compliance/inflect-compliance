@@ -8,6 +8,7 @@ import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useFormTelemetry } from '@/lib/telemetry/form-telemetry';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 
 const POLICY_CATEGORIES: ComboboxOption[] = [
     'Information Security',
@@ -117,6 +118,7 @@ export default function NewPolicyPage() {
 
     return (
         <div className="max-w-3xl mx-auto space-y-6 animate-fadeIn">
+            <BackAffordance />
             <div>
                 <h1 className="text-2xl font-bold">
                     {isTemplateMode ? 'New Policy from Template' : 'New Policy'}

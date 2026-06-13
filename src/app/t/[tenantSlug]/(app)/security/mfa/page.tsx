@@ -6,6 +6,7 @@ import { useTenantApiUrl } from '@/lib/tenant-context-provider';
 import { ShieldCheck, QrCode, Copy, CheckCircle, XCircle, Trash2, AlertTriangle, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCopyToClipboard } from '@/components/ui/hooks';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 
 interface MfaStatus {
     isEnrolled: boolean;
@@ -147,6 +148,7 @@ export default function UserMfaPage() {
 
     return (
         <div className="space-y-6 animate-fadeIn max-w-2xl">
+            <BackAffordance />
             <h1 className="text-2xl font-bold flex items-center gap-2">
                 <ShieldCheck className="w-6 h-6 text-[var(--brand-default)]" />
                 Multi-Factor Authentication

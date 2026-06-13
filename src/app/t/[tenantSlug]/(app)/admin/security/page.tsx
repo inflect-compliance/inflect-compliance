@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTenantApiUrl } from '@/lib/tenant-context-provider';
 import { ShieldCheck, Save, AlertTriangle, CheckCircle, LogOut, Users, UserX } from 'lucide-react';
 import { InfoTooltip } from '@/components/ui/tooltip';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 
 type MfaPolicy = 'DISABLED' | 'OPTIONAL' | 'REQUIRED';
 
@@ -166,6 +167,7 @@ export default function AdminSecurityPage() {
 
     return (
         <div className="space-y-6 animate-fadeIn">
+            <BackAffordance />
             <h1 className="text-2xl font-bold flex items-center gap-2">
                 <ShieldCheck className="w-6 h-6 text-[var(--brand-default)]" />
                 Security & MFA

@@ -21,6 +21,34 @@
 export type RouteClass = 'main' | 'subpage' | 'unknown';
 
 /**
+ * Subpages that intentionally DO NOT render `<BackAffordance>`.
+ *
+ *   - **Redirect shims** (`/controls/new`, `/risks/new`, `/issues/*`) —
+ *     these files only call `redirect()`; there's no UI to attach the
+ *     affordance to.
+ *   - **Auth + onboarding flow pages** (`/auth/mfa`, `/onboarding`) —
+ *     a back affordance would let the user bypass a required gating
+ *     step. Wrong affordance for the page's job.
+ *   - **Print views** (`/reports/soa/print`) — print CSS hides nav chrome
+ *     anyway, and the print page has its own minimal frame.
+ *
+ * The RQ4-10 cohort-sweep ratchet reads this list and exempts every
+ * entry from the positive-coverage assertion. Add an entry HERE with a
+ * comment naming the reason; never silently strip a BackAffordance
+ * import from a page.
+ */
+export const BACK_AFFORDANCE_EXEMPT_SUBPAGES: readonly string[] = [
+    '/auth/mfa',              // auth flow — back would bypass MFA challenge
+    '/controls/new',          // redirect shim → /controls?create=1
+    '/issues/[issueId]',      // legacy redirect → /tasks/[taskId]
+    '/issues/dashboard',      // legacy redirect → /tasks/dashboard
+    '/issues/new',            // legacy redirect → /tasks/new
+    '/onboarding',            // forced flow — back would skip required step
+    '/reports/soa/print',     // print view, chrome-less by design
+    '/risks/new',             // redirect shim → /risks?create=1
+] as const;
+
+/**
  * Top-level sidebar destinations. These pages are reached from the primary
  * navigation; they have no parent within the tenant scope. The back
  * affordance is forbidden here.
