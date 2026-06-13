@@ -194,7 +194,7 @@ export default function RiskBoardPage() {
                             >
                                 <span className="w-6 text-content-subtle text-xs tabular-nums">{idx + 1}.</span>
                                 <Link
-                                    href={href(`/risks/${row.id}`)}
+                                    href={href(`/risks/${row.id}?tab=assessment`)}
                                     className="flex-1 truncate text-content-emphasis hover:text-content-default"
                                 >
                                     {row.title}
