@@ -1199,3 +1199,24 @@ See `docs/list-virtualization.md` for the rollout decision tree
 `<Combobox>`), the four `VirtualizedList` contract rules, the
 DataTable + Combobox preserved/dropped feature lists, and the test
 layout.
+
+### Risk Quantification — RQ3 roadmap (complete)
+
+The risk-quantification cohort (RQ3-1 → RQ3-10 + the six OB-* polish
+points) is the architectural shift from "qualitative and quantitative
+side-by-side" to "loss distribution leads, sensors update beliefs,
+controls carry a price". The wave reshaped the dashboard, added a
+board view, closed the KRI ⇄ assessment loop, and introduced
+Mitigation ROI — every PR carries an implementation note + a
+structural ratchet.
+
+**Read the capstone first:** [`docs/rq3-roadmap-complete.md`](docs/rq3-roadmap-complete.md).
+It indexes every implementation note (`docs/implementation-notes/`),
+every ratchet (`tests/guards/rq3-*.test.ts`), and the load-bearing
+decisions a new contributor needs to understand the post-RQ3
+codebase.
+
+The capstone is itself ratcheted by
+`tests/guards/rq3-11-capstone.test.ts`: a new RQ3 follow-up that ships
+an implementation note OR a `rq3-*` ratchet without threading itself
+into the capstone fails CI.
