@@ -25,6 +25,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useTenantApiUrl } from '@/lib/tenant-context-provider';
+import { useToast } from '@/components/ui/hooks';
 import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
@@ -45,6 +46,13 @@ export interface AssessmentRisk {
     residualLikelihood: number | null;
     residualImpact: number | null;
     residualScore: number | null;
+    /**
+     * RQ3-OB-D — drives the adaptive bridge copy. When the risk
+     * already carries a FAIR-derived ALE, "Quantify this risk →"
+     * reads wrong (the work is done); the bridge becomes "Review the
+     * FAIR analysis →". Null/undefined → not yet quantified.
+     */
+    fairAle?: number | null;
 }
 
 function BandChip({ score, config }: { score: number; config: RiskMatrixConfigShape }) {
@@ -89,6 +97,7 @@ export function RiskAssessmentPanel({
     onLinkControls: () => void;
 }) {
     const apiUrl = useTenantApiUrl();
+    const toast = useToast();
 
     const [config, setConfig] = useState<RiskMatrixConfigShape | null>(null);
     const [suggestion, setSuggestion] = useState<ResidualSuggestionPayload | null>(null);
@@ -198,6 +207,14 @@ export function RiskAssessmentPanel({
                 body: JSON.stringify({ justification: justification || null }),
             });
             if (!res.ok) throw new Error(`Failed to accept suggestion (${res.status})`);
+            // RQ3-OB-D — "accepting deserves an answer". The success
+            // toast carries the SERVER-derived one-liner (composed in
+            // acceptResidualSuggestion from the recomputed values), so
+            // the message reflects exactly what was persisted — never
+            // client draft state, which could disagree.
+            const body = await res.json().catch(() => null);
+            const summary: string | undefined = body?.accepted?.summary;
+            toast.success(summary ?? 'Residual suggestion accepted');
             onRiskUpdated();
             await loadSuggestion();
         } catch (err) {
@@ -486,12 +503,24 @@ export function RiskAssessmentPanel({
             </div>
 
             {/* ── Quantify bridge ───────────────────────────────── */}
-            <div className={cn(cardVariants({ density: 'compact' }), 'flex items-center justify-between')}>
+            {/* RQ3-OB-D — the bridge knows where you've been. When a
+                FAIR ALE already exists, "Quantify this risk →" is the
+                wrong invitation (the work is done) — the copy adapts
+                to "Review the FAIR analysis →" and the helper text
+                follows. The callback is the same; only the framing
+                changes. */}
+            <div
+                className={cn(cardVariants({ density: 'compact' }), 'flex items-center justify-between')}
+                data-testid="quantify-bridge"
+                data-quantified={risk.fairAle != null ? 'true' : 'false'}
+            >
                 <p className="text-sm text-content-muted">
-                    Need loss numbers instead of bands? Run the FAIR analysis on this risk.
+                    {risk.fairAle != null
+                        ? 'This risk already carries a FAIR loss estimate. Review or refine the analysis.'
+                        : 'Need loss numbers instead of bands? Run the FAIR analysis on this risk.'}
                 </p>
                 <Button variant="secondary" id="quantify-bridge-btn" onClick={onQuantify}>
-                    Quantify this risk
+                    {risk.fairAle != null ? 'Review the FAIR analysis' : 'Quantify this risk'}
                 </Button>
             </div>
         </div>

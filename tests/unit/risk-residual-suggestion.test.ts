@@ -139,6 +139,12 @@ describe('acceptResidualSuggestion', () => {
         expect(accepted.residualImpact).toBe(5);
         expect(accepted.residualScore).toBe(15);
 
+        // RQ3-OB-D — the return carries the server-derived toast
+        // one-liner, composed from the recomputed values.
+        expect(accepted.summary).toMatch(/^Residual 15 — /);
+        expect(accepted.summary).toMatch(/likelihood/);
+        expect(accepted.summary).toMatch(/impact/);
+
         const write = (mockDb.risk.update as jest.Mock).mock.calls[0][0];
         expect(write.data).toMatchObject({
             residualLikelihood: 3,

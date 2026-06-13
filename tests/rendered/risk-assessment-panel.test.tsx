@@ -21,6 +21,12 @@ jest.mock('@/lib/tenant-context-provider', () => ({
     useTenantApiUrl: () => (p: string) => `/api/t/acme${p}`,
 }));
 
+// RQ3-OB-D — capture the accept-toast content.
+const toastSuccess = jest.fn();
+jest.mock('@/components/ui/hooks', () => ({
+    useToast: () => ({ success: toastSuccess, error: jest.fn(), info: jest.fn(), warning: jest.fn(), dismiss: jest.fn() }),
+}));
+
 import { RiskAssessmentPanel, type AssessmentRisk } from '@/app/t/[tenantSlug]/(app)/risks/[riskId]/RiskAssessmentPanel';
 
 const MATRIX = {
@@ -93,7 +99,18 @@ function mockFetchRoutes(over: { suggestion?: unknown; kriBreaches?: unknown[] }
         }
         if (url.includes('/residual-suggestion')) {
             if (init?.method === 'POST') {
-                return { ok: true, json: async () => ({ success: true }) };
+                // RQ3-OB-D — the accept response carries the
+                // server-derived toast one-liner.
+                return {
+                    ok: true,
+                    json: async () => ({
+                        success: true,
+                        accepted: {
+                            residualScore: 8,
+                            summary: 'Residual 8 — 2 controls, 60% likelihood / 30% impact',
+                        },
+                    }),
+                };
             }
             return { ok: true, json: async () => over.suggestion ?? SUGGESTION };
         }
@@ -166,6 +183,16 @@ describe('RiskAssessmentPanel — residual flow', () => {
         });
     });
 
+    it('accept fires a success toast carrying the SERVER one-liner (not client state)', async () => {
+        await renderPanel();
+        fireEvent.click(screen.getByText('Accept suggestion'));
+        await waitFor(() =>
+            expect(toastSuccess).toHaveBeenCalledWith(
+                'Residual 8 — 2 controls, 60% likelihood / 30% impact',
+            ),
+        );
+    });
+
     it('manual override PUTs decomposed dims + scoreJustification, never a rollup', async () => {
         await renderPanel();
         fireEvent.click(screen.getByText('Assess residual manually'));
@@ -208,6 +235,29 @@ describe('RiskAssessmentPanel — bridges', () => {
         const onQuantify = jest.fn();
         await renderPanel({ onQuantify });
         fireEvent.click(screen.getByText('Quantify this risk'));
+        expect(onQuantify).toHaveBeenCalled();
+    });
+
+    // RQ3-OB-D — the bridge knows where you've been.
+    it('un-quantified risk → "Quantify this risk" invitation', async () => {
+        await renderPanel({ risk: { ...BASE_RISK, fairAle: null } });
+        expect(screen.getByText('Quantify this risk')).toBeInTheDocument();
+        expect(screen.queryByText('Review the FAIR analysis')).toBeNull();
+        expect(screen.getByTestId('quantify-bridge')).toHaveAttribute('data-quantified', 'false');
+    });
+
+    it('already-quantified risk → "Review the FAIR analysis" + adapted helper copy', async () => {
+        await renderPanel({ risk: { ...BASE_RISK, fairAle: 250_000 } });
+        expect(screen.getByText('Review the FAIR analysis')).toBeInTheDocument();
+        expect(screen.queryByText('Quantify this risk')).toBeNull();
+        expect(screen.getByTestId('quantify-bridge')).toHaveAttribute('data-quantified', 'true');
+        expect(screen.getByText(/already carries a FAIR loss estimate/)).toBeInTheDocument();
+    });
+
+    it('the adapted bridge still fires the same onQuantify callback', async () => {
+        const onQuantify = jest.fn();
+        await renderPanel({ onQuantify, risk: { ...BASE_RISK, fairAle: 100_000 } });
+        fireEvent.click(screen.getByText('Review the FAIR analysis'));
         expect(onQuantify).toHaveBeenCalled();
     });
 

@@ -64,6 +64,28 @@ import { Heading } from '@/components/ui/typography';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 
+// RQ3-OB-D — a deduped movement arrow names the risks that took its
+// path, not just a count. The list is bounded (top N + "+M more") so
+// a path shared by 40 risks doesn't produce an unreadable tooltip.
+export const MOVEMENT_ARROW_TOOLTIP_MAX = 8;
+
+/**
+ * Compose the movement-arrow tooltip text from the per-path risk
+ * titles. Pure + exported for unit coverage: top `max` titles joined,
+ * then a "+N more" overflow tail. Empty list → empty string (the
+ * caller skips the `<title>` when there's nothing to say).
+ */
+export function movementArrowTitle(
+    titles: ReadonlyArray<string>,
+    max: number = MOVEMENT_ARROW_TOOLTIP_MAX,
+): string {
+    if (titles.length === 0) return '';
+    const shown = titles.slice(0, max);
+    const overflow = titles.length - shown.length;
+    const head = shown.join(', ');
+    return overflow > 0 ? `${head} +${overflow} more` : head;
+}
+
 // ─── Public types ───────────────────────────────────────────────────
 
 export interface RiskMatrixDataCell {
@@ -206,13 +228,20 @@ export function RiskMatrix({
     // ten overdrawn ones. Same-cell pairs (no movement) are skipped.
     const movementArrows = useMemo(() => {
         if (!movements) return [];
-        const byPath = new Map<string, { from: { likelihood: number; impact: number }; to: { likelihood: number; impact: number }; count: number }>();
+        // RQ3-OB-D — retain the per-path risk TITLES, not just the
+        // count. The deduped arrow used to collapse "three risks
+        // moved" to a bare ×3; the tooltip now names which three.
+        const byPath = new Map<string, { from: { likelihood: number; impact: number }; to: { likelihood: number; impact: number }; count: number; titles: string[] }>();
         for (const m of movements) {
             if (m.from.likelihood === m.to.likelihood && m.from.impact === m.to.impact) continue;
             const key = `${m.from.likelihood}-${m.from.impact}>${m.to.likelihood}-${m.to.impact}`;
             const cur = byPath.get(key);
-            if (cur) cur.count += 1;
-            else byPath.set(key, { from: m.from, to: m.to, count: 1 });
+            if (cur) {
+                cur.count += 1;
+                cur.titles.push(m.title);
+            } else {
+                byPath.set(key, { from: m.from, to: m.to, count: 1, titles: [m.title] });
+            }
         }
         return Array.from(byPath.values());
     }, [movements]);
@@ -459,8 +488,29 @@ export function RiskMatrix({
                                     const from = px(a.from);
                                     const to = px(a.to);
                                     const key = `${a.from.likelihood}-${a.from.impact}>${a.to.likelihood}-${a.to.impact}`;
+                                    // RQ3-OB-D — the arrow names its risks on hover.
+                                    // The overlay SVG is pointer-events-none (so it
+                                    // never blocks cell clicks); this single arrow
+                                    // group opts back IN so the native <title> fires.
+                                    const tooltip = movementArrowTitle(a.titles);
                                     return (
-                                        <g key={key} data-testid="risk-matrix-movement-arrow" data-count={a.count}>
+                                        <g
+                                            key={key}
+                                            data-testid="risk-matrix-movement-arrow"
+                                            data-count={a.count}
+                                            style={{ pointerEvents: 'auto' }}
+                                        >
+                                            <title>{tooltip}</title>
+                                            {/* Transparent wide hit-line — the visible
+                                                stroke is too thin to hover reliably. */}
+                                            <line
+                                                x1={from.x}
+                                                y1={from.y}
+                                                x2={to.x}
+                                                y2={to.y}
+                                                stroke="transparent"
+                                                strokeWidth={4}
+                                            />
                                             <line
                                                 x1={from.x}
                                                 y1={from.y}

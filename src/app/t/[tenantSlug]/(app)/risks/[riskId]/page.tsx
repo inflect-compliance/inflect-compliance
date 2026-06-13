@@ -527,6 +527,8 @@ export default function RiskDetailPage() {
                         residualLikelihood: risk.residualLikelihood,
                         residualImpact: risk.residualImpact,
                         residualScore: risk.residualScore,
+                        // RQ3-OB-D — drives the adaptive bridge copy.
+                        fairAle: risk.fairAle,
                     }}
                     canWrite={canWrite}
                     onRiskUpdated={fetchRisk}

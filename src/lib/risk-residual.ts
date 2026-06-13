@@ -194,3 +194,24 @@ export function describeCombination(combined: CombinedEffectiveness): string {
     if (parts.length === 0) return 'No linked controls carry an effectiveness signal yet';
     return parts.join('; ');
 }
+
+/**
+ * RQ3-OB-D — compact one-liner for the accept-suggestion success
+ * toast, e.g. "Residual 8 — 2 controls, 60% likelihood / 30% impact".
+ *
+ * Distinct from `describeCombination` (which splits likelihood vs
+ * impact into two clauses for the breakdown card): the toast wants
+ * a single denser line that leads with the resulting residual score
+ * — the number the user just committed to. Composed SERVER-SIDE so
+ * the toast content derives from the accept response, never from
+ * client state that could disagree with what was persisted.
+ */
+export function describeAcceptedResidual(
+    suggestion: Pick<ResidualSuggestion, 'residualScore' | 'likelihoodReduction' | 'impactReduction'>,
+    participatingCount: number,
+): string {
+    const controls = `${participatingCount} control${participatingCount === 1 ? '' : 's'}`;
+    const lik = Math.round(suggestion.likelihoodReduction * 100);
+    const imp = Math.round(suggestion.impactReduction * 100);
+    return `Residual ${suggestion.residualScore} — ${controls}, ${lik}% likelihood / ${imp}% impact`;
+}

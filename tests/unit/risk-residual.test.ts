@@ -9,6 +9,7 @@ import {
     combineEffectiveness,
     suggestResidual,
     describeCombination,
+    describeAcceptedResidual,
     MAX_REDUCTION,
     type ControlEffectivenessInput,
 } from '@/lib/risk-residual';
@@ -130,5 +131,31 @@ describe('describeCombination — the human line', () => {
     it('says so plainly when nothing participates', () => {
         const r = combineEffectiveness([control({ effectiveness: null, source: null })]);
         expect(describeCombination(r)).toMatch(/No linked controls carry an effectiveness signal/);
+    });
+});
+
+describe('describeAcceptedResidual — RQ3-OB-D accept-toast one-liner', () => {
+    it('leads with the residual score, then controls + per-dim percentages', () => {
+        const line = describeAcceptedResidual(
+            { residualScore: 8, likelihoodReduction: 0.6, impactReduction: 0.3 },
+            2,
+        );
+        expect(line).toBe('Residual 8 — 2 controls, 60% likelihood / 30% impact');
+    });
+
+    it('singularises one control', () => {
+        const line = describeAcceptedResidual(
+            { residualScore: 12, likelihoodReduction: 0.5, impactReduction: 0 },
+            1,
+        );
+        expect(line).toBe('Residual 12 — 1 control, 50% likelihood / 0% impact');
+    });
+
+    it('rounds the reductions to whole percent', () => {
+        const line = describeAcceptedResidual(
+            { residualScore: 6, likelihoodReduction: 0.666, impactReduction: 0.334 },
+            3,
+        );
+        expect(line).toBe('Residual 6 — 3 controls, 67% likelihood / 33% impact');
     });
 });

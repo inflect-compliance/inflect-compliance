@@ -93,4 +93,21 @@ describe('RiskMatrix — movement overlay on', () => {
         expect(screen.queryByTestId('risk-matrix-movement-overlay')).toBeNull();
         expect(screen.getByTestId('risk-matrix')).toHaveAttribute('data-movement', 'false');
     });
+
+    // RQ3-OB-D — the arrow names its risks (not just a count).
+    it('each arrow carries an SVG <title> naming the risks on its path', () => {
+        renderAndToggle();
+        const arrows = screen.getAllByTestId('risk-matrix-movement-arrow');
+        const titles = arrows.map((a) => a.querySelector('title')?.textContent).sort();
+        // r1+r2 → "A, B"; r3 → "C".
+        expect(titles).toEqual(['A, B', 'C']);
+    });
+
+    it('a hovered arrow opts back into pointer events so the native title fires', () => {
+        renderAndToggle();
+        const arrow = screen.getAllByTestId('risk-matrix-movement-arrow')[0];
+        // The overlay is pointer-events-none; the arrow group overrides
+        // it so the browser tooltip can surface on hover.
+        expect(arrow).toHaveStyle({ pointerEvents: 'auto' });
+    });
 });

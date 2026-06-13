@@ -34,6 +34,7 @@ import {
     combineEffectiveness,
     suggestResidual,
     describeCombination,
+    describeAcceptedResidual,
     type CombinedEffectiveness,
     type ControlEffectivenessInput,
     type ResidualSuggestion,
@@ -234,7 +235,15 @@ export async function acceptResidualSuggestion(
             },
         });
 
-        return suggestion;
+        // RQ3-OB-D — compose the toast one-liner SERVER-SIDE from the
+        // recomputed values, so the success toast reflects exactly
+        // what was persisted (never client state). Spread onto the
+        // suggestion so existing callers reading `.residualScore`
+        // etc. keep working; `.summary` is the new field.
+        return {
+            ...suggestion,
+            summary: describeAcceptedResidual(suggestion, combined.participatingCount),
+        };
     });
     await bumpEntityCacheVersion(ctx, 'risk');
     return accepted;
