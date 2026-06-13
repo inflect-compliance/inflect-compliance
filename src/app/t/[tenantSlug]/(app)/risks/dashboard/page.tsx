@@ -12,6 +12,7 @@ import { KPIStat } from '@/components/ui/metric';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { SkeletonDashboard } from '@/components/ui/skeleton';
 import { resolveBandForScore } from '@/lib/risk-matrix/scoring';
+import { RiskFirstRunEmpty } from '@/components/risks/RiskFirstRunEmpty';
 import type { RiskMatrixBand } from '@/lib/risk-matrix/types';
 import { InfoTooltip } from '@/components/ui/tooltip';
 import { formatTailAwareAle } from '@/lib/tail-language';
@@ -187,11 +188,7 @@ export default function RiskDashboardPage() {
                         ariaLabel="Risk status breakdown"
                         total={total}
                         showPercent
-                        emptyState={
-                            <p className="text-content-subtle text-sm">
-                                {t('noRisksYet')}
-                            </p>
-                        }
+                        emptyState={<RiskFirstRunEmpty size="sm" />}
                         items={Object.entries(statusCounts)
                             .sort(([, a], [, b]) => b - a)
                             .map(([status, count]) => ({
