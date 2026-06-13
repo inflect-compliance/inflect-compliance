@@ -240,10 +240,15 @@ describe('New page token discipline', () => {
         //     <ProgressBar>, date via <DatePicker>); in the unmigrated
         //     tally only because the surface is new and not yet
         //     promoted to MIGRATED_PAGES.
+        //   - 106 (+1): RQ3-10 — risks/board/page.tsx, the new
+        //     board-altitude view. Token-clean (semantic tokens only,
+        //     reuses <Card>/<KPIStat>/<StatusBadge>/<DashboardLayout>);
+        //     in the unmigrated tally only because the surface is new
+        //     and not yet promoted to MIGRATED_PAGES.
         // Each increment names the epic + page + reason; promotion
         // to MIGRATED_PAGES is the path forward, never silent
         // floor-bumping.
-        expect(unmigrated.length).toBeLessThanOrEqual(105);
+        expect(unmigrated.length).toBeLessThanOrEqual(106);
     });
 
     it('migrated page count is at least 4', () => {
