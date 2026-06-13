@@ -38,6 +38,7 @@ import Link from 'next/link';
 import { type ReactNode } from 'react';
 
 import { cn } from '@dub/utils';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 
 // ─── Tab descriptor ───────────────────────────────────────────────
 
@@ -55,11 +56,18 @@ export interface EntityDetailTab<TKey extends string = string> {
 // ─── Public props ────────────────────────────────────────────────
 
 export interface EntityDetailLayoutProps<TKey extends string = string> {
-    /** Back-navigation link rendered above the title. Optional. */
-    back?: {
-        href: string;
-        label: string;
-    };
+    /**
+     * Back-navigation affordance rendered above the title. Two forms:
+     *
+     *   - `{ href, label }` — static link (legacy form, still supported).
+     *   - `{ smart: true }` — RQ4-4 smart back affordance: routes through
+     *     `<BackAffordance>`, which resolves referrer first, canonical
+     *     parent second. This is the default form every subpage should
+     *     use.
+     */
+    back?:
+        | { href: string; label: string }
+        | { smart: true };
     /** Title of the detail page. Plain string OR rich element. */
     title: ReactNode;
     /**
@@ -172,7 +180,9 @@ export function EntityDetailLayout<TKey extends string = string>({
             {/* Header */}
             <header className="flex items-start justify-between gap-4 flex-wrap">
                 <div className="min-w-0">
-                    {back && (
+                    {back && 'smart' in back ? (
+                        <BackAffordance />
+                    ) : back ? (
                         <Link
                             href={back.href}
                             className="text-content-muted text-xs hover:text-content-emphasis transition"
@@ -180,7 +190,7 @@ export function EntityDetailLayout<TKey extends string = string>({
                         >
                             ← {back.label}
                         </Link>
-                    )}
+                    ) : null}
                     <h1
                         className="text-2xl font-bold mt-1 text-content-emphasis"
                         data-testid="entity-detail-title"

@@ -610,7 +610,7 @@ export default function ControlDetailPage() {
     return (
         <EntityDetailLayout
             id="control-detail-page"
-            back={{ href: tenantHref('/controls'), label: 'Controls' }}
+            back={{ smart: true }}
             title={<span id="control-title">{control.name}</span>}
             meta={headerMeta}
             actions={headerActions}
