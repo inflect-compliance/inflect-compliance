@@ -109,6 +109,24 @@ export interface RiskMatrixCellProps {
     'data-testid'?: string;
     /** Override class merged onto the cell's box. */
     className?: string;
+    /**
+     * RQ3-OB-E — roving tabindex. The matrix grid keeps exactly ONE
+     * cell tabbable at any time; the others sit on `-1` so the user
+     * Tabs INTO the grid once, then steers with arrow keys. The
+     * matrix owns the focused-cell state; the cell just reflects it.
+     * Defaults to `true` so the legacy single-cell use case (no
+     * arrow nav) keeps its existing tab-stop.
+     */
+    tabbable?: boolean;
+    /**
+     * RQ3-OB-E — emitted on arrow-key press (Up/Down/Left/Right) +
+     * Home/End. The matrix translates the direction into a focus
+     * move on the next gridcell, wrapping at the edges OR clamping
+     * (the matrix decides — the cell stays direction-agnostic).
+     */
+    onArrowKey?: (
+        key: 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight' | 'Home' | 'End',
+    ) => void;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────
@@ -161,6 +179,8 @@ export function RiskMatrixCell({
     id,
     'data-testid': dataTestId,
     className = '',
+    tabbable = true,
+    onArrowKey,
 }: RiskMatrixCellProps) {
     const resolved = useMemo(
         () => resolveCell(likelihood, impact, config),
@@ -231,7 +251,12 @@ export function RiskMatrixCell({
         <div
             id={id}
             role="gridcell"
-            tabIndex={interactive ? 0 : -1}
+            // RQ3-OB-E — roving tabindex. The grid keeps exactly one
+            // tabbable cell at a time when arrow-key nav is wired; the
+            // others stay at `-1` until they become the active cell.
+            // Non-interactive cells stay at `-1` regardless (a focused
+            // empty cell with no callbacks would be a dead-end stop).
+            tabIndex={interactive ? (tabbable ? 0 : -1) : -1}
             aria-label={ariaLabel}
             data-testid={dataTestId ?? `risk-matrix-cell-${likelihood}-${impact}`}
             data-empty={isEmpty ? 'true' : 'false'}
@@ -248,12 +273,35 @@ export function RiskMatrixCell({
                           if (e.key === 'Enter' || e.key === ' ') {
                               e.preventDefault();
                               onClick?.();
+                              return;
+                          }
+                          // RQ3-OB-E — arrow / Home / End route to the
+                          // matrix so it can steer focus across cells.
+                          // preventDefault stops page-scroll on arrow
+                          // press; the matrix handles wrap/clamp.
+                          if (
+                              onArrowKey &&
+                              (e.key === 'ArrowUp' ||
+                                  e.key === 'ArrowDown' ||
+                                  e.key === 'ArrowLeft' ||
+                                  e.key === 'ArrowRight' ||
+                                  e.key === 'Home' ||
+                                  e.key === 'End')
+                          ) {
+                              e.preventDefault();
+                              onArrowKey(e.key);
                           }
                       }
                     : undefined
             }
             className={[
-                'group relative flex min-h-[28px] items-center justify-center rounded-sm text-xs font-semibold tabular-nums transition-colors duration-150 ease-out',
+                // RQ3-OB-E — motion-reduce:transition-none collapses
+                // the color crossfade when the user opts out. The
+                // global token override (--duration-fast → 1ms) only
+                // catches utilities that READ the var; a literal
+                // `duration-150` does not, so this is the belt to the
+                // global rule's braces.
+                'group relative flex min-h-[28px] items-center justify-center rounded-sm text-xs font-semibold tabular-nums transition-colors duration-150 ease-out motion-reduce:transition-none',
                 'focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-default)] focus-visible:ring-offset-1',
                 interactive ? 'cursor-pointer hover:brightness-110' : 'cursor-default',
                 selected ? 'ring-2 ring-[var(--brand-default)] ring-offset-1' : '',
