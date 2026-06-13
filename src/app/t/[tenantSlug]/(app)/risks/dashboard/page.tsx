@@ -414,7 +414,7 @@ export default function RiskDashboardPage() {
                                     return (
                                         <Link
                                             key={f.riskId}
-                                            href={href(`/risks/${f.riskId}`)}
+                                            href={href(`/risks/${f.riskId}?tab=assessment`)}
                                             className="flex items-center justify-between gap-default p-2 rounded text-sm hover:bg-bg-muted/50 transition-colors duration-100 ease-out"
                                             data-testid={`risk-coherence-row-${f.riskId}`}
                                             data-direction={f.direction}
@@ -466,10 +466,15 @@ export default function RiskDashboardPage() {
                                     : r.reasons.length === 2
                                       ? 'border-l-content-warning'
                                       : 'border-l-border-subtle';
+                            // RQ3-OB-C — staleness rows deep-link to the
+                            // assessment tab so the user lands on the exact
+                            // pane that closes the rot signal (re-assess
+                            // for AGED/REVIEW_OVERDUE/SIGNAL_MOVED;
+                            // re-derive residual for CONTROLS_MOVED_SINCE).
                             return (
                                 <Link
                                     key={r.riskId}
-                                    href={href(`/risks/${r.riskId}`)}
+                                    href={href(`/risks/${r.riskId}?tab=assessment`)}
                                     className={`flex items-center justify-between gap-default p-2 pl-3 rounded border-l-2 ${tone} text-sm hover:bg-bg-muted/50 transition-colors duration-100 ease-out`}
                                     data-testid={`risk-stale-row-${r.riskId}`}
                                     data-reason-count={r.reasons.length}
@@ -499,7 +504,7 @@ export default function RiskDashboardPage() {
                         {overdueRisks.map(r => {
                             const daysOverdue = Math.floor((now.getTime() - new Date(r.nextReviewAt!).getTime()) / 86400000);
                             return (
-                                <Link key={r.id} href={href(`/risks/${r.id}`)} className="flex justify-between items-center p-2 rounded hover:bg-bg-error transition">
+                                <Link key={r.id} href={href(`/risks/${r.id}?tab=assessment`)} className="flex justify-between items-center p-2 rounded hover:bg-bg-error transition">
                                     <span className="text-sm text-content-emphasis">{r.title}</span>
                                     <span className="text-xs text-content-error">{t('daysOverdue', { days: daysOverdue })} · {r.treatmentOwner || t('noOwner')}</span>
                                 </Link>
