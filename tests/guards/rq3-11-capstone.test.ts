@@ -45,7 +45,12 @@ describe('RQ3-11 — the capstone is the index', () => {
 
     test('the capstone names every RQ3 implementation note', () => {
         const capstone = read(CAPSTONE_PATH);
-        const notes = listFiles(NOTES_DIR, /^2026-06-(11|12|13)-rq3-.*\.md$/);
+        const notes = listFiles(NOTES_DIR, /^2026-06-(11|12|13)-rq3-.*\.md$/).filter(
+            // The capstone's OWN implementation note is excluded — the
+            // capstone indexes the cohort, it doesn't index itself.
+            // (Symmetric with the ratchet-test exclusion below.)
+            (f) => f !== '2026-06-13-rq3-11-capstone.md',
+        );
         // We expect at least the documented cohort.
         expect(notes.length).toBeGreaterThan(0);
         const missing = notes.filter((note) => !capstone.includes(note));
