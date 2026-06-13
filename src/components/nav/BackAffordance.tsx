@@ -32,6 +32,40 @@ import {
 } from '@/lib/nav/canonical-parents';
 
 /**
+ * Map of in-tenant section paths to their canonical display names.
+ *
+ * `labelFromPathname` consults this map first; an unmapped section
+ * falls back to capitalising the first segment. The map lets the
+ * referrer-based affordance show the right product name (e.g.
+ * `/audits` → "Internal Audit", not the raw "Audits") without forcing
+ * every section to be listed.
+ */
+const SECTION_LABELS: Record<string, string> = {
+    '/access-reviews': 'Access reviews',
+    '/admin': 'Admin',
+    '/assets': 'Assets',
+    '/audits': 'Internal Audit',
+    '/calendar': 'Calendar',
+    '/clauses': 'Clauses',
+    '/controls': 'Controls',
+    '/coverage': 'Coverage',
+    '/dashboard': 'Dashboard',
+    '/evidence': 'Evidence',
+    '/findings': 'Findings',
+    '/frameworks': 'Frameworks',
+    '/issues': 'Issues',
+    '/mapping': 'Mapping',
+    '/notifications': 'Notifications',
+    '/policies': 'Policies',
+    '/processes': 'Processes',
+    '/reports': 'Reports',
+    '/risks': 'Risks',
+    '/tasks': 'Tasks',
+    '/tests': 'Tests',
+    '/vendors': 'Vendors',
+};
+
+/**
  * Convert an in-tenant pathname back into a CanonicalParent shape by
  * looking up the label of the route the user came from. We don't have a
  * "label for any path" registry yet, so for now the smart label uses the
@@ -41,15 +75,29 @@ function labelFromPathname(pathname: string): string {
     const stripped = pathname.replace(/^\/t\/[^/]+/, '');
     const seg = stripped.split('/').filter(Boolean)[0];
     if (!seg) return 'previous page';
+    const sectionKey = `/${seg}`;
+    if (SECTION_LABELS[sectionKey]) return SECTION_LABELS[sectionKey];
     return seg.charAt(0).toUpperCase() + seg.slice(1);
 }
 
 export interface BackAffordanceProps {
     /** Optional override — used by tests + the `back` prop's static form. */
     override?: CanonicalParent;
+    /**
+     * When true, render ONLY when an in-tab referrer exists. With no
+     * referrer (cold load, deep link, fresh tab), the component
+     * returns null — no canonical-parent fallback.
+     *
+     * Use this variant on MAIN pages that are sometimes deep-linked
+     * FROM elsewhere (e.g. `/clauses`, `/findings` reached from
+     * `/audits`). The OB-H invariant — "no MAIN page renders an
+     * IA-canonical back fallback" — stays intact; only the
+     * "where you came from" arm remains.
+     */
+    noFallback?: boolean;
 }
 
-export function BackAffordance({ override }: BackAffordanceProps) {
+export function BackAffordance({ override, noFallback }: BackAffordanceProps) {
     const pathname = usePathname() ?? '';
     const tenantSlug = tenantSlugFromPath(pathname);
     const referrer = usePreviousPath(tenantSlug);
@@ -59,7 +107,7 @@ export function BackAffordance({ override }: BackAffordanceProps) {
         destination = override;
     } else if (referrer && tenantSlug && referrer !== pathname) {
         destination = { href: referrer, label: labelFromPathname(referrer) };
-    } else if (tenantSlug) {
+    } else if (tenantSlug && !noFallback) {
         destination = resolveCanonicalParent(pathname, tenantSlug);
     }
 

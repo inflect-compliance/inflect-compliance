@@ -2,6 +2,7 @@ import { getTranslations } from 'next-intl/server';
 import { getTenantCtx } from '@/app-layer/context';
 import { listFindings } from '@/app-layer/usecases/finding';
 import { FindingsClient } from './FindingsClient';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,6 +34,7 @@ export default async function FindingsPage({
 
     return (
         <div className="space-y-section animate-fadeIn">
+            <BackAffordance noFallback />
             <FindingsClient
                 initialFindings={JSON.parse(JSON.stringify(findings))}
                 tenantSlug={tenantSlug}

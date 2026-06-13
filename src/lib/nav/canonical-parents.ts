@@ -73,9 +73,13 @@ const PARENT_MAP: Record<string, CanonicalParent> = {
 
     // Controls
     '/controls/[controlId]': { href: '/controls', label: 'Controls' },
+    // Test-plan detail lives URL-wise under a control, but the user's
+    // mental model is "I'm working on a test"; the canonical parent is
+    // the Tests list. The in-tab referrer still wins — drilling in from
+    // a control detail shows "Back to Control" via the smart referrer.
     '/controls/[controlId]/tests/[planId]': {
-        href: '/controls/[controlId]',
-        label: 'Control',
+        href: '/tests',
+        label: 'Tests',
     },
     '/controls/dashboard': { href: '/controls', label: 'Controls' },
     '/controls/new': { href: '/controls', label: 'Controls' },
