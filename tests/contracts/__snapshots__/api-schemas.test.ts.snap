@@ -1368,6 +1368,18 @@ exports[`API contract — per-schema snapshots schema: ControlListItem 1`] = `
         "null"
       ]
     },
+    "annualCost": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "effectiveness": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
     "isCustom": {
       "type": "boolean"
     },
@@ -1717,6 +1729,13 @@ exports[`API contract — per-schema snapshots schema: ControlUpdateRequest 1`] 
         "COMPENSATING",
         null
       ]
+    },
+    "annualCost": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
     }
   },
   "description": "Partial update for a control. Status, applicability, and owner have dedicated focused endpoints; this body covers descriptive metadata only."

@@ -40,6 +40,8 @@ import { Sparkle3 } from '@/components/ui/icons/nucleo/sparkle3';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 
+import { ControlRoiCard } from './_components/ControlRoiCard';
+
 const TraceabilityPanel = dynamic(() => import('@/components/TraceabilityPanel'), {
     loading: () => <SkeletonCard lines={3} />,
     ssr: false,
@@ -233,7 +235,7 @@ export default function ControlDetailPage() {
 
     // Edit modal state
     const [showEditModal, setShowEditModal] = useState(false);
-    const [editForm, setEditForm] = useState({ name: '', description: '', intent: '', category: '', frequency: '', owner: '', automationType: '', mitigationType: '' });
+    const [editForm, setEditForm] = useState({ name: '', description: '', intent: '', category: '', frequency: '', owner: '', automationType: '', mitigationType: '', annualCost: '' });
     const [savingEdit, setSavingEdit] = useState(false);
     const [editError, setEditError] = useState('');
     const [editSuccess, setEditSuccess] = useState(false);
@@ -253,6 +255,10 @@ export default function ControlDetailPage() {
             owner: control.ownerUserId || '',
             automationType: control.automationType || '',
             mitigationType: control.mitigationType || '',
+            annualCost:
+                control.annualCost === null || control.annualCost === undefined
+                    ? ''
+                    : String(control.annualCost),
         });
         setEditError('');
         setEditSuccess(false);
@@ -285,6 +291,17 @@ export default function ControlDetailPage() {
                     intent: form.intent.trim() || null,
                     category: form.category.trim() || null,
                     frequency: form.frequency || null,
+                    // RQ3-8 — empty string clears the price (honest
+                    // null); a parseable number is sent through, an
+                    // unparseable value is dropped (the input is
+                    // type=number so this is the belt-and-braces
+                    // case).
+                    annualCost:
+                        form.annualCost.trim() === ''
+                            ? null
+                            : Number.isFinite(Number(form.annualCost))
+                                ? Number(form.annualCost)
+                                : undefined,
                 }),
             });
             if (!res.ok) {
@@ -820,6 +837,8 @@ export default function ControlDetailPage() {
             )}
 
             {/* Tab content — tab bar is rendered by EntityDetailLayout */}
+            {tab === 'overview' && <ControlRoiCard controlId={controlId} />}
+
             {tab === 'overview' && (
                 <div className={cn(cardVariants(), 'space-y-default')}>
                     {/* Overview header with Edit button */}

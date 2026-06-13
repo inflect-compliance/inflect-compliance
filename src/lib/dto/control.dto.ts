@@ -25,6 +25,11 @@ export const ControlListItemDTOSchema = z.object({
     automationKey: z.string().nullable().optional(),
     automationType: z.string().nullable().optional(),
     mitigationType: z.string().nullable().optional(),
+    // RQ3-8 — annual cost in the tenant's currency. Null until an
+    // owner prices it; the ROI surface returns a typed `NO_COST`
+    // gap rather than fabricating a number.
+    annualCost: z.number().nullable().optional(),
+    effectiveness: z.number().nullable().optional(),
     isCustom: z.boolean().optional(),
     lastTested: z.string().nullable().optional(),
     nextDueAt: z.string().nullable().optional(),

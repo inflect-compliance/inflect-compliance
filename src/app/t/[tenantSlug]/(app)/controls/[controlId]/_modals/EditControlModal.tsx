@@ -20,6 +20,7 @@
 import { Button } from '@/components/ui/button';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Modal } from '@/components/ui/modal';
+import { NumberStepper } from '@/components/ui/number-stepper';
 import { RequiredMarker } from '@/components/ui/required-marker';
 import { UserCombobox } from '@/components/ui/user-combobox';
 
@@ -32,6 +33,9 @@ export interface EditControlForm {
     owner: string;
     automationType: string;
     mitigationType: string;
+    /** RQ3-8 — annualCost as a free-text input bridges to a Float?
+     *  number on the wire. Empty string → null. */
+    annualCost: string;
 }
 
 const AUTOMATION_TYPE_OPTIONS: ComboboxOption[] = [
@@ -285,6 +289,36 @@ export function EditControlModal({
                                     matchTriggerWidth
                                 />
                             </div>
+                        </div>
+                        <div data-testid="edit-annual-cost-input">
+                            <label
+                                htmlFor="edit-annual-cost"
+                                className="mb-1 block text-sm text-content-default"
+                            >
+                                Annual cost
+                            </label>
+                            <NumberStepper
+                                id="edit-annual-cost"
+                                value={
+                                    form.annualCost.trim() === '' ||
+                                    Number.isNaN(Number(form.annualCost))
+                                        ? 0
+                                        : Number(form.annualCost)
+                                }
+                                onChange={(v) =>
+                                    setForm((f) => ({
+                                        ...f,
+                                        // 0 = unpriced (honest null on save).
+                                        annualCost: v <= 0 ? '' : String(v),
+                                    }))
+                                }
+                                min={0}
+                                step={1000}
+                                ariaLabel="Annual cost"
+                            />
+                            <p className="mt-1 text-xs text-content-subtle">
+                                Operate + maintain spend per year. Leave at 0 if not priced — the ROI surface shows an honest gap rather than fabricating a number.
+                            </p>
                         </div>
                         <div>
                             <label

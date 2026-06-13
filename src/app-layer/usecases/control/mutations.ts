@@ -103,6 +103,7 @@ export async function updateControl(ctx: RequestContext, id: string, data: {
     automationType?: string | null;
     mitigationType?: string | null;
     intent?: string | null;
+    annualCost?: number | null;
 }) {
     assertCanUpdateControl(ctx);
 
@@ -118,6 +119,7 @@ export async function updateControl(ctx: RequestContext, id: string, data: {
             ...(data.automationType !== undefined && { automationType: data.automationType as 'AUTOMATED' | null }),
             ...(data.mitigationType !== undefined && { mitigationType: data.mitigationType as 'PREVENTIVE' | null }),
             ...(data.intent !== undefined && { intent: data.intent }),
+            ...(data.annualCost !== undefined && { annualCost: data.annualCost }),
         });
 
         if (!control) {

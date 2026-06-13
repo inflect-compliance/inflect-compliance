@@ -971,6 +971,12 @@ model Control {
   category                     String?
   status                       ControlStatus            @default(NOT_STARTED)
   effectiveness                Int?
+  /// RQ3-8 — annual cost (operate + maintain) in the tenant's
+  /// currency. Float matches the existing money-field pattern
+  /// (sleAmount, aroAmount, fairAle on Risk). Nullable until an
+  /// owner prices it — the ROI surface returns an honest null with
+  /// a typed `NO_COST` reason rather than fabricating a number.
+  annualCost                   Float?
   lastTested                   DateTime?
   reviewCadence                ReviewCadence?
   isCustom                     Boolean                  @default(false)
