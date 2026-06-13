@@ -14,6 +14,7 @@ import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { TestPlanScheduleSection } from '@/components/TestPlanScheduleSection';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { CardHeader } from '@/components/ui/card-header';
 import { KPIStat } from '@/components/ui/metric';
 import { cardVariants } from '@/components/ui/card';
@@ -167,12 +168,7 @@ export default function TestPlanDetailPage() {
 
     return (
         <div className="space-y-section animate-fadeIn">
-            {/* Breadcrumb */}
-            <div>
-                <Link href={tenantHref(`/controls/${controlId}`)} className="text-content-muted text-xs hover:text-content-emphasis transition">
-                    ← Back to Control
-                </Link>
-            </div>
+            <BackAffordance />
 
             {/* Header */}
             <div className="flex items-center justify-between">

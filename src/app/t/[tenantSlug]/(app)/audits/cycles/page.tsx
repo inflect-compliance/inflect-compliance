@@ -18,6 +18,7 @@ import type { DateRangeValue } from '@/components/ui/date-picker/types';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 
@@ -117,6 +118,7 @@ export default function AuditCyclesPage() {
 
     return (
         <div className="space-y-section animate-fadeIn">
+            <BackAffordance />
             <div className="flex items-center justify-between">
                 <div>
                     <PageBreadcrumbs

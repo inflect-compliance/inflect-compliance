@@ -81,9 +81,11 @@ const BASELINE_PLUS_LITERAL_SITES = new Set<string>([
     'src/app/t/[tenantSlug]/(app)/admin/vendor-templates/[templateId]/VendorTemplateBuilderClient.tsx:584',
     'src/app/t/[tenantSlug]/(app)/admin/vendor-templates/[templateId]/VendorTemplateBuilderClient.tsx:687',
     'src/app/t/[tenantSlug]/(app)/audits/cycles/[cycleId]/page.tsx:123',
-    'src/app/t/[tenantSlug]/(app)/audits/cycles/page.tsx:134',
-    'src/app/t/[tenantSlug]/(app)/audits/cycles/page.tsx:207',
-    'src/app/t/[tenantSlug]/(app)/audits/cycles/page.tsx:219',
+    // RQ4-back-link-fixes-2 — shifted +2 by the `BackAffordance`
+    // import + mount added above the page title.
+    'src/app/t/[tenantSlug]/(app)/audits/cycles/page.tsx:136',
+    'src/app/t/[tenantSlug]/(app)/audits/cycles/page.tsx:209',
+    'src/app/t/[tenantSlug]/(app)/audits/cycles/page.tsx:221',
     'src/app/t/[tenantSlug]/(app)/audits/readiness/page.tsx:155',
     'src/app/t/[tenantSlug]/(app)/controls/[controlId]/tests/[planId]/page.tsx:300',
     // B9 — line numbers shifted by 13 when the Export PDF anchor

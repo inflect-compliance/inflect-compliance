@@ -37,6 +37,7 @@ import { getReadinessOverview } from '@/app-layer/usecases/audit-readiness';
 import type { ReadinessResult } from '@/app-layer/usecases/audit-readiness-scoring';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { cardVariants } from '@/components/ui/card-variants';
 import { cn } from '@/lib/cn';
 
@@ -105,6 +106,7 @@ export default async function ReadinessOverviewPage({
 
     return (
         <div className="space-y-section animate-fadeIn">
+            <BackAffordance />
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-compact">
                 <div>
                     <PageBreadcrumbs
