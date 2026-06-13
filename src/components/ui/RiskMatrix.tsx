@@ -50,7 +50,7 @@
  * full list either way.
  */
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { ArrowLeftRight } from 'lucide-react';
 import { useLocalStorage } from '@/components/ui/hooks';
 
@@ -300,6 +300,56 @@ export function RiskMatrix({
         );
     };
 
+    // RQ3-OB-E — grid keyboard navigation.
+    //
+    // The matrix advertises `role="grid"`, which contracts arrow-key
+    // navigation across cells. Roving tabindex: exactly ONE cell is
+    // in the tab order at any time (`focusedKey`); arrow keys move
+    // it. Default tab-stop is the top-left rendered cell so a fresh
+    // Tab into the grid lands somewhere predictable.
+    //
+    // Roving tabindex only engages when the grid is INTERACTIVE
+    // (`onCellClick` is wired). For a read-only matrix every cell
+    // already sits on `tabIndex=-1` so this state is a no-op.
+    const interactive = Boolean(onCellClick);
+    const defaultKey = `${cellAt(rows[0], cols[0]).likelihood}-${cellAt(rows[0], cols[0]).impact}`;
+    const [focusedKey, setFocusedKey] = useState<string | null>(null);
+    const gridRef = useRef<HTMLDivElement | null>(null);
+    const effectiveFocusedKey = focusedKey ?? defaultKey;
+
+    const handleArrowKey = useCallback(
+        (yIdx: number, xIdx: number, key: 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight' | 'Home' | 'End') => {
+            // Compute next rendered (y, x). Clamp at edges — wrap-
+            // around in a grid that conveys position (likelihood ×
+            // impact is geographic, not a list) would confuse the
+            // mental model. Home / End jump to the row's edges.
+            let nextY = yIdx;
+            let nextX = xIdx;
+            if (key === 'ArrowUp') nextY = Math.max(0, yIdx - 1);
+            else if (key === 'ArrowDown') nextY = Math.min(yLevels - 1, yIdx + 1);
+            else if (key === 'ArrowLeft') nextX = Math.max(0, xIdx - 1);
+            else if (key === 'ArrowRight') nextX = Math.min(xLevels - 1, xIdx + 1);
+            else if (key === 'Home') nextX = 0;
+            else if (key === 'End') nextX = xLevels - 1;
+            const nextRow = rows[nextY];
+            const nextCol = cols[nextX];
+            const nextCell = cellAt(nextRow, nextCol);
+            const nextKey = `${nextCell.likelihood}-${nextCell.impact}`;
+            if (nextKey === effectiveFocusedKey) return;
+            setFocusedKey(nextKey);
+            // Imperatively focus the new cell DOM node. tabIndex
+            // updates in React's render cycle, so we focus after
+            // the commit via the gridRef + the cell's data-testid.
+            requestAnimationFrame(() => {
+                const next = gridRef.current?.querySelector<HTMLDivElement>(
+                    `[data-testid="risk-matrix-cell-${nextCell.likelihood}-${nextCell.impact}"]`,
+                );
+                next?.focus();
+            });
+        },
+        [rows, cols, yLevels, xLevels, effectiveFocusedKey],
+    );
+
     return (
         <div
             id={id}
@@ -387,6 +437,7 @@ export function RiskMatrix({
                         hierarchy axe-AA's `aria-required-children`
                         rule expects. */}
                     <div
+                        ref={gridRef}
                         role="grid"
                         aria-label={`${yAxisLabel} by ${xAxisLabel} matrix`}
                         data-testid="risk-matrix-grid"
@@ -413,12 +464,11 @@ export function RiskMatrix({
                                 >
                                     {rowVal}
                                 </div>
-                                {cols.map((colVal) => {
+                                {cols.map((colVal, xIdx) => {
                                     // yIdx tells us which rendered row;
                                     // we resolve the semantic cell from
                                     // (rowVal, colVal) under the
                                     // current swap state.
-                                    void yIdx; // silence unused; retained for clarity
                                     const cell = cellAt(rowVal, colVal);
                                     const cellKey = `${cell.likelihood}-${cell.impact}`;
                                     return (
@@ -431,6 +481,15 @@ export function RiskMatrix({
                                             mode={mode}
                                             bubbleLimit={bubbleLimit}
                                             config={config}
+                                            // RQ3-OB-E — roving tabindex + arrow
+                                            // routing. Only the focused cell is
+                                            // tabbable; arrows steer.
+                                            tabbable={interactive && cellKey === effectiveFocusedKey}
+                                            onArrowKey={
+                                                interactive
+                                                    ? (k) => handleArrowKey(yIdx, xIdx, k)
+                                                    : undefined
+                                            }
                                             aleOverlay={aleOverlayActive}
                                             totalAle={cell.totalAle}
                                             collisionRatio={cell.collisionRatio}

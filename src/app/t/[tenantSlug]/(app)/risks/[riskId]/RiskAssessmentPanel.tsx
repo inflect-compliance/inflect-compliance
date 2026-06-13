@@ -432,6 +432,12 @@ export function RiskAssessmentPanel({
                     <div className="space-y-default border-t border-border-subtle pt-4">
                         {residualBaselineDirty && (
                             <div
+                                // RQ3-OB-E — the conflict warning appears
+                                // when inherent shifts mid-draft. role=status
+                                // + aria-live=polite announces it to screen
+                                // readers when it mounts, not just visually.
+                                role="status"
+                                aria-live="polite"
                                 className="rounded-md border border-border-warning bg-bg-warning/20 p-2 text-xs text-content-warning"
                                 data-testid="residual-baseline-warning"
                             >
