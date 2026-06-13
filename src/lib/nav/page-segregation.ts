@@ -37,6 +37,24 @@ export type RouteClass = 'main' | 'subpage' | 'unknown';
  * comment naming the reason; never silently strip a BackAffordance
  * import from a page.
  */
+/**
+ * MAIN pages on which `<BackAffordance noFallback />` is intentionally
+ * mounted. The OB-H invariant "no MAIN page renders an IA-canonical
+ * back fallback" still holds — these pages mount the affordance in
+ * `noFallback` mode, which returns null when there's no in-tab
+ * referrer. The user only ever sees a back link when they actually
+ * arrived from somewhere in the app.
+ *
+ * Use this for top-level destinations that are routinely deep-linked
+ * from other sections (e.g. `/clauses` and `/findings` reached from
+ * `/audits`). The cohort sweep ratchet checks for `noFallback` on
+ * every entry here.
+ */
+export const REFERRER_ONLY_BACK_MAIN_PAGES: readonly string[] = [
+    '/clauses',   // deep-linked from /audits (Internal Audit)
+    '/findings',  // deep-linked from /audits (Internal Audit)
+] as const;
+
 export const BACK_AFFORDANCE_EXEMPT_SUBPAGES: readonly string[] = [
     '/auth/mfa',              // auth flow — back would bypass MFA challenge
     '/controls/new',          // redirect shim → /controls?create=1

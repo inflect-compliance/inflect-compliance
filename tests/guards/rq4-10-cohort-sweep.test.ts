@@ -31,6 +31,7 @@ import {
     BACK_AFFORDANCE_COHORT_TODO,
     BACK_AFFORDANCE_EXEMPT_SUBPAGES,
     MAIN_PAGES,
+    REFERRER_ONLY_BACK_MAIN_PAGES,
     SUBPAGES,
 } from '@/lib/nav/page-segregation';
 
@@ -159,19 +160,56 @@ describe('rq4-10 cohort sweep', () => {
         );
     });
 
-    it('no MAIN_PAGE mounts BackAffordance (OB-H)', () => {
+    it('no MAIN_PAGE mounts BackAffordance with a canonical fallback (OB-H)', () => {
+        // OB-H invariant: a MAIN page never carries an IA-canonical
+        // back link. The `noFallback` variant is the explicit
+        // exception — it only renders when an in-tab referrer
+        // exists, so the affordance is purely "where you came from"
+        // (no static "up" link to a non-existent parent).
+        const referrerOnly = new Set(REFERRER_ONLY_BACK_MAIN_PAGES);
         const leaked: string[] = [];
 
         for (const pattern of MAIN_PAGES) {
             const files = tsxFilesForPattern(pattern);
             for (const f of files) {
-                if (fileMountsBackAffordanceComponent(f)) {
-                    leaked.push(`${pattern} (${path.basename(f)})`);
+                if (!fileMountsBackAffordanceComponent(f)) continue;
+                if (referrerOnly.has(pattern)) {
+                    // Mount is allowed, but ONLY in noFallback mode.
+                    const source = fs.readFileSync(f, 'utf-8');
+                    if (!/<BackAffordance\s+noFallback\b/.test(source)) {
+                        leaked.push(
+                            `${pattern} (${path.basename(f)}) — mounts BackAffordance without noFallback`,
+                        );
+                    }
+                    continue;
                 }
+                leaked.push(`${pattern} (${path.basename(f)})`);
             }
         }
 
         expect(leaked).toEqual([]);
+    });
+
+    it('every entry in REFERRER_ONLY_BACK_MAIN_PAGES is a real MAIN_PAGE that mounts <BackAffordance noFallback />', () => {
+        const mainSet = new Set(MAIN_PAGES);
+        const orphans: string[] = [];
+        const missing: string[] = [];
+
+        for (const pattern of REFERRER_ONLY_BACK_MAIN_PAGES) {
+            if (!mainSet.has(pattern)) {
+                orphans.push(pattern);
+                continue;
+            }
+            const files = tsxFilesForPattern(pattern);
+            const mounted = files.some((f) =>
+                /<BackAffordance\s+noFallback\b/.test(
+                    fs.readFileSync(f, 'utf-8'),
+                ),
+            );
+            if (!mounted) missing.push(pattern);
+        }
+
+        expect({ orphans, missing }).toEqual({ orphans: [], missing: [] });
     });
 
     it('every exempt subpage is still listed in SUBPAGES (no orphan exemptions)', () => {

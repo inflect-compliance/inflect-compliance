@@ -3,6 +3,7 @@ import { getTenantCtx } from '@/app-layer/context';
 import { listClauses } from '@/app-layer/usecases/clause';
 import { ClausesBrowser } from './ClausesBrowser';
 import { Heading } from '@/components/ui/typography';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +27,7 @@ export default async function ClausesPage({
 
     return (
         <div className="space-y-section animate-fadeIn">
+            <BackAffordance noFallback />
             <Heading level={1}>{t('title')}</Heading>
             <p className="text-content-muted text-sm">{t('subtitle')}</p>
 
