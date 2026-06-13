@@ -2,6 +2,7 @@ export * from "./android-logo";
 export * from "./apple";
 export * from "./apple-logo";
 export * from "./arrow-bold-up";
+export * from "./arrow-left";
 export * from "./arrow-right";
 export * from "./arrow-trend-up";
 export * from "./arrow-turn-left";

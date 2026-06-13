@@ -65,11 +65,18 @@ export interface EntityDetailLayoutProps<TKey extends string = string> {
      * canonical pattern is to use one or the other.
      */
     breadcrumbs?: ReadonlyArray<BreadcrumbItem>;
-    /** Back-navigation link rendered above the title. Optional. */
-    back?: {
-        href: string;
-        label: string;
-    };
+    /**
+     * Back-navigation affordance rendered above the title. Two forms:
+     *
+     *   - `{ href, label }` — static link (legacy, still supported).
+     *   - `{ smart: true }` — RQ4-4 smart back affordance: forwards to
+     *     `<PageHeader>` which mounts `<BackAffordance>`, resolving the
+     *     destination from the in-tab referrer (or canonical parent on
+     *     a cold load / deep link).
+     */
+    back?:
+        | { href: string; label: string }
+        | { smart: true };
     /** Title of the detail page. Plain string OR rich element. */
     title: ReactNode;
     /**
