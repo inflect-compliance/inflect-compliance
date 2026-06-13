@@ -2,20 +2,28 @@
  * Roadmap-10 PR-9 — detail-page `back={...}` prop ban.
  *
  * R9 north-star decision (locked 2026-05-11): detail-page top-left
- * navigation is **breadcrumbs only**. The `back={...}` prop on
+ * navigation was **breadcrumbs only**. The `back={...}` prop on
  * `<EntityDetailLayout>` / `<PageHeader>` parallels the breadcrumb
- * trail with an extra back button — two ways to go up, neither
- * obvious to choose between, both consuming chrome.
+ * trail with an extra back button — at the time, two ways to go up
+ * felt redundant.
  *
- * Both primitives still EXPOSE the `back` prop (interfaces are
- * load-bearing through other consumers); but no app page should
- * pass it. Pass `breadcrumbs={...}` instead — every detail-page
- * primitive renders them.
+ * **2026-06-13 — RQ4 update.** The user-decision pinned in the RQ4
+ * planning phase REVERSED that: every subpage gets a thin
+ * "← Back to <Destination>" affordance ABOVE its title, alongside
+ * breadcrumbs. The two affordances answer different questions —
+ * breadcrumbs are "you are here", back is "go where you came from".
  *
- * Scan: any `<EntityDetailLayout` or `<PageHeader` JSX in
- * `src/app/**` that passes a `back={...}` prop is a violation.
- * The scanner strips JS/TS comments first so doc-block references
- * to the prop don't false-positive.
+ * So the ban is narrowed: the LEGACY static form
+ * `back={{ href: ..., label: ... }}` is still banned (it's the
+ * pre-RQ4 hand-rolled affordance that doesn't carry smart resolution).
+ * The NEW RQ4 smart form `back={{ smart: true }}` is the canonical
+ * mount — it routes through `<BackAffordance>` and resolves to the
+ * in-tab referrer (or the IA-canonical parent on a cold load).
+ *
+ * Scan: any `<EntityDetailLayout` or `<PageHeader` JSX in `src/app/**`
+ * that passes the LEGACY `back={{ href: ..., label: ... }}` static
+ * form is a violation. The scanner strips JS/TS comments first so
+ * doc-block references don't false-positive.
  */
 import * as fs from 'fs';
 import * as path from 'path';
@@ -49,15 +57,24 @@ function stripComments(src: string): string {
 const PRIMITIVE_BLOCK_RE =
     /<(?:EntityDetailLayout|PageHeader)\b[\s\S]*?(?:>|\/>)/g;
 
-describe('detail-page back prop ban (R10-PR9)', () => {
-    test('no <EntityDetailLayout> or <PageHeader> in src/app passes back={...}', () => {
+describe('detail-page back prop ban (R10-PR9 + RQ4-4)', () => {
+    test('no <EntityDetailLayout> or <PageHeader> in src/app passes the LEGACY back={{ href, label }} static form', () => {
         const offenders: { file: string; snippet: string }[] = [];
         for (const file of walk(APP_ROOT)) {
             const content = stripComments(fs.readFileSync(file, 'utf-8'));
             const blocks = content.match(PRIMITIVE_BLOCK_RE);
             if (!blocks) continue;
             for (const block of blocks) {
-                if (/\sback=\{/.test(block)) {
+                // Only flag the LEGACY form: `back={{ ...href... }}` or
+                // `back={ /* obj */ }` with `href:` in it. The new
+                // canonical form `back={{ smart: true }}` is the
+                // RQ4-4 smart back affordance and is explicitly
+                // allowed (it routes through <BackAffordance> which
+                // resolves the destination at render time).
+                if (
+                    /\sback=\{\s*\{[^}]*href\s*:/.test(block) ||
+                    /\sback=\{\s*\{[^}]*label\s*:/.test(block)
+                ) {
                     offenders.push({
                         file: path.relative(ROOT, file),
                         snippet: block.slice(0, 120),
@@ -71,20 +88,22 @@ describe('detail-page back prop ban (R10-PR9)', () => {
                 .map((o) => `  ${o.file}\n    ${o.snippet}`)
                 .join('\n');
             throw new Error(
-                `${offenders.length} site(s) pass back={...} to <EntityDetailLayout> or <PageHeader>:\n${sample}\n\nFix: remove the back prop. Both primitives render breadcrumbs, which are the canonical up-navigation. If breadcrumbs aren't already passed, pass \`breadcrumbs={[{ label, href }, …]}\` instead.`,
+                `${offenders.length} site(s) pass the LEGACY back={{ href, label }} static form to <EntityDetailLayout> or <PageHeader>:\n${sample}\n\nFix: replace with the RQ4-4 smart form: \`back={{ smart: true }}\`. The smart form routes through <BackAffordance> and resolves to the in-tab referrer (or canonical parent on cold load), so the destination tracks where the user actually came from.`,
             );
         }
     });
 
-    test('EntityDetailLayout primitive still exposes back?: prop (interface, not call sites)', () => {
-        // Lock the primitive's interface intentionally — only call
-        // sites are banned. The prop remains in the type so external
-        // consumers / library callers can pass it. The ratchet's job
-        // is to ban its use in OUR app pages.
+    test('EntityDetailLayout primitive still exposes back?: prop in a union form (legacy + RQ4 smart)', () => {
+        // Lock the primitive's interface — the prop remains in the
+        // type so external consumers / library callers can pass it.
+        // RQ4-4 widens it to a union that includes the new smart
+        // form; both arms must remain.
         const src = fs.readFileSync(
             path.resolve(ROOT, 'src/components/layout/EntityDetailLayout.tsx'),
             'utf-8',
         );
-        expect(src).toMatch(/back\?:\s*\{[^}]*href:\s*string/);
+        expect(src).toMatch(/href:\s*string/);
+        expect(src).toMatch(/label:\s*string/);
+        expect(src).toMatch(/smart:\s*true/);
     });
 });
