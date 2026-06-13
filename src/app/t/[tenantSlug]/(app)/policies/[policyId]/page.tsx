@@ -385,6 +385,7 @@ export default function PolicyDetailPage() {
     return (
         <EntityDetailLayout
             id="policy-detail-page"
+            back={{ smart: true }}
             breadcrumbs={breadcrumbs}
             tabs={tabs}
             activeTab={tab}

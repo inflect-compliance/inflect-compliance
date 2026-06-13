@@ -180,6 +180,7 @@ export default function AssetDetailPage() {
     return (
         <EntityDetailLayout
             id="asset-detail-page"
+            back={{ smart: true }}
             breadcrumbs={breadcrumbs}
             tabs={tabs}
             activeTab={activeTab}

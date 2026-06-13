@@ -264,6 +264,7 @@ export default function TestRunPage() {
     return (
         <EntityDetailLayout
             id="test-run-detail-page"
+            back={{ smart: true }}
             breadcrumbs={breadcrumbs}
 
             title={

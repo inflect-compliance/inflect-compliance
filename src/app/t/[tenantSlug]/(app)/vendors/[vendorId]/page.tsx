@@ -265,6 +265,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
     return (
         <EntityDetailLayout
             id="vendor-detail-page"
+            back={{ smart: true }}
             breadcrumbs={breadcrumbs}
 
             title={<span id="vendor-detail-name">{vendor.name}</span>}
