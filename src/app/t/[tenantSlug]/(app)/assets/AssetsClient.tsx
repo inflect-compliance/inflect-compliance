@@ -33,6 +33,18 @@ import { Plus } from '@/components/ui/icons/nucleo';
 import type { TrendPayload } from '@/app-layer/usecases/compliance-trends';
 import type { TimeSeriesPoint } from '@/components/ui/charts';
 import { NewAssetModal } from './NewAssetModal';
+import { AssetDetailSheet } from './AssetDetailSheet';
+import { getAssetCriticality } from './_form/asset-criticality';
+import { useKeyboardShortcut } from '@/lib/hooks/use-keyboard-shortcut';
+import type { StatusBadgeVariant } from '@/components/ui/status-badge';
+
+/** Item 34 — map the derived criticality tone to a StatusBadge variant. */
+const CRITICALITY_VARIANT: Record<string, StatusBadgeVariant> = {
+    critical: 'error',
+    danger: 'error',
+    warning: 'warning',
+    success: 'success',
+};
 
 interface AssetsClientProps {
     initialAssets: any[];
@@ -83,6 +95,9 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
     // auto-opening on `?create=1` (the redirect target from
     // `/assets/new`). Matches the canonical NewVendorModal wiring.
     const [isCreateOpen, setIsCreateOpen] = useState(false);
+    // Item 32 — quick-look side panel: the id of the asset whose panel
+    // is open (null = closed).
+    const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
     const searchParams = useSearchParams();
     const router = useRouter();
     useEffect(() => {
@@ -137,6 +152,33 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
         initialData: filtersMatchInitial ? initialAssets : undefined,
     });
     const assets = assetsQuery.data ?? [];
+
+    // Item 32 — the asset row backing the open quick-look panel.
+    const selectedAsset =
+        selectedAssetId != null
+            ? assets.find((a: { id: string }) => a.id === selectedAssetId) ?? null
+            : null;
+
+    // Item 27 — ↑/↓ move the panel selection to the previous/next asset
+    // in the current (filtered, sorted) list while the panel stays open,
+    // so a reviewer can walk the register without reaching for the mouse.
+    // Only active while the panel is open; clamped at the ends.
+    const moveSelection = (delta: number) => {
+        if (selectedAssetId == null || assets.length === 0) return;
+        const idx = assets.findIndex((a: { id: string }) => a.id === selectedAssetId);
+        if (idx === -1) return;
+        const next = Math.min(assets.length - 1, Math.max(0, idx + delta));
+        setSelectedAssetId(assets[next].id);
+    };
+    useKeyboardShortcut('ArrowDown', () => moveSelection(1), {
+        enabled: selectedAssetId != null,
+        description: 'Next asset',
+    });
+    useKeyboardShortcut('ArrowUp', () => moveSelection(-1), {
+        enabled: selectedAssetId != null,
+        description: 'Previous asset',
+    });
+
     const liveFilters = useMemo(() => buildAssetFilters(), []);
     // R-filter-gear (#3, 2026-06-07) — the gear controls the quantifiable
     // KPI cards (Total / Active / High criticality / Retired), not the
@@ -258,7 +300,12 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
             { id: 'code', label: 'Code', defaultVisible: false },
             { id: 'name', label: 'Name' },
             { id: 'type', label: 'Type' },
-            { id: 'classification', label: 'Classification' },
+            // Item 34 — the derived criticality (top-two-mean of C/I/A)
+            // leads the risk-relevant columns; classification is demoted
+            // off-by-default since criticality is the operative signal for
+            // prioritisation and classification duplicates much of it.
+            { id: 'criticality', label: 'Criticality' },
+            { id: 'classification', label: 'Classification', defaultVisible: false },
             { id: 'owner', label: 'Owner' },
             { id: 'controls', label: 'Controls' },
             { id: 'tasks', label: 'Tasks' },
@@ -299,21 +346,39 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
         {
             accessorKey: 'name',
             header: t.name,
-            // B2 — match Controls table standard: title cell is a
-            // `<Link>` so single-click on the name navigates.
-            cell: ({ row, getValue }: any) => (
-                <TableTitleCell
-                    href={tenantHref(`/assets/${row.original.id}`)}
-                    id={`asset-link-${row.original.id}`}
-                >
-                    {getValue()}
-                </TableTitleCell>
+            // Item 32 — single click anywhere on the row (the name
+            // included) opens the quick-look side panel, NOT a full-page
+            // navigation. So the title is a plain (non-link) cell; the
+            // row's onRowClick owns the interaction and the panel's
+            // "Full view" button enters the detail page.
+            cell: ({ getValue }: any) => (
+                <TableTitleCell>{getValue()}</TableTitleCell>
             ),
         },
         {
             accessorKey: 'type',
             header: t.type,
             cell: ({ getValue }: any) => <StatusBadge variant="info" size="sm">{String(getValue()).replace(/_/g, ' ')}</StatusBadge>,
+        },
+        {
+            // Item 34 — derived criticality (top-two-mean of C/I/A with a
+            // critical-ceiling override), shown as a toned badge.
+            id: 'criticality',
+            header: 'Criticality',
+            accessorFn: (a) =>
+                getAssetCriticality(a.confidentiality ?? 3, a.integrity ?? 3, a.availability ?? 3).score,
+            cell: ({ row }) => {
+                const crit = getAssetCriticality(
+                    row.original.confidentiality ?? 3,
+                    row.original.integrity ?? 3,
+                    row.original.availability ?? 3,
+                );
+                return (
+                    <StatusBadge variant={CRITICALITY_VARIANT[crit.tone] ?? 'neutral'} size="sm">
+                        {crit.label}
+                    </StatusBadge>
+                );
+            },
         },
         {
             id: 'classification',
@@ -450,7 +515,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                     getRowId={(a: any) => a.id}
                     columnVisibility={columnVisibility}
                     onColumnVisibilityChange={setColumnVisibility}
-                    onRowClick={(row) => router.push(tenantHref(`/assets/${row.original.id}`))}
+                    onRowClick={(row) => setSelectedAssetId(row.original.id)}
                     emptyState={
                         hasActive ? (
                             <EmptyState
@@ -485,6 +550,13 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                     className="hover:bg-bg-muted"
                 />
             </ListPageShell.Body>
+
+            <AssetDetailSheet
+                asset={selectedAsset}
+                open={selectedAssetId != null}
+                onOpenChange={(o) => { if (!o) setSelectedAssetId(null); }}
+                tenantHref={tenantHref}
+            />
 
             <NewAssetModal
                 open={isCreateOpen}
