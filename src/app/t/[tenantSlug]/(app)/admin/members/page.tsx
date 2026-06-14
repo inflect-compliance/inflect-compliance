@@ -39,6 +39,7 @@ import { InlineNotice } from '@/components/ui/inline-notice';
 import { cn } from '@/lib/cn';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 
 // ─── Types ───
 
@@ -601,6 +602,7 @@ export default function MembersAdminPage() {
     if (loading) {
         return (
             <div className="space-y-section animate-fadeIn">
+                <BackAffordance />
                 <PageBreadcrumbs
                     items={[
                         { label: 'Dashboard', href: tenantHref('/dashboard') },

@@ -45,6 +45,7 @@ import type {
 import { Heading } from '@/components/ui/typography';
 import { Card } from '@/components/ui/card';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 
 interface RiskMatrixAdminClientProps {
     tenantSlug: string;
@@ -264,6 +265,7 @@ export function RiskMatrixAdminClient({
             data-testid="risk-matrix-admin"
             className="animate-fadeIn space-y-section p-6"
         >
+            <BackAffordance />
             <header className="flex flex-wrap items-end justify-between gap-compact">
                 <div>
                     <PageBreadcrumbs

@@ -10,6 +10,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { InlineNotice } from '@/components/ui/inline-notice';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref, useMoneyFormatter } from '@/lib/tenant-context-provider';
 import { formatDate } from '@/lib/format-date';
 
@@ -102,6 +103,7 @@ export default function RiskAppetitePage() {
 
     return (
         <div className="space-y-section">
+            <BackAffordance />
             <PageBreadcrumbs items={[{ label: 'Admin', href: tenantHref('/admin') }, { label: 'Risk appetite' }]} />
             <div className="flex items-center justify-between">
                 <Heading level={1}>Risk Appetite</Heading>

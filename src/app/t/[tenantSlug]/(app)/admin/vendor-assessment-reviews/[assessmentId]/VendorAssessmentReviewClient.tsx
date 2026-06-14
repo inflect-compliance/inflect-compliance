@@ -31,6 +31,7 @@ import { SkeletonDetailPage } from '@/components/ui/skeleton';
 import { formatDate } from '@/lib/format-date';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 
@@ -281,14 +282,9 @@ export function VendorAssessmentReviewClient({
 
     return (
         <div className="space-y-section animate-fadeIn" data-testid="vendor-review-page">
+            <BackAffordance />
             {/* Header */}
             <div>
-                <Link
-                    href={tenantHref(`/vendors/${view.vendor.id}`)}
-                    className="text-content-muted text-xs hover:text-content-emphasis transition"
-                >
-                    ← Back to vendor
-                </Link>
                 <div className="flex items-start justify-between mt-1">
                     <div>
                         <p className="text-xs text-content-subtle">

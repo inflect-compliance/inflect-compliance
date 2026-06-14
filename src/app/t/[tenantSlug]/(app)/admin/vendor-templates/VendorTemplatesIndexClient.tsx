@@ -25,6 +25,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { cardVariants } from '@/components/ui/card';
 
 interface TemplateRow {
@@ -95,6 +96,7 @@ export function VendorTemplatesIndexClient() {
 
     return (
         <div className="space-y-section animate-fadeIn">
+            <BackAffordance />
             <header>
                 <PageBreadcrumbs
                     items={[

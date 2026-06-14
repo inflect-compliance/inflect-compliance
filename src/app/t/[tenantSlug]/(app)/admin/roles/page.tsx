@@ -44,6 +44,7 @@ import { ListPageShell } from '@/components/layout/ListPageShell';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading, Eyebrow } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { cn } from '@/lib/cn';
 
 // ─── Types ───
@@ -549,6 +550,7 @@ export default function CustomRolesPage() {
     if (loading) {
         return (
             <div className="space-y-section animate-fadeIn">
+                <BackAffordance />
                 <PageBreadcrumbs
                     items={[
                         { label: 'Dashboard', href: tenantHref('/dashboard') },
