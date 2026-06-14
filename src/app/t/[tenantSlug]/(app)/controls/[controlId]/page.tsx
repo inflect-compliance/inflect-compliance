@@ -775,7 +775,9 @@ export default function ControlDetailPage() {
                         options={STATUS_CB_OPTIONS}
                         disabled={changingStatus}
                         placeholder="Status"
-                        buttonProps={{ className: 'text-sm' }}
+                        // Item 29 — brand-color the status action (matches the
+                        // primary "+ …" create buttons).
+                        buttonProps={{ variant: 'primary', className: 'text-sm' }}
                     />
                     <Button variant="secondary" onClick={() => { setAppChoice(control.applicability); setAppJustification(control.applicabilityJustification || ''); setShowApplicability(!showApplicability); }} id="toggle-applicability-btn">
                         Applicability

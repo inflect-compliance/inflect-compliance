@@ -53,6 +53,12 @@ export const UpdateAssetSchema = z.object({
     businessProcesses: z.string().optional().nullable(),
     dataResidency: z.string().optional().nullable(),
     retention: z.string().optional().nullable(),
+    // Item 29 — asset lifecycle status. Previously absent here, so the
+    // schema's `.strip()` silently dropped any `status` in the body (the
+    // edit modal's status field never persisted, and there was no
+    // standalone status action). Now accepted so the detail-page status
+    // control + the modal both take effect.
+    status: z.enum(['ACTIVE', 'RETIRED']).optional(),
 }).strip().openapi('AssetUpdateRequest', {
     description: 'Partial update for an asset. Every field is optional; only provided fields are persisted.',
 });

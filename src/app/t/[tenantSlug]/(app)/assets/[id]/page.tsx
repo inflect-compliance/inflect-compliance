@@ -16,6 +16,7 @@ import LinkedTasksPanel from '@/components/LinkedTasksPanel';
 import { EmptyState } from '@/components/ui/empty-state';
 import { CopyText } from '@/components/ui/copy-text';
 import { Button } from '@/components/ui/button';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Pen2 } from '@/components/ui/icons/nucleo';
 import { Tooltip } from '@/components/ui/tooltip';
 import { type StatusBadgeVariant } from '@/components/ui/status-badge';
@@ -148,6 +149,34 @@ export default function AssetDetailPage() {
         };
     }, [apiUrl]);
 
+    // Item 29 — brand-color status action on the asset detail header.
+    // AssetStatus is a two-state lifecycle (ACTIVE / RETIRED).
+    const ASSET_STATUS_OPTIONS: ComboboxOption[] = [
+        { value: 'ACTIVE', label: 'Active' },
+        { value: 'RETIRED', label: 'Retired' },
+    ];
+    const [changingStatus, setChangingStatus] = useState(false);
+    const changeStatus = async (status: string) => {
+        setChangingStatus(true);
+        setError('');
+        try {
+            const res = await fetch(apiUrl(`/assets/${assetId}`), {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status }),
+            });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.message || `Failed to change status (${res.status})`);
+            }
+            await fetchAsset();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to change status');
+        } finally {
+            setChangingStatus(false);
+        }
+    };
+
     const critColor = (c: string): StatusBadgeVariant => c === 'HIGH' ? 'error' : c === 'MEDIUM' ? 'warning' : 'success';
 
     const breadcrumbs = [
@@ -185,6 +214,23 @@ export default function AssetDetailPage() {
             tabs={tabs}
             activeTab={activeTab}
             onTabChange={(k) => setActiveTab(k)}
+            actions={
+                permissions.canWrite ? (
+                    <Combobox
+                        hideSearch
+                        id="asset-status-select"
+                        selected={ASSET_STATUS_OPTIONS.find(o => o.value === (asset.status || 'ACTIVE')) ?? null}
+                        setSelected={(opt) => { if (opt) changeStatus(opt.value); }}
+                        options={ASSET_STATUS_OPTIONS}
+                        disabled={changingStatus}
+                        placeholder="Status"
+                        // Item 29 — brand-color the status action (matches the
+                        // primary "+ …" create buttons), consistent with risk /
+                        // task / control detail headers.
+                        buttonProps={{ variant: 'primary', className: 'text-sm' }}
+                    />
+                ) : undefined
+            }
 
             title={
                 <span className="inline-flex items-center gap-2.5">
