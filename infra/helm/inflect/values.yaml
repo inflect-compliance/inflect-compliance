@@ -329,7 +329,7 @@ worker:
     tag: ""          # empty = use .Values.image.tag (which falls back to .Chart.AppVersion)
     pullPolicy: ""   # empty = use .Values.image.pullPolicy
 
-  # Worker entrypoint. The Node 22 `--import tsx` syntax loads the
+  # Worker entrypoint. The Node 24 `--import tsx` syntax loads the
   # tsx loader, so scripts/worker.ts can stay TypeScript without a
   # build step.
   command:

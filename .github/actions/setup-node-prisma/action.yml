@@ -10,9 +10,9 @@ description: >-
 
 inputs:
   node-version:
-    description: "Node.js major version (e.g. 22). Defaults to 22."
+    description: "Node.js major version (e.g. 24). Defaults to 24."
     required: false
-    default: "22"
+    default: "24"
 
 runs:
   using: composite

@@ -84,15 +84,20 @@ describe('deterministic install model', () => {
         expect(pkg.engines).toBeDefined();
         expect(typeof pkg.engines.node).toBe('string');
         expect(typeof pkg.engines.npm).toBe('string');
-        // The supported runtime is Node 22 across all environments.
-        expect(pkg.engines.node).toContain('22');
+        // The supported runtime is Node 24 across all environments.
+        // (Bumped from 22 → 24 in cleanup-5-node-24-bump to retire the
+        // four npm-CLI-bundled CVEs that lived in `.trivyignore` —
+        // picomatch DoS / method injection, brace-expansion DoS,
+        // ip-address XSS. Node 24 ships an npm CLI whose transitive
+        // lockfile carries the patched versions of all four.)
+        expect(pkg.engines.node).toContain('24');
     });
 
     it('the Node version is pinned consistently (.nvmrc / engines / workflows)', () => {
         // .nvmrc is the source of truth for version-manager users.
         const nvmrc = read('.nvmrc').trim();
         const nvmMajor = nvmrc.split('.')[0];
-        expect(nvmMajor).toBe('22');
+        expect(nvmMajor).toBe('24');
 
         // engines.node must admit that major.
         const pkg = JSON.parse(read('package.json'));
