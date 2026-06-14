@@ -141,6 +141,12 @@ export function AppShell({
         }
     }, [pathname]);
 
+    // Item 33 — the process-map canvas (exact `/t/<slug>/processes`
+    // route) is a full-bleed editor surface that must span the content
+    // area, so it opts out of the centered max-w reading column below.
+    // Sub-routes (`/processes/governance`, …) keep the normal column.
+    const isCanvasFullBleed = /\/processes\/?$/.test(pathname ?? '');
+
     // Variant-driven slot resolution.
     // R14-PR12 unified the chrome — the mobile-only top bar that
     // AppShell used to render with its own hamburger + theme
@@ -235,8 +241,24 @@ export function AppShell({
                     centred at every step. Readable content (detail
                     pages, modals) is clamped separately by their
                     own shell so prose still tops out at a sane
-                    measure. */}
-                <div className="p-4 md:p-6 max-w-7xl 2xl:max-w-screen-2xl 3xl:max-w-none mx-auto md:flex md:flex-col md:flex-1 md:min-h-0 md:overflow-y-auto md:w-full">
+                    measure.
+
+                    Item 33 — full-bleed escape for the process-map canvas.
+                    That route is an edge-to-edge editor surface (a
+                    WorkspaceShell + pannable canvas), not a reading column;
+                    the `max-w-*` cap + `mx-auto` centering left it floating
+                    in the middle of the page instead of spanning it. On the
+                    exact `/processes` route we drop the width cap + centering
+                    (padding stays for breathing room). Sub-routes like
+                    `/processes/governance` keep the normal reading column. */}
+                <div
+                    className={cn(
+                        'p-4 md:p-6 md:flex md:flex-col md:flex-1 md:min-h-0 md:overflow-y-auto md:w-full',
+                        isCanvasFullBleed
+                            ? null
+                            : 'max-w-7xl 2xl:max-w-screen-2xl 3xl:max-w-none mx-auto',
+                    )}
+                >
                     {children}
                 </div>
                 </BreadcrumbsProvider>

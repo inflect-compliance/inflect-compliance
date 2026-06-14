@@ -75,7 +75,9 @@ export function TableEmptyState({
         return (
             <div
                 className={cn(
-                    "text-content-muted flex h-96 w-full items-center justify-center text-sm",
+                    // Item 35 — min-h-48 (192px) that can grow, not a fixed
+                    // h-96 (384px), so a row-less sub-table stays compact.
+                    "text-content-muted flex min-h-48 w-full items-center justify-center text-sm",
                     className,
                 )}
                 data-testid="table-empty-state"
@@ -104,7 +106,8 @@ export function TableEmptyState({
     return (
         <div
             className={cn(
-                "flex h-96 w-full items-center justify-center",
+                // Item 35 — min-h-48 floor (192px), not fixed h-96 (384px).
+                "flex min-h-48 w-full items-center justify-center",
                 className,
             )}
             data-testid="table-empty-state"
