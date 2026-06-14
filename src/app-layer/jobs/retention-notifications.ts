@@ -74,12 +74,35 @@ export async function runEvidenceRetentionNotifications(
         where,
         select: {
             id: true, tenantId: true, title: true, owner: true, controlId: true,
-            retentionUntil: true,
+            ownerUserId: true, retentionUntil: true,
         },
     });
 
+    // Cache of tenant-OWNER userId per tenant so we don't re-query for each
+    // evidence row. The fallback chain for `createdByUserId` (required NOT
+    // NULL on Task):
+    //   1. The evidence's own `ownerUserId` if set.
+    //   2. The tenant's first ACTIVE OWNER membership.
+    // If neither exists the evidence is skipped — better to lose a
+    // notification than to crash the whole sweep.
+    const tenantOwnerCache = new Map<string, string | null>();
+    async function tenantOwnerUserId(tenantId: string): Promise<string | null> {
+        if (tenantOwnerCache.has(tenantId)) {
+            return tenantOwnerCache.get(tenantId)!;
+        }
+        const owner = await prisma.tenantMembership.findFirst({
+            where: { tenantId, role: 'OWNER', status: 'ACTIVE' },
+            select: { userId: true },
+            orderBy: { createdAt: 'asc' },
+        });
+        const id = owner?.userId ?? null;
+        tenantOwnerCache.set(tenantId, id);
+        return id;
+    }
+
     let tasksCreated = 0;
     let skippedDuplicate = 0;
+    let skippedNoActor = 0;
 
     for (const ev of expiring) {
         // Check for existing task with same evidence link (idempotent)
@@ -105,10 +128,19 @@ export async function runEvidenceRetentionNotifications(
         // Create Task + link
         // retentionUntil is non-null: the where clause filters `retentionUntil: { not: null }`
         const daysLeft = Math.ceil((new Date(ev.retentionUntil!).getTime() - Date.now()) / 86_400_000);
-        // KNOWN BUG: this create misses the required `createdByUserId`
-        // field (Task.createdByUserId is NOT NULL). Background jobs have
-        // no actor userId — a system-user sentinel is needed.
-        // Tracked in #BUG-retention-task-creator.
+        // Background job has no actor — attribute to the evidence's own
+        // owner if available, else the tenant's first ACTIVE OWNER.
+        // Either way Task.createdByUserId is properly populated (no more
+        // `as any` cast; runtime crash that would have hit the legacy
+        // path on every run is now prevented). If neither resolves the
+        // row is skipped — better to lose ONE notification than crash
+        // the sweep.
+        const createdByUserId =
+            ev.ownerUserId ?? (await tenantOwnerUserId(ev.tenantId));
+        if (!createdByUserId) {
+            skippedNoActor++;
+            continue;
+        }
         const task = await prisma.task.create({
             data: {
                 tenantId: ev.tenantId,
@@ -116,10 +148,10 @@ export async function runEvidenceRetentionNotifications(
                 title: `Refresh expiring evidence: ${ev.title}`,
                 description: `Evidence "${ev.title}" expires in ${daysLeft} days (${formatDate(ev.retentionUntil)}). Please upload refreshed evidence or extend the retention date.`,
                 status: 'OPEN',
-                priority: daysLeft <= 7 ? 'HIGH' : 'MEDIUM',
+                priority: daysLeft <= 7 ? 'P1' : 'P2',
+                createdByUserId,
                 ...(ev.controlId ? { controlId: ev.controlId } : {}),
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- createdByUserId missing: background job has no actor; requires system-user id (tracked #BUG-retention-task-creator)
-            } as any,
+            },
         });
 
         // Create task link to evidence

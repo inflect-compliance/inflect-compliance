@@ -52,8 +52,10 @@ const CAPS: Record<string, number> = {
     // across ~65 files drove every pattern down; each cap is lowered to
     // the exact post-cleanup floor so the gain cannot silently erode.
     // The `as any` cap counts comment mentions too (this ratchet does
-    // not strip comments) — the code-level count is 4, tracked by
-    // tests/guardrails/no-explicit-any-ratchet.test.ts.
+    // not strip comments) — the code-level count is now 0, tracked by
+    // tests/guardrails/no-explicit-any-ratchet.test.ts. The 15
+    // remaining occurrences are all in docstrings / explanatory
+    // comments (multiple-mentions-per-line counted separately).
     // R10-PR3 follow-up (2026-05-24) — `<any>` raised from 61 → 63.
     // The raw-`<table>` → DataTable migration of the vendor
     // assessments + subprocessors sub-tables introduced two
@@ -64,7 +66,7 @@ const CAPS: Record<string, number> = {
     ': any': 357,
     '<any>': 63,
     'useState<any>': 24,
-    'as any': 18,
+    'as any': 15,
     '// @ts-ignore': 0,
 };
 

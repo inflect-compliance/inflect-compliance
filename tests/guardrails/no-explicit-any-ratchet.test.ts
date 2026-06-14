@@ -59,8 +59,18 @@ const SRC_DIR = path.join(REPO_ROOT, 'src');
  *     STEP_ORDER vs ONBOARDING_STEPS divergence (×3, a latent bug
  *     out of P1 scope) and retention-notifications' system-user gap
  *     (×1) — each carries an inline eslint-disable + reason.
+ *   • 4 → 0: cleanup wave (2026-06-14) — onboarding's STEP_ORDER
+ *     aligned to the schema's `ONBOARDING_STEPS` (long names), so
+ *     the three `body.step as any` casts in the route handler are
+ *     redundant and removed. retention-notifications now attributes
+ *     the generated Task to `Evidence.ownerUserId` (or the tenant's
+ *     first ACTIVE OWNER as fallback), so `createdByUserId` is
+ *     properly populated and the `as any` cast goes away. Both
+ *     casts were hiding actual runtime bugs (silent step-name
+ *     mismatch; Task.priority sent as 'HIGH'/'MEDIUM' instead of
+ *     P1/P2). High-risk-perimeter zero-cast goal: REACHED for `src/`.
  */
-const CURRENT_BASELINE = 4;
+const CURRENT_BASELINE = 0;
 
 const AS_ANY_RE = /\bas\s+any\b/;
 

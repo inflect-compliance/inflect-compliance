@@ -17,17 +17,17 @@ export const POST = withApiErrorHandling(withValidatedBody(StepBodySchema, async
     const ctx = await getTenantCtx(await params, req);
 
     if (body.action === 'save') {
-        const state = await saveOnboardingStep(ctx, body.step as any, body.data ?? {});
+        const state = await saveOnboardingStep(ctx, body.step, body.data ?? {});
         return jsonResponse(state);
     }
 
     if (body.action === 'skip') {
-        const state = await skipOnboardingStep(ctx, body.step as any);
+        const state = await skipOnboardingStep(ctx, body.step);
         return jsonResponse(state);
     }
 
     // action === 'complete'
-    const state = await completeOnboardingStep(ctx, body.step as any);
+    const state = await completeOnboardingStep(ctx, body.step);
     return jsonResponse(state);
 }));
 
