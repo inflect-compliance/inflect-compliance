@@ -18,11 +18,11 @@ import { logger } from '@/lib/observability/logger';
 const STEP_ORDER = [
     'COMPANY_PROFILE',
     'FRAMEWORK_SELECTION',
-    'ASSETS',
-    'CONTROLS',
-    'RISKS',
-    'TEAM',
-    'REVIEW',
+    'ASSET_SETUP',
+    'CONTROL_BASELINE_INSTALL',
+    'INITIAL_RISK_REGISTER',
+    'TEAM_SETUP',
+    'REVIEW_AND_FINISH',
 ] as const;
 
 type OnboardingStep = (typeof STEP_ORDER)[number];
