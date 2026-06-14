@@ -10,6 +10,7 @@ import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { Card, cardVariants } from '@/components/ui/card';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { cn } from '@/lib/cn';
 
 const SCALE_OPTIONS: ComboboxOption[] = [1,2,3,4,5].map(v => ({ value: String(v), label: String(v) }));
@@ -246,6 +247,7 @@ export default function AIRiskAssessmentPage() {
 
     return (
         <div className="space-y-section animate-fadeIn max-w-5xl">
+            <BackAffordance />
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>

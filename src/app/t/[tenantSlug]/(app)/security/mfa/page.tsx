@@ -17,6 +17,7 @@ import { useToast } from '@/components/ui/hooks/use-toast';
 import { useCopyToClipboard } from '@/components/ui/hooks';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Heading } from '@/components/ui/typography';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 
 interface MfaStatus {
     isEnrolled: boolean;
@@ -162,6 +163,7 @@ export default function UserMfaPage() {
 
     return (
         <div className="space-y-section animate-fadeIn max-w-2xl">
+            <BackAffordance />
             <Heading level={1} className="flex items-center gap-tight">
                 <ShieldCheck className="w-6 h-6 text-[var(--brand-default)]" />
                 Multi-Factor Authentication

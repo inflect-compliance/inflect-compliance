@@ -17,6 +17,7 @@ import { CACHE_KEYS } from '@/lib/swr-keys';
 import { Heading } from '@/components/ui/typography';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 
 type Health = 'green' | 'amber' | 'red' | 'unknown';
 
@@ -56,6 +57,7 @@ export default function GovernanceGraphPage() {
 
     return (
         <div className="space-y-section p-default" data-testid="governance-graph-page">
+            <BackAffordance />
             <PageBreadcrumbs
                 items={[
                     { label: 'Dashboard', href: tenantHref('/dashboard') },

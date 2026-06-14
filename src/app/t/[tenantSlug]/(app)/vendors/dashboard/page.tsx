@@ -77,6 +77,7 @@ export default function VendorDashboardPage() {
     return (
         <DashboardLayout
             header={{
+                back: { smart: true },
                 title: 'Vendor Dashboard',
                 description: `${metrics.totalVendors} total vendors`,
                 actions: (

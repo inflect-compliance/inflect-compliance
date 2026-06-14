@@ -56,6 +56,7 @@ export const REFERRER_ONLY_BACK_MAIN_PAGES: readonly string[] = [
 ] as const;
 
 export const BACK_AFFORDANCE_EXEMPT_SUBPAGES: readonly string[] = [
+    '/assets/new',            // redirect shim → /assets?create=1
     '/audits/new',            // redirect shim → /audits?create=1
     '/auth/mfa',              // auth flow — back would bypass MFA challenge
     '/controls/new',          // redirect shim → /controls?create=1
@@ -63,8 +64,11 @@ export const BACK_AFFORDANCE_EXEMPT_SUBPAGES: readonly string[] = [
     '/issues/dashboard',      // legacy redirect → /tasks/dashboard
     '/issues/new',            // legacy redirect → /tasks/new
     '/onboarding',            // forced flow — back would skip a required step
+    '/policies/new',          // redirect shim → /policies?create=1
     '/reports/soa/print',     // print view, chrome-less by design
     '/risks/new',             // redirect shim → /risks?create=1
+    '/tasks/new',             // redirect shim → /tasks?create=1
+    '/vendors/new',           // redirect shim → /vendors?create=1
 ] as const;
 
 /**
@@ -89,35 +93,6 @@ export const BACK_AFFORDANCE_EXEMPT_SUBPAGES: readonly string[] = [
  *   3. Remove the entry from this list — CI confirms the mount.
  */
 export const BACK_AFFORDANCE_COHORT_TODO: readonly string[] = [
-    '/assets/new',
-    '/controls/dashboard',
-    '/controls/sankey',
-    '/controls/templates',
-    '/frameworks/[frameworkKey]/diff',
-    '/frameworks/[frameworkKey]/install',
-    '/frameworks/[frameworkKey]/templates',
-    '/policies/new',
-    '/policies/templates',
-    '/processes/governance',
-    '/reports/soa',
-    '/risks/ai',
-    '/risks/board',
-    '/risks/correlations',
-    '/risks/dashboard',
-    '/risks/hierarchy',
-    '/risks/import',
-    '/risks/kri',
-    '/risks/loss-events',
-    '/risks/reports',
-    '/risks/scenarios',
-    '/security/mfa',
-    '/tasks/dashboard',
-    '/tasks/new',
-    '/tests/dashboard',
-    '/tests/due',
-    '/vendors/[vendorId]/assessment/[assessmentId]',
-    '/vendors/dashboard',
-    '/vendors/new',
 ] as const;
 
 /**

@@ -115,6 +115,7 @@ export default function RiskBoardPage() {
     return (
         <DashboardLayout
             header={{
+                back: { smart: true },
                 title: 'Risk Board',
                 description: `${tenant.tenantName} — board-altitude view of the program`,
                 actions: (

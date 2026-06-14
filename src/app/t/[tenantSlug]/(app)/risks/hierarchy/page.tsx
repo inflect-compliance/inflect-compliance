@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref, useMoneyFormatter } from '@/lib/tenant-context-provider';
 
 interface Agg { nodeId: string; nodeName: string; riskCount: number; totalAle: number; children: Agg[] }
@@ -62,6 +63,7 @@ export default function RiskHierarchyPage() {
 
     return (
         <div className="space-y-section">
+            <BackAffordance />
             <PageBreadcrumbs items={[{ label: 'Risks', href: tenantHref('/risks') }, { label: 'Hierarchy' }]} />
             <Heading level={1}>Risk Hierarchy</Heading>
 

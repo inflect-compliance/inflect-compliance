@@ -8,6 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { Heading } from '@/components/ui/typography';
 import { KPIStat } from '@/components/ui/metric';
@@ -97,11 +98,9 @@ export default function InstallWizardPage() {
 
     return (
         <div className="max-w-2xl mx-auto space-y-section">
+            <BackAffordance />
             {/* Header */}
             <div>
-                <Link href={tenantHref(`/frameworks/${frameworkKey}`)} className="text-content-muted hover:text-content-emphasis transition-colors text-sm">
-                    ← Back to {framework.name}
-                </Link>
                 <Heading level={1} className="mt-2" id="install-wizard-heading">
                     Install {framework.name} Pack
                 </Heading>

@@ -11,6 +11,7 @@ import { FileText, SearchX } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { Card, cardVariants } from '@/components/ui/card';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { cn } from '@/lib/cn';
 
 export default function TemplatesPage() {
@@ -69,6 +70,7 @@ export default function TemplatesPage() {
 
     return (
         <div className="space-y-section animate-fadeIn">
+            <BackAffordance />
             <div className="flex items-center justify-between">
                 <div>
                     <Heading level={1}>Policy Templates</Heading>

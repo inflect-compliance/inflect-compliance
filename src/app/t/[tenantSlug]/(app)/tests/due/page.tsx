@@ -10,6 +10,7 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { ListPageShell } from '@/components/layout/ListPageShell';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
 import { IconAction } from '@/components/ui/icon-action';
@@ -101,6 +102,7 @@ export default function DueQueuePage() {
     return (
         <ListPageShell className="animate-fadeIn gap-section">
             <ListPageShell.Header>
+                <BackAffordance />
                 <div className="flex items-center justify-between">
                     <div>
                         <Heading level={1} id="due-queue-title">Due Queue</Heading>

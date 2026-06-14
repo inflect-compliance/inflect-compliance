@@ -14,6 +14,7 @@
 import { getTenantCtx } from '@/app-layer/context';
 import { getTraceabilityGraph } from '@/app-layer/usecases/traceability-graph';
 import { ControlsSankeyClient } from './ControlsSankeyClient';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +29,7 @@ export default async function ControlsSankeyPage({
 
     return (
         <div className="animate-fadeIn">
+            <BackAffordance />
             <ControlsSankeyClient
                 initialGraph={JSON.parse(JSON.stringify(graph))}
                 tenantSlug={tenantSlug}

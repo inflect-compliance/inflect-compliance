@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref, useMoneyFormatter } from '@/lib/tenant-context-provider';
 
 interface Scenario { id: string; name: string; status: string; investmentCost: number | null; computedRoi: number | null; createdAt: string }
@@ -59,6 +60,7 @@ export default function RiskScenariosPage() {
 
     return (
         <div className="space-y-section">
+            <BackAffordance />
             <PageBreadcrumbs items={[{ label: 'Risks', href: tenantHref('/risks') }, { label: 'Scenarios' }]} />
             <Heading level={1}>Risk Scenarios</Heading>
 

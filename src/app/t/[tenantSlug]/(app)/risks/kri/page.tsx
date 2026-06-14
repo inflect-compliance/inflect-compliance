@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 
 interface Kri {
@@ -61,6 +62,7 @@ export default function KriPage() {
 
     return (
         <div className="space-y-section">
+            <BackAffordance />
             <PageBreadcrumbs items={[{ label: 'Risks', href: tenantHref('/risks') }, { label: 'KRIs' }]} />
             <Heading level={1}>Key Risk Indicators</Heading>
 
