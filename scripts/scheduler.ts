@@ -27,6 +27,7 @@ import Redis from 'ioredis';
 import pino from 'pino';
 import { QUEUE_NAME } from '../src/app-layer/jobs/types';
 import { SCHEDULED_JOBS } from '../src/app-layer/jobs/schedules';
+import { registerSchedules } from '../src/app-layer/jobs/register-schedules';
 
 // ─── Logger ───
 
@@ -54,23 +55,30 @@ if (!REDIS_URL) {
 // signal that the worker will fail too. Refusing to register
 // schedules in that state surfaces the misconfiguration on the
 // deploy that introduces it, not three jobs later.
-if (process.env.NODE_ENV === 'production') {
-    (async () => {
-        const { checkProductionEncryptionKey } = await import(
-            '../src/lib/security/startup-encryption-check'
-        );
-        const config = checkProductionEncryptionKey(process.env);
-        if (!config.ok) {
-            log.fatal('[startup] FATAL: ' + config.reason);
-            process.exit(1);
-        }
-    })();
+//
+// Awaited at the TOP of main() — previously this ran as a
+// fire-and-forget IIFE at module load, so registration could begin
+// (and connect to Redis) before the check resolved and before its
+// `process.exit(1)` could take effect. Now the gate strictly precedes
+// any registration work.
+async function assertProductionEncryptionKey(): Promise<void> {
+    if (process.env.NODE_ENV !== 'production') return;
+    const { checkProductionEncryptionKey } = await import(
+        '../src/lib/security/startup-encryption-check'
+    );
+    const config = checkProductionEncryptionKey(process.env);
+    if (!config.ok) {
+        log.fatal('[startup] FATAL: ' + config.reason);
+        process.exit(1);
+    }
 }
 
 async function main() {
     const args = process.argv.slice(2);
     const listOnly = args.includes('--list');
     const cleanAll = args.includes('--clean');
+
+    await assertProductionEncryptionKey();
 
     const connection = new Redis(REDIS_URL!, {
         maxRetriesPerRequest: null,
@@ -99,34 +107,9 @@ async function main() {
 
 async function registerAll(queue: Queue): Promise<void> {
     log.info({ count: SCHEDULED_JOBS.length }, 'registering repeatable jobs');
-
-    for (const schedule of SCHEDULED_JOBS) {
-        // BullMQ upserts repeatables — if the same name+pattern exists, it's a no-op
-        // An entry's `tz` (or the legacy `options.tz`) is passed into
-        // the BullMQ repeat options so the cron `pattern` is evaluated
-        // in that zone — task-due-notification fires at 08:00 local.
-        const tz = schedule.tz ?? schedule.options?.tz;
-        await queue.upsertJobScheduler(
-            schedule.name,
-            {
-                pattern: schedule.pattern,
-                ...(tz ? { tz } : {}),
-                ...(schedule.options?.limit ? { limit: schedule.options.limit } : {}),
-            },
-            {
-                name: schedule.name,
-                data: schedule.defaultPayload,
-            },
-        );
-
-        log.info({
-            jobName: schedule.name,
-            pattern: schedule.pattern,
-            ...(tz ? { tz } : {}),
-            description: schedule.description,
-        }, 'repeatable registered');
-    }
-
+    // Single source of truth for the upsert shape — shared with the
+    // worker's boot-time self-registration (item 28).
+    await registerSchedules(queue, log);
     log.info('all schedules registered ✓');
 }
 

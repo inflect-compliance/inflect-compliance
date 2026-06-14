@@ -19,13 +19,14 @@
  * @module scripts/worker
  */
 import 'dotenv/config';
-import { Worker, Job } from 'bullmq';
+import { Worker, Job, Queue } from 'bullmq';
 import Redis from 'ioredis';
 import pino from 'pino';
 import {
     QUEUE_NAME,
     type JobName,
 } from '../src/app-layer/jobs/types';
+import { registerSchedules } from '../src/app-layer/jobs/register-schedules';
 
 // ─── Standalone logger ───
 
@@ -127,6 +128,35 @@ log.info({ queueName: QUEUE_NAME, redisUrl: REDIS_URL.replace(/\/\/.*@/, '//***@
 })();
 
 const connection = createWorkerConnection();
+
+// ─── Boot-time schedule self-registration (item 28) ───
+//
+// A running worker must ALWAYS imply the repeatable cron schedules
+// exist. Previously the deploy relied solely on the one-shot
+// `scripts/scheduler.ts` running before the worker
+// (`node scheduler && node worker`); if that step was skipped or the
+// VM's hand-managed compose drifted off it, the repeatable jobs were
+// never registered and nothing ever enqueued the daily
+// `task-due-notification` scan — the in-app deadline reminders
+// silently never fired. `upsertJobScheduler` is idempotent, so
+// registering here on every boot is safe and removes that single
+// point of failure. Failure-soft: a registration error is logged but
+// must NOT stop the worker from coming up to drain already-enqueued
+// jobs (the standalone scheduler step is still the explicit path).
+(async () => {
+    const schedulerQueue = new Queue(QUEUE_NAME, { connection: createWorkerConnection() });
+    try {
+        const count = await registerSchedules(schedulerQueue, log);
+        log.info({ count }, 'repeatable schedules registered on worker boot');
+    } catch (err) {
+        log.error(
+            { err: err instanceof Error ? err.message : String(err) },
+            'failed to register repeatable schedules on boot — cron jobs may not fire until the scheduler step runs',
+        );
+    } finally {
+        await schedulerQueue.close();
+    }
+})();
 
 const worker = new Worker(
     QUEUE_NAME,
