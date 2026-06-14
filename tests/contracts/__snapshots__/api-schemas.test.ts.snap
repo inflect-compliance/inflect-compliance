@@ -408,6 +408,13 @@ exports[`API contract — per-schema snapshots schema: AssetUpdateRequest 1`] = 
         "string",
         "null"
       ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ACTIVE",
+        "RETIRED"
+      ]
     }
   },
   "description": "Partial update for an asset. Every field is optional; only provided fields are persisted."
