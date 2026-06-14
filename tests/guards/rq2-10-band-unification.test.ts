@@ -19,7 +19,7 @@
  *      same diff.
  */
 
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -29,12 +29,26 @@ const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf-8');
 const risksClient = read('src/app/t/[tenantSlug]/(app)/risks/RisksClient.tsx');
 const pdf = read('src/app-layer/reports/pdf/riskRegister.ts');
 
+/**
+ * `execFileSync` (argv form) — bypasses the shell so neither the
+ * scan-root path nor the symbol name can be interpreted as shell
+ * tokens. Silences CodeQL's
+ * `js/shell-command-injection-from-environment`.
+ */
 function srcImportersOf(symbol: string): string[] {
-    const out = execSync(
-        `grep -rl "${symbol}" ${path.join(ROOT, 'src')} --include="*.ts" --include="*.tsx" || true`,
-        { encoding: 'utf-8' },
-    );
-    return out.split('\n').filter(Boolean).map((p) => path.relative(ROOT, p)).sort();
+    let stdout: string;
+    try {
+        stdout = execFileSync(
+            'grep',
+            ['-rl', symbol, path.join(ROOT, 'src'), '--include=*.ts', '--include=*.tsx'],
+            { encoding: 'utf-8' },
+        );
+    } catch (e) {
+        const err = e as { status: number; stdout?: string };
+        if (err.status === 1) stdout = err.stdout ?? '';
+        else throw e;
+    }
+    return stdout.split('\n').filter(Boolean).map((p) => path.relative(ROOT, p)).sort();
 }
 
 describe('RQ2-10 — unified surfaces', () => {

@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import { Heading } from '@/components/ui/typography';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { KPIStat } from '@/components/ui/metric';
@@ -15,21 +14,16 @@ export default function DiffPage() {
     const tenantSlug = params.tenantSlug as string;
     const frameworkKey = params.frameworkKey as string;
     const apiUrl = useCallback((path: string) => `/api/t/${tenantSlug}${path}`, [tenantSlug]);
-    const tenantHref = useCallback((path: string) => `/t/${tenantSlug}${path}`, [tenantSlug]);
 
     const fromKey = searchParams.get('from') || '';
     const [diff, setDiff] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [framework, setFramework] = useState<any>(null);
     const [activeTab, setActiveTab] = useState<'added' | 'removed' | 'changed'>('added');
 
     useEffect(() => {
         (async () => {
             try {
-                const fwRes = await fetch(apiUrl(`/frameworks/${frameworkKey}`));
-                if (fwRes.ok) setFramework(await fwRes.json());
-
                 if (fromKey) {
                     const diffRes = await fetch(apiUrl(`/frameworks/${frameworkKey}?action=diff&from=${fromKey}`));
                     if (diffRes.ok) {

@@ -15,21 +15,37 @@
  *   - inline pluralization ternaries drifting back where the shared
  *     helper exists.
  */
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf-8');
 
+/**
+ * `execFileSync` (not `execSync`) — argv array bypasses the shell so
+ * the patterns + scan-root path can never be interpreted as shell
+ * tokens. -F is fixed-string so the patterns themselves remain
+ * inert. CodeQL's `js/shell-command-injection-from-environment` rule
+ * fires on string-built shell commands; argv-form is the canonical
+ * fix.
+ */
 function grepSrc(pattern: string): string[] {
-    // -F fixed-string + single quotes: the patterns contain backticks
-    // and dollar signs that must never reach shell interpolation.
-    const out = execSync(
-        `grep -rlnF -e '${pattern}' ${path.join(ROOT, 'src')} --include="*.ts" --include="*.tsx" || true`,
-        { encoding: 'utf-8' },
-    );
-    return out.split('\n').filter(Boolean).map((p) => path.relative(ROOT, p)).sort();
+    let stdout: string;
+    try {
+        stdout = execFileSync(
+            'grep',
+            ['-rlnF', '-e', pattern, path.join(ROOT, 'src'), '--include=*.ts', '--include=*.tsx'],
+            { encoding: 'utf-8' },
+        );
+    } catch (e) {
+        // grep exits 1 when no matches — `as` cast for the error
+        // shape; treat as no findings.
+        const err = e as { status: number; stdout?: string };
+        if (err.status === 1) stdout = err.stdout ?? '';
+        else throw e;
+    }
+    return stdout.split('\n').filter(Boolean).map((p) => path.relative(ROOT, p)).sort();
 }
 
 describe('RQ3-OB-A — one voice', () => {
@@ -40,10 +56,18 @@ describe('RQ3-OB-A — one voice', () => {
     });
 
     test('no local money-formatter declarations (useMoneyFormatter is the seam)', () => {
-        const out = execSync(
-            `grep -rnF -e 'const money = (n' ${path.join(ROOT, 'src')} --include="*.ts" --include="*.tsx" || true`,
-            { encoding: 'utf-8' },
-        ).trim();
+        let out: string;
+        try {
+            out = execFileSync(
+                'grep',
+                ['-rnF', '-e', 'const money = (n', path.join(ROOT, 'src'), '--include=*.ts', '--include=*.tsx'],
+                { encoding: 'utf-8' },
+            ).trim();
+        } catch (e) {
+            const err = e as { status: number; stdout?: string };
+            if (err.status === 1) out = '';
+            else throw e;
+        }
         expect(out).toBe('');
     });
 

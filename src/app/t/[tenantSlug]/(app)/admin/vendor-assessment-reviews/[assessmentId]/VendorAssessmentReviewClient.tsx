@@ -19,10 +19,8 @@
  *   • DRAFT / SENT / IN_PROGRESS   — "not yet submitted" placeholder
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import {
     useTenantApiUrl,
-    useTenantHref,
     useTenantContext,
 } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
@@ -117,7 +115,6 @@ export function VendorAssessmentReviewClient({
     assessmentId: string;
 }) {
     const apiUrl = useTenantApiUrl();
-    const tenantHref = useTenantHref();
     const { permissions } = useTenantContext();
 
     const [view, setView] = useState<ReviewView | null>(null);

@@ -6,8 +6,7 @@
 
 import { formatDate } from '@/lib/format-date';
 import { useEffect, useState, useCallback, use } from 'react';
-import Link from 'next/link';
-import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
+import { useTenantApiUrl, useTenantContext } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { SkeletonDetailPage } from '@/components/ui/skeleton';
@@ -29,7 +28,6 @@ export default function AssessmentPage(
 ) {
     const params = use(props.params);
     const apiUrl = useTenantApiUrl();
-    const tenantHref = useTenantHref();
     const { permissions, role } = useTenantContext();
     const canWrite = permissions?.canWrite;
     const isAdmin = role === 'ADMIN';
