@@ -33,13 +33,25 @@ function withProviders(node: React.ReactNode) {
     );
 }
 
-describe('getAssetCriticality — high-water-mark levels', () => {
+describe('getAssetCriticality — top-two-mean with critical override (item 25)', () => {
     it.each([
+        // [C, I, A, expectedScore, expectedLabel]
         [1, 1, 1, 1, 'Low'],
-        [2, 1, 1, 2, 'Low'],
-        [3, 1, 1, 3, 'Medium'],
-        [1, 4, 2, 4, 'High'],
+        // A single Medium/High dimension no longer dominates: the mean of
+        // the two highest pulls it back down.
+        [3, 1, 1, 2, 'Low'], // top two {3,1} → mean 2 → Low (was Medium under max())
+        [4, 1, 1, 3, 'Medium'], // top two {4,1} → mean 2.5 → 3 → Medium (was High under max())
+        // It takes two elevated dimensions to raise the band.
+        [4, 4, 1, 4, 'High'], // top two {4,4} → mean 4 → High
+        [4, 3, 1, 4, 'High'], // top two {4,3} → mean 3.5 → 4 → High
+        [3, 3, 1, 3, 'Medium'], // top two {3,3} → mean 3 → Medium
+        // All-High but no ceiling dimension stays High, NOT Critical.
+        [4, 4, 4, 4, 'High'],
+        // Critical override — a single ceiling (5) dimension forces
+        // Critical regardless of the other two.
+        [5, 1, 1, 5, 'Critical'],
         [1, 1, 5, 5, 'Critical'],
+        [5, 5, 5, 5, 'Critical'],
     ])('C=%i I=%i A=%i → score %i / %s', (c, i, a, score, label) => {
         const r = getAssetCriticality(c, i, a);
         expect(r.score).toBe(score);
@@ -79,13 +91,15 @@ describe('AssetCriticalityFields (A1/A2)', () => {
 
 describe('AssetCriticalityBadge (A3 — detail Overview)', () => {
     it('shows the score + label and no sliders', () => {
+        // C=4, I=1, A=2 → top two {4,2} → mean 3 → Medium (under the
+        // item-25 model; was High under the old high-water-mark rule).
         const { container } = render(
             <AssetCriticalityBadge confidentiality={4} integrity={1} availability={2} />,
         );
         expect(container.querySelectorAll('input[type="range"]').length).toBe(0);
         const badge = screen.getByTestId('asset-criticality-score');
-        expect(badge.textContent).toMatch(/4/);
-        expect(badge.textContent).toMatch(/High/);
+        expect(badge.textContent).toMatch(/3/);
+        expect(badge.textContent).toMatch(/Medium/);
     });
 });
 
