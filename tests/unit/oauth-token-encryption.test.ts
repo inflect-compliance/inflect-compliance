@@ -60,7 +60,7 @@ describe('OAuth Token Encryption', () => {
     // ── 3. DB Value Is Not Plaintext ──
 
     test('encrypted value does not contain original plaintext', () => {
-        const sensitiveToken = 'gho_supersecretgithubtoken123456789';
+        const sensitiveToken = 'gho_supersecretgithubtoken123456789'; // pragma: allowlist secret — synthetic GitHub-token-shaped string
         const encrypted = encryptField(sensitiveToken);
         // The base64 ciphertext must not contain the original token
         expect(encrypted).not.toContain(sensitiveToken);
@@ -106,7 +106,7 @@ describe('OAuth Token Encryption', () => {
     test('encryptOnWrite simulation: plain fields populate encrypted columns', () => {
         const fields = _getPiiFieldMap('Account')!;
         const data: Record<string, unknown> = {
-            access_token: 'ya29.test_access_token',
+            access_token: 'ya29.test_access_token', // pragma: allowlist secret — synthetic OAuth token literal
             refresh_token: '1//test_refresh_token',
         };
 

@@ -23,7 +23,7 @@ import { checkPasswordAgainstHIBP } from '@/lib/security/password-check';
 import { logger } from '@/lib/observability/logger';
 
 /** SHA-1 of 'password' is 5BAA61E4C9B93F3F0682250B6CF8331B7EE68FD8. */
-const SHA1_OF_PASSWORD = '5BAA61E4C9B93F3F0682250B6CF8331B7EE68FD8';
+const SHA1_OF_PASSWORD = '5BAA61E4C9B93F3F0682250B6CF8331B7EE68FD8'; // pragma: allowlist secret — public SHA-1 of the literal string 'password'
 const SHA1_PREFIX_OF_PASSWORD = SHA1_OF_PASSWORD.slice(0, 5); // '5BAA6'
 const SHA1_SUFFIX_OF_PASSWORD = SHA1_OF_PASSWORD.slice(5);    // '1E4C9B93F3F0682250B6CF8331B7EE68FD8'
 

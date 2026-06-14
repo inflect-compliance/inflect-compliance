@@ -82,7 +82,7 @@ describe('Audit Redaction — redactSensitiveFields', () => {
     it('redacts password fields', () => {
         const result = redactSensitiveFields({
             name: 'Alice',
-            password: 'super-secret-123',
+            password: 'super-secret-123', // pragma: allowlist secret — test-only redaction input
         });
         expect(result).toEqual({
             name: 'Alice',

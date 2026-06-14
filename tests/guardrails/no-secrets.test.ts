@@ -85,43 +85,16 @@ interface KnownHit {
 }
 
 const REPO_BASELINE: readonly KnownHit[] = [
-    // .env.example — placeholder values committed for developer
-    // onboarding. Matches the "Hardcoded Password Assignment" pattern
-    // because lines like `AUTH_SECRET="your-secret-key-here-…"` look
-    // like assignments. They are not real secrets.
-    { file: '.env.example', pattern: 'Hardcoded Password Assignment', reason: 'Developer-onboarding placeholders.' },
-
-    // Test setup + integration/unit fixtures: every entry below is a
-    // synthetic test value (auth secret stubs, encryption keys for
-    // unit tests, hardcoded test passwords for credential flows).
-    // jest.setup.js entry removed — the three test-fixture secret
-    // literals there now carry inline `pragma: allowlist secret`
-    // markers, so the scanner walks past them without surfacing a
-    // baseline entry. Keeping the entry here would fail the
-    // "no stale baseline" check.
-    { file: 'tests/integration/credentials-end-to-end.test.ts', pattern: 'Hardcoded Password Assignment', reason: 'Test fixtures for credential flow.' },
-    { file: 'tests/integration/github-provider.test.ts', pattern: 'Hardcoded Password Assignment', reason: 'GitHub provider test fixtures.' },
-    // integration-regression.test.ts entry removed: the
-    // quality-roadmap unused-imports sweep added an inline
-    // `// pragma: allowlist secret` to the placeholder
-    // webhook-secret fixture, so the scanner no longer flags it.
-    { file: 'tests/integration/mfa-enrollment.test.ts', pattern: 'Hardcoded Password Assignment', reason: 'MFA enrollment test fixtures.' },
-    { file: 'tests/integration/webhook.test.ts', pattern: 'Hardcoded Password Assignment', reason: 'Webhook test fixtures.' },
-    { file: 'tests/unit/audit-redact.test.ts', pattern: 'Hardcoded Password Assignment', reason: 'Audit redaction test fixtures.' },
-    { file: 'tests/unit/auth-brute-force.test.ts', pattern: 'Hardcoded Password Assignment', reason: 'Brute-force test fixtures.' },
-    // av-webhook + refresh entries removed: PR-A.4 added explicit
-    // `// pragma: allowlist secret` carve-outs to those lines, so the
-    // scanner no longer flags them and the baseline entries became
-    // stale. The carve-out comments are the durable record of why
-    // those test fixtures are safe.
-    // backfill-token-encryption.test.ts entry removed: same
-    // reason as integration-regression above — inline carve-out
-    // comment added during the quality-roadmap sweep, baseline
-    // entry now stale.
-    { file: 'tests/unit/oauth-token-encryption.test.ts', pattern: 'Hardcoded Password Assignment', reason: 'OAuth token encryption test fixtures.' },
-    { file: 'tests/unit/oauth-token-encryption.test.ts', pattern: 'GitHub Token', reason: 'Synthetic GitHub-shaped token used to verify provider-specific encryption envelopes.' },
-    { file: 'tests/unit/password-check.test.ts', pattern: 'Hardcoded Password Assignment', reason: 'Password-check test fixtures.' },
-    { file: 'tests/unit/totp-crypto.test.ts', pattern: 'Hardcoded Password Assignment', reason: 'TOTP crypto test fixtures.' },
+    // Baseline cleared in cleanup-6-secret-scan-pragmas
+    // (2026-06-14). Every previously-baselined fixture and the
+    // `.env.example` placeholders now carry an inline
+    // `// pragma: allowlist secret` (or `# pragma: …`) comment with
+    // a one-line reason. The pragma form lives next to the literal
+    // it describes — durable, grep-able, and reviewer-visible at the
+    // exact line — so the baseline array became stale and was
+    // removed in the same diff. The "no stale entries" sanity check
+    // below also closes the GitHub Secret Scanning (Generic) alerts
+    // that surfaced these fixtures.
 ];
 
 function isBaselineHit(file: string, patternName: string): boolean {
