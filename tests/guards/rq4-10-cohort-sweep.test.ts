@@ -87,6 +87,12 @@ function fileMountsBackAffordance(file: string): boolean {
     // EntityDetailLayout/PageHeader.back={{ smart: true }} counts as a mount
     // because the layout/header itself renders <BackAffordance/>.
     if (/\bback=\{\{\s*smart:\s*true\s*\}\}/.test(source)) return true;
+    // DashboardLayout consumers pass `header` as an OBJECT, so the smart-back
+    // form appears as a property literal `back: { smart: true }` (no JSX
+    // expression braces). Treat that as a mount too — DashboardLayout
+    // forwards the prop straight to <PageHeader>, which mounts
+    // <BackAffordance>.
+    if (/\bback:\s*\{\s*smart:\s*true\s*\}/.test(source)) return true;
     if (!/@\/components\/nav\/BackAffordance/.test(source)) return false;
     return /<BackAffordance\b/.test(source);
 }

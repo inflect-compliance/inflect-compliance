@@ -87,6 +87,7 @@ export default function ControlsDashboard() {
     return (
         <DashboardLayout
             header={{
+                back: { smart: true },
                 title: 'Controls Dashboard',
                 titleId: 'dashboard-heading',
                 description: `${data.totalControls} controls in register`,

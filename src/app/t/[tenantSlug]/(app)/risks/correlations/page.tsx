@@ -10,6 +10,7 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 
 interface Matrix { riskIds: string[]; riskTitles: string[]; matrix: number[][]; isPositiveSemiDefinite: boolean }
@@ -61,6 +62,7 @@ export default function CorrelationMatrixPage() {
 
     return (
         <div className="space-y-section">
+            <BackAffordance />
             <PageBreadcrumbs items={[{ label: 'Risks', href: tenantHref('/risks') }, { label: 'Correlations' }]} />
             <div className="flex items-center justify-between">
                 <Heading level={1}>Risk Correlation Matrix</Heading>

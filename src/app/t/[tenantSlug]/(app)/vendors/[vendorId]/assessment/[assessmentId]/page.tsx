@@ -9,6 +9,7 @@ import { useEffect, useState, useCallback, use } from 'react';
 import Link from 'next/link';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { SkeletonDetailPage } from '@/components/ui/skeleton';
 import { Combobox } from '@/components/ui/combobox';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -167,12 +168,7 @@ export default function AssessmentPage(
 
     return (
         <div className="space-y-section animate-fadeIn max-w-3xl mx-auto">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-compact">
-                    <Link href={tenantHref(`/vendors/${params.vendorId}`)} className="text-content-muted hover:text-content-emphasis">← Back to Vendor</Link>
-                </div>
-            </div>
+            <BackAffordance />
 
             <div className={cn(cardVariants(), 'space-y-tight')}>
                 <div className="flex items-center justify-between">

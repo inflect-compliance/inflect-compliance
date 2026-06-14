@@ -150,6 +150,7 @@ export default function RiskDashboardPage() {
     return (
         <DashboardLayout
             header={{
+                back: { smart: true },
                 title: t('dashboardTitle'),
                 description: `${tenant.tenantName} — ${t('riskCount', { count: total })}`,
                 actions: (

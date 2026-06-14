@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import { formatDateTime } from '@/lib/format-date';
 
@@ -38,6 +39,7 @@ export default function RiskReportsPage() {
 
     return (
         <div className="space-y-section">
+            <BackAffordance />
             <PageBreadcrumbs items={[{ label: 'Risks', href: tenantHref('/risks') }, { label: 'Reports' }]} />
             <Heading level={1}>Risk Reports</Heading>
 

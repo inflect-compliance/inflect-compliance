@@ -111,6 +111,7 @@ export default function TestDashboardPage() {
     return (
         <DashboardLayout
             header={{
+                back: { smart: true },
                 title: 'Test Dashboard',
                 titleId: 'dashboard-title',
                 description: 'Testing health and framework readiness',

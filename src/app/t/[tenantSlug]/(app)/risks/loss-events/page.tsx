@@ -25,6 +25,7 @@ import { ProgressBar } from '@/components/ui/progress-bar';
 import { DatePicker } from '@/components/ui/date-picker/date-picker';
 import { type DateValue } from '@/components/ui/date-picker/types';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantApiUrl, useTenantHref, useMoneyFormatter } from '@/lib/tenant-context-provider';
 import { formatDate } from '@/lib/format-date';
 
@@ -129,6 +130,7 @@ export default function LossEventsPage() {
 
     return (
         <div className="space-y-section">
+            <BackAffordance />
             <PageBreadcrumbs
                 items={[
                     { label: 'Risks', href: tenantHref('/risks') },

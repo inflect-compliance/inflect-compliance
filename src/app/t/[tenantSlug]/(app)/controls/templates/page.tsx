@@ -18,6 +18,7 @@ import { InlineNotice } from '@/components/ui/inline-notice';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { cardVariants } from '@/components/ui/card';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { cn } from '@/lib/cn';
 
 export default function ControlTemplatesPage() {
@@ -95,6 +96,7 @@ export default function ControlTemplatesPage() {
 
     return (
         <div className="space-y-section animate-fadeIn">
+            <BackAffordance />
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>

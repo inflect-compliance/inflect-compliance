@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Heading } from '@/components/ui/typography';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { KPIStat } from '@/components/ui/metric';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
@@ -46,10 +47,8 @@ export default function DiffPage() {
 
     return (
         <div className="space-y-section animate-fadeIn">
+            <BackAffordance />
             <div>
-                <Link href={tenantHref(`/frameworks/${frameworkKey}`)} className="text-content-muted hover:text-content-emphasis transition-colors text-sm">
-                    ← Back to {framework?.name || frameworkKey}
-                </Link>
                 <Heading level={1} className="mt-2" id="diff-heading">
                     Requirements Diff
                 </Heading>

@@ -114,6 +114,7 @@ export default function TaskDashboardPage() {
     return (
         <DashboardLayout
             header={{
+                back: { smart: true },
                 title: 'Task Dashboard',
                 description: `${metrics.total} total tasks`,
                 actions: (

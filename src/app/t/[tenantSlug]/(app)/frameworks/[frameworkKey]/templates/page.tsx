@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Button } from '@/components/ui/button';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading, Eyebrow } from '@/components/ui/typography';
 import { cardVariants } from '@/components/ui/card';
@@ -130,12 +131,10 @@ export default function TemplateLibraryPage() {
 
     return (
         <div className="space-y-section animate-fadeIn">
+            <BackAffordance />
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <Link href={tenantHref(`/frameworks/${frameworkKey}`)} className="text-content-muted hover:text-content-emphasis transition-colors text-sm">
-                        ← Back to {framework?.name || frameworkKey}
-                    </Link>
                     <Heading level={1} className="mt-2" id="template-library-heading">
                         Template Library — {framework?.name}
                     </Heading>

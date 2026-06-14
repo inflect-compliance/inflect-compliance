@@ -9,6 +9,7 @@ import { buttonVariants } from '@/components/ui/button-variants';
 import { DataTable, createColumns } from '@/components/ui/table';
 import { Heading } from '@/components/ui/typography';
 import { Card, cardVariants } from '@/components/ui/card';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { cn } from '@/lib/cn';
 
 type ParsedRow = {
@@ -131,12 +132,10 @@ export default function RiskImportPage() {
 
     return (
         <div className="space-y-section animate-fadeIn max-w-4xl">
-            <div className="flex items-center gap-compact">
-                <Link href={href('/risks')} className="text-content-muted hover:text-content-emphasis transition">←</Link>
-                <div>
-                    <Heading level={1}>{t('importTitle')}</Heading>
-                    <p className="text-content-muted text-sm">{tenant.tenantName}</p>
-                </div>
+            <BackAffordance />
+            <div>
+                <Heading level={1}>{t('importTitle')}</Heading>
+                <p className="text-content-muted text-sm">{tenant.tenantName}</p>
             </div>
 
             {/* Format info */}
