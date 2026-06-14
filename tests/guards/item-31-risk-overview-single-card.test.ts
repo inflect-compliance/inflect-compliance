@@ -26,10 +26,18 @@ describe('item 31 — risk Overview single score card', () => {
     });
 
     it('no longer renders the three-card Likelihood / Impact / Inherent grid', () => {
-        // The old shape: three <KPIStat> cards, one labelled "Inherent
-        // Score", inside a grid-cols-3 wrapper.
+        // The old shape: three <KPIStat> cards (one labelled "Inherent
+        // Score") inside a `grid-cols-3` wrapper. The single card still
+        // routes through `<KPIStat>` — the `metric-typography` ratchet
+        // requires every oversized number to flow through that
+        // primitive — but with the consolidated "Inherent Risk Score"
+        // label and the L×I breakdown moved into the `description`
+        // slot, NOT as separate `value={risk.likelihood}` /
+        // `value={risk.impact}` cards.
         expect(src).not.toContain('label="Inherent Score"');
-        expect(src).not.toContain('<KPIStat');
+        expect(src).not.toContain('value={risk.likelihood}');
+        expect(src).not.toContain('value={risk.impact}');
+        expect(src).not.toContain('grid-cols-3 gap-default');
     });
 
     it('keeps the Likelihood × Impact breakdown visible in the card', () => {
