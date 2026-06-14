@@ -618,21 +618,31 @@ export default function RiskDetailPage() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-default">
-                    <div className={cardVariants({ density: 'compact' })}>
-                        <KPIStat value={risk.likelihood} label="Likelihood" size="sm" />
-                    </div>
-                    <div className={cardVariants({ density: 'compact' })}>
-                        <KPIStat value={risk.impact} label="Impact" size="sm" />
-                    </div>
-                    <div className={cardVariants({ density: 'compact' })}>
-                        <KPIStat
-                            value={risk.inherentScore}
-                            label="Inherent Score"
-                            size="sm"
-                            tone={risk.inherentScore > 12 ? 'critical' : risk.inherentScore > 5 ? 'attention' : 'success'}
-                        />
-                    </div>
+                {/* Item 31 — single inherent-score card (was three separate
+                    Likelihood / Impact / Inherent Score cards), mirroring the
+                    controls Overview single-card pattern. The headline number is
+                    the inherent score; Likelihood × Impact is the supporting
+                    breakdown so the derivation stays visible. */}
+                <div className={cn(cardVariants(), 'space-y-tight')} data-testid="risk-score-card">
+                    <KPIStat
+                        value={risk.inherentScore}
+                        label="Inherent Risk Score"
+                        tone={
+                            risk.inherentScore > 12
+                                ? 'critical'
+                                : risk.inherentScore > 5
+                                  ? 'attention'
+                                  : 'success'
+                        }
+                        description={
+                            <>
+                                Likelihood{' '}
+                                <span className="font-semibold text-content-default">{risk.likelihood}</span>{' '}
+                                × Impact{' '}
+                                <span className="font-semibold text-content-default">{risk.impact}</span>
+                            </>
+                        }
+                    />
                 </div>
 
                 {risk.threat && (
