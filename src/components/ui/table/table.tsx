@@ -1234,13 +1234,17 @@ export function Table<T>({
       ) : (
         <div
           className={cn(
-            // flex-1 + min-h-96: fills the card when the parent is
-            // a flex column (fillBody mode) so the message is in
-            // the vertical centre of the WHOLE card, not stuck in
-            // the upper 384px. min-h-96 keeps the legacy
-            // empty-state height as a floor in non-fillBody mode.
-            // text-center handles multi-line empty messages.
-            "text-content-muted flex flex-1 min-h-96 w-full items-center justify-center text-center text-sm",
+            // flex-1 + min-h-48: in fillBody mode flex-1 fills the card
+            // so the message is vertically centred in the WHOLE card.
+            // The floor is min-h-48 (192px), NOT min-h-96 (384px) — item
+            // 35: a row-less sub-table inside a detail-page tab is
+            // non-fillBody, so flex-1 has no space to fill and the floor
+            // is its entire height. 384px reserved a huge empty block for
+            // a small panel; 192px is a proportionate empty state.
+            // fillBody (full-page) tables are unaffected: flex-1 still
+            // grows past the floor. text-center handles multi-line
+            // empty messages.
+            "text-content-muted flex flex-1 min-h-48 w-full items-center justify-center text-center text-sm",
             emptyWrapperClassName,
           )}
         >
