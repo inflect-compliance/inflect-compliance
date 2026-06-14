@@ -12,7 +12,6 @@ import { useTenantContext, useTenantApiUrl, useTenantHref } from '@/lib/tenant-c
 import dynamic from 'next/dynamic';
 import LinkedTasksPanel from '@/components/LinkedTasksPanel';
 import { Eyebrow } from '@/components/ui/typography';
-import { KPIStat } from '@/components/ui/metric';
 import { MetaStrip } from '@/components/ui/meta-strip';
 import { RiskScoreExplainer } from '@/components/RiskScoreExplainer';
 import {
@@ -616,20 +615,32 @@ export default function RiskDetailPage() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-default">
-                    <div className={cardVariants({ density: 'compact' })}>
-                        <KPIStat value={risk.likelihood} label="Likelihood" size="sm" />
-                    </div>
-                    <div className={cardVariants({ density: 'compact' })}>
-                        <KPIStat value={risk.impact} label="Impact" size="sm" />
-                    </div>
-                    <div className={cardVariants({ density: 'compact' })}>
-                        <KPIStat
-                            value={risk.inherentScore}
-                            label="Inherent Score"
-                            size="sm"
-                            tone={risk.inherentScore > 12 ? 'critical' : risk.inherentScore > 5 ? 'attention' : 'success'}
-                        />
+                {/* Item 31 — single inherent-score card (was three separate
+                    Likelihood / Impact / Inherent Score cards), mirroring the
+                    controls Overview single-card pattern. The headline number is
+                    the inherent score; Likelihood × Impact is the supporting
+                    breakdown so the derivation stays visible. */}
+                <div className={cn(cardVariants(), 'space-y-tight')} data-testid="risk-score-card">
+                    <Eyebrow>Inherent Risk Score</Eyebrow>
+                    <div className="flex items-baseline gap-3">
+                        <span
+                            className={cn(
+                                'text-3xl font-bold tabular-nums',
+                                risk.inherentScore > 12
+                                    ? 'text-content-error'
+                                    : risk.inherentScore > 5
+                                      ? 'text-content-warning'
+                                      : 'text-content-success',
+                            )}
+                        >
+                            {risk.inherentScore}
+                        </span>
+                        <span className="text-sm text-content-subtle">
+                            Likelihood{' '}
+                            <span className="font-semibold text-content-default">{risk.likelihood}</span>{' '}
+                            × Impact{' '}
+                            <span className="font-semibold text-content-default">{risk.impact}</span>
+                        </span>
                     </div>
                 </div>
 
