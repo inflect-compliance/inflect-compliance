@@ -187,6 +187,9 @@ export function RisksClient(props: RisksClientProps) {
  */
 const RISK_VIEW_LINKS: ReadonlyArray<{ href: string; label: string; icon: AppIconName }> = [
     { href: '/risks/dashboard', label: 'Risk dashboard', icon: 'activity' },
+    // Item 30 — the risk board (RQ3-10) shipped without a nav entry; the
+    // page existed but was unreachable from the list header. Restored.
+    { href: '/risks/board', label: 'Risk board', icon: 'overview' },
     { href: '/risks/scenarios', label: 'Scenarios', icon: 'preview' },
     { href: '/risks/hierarchy', label: 'Hierarchy', icon: 'share' },
     { href: '/risks/kri', label: 'Key risk indicators', icon: 'alertCircle' },
@@ -873,19 +876,32 @@ function RisksPageInner({
                                 </Link>
                             </Tooltip>
                         ))}
-                        {/* RQ3-5 — three peer register views. The
-                            choice persists (polish #13 pattern). */}
+                        {/* Item 30 — Register and Matrix collapse to a single
+                            two-state toggle (table ⇄ heatmap of the same
+                            register). The histogram is no longer a third peer
+                            in this toggle — it is its own standalone button
+                            below, so the distribution view reads as a distinct
+                            analytical mode rather than a register layout.
+                            The choice persists (polish #13 pattern). */}
                         <ToggleGroup
                             size="sm"
                             ariaLabel="Risks view"
                             options={[
                                 { value: 'register', label: t.register, id: 'risks-view-register' },
                                 { value: 'heatmap', label: t.heatmap, id: 'risks-view-heatmap' },
-                                { value: 'histogram', label: t.histogram, id: 'risks-view-histogram' },
                             ]}
-                            selected={view}
-                            selectAction={(v) => setView(v as 'register' | 'heatmap' | 'histogram')}
+                            selected={view === 'histogram' ? null : view}
+                            selectAction={(v) => setView(v as 'register' | 'heatmap')}
                         />
+                        <Button
+                            variant={view === 'histogram' ? 'primary' : 'secondary'}
+                            size="sm"
+                            id="risks-view-histogram"
+                            aria-pressed={view === 'histogram'}
+                            onClick={() => setView('histogram')}
+                        >
+                            {t.histogram}
+                        </Button>
                         {permissions.canWrite && (
                             <>
                                 <Tooltip content="Import risks">
