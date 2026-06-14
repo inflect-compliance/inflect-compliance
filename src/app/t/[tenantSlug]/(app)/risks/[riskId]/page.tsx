@@ -448,7 +448,9 @@ export default function RiskDetailPage() {
                         setSelected={(opt) => { if (opt) handleStatusChange(opt.value); }}
                         options={STATUS_OPTIONS}
                         placeholder="Status"
-                        buttonProps={{ className: 'text-sm' }}
+                        // Item 29 — brand-color the status action (matches the
+                        // primary "+ …" create buttons).
+                        buttonProps={{ variant: 'primary', className: 'text-sm' }}
                     />
                 )
             }

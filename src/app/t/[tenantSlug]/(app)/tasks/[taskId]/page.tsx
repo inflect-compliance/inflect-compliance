@@ -574,7 +574,9 @@ export default function TaskDetailPage() {
                         options={TASK_STATUS_CB_OPTIONS}
                         disabled={changingStatus}
                         placeholder="Status"
-                        buttonProps={{ className: 'text-sm' }}
+                        // Item 29 — brand-color the status action (matches the
+                        // primary "+ …" create buttons).
+                        buttonProps={{ variant: 'primary', className: 'text-sm' }}
                     />
                 )
             }
