@@ -53,7 +53,7 @@ permissions:
 # `ubuntu-latest`, so this file works on every plan.
 
 env:
-  NODE_VERSION: "22"
+  NODE_VERSION: "24"
   SKIP_ENV_VALIDATION: "1"
   # ── Dummy secrets (CI-only — no real credentials) ──
   AUTH_SECRET: ci-auth-secret-that-is-long-enough
