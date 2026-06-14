@@ -9,6 +9,7 @@ import { textLinkVariants } from '@/components/ui/typography';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
+import { Plus } from '@/components/ui/icons/nucleo';
 import { DataTable, createColumns } from '@/components/ui/table';
 import {
     EntityPicker,
@@ -800,8 +801,8 @@ export default function TaskDetailPage() {
                                 />
                                 <Combobox hideSearch id="link-relation" selected={RELATION_CB_OPTIONS.find(o => o.value === linkRelation) ?? null} setSelected={(opt) => setLinkRelation(opt?.value ?? linkRelation)} options={RELATION_CB_OPTIONS} matchTriggerWidth />
                             </div>
-                            <Button type="submit" variant="primary" disabled={savingLink} id="submit-link-btn">
-                                {savingLink ? 'Linking...' : '+ Link'}
+                            <Button type="submit" variant="primary" icon={savingLink ? undefined : <Plus className="-ml-0.5 -mr-2.5" />} disabled={savingLink} id="submit-link-btn">
+                                {savingLink ? 'Linking...' : 'Link'}
                             </Button>
                         </form>
                     )}
@@ -828,8 +829,8 @@ export default function TaskDetailPage() {
                                 required
                                 id="comment-body"
                             />
-                            <Button type="submit" variant="primary" disabled={savingComment} id="submit-comment-btn">
-                                {savingComment ? 'Posting...' : '+ Comment'}
+                            <Button type="submit" variant="primary" icon={savingComment ? undefined : <Plus className="-ml-0.5 -mr-2.5" />} disabled={savingComment} id="submit-comment-btn">
+                                {savingComment ? 'Posting...' : 'Comment'}
                             </Button>
                         </form>
                     )}

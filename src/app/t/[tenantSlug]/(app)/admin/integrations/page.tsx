@@ -10,6 +10,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import { Trash2, CheckCircle, XCircle, Loader2, Link2, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Plus } from '@/components/ui/icons/nucleo';
 import { Combobox } from '@/components/ui/combobox';
 import { RequiredMarker } from '@/components/ui/required-marker';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -233,10 +234,11 @@ export default function AdminIntegrationsPage() {
                         <Heading level={2}>Configured Connections</Heading>
                         <Button
                             variant="primary"
+                            icon={<Plus className="-ml-0.5 -mr-2.5" />}
                             onClick={() => { resetForm(); setShowForm(true); }}
                             id="add-integration-btn"
                         >
-                            + Integration
+                            Integration
                         </Button>
                     </div>
 

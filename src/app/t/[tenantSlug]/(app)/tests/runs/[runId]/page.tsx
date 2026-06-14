@@ -13,6 +13,7 @@ import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-c
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { Tooltip } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
+import { Plus } from '@/components/ui/icons/nucleo';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
@@ -414,10 +415,11 @@ export default function TestRunPage() {
                     {permissions.canWrite && (
                         <Button
                             variant="primary"
+                            icon={showEvForm ? undefined : <Plus className="-ml-0.5 -mr-2.5" />}
                             onClick={() => { setShowEvForm(!showEvForm); setEvError(''); }}
                             id="link-evidence-btn"
                         >
-                            {showEvForm ? 'Cancel' : '+ Evidence'}
+                            {showEvForm ? 'Cancel' : 'Evidence'}
                         </Button>
                     )}
                 </div>

@@ -9,6 +9,7 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { AppIcon } from '@/components/icons/AppIcon';
 import { Button } from '@/components/ui/button';
+import { Plus } from '@/components/ui/icons/nucleo';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
@@ -121,10 +122,11 @@ export default function TestPlansPanel({ controlId }: { controlId: string }) {
                 {permissions.canWrite && (
                     <Button
                         variant="primary"
+                        icon={showForm ? undefined : <Plus className="-ml-0.5 -mr-2.5" />}
                         onClick={() => setShowForm(!showForm)}
                         id="create-test-plan-btn"
                     >
-                        {showForm ? 'Cancel' : '+ Test Plan'}
+                        {showForm ? 'Cancel' : 'Test Plan'}
                     </Button>
                 )}
             </div>

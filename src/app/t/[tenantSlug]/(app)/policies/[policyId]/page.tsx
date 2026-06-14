@@ -10,6 +10,7 @@ import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
+import { Plus } from '@/components/ui/icons/nucleo';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 import type { PolicyDetailDTO, PolicyVersionDTO, AuditLogEntry } from '@/lib/dto';
@@ -451,7 +452,7 @@ export default function PolicyDetailPage() {
                                     ? 'HTML'
                                     : 'MARKDOWN',
                             );
-                        }} className={buttonVariants({ variant: 'primary' })} id="new-version-btn">+ Version</button>
+                        }} className={buttonVariants({ variant: 'primary' })} id="new-version-btn"><Plus className="-ml-0.5 -mr-2.5" />Version</button>
                     )}
                     {canAdmin && policy.status !== 'ARCHIVED' && (
                         <Button variant="ghost" size="sm" className="text-content-muted hover:text-content-error" onClick={archivePolicy} disabled={actionLoading === 'archive'} id="archive-btn">
@@ -754,8 +755,8 @@ export default function PolicyDetailPage() {
                             placeholder="What changed in this version?" id="change-summary-input" />
                     </div>
 
-                    <Button variant="primary" onClick={createVersion} disabled={saving} id="save-version-btn">
-                        {saving ? 'Saving...' : '+ Version'}
+                    <Button variant="primary" icon={saving ? undefined : <Plus className="-ml-0.5 -mr-2.5" />} onClick={createVersion} disabled={saving} id="save-version-btn">
+                        {saving ? 'Saving...' : 'Version'}
                     </Button>
                 </div>
             )}

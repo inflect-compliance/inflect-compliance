@@ -26,6 +26,7 @@ import {
     useTenantContext,
 } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
+import { Plus } from '@/components/ui/icons/nucleo';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { SkeletonDetailPage } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -579,10 +580,11 @@ function AddSectionForm({ onSubmit }: { onSubmit: (title: string) => void }) {
             />
             <Button
                 variant="primary"
+                icon={<Plus className="-ml-0.5 -mr-2.5" />}
                 type="submit"
                 disabled={!title.trim()}
             >
-                + Section
+                Section
             </Button>
         </form>
     );
@@ -681,12 +683,13 @@ function AddQuestionForm({
             <div className="md:col-span-2">
                 <Button
                     variant="primary"
+                    icon={busy ? undefined : <Plus className="-ml-0.5 -mr-2.5" />}
                     className="w-full"
                     type="submit"
                     disabled={busy || !prompt.trim()}
                     loading={busy}
                 >
-                    {busy ? 'Adding…' : '+ Question'}
+                    {busy ? 'Adding…' : 'Question'}
                 </Button>
             </div>
         </form>

@@ -31,6 +31,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useToast } from '@/components/ui/hooks/use-toast';
 
 import { Button } from '@/components/ui/button';
+import { Plus } from '@/components/ui/icons/nucleo';
 import { NumberStepper } from '@/components/ui/number-stepper';
 import { RiskMatrix } from '@/components/ui/RiskMatrix';
 import { DEFAULT_RISK_MATRIX_CONFIG } from '@/lib/risk-matrix/defaults';
@@ -482,11 +483,12 @@ export function RiskMatrixAdminClient({
                             </Heading>
                             <Button
                                 variant="primary"
+                                icon={<Plus className="-ml-0.5 -mr-2.5" />}
                                 type="button"
                                 id="rm-add-band-btn"
                                 onClick={addBand}
                             >
-                                + Band
+                                Band
                             </Button>
                         </div>
                         <p className="text-xs text-content-subtle">
