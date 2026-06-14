@@ -515,6 +515,14 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                     getRowId={(a: any) => a.id}
                     columnVisibility={columnVisibility}
                     onColumnVisibilityChange={setColumnVisibility}
+                    // Item 32 — the asset table's primary interaction is
+                    // single-click → open quick-look panel. The DataTable's
+                    // default `selectionEnabled` is on, which steals single
+                    // click for selection and pushes `onRowClick` to
+                    // double-click; selection is irrelevant here (no
+                    // multi-select actions on the assets list today), so
+                    // disable it and let single click own the panel-open.
+                    selectionEnabled={false}
                     onRowClick={(row) => setSelectedAssetId(row.original.id)}
                     emptyState={
                         hasActive ? (

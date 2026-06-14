@@ -31,6 +31,15 @@ describe('item 32 — single click opens the quick-look panel', () => {
         // The old full-page navigation on row click is gone.
         expect(src).not.toMatch(/onRowClick=\{\(row\) => router\.push\(tenantHref\(`\/assets/);
     });
+    it('disables row-selection so SINGLE click runs onRowClick (not double-click)', () => {
+        // The Table primitive defaults `selectionEnabled` to true, in
+        // which case single click toggles the row's radio and
+        // `onRowClick` only fires on double-click. The item-32 spec
+        // is "ONE click opens the panel" — so selection must be
+        // explicitly off on this table. A regression that drops this
+        // line silently re-introduces the double-click contract.
+        expect(src).toContain('selectionEnabled={false}');
+    });
     it('mounts the AssetDetailSheet', () => {
         expect(src).toContain('<AssetDetailSheet');
     });
@@ -39,6 +48,15 @@ describe('item 32 — single click opens the quick-look panel', () => {
         expect(sheet).toContain('asset-sheet-full-view');
         expect(sheet).toMatch(/Full view/);
         expect(sheet).toMatch(/\/assets\/\$\{asset\.id\}/);
+    });
+    it('row title tints brand-color on row hover (TableTitleCell no-href branch)', () => {
+        // Without href, TableTitleCell was a plain <span> with no
+        // hover treatment, so the title text stayed static while the
+        // row visibly hovered. The no-href branch now applies a
+        // `group-hover/row:` brand-color transition so the title
+        // signals clickability synchronously with the row.
+        const titleCell = read('src/components/ui/table-title-cell.tsx');
+        expect(titleCell).toMatch(/group-hover\/row:text-\[var\(--brand-default\)\]/);
     });
 });
 

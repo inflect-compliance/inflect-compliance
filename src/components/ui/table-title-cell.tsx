@@ -60,6 +60,19 @@ const TITLE_CELL_BASE =
 const TITLE_CELL_LINK_HOVER =
     'hover:text-[var(--brand-default)] transition-colors duration-150 ease-out';
 
+/**
+ * Row-level hover tint applied on the **no-href** branch. When the
+ * title is a plain `<span>` (whole-row `onRowClick` owns navigation),
+ * the title text would otherwise stay static while the row hover
+ * visibly changes — breaking the "I can click this" affordance.
+ * Hooking into the existing `group/row` token on the `<tr>` paints
+ * the title brand-color whenever the row is hovered, so the same
+ * cue lands without re-introducing the per-cell hover that the
+ * href branch already covers.
+ */
+const TITLE_CELL_ROW_HOVER =
+    'group-hover/row:text-[var(--brand-default)] transition-colors duration-150 ease-out';
+
 export function TableTitleCell({
     children,
     href,
@@ -97,7 +110,7 @@ export function TableTitleCell({
         );
     }
     return (
-        <span id={id} className={cn(TITLE_CELL_BASE, className)}>
+        <span id={id} className={cn(TITLE_CELL_BASE, TITLE_CELL_ROW_HOVER, className)}>
             {children}
         </span>
     );
