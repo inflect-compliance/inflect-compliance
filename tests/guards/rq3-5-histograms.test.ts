@@ -31,8 +31,15 @@ describe('RQ3-5 — the histogram is a peer view', () => {
     test('three views, persisted per tenant (polish #13 pattern)', () => {
         expect(client).toMatch(/useLocalStorage<'register' \| 'heatmap' \| 'histogram'>/);
         expect(client).toMatch(/inflect:risks-view:\$\{tenantSlug\}/);
+        // Item 30 (2026-06-14) — register + heatmap collapsed to a
+        // single 2-way ToggleGroup; histogram was promoted OUT of the
+        // toggle into its own standalone button so the distribution
+        // view reads as a distinct analytical mode rather than a
+        // register layout. The histogram value still drives the same
+        // `view` state and renders the same chart — only the toggle
+        // mechanism moved.
         expect(client).toMatch(/<ToggleGroup/);
-        expect(client).toMatch(/value: 'histogram'/);
+        expect(client).toMatch(/aria-pressed=\{view === 'histogram'\}/);
         // The heatmap stays for the ritual.
         expect(client).toMatch(/view === 'heatmap' \? \(/);
         expect(client).toMatch(/<RiskMatrix/);
