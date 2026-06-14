@@ -2,7 +2,6 @@
 /* eslint-disable react-hooks/exhaustive-deps -- Various useEffect/useMemo dep arrays in this file deliberately omit identity-unstable callbacks (handlers recreated each render) or use selector functions whose change-detection happens elsewhere. Adding the deps would either trigger unnecessary re-runs OR cause infinite render loops; the proper structural fix is to wrap parent-level callbacks in useCallback. Tracked as follow-up. */
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Button } from '@/components/ui/button';
 import { BackAffordance } from '@/components/nav/BackAffordance';
@@ -18,7 +17,6 @@ export default function TemplateLibraryPage() {
     const tenantSlug = params.tenantSlug as string;
     const frameworkKey = params.frameworkKey as string;
     const apiUrl = useCallback((path: string) => `/api/t/${tenantSlug}${path}`, [tenantSlug]);
-    const tenantHref = useCallback((path: string) => `/t/${tenantSlug}${path}`, [tenantSlug]);
 
     const [templates, setTemplates] = useState<any[]>([]);
     const [framework, setFramework] = useState<any>(null);

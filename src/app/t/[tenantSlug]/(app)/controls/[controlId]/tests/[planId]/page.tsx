@@ -86,7 +86,6 @@ export default function TestPlanDetailPage() {
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const { permissions } = useTenantContext();
-    const controlId = params?.controlId as string;
     const planId = params?.planId as string;
 
     const [plan, setPlan] = useState<TestPlanDetail | null>(null);
