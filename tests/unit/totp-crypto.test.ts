@@ -12,34 +12,34 @@ import {
     verifyTotpCode,
 } from '../../src/lib/security/totp-crypto';
 
-const TEST_AUTH_SECRET = 'test-auth-secret-for-mfa-at-least-32-chars-long!';
+const TEST_AUTH_SECRET = 'test-auth-secret-for-mfa-at-least-32-chars-long!'; // pragma: allowlist secret — test-only KEK string, not a real credential
 
 describe('TOTP Crypto', () => {
     // ─── Encryption/Decryption ──────────────────────────────────────
 
     describe('encryptTotpSecret / decryptTotpSecret', () => {
         it('round-trips plaintext correctly', () => {
-            const secret = 'JBSWY3DPEHPK3PXP';
+            const secret = 'JBSWY3DPEHPK3PXP'; // pragma: allowlist secret — RFC 6238 TOTP test vector
             const encrypted = encryptTotpSecret(secret, TEST_AUTH_SECRET);
             const decrypted = decryptTotpSecret(encrypted, TEST_AUTH_SECRET);
             expect(decrypted).toBe(secret);
         });
 
         it('produces different ciphertext each time (random IV)', () => {
-            const secret = 'JBSWY3DPEHPK3PXP';
+            const secret = 'JBSWY3DPEHPK3PXP'; // pragma: allowlist secret — RFC 6238 TOTP test vector
             const e1 = encryptTotpSecret(secret, TEST_AUTH_SECRET);
             const e2 = encryptTotpSecret(secret, TEST_AUTH_SECRET);
             expect(e1).not.toBe(e2); // Different IVs
         });
 
         it('fails to decrypt with wrong key', () => {
-            const secret = 'JBSWY3DPEHPK3PXP';
+            const secret = 'JBSWY3DPEHPK3PXP'; // pragma: allowlist secret — RFC 6238 TOTP test vector
             const encrypted = encryptTotpSecret(secret, TEST_AUTH_SECRET);
             expect(() => decryptTotpSecret(encrypted, 'wrong-key-that-is-long-enough-to-test')).toThrow();
         });
 
         it('fails on tampered ciphertext', () => {
-            const secret = 'JBSWY3DPEHPK3PXP';
+            const secret = 'JBSWY3DPEHPK3PXP'; // pragma: allowlist secret — RFC 6238 TOTP test vector
             const encrypted = encryptTotpSecret(secret, TEST_AUTH_SECRET);
             // Tamper with a byte
             const buf = Buffer.from(encrypted, 'base64');

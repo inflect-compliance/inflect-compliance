@@ -321,7 +321,7 @@ describe('GitHub Branch Protection Provider', () => {
 
     describe('GitHubProvider.verifyWebhookSignature', () => {
         const provider = new GitHubProvider();
-        const secret = 'webhook-secret-123';
+        const secret = 'webhook-secret-123'; // pragma: allowlist secret — test-only HMAC key
         const body = '{"action":"edited"}';
 
         it('accepts valid sha256 signature', () => {

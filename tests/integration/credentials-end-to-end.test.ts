@@ -47,7 +47,7 @@ describeFn('Credentials path — end-to-end', () => {
     let stub: StubEmailProvider;
     const uniq = `ce2e-${Date.now()}`;
     const email = `${uniq}@example.com`;
-    const password = 'CorrectHorseBattery9!';
+    const password = 'CorrectHorseBattery9!'; // pragma: allowlist secret — test-only password
     let tenantId = '';
     let userId = '';
 
@@ -175,7 +175,7 @@ describeFn('Credentials path — end-to-end', () => {
     it('rejects a wrong password with credentials_invalid — no raw password in audit', async () => {
         const result = await authenticateWithPassword({
             email,
-            password: 'this-is-not-the-password',
+            password: 'this-is-not-the-password', // pragma: allowlist secret — test-only wrong-password literal
         });
         expect(result).toEqual({ ok: false, reason: 'credentials_invalid' });
 

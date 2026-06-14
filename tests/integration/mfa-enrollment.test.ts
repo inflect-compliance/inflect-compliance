@@ -20,7 +20,7 @@ import {
     verifyTotpCode,
 } from '../../src/lib/security/totp-crypto';
 
-const AUTH_SECRET = 'test-secret-for-mfa-integration-tests-32chars!';
+const AUTH_SECRET = 'test-secret-for-mfa-integration-tests-32chars!'; // pragma: allowlist secret — test-only KEK string
 
 describe('MFA TOTP Enrollment Integration', () => {
     // ─── Enrollment Start Logic ─────────────────────────────────────

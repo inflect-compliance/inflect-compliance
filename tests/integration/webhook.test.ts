@@ -17,7 +17,7 @@ import {
 } from '@/app-layer/integrations/webhook-crypto';
 
 describe('Webhook Crypto', () => {
-    const secret = 'test-webhook-secret-12345';
+    const secret = 'test-webhook-secret-12345'; // pragma: allowlist secret — test-only HMAC key
     const payload = '{"action":"completed","check_suite":{"id":123}}';
 
     // ── HMAC-SHA256 ──

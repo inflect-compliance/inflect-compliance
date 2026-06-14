@@ -102,7 +102,7 @@ import { clearAllRateLimits } from '@/lib/security/rate-limit';
 
 describe('authenticateWithPassword — Epic A.3 progressive brute-force', () => {
     const email = 'alice@example.com';
-    const password = 'correct-horse-battery-staple';
+    const password = 'correct-horse-battery-staple'; // pragma: allowlist secret — test-only password literal
 
     beforeEach(() => {
         clearAllRateLimits();
