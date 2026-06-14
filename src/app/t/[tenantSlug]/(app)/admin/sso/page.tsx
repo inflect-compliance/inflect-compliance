@@ -18,6 +18,7 @@ import { InlineNotice } from '@/components/ui/inline-notice';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { cn } from '@/lib/cn';
 
 interface SsoProvider {
@@ -241,6 +242,7 @@ export default function SsoAdminPage() {
     if (loading) {
         return (
             <div className="space-y-section animate-fadeIn">
+                <BackAffordance />
                 <PageBreadcrumbs
                     items={[
                         { label: 'Dashboard', href: tenantHref('/dashboard') },

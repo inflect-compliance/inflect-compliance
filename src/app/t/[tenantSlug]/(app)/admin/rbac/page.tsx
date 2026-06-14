@@ -8,6 +8,7 @@ import { Check } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { cardVariants } from '@/components/ui/card-variants';
 import { cn } from '@/lib/cn';
 import { MembersTable, type MembersTableRow } from './MembersTable';
@@ -74,6 +75,7 @@ export default async function RbacPage({
 
     return (
         <div className="space-y-page animate-fadeIn">
+            <BackAffordance />
             {/* Header */}
             <div>
                 <PageBreadcrumbs

@@ -89,23 +89,6 @@ export const BACK_AFFORDANCE_EXEMPT_SUBPAGES: readonly string[] = [
  *   3. Remove the entry from this list — CI confirms the mount.
  */
 export const BACK_AFFORDANCE_COHORT_TODO: readonly string[] = [
-    '/admin/audit-log',
-    '/admin/billing',
-    '/admin/entra',
-    '/admin/integrations',
-    '/admin/integrations/sharepoint-health',
-    '/admin/members',
-    '/admin/notifications',
-    '/admin/rbac',
-    '/admin/risk-appetite',
-    '/admin/risk-matrix',
-    '/admin/roles',
-    '/admin/scim',
-    '/admin/security',
-    '/admin/sso',
-    '/admin/vendor-assessment-reviews/[assessmentId]',
-    '/admin/vendor-templates',
-    '/admin/vendor-templates/[templateId]',
     '/assets/new',
     '/controls/dashboard',
     '/controls/sankey',

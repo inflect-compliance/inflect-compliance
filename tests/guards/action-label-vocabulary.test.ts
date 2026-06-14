@@ -78,8 +78,10 @@ const BASELINE_PLUS_LITERAL_SITES = new Set<string>([
     'src/app/t/[tenantSlug]/(app)/admin/risk-matrix/RiskMatrixAdminClient.tsx:487',
     'src/app/t/[tenantSlug]/(app)/admin/roles/page.tsx:593',
     'src/app/t/[tenantSlug]/(app)/admin/scim/page.tsx:216',
-    'src/app/t/[tenantSlug]/(app)/admin/vendor-templates/[templateId]/VendorTemplateBuilderClient.tsx:584',
-    'src/app/t/[tenantSlug]/(app)/admin/vendor-templates/[templateId]/VendorTemplateBuilderClient.tsx:687',
+    // cleanup-2-back-affordance-admin — shifted +2 by the BackAffordance
+    // import + mount added above the page title.
+    'src/app/t/[tenantSlug]/(app)/admin/vendor-templates/[templateId]/VendorTemplateBuilderClient.tsx:586',
+    'src/app/t/[tenantSlug]/(app)/admin/vendor-templates/[templateId]/VendorTemplateBuilderClient.tsx:689',
     'src/app/t/[tenantSlug]/(app)/audits/cycles/[cycleId]/page.tsx:123',
     // RQ4-back-link-fixes-2 — shifted +2 by the `BackAffordance`
     // import + mount added above the page title.

@@ -13,6 +13,7 @@ import { ToggleGroup } from '@/components/ui/toggle-group';
 import { InlineNotice } from '@/components/ui/inline-notice';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { GroupMappingsSection } from './GroupMappingsSection';
 
 interface EntraConfig {
@@ -84,6 +85,7 @@ export default function EntraProviderWizard() {
 
     return (
         <div className="space-y-section">
+            <BackAffordance />
             <PageBreadcrumbs items={[{ label: 'Admin' }, { label: 'Entra ID' }]} />
             <div className="flex items-center gap-default">
                 <Heading level={1}>Microsoft Entra ID</Heading>

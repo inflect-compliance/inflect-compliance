@@ -19,6 +19,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { Card, cardVariants } from '@/components/ui/card';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 
 interface ScimToken {
     id: string;
@@ -118,6 +119,7 @@ export default function ScimAdminPage() {
 
     return (
         <div className="space-y-section animate-fadeIn max-w-4xl">
+            <BackAffordance />
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>

@@ -46,6 +46,7 @@ export default async function AuditLogPage({
         <ListPageShell className="gap-default">
             <ListPageShell.Header>
                 <PageHeader
+                    back={{ smart: true }}
                     breadcrumbs={[
                         { label: 'Dashboard', href: tenantHref('/dashboard') },
                         { label: t('title'), href: tenantHref('/admin') },
