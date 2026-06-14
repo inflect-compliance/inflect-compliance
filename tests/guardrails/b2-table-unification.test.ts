@@ -24,10 +24,20 @@ describe('B2 — table unification', () => {
     describe('Title-cell navigation parity', () => {
         // Pages whose list tables MUST have a navigable title cell
         // (the row maps 1:1 to a detail page).
-        const NAVIGABLE_LISTS: Array<{
-            label: string;
-            file: string;
-        }> = [
+        //
+        // Two acceptable interaction shapes for the title:
+        //   - `<TableTitleCell href={…}>` — canonical Controls
+        //     pattern: single-click on the title navigates to the
+        //     detail page. The legacy / dominant shape.
+        //   - `<TableTitleCell>` (no href) PAIRED with a row-level
+        //     `onRowClick={…}` handler — item 32 (2026-06-14): single
+        //     click on the row opens a quick-look <Sheet> instead of
+        //     navigating, with a "Full view" button inside. The
+        //     primary interaction is preserved; the destination
+        //     changed.
+        // Either is legitimate; what's NOT legitimate is a dead title
+        // cell with no row-level handler (a row that ignores clicks).
+        const NAVIGABLE_LISTS: Array<{ label: string; file: string }> = [
             { label: 'Controls (canonical)', file: 'src/app/t/[tenantSlug]/(app)/controls/ControlsClient.tsx' },
             { label: 'Risks', file: 'src/app/t/[tenantSlug]/(app)/risks/RisksClient.tsx' },
             { label: 'Policies', file: 'src/app/t/[tenantSlug]/(app)/policies/PoliciesClient.tsx' },
@@ -37,13 +47,11 @@ describe('B2 — table unification', () => {
         ];
 
         for (const { label, file } of NAVIGABLE_LISTS) {
-            it(`${label} renders TableTitleCell with an href`, () => {
+            it(`${label} renders a click-handled title cell (href OR onRowClick)`, () => {
                 const src = read(file);
-                // The title cell MUST carry an href — without it,
-                // single-click on the title is dead and the user
-                // has to double-click the row (the canonical
-                // Controls behaviour expects both).
-                expect(src).toMatch(/<TableTitleCell\b[\s\S]{0,300}href=/);
+                const hasTitleHref = /<TableTitleCell\b[\s\S]{0,300}href=/.test(src);
+                const hasRowClick = /onRowClick=\{/.test(src);
+                expect(hasTitleHref || hasRowClick).toBe(true);
             });
         }
     });
