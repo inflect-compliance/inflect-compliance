@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import type { Role } from '@prisma/client';
 import { Button } from '@/components/ui/button';
+import { Plus } from '@/components/ui/icons/nucleo';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { Tooltip } from '@/components/ui/tooltip';
 import { DataTable, createColumns } from '@/components/ui/table';
@@ -589,10 +590,11 @@ export default function CustomRolesPage() {
                     {!showCreate && !editingId && (
                         <Button
                             variant="primary"
+                            icon={<Plus className="-ml-0.5 -mr-2.5" />}
                             onClick={() => setShowCreate(true)}
                             id="create-role-btn"
                         >
-                            + Role
+                            Role
                         </Button>
                     )}
                 </div>

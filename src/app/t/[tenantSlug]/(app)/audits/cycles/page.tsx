@@ -8,6 +8,7 @@ import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
 import { ClipboardCheck } from 'lucide-react';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Button } from '@/components/ui/button';
+import { Plus } from '@/components/ui/icons/nucleo';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
@@ -132,8 +133,8 @@ export default function AuditCyclesPage() {
                     <Heading level={1}>Audit Readiness</Heading>
                     <p className="text-content-muted text-sm">{cycles.length} audit cycle{cycles.length !== 1 ? 's' : ''}</p>
                 </div>
-                <Button variant="primary" onClick={() => setShowForm(!showForm)} id="create-cycle-btn">
-                    {showForm ? 'Cancel' : '+ Cycle'}
+                <Button variant="primary" icon={showForm ? undefined : <Plus className="-ml-0.5 -mr-2.5" />} onClick={() => setShowForm(!showForm)} id="create-cycle-btn">
+                    {showForm ? 'Cancel' : 'Cycle'}
                 </Button>
             </div>
 
@@ -206,7 +207,7 @@ export default function AuditCyclesPage() {
                     </div>
                     <div className="mt-4 flex gap-tight">
                         <Button type="button" variant="secondary" onClick={() => setShowForm(false)}>Cancel</Button>
-                        <Button type="submit" variant="primary" id="submit-cycle-btn">+ Cycle</Button>
+                        <Button type="submit" variant="primary" icon={<Plus className="-ml-0.5 -mr-2.5" />} id="submit-cycle-btn">Cycle</Button>
                     </div>
                 </form>
             )}
@@ -218,7 +219,7 @@ export default function AuditCyclesPage() {
                         title="No audit cycles yet"
                         description="Create your first audit cycle for ISO 27001 or NIS2."
                         primaryAction={{
-                            label: '+ Audit Cycle',
+                            label: 'Add Audit Cycle',
                             onClick: () => setShowForm(true),
                         }}
                     />
