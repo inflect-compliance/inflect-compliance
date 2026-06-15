@@ -27,8 +27,19 @@ describe('B5 — entity prev/next nav', () => {
         expect(PRIM).toMatch(/idx < 0 \|\| ids\.length <= 1/);
         // disable a stepper when its neighbour doesn't exist
         expect(PRIM).toMatch(/disabled=\{!id\}/);
-        // navigate via the router using the caller's href builder
-        expect(PRIM).toMatch(/router\.push\(hrefFor\(id\)\)/);
+        // Lateral step uses router.replace (not push) so stepping through
+        // siblings doesn't stack history — Back returns to the list, not the
+        // previously-viewed sibling.
+        expect(PRIM).toMatch(/router\.replace\(hrefFor\(id\)\)/);
+        expect(PRIM).not.toMatch(/router\.push\(hrefFor\(id\)\)/);
+    });
+
+    it('wires ↑/↓ keyboard shortcuts to prev/next (gated on a neighbour)', () => {
+        expect(PRIM).toMatch(/useKeyboardShortcut\('ArrowUp'/);
+        expect(PRIM).toMatch(/useKeyboardShortcut\('ArrowDown'/);
+        // gated so the ends don't fire + hooks run unconditionally
+        expect(PRIM).toMatch(/enabled:\s*!navDisabled && prevId != null/);
+        expect(PRIM).toMatch(/enabled:\s*!navDisabled && nextId != null/);
     });
 
     it('the asset detail page mounts it beside the name with the ordered ids', () => {

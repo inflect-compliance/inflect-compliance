@@ -16,6 +16,7 @@
  */
 import { useRouter } from 'next/navigation';
 import { Tooltip } from '@/components/ui/tooltip';
+import { useKeyboardShortcut } from '@/lib/hooks/use-keyboard-shortcut';
 import { cn } from '@/lib/cn';
 
 export interface EntityPrevNextNavProps {
@@ -57,19 +58,40 @@ export function EntityPrevNextNav({
 }: EntityPrevNextNavProps) {
     const router = useRouter();
     const idx = ids.indexOf(currentId);
+    const prevId = idx > 0 ? ids[idx - 1] : null;
+    const nextId = idx >= 0 && idx < ids.length - 1 ? ids[idx + 1] : null;
+    // Lateral step to a sibling. `router.replace` (not push) so stepping
+    // through siblings does NOT stack history — the browser Back button and
+    // the smart "Back to <list>" affordance both return to the LIST, not the
+    // previously-viewed sibling (no circular back-to-back navigation).
+    const go = (id: string | null) => {
+        if (id) router.replace(hrefFor(id));
+    };
+
+    // Keyboard: ↑ = previous, ↓ = next sibling. The hook is typing-safe
+    // (skips when an input/textarea is focused). Hooks must run
+    // unconditionally, so they're gated via `enabled` rather than placed
+    // after the early return below.
+    const navDisabled = idx < 0 || ids.length <= 1;
+    useKeyboardShortcut('ArrowUp', () => go(prevId), {
+        enabled: !navDisabled && prevId != null,
+        description: `Previous ${labelSingular}`,
+    });
+    useKeyboardShortcut('ArrowDown', () => go(nextId), {
+        enabled: !navDisabled && nextId != null,
+        description: `Next ${labelSingular}`,
+    });
+
     // Nothing to step through (single item, or the current id isn't in the
     // loaded window) → render nothing.
-    if (idx < 0 || ids.length <= 1) return null;
-
-    const prevId = idx > 0 ? ids[idx - 1] : null;
-    const nextId = idx < ids.length - 1 ? ids[idx + 1] : null;
+    if (navDisabled) return null;
 
     const step = (id: string | null, dir: 'up' | 'down', label: string) => {
         const button = (
             <button
                 type="button"
                 disabled={!id}
-                onClick={() => id && router.push(hrefFor(id))}
+                onClick={() => go(id)}
                 aria-label={label}
                 data-testid={`entity-nav-${dir === 'up' ? 'prev' : 'next'}`}
                 className={cn(
