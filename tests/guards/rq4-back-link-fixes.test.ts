@@ -36,10 +36,20 @@ describe('rq4 back-link fixes', () => {
     it('BackAffordance exposes a `noFallback` prop that skips canonical resolution', () => {
         const source = fs.readFileSync(BACK_AFFORDANCE_PATH, 'utf-8');
         expect(source).toMatch(/noFallback\?:\s*boolean/);
-        // The implementation must gate the canonical-parent branch
-        // behind `!noFallback`. The user-visible contract: with no
-        // referrer + noFallback, the component returns null.
-        expect(source).toMatch(/!noFallback/);
+        // The implementation must gate canonical-parent resolution behind
+        // noFallback (with no referrer + noFallback the component returns
+        // null). The sibling-detail guard expresses this as
+        // `noFallback ? null : resolveCanonicalParent(...)`.
+        expect(source).toMatch(/noFallback\s*\?\s*null/);
+    });
+
+    it('BackAffordance skips a sibling-detail referrer → canonical parent (no circular back)', () => {
+        // Stepping /assets/A → /assets/B via prev/next must not make "Back"
+        // return to /assets/B; siblings (same canonical parent) route to the
+        // shared parent (the list) instead.
+        const source = fs.readFileSync(BACK_AFFORDANCE_PATH, 'utf-8');
+        expect(source).toMatch(/referrerIsSibling/);
+        expect(source).toMatch(/resolveCanonicalParent\(referrer, tenantSlug\)/);
     });
 
     it('canonical parent for /controls/[controlId]/tests/[planId] is /tests with label "Tests"', () => {

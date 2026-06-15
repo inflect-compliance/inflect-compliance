@@ -105,10 +105,24 @@ export function BackAffordance({ override, noFallback }: BackAffordanceProps) {
     let destination: CanonicalParent | null = null;
     if (override) {
         destination = override;
-    } else if (referrer && tenantSlug && referrer !== pathname) {
-        destination = { href: referrer, label: labelFromPathname(referrer) };
-    } else if (tenantSlug && !noFallback) {
-        destination = resolveCanonicalParent(pathname, tenantSlug);
+    } else if (tenantSlug) {
+        const canonical = noFallback
+            ? null
+            : resolveCanonicalParent(pathname, tenantSlug);
+        // Sibling-detail guard: when the referrer is a SIBLING of the current
+        // page (both resolve to the same canonical parent — e.g. stepping
+        // /assets/A → /assets/B via the prev/next nav), "back" must NOT return
+        // to the sibling (that's the circular back-to-back-asset bug). Skip the
+        // referrer and go straight to the shared canonical parent (the list).
+        const referrerIsSibling =
+            referrer != null &&
+            canonical != null &&
+            resolveCanonicalParent(referrer, tenantSlug)?.href === canonical.href;
+        if (referrer && referrer !== pathname && !referrerIsSibling) {
+            destination = { href: referrer, label: labelFromPathname(referrer) };
+        } else {
+            destination = canonical;
+        }
     }
 
     if (!destination) return null;
