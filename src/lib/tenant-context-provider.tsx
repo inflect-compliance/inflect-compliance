@@ -7,6 +7,13 @@ import type { PermissionSet } from '@/lib/permissions';
 // ─── Tenant context ───
 
 export interface TenantContextValue {
+    /**
+     * The authenticated user's id. Resolved server-side in the tenant layout
+     * and threaded through here so client components can read it WITHOUT
+     * `useSession()` — the app deliberately mounts no `<SessionProvider>`, so
+     * `useSession()` returns undefined and throws on destructure.
+     */
+    userId: string;
     tenantId: string;
     tenantSlug: string;
     tenantName: string;
@@ -51,6 +58,14 @@ export function useTenantContext(): TenantContextValue {
  */
 export function usePermissions(): PermissionSet {
     return useTenantContext().appPermissions;
+}
+
+/**
+ * The authenticated user's id — the no-SessionProvider replacement for
+ * `useSession().user.id` in client components.
+ */
+export function useCurrentUserId(): string {
+    return useTenantContext().userId;
 }
 
 /**

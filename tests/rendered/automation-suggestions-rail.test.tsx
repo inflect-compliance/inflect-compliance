@@ -10,9 +10,9 @@ jest.mock('@/lib/hooks/use-tenant-swr', () => ({
 }));
 jest.mock('@/lib/tenant-context-provider', () => ({
     useTenantApiUrl: () => (p: string) => p,
-}));
-jest.mock('next-auth/react', () => ({
-    useSession: () => ({ data: { user: { id: 'u1' } } }),
+    // No <SessionProvider> in the app — the current user id comes from the
+    // server-resolved tenant context, not useSession().
+    useCurrentUserId: () => 'u1',
 }));
 
 import { AutomationSuggestionsRail } from '@/components/automation/AutomationSuggestionsRail';
