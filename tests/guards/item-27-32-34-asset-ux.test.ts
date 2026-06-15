@@ -2,9 +2,9 @@
  * Items 27 / 32 / 34 — asset list interaction ratchets.
  *
  * 34 — the asset table has a derived Criticality column.
- * 32 — a single row click opens the quick-look side panel (not a
- *      full-page navigation), and the panel carries a "Full view"
- *      button to enter the detail page.
+ * 32 — three-way interaction: single-click TITLE → quick-look panel;
+ *      single-click ROW → select (action row); double-click ROW → full
+ *      detail page. The panel carries a "Full view" button too.
  * 27 — ↑/↓ move the panel selection between assets while it's open.
  */
 import * as fs from 'node:fs';
@@ -24,21 +24,26 @@ describe('item 34 — asset Criticality column', () => {
     });
 });
 
-describe('item 32 — single click opens the quick-look panel', () => {
+describe('item 32 — three-way asset interaction (title / row / double-click)', () => {
     const src = read(CLIENT);
-    it('row click opens the panel instead of navigating', () => {
-        expect(src).toContain('onRowClick={(row) => setSelectedAssetId(row.original.id)}');
-        // The old full-page navigation on row click is gone.
-        expect(src).not.toMatch(/onRowClick=\{\(row\) => router\.push\(tenantHref\(`\/assets/);
+    it('single-click on the TITLE opens the quick-look panel (title is a <button>)', () => {
+        // A <button> so isClickOnInteractiveChild() skips the row's
+        // select/navigate handlers — title clicks only open the panel.
+        expect(src).toMatch(/<button[\s\S]{0,200}setSelectedAssetId\(row\.original\.id\)/);
+        expect(src).toMatch(/data-testid=\{`asset-title-\$\{row\.original\.id\}`\}/);
     });
-    it('disables row-selection so SINGLE click runs onRowClick (not double-click)', () => {
-        // The Table primitive defaults `selectionEnabled` to true, in
-        // which case single click toggles the row's radio and
-        // `onRowClick` only fires on double-click. The item-32 spec
-        // is "ONE click opens the panel" — so selection must be
-        // explicitly off on this table. A regression that drops this
-        // line silently re-introduces the double-click contract.
-        expect(src).toContain('selectionEnabled={false}');
+    it('single-click ROW selects (selectionEnabled on → action row replaces headers)', () => {
+        // selectionEnabled on means single-click toggles the row's
+        // selection (the SelectionToolbar appears); a regression back to
+        // `selectionEnabled={false}` would make single-click navigate.
+        expect(src).toContain('selectionEnabled');
+        expect(src).not.toContain('selectionEnabled={false}');
+    });
+    it('double-click ROW opens the full detail page (onRowClick → navigate)', () => {
+        // With selection on, onRowClick fires on DOUBLE click.
+        expect(src).toMatch(/onRowClick=\{\(row\) =>\s*router\.push\(tenantHref\(`\/assets\/\$\{row\.original\.id\}`\)\)/);
+        // The old single-click-opens-panel onRowClick is gone.
+        expect(src).not.toContain('onRowClick={(row) => setSelectedAssetId(row.original.id)}');
     });
     it('mounts the AssetDetailSheet', () => {
         expect(src).toContain('<AssetDetailSheet');
