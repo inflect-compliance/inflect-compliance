@@ -110,7 +110,8 @@ describe('Roadmap-16 PR-12 — Lickable Charts capstone bundle', () => {
 
     describe('PR-5/6 — DonutChart rebuild + hover', () => {
         it('uses visx Pie + ChartRadialGradient for segment rendering', () => {
-            expect(DONUT).toMatch(/import\s+Pie\s+from\s+['"]@visx\/shape/);
+            // @visx 4.0 — Pie is a named root export (deep /lib path dropped).
+            expect(DONUT).toMatch(/import\s+\{\s*Pie\s*\}\s+from\s+['"]@visx\/shape['"]/);
             expect(DONUT).toMatch(/<ChartRadialGradient/);
             expect(DONUT).toMatch(/cornerRadius=\{1\.5\}/);
         });

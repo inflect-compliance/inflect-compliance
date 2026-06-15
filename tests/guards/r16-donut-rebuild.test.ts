@@ -48,11 +48,12 @@ const DONUT_SRC = fs.readFileSync(
 describe('Roadmap-16 PR-5 — DonutChart visual rebuild', () => {
     describe('imports — visx Pie + R16 gradient primitives', () => {
         it('imports Pie from @visx/shape', () => {
-            // The whole rebuild rides on visx's `<Pie>` arc
-            // geometry. Without it, we're back to dasharray
-            // and can't carry per-segment gradient fills.
+            // The whole rebuild rides on visx's `<Pie>` arc geometry. Without
+            // it, we're back to dasharray and can't carry per-segment gradient
+            // fills. @visx 4.0 dropped the deep `/lib/shapes/Pie` subpath — Pie
+            // is now a named export off the package root.
             expect(DONUT_SRC).toMatch(
-                /import\s+Pie\s+from\s+['"]@visx\/shape\/lib\/shapes\/Pie['"]/,
+                /import\s+\{\s*Pie\s*\}\s+from\s+['"]@visx\/shape['"]/,
             );
         });
 

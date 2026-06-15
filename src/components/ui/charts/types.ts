@@ -13,9 +13,13 @@
  * primitive next gets a substantive update.
  */
 import { ScaleTypeToD3Scale } from "@visx/scale";
-import { TooltipWithBounds } from "@visx/tooltip";
-import { UseTooltipParams } from "@visx/tooltip/lib/hooks/useTooltip";
-import { TooltipInPortalProps } from "@visx/tooltip/lib/hooks/useTooltipInPortal";
+// @visx 4.0 drops deep `/lib/...` import paths — these types are re-exported
+// from the package root.
+import {
+    TooltipWithBounds,
+    type UseTooltipParams,
+    type TooltipInPortalProps,
+} from "@visx/tooltip";
 import { Dispatch, FC, ReactElement, SetStateAction } from "react";
 
 export type Datum = Record<string, any>;
