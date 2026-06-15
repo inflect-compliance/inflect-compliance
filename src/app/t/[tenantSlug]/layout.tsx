@@ -56,6 +56,7 @@ export default async function TenantLayout({
 
     return (
         <TenantProvider value={{
+            userId: session.user.id,
             tenantId: serverCtx.tenant.id,
             tenantSlug: serverCtx.tenant.slug,
             tenantName: serverCtx.tenant.name,

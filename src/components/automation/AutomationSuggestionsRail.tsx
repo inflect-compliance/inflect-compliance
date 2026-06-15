@@ -11,9 +11,8 @@
  * <AsidePanel> wrapper; this component owns the list + actions.
  */
 import { useState } from 'react';
-import { useSession } from 'next-auth/react';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
-import { useTenantApiUrl } from '@/lib/tenant-context-provider';
+import { useTenantApiUrl, useCurrentUserId } from '@/lib/tenant-context-provider';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import { Button } from '@/components/ui/button';
 import { Sparkle3 } from '@/components/ui/icons/nucleo/sparkle3';
@@ -45,8 +44,10 @@ function draftConfig(s: RuleSuggestion, currentUserId: string): Record<string, u
 }
 
 export function AutomationSuggestionsRail() {
-    const { data: session } = useSession();
-    const currentUserId = session?.user?.id ?? '';
+    // No `useSession()` — the app mounts no <SessionProvider> (it returns
+    // undefined and throws on destructure). The current user id comes from the
+    // server-resolved tenant context.
+    const currentUserId = useCurrentUserId();
     const apiUrl = useTenantApiUrl();
     const { data, isLoading } = useTenantSWR<{ suggestions: RuleSuggestion[] }>(
         CACHE_KEYS.automation.suggestions(),
