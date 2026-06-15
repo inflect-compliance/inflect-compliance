@@ -44,7 +44,9 @@
  */
 
 import { useId, useState } from 'react';
-import Pie from '@visx/shape/lib/shapes/Pie';
+// @visx 4.0 drops deep `/lib/...` import paths (exports-map gated) — Pie is a
+// named export off the package root now.
+import { Pie } from '@visx/shape';
 import { motion } from 'motion/react';
 import {
     ChartFlowGradient,
