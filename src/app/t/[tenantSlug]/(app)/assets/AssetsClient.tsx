@@ -346,13 +346,24 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
         {
             accessorKey: 'name',
             header: t.name,
-            // Item 32 — single click anywhere on the row (the name
-            // included) opens the quick-look side panel, NOT a full-page
-            // navigation. So the title is a plain (non-link) cell; the
-            // row's onRowClick owns the interaction and the panel's
-            // "Full view" button enters the detail page.
-            cell: ({ getValue }: any) => (
-                <TableTitleCell>{getValue()}</TableTitleCell>
+            // Interaction model: a single click on the TITLE opens the
+            // quick-look side panel. It's a <button>, so the table's
+            // isClickOnInteractiveChild() skips the row's select/navigate
+            // handlers for title clicks — the title never toggles selection
+            // or navigates to the full page (those are the row's job:
+            // single-click row = select, double-click row = full view).
+            cell: ({ row, getValue }: any) => (
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedAssetId(row.original.id);
+                    }}
+                    className="block w-full text-left rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    data-testid={`asset-title-${row.original.id}`}
+                >
+                    <TableTitleCell>{getValue()}</TableTitleCell>
+                </button>
             ),
         },
         {
@@ -515,15 +526,19 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                     getRowId={(a: any) => a.id}
                     columnVisibility={columnVisibility}
                     onColumnVisibilityChange={setColumnVisibility}
-                    // Item 32 — the asset table's primary interaction is
-                    // single-click → open quick-look panel. The DataTable's
-                    // default `selectionEnabled` is on, which steals single
-                    // click for selection and pushes `onRowClick` to
-                    // double-click; selection is irrelevant here (no
-                    // multi-select actions on the assets list today), so
-                    // disable it and let single click own the panel-open.
-                    selectionEnabled={false}
-                    onRowClick={(row) => setSelectedAssetId(row.original.id)}
+                    // Three-way interaction model:
+                    //   • single-click TITLE   → quick-look side panel (the
+                    //     title <button> owns this; see the name column cell).
+                    //   • single-click ROW     → select the row; the selection
+                    //     action row replaces the column headers.
+                    //   • double-click ROW     → full detail page.
+                    // With selectionEnabled on, the DataTable gives single
+                    // click to selection and fires onRowClick on double-click —
+                    // so onRowClick is the "full view" navigation.
+                    selectionEnabled
+                    onRowClick={(row) =>
+                        router.push(tenantHref(`/assets/${row.original.id}`))
+                    }
                     emptyState={
                         hasActive ? (
                             <EmptyState
