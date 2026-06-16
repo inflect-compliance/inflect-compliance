@@ -3,6 +3,9 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useSWRConfig } from 'swr';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
+import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
+import { UserCombobox } from '@/components/ui/user-combobox';
+import { ownerDisplayName } from '@/lib/owner-display';
 import { useTenantMutation } from '@/lib/hooks/use-tenant-mutation';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import type { CappedList } from '@/lib/list-backfill-cap';
@@ -179,6 +182,53 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             : { rows: initialEvidence, truncated: false },
     });
     const truncated = evidenceQuery.data?.truncated ?? false;
+
+    // ─── Bulk actions (canonical BulkActionBar — assign-owner only) ───
+    // Evidence status is workflow-gated (the reviewer-identity review chain),
+    // so the bar carries Assign owner only — no bulk status.
+    const [selected, setSelected] = useState<Set<string>>(new Set());
+    const [bulkApplying, setBulkApplying] = useState(false);
+    const handleBulkApply = async (action: string, value: string) => {
+        const ids = Array.from(selected);
+        if (action !== 'assign' || ids.length === 0) return;
+        setBulkApplying(true);
+        try {
+            const res = await fetch(apiUrl('/evidence/bulk/assign'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ evidenceIds: ids, ownerUserId: value || null }),
+            });
+            if (!res.ok) throw new Error('Bulk action failed');
+            await evidenceQuery.mutate();
+            setSelected(new Set());
+        } finally {
+            setBulkApplying(false);
+        }
+    };
+    const evidenceBulkActions: BulkActionDef[] = useMemo(
+        () => [
+            {
+                value: 'assign',
+                label: 'Assign owner',
+                renderInput: ({ value, setValue, setLabel }) => (
+                    <UserCombobox
+                        tenantSlug={tenantSlug}
+                        selectedId={value || null}
+                        onChange={(id, m) => {
+                            setValue(id ?? '');
+                            setLabel(ownerDisplayName(m?.name, m?.email) ?? '');
+                        }}
+                        forceDropdown
+                        matchTriggerWidth
+                        placeholder="Owner (blank = unassign)"
+                        className="w-full sm:w-44"
+                        id="bulk-value-input"
+                    />
+                ),
+            },
+        ],
+        [tenantSlug],
+    );
 
     // Stabilise the array identity across renders so dependent hooks
     // (`useEffect` at line ~330 reads `evidence`) don't re-fire on
@@ -1115,6 +1165,20 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                             setDetailEvidenceId(row.original.id);
                             setDetailSheetOpen(true);
                         }}
+                        selectionEnabled
+                        selectedRows={Object.fromEntries(
+                            Array.from(selected).map((id) => [id, true]),
+                        )}
+                        onRowSelectionChange={(rows) =>
+                            setSelected(new Set(rows.map((r) => r.original.id)))
+                        }
+                        selectionControls={() => (
+                            <BulkActionBar
+                                actions={evidenceBulkActions}
+                                onApply={handleBulkApply}
+                                applying={bulkApplying}
+                            />
+                        )}
                         emptyState={
                             anyFilterActive ? (
                                 <EmptyState

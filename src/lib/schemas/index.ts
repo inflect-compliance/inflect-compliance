@@ -606,6 +606,29 @@ export const BulkTestPlanAssignSchema = z.object({
     ownerUserId: z.string().nullable(),
 }).strip();
 
+// ─── Evidence bulk actions (canonical BulkActionBar rollout — wave B) ───
+// Evidence status is workflow-gated (the reviewer-identity review chain),
+// so the bulk bar is assign-owner only — no bulk status.
+
+export const BulkEvidenceAssignSchema = z.object({
+    evidenceIds: z.array(z.string().min(1)).min(1).max(100),
+    ownerUserId: z.string().nullable(),
+}).strip();
+
+// ─── Policy bulk actions (canonical BulkActionBar rollout — wave B) ───
+// Policy status is approval-gated (can't reach PUBLISHED without APPROVED),
+// so the bulk bar is Assign owner + Archive (the one safe terminal verb) —
+// no bulk status that could bypass the approval workflow.
+
+export const BulkPolicyAssignSchema = z.object({
+    policyIds: z.array(z.string().min(1)).min(1).max(100),
+    ownerUserId: z.string().nullable(),
+}).strip();
+
+export const BulkPolicyArchiveSchema = z.object({
+    policyIds: z.array(z.string().min(1)).min(1).max(100),
+}).strip();
+
 // ─── Issue Compatibility Aliases (deprecated — use Task schemas) ───
 
 /** @deprecated Use CreateTaskSchema */ export const CreateIssueSchema = CreateTaskSchema;

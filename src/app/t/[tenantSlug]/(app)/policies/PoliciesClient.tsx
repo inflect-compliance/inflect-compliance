@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { ownerDisplayName } from '@/lib/owner-display';
+import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
+import { UserCombobox } from '@/components/ui/user-combobox';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import type { CappedList } from '@/lib/list-backfill-cap';
 import { TruncationBanner } from '@/components/ui/TruncationBanner';
@@ -181,6 +183,66 @@ function PoliciesPageInner({
     const policies = policiesQuery.data?.rows ?? [];
     const truncated = policiesQuery.data?.truncated ?? false;
     const loading = policiesQuery.isLoading && !policiesQuery.data;
+
+    // ─── Bulk actions (canonical BulkActionBar — assign + archive) ───
+    // Policy status is approval-gated, so the bar carries Assign owner
+    // (write) + Archive (the one safe terminal verb, admin-gated) — no bulk
+    // status that could bypass the publish-approval workflow.
+    const [selected, setSelected] = useState<Set<string>>(new Set());
+    const [bulkApplying, setBulkApplying] = useState(false);
+    const handleBulkApply = async (action: string, value: string) => {
+        const ids = Array.from(selected);
+        if (!action || ids.length === 0) return;
+        setBulkApplying(true);
+        try {
+            const url =
+                action === 'archive'
+                    ? `/api/t/${tenantSlug}/policies/bulk/archive`
+                    : `/api/t/${tenantSlug}/policies/bulk/assign`;
+            const body =
+                action === 'archive'
+                    ? { policyIds: ids }
+                    : { policyIds: ids, ownerUserId: value || null };
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+            if (!res.ok) throw new Error('Bulk action failed');
+            await policiesQuery.mutate();
+            setSelected(new Set());
+        } finally {
+            setBulkApplying(false);
+        }
+    };
+    const policyBulkActions: BulkActionDef[] = useMemo(() => {
+        const defs: BulkActionDef[] = [
+            {
+                value: 'assign',
+                label: 'Assign owner',
+                renderInput: ({ value, setValue, setLabel }) => (
+                    <UserCombobox
+                        tenantSlug={tenantSlug}
+                        selectedId={value || null}
+                        onChange={(id, m) => {
+                            setValue(id ?? '');
+                            setLabel(ownerDisplayName(m?.name, m?.email) ?? '');
+                        }}
+                        forceDropdown
+                        matchTriggerWidth
+                        placeholder="Owner (blank = unassign)"
+                        className="w-full sm:w-44"
+                        id="bulk-value-input"
+                    />
+                ),
+            },
+        ];
+        // Archive is admin-gated (mirrors archivePolicy's OWNER/ADMIN guard).
+        if (permissions.canAdmin) {
+            defs.push({ value: 'archive', label: 'Archive' });
+        }
+        return defs;
+    }, [tenantSlug, permissions.canAdmin]);
 
     const liveFilters = useMemo(
         () => buildPolicyFilters(policies),
@@ -521,6 +583,23 @@ function PoliciesPageInner({
                 onColumnVisibilityChange: setColumnVisibility,
                 'data-testid': 'policies-table',
                 className: 'hover:bg-bg-muted',
+                // Selection + canonical BulkActionBar; gated on edit so a
+                // READER sees neither checkboxes nor the bar.
+                selectedRows: permissions.canWrite
+                    ? Object.fromEntries(Array.from(selected).map((id) => [id, true]))
+                    : undefined,
+                onRowSelectionChange: permissions.canWrite
+                    ? (rows) => setSelected(new Set(rows.map((r) => r.original.id)))
+                    : undefined,
+                selectionControls: permissions.canWrite
+                    ? () => (
+                          <BulkActionBar
+                              actions={policyBulkActions}
+                              onApply={handleBulkApply}
+                              applying={bulkApplying}
+                          />
+                      )
+                    : undefined,
             }}
         >
             {permissions.canWrite && (
