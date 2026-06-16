@@ -38,7 +38,13 @@ export interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-const STORAGE_KEY = 'inflect:theme';
+/**
+ * localStorage key for the persisted theme. Exported so the anti-FOUC inline
+ * script in the root layout (`src/app/layout.tsx`) reads the SAME key — the
+ * script sets `data-theme` BEFORE first paint so there's no dark→light flash
+ * on load / hard navigation, then this provider's effect reconciles state.
+ */
+export const STORAGE_KEY = 'inflect:theme';
 const ATTR = 'data-theme';
 
 function readInitialTheme(): Theme {

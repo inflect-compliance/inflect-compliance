@@ -4,7 +4,18 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import { Providers } from './providers';
 import { CSP_NONCE_HEADER } from '@/lib/security/csp';
+import { STORAGE_KEY as THEME_STORAGE_KEY } from '@/components/theme/ThemeProvider';
 import './globals.css';
+
+/**
+ * Anti-FOUC theme script. Runs synchronously in <head> BEFORE first paint:
+ * reads the persisted theme (same key + resolution as ThemeProvider) and sets
+ * `data-theme` on <html>. Without it, SSR ships `data-theme="dark"` and the
+ * client only flips to light in a post-paint effect — so a light-theme user
+ * sees a dark flash on every load / hard navigation. Setting the attribute
+ * here, before the browser paints, removes the flash entirely.
+ */
+const THEME_INIT_SCRIPT = `(function(){try{var k=${JSON.stringify(THEME_STORAGE_KEY)};var t=localStorage.getItem(k);if(t!=='light'&&t!=='dark'){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`;
 
 export const metadata: Metadata = {
     title: 'Inflect Compliance — Платформа за съответствие по ISO 27001',
@@ -33,11 +44,19 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     const nonce = (await headers()).get(CSP_NONCE_HEADER) ?? undefined;
 
     return (
-        // `data-theme="dark"` seeds the SSR markup so the first paint matches
-        // the baseline palette. ThemeProvider rehydrates from localStorage /
-        // prefers-color-scheme on the client and flips the attribute if needed.
+        // `data-theme="dark"` seeds the SSR markup; the THEME_INIT_SCRIPT below
+        // corrects it to the persisted theme BEFORE first paint (no dark→light
+        // flash), and ThemeProvider then reconciles its state on the client.
         <html lang={locale} data-theme="dark" suppressHydrationWarning>
             <head>
+                {/* Anti-FOUC: set the persisted theme before the browser paints,
+                    so a light-theme user never sees a dark flash on load / hard
+                    navigation. Carries the CSP nonce when present. */}
+                <script
+                    nonce={nonce}
+                    suppressHydrationWarning
+                    dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
+                />
                 {/*
                     2026-05-14 — CSP `strict-dynamic` + webpack chunk
                     loader bridge. Next.js auto-applies the request
