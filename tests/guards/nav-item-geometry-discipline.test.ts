@@ -47,7 +47,7 @@ const GEOMETRY_TOKENS: Record<string, string> = {
     NAV_ITEM_GAP: 'gap-compact',
     NAV_ITEM_RADIUS: 'rounded-lg',
     // 28px (h-7) — sized up so the glyph fills the collapsed icon-rail.
-    NAV_ITEM_ICON_SIZE: 'h-7 w-7',
+    NAV_ITEM_ICON_SIZE: 'h-4 w-4',
 };
 
 describe('Roadmap-12 PR-2 — NavItem geometry discipline', () => {

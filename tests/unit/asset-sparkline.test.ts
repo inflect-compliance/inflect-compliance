@@ -7,7 +7,10 @@
  * instead of the truthful flat `1`. `firstAssetDataIndex` finds where real data
  * begins (gated on total>0) so all four series can be sliced date-aligned.
  */
-import { firstAssetDataIndex } from '@/lib/assets/asset-sparkline';
+import {
+    firstAssetDataIndex,
+    centeredSparklineDomain,
+} from '@/lib/assets/asset-sparkline';
 
 const pts = (...vals: number[]) => vals.map((value) => ({ value }));
 
@@ -34,5 +37,36 @@ describe('firstAssetDataIndex', () => {
         const start = firstAssetDataIndex(total);
         expect(retired.slice(start).map((p) => p.value)).toEqual([1, 1, 1]); // flat, not a ramp
         expect(total.slice(start).map((p) => p.value)).toEqual([4, 4, 4]);
+    });
+});
+
+describe('centeredSparklineDomain — sparklines sit at the same vertical level', () => {
+    const s = (vals: number[]) => vals.map((value) => ({ value }));
+
+    it('centers a ramping series (data in the middle band, equal padding)', () => {
+        // [0..10] → pad = 5 → [-5, 15]; the data midpoint (5) is the domain
+        // midpoint, so the line is vertically centered.
+        expect(centeredSparklineDomain(s([0, 5, 10]))).toEqual([-5, 15]);
+    });
+
+    it('returns undefined for a constant series (chart auto-fit centers it)', () => {
+        expect(centeredSparklineDomain(s([3, 3, 3]))).toBeUndefined();
+        expect(centeredSparklineDomain(s([0, 0]))).toBeUndefined();
+    });
+
+    it('returns undefined for an empty/undefined series', () => {
+        expect(centeredSparklineDomain([])).toBeUndefined();
+        expect(centeredSparklineDomain(undefined)).toBeUndefined();
+    });
+
+    it('a low-magnitude and a high-magnitude series both center (same level)', () => {
+        // The old shared [0,max] domain put these at different heights; centered
+        // per-series domains place each series midpoint at the vertical center.
+        const low = centeredSparklineDomain(s([1, 2]))!;
+        const high = centeredSparklineDomain(s([90, 100]))!;
+        const mid = (d: [number, number]) => (d[0] + d[1]) / 2;
+        expect(mid(low)).toBe(1.5); // midpoint of [1,2]
+        expect(mid(high)).toBe(95); // midpoint of [90,100]
+        // each series' own data midpoint == its domain midpoint → centered
     });
 });

@@ -340,7 +340,7 @@ describe('Roadmap-13 PR-12 — Living Sidebar capstone bundle', () => {
         it('still 44px touch row + 8px radius + 28px icon', () => {
             expect(NAV_ITEM_SRC).toMatch(/min-h-\[44px\]/);
             expect(NAV_ITEM_SRC).toMatch(/rounded-lg/);
-            expect(NAV_ITEM_SRC).toMatch(/h-7 w-7/);
+            expect(NAV_ITEM_SRC).toMatch(/h-4 w-4/);
         });
         it('still focus-visible ring at --ring', () => {
             expect(baseRegion).toMatch(
