@@ -167,6 +167,86 @@ export async function updateAsset(ctx: RequestContext, id: string, data: any) {
     return updated;
 }
 
+// ─── Bulk actions (canonical BulkActionBar — asset rollout) ───
+//
+// Follow the Tasks bulk pattern: assert write, fetch the affected rows once
+// (audit source + no per-id reads in a loop), one tenant-scoped `updateMany`,
+// a per-row audit entry, then bump the list cache.
+
+/** Bulk-set status (ACTIVE / RETIRED) on the given assets. */
+export async function bulkSetAssetStatus(
+    ctx: RequestContext,
+    assetIds: string[],
+    status: 'ACTIVE' | 'RETIRED',
+) {
+    assertCanWrite(ctx);
+    const updated = await runInTenantContext(ctx, async (db) => {
+        const rows = await AssetRepository.listByIds(db, ctx, assetIds);
+        if (rows.length === 0) return 0;
+        await AssetRepository.bulkUpdate(db, ctx, assetIds, { status });
+        for (const r of rows) {
+            await logEvent(db, ctx, {
+                action: 'UPDATE',
+                entityType: 'Asset',
+                entityId: r.id,
+                details: `Asset status set to ${status}`,
+                detailsJson: {
+                    category: 'entity_lifecycle',
+                    entityName: 'Asset',
+                    operation: 'updated',
+                    changedFields: ['status'],
+                    after: { status },
+                    summary: `status set to ${status} (bulk)`,
+                },
+            });
+        }
+        return rows.length;
+    });
+    // Assets use React Query on the client; AssetsClient invalidates its list
+    // query after the bulk mutation. No server-side SWR cache to bump.
+    return { updated };
+}
+
+/** Bulk-assign an owner (ownerUserId; null = unassign) to the given assets. */
+export async function bulkAssignAsset(
+    ctx: RequestContext,
+    assetIds: string[],
+    ownerUserId: string | null,
+) {
+    assertCanWrite(ctx);
+    const updated = await runInTenantContext(ctx, async (db) => {
+        const rows = await AssetRepository.listByIds(db, ctx, assetIds);
+        if (rows.length === 0) return 0;
+        await AssetRepository.bulkUpdate(db, ctx, assetIds, {
+            ownerUserId: ownerUserId || null,
+        });
+        for (const r of rows) {
+            await logEvent(db, ctx, {
+                action: 'UPDATE',
+                entityType: 'Asset',
+                entityId: r.id,
+                details: ownerUserId
+                    ? `Asset owner reassigned`
+                    : `Asset owner cleared`,
+                detailsJson: {
+                    category: 'entity_lifecycle',
+                    entityName: 'Asset',
+                    operation: 'updated',
+                    changedFields: ['ownerUserId'],
+                    after: { ownerUserId: ownerUserId || null },
+                    summary: ownerUserId
+                        ? `owner reassigned (bulk)`
+                        : `owner cleared (bulk)`,
+                },
+            });
+        }
+        return rows.length;
+    });
+    // Assets use React Query on the client; AssetsClient invalidates its list
+    // query after the bulk mutation. No server-side SWR cache to bump.
+    return { updated };
+}
+
 export async function deleteAsset(ctx: RequestContext, id: string) {
     assertCanAdmin(ctx);
 

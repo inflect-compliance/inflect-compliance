@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
 import { DataTable, createColumns, useColumnsDropdown } from '@/components/ui/table';
 import {
@@ -28,6 +28,10 @@ import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
 import { firstAssetDataIndex, centeredSparklineDomain } from '@/lib/assets/asset-sparkline';
+import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
+import { UserCombobox } from '@/components/ui/user-combobox';
+import { Combobox } from '@/components/ui/combobox';
+import { ownerDisplayName } from '@/lib/owner-display';
 import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
 import { Plus } from '@/components/ui/icons/nucleo';
 import type { TrendPayload } from '@/app-layer/usecases/compliance-trends';
@@ -152,6 +156,94 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
         initialData: filtersMatchInitial ? initialAssets : undefined,
     });
     const assets = assetsQuery.data ?? [];
+
+    // ─── Bulk actions (canonical BulkActionBar) ───
+    const queryClient = useQueryClient();
+    const [selected, setSelected] = useState<Set<string>>(new Set());
+    const bulkMutation = useMutation({
+        mutationFn: async ({
+            action,
+            value,
+        }: {
+            action: string;
+            value: string;
+            label: string;
+        }) => {
+            const ids = Array.from(selected);
+            const url =
+                action === 'status'
+                    ? apiUrl('/assets/bulk/status')
+                    : apiUrl('/assets/bulk/assign');
+            const body =
+                action === 'status'
+                    ? { assetIds: ids, status: value }
+                    : { assetIds: ids, ownerUserId: value || null };
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+            if (!res.ok) throw new Error('Bulk action failed');
+            return res.json();
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.assets.all(tenantSlug) });
+            setSelected(new Set());
+        },
+    });
+    const handleBulkApply = (action: string, value: string, label: string) => {
+        if (!action || selected.size === 0) return;
+        bulkMutation.mutate({ action, value, label });
+    };
+    const assetBulkActions: BulkActionDef[] = useMemo(
+        () => [
+            {
+                value: 'status',
+                label: 'Set status',
+                canApply: (v) => v !== '',
+                renderInput: ({ value, setValue }) => (
+                    <Combobox
+                        hideSearch
+                        id="bulk-value-input"
+                        selected={
+                            [
+                                { value: 'ACTIVE', label: 'Active' },
+                                { value: 'RETIRED', label: 'Retired' },
+                            ].find((o) => o.value === value) ?? null
+                        }
+                        setSelected={(opt) => setValue(opt?.value ?? '')}
+                        options={[
+                            { value: 'ACTIVE', label: 'Active' },
+                            { value: 'RETIRED', label: 'Retired' },
+                        ]}
+                        placeholder="Select status..."
+                        matchTriggerWidth
+                        buttonProps={{ className: 'text-sm' }}
+                    />
+                ),
+            },
+            {
+                value: 'assign',
+                label: 'Assign owner',
+                renderInput: ({ value, setValue, setLabel }) => (
+                    <UserCombobox
+                        tenantSlug={tenantSlug}
+                        selectedId={value || null}
+                        onChange={(id, m) => {
+                            setValue(id ?? '');
+                            setLabel(ownerDisplayName(m?.name, m?.email) ?? '');
+                        }}
+                        forceDropdown
+                        matchTriggerWidth
+                        placeholder="Owner (blank = unassign)"
+                        className="w-full sm:w-44"
+                        id="bulk-value-input"
+                    />
+                ),
+            },
+        ],
+        [tenantSlug],
+    );
 
     // Item 32 — the asset row backing the open quick-look panel.
     const selectedAsset =
@@ -538,6 +630,19 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                     // click to selection and fires onRowClick on double-click —
                     // so onRowClick is the "full view" navigation.
                     selectionEnabled
+                    selectedRows={Object.fromEntries(
+                        Array.from(selected).map((id) => [id, true]),
+                    )}
+                    onRowSelectionChange={(rows) =>
+                        setSelected(new Set(rows.map((r) => r.original.id)))
+                    }
+                    selectionControls={() => (
+                        <BulkActionBar
+                            actions={assetBulkActions}
+                            onApply={handleBulkApply}
+                            applying={bulkMutation.isPending}
+                        />
+                    )}
                     onRowClick={(row) =>
                         router.push(tenantHref(`/assets/${row.original.id}`))
                     }
