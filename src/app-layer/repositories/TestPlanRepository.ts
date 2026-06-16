@@ -1,6 +1,7 @@
 /**
  * Test Plan repository — CRUD operations for ControlTestPlan.
  */
+import { Prisma } from '@prisma/client';
 import { PrismaTx } from '@/lib/db-context';
 import { RequestContext } from '../types';
 
@@ -103,6 +104,31 @@ export const TestPlanRepository = {
         return db.controlTestPlan.update({
             where: { id: planId },
             data: { nextDueAt },
+        });
+    },
+
+    /** Fetch the tenant's test plans for the given ids (bulk-action audit source). */
+    async listByIds(db: PrismaTx, ctx: RequestContext, ids: string[]) {
+        // Bounded by the `in: ids` set (bulk schemas cap at 100 ids); a `take:`
+        // would be redundant.
+        return db.controlTestPlan.findMany({ // guardrail-allow: unbounded
+            where: { id: { in: ids }, tenantId: ctx.tenantId },
+        });
+    },
+
+    /**
+     * Tenant-scoped bulk update — one `updateMany` so the bulk-action path
+     * never reads/writes per-id in a loop. Returns the affected-row count.
+     */
+    async bulkUpdate(
+        db: PrismaTx,
+        ctx: RequestContext,
+        ids: string[],
+        data: Omit<Prisma.ControlTestPlanUncheckedUpdateInput, 'tenantId'>,
+    ) {
+        return db.controlTestPlan.updateMany({
+            where: { id: { in: ids }, tenantId: ctx.tenantId },
+            data,
         });
     },
 };

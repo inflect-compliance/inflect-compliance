@@ -150,15 +150,17 @@ describe('Right-rail list-page aside discipline (Phase 2)', () => {
     });
 
     it('controls list page uses the header-row selection bar (B1), keeping the browse/AI rails', () => {
-        // B1 (2026-06-07): the controls selection actions moved from the
-        // SelectionSummaryPanel right-rail INTO the DataTable's header-row
-        // `batchActions` bar (the row-select bar that pops over the
-        // column-names row). The aside slot persists for the browse + AI
-        // assist rails; only the SELECTION rail is retired.
+        // The controls selection actions render via the canonical
+        // <BulkActionBar> in the DataTable's header-row `selectionControls`
+        // slot (the row-select bar that pops over the column-names row),
+        // replacing the earlier `batchActions` verbs. The aside slot
+        // persists for the browse + AI assist rails; only the SELECTION
+        // rail is retired.
         const src = read(CONTROLS_CLIENT_PATH);
         expect(src).toMatch(/<EntityListPage[\s\S]*?\baside=\{/);
         expect(src).not.toContain('<SelectionSummaryPanel');
-        expect(src).toMatch(/batchActions:\s*controlBatchActions/);
+        expect(src).toMatch(/selectionControls:\s*canEditControls/);
+        expect(src).toMatch(/<BulkActionBar\b/);
     });
 });
 

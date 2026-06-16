@@ -4,8 +4,11 @@
  *
  * The DataTable's `SelectionToolbar` already overlays the `<thead>` row
  * (absolute, top-0, z-30). B1:
- *   - Controls: the bulk-status verbs moved from the `SelectionSummaryPanel`
- *     right-rail BACK into the DataTable's `batchActions` (header bar).
+ *   - Controls: the bulk actions render via the canonical <BulkActionBar>
+ *     in the DataTable's `selectionControls` slot (header bar) — the same
+ *     primitive Tasks/Assets use. This superseded the earlier three-verb
+ *     `batchActions` (and the per-id N+1 status loop they drove) when the
+ *     bar rolled out to all entities.
  *   - Tasks: the standalone `#bulk-toolbar` card moved into the DataTable's
  *     `selectionControls` (the inline form renders in the header bar).
  *   - The bar height now matches the header row (`h-9`, was `h-11` — it
@@ -22,11 +25,14 @@ const TASKS = read('src/app/t/[tenantSlug]/(app)/tasks/TasksClient.tsx');
 const TOOLBAR = read('src/components/ui/table/selection-toolbar.tsx');
 
 describe('B1 — row-select action bar in the header row', () => {
-    it('Controls renders bulk-status verbs via batchActions, NOT a selection right-rail', () => {
-        expect(CONTROLS).toMatch(/batchActions:\s*controlBatchActions/);
-        expect(CONTROLS).toMatch(/Mark Implemented/);
+    it('Controls renders the canonical BulkActionBar via selectionControls, NOT a selection right-rail', () => {
+        expect(CONTROLS).toMatch(/selectionControls:\s*canEditControls/);
+        expect(CONTROLS).toMatch(/<BulkActionBar\b/);
+        expect(CONTROLS).toMatch(/actions=\{controlBulkActions\}/);
         // The selection-summary right-rail is gone.
         expect(CONTROLS).not.toMatch(/SelectionSummaryPanel/);
+        // The former three-verb batchActions + per-id N+1 loop are gone.
+        expect(CONTROLS).not.toMatch(/batchActions:\s*controlBatchActions/);
     });
 
     it('Tasks renders the bulk-edit form via selectionControls, NOT a standalone #bulk-toolbar', () => {

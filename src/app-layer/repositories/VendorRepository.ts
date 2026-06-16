@@ -210,6 +210,31 @@ export class VendorRepository {
         if (!existing) return null;
         return db.vendor.update({ where: { id }, data: { status: status as VendorStatus } });
     }
+
+    /** Fetch the tenant's vendors for the given ids (bulk-action audit source). */
+    static async listByIds(db: PrismaTx, ctx: RequestContext, ids: string[]) {
+        // Bounded by the `in: ids` set (bulk schemas cap at 100 ids); a `take:`
+        // would be redundant.
+        return db.vendor.findMany({ // guardrail-allow: unbounded
+            where: { id: { in: ids }, tenantId: ctx.tenantId },
+        });
+    }
+
+    /**
+     * Tenant-scoped bulk update — one `updateMany` so the bulk-action path
+     * never reads/writes per-id in a loop. Returns the affected-row count.
+     */
+    static async bulkUpdate(
+        db: PrismaTx,
+        ctx: RequestContext,
+        ids: string[],
+        data: Omit<Prisma.VendorUncheckedUpdateInput, 'tenantId'>,
+    ) {
+        return db.vendor.updateMany({
+            where: { id: { in: ids }, tenantId: ctx.tenantId },
+            data,
+        });
+    }
 }
 
 export class VendorDocumentRepository {

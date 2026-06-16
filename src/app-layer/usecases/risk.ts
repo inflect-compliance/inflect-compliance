@@ -818,3 +818,69 @@ export async function unlinkRiskEvidence(
     return outcome;
 }
 
+// ─── Bulk actions (canonical BulkActionBar rollout) ───
+
+export async function bulkSetRiskStatus(
+    ctx: RequestContext,
+    riskIds: string[],
+    status: 'OPEN' | 'MITIGATING' | 'MITIGATED' | 'ACCEPTED' | 'CLOSED',
+) {
+    assertCanWrite(ctx);
+    const updated = await runInTenantContext(ctx, async (db) => {
+        const rows = await RiskRepository.listByIds(db, ctx, riskIds);
+        if (rows.length === 0) return 0;
+        await RiskRepository.bulkUpdate(db, ctx, riskIds, { status });
+        for (const r of rows) {
+            await logEvent(db, ctx, {
+                action: 'UPDATE',
+                entityType: 'Risk',
+                entityId: r.id,
+                details: `Risk status set to ${status}`,
+                detailsJson: {
+                    category: 'status_change',
+                    entityName: 'Risk',
+                    fromStatus: r.status,
+                    toStatus: status,
+                },
+            });
+        }
+        return rows.length;
+    });
+    await bumpEntityCacheVersion(ctx, 'risk');
+    return { updated };
+}
+
+export async function bulkAssignRisk(
+    ctx: RequestContext,
+    riskIds: string[],
+    ownerUserId: string | null,
+) {
+    assertCanWrite(ctx);
+    const updated = await runInTenantContext(ctx, async (db) => {
+        const rows = await RiskRepository.listByIds(db, ctx, riskIds);
+        if (rows.length === 0) return 0;
+        await RiskRepository.bulkUpdate(db, ctx, riskIds, {
+            ownerUserId: ownerUserId || null,
+        });
+        for (const r of rows) {
+            await logEvent(db, ctx, {
+                action: 'UPDATE',
+                entityType: 'Risk',
+                entityId: r.id,
+                details: ownerUserId ? `Risk owner reassigned` : `Risk owner cleared`,
+                detailsJson: {
+                    category: 'entity_lifecycle',
+                    entityName: 'Risk',
+                    operation: 'updated',
+                    changedFields: ['ownerUserId'],
+                    after: { ownerUserId: ownerUserId || null },
+                    summary: ownerUserId ? `owner reassigned (bulk)` : `owner cleared (bulk)`,
+                },
+            });
+        }
+        return rows.length;
+    });
+    await bumpEntityCacheVersion(ctx, 'risk');
+    return { updated };
+}
+

@@ -10,6 +10,9 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { ownerDisplayName } from '@/lib/owner-display';
+import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
+import { UserCombobox } from '@/components/ui/user-combobox';
+import { Combobox } from '@/components/ui/combobox';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import type { CappedList } from '@/lib/list-backfill-cap';
 import { TruncationBanner } from '@/components/ui/TruncationBanner';
@@ -71,6 +74,15 @@ import { detectCellCollisions } from '@/lib/risk-collisions';
 import { AleHistogram, type AleHistogramDatum } from '@/components/ui/charts';
 import { ToggleGroup } from '@/components/ui/toggle-group';
 import { useLocalStorage } from '@/components/ui/hooks';
+
+/** Bulk-action status options (canonical BulkActionBar). */
+const RISK_STATUS_OPTIONS = [
+    { value: 'OPEN', label: 'Open' },
+    { value: 'MITIGATING', label: 'Mitigating' },
+    { value: 'MITIGATED', label: 'Mitigated' },
+    { value: 'ACCEPTED', label: 'Accepted' },
+    { value: 'CLOSED', label: 'Closed' },
+];
 
 /** RQ2-5 — resolved ALE for a list row (null = not quantified). */
 function riskAle(r: RiskListItem): number | null {
@@ -318,6 +330,75 @@ function RisksPageInner({
     const rawRisks = risksQuery.data?.rows ?? [];
     const truncated = risksQuery.data?.truncated ?? false;
     const loading = risksQuery.isLoading && !risksQuery.data;
+
+    // ─── Bulk actions (canonical BulkActionBar) ───
+    const [selected, setSelected] = useState<Set<string>>(new Set());
+    const [bulkApplying, setBulkApplying] = useState(false);
+    const handleBulkApply = async (action: string, value: string) => {
+        const ids = Array.from(selected);
+        if (!action || ids.length === 0) return;
+        setBulkApplying(true);
+        try {
+            const url = action === 'status' ? apiUrl('/risks/bulk/status') : apiUrl('/risks/bulk/assign');
+            const body =
+                action === 'status'
+                    ? { riskIds: ids, status: value }
+                    : { riskIds: ids, ownerUserId: value || null };
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+            if (!res.ok) throw new Error('Bulk action failed');
+            await risksQuery.mutate();
+            setSelected(new Set());
+        } finally {
+            setBulkApplying(false);
+        }
+    };
+    const riskBulkActions: BulkActionDef[] = useMemo(
+        () => [
+            {
+                value: 'status',
+                label: 'Set status',
+                canApply: (v) => v !== '',
+                renderInput: ({ value, setValue }) => (
+                    <Combobox
+                        hideSearch
+                        id="bulk-value-input"
+                        selected={
+                            RISK_STATUS_OPTIONS.find((o) => o.value === value) ?? null
+                        }
+                        setSelected={(opt) => setValue(opt?.value ?? '')}
+                        options={RISK_STATUS_OPTIONS}
+                        placeholder="Select status..."
+                        matchTriggerWidth
+                        buttonProps={{ className: 'text-sm' }}
+                    />
+                ),
+            },
+            {
+                value: 'assign',
+                label: 'Assign owner',
+                renderInput: ({ value, setValue, setLabel }) => (
+                    <UserCombobox
+                        tenantSlug={tenantSlug}
+                        selectedId={value || null}
+                        onChange={(id, m) => {
+                            setValue(id ?? '');
+                            setLabel(ownerDisplayName(m?.name, m?.email) ?? '');
+                        }}
+                        forceDropdown
+                        matchTriggerWidth
+                        placeholder="Owner (blank = unassign)"
+                        className="w-full sm:w-44"
+                        id="bulk-value-input"
+                    />
+                ),
+            },
+        ],
+        [tenantSlug],
+    );
 
     // ─── PR-1: org-parity sortable headers ───
     const [sortBy, setSortBy] = useState<string | undefined>(undefined);
@@ -1086,6 +1167,20 @@ function RisksPageInner({
                             setSortOrder(nextOrder);
                         }}
                         onRowClick={(row) => router.push(tenantHref(`/risks/${row.original.id}`))}
+                        selectionEnabled
+                        selectedRows={Object.fromEntries(
+                            Array.from(selected).map((id) => [id, true]),
+                        )}
+                        onRowSelectionChange={(rows) =>
+                            setSelected(new Set(rows.map((r) => r.original.id)))
+                        }
+                        selectionControls={() => (
+                            <BulkActionBar
+                                actions={riskBulkActions}
+                                onApply={handleBulkApply}
+                                applying={bulkApplying}
+                            />
+                        )}
                         emptyState={
                             hasActive ? (
                                 <EmptyState

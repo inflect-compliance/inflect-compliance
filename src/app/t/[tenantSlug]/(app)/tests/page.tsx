@@ -10,7 +10,11 @@ import Link from 'next/link';
 import { DataTable, createColumns, useColumnsDropdown } from '@/components/ui/table';
 import { ListPageShell } from '@/components/layout/ListPageShell';
 import { useRouter } from 'next/navigation';
-import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
+import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
+import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
+import { UserCombobox } from '@/components/ui/user-combobox';
+import { Combobox } from '@/components/ui/combobox';
+import { ownerDisplayName } from '@/lib/owner-display';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { FilterProvider, useFilterContext, useFilters, useFilterCardVisibility, filtersToCards, selectVisibleFilters } from '@/components/ui/filter';
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
@@ -22,6 +26,13 @@ import { cardVariants } from '@/components/ui/card';
 import { AppIcon } from '@/components/icons/AppIcon';
 import { Tooltip } from '@/components/ui/tooltip';
 import { buildTestFilters, TEST_FILTER_KEYS } from './filter-defs';
+
+/** Bulk-action status options (canonical BulkActionBar). */
+const TEST_PLAN_STATUS_OPTIONS = [
+    { value: 'ACTIVE', label: 'Active' },
+    { value: 'PAUSED', label: 'Paused' },
+    { value: 'ARCHIVED', label: 'Archived' },
+];
 
 interface TestPlanSummary {
     id: string;
@@ -83,6 +94,7 @@ export default function TestsRollupPage() {
 function TestsRollupContent() {
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
+    const { tenantSlug } = useTenantContext();
     const router = useRouter();
     const { state, search, hasActive } = useFilters();
 
@@ -101,6 +113,73 @@ function TestsRollupContent() {
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { fetchData(); }, [fetchData]);
+
+    // ─── Bulk actions (canonical BulkActionBar) ───
+    const [selected, setSelected] = useState<Set<string>>(new Set());
+    const [bulkApplying, setBulkApplying] = useState(false);
+    const handleBulkApply = async (action: string, value: string) => {
+        const ids = Array.from(selected);
+        if (!action || ids.length === 0) return;
+        setBulkApplying(true);
+        try {
+            const url = action === 'status' ? apiUrl('/tests/plans/bulk/status') : apiUrl('/tests/plans/bulk/assign');
+            const body =
+                action === 'status'
+                    ? { planIds: ids, status: value }
+                    : { planIds: ids, ownerUserId: value || null };
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+            if (!res.ok) throw new Error('Bulk action failed');
+            await fetchData();
+            setSelected(new Set());
+        } finally {
+            setBulkApplying(false);
+        }
+    };
+    const testBulkActions: BulkActionDef[] = useMemo(
+        () => [
+            {
+                value: 'status',
+                label: 'Set status',
+                canApply: (v) => v !== '',
+                renderInput: ({ value, setValue }) => (
+                    <Combobox
+                        hideSearch
+                        id="bulk-value-input"
+                        selected={TEST_PLAN_STATUS_OPTIONS.find((o) => o.value === value) ?? null}
+                        setSelected={(opt) => setValue(opt?.value ?? '')}
+                        options={TEST_PLAN_STATUS_OPTIONS}
+                        placeholder="Select status..."
+                        matchTriggerWidth
+                        buttonProps={{ className: 'text-sm' }}
+                    />
+                ),
+            },
+            {
+                value: 'assign',
+                label: 'Assign owner',
+                renderInput: ({ value, setValue, setLabel }) => (
+                    <UserCombobox
+                        tenantSlug={tenantSlug}
+                        selectedId={value || null}
+                        onChange={(id, m) => {
+                            setValue(id ?? '');
+                            setLabel(ownerDisplayName(m?.name, m?.email) ?? '');
+                        }}
+                        forceDropdown
+                        matchTriggerWidth
+                        placeholder="Owner (blank = unassign)"
+                        className="w-full sm:w-44"
+                        id="bulk-value-input"
+                    />
+                ),
+            },
+        ],
+        [tenantSlug],
+    );
 
     // ── Column-visibility gear (Epic 52/R10) ──
     const {
@@ -292,6 +371,20 @@ function TestsRollupContent() {
                     getRowId={(p) => p.id}
                     columnVisibility={columnVisibility}
                     onColumnVisibilityChange={setColumnVisibility}
+                    selectionEnabled
+                    selectedRows={Object.fromEntries(
+                        Array.from(selected).map((id) => [id, true]),
+                    )}
+                    onRowSelectionChange={(rows) =>
+                        setSelected(new Set(rows.map((r) => r.original.id)))
+                    }
+                    selectionControls={() => (
+                        <BulkActionBar
+                            actions={testBulkActions}
+                            onApply={handleBulkApply}
+                            applying={bulkApplying}
+                        />
+                    )}
                     emptyState={
                         hasActive
                             ? 'No test plans match your filters.'

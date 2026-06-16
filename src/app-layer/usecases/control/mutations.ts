@@ -349,3 +349,78 @@ export async function purgeControl(ctx: RequestContext, id: string) {
     await bumpEntityCacheVersion(ctx, 'control');
     return result;
 }
+
+// ─── Bulk actions (canonical BulkActionBar rollout) ───
+
+export async function bulkSetControlStatus(
+    ctx: RequestContext,
+    controlIds: string[],
+    status:
+        | 'NOT_STARTED'
+        | 'PLANNED'
+        | 'IN_PROGRESS'
+        | 'IMPLEMENTING'
+        | 'IMPLEMENTED'
+        | 'NEEDS_REVIEW'
+        | 'NOT_APPLICABLE',
+) {
+    assertCanUpdateControl(ctx);
+    const updated = await runInTenantContext(ctx, async (db) => {
+        // Tenant-owned rows only — global library controls (tenantId NULL)
+        // are silently excluded by the repo's tenantId filter.
+        const rows = await ControlRepository.listByIds(db, ctx, controlIds);
+        if (rows.length === 0) return 0;
+        await ControlRepository.bulkUpdate(db, ctx, controlIds, { status });
+        for (const r of rows) {
+            await logEvent(db, ctx, {
+                action: 'CONTROL_STATUS_CHANGED',
+                entityType: 'Control',
+                entityId: r.id,
+                details: `Status changed: ${r.status} → ${status}`,
+                detailsJson: {
+                    category: 'status_change',
+                    entityName: 'Control',
+                    fromStatus: r.status,
+                    toStatus: status,
+                },
+            });
+        }
+        return rows.length;
+    });
+    await bumpEntityCacheVersion(ctx, 'control');
+    return { updated };
+}
+
+export async function bulkAssignControl(
+    ctx: RequestContext,
+    controlIds: string[],
+    ownerUserId: string | null,
+) {
+    assertCanUpdateControl(ctx);
+    const updated = await runInTenantContext(ctx, async (db) => {
+        const rows = await ControlRepository.listByIds(db, ctx, controlIds);
+        if (rows.length === 0) return 0;
+        await ControlRepository.bulkUpdate(db, ctx, controlIds, {
+            ownerUserId: ownerUserId || null,
+        });
+        for (const r of rows) {
+            await logEvent(db, ctx, {
+                action: 'CONTROL_OWNER_CHANGED',
+                entityType: 'Control',
+                entityId: r.id,
+                details: `Owner set to: ${ownerUserId || 'none'}`,
+                detailsJson: {
+                    category: 'entity_lifecycle',
+                    entityName: 'Control',
+                    operation: 'updated',
+                    changedFields: ['ownerUserId'],
+                    after: { ownerUserId: ownerUserId || null },
+                    summary: ownerUserId ? `owner reassigned (bulk)` : `owner cleared (bulk)`,
+                },
+            });
+        }
+        return rows.length;
+    });
+    await bumpEntityCacheVersion(ctx, 'control');
+    return { updated };
+}
