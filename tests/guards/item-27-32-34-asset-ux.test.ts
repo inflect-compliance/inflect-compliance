@@ -54,13 +54,16 @@ describe('item 32 — three-way asset interaction (title / row / double-click)',
         expect(sheet).toMatch(/Full view/);
         expect(sheet).toMatch(/\/assets\/\$\{asset\.id\}/);
     });
-    it('row title tints brand-color on row hover (TableTitleCell no-href branch)', () => {
-        // Without href, TableTitleCell was a plain <span> with no
-        // hover treatment, so the title text stayed static while the
-        // row visibly hovered. The no-href branch now applies a
-        // `group-hover/row:` brand-color transition so the title
-        // signals clickability synchronously with the row.
+    it('asset name tints brand-color only on hover of the NAME (tintOn="self"), like controls', () => {
+        // The asset name is its own <button>; tintOn="self" makes the brand-tone
+        // hover fire only when the name is hovered (`hover:`), NOT on whole-row
+        // hover — matching the controls table. (The component keeps the default
+        // `group-hover/row:` mode for other no-href consumers.)
+        const client = read('src/app/t/[tenantSlug]/(app)/assets/AssetsClient.tsx');
+        expect(client).toMatch(/<TableTitleCell tintOn="self">/);
         const titleCell = read('src/components/ui/table-title-cell.tsx');
+        // self mode reuses the Link self-hover class; row mode still exists.
+        expect(titleCell).toMatch(/tintOn === 'self' \? TITLE_CELL_LINK_HOVER : TITLE_CELL_ROW_HOVER/);
         expect(titleCell).toMatch(/group-hover\/row:text-\[var\(--brand-default\)\]/);
     });
 });

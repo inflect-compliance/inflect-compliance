@@ -361,7 +361,10 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                     className="block w-full text-left rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     data-testid={`asset-title-${row.original.id}`}
                 >
-                    <TableTitleCell>{getValue()}</TableTitleCell>
+                    {/* tintOn="self" — the name tints brand-color only when the
+                        name itself is hovered (not the whole row), matching the
+                        controls table. */}
+                    <TableTitleCell tintOn="self">{getValue()}</TableTitleCell>
                 </button>
             ),
         },
