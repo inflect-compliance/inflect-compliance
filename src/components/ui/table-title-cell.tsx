@@ -50,6 +50,16 @@ export interface TableTitleCellProps {
     href?: string;
     /** Forwarded to the underlying Link / span (E2E selector). */
     id?: string;
+    /**
+     * For the no-href branch only: where the brand-tone hover fires.
+     *   - `'row'` (default) — tints when the whole ROW is hovered
+     *     (`group-hover/row:`); the row owns navigation.
+     *   - `'self'` — tints only when the NAME itself is hovered
+     *     (`hover:`), matching the href/Link branch. Use when the title is
+     *     wrapped in its own interactive element (e.g. the assets table's
+     *     quick-look `<button>`) so the cue lands on the name, not the row.
+     */
+    tintOn?: 'row' | 'self';
     /** Override styling — additive to the canonical class string. */
     className?: string;
 }
@@ -77,6 +87,7 @@ export function TableTitleCell({
     children,
     href,
     id,
+    tintOn = 'row',
     className,
 }: TableTitleCellProps) {
     if (href) {
@@ -110,7 +121,14 @@ export function TableTitleCell({
         );
     }
     return (
-        <span id={id} className={cn(TITLE_CELL_BASE, TITLE_CELL_ROW_HOVER, className)}>
+        <span
+            id={id}
+            className={cn(
+                TITLE_CELL_BASE,
+                tintOn === 'self' ? TITLE_CELL_LINK_HOVER : TITLE_CELL_ROW_HOVER,
+                className,
+            )}
+        >
             {children}
         </span>
     );
