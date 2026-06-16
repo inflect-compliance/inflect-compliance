@@ -385,4 +385,30 @@ export class ControlRepository {
         await db.controlAsset.delete({ where: { id: link.id } });
         return true;
     }
+
+    /** Fetch the tenant's controls for the given ids (bulk-action audit source). */
+    static async listByIds(db: PrismaTx, ctx: RequestContext, ids: string[]) {
+        // Bounded by the `in: ids` set (bulk schemas cap at 100 ids); a `take:`
+        // would be redundant. Tenant-owned rows only — framework-global controls
+        // (tenantId NULL) are never bulk-editable by a tenant.
+        return db.control.findMany({ // guardrail-allow: unbounded
+            where: { id: { in: ids }, tenantId: ctx.tenantId },
+        });
+    }
+
+    /**
+     * Tenant-scoped bulk update — one `updateMany` so the bulk-action path
+     * never reads/writes per-id in a loop. Returns the affected-row count.
+     */
+    static async bulkUpdate(
+        db: PrismaTx,
+        ctx: RequestContext,
+        ids: string[],
+        data: Omit<Prisma.ControlUncheckedUpdateInput, 'tenantId'>,
+    ) {
+        return db.control.updateMany({
+            where: { id: { in: ids }, tenantId: ctx.tenantId },
+            data,
+        });
+    }
 }

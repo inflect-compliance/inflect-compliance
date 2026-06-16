@@ -117,32 +117,35 @@ describe('Controls list — UX polish', () => {
         });
     });
 
-    describe('Bulk actions — header-row selection bar (B1)', () => {
-        it('wires the three bulk-status verbs into the DataTable batchActions', () => {
-            // B1 (2026-06-07): the bulk-status verbs render in the
-            // DataTable's header-row selection toolbar via `batchActions`
-            // (the row-select bar that pops over the column-names row),
-            // NOT the retired SelectionSummaryPanel right-rail.
-            expect(source).toMatch(/batchActions:\s*controlBatchActions/);
-            expect(source).toContain("label: 'Mark Implemented'");
-            expect(source).toContain("label: 'Mark Needs Review'");
-            expect(source).toContain("label: 'Mark Not Applicable'");
+    describe('Bulk actions — canonical BulkActionBar (header-row selection bar)', () => {
+        it('mounts the canonical BulkActionBar with status + assign actions via selectionControls', () => {
+            // The bulk actions render in the DataTable's header-row
+            // selection toolbar via the shared <BulkActionBar> (the same
+            // primitive Tasks/Assets use), NOT the retired
+            // SelectionSummaryPanel right-rail or the former three-verb
+            // batchActions.
+            expect(source).toMatch(/selectionControls:\s*canEditControls/);
+            expect(source).toMatch(/<BulkActionBar\b/);
+            expect(source).toMatch(/actions=\{controlBulkActions\}/);
+            expect(source).toMatch(/value: 'status'/);
+            expect(source).toMatch(/value: 'assign'/);
             expect(source).not.toContain('<SelectionSummaryPanel');
+            expect(source).not.toMatch(/batchActions:\s*controlBatchActions/);
         });
 
-        it('the destructive Mark-Not-Applicable verb carries tone=danger', () => {
-            // Locks the destructive treatment through to the batch-action
-            // button's tone contract.
-            expect(source).toMatch(
-                /label: 'Mark Not Applicable'[\s\S]{0,400}tone: 'danger'/,
-            );
+        it('bulk status/assign go through one updateMany endpoint, not a per-id loop', () => {
+            // The former bulkSetStatus N+1 (one POST per selected id) is
+            // replaced by a single POST to the /controls/bulk/* endpoints.
+            expect(source).toMatch(/\/controls\/bulk\/status/);
+            expect(source).toMatch(/\/controls\/bulk\/assign/);
+            expect(source).not.toMatch(/const bulkSetStatus =/);
         });
 
         it('the bulk actions are permission-gated (canEditControls)', () => {
             // READER sees neither checkboxes nor the action bar; the
-            // batchActions only exist when the viewer can edit.
+            // selectionControls slot only mounts when the viewer can edit.
             expect(source).toMatch(
-                /const controlBatchActions = canEditControls/,
+                /selectionControls:\s*canEditControls\s*\n?\s*\?/,
             );
         });
     });

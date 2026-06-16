@@ -25,6 +25,8 @@ export {
     deleteControl,
     restoreControl,
     purgeControl,
+    bulkSetControlStatus,
+    bulkAssignControl,
 } from './mutations';
 
 export {

@@ -550,6 +550,62 @@ export const BulkAssetAssignSchema = z.object({
     ownerUserId: z.string().nullable(),
 }).strip();
 
+// ─── Risk bulk actions (canonical BulkActionBar rollout) ───
+
+export const BulkRiskStatusSchema = z.object({
+    riskIds: z.array(z.string().min(1)).min(1).max(100),
+    status: z.enum(['OPEN', 'MITIGATING', 'MITIGATED', 'ACCEPTED', 'CLOSED']),
+}).strip();
+
+export const BulkRiskAssignSchema = z.object({
+    riskIds: z.array(z.string().min(1)).min(1).max(100),
+    ownerUserId: z.string().nullable(),
+}).strip();
+
+// ─── Control bulk actions (canonical BulkActionBar rollout) ───
+
+export const BulkControlStatusSchema = z.object({
+    controlIds: z.array(z.string().min(1)).min(1).max(100),
+    status: z.enum([
+        'NOT_STARTED',
+        'PLANNED',
+        'IN_PROGRESS',
+        'IMPLEMENTING',
+        'IMPLEMENTED',
+        'NEEDS_REVIEW',
+        'NOT_APPLICABLE',
+    ]),
+}).strip();
+
+export const BulkControlAssignSchema = z.object({
+    controlIds: z.array(z.string().min(1)).min(1).max(100),
+    ownerUserId: z.string().nullable(),
+}).strip();
+
+// ─── Vendor bulk actions (canonical BulkActionBar rollout) ───
+
+export const BulkVendorStatusSchema = z.object({
+    vendorIds: z.array(z.string().min(1)).min(1).max(100),
+    status: z.enum(['ACTIVE', 'ONBOARDING', 'OFFBOARDING', 'OFFBOARDED']),
+}).strip();
+
+export const BulkVendorAssignSchema = z.object({
+    vendorIds: z.array(z.string().min(1)).min(1).max(100),
+    ownerUserId: z.string().nullable(),
+}).strip();
+
+// ─── Test plan bulk actions (canonical BulkActionBar rollout) ───
+
+export const BulkTestPlanStatusSchema = z.object({
+    planIds: z.array(z.string().min(1)).min(1).max(100),
+    status: z.enum(['ACTIVE', 'PAUSED', 'ARCHIVED']),
+}).strip();
+
+export const BulkTestPlanAssignSchema = z.object({
+    planIds: z.array(z.string().min(1)).min(1).max(100),
+    ownerUserId: z.string().nullable(),
+}).strip();
+
 // ─── Issue Compatibility Aliases (deprecated — use Task schemas) ───
 
 /** @deprecated Use CreateTaskSchema */ export const CreateIssueSchema = CreateTaskSchema;

@@ -526,3 +526,69 @@ export async function updateVendorStatusWithGate(ctx: RequestContext, vendorId: 
         return updated;
     });
 }
+
+// ─── Bulk actions (canonical BulkActionBar rollout) ───
+
+export async function bulkSetVendorStatus(
+    ctx: RequestContext,
+    vendorIds: string[],
+    status: 'ACTIVE' | 'ONBOARDING' | 'OFFBOARDING' | 'OFFBOARDED',
+) {
+    assertCanManageVendors(ctx);
+    const updated = await runInTenantContext(ctx, async (db) => {
+        const rows = await VendorRepository.listByIds(db, ctx, vendorIds);
+        if (rows.length === 0) return 0;
+        await VendorRepository.bulkUpdate(db, ctx, vendorIds, { status });
+        for (const r of rows) {
+            await logEvent(db, ctx, {
+                action: 'VENDOR_STATUS_CHANGED',
+                entityType: 'Vendor',
+                entityId: r.id,
+                details: `Vendor "${r.name}" status set to ${status}`,
+                detailsJson: {
+                    category: 'status_change',
+                    entityName: 'Vendor',
+                    fromStatus: r.status,
+                    toStatus: status,
+                },
+            });
+        }
+        return rows.length;
+    });
+    return { updated };
+}
+
+export async function bulkAssignVendor(
+    ctx: RequestContext,
+    vendorIds: string[],
+    ownerUserId: string | null,
+) {
+    assertCanManageVendors(ctx);
+    const updated = await runInTenantContext(ctx, async (db) => {
+        const rows = await VendorRepository.listByIds(db, ctx, vendorIds);
+        if (rows.length === 0) return 0;
+        await VendorRepository.bulkUpdate(db, ctx, vendorIds, {
+            ownerUserId: ownerUserId || null,
+        });
+        for (const r of rows) {
+            await logEvent(db, ctx, {
+                action: 'VENDOR_UPDATED',
+                entityType: 'Vendor',
+                entityId: r.id,
+                details: ownerUserId
+                    ? `Vendor "${r.name}" owner reassigned`
+                    : `Vendor "${r.name}" owner cleared`,
+                detailsJson: {
+                    category: 'entity_lifecycle',
+                    entityName: 'Vendor',
+                    operation: 'updated',
+                    changedFields: ['ownerUserId'],
+                    after: { ownerUserId: ownerUserId || null },
+                    summary: ownerUserId ? `owner reassigned (bulk)` : `owner cleared (bulk)`,
+                },
+            });
+        }
+        return rows.length;
+    });
+    return { updated };
+}

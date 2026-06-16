@@ -564,3 +564,67 @@ export async function createAutomatedTestRun(
         return completedRun;
     });
 }
+
+// ─── Bulk actions (canonical BulkActionBar rollout) ───
+
+export async function bulkSetTestPlanStatus(
+    ctx: RequestContext,
+    planIds: string[],
+    status: 'ACTIVE' | 'PAUSED' | 'ARCHIVED',
+) {
+    assertCanManageTestPlans(ctx);
+    const updated = await runInTenantContext(ctx, async (db) => {
+        const rows = await TestPlanRepository.listByIds(db, ctx, planIds);
+        if (rows.length === 0) return 0;
+        await TestPlanRepository.bulkUpdate(db, ctx, planIds, { status });
+        for (const r of rows) {
+            await logEvent(db, ctx, {
+                action: 'UPDATE',
+                entityType: 'ControlTestPlan',
+                entityId: r.id,
+                details: `Test plan status set to ${status}`,
+                detailsJson: {
+                    category: 'status_change',
+                    entityName: 'ControlTestPlan',
+                    fromStatus: r.status,
+                    toStatus: status,
+                },
+            });
+        }
+        return rows.length;
+    });
+    return { updated };
+}
+
+export async function bulkAssignTestPlan(
+    ctx: RequestContext,
+    planIds: string[],
+    ownerUserId: string | null,
+) {
+    assertCanManageTestPlans(ctx);
+    const updated = await runInTenantContext(ctx, async (db) => {
+        const rows = await TestPlanRepository.listByIds(db, ctx, planIds);
+        if (rows.length === 0) return 0;
+        await TestPlanRepository.bulkUpdate(db, ctx, planIds, {
+            ownerUserId: ownerUserId || null,
+        });
+        for (const r of rows) {
+            await logEvent(db, ctx, {
+                action: 'UPDATE',
+                entityType: 'ControlTestPlan',
+                entityId: r.id,
+                details: ownerUserId ? `Test plan owner reassigned` : `Test plan owner cleared`,
+                detailsJson: {
+                    category: 'entity_lifecycle',
+                    entityName: 'ControlTestPlan',
+                    operation: 'updated',
+                    changedFields: ['ownerUserId'],
+                    after: { ownerUserId: ownerUserId || null },
+                    summary: ownerUserId ? `owner reassigned (bulk)` : `owner cleared (bulk)`,
+                },
+            });
+        }
+        return rows.length;
+    });
+    return { updated };
+}

@@ -20,9 +20,12 @@ import { NewControlModal } from './NewControlModal';
 import { ControlDetailSheet } from './ControlDetailSheet';
 import { queryKeys } from '@/lib/queryKeys';
 import { ownerDisplayName } from '@/lib/owner-display';
+import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
+import { UserCombobox } from '@/components/ui/user-combobox';
+import { Combobox } from '@/components/ui/combobox';
 import { AppIcon } from '@/components/icons/AppIcon';
 import { Plus } from '@/components/ui/icons/nucleo';
-import { Paperclip, CheckCircle2, AlertTriangle, X, ChevronDown, ChevronLeft } from 'lucide-react';
+import { Paperclip, ChevronDown, ChevronLeft } from 'lucide-react';
 import {
     createColumns,
     useColumnsDropdown,
@@ -85,6 +88,24 @@ const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
  * `CONTROL_STATUS_LABELS` as the single source of truth.
  */
 const STATUS_LABELS: Record<string, string> = CONTROL_STATUS_LABELS;
+
+/**
+ * Bulk-action status options (canonical BulkActionBar) — the seven
+ * ControlStatus enum members, labelled via the shared `STATUS_LABELS`
+ * source of truth.
+ */
+const CONTROL_STATUS_OPTIONS = (
+    [
+        'NOT_STARTED',
+        'PLANNED',
+        'IN_PROGRESS',
+        'IMPLEMENTING',
+        'IMPLEMENTED',
+        'NEEDS_REVIEW',
+        'NOT_APPLICABLE',
+    ] as const
+).map((value) => ({ value, label: STATUS_LABELS[value] ?? value }));
+
 const FREQ_LABELS: Record<string, string> = {
     AD_HOC: 'Ad Hoc', DAILY: 'Daily', WEEKLY: 'Weekly',
     MONTHLY: 'Monthly', QUARTERLY: 'Quarterly', ANNUALLY: 'Annually',
@@ -434,53 +455,7 @@ function ControlsPageInner({
         storageKey: 'inflect:col-vis:controls',
         columns: controlColumnList,
     });
-    // ─── Mutation: status cycle ───
-
-    const statusMutation = useMutation({
-        mutationFn: async ({ controlId, newStatus }: { controlId: string; newStatus: string }) => {
-            const res = await fetch(apiUrl(`/controls/${controlId}/status`), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: newStatus }),
-            });
-            if (!res.ok) throw new Error('Status update failed');
-            return res.json();
-        },
-        onMutate: async ({ controlId, newStatus }) => {
-            await queryClient.cancelQueries({ queryKey: queryKeys.controls.all(tenantSlug) });
-
-            const listKey = queryKeys.controls.list(tenantSlug, queryKeyFilters);
-            // PR-5 — cache value is `CappedList<ControlListItem>` (the API
-            // returns `{ rows, truncated }`); preserve the `truncated` flag
-            // and only rewrite `rows`.
-            const previousList = queryClient.getQueryData<CappedList<ControlListItem>>(listKey);
-
-            if (previousList) {
-                queryClient.setQueryData<CappedList<ControlListItem>>(listKey, (old) =>
-                    old
-                        ? {
-                              ...old,
-                              rows: old.rows.map(c =>
-                                  c.id === controlId ? { ...c, status: newStatus } : c,
-                              ),
-                          }
-                        : old,
-                );
-            }
-
-            return { previousList, listKey };
-        },
-        onError: (_err, _vars, context) => {
-            if (context?.previousList) {
-                queryClient.setQueryData(context.listKey, context.previousList);
-            }
-        },
-        onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.controls.all(tenantSlug) });
-        },
-    });
-
-    // ─── Row selection → selection-summary rail (right-rail Phase 2) ───
+    // ─── Row selection → canonical BulkActionBar ───
     // The page owns the selection state; DataTable is controlled via
     // `selectedRows` + `onRowSelectionChange`. When ≥1 row is selected
     // (and the viewer can edit), the `aside` slot mounts the
@@ -511,11 +486,79 @@ function ControlsPageInner({
         [settledSelection],
     );
     const canEditControls = appPermissions.controls.edit;
-    const bulkSetStatus = (newStatus: string) => {
-        for (const id of selectedIds) {
-            statusMutation.mutate({ controlId: id, newStatus });
-        }
+
+    // Canonical bulk path — one `updateMany`-backed endpoint instead of the
+    // former per-id status loop (kills the N+1). status + assign mirror the
+    // Tasks/Assets bars.
+    const bulkMutation = useMutation({
+        mutationFn: async ({ action, value }: { action: string; value: string; label: string }) => {
+            const ids = selectedIds;
+            const url =
+                action === 'status'
+                    ? apiUrl('/controls/bulk/status')
+                    : apiUrl('/controls/bulk/assign');
+            const body =
+                action === 'status'
+                    ? { controlIds: ids, status: value }
+                    : { controlIds: ids, ownerUserId: value || null };
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+            if (!res.ok) throw new Error('Bulk action failed');
+            return res.json();
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.controls.all(tenantSlug) });
+            setRowSelection({});
+        },
+    });
+    const handleBulkApply = (action: string, value: string, label: string) => {
+        if (!action || selectedIds.length === 0) return;
+        bulkMutation.mutate({ action, value, label });
     };
+    const controlBulkActions: BulkActionDef[] = useMemo(
+        () => [
+            {
+                value: 'status',
+                label: 'Set status',
+                canApply: (v) => v !== '',
+                renderInput: ({ value, setValue }) => (
+                    <Combobox
+                        hideSearch
+                        id="bulk-value-input"
+                        selected={CONTROL_STATUS_OPTIONS.find((o) => o.value === value) ?? null}
+                        setSelected={(opt) => setValue(opt?.value ?? '')}
+                        options={CONTROL_STATUS_OPTIONS}
+                        placeholder="Select status..."
+                        matchTriggerWidth
+                        buttonProps={{ className: 'text-sm' }}
+                    />
+                ),
+            },
+            {
+                value: 'assign',
+                label: 'Assign owner',
+                renderInput: ({ value, setValue, setLabel }) => (
+                    <UserCombobox
+                        tenantSlug={tenantSlug}
+                        selectedId={value || null}
+                        onChange={(id, m) => {
+                            setValue(id ?? '');
+                            setLabel(ownerDisplayName(m?.name, m?.email) ?? '');
+                        }}
+                        forceDropdown
+                        matchTriggerWidth
+                        placeholder="Owner (blank = unassign)"
+                        className="w-full sm:w-44"
+                        id="bulk-value-input"
+                    />
+                ),
+            },
+        ],
+        [tenantSlug],
+    );
 
     // Stable DataTable callbacks — see the apiUrl/tenantHref note above.
     // `handleRowClick` is the double-click→navigate handler; keeping it
@@ -753,30 +796,11 @@ function ControlsPageInner({
         },
     ]), [appPermissions, tenantHref, taskStats]);
 
-    // B1 (2026-06-07): the bulk-status verbs live in the DataTable's
-    // header-row selection toolbar (`batchActions`) — the row-select action
-    // bar that pops over the column-names row — NOT a right-rail. The
-    // selection-summary AsidePanel was removed.
-    const controlBatchActions = canEditControls
-        ? [
-              {
-                  label: 'Mark Implemented',
-                  icon: <CheckCircle2 className="size-3.5" />,
-                  onClick: () => bulkSetStatus('IMPLEMENTED'),
-              },
-              {
-                  label: 'Mark Needs Review',
-                  icon: <AlertTriangle className="size-3.5" />,
-                  onClick: () => bulkSetStatus('NEEDS_REVIEW'),
-              },
-              {
-                  label: 'Mark Not Applicable',
-                  icon: <X className="size-3.5" />,
-                  tone: 'danger' as const,
-                  onClick: () => bulkSetStatus('NOT_APPLICABLE'),
-              },
-          ]
-        : undefined;
+    // The bulk-action UI lives in the DataTable's header-row selection
+    // toolbar via the canonical <BulkActionBar> (`selectionControls`) — the
+    // row-select action bar that pops over the column-names row. It carries
+    // the full status picker + assign-owner, replacing the former
+    // three-verb `batchActions` (and the per-id N+1 they drove).
 
     // Browse rail — category accordion. The loaded controls are
     // grouped by their framework-native category, derived via
@@ -1217,11 +1241,19 @@ function ControlsPageInner({
                 onColumnVisibilityChange: setColumnVisibility,
                 'data-testid': 'controls-table',
                 className: 'hover:bg-bg-muted',
-                // B1 — selection is page-controlled; the bulk-status verbs
-                // render in the header-row selection toolbar via
-                // `batchActions`. For viewers without edit permission,
+                // Selection is page-controlled; the canonical BulkActionBar
+                // renders in the header-row selection toolbar via
+                // `selectionControls`. For viewers without edit permission,
                 // selection is left off entirely (no checkboxes, no bar).
-                batchActions: controlBatchActions,
+                selectionControls: canEditControls
+                    ? () => (
+                          <BulkActionBar
+                              actions={controlBulkActions}
+                              onApply={handleBulkApply}
+                              applying={bulkMutation.isPending}
+                          />
+                      )
+                    : undefined,
                 selectedRows: canEditControls ? rowSelection : undefined,
                 onRowSelectionChange: canEditControls
                     ? handleRowSelectionChange

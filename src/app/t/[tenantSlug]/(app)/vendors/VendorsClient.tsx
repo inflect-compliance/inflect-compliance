@@ -11,6 +11,10 @@ import { NewVendorModal } from './NewVendorModal';
 import { Button } from '@/components/ui/button';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
+import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
+import { UserCombobox } from '@/components/ui/user-combobox';
+import { Combobox } from '@/components/ui/combobox';
+import { ownerDisplayName } from '@/lib/owner-display';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import type { CappedList } from '@/lib/list-backfill-cap';
 import { TruncationBanner } from '@/components/ui/TruncationBanner';
@@ -51,6 +55,14 @@ function isOverdue(d: string | null, now: Date | null) {
     if (!d || !now) return false;
     return new Date(d) < now;
 }
+
+/** Bulk-action status options (canonical BulkActionBar). */
+const VENDOR_STATUS_OPTIONS = [
+    { value: 'ACTIVE', label: 'Active' },
+    { value: 'ONBOARDING', label: 'Onboarding' },
+    { value: 'OFFBOARDING', label: 'Offboarding' },
+    { value: 'OFFBOARDED', label: 'Offboarded' },
+];
 
 interface VendorsClientProps {
     initialVendors: any[];
@@ -149,6 +161,74 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
 
     const vendors = vendorsQuery.data?.rows ?? [];
     const truncated = vendorsQuery.data?.truncated ?? false;
+
+    // ─── Bulk actions (canonical BulkActionBar) ───
+    const apiUrl = (path: string) => `/api/t/${tenantSlug}${path}`;
+    const [selected, setSelected] = useState<Set<string>>(new Set());
+    const [bulkApplying, setBulkApplying] = useState(false);
+    const handleBulkApply = async (action: string, value: string) => {
+        const ids = Array.from(selected);
+        if (!action || ids.length === 0) return;
+        setBulkApplying(true);
+        try {
+            const url = action === 'status' ? apiUrl('/vendors/bulk/status') : apiUrl('/vendors/bulk/assign');
+            const body =
+                action === 'status'
+                    ? { vendorIds: ids, status: value }
+                    : { vendorIds: ids, ownerUserId: value || null };
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+            if (!res.ok) throw new Error('Bulk action failed');
+            await vendorsQuery.mutate();
+            setSelected(new Set());
+        } finally {
+            setBulkApplying(false);
+        }
+    };
+    const vendorBulkActions: BulkActionDef[] = useMemo(
+        () => [
+            {
+                value: 'status',
+                label: 'Set status',
+                canApply: (v) => v !== '',
+                renderInput: ({ value, setValue }) => (
+                    <Combobox
+                        hideSearch
+                        id="bulk-value-input"
+                        selected={VENDOR_STATUS_OPTIONS.find((o) => o.value === value) ?? null}
+                        setSelected={(opt) => setValue(opt?.value ?? '')}
+                        options={VENDOR_STATUS_OPTIONS}
+                        placeholder="Select status..."
+                        matchTriggerWidth
+                        buttonProps={{ className: 'text-sm' }}
+                    />
+                ),
+            },
+            {
+                value: 'assign',
+                label: 'Assign owner',
+                renderInput: ({ value, setValue, setLabel }) => (
+                    <UserCombobox
+                        tenantSlug={tenantSlug}
+                        selectedId={value || null}
+                        onChange={(id, m) => {
+                            setValue(id ?? '');
+                            setLabel(ownerDisplayName(m?.name, m?.email) ?? '');
+                        }}
+                        forceDropdown
+                        matchTriggerWidth
+                        placeholder="Owner (blank = unassign)"
+                        className="w-full sm:w-44"
+                        id="bulk-value-input"
+                    />
+                ),
+            },
+        ],
+        [tenantSlug],
+    );
     const liveFilters = useMemo(() => buildVendorFilters(), []);
     const filterCards = useMemo(() => filtersToCards(liveFilters), [liveFilters]);
     const { visibleCards, dropdown: filtersDropdown } = useFilterCardVisibility({
@@ -387,6 +467,20 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                         columnVisibility={columnVisibility}
                         onColumnVisibilityChange={setColumnVisibility}
                         onRowClick={(row) => router.push(tenantHref(`/vendors/${row.original.id}`))}
+                        selectionEnabled
+                        selectedRows={Object.fromEntries(
+                            Array.from(selected).map((id) => [id, true]),
+                        )}
+                        onRowSelectionChange={(rows) =>
+                            setSelected(new Set(rows.map((r) => r.original.id)))
+                        }
+                        selectionControls={() => (
+                            <BulkActionBar
+                                actions={vendorBulkActions}
+                                onApply={handleBulkApply}
+                                applying={bulkApplying}
+                            />
+                        )}
                         emptyState={
                             hasActive ? (
                                 <EmptyState
