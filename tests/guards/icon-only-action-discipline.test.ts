@@ -50,7 +50,9 @@ describe('icon-only action discipline', () => {
         { file: `${APP}/tests/due/page.tsx`, label: 'Run due planning' },
         // UI-18: the evidence "Upload file" + "Import ZIP" icon buttons were
         // removed — the +Evidence button opens the upload modal directly.
-        { file: `${APP}/tasks/TasksClient.tsx`, label: 'Apply' },
+        // The Tasks bulk "Apply" IconAction moved into the shared
+        // <BulkActionBar> primitive (src/components/ui/bulk-action-bar.tsx), so
+        // it's no longer an app-layer site.
     ];
 
     for (const { file, label } of ICON_ACTION_SITES) {
