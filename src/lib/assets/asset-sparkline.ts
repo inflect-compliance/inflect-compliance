@@ -17,3 +17,31 @@ export function firstAssetDataIndex(total: ReadonlyArray<{ value: number }>): nu
     const i = total.findIndex((p) => p.value > 0);
     return i < 0 ? total.length : i;
 }
+
+/**
+ * Centered y-domain for a KPI sparkline so a ROW of sparklines all sit at the
+ * SAME vertical level regardless of magnitude.
+ *
+ * The earlier shared `[0, globalMax]` domain pinned low-value metrics
+ * (criticality 0, retired 1) to the bottom and high ones (total 14) to the top
+ * — visually "some lower, some higher". Centering each series in the middle
+ * ~50% band instead makes the row read as uniform: the data's midpoint lands at
+ * the vertical centre for every card.
+ *
+ * Returns `undefined` for a constant or empty series — the chart's own auto-fit
+ * already centres those (`[v-1, v+1]`).
+ */
+export function centeredSparklineDomain(
+    series: ReadonlyArray<{ value: number }> | undefined,
+): [number, number] | undefined {
+    if (!series || series.length === 0) return undefined;
+    let min = series[0].value;
+    let max = series[0].value;
+    for (const { value } of series) {
+        if (value < min) min = value;
+        if (value > max) max = value;
+    }
+    if (min === max) return undefined; // constant → chart auto-fit centres it
+    const pad = (max - min) * 0.5; // data occupies the middle ~50% band
+    return [min - pad, max + pad];
+}

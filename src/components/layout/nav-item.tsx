@@ -69,7 +69,7 @@ export const NAV_ITEM_PADDING = 'px-3 py-2.5 md:py-1.5';
  * **gap-compact** — 8px between icon and label.
  * Tighter (6px) makes the icon glue to the label; wider (12px)
  * floats them apart in a way that reads as carelessness. 8 is the
- * Goldilocks for an 18px icon + 14px label.
+ * Balanced for a 16px icon + 14px label.
  */
 export const NAV_ITEM_GAP = 'gap-compact';
 
@@ -82,18 +82,18 @@ export const NAV_ITEM_GAP = 'gap-compact';
 export const NAV_ITEM_RADIUS = 'rounded-lg';
 
 /**
- * **28×28 icon.** Sized up from 18 so the glyph carries the row (the labels
+ * **16×16 icon.** Sized to match the `text-sm` label (the labels
  * shrank with the compact rows) and, crucially, fills the collapsed icon-rail
- * properly — an 18px icon looked lost in the 56px rail. 28px = `h-7 w-7`.
+ * properly — icon matches the `text-sm` (14px) label so the glyph isn't disproportionately larger than the text. 16px = `h-4 w-4`.
  */
-export const NAV_ITEM_ICON_SIZE = 'h-7 w-7';
+export const NAV_ITEM_ICON_SIZE = 'h-4 w-4';
 
 /**
  * Icon class — full recipe. (R12-PR9 lock.)
  *
  * Two tokens, both load-bearing:
  *
- *   (1) `NAV_ITEM_ICON_SIZE` — 18×18, the geometry above.
+ *   (1) `NAV_ITEM_ICON_SIZE` — 16×16, the geometry above.
  *
  *   (2) `flex-shrink-0` — the icon MUST hold its 18×18 box.
  *       Without this, on a row with a very long label and a

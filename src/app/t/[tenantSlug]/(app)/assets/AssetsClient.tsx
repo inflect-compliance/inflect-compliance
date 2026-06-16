@@ -27,7 +27,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
-import { firstAssetDataIndex } from '@/lib/assets/asset-sparkline';
+import { firstAssetDataIndex, centeredSparklineDomain } from '@/lib/assets/asset-sparkline';
 import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
 import { Plus } from '@/components/ui/icons/nucleo';
 import type { TrendPayload } from '@/app-layer/usecases/compliance-trends';
@@ -251,13 +251,12 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
         const active = activeRaw.slice(start);
         const critical = criticalRaw.slice(start);
         const retired = retiredRaw.slice(start);
-        // Shared 0-anchored domain so the four sparklines are comparable on
-        // absolute scale: `total` rides high, `retired` sits low, instead of
-        // each auto-fitting its own range (which made them all look alike).
-        // `total` is the superset, so its max is the global max.
-        const globalMax = Math.max(1, ...total.map((p) => p.value));
-        const sparklineDomain: [number, number] = [0, globalMax];
-        return { total, active, critical, retired, sparklineDomain };
+        // Each sparkline gets its OWN centered domain (computed per card at
+        // render via centeredSparklineDomain) so the four lines sit at the SAME
+        // vertical level — the row reads as uniform. The previous shared
+        // `[0, globalMax]` domain pinned low-value metrics to the bottom and
+        // high ones to the top ("some lower, some higher").
+        return { total, active, critical, retired };
     }, [trendsQuery.data]);
 
     const assetKpiDefs: ReadonlyArray<KpiFilterDef<AssetKpiId>> = useMemo(
@@ -501,7 +500,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                                 value={c.value}
                                 accent={c.accent}
                                 sparkline={c.sparkline}
-                                sparklineDomain={assetTrends.sparklineDomain}
+                                sparklineDomain={centeredSparklineDomain(c.sparkline)}
                                 onClick={() =>
                                     toggleAssetKpi(card.id as AssetKpiId)
                                 }
