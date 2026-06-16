@@ -657,3 +657,67 @@ export async function listPoliciesWithDeleted(ctx: RequestContext) {
         db.policy.findMany(withDeleted({ where: { tenantId: ctx.tenantId }, orderBy: { createdAt: 'desc' as const } }))
     );
 }
+
+// ─── Bulk actions (canonical BulkActionBar rollout — wave B) ───
+// Assign owner + Archive only: Policy status is approval-gated (can't reach
+// PUBLISHED without going through APPROVED), so there is no bulk status path
+// that could bypass the workflow. Archive is the one safe terminal verb and
+// keeps `archivePolicy`'s OWNER/ADMIN gate.
+
+export async function bulkAssignPolicy(
+    ctx: RequestContext,
+    policyIds: string[],
+    ownerUserId: string | null,
+) {
+    assertCanWrite(ctx);
+    const updated = await runInTenantContext(ctx, async (db) => {
+        const rows = await PolicyRepository.listByIds(db, ctx, policyIds);
+        if (rows.length === 0) return 0;
+        await PolicyRepository.bulkUpdate(db, ctx, policyIds, {
+            ownerUserId: ownerUserId || null,
+        });
+        for (const r of rows) {
+            await logEvent(db, ctx, {
+                action: 'POLICY_UPDATED',
+                entityType: 'Policy',
+                entityId: r.id,
+                details: ownerUserId ? `Policy owner reassigned` : `Policy owner cleared`,
+                detailsJson: {
+                    category: 'entity_lifecycle',
+                    entityName: 'Policy',
+                    operation: 'updated',
+                    changedFields: ['ownerUserId'],
+                    after: { ownerUserId: ownerUserId || null },
+                    summary: ownerUserId ? `owner reassigned (bulk)` : `owner cleared (bulk)`,
+                },
+            });
+        }
+        return rows.length;
+    });
+    return { updated };
+}
+
+export async function bulkArchivePolicy(ctx: RequestContext, policyIds: string[]) {
+    assertCanAdmin(ctx);
+    const updated = await runInTenantContext(ctx, async (db) => {
+        const rows = await PolicyRepository.listByIds(db, ctx, policyIds);
+        if (rows.length === 0) return 0;
+        await PolicyRepository.bulkUpdate(db, ctx, policyIds, { status: 'ARCHIVED' });
+        for (const r of rows) {
+            await logEvent(db, ctx, {
+                action: 'POLICY_ARCHIVED',
+                entityType: 'Policy',
+                entityId: r.id,
+                details: `Policy archived: ${r.title}`,
+                detailsJson: {
+                    category: 'status_change',
+                    entityName: 'Policy',
+                    fromStatus: r.status,
+                    toStatus: 'ARCHIVED',
+                },
+            });
+        }
+        return rows.length;
+    });
+    return { updated };
+}

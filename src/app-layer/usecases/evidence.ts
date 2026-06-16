@@ -762,3 +762,41 @@ export async function downloadEvidenceFile(ctx: RequestContext, fileId: string) 
         };
     });
 }
+
+// ─── Bulk actions (canonical BulkActionBar rollout — wave B) ───
+// Assign-owner only: Evidence status is workflow-gated (the reviewer-identity
+// review chain in `reviewEvidence`), so there is no bulk status path.
+
+export async function bulkAssignEvidence(
+    ctx: RequestContext,
+    evidenceIds: string[],
+    ownerUserId: string | null,
+) {
+    assertCanWrite(ctx);
+    const updated = await runInTenantContext(ctx, async (db) => {
+        const rows = await EvidenceRepository.listByIds(db, ctx, evidenceIds);
+        if (rows.length === 0) return 0;
+        await EvidenceRepository.bulkUpdate(db, ctx, evidenceIds, {
+            ownerUserId: ownerUserId || null,
+        });
+        for (const r of rows) {
+            await logEvent(db, ctx, {
+                action: 'UPDATE',
+                entityType: 'Evidence',
+                entityId: r.id,
+                details: ownerUserId ? `Evidence owner reassigned` : `Evidence owner cleared`,
+                detailsJson: {
+                    category: 'entity_lifecycle',
+                    entityName: 'Evidence',
+                    operation: 'updated',
+                    changedFields: ['ownerUserId'],
+                    after: { ownerUserId: ownerUserId || null },
+                    summary: ownerUserId ? `owner reassigned (bulk)` : `owner cleared (bulk)`,
+                },
+            });
+        }
+        return rows.length;
+    });
+    await bumpEntityCacheVersion(ctx, 'evidence');
+    return { updated };
+}
