@@ -112,7 +112,15 @@ describe('Epic 60 — legacy pattern ratchet', () => {
     // ── Raw localStorage calls in src/app/** ───────────────────────────
 
     it('bans raw localStorage.getItem / setItem in src/app/**', () => {
-        const hits = countMatches(appFiles, /localStorage\.(getItem|setItem)/g);
+        // EXCEPTION: the root layout's anti-FOUC theme init script is an inline
+        // pre-paint `<script>` STRING — it runs before React hydration, so the
+        // `useLocalStorage` hook is impossible there (the whole point is to set
+        // `data-theme` before any React renders, killing the dark→light flash).
+        // Locked separately by tests/guards/theme-flash-init.test.ts.
+        const scanned = appFiles.filter(
+            (f) => path.relative(process.cwd(), f) !== 'src/app/layout.tsx',
+        );
+        const hits = countMatches(scanned, /localStorage\.(getItem|setItem)/g);
         const total = hits.reduce((s, h) => s + h.matches, 0);
         // Post-rollout floor: 0. The approved direct-localStorage
         // modules (theme provider, filter presets, column-visibility
