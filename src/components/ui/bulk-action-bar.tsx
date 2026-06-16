@@ -1,0 +1,118 @@
+'use client';
+
+/**
+ * BulkActionBar — the canonical table selection action row.
+ *
+ * Rendered inside a `<DataTable selectionControls={…}>` slot (the slot pops
+ * over the column-header row when rows are selected). The DataTable's
+ * SelectionToolbar owns the selected-count + Clear; THIS component owns the
+ * form: a "Choose action…" picker → the active action's value input → Apply.
+ *
+ * Extracted from the Tasks table (the first consumer) so every entity table
+ * gets the SAME bulk-edit UX. A consumer supplies its `actions` (each with an
+ * optional value-input renderer + a `canApply` gate) and an `onApply` handler
+ * that fires its bulk mutation. The bar manages action/value/label state and
+ * clears the form once the apply settles.
+ *
+ * Usage:
+ *   <DataTable
+ *     selectionEnabled
+ *     selectionControls={() => (
+ *       <BulkActionBar actions={ASSET_BULK_ACTIONS} onApply={apply} applying={m.isMutating} />
+ *     )}
+ *   />
+ */
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { IconAction } from '@/components/ui/icon-action';
+import { AppIcon } from '@/components/icons/AppIcon';
+import { cn } from '@/lib/cn';
+
+export interface BulkActionDef {
+    /** Stable action id (e.g. 'assign', 'status'). */
+    value: string;
+    /** Dropdown label (e.g. 'Assign', 'Change Status'). */
+    label: string;
+    /**
+     * Render the value input for this action (people-picker, status select,
+     * date picker, …). Omit for an action that needs no value. Receives the
+     * current value + setters; `setLabel` carries an optimistic display label
+     * (e.g. the chosen assignee's name) the consumer can use in its optimistic
+     * update.
+     */
+    renderInput?: (ctx: {
+        value: string;
+        setValue: (v: string) => void;
+        setLabel: (l: string) => void;
+    }) => ReactNode;
+    /** Whether Apply is enabled for the current value. Default: always. */
+    canApply?: (value: string) => boolean;
+}
+
+export interface BulkActionBarProps {
+    actions: BulkActionDef[];
+    /** Apply handler — `(actionId, value, optimisticLabel)`. */
+    onApply: (action: string, value: string, label: string) => void;
+    /** True while the consumer's bulk mutation is in flight. */
+    applying?: boolean;
+    className?: string;
+}
+
+export function BulkActionBar({
+    actions,
+    onApply,
+    applying,
+    className,
+}: BulkActionBarProps) {
+    const [action, setAction] = useState('');
+    const [value, setValue] = useState('');
+    const [label, setLabel] = useState('');
+    const wasApplying = useRef(false);
+
+    // Clear the form once an apply settles (success OR failure) — mirrors the
+    // toolbar resetting after the bulk mutation completes.
+    useEffect(() => {
+        if (wasApplying.current && !applying) {
+            setAction('');
+            setValue('');
+            setLabel('');
+        }
+        wasApplying.current = !!applying;
+    }, [applying]);
+
+    const options: ComboboxOption[] = actions.map((a) => ({
+        value: a.value,
+        label: a.label,
+    }));
+    const active = actions.find((a) => a.value === action) ?? null;
+    const ready = !!action && (active?.canApply ? active.canApply(value) : true);
+
+    return (
+        <div className={cn('flex items-center gap-compact', className)}>
+            <Combobox
+                hideSearch
+                id="bulk-action-select"
+                selected={options.find((o) => o.value === action) ?? null}
+                setSelected={(opt) => {
+                    setAction(opt?.value ?? '');
+                    setValue('');
+                    setLabel('');
+                }}
+                options={options}
+                placeholder="Choose action..."
+                matchTriggerWidth
+                buttonProps={{ className: 'text-sm' }}
+            />
+            {active?.renderInput?.({ value, setValue, setLabel })}
+            <IconAction
+                variant="primary"
+                disabled={!ready}
+                loading={applying}
+                onClick={() => onApply(action, value, label)}
+                id="bulk-apply-btn"
+                icon={<AppIcon name="checkCircle" size={16} />}
+                label="Apply"
+            />
+        </div>
+    );
+}

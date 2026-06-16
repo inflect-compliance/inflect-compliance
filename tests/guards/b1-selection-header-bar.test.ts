@@ -31,7 +31,11 @@ describe('B1 — row-select action bar in the header row', () => {
 
     it('Tasks renders the bulk-edit form via selectionControls, NOT a standalone #bulk-toolbar', () => {
         expect(TASKS).toMatch(/selectionControls=\{\(\)\s*=>/);
-        expect(TASKS).toMatch(/id="bulk-apply-btn"/);
+        // The bulk-edit form is the canonical <BulkActionBar> (which carries
+        // the #bulk-apply-btn); it's mounted in the selectionControls slot.
+        expect(TASKS).toMatch(/<BulkActionBar\b/);
+        const bar = read('src/components/ui/bulk-action-bar.tsx');
+        expect(bar).toMatch(/id="bulk-apply-btn"/);
         // The standalone bulk-action card is gone.
         expect(TASKS).not.toMatch(/id="bulk-toolbar"/);
     });

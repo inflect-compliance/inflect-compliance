@@ -16,7 +16,9 @@ const read = (p: string) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 describe('UI-22 — Tasks bulk Assign uses a people-picker', () => {
     const src = read('src/app/t/[tenantSlug]/(app)/tasks/TasksClient.tsx');
     it('renders <UserCombobox> for the assign action (no raw User ID input)', () => {
-        expect(src).toMatch(/bulkAction === 'assign'[\s\S]{0,200}<UserCombobox/);
+        // The assign action is now a BulkActionDef (canonical BulkActionBar);
+        // its renderInput supplies the people-picker.
+        expect(src).toMatch(/value: 'assign'[\s\S]{0,300}<UserCombobox/);
         expect(src).not.toMatch(/placeholder="User ID \(blank = unassign\)"/);
     });
     it('optimistic assignee uses the picked label, not the raw user id', () => {

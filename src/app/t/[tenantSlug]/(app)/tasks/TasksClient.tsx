@@ -35,7 +35,6 @@ import {
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
 import { ListPageShell } from '@/components/layout/ListPageShell';
 import { Button } from '@/components/ui/button';
-import { IconAction } from '@/components/ui/icon-action';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
 import { buttonVariants } from '@/components/ui/button-variants';
@@ -45,6 +44,7 @@ import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
 import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { UserCombobox } from '@/components/ui/user-combobox';
+import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
 import { ownerDisplayName } from '@/lib/owner-display';
 import { DatePicker } from '@/components/ui/date-picker/date-picker';
 import {
@@ -78,11 +78,6 @@ const TYPE_LABELS: Record<string, string> = {
 // the bulk bar can't collect — closing is a deliberate single-task
 // action via the task detail page. RESOLVED is retired everywhere.
 const BULK_STATUS_CB_OPTIONS: ComboboxOption[] = ['OPEN', 'TRIAGED', 'IN_PROGRESS', 'BLOCKED'].map(s => ({ value: s, label: STATUS_LABELS[s] || s }));
-const BULK_ACTION_OPTIONS: ComboboxOption[] = [
-    { value: 'assign', label: 'Assign' },
-    { value: 'status', label: 'Change Status' },
-    { value: 'due', label: 'Set Due Date' },
-];
 
 interface TaskListItem {
     id: string;
@@ -170,13 +165,9 @@ function TasksPageInner({
     const filterCtx = useFilters();
     const { state, search, hasActive } = filterCtx;
 
-    // Bulk selection
+    // Bulk selection — the <BulkActionBar> owns the action/value form state;
+    // this client only tracks which rows are selected.
     const [selected, setSelected] = useState<Set<string>>(new Set());
-    const [bulkAction, setBulkAction] = useState('');
-    const [bulkValue, setBulkValue] = useState('');
-    // Display label for the chosen assignee (UserCombobox) — drives the
-    // optimistic assignee name so the row doesn't flash the raw user id.
-    const [bulkValueLabel, setBulkValueLabel] = useState('');
 
     // ─── Query: tasks list (hydrated with server data) ───
 
@@ -431,29 +422,86 @@ function TasksPageInner({
         },
     });
 
-    const handleBulkSubmit = () => {
-        if (!bulkAction || selected.size === 0) return;
+    // BulkActionBar.onApply — fire the bulk mutation; the bar clears its own
+    // form once `applying` settles.
+    const handleBulkApply = (action: string, value: string, label: string) => {
+        if (!action || selected.size === 0) return;
         bulkMutation
-            .trigger({
-                action: bulkAction,
-                value: bulkValue,
-                label: bulkValueLabel,
-                ids: Array.from(selected),
-            })
+            .trigger({ action, value, label, ids: Array.from(selected) })
             .catch(() => {
                 /* rollback already applied by the hook */
             })
             .finally(() => {
-                // Mirror the prior `onSettled` semantics — clear bulk
-                // selection state and fan out invalidation to sibling
-                // filter variants.
+                // Mirror the prior `onSettled` semantics — clear selection +
+                // fan out invalidation to sibling filter variants.
                 invalidateAllTasks();
                 setSelected(new Set());
-                setBulkAction('');
-                setBulkValue('');
-                setBulkValueLabel('');
             });
     };
+
+    // Canonical bulk actions for the Tasks table — Assign (people-picker),
+    // Change Status (active transitions), Set Due Date.
+    const taskBulkActions: BulkActionDef[] = useMemo(
+        () => [
+            {
+                value: 'assign',
+                label: 'Assign',
+                renderInput: ({ value, setValue, setLabel }) => (
+                    <UserCombobox
+                        tenantSlug={tenantSlug}
+                        selectedId={value || null}
+                        onChange={(id, m) => {
+                            setValue(id ?? '');
+                            setLabel(ownerDisplayName(m?.name, m?.email) ?? '');
+                        }}
+                        forceDropdown
+                        matchTriggerWidth
+                        placeholder="Assignee (blank = unassign)"
+                        className="w-full sm:w-44"
+                        id="bulk-value-input"
+                    />
+                ),
+            },
+            {
+                value: 'status',
+                label: 'Change Status',
+                canApply: (v) => v !== '',
+                renderInput: ({ value, setValue }) => (
+                    <Combobox
+                        hideSearch
+                        id="bulk-value-input"
+                        selected={
+                            BULK_STATUS_CB_OPTIONS.find((o) => o.value === value) ??
+                            null
+                        }
+                        setSelected={(opt) => setValue(opt?.value ?? '')}
+                        options={BULK_STATUS_CB_OPTIONS}
+                        placeholder="Select status..."
+                        matchTriggerWidth
+                        buttonProps={{ className: 'text-sm' }}
+                    />
+                ),
+            },
+            {
+                value: 'due',
+                label: 'Set Due Date',
+                renderInput: ({ value, setValue }) => (
+                    <DatePicker
+                        id="bulk-value-input"
+                        className="w-full sm:w-40 text-sm"
+                        placeholder="Due date"
+                        clearable
+                        align="start"
+                        value={parseYMD(value)}
+                        onChange={(next) => setValue(toYMD(next) ?? '')}
+                        disabledDays={{ before: startOfUtcDay(new Date()) }}
+                        aria-label="Bulk due date"
+                    />
+                ),
+            },
+        ],
+        [tenantSlug],
+    );
 
     // R10-PR7 — column-visibility gear.
     const taskColumnList = useMemo(
@@ -691,69 +739,11 @@ function TasksPageInner({
                         setSelected(new Set(rows.map((r) => r.original.id)))
                     }
                     selectionControls={() => (
-                        <div className="flex items-center gap-compact">
-                            <Combobox
-                                hideSearch
-                                id="bulk-action-select"
-                                selected={BULK_ACTION_OPTIONS.find(o => o.value === bulkAction) ?? null}
-                                setSelected={(opt) => { setBulkAction(opt?.value ?? ''); setBulkValue(''); setBulkValueLabel(''); }}
-                                options={BULK_ACTION_OPTIONS}
-                                placeholder="Choose action..."
-                                matchTriggerWidth
-                                buttonProps={{ className: 'text-sm' }}
-                            />
-                            {bulkAction === 'assign' && (
-                                <UserCombobox
-                                    tenantSlug={tenantSlug}
-                                    selectedId={bulkValue || null}
-                                    onChange={(id, m) => {
-                                        setBulkValue(id ?? '');
-                                        setBulkValueLabel(
-                                            ownerDisplayName(m?.name, m?.email) ?? '',
-                                        );
-                                    }}
-                                    forceDropdown
-                                    matchTriggerWidth
-                                    placeholder="Assignee (blank = unassign)"
-                                    className="w-full sm:w-44"
-                                    id="bulk-value-input"
-                                />
-                            )}
-                            {bulkAction === 'status' && (
-                                <Combobox
-                                    hideSearch
-                                    id="bulk-value-input"
-                                    selected={BULK_STATUS_CB_OPTIONS.find(o => o.value === bulkValue) ?? null}
-                                    setSelected={(opt) => setBulkValue(opt?.value ?? '')}
-                                    options={BULK_STATUS_CB_OPTIONS}
-                                    placeholder="Select status..."
-                                    matchTriggerWidth
-                                    buttonProps={{ className: 'text-sm' }}
-                                />
-                            )}
-                            {bulkAction === 'due' && (
-                                <DatePicker
-                                    id="bulk-value-input"
-                                    className="w-full sm:w-40 text-sm"
-                                    placeholder="Due date"
-                                    clearable
-                                    align="start"
-                                    value={parseYMD(bulkValue)}
-                                    onChange={(next) => setBulkValue(toYMD(next) ?? '')}
-                                    disabledDays={{ before: startOfUtcDay(new Date()) }}
-                                    aria-label="Bulk due date"
-                                />
-                            )}
-                            <IconAction
-                                variant="primary"
-                                disabled={!bulkAction || (bulkAction === 'status' && !bulkValue)}
-                                loading={bulkMutation.isMutating}
-                                onClick={handleBulkSubmit}
-                                id="bulk-apply-btn"
-                                icon={<AppIcon name="checkCircle" size={16} />}
-                                label="Apply"
-                            />
-                        </div>
+                        <BulkActionBar
+                            actions={taskBulkActions}
+                            onApply={handleBulkApply}
+                            applying={bulkMutation.isMutating}
+                        />
                     )}
                     onRowClick={(row) => router.push(tenantHref(`/tasks/${row.original.id}`))}
                     emptyState={
