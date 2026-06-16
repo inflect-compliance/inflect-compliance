@@ -111,6 +111,31 @@ export class AssetRepository {
         });
     }
 
+    /** Fetch the tenant's assets for the given ids (bulk-action audit source). */
+    static async listByIds(db: PrismaTx, ctx: RequestContext, ids: string[]) {
+        // Bounded by the `in: ids` set (bulk schemas cap at 100 ids); a `take:`
+        // would be redundant.
+        return db.asset.findMany({ // guardrail-allow: unbounded
+            where: { id: { in: ids }, tenantId: ctx.tenantId },
+        });
+    }
+
+    /**
+     * Tenant-scoped bulk update — one `updateMany` so the bulk-action path
+     * never reads/writes per-id in a loop. Returns the affected-row count.
+     */
+    static async bulkUpdate(
+        db: PrismaTx,
+        ctx: RequestContext,
+        ids: string[],
+        data: Omit<Prisma.AssetUncheckedUpdateInput, 'tenantId'>,
+    ) {
+        return db.asset.updateMany({
+            where: { id: { in: ids }, tenantId: ctx.tenantId },
+            data,
+        });
+    }
+
     static async delete(db: PrismaTx, ctx: RequestContext, id: string) {
         const existing = await this.getById(db, ctx, id);
         if (!existing) return false;

@@ -538,6 +538,18 @@ export const BulkTaskDueDateSchema = z.object({
     dueAt: z.string().nullable(),
 }).strip();
 
+// ─── Asset bulk actions (canonical BulkActionBar rollout) ───
+
+export const BulkAssetStatusSchema = z.object({
+    assetIds: z.array(z.string().min(1)).min(1).max(100),
+    status: z.enum(['ACTIVE', 'RETIRED']),
+}).strip();
+
+export const BulkAssetAssignSchema = z.object({
+    assetIds: z.array(z.string().min(1)).min(1).max(100),
+    ownerUserId: z.string().nullable(),
+}).strip();
+
 // ─── Issue Compatibility Aliases (deprecated — use Task schemas) ───
 
 /** @deprecated Use CreateTaskSchema */ export const CreateIssueSchema = CreateTaskSchema;
