@@ -1167,6 +1167,7 @@ function RisksPageInner({
                             setSortOrder(nextOrder);
                         }}
                         onRowClick={(row) => router.push(tenantHref(`/risks/${row.original.id}`))}
+                        onRowPrefetch={(row) => router.prefetch(tenantHref(`/risks/${row.original.id}`))}
                         selectionEnabled
                         selectedRows={Object.fromEntries(
                             Array.from(selected).map((id) => [id, true]),

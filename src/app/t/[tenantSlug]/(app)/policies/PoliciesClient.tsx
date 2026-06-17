@@ -559,6 +559,7 @@ function PoliciesPageInner({
                 getRowId: (p: any) => p.id,
                 onRowClick: (row) =>
                     router.push(tenantHref(`/policies/${row.original.id}`)),
+                onRowPrefetch: (row) => router.prefetch(tenantHref(`/policies/${row.original.id}`)),
                 emptyState: hasActive ? (
                     <EmptyState
                         size="sm"

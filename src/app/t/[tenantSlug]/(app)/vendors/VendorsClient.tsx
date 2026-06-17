@@ -467,6 +467,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                         columnVisibility={columnVisibility}
                         onColumnVisibilityChange={setColumnVisibility}
                         onRowClick={(row) => router.push(tenantHref(`/vendors/${row.original.id}`))}
+                        onRowPrefetch={(row) => router.prefetch(tenantHref(`/vendors/${row.original.id}`))}
                         selectionEnabled
                         selectedRows={Object.fromEntries(
                             Array.from(selected).map((id) => [id, true]),
