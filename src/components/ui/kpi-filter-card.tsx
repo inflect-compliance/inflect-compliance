@@ -203,25 +203,39 @@ export function KpiFilterCard({
 
     const sparkLabel =
         typeof label === "string" ? `${label} trend` : "Trend";
+    const hasSparkline = !!sparkline && sparkline.length >= 2;
     const body = (
         // B2 (2026-06-07): the sparkline sits to the RIGHT of the value, not
         // beneath it — so trendline cards keep the SAME (compact) height as
         // cards without a trendline, instead of growing a row taller.
-        // `items-end` aligns the sparkline to the value's baseline.
-        <div className="flex items-end justify-between gap-compact">
+        //
+        // Windows-alignment follow-up (the B2 in-flow `flex items-end` row
+        // gave the sparkline `w-2/3`, squeezing <KPIStat>'s label into the
+        // remaining third. A label like "HIGH CRITICALITY" then wrapped to a
+        // DIFFERENT line-count per OS — 2 lines on Windows where it was 1 on
+        // Linux — because text wrapping is font-metric dependent. That made
+        // each card's body a different height, so the bottom-aligned
+        // sparklines landed at different vertical levels: exactly the
+        // pre-#1097 symptom, OS-triggered.) Two-part fix:
+        //   1. <KPIStat> owns the FULL card width again, so its label never
+        //      wraps into a narrow column — one line on every platform.
+        //   2. The sparkline is taken OUT of flow (absolute, pinned to the
+        //      card's bottom-right) so its vertical position can't depend on
+        //      the label/value text height at all. With the KPI grid already
+        //      equalising card heights, every trend sits at the same offset
+        //      from the card bottom.
+        <div className="relative">
             <KPIStat {...kpiStatProps} />
-            {sparkline && sparkline.length >= 2 && (
+            {hasSparkline && (
                 // Fixed-size wrapper is LOAD-BEARING. MiniAreaChart's
                 // <ParentSize> forces inline `height: 100%`, which would
-                // override an `h-8` passed on the chart itself and resolve
-                // against the auto-height card — ParentSize then grows to
-                // fill, the card grows to fit, and they expand without
-                // bound. Pinning the parent height (h-8) stops the loop.
-                // B2-follow (#73 → #75, 2026-06-07): the trend spans the
-                // right TWO-THIRDS of the card (w-2/3) — value on the left
-                // third, sparkline filling the rest — instead of a narrow
-                // chip jammed against the right.
-                <div className="h-8 w-2/3 shrink-0">
+                // override an `h-8` on the chart itself and resolve against
+                // the auto-height card — ParentSize then grows to fill, the
+                // card grows to fit, and they expand without bound. Pinning
+                // the wrapper height (h-8) stops the loop. The trend spans
+                // the right TWO-THIRDS (w-2/3); `pointer-events-none` keeps
+                // it from stealing clicks from the card button.
+                <div className="pointer-events-none absolute bottom-0 right-0 h-8 w-2/3">
                     <MiniAreaChart
                         data={sparkline}
                         variant={effectiveSparklineVariant}
