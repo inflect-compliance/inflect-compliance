@@ -42,14 +42,25 @@ export interface TrendDataPoint {
     evidenceOverdue: number;
     evidenceDueSoon7d: number;
     evidenceCurrent: number;
+    // Status buckets — nullable: null on pre-existence snapshot rows (no data
+    // to plot), real counts going forward. The chart pipeline trims the NULL
+    // prefix so the sparkline shows only truthful history.
+    evidenceDraft: number | null;
+    evidenceSubmitted: number | null;
+    evidenceApproved: number | null;
 
     // Policies
     policiesTotal: number;
     policiesOverdueReview: number;
+    policiesDraft: number | null;
+    policiesInReview: number | null;
+    policiesApproved: number | null;
 
     // Vendors
     vendorsTotal: number;
     vendorsOverdueReview: number;
+    vendorsActive: number | null;
+    vendorsCritical: number | null;
 
     // Tasks
     tasksOpen: number;
@@ -103,10 +114,18 @@ function toDataPoint(s: ComplianceSnapshot): TrendDataPoint {
         evidenceOverdue: s.evidenceOverdue,
         evidenceDueSoon7d: s.evidenceDueSoon7d,
         evidenceCurrent: s.evidenceCurrent,
+        evidenceDraft: s.evidenceDraft,
+        evidenceSubmitted: s.evidenceSubmitted,
+        evidenceApproved: s.evidenceApproved,
         policiesTotal: s.policiesTotal,
         policiesOverdueReview: s.policiesOverdueReview,
+        policiesDraft: s.policiesDraft,
+        policiesInReview: s.policiesInReview,
+        policiesApproved: s.policiesApproved,
         vendorsTotal: s.vendorsTotal,
         vendorsOverdueReview: s.vendorsOverdueReview,
+        vendorsActive: s.vendorsActive,
+        vendorsCritical: s.vendorsCritical,
         tasksOpen: s.tasksOpen,
         tasksOverdue: s.tasksOverdue,
         assetsTotal: s.assetsTotal,

@@ -79,11 +79,19 @@ function setupDashboardMocks() {
     };
     mockTx.evidence = {
         count: jest.fn(async () => 20),
+        // KPI status buckets (PR2) — by-status group counts.
+        groupBy: jest.fn(async () => [
+            { status: 'DRAFT', _count: 6 },
+            { status: 'SUBMITTED', _count: 4 },
+            { status: 'APPROVED', _count: 10 },
+        ]),
     };
     mockTx.policy = {
         groupBy: jest.fn(async () => [
             { status: 'PUBLISHED', _count: 4 },
             { status: 'DRAFT', _count: 2 },
+            { status: 'IN_REVIEW', _count: 1 },
+            { status: 'APPROVED', _count: 3 },
         ]),
         count: jest.fn(async () => 1),
     };

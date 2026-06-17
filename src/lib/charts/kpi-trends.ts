@@ -75,6 +75,26 @@ export function buildKpiSparklines<K extends string>(
 }
 
 /**
+ * Build ONE series for a NULLABLE metric (a column added forward-only, so
+ * pre-existence snapshot rows read `null`). Trims the leading `null` prefix —
+ * the sparkline starts where the column began being captured — and maps the
+ * rest (a stray `null` after real data coalesces to 0). Returns `[]` while
+ * there's still no data, so `<KpiFilterCard>` draws nothing until ≥ 2 points.
+ */
+export function buildKpiSparklineNullable(
+    points: readonly TrendDataPoint[] | undefined,
+    pick: (d: TrendDataPoint) => number | null,
+): TimeSeriesPoint[] {
+    const pts = points ?? [];
+    const firstReal = pts.findIndex((d) => pick(d) != null);
+    if (firstReal < 0) return [];
+    return pts.slice(firstReal).map((d) => ({
+        date: new Date(d.date),
+        value: pick(d) ?? 0,
+    }));
+}
+
+/**
  * Centered y-domain for a KPI sparkline so a ROW of sparklines sit at the SAME
  * vertical level regardless of magnitude — the data's midpoint lands at the
  * vertical centre of every card. Returns `undefined` for a constant/empty
