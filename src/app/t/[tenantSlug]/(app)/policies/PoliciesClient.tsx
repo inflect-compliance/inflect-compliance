@@ -9,6 +9,7 @@ import { NewPolicyModal } from './NewPolicyModal';
 import { Button } from '@/components/ui/button';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
+import { useKpiTrends, buildKpiSparklines, centeredSparklineDomain } from '@/lib/charts/kpi-trends';
 import { ownerDisplayName } from '@/lib/owner-display';
 import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
 import { UserCombobox } from '@/components/ui/user-combobox';
@@ -263,6 +264,18 @@ function PoliciesPageInner({
     type PolicyKpiId = 'total' | 'draft' | 'inReview' | 'approved';
     // guardrail-ignore: KPI counts across the loaded page, not a refilter.
     const totalPolicies = policies.length;
+
+    // Canonical KPI-card sparkline (shared hook). Only `total` has a daily
+    // snapshot series; the status cards (draft/inReview/approved) have no
+    // snapshot column yet, so they stay value-only.
+    const trendsQuery = useKpiTrends(tenantSlug);
+    const policyTrends = useMemo(
+        () =>
+            buildKpiSparklines(trendsQuery.data?.dataPoints, (d) => d.policiesTotal, {
+                total: (d) => d.policiesTotal,
+            }),
+        [trendsQuery.data],
+    );
     // guardrail-ignore: KPI count, not a refilter.
     const draftPolicies = policies.filter((p: any) => p.status === 'DRAFT').length;
     // guardrail-ignore: KPI count, not a refilter.
@@ -515,6 +528,8 @@ function PoliciesPageInner({
                     <KpiFilterCard
                         label="Total policies"
                         value={totalPolicies}
+                        sparkline={policyTrends.total}
+                        sparklineDomain={centeredSparklineDomain(policyTrends.total)}
                         onClick={() => togglePolicyKpi('total')}
                         selected={activePolicyKpi === 'total'}
                     />

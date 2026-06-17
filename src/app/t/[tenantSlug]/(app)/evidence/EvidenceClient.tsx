@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useSWRConfig } from 'swr';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
+import { useKpiTrends, buildKpiSparklines, centeredSparklineDomain } from '@/lib/charts/kpi-trends';
 import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
 import { UserCombobox } from '@/components/ui/user-combobox';
 import { ownerDisplayName } from '@/lib/owner-display';
@@ -413,6 +414,18 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     type EvidenceKpiId = 'total' | 'draft' | 'submitted' | 'approved';
     // guardrail-ignore: KPI counts across the loaded page, not a refilter.
     const totalEvidence = evidence.length;
+
+    // Canonical KPI-card sparkline (shared hook). Only `total` has a daily
+    // snapshot series; the status cards (draft/submitted/approved) have no
+    // snapshot column yet, so they stay value-only.
+    const trendsQuery = useKpiTrends(tenantSlug);
+    const evidenceTrends = useMemo(
+        () =>
+            buildKpiSparklines(trendsQuery.data?.dataPoints, (d) => d.evidenceTotal, {
+                total: (d) => d.evidenceTotal,
+            }),
+        [trendsQuery.data],
+    );
     // guardrail-ignore: KPI count, not a refilter.
     const draftEvidence = evidence.filter((ev: any) => ev.status === 'DRAFT').length;
     // guardrail-ignore: KPI count, not a refilter.
@@ -992,6 +1005,8 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                     <KpiFilterCard
                         label="Total evidence"
                         value={totalEvidence}
+                        sparkline={evidenceTrends.total}
+                        sparklineDomain={centeredSparklineDomain(evidenceTrends.total)}
                         onClick={() => toggleEvidenceKpi('total')}
                         selected={activeEvidenceKpi === 'total'}
                     />
