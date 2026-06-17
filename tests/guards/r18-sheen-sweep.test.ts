@@ -128,15 +128,19 @@ describe('R18-PR10 — periodic sheen sweep', () => {
             );
         });
 
-        it('each segment paints a third layer filled with the sheen def', () => {
-            // colour → gloss → sheen. R18-PR11 converted the donut
-            // segment layers from `<path d={path}>` to
-            // `<motion.path animate={{ d }}>` for the data-change
-            // morph — so the sheen layer is now a `<motion.path>`.
-            // What's locked is the sheen FILL on an inert
-            // (pointerEvents=none + aria-hidden) segment layer.
+        it('each segment paints a third layer filled with the sheen def, inside the inert visual group', () => {
+            // colour → gloss → sheen, all `<motion.path>` for the
+            // R18-PR11 data-change morph. The sheen FILL must be
+            // present...
             expect(DONUT_SRC).toMatch(
-                /fill=\{`url\(#\$\{chartSheenId\(chartId\)\}\)`\}[\s\S]*?pointerEvents="none"[\s\S]*?aria-hidden="true"/,
+                /fill=\{`url\(#\$\{chartSheenId\(chartId\)\}\)`\}/,
+            );
+            // ...and the layers live inside the popped visual group
+            // that carries `pointerEvents="none"` + `aria-hidden`
+            // (the hover-tremble fix moved inertness from each path to
+            // the shared group; a SEPARATE hit path owns the hover).
+            expect(DONUT_SRC).toMatch(
+                /transform=\{popTransform\}\s*\n?\s*pointerEvents="none"\s*\n?\s*aria-hidden="true"/,
             );
         });
     });

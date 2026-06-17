@@ -495,114 +495,106 @@ export default function DonutChart({
                                 midAngle,
                             );
                             return (
-                                <g
-                                    key={`${seg.label}-${arc.index}`}
-                                    transform={popTransform}
-                                    onMouseEnter={() =>
-                                        setHoveredKey(seg.label)
-                                    }
-                                    onMouseLeave={() => setHoveredKey(null)}
-                                    onFocus={() => setHoveredKey(seg.label)}
-                                    onBlur={() => setHoveredKey(null)}
-                                    tabIndex={0}
-                                    style={{
-                                        // R12 motion language —
-                                        // transform via transition,
-                                        // 200ms ease-out (matches
-                                        // --chart-hover-duration).
-                                        transition:
-                                            'transform 200ms ease-out',
-                                        outline: 'none',
-                                        cursor: 'pointer',
-                                    }}
-                                    aria-label={`${seg.label}: ${seg.value}`}
-                                >
-                                    {/* Colour layer — the segment's
-                                        series gradient (or legacy
-                                        hex).
+                                <g key={`${seg.label}-${arc.index}`}>
+                                    {/* VISUAL layers — pop radially
+                                        outward on hover, but INERT to
+                                        the pointer (`pointer-events:
+                                        none` on the group cascades to
+                                        every child). The hover target
+                                        is the stable hit path BELOW,
+                                        not this group.
 
-                                        R18-PR11 — fluid data-change
-                                        morph. `<motion.path>` with
-                                        `animate={{ d }}` tweens the
-                                        arc geometry whenever the
-                                        `segments` prop changes — a
-                                        risk count flips, a status
-                                        moves — instead of snapping
-                                        to the new shape. `initial=
-                                        {false}` means NO mount
-                                        animation: the bubble-
-                                        entrance (PR-5, the group
-                                        scale) owns the mount; this
-                                        layer only animates on
-                                        UPDATE. Replaces the prior
-                                        CSS-transition className,
-                                        which was a no-op — CSS
-                                        can't reliably transition
-                                        the `d` attribute;
-                                        framer-motion's path
-                                        interpolation can. */}
-                                    <motion.path
-                                        initial={false}
-                                        animate={{ d: path }}
-                                        transition={{
-                                            duration: 0.5,
-                                            ease: 'easeOut',
+                                        Boundary-tremble fix: when the
+                                        handlers lived on THIS popped
+                                        group, hovering a segment near a
+                                        boundary translated it 4px out
+                                        from under the cursor →
+                                        mouseleave → un-pop → the arc
+                                        snapped back under the cursor →
+                                        mouseenter → pop … an infinite
+                                        oscillation (the "trembling"
+                                        when the mouse sits between two
+                                        sections). Decoupling the hit
+                                        target from the moving geometry
+                                        breaks the loop. */}
+                                    <g
+                                        transform={popTransform}
+                                        pointerEvents="none"
+                                        aria-hidden="true"
+                                        style={{
+                                            // R12 motion language —
+                                            // transform via transition,
+                                            // 200ms ease-out (matches
+                                            // --chart-hover-duration).
+                                            transition:
+                                                'transform 200ms ease-out',
                                         }}
-                                        fill={fill}
+                                    >
+                                        {/* Colour layer — the segment's
+                                            series gradient (or legacy
+                                            hex). R18-PR11 — motion.path
+                                            morphs the `d` on data change;
+                                            initial is false so the
+                                            bubble-entrance owns the mount. */}
+                                        <motion.path
+                                            initial={false}
+                                            animate={{ d: path }}
+                                            transition={{
+                                                duration: 0.5,
+                                                ease: 'easeOut',
+                                            }}
+                                            fill={fill}
+                                        />
+                                        {/* R18-PR4 — gloss layer (same `d`,
+                                            shared vertical gloss def). */}
+                                        <motion.path
+                                            initial={false}
+                                            animate={{ d: path }}
+                                            transition={{
+                                                duration: 0.5,
+                                                ease: 'easeOut',
+                                            }}
+                                            fill={`url(#${chartGlossId(chartId)})`}
+                                        />
+                                        {/* R18-PR10 — travelling sheen
+                                            layer (same `d`). */}
+                                        <motion.path
+                                            initial={false}
+                                            animate={{ d: path }}
+                                            transition={{
+                                                duration: 0.5,
+                                                ease: 'easeOut',
+                                            }}
+                                            fill={`url(#${chartSheenId(chartId)})`}
+                                        />
+                                    </g>
+                                    {/* STABLE hit target — the RESTING
+                                        arc geometry, never translated, so
+                                        it can't move out from under the
+                                        cursor. Transparent fill +
+                                        `pointer-events: all` makes the whole
+                                        band hittable; this path owns the
+                                        hover state, keyboard focus, a11y
+                                        label, and native tooltip. */}
+                                    <path
+                                        d={path}
+                                        fill="transparent"
+                                        pointerEvents="all"
+                                        onMouseEnter={() =>
+                                            setHoveredKey(seg.label)
+                                        }
+                                        onMouseLeave={() => setHoveredKey(null)}
+                                        onFocus={() => setHoveredKey(seg.label)}
+                                        onBlur={() => setHoveredKey(null)}
+                                        tabIndex={0}
+                                        style={{
+                                            outline: 'none',
+                                            cursor: 'pointer',
+                                        }}
+                                        aria-label={`${seg.label}: ${seg.value}`}
                                     >
                                         <title>{`${seg.label}: ${seg.value} (${(segPercent * 100).toFixed(1)}%)`}</title>
-                                    </motion.path>
-                                    {/* R18-PR4 — gloss layer. SAME
-                                        `d`, painted on top, filled
-                                        with the shared vertical
-                                        gloss def. The white→
-                                        transparent ramp lets the
-                                        colour layer show through
-                                        everywhere except the sheen
-                                        band near the top edge — the
-                                        segment reads as glass
-                                        catching light. pointer-
-                                        events-none so the gloss
-                                        overlay never intercepts the
-                                        hover that belongs to the
-                                        colour layer's <g>.
-                                        R18-PR11 — same `d` morph so
-                                        the gloss tracks the colour
-                                        layer through a data change. */}
-                                    <motion.path
-                                        initial={false}
-                                        animate={{ d: path }}
-                                        transition={{
-                                            duration: 0.5,
-                                            ease: 'easeOut',
-                                        }}
-                                        fill={`url(#${chartGlossId(chartId)})`}
-                                        pointerEvents="none"
-                                        aria-hidden="true"
-                                    />
-                                    {/* R18-PR10 — sheen-sweep
-                                        layer. SAME `d` again,
-                                        painted on top of the gloss,
-                                        filled with the travelling
-                                        sheen def. As useChartSheen
-                                        pans the gradient, a narrow
-                                        white band drifts across
-                                        this segment. Stacked third:
-                                        colour → static gloss →
-                                        moving sheen. Inert like the
-                                        gloss layer. R18-PR11 — same
-                                        `d` morph. */}
-                                    <motion.path
-                                        initial={false}
-                                        animate={{ d: path }}
-                                        transition={{
-                                            duration: 0.5,
-                                            ease: 'easeOut',
-                                        }}
-                                        fill={`url(#${chartSheenId(chartId)})`}
-                                        pointerEvents="none"
-                                        aria-hidden="true"
-                                    />
+                                    </path>
                                 </g>
                             );
                         })
