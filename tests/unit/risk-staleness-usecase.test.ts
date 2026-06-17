@@ -26,7 +26,19 @@ import { makeRequestContext } from '../helpers/make-context';
 const readerCtx = makeRequestContext('READER');
 const daysAgo = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000);
 
+// De-flake: freeze the clock to a fixed instant so every `daysAgo(n)`
+// resolves against ONE `Date.now()`. The usecase matches the
+// `kriReading.groupBy` _max-`recordedAt` to the `kriReading.findMany`
+// reading by EXACT timestamp (risk-staleness.ts: `getTime() !== … →
+// continue`). Without a frozen clock the two `daysAgo(2)` fixtures are
+// separate `Date.now()` calls that occasionally straddle a millisecond
+// boundary → unequal `getTime()` → the RED reading is dropped → no
+// SIGNAL_MOVED → `sig` undefined. A fixed `now` makes matched-timestamp
+// fixtures byte-equal and removes all date-rollover sensitivity.
+const FIXED_NOW = new Date('2026-06-15T12:00:00.000Z');
+
 beforeEach(() => {
+    jest.useFakeTimers({ now: FIXED_NOW });
     jest.clearAllMocks();
     (mockDb.risk.findMany as jest.Mock).mockResolvedValue([]);
     (mockDb.riskScoreEvent.groupBy as jest.Mock).mockResolvedValue([]);
@@ -35,6 +47,10 @@ beforeEach(() => {
     (mockDb.keyRiskIndicator.findMany as jest.Mock).mockResolvedValue([]);
     (mockDb.kriReading.groupBy as jest.Mock).mockResolvedValue([]);
     (mockDb.kriReading.findMany as jest.Mock).mockResolvedValue([]);
+});
+
+afterEach(() => {
+    jest.useRealTimers();
 });
 
 describe('getRiskStaleness', () => {
