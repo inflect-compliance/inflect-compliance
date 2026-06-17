@@ -36,7 +36,16 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Cancel superseded runs ONLY for push events (a new commit truly
+  # supersedes the old). For pull_request runs, do NOT auto-cancel: a
+  # `synchronize` fires whenever the PR's merge-ref is recomputed —
+  # including when `main` advances (e.g. semantic-release's per-merge
+  # release commit) WITHOUT any new PR commit. With cancel-in-progress on,
+  # that recompute cancelled the still-in-flight job (Build/Docker) while
+  # already-finished siblings stayed green — a recurring spurious "Build
+  # cancelled". Letting PR runs finish (at the cost of an occasional
+  # duplicate) trades a little runner time for reliable, non-flaky checks.
+  cancel-in-progress: ${{ github.event_name != 'pull_request' }}
 
 permissions:
   contents: read
@@ -366,7 +375,9 @@ jobs:
   build:
     name: Build
     runs-on: ${{ vars.LARGE_RUNNER || 'ubuntu-latest' }}
-    timeout-minutes: 10
+    # Normally ~3.5 min; 15 gives cold-runner headroom without masking a
+    # genuine hang (the prior spurious cancels were concurrency, not timeout).
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v6
@@ -866,13 +877,14 @@ jobs:
     name: Docker Build
     needs: [build]
     runs-on: ${{ vars.LARGE_RUNNER || 'ubuntu-latest' }}
-    # Roadmap-27 CI hardening — bumped 15 → 25. semantic-release
-    # bumps the package.json version on every release, which
-    # cache-misses the Docker `npm ci` layer; a cold full install
-    # pushes this job past 15 min and the run is cancelled. GHA
-    # layer caching is already enabled (cache-from/to: gha) — the
-    # cold npm-ci layer after a version bump is unavoidable.
-    timeout-minutes: 25
+    # Roadmap-27 CI hardening — bumped 15 → 25, then 25 → 40 (2026-06-18)
+    # after a job was observed hitting the 25 min limit exactly and being
+    # cancelled. semantic-release bumps the package.json version on every
+    # release, which cache-misses the Docker `npm ci` layer; a cold full
+    # install + next build + image layers can exceed 25 min. GHA layer
+    # caching is on (cache-from/to: gha) — the cold npm-ci layer after a
+    # version bump is unavoidable, so give it real headroom.
+    timeout-minutes: 40
 
     steps:
       - uses: actions/checkout@v6
