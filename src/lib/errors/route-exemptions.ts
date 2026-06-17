@@ -29,7 +29,8 @@ export interface BareRouteExemption {
         | 'external_webhook'
         | 'scim_2_0'
         | 'staging_fixture'
-        | 'sse_stream';
+        | 'sse_stream'
+        | 'telemetry_sink';
     /** Why this route does not use `withApiErrorHandling`. */
     reason: string;
 }
@@ -161,6 +162,18 @@ export const BARE_ROUTE_EXEMPTIONS: ReadonlyArray<BareRouteExemption> = [
         reason:
             'Legacy CSP report endpoint. Best-effort forwards to the ' +
             '/api/security/csp-report sink and always returns 204.',
+    },
+    {
+        file: 'telemetry/vitals/route.ts',
+        category: 'telemetry_sink',
+        reason:
+            'Web-vitals RUM beacon sink. Public, unauthenticated, ' +
+            'best-effort: size-capped + per-IP rate-limited, always ' +
+            'returns 204, swallows all errors (telemetry must never break ' +
+            'a page). Same fire-and-forget browser-beacon shape as ' +
+            'csp-report; NOT wrapped because withApiErrorHandling would ' +
+            'apply the 60/min mutation limit, throttling legitimate ' +
+            '~8-vitals/page traffic. See src/lib/observability/web-vitals.ts.',
     },
     {
         file: 'security/csp-report/route.ts',

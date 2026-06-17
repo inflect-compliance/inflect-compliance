@@ -11,9 +11,10 @@ import { recordWebVital, acceptVitalBeacon } from '@/lib/observability/web-vital
  *   - metric names allowlisted, values validated (server side);
  *   - ALWAYS returns 204 — never leaks internal state, never errors the client.
  *
- * Not wrapped in `withApiErrorHandling` on purpose: that would apply the 60/min
- * mutation limit, but vitals legitimately fire ~8 per page over rapid
- * navigation. The dedicated `acceptVitalBeacon` limiter is tuned for that.
+ * Deliberately NOT routed through the standard API error wrapper (it's in
+ * BARE_ROUTE_EXEMPTIONS): that wrapper applies the 60/min mutation limit, but
+ * vitals legitimately fire ~8 per page over rapid navigation. The dedicated
+ * `acceptVitalBeacon` limiter is tuned for that instead.
  */
 
 const MAX_PAYLOAD_BYTES = 2048;

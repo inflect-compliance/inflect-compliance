@@ -188,6 +188,15 @@ describe('Structural Guard: Tenant Isolation Conventions', () => {
             // sits outside `/api/t/`. The avatar upload/delete acts
             // only on `session.user.id`; the serve route is read-only.
             'account',
+            // Web-vitals RUM sink. A public, unauthenticated, best-effort
+            // telemetry beacon receiver (Core Web Vitals + Next nav timing).
+            // It carries NO tenant data and resolves no RequestContext —
+            // samples are bounded to {allowlisted metric name, normalized
+            // route, CWV rating} with no tenant/user labels. Same rationale
+            // as `csp-report`: a fire-and-forget browser beacon, not a
+            // tenant-scoped business route. See
+            // src/lib/observability/web-vitals.ts.
+            'telemetry',
         ]);
 
         // Legacy routes are allowed as documented thin wrappers
