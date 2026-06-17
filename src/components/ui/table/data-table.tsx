@@ -24,7 +24,7 @@ import {
   Table as TableType,
   VisibilityState,
 } from "@tanstack/react-table";
-import { Dispatch, MouseEvent, ReactNode, SetStateAction, useState } from "react";
+import { Dispatch, MouseEvent, ReactNode, SetStateAction, useRef, useState } from "react";
 import { type BatchAction, renderBatchActions } from "./selection-toolbar";
 import { Table, useTable } from "./table";
 import { cn } from "./table-utils";
@@ -95,6 +95,17 @@ export interface DataTableProps<T> {
 
   /** Callback when a row is clicked. */
   onRowClick?: (row: Row<T>, e: MouseEvent) => void;
+
+  /**
+   * Called once, on the FIRST pointer-enter of each row, to warm that row's
+   * detail route — the consumer does `router.prefetch(href)` so the chunk +
+   * RSC payload are in flight before the click (navigation feels instant).
+   * Deduped per row, so it fires at most once per row. The callback lives in
+   * the consumer (which already holds the router) so the table primitive
+   * stays free of a `useRouter` dependency — rendering a DataTable never
+   * requires an app-router context. Complements `onRowClick`.
+   */
+  onRowPrefetch?: (row: Row<T>) => void;
 
   /** Unique row ID extractor (required for selection). */
   getRowId?: (row: T) => string;
@@ -283,6 +294,7 @@ export function DataTable<T>({
   sortOrder,
   onSortChange,
   onRowClick,
+  onRowPrefetch,
   getRowId,
   onRowSelectionChange,
   selectedRows,
@@ -424,6 +436,25 @@ export function DataTable<T>({
   // this is NOT a loose cast.
   const { table, ...rest } = useTable(tableProps as unknown as UseTableProps<T>);
 
+  // Hover-prefetch — fire the consumer's `onRowPrefetch` once per row on the
+  // first pointer-enter so it can warm that row's detail route before the
+  // click. Reuses the standard <Table>'s per-row `rowProps` hook; deduped by
+  // row id via a ref. The router lives in the consumer, NOT here, so a
+  // DataTable can render without an app-router context. Entity lists render
+  // ≤ the windowed row set (well under the virtualization threshold), so they
+  // take the standard <Table> path this attaches to.
+  const prefetchedRows = useRef<Set<string>>(new Set());
+  const prefetchRowProps = onRowPrefetch
+    ? (row: Row<T>) => ({
+        onMouseEnter: () => {
+          if (!prefetchedRows.current.has(row.id)) {
+            prefetchedRows.current.add(row.id);
+            onRowPrefetch(row);
+          }
+        },
+      })
+    : undefined;
+
   // The outermost wrapper exists for the dataTestId / id hooks the
   // E2E suite uses. When fillBody is on it participates in the
   // flex chain (max-h-full + flex flex-col + overflow-hidden) so
@@ -470,6 +501,7 @@ export function DataTable<T>({
         {...rest}
         table={table}
         data={data}
+        rowProps={prefetchRowProps}
       />
     </div>
   );

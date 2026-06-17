@@ -746,6 +746,7 @@ function TasksPageInner({
                         />
                     )}
                     onRowClick={(row) => router.push(tenantHref(`/tasks/${row.original.id}`))}
+                    onRowPrefetch={(row) => router.prefetch(tenantHref(`/tasks/${row.original.id}`))}
                     emptyState={
                         hasActive ? (
                             <EmptyState

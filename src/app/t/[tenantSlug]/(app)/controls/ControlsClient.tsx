@@ -1209,6 +1209,7 @@ function ControlsPageInner({
                 // depend on the standard <table> layout.
                 virtualize: false,
                 onRowClick: handleRowClick,
+                onRowPrefetch: (row) => router.prefetch(tenantHref(`/controls/${row.original.id}`)),
                 emptyState: hasActive ? (
                     <EmptyState
                         size="sm"

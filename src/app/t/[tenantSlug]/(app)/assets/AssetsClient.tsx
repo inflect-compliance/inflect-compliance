@@ -654,6 +654,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                     onRowClick={(row) =>
                         router.push(tenantHref(`/assets/${row.original.id}`))
                     }
+                    onRowPrefetch={(row) => router.prefetch(tenantHref(`/assets/${row.original.id}`))}
                     emptyState={
                         hasActive ? (
                             <EmptyState
