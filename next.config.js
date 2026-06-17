@@ -43,9 +43,25 @@ const defaultOptions = {
     ],
     experimental: {
         // optimizePackageImports remains experimental in Next 15.
+        // Barrel/submodule packages — let Next rewrite imports to the
+        // specific entry points so unused code tree-shakes out of the
+        // initial chunks (faster time-to-interactive on chart/list pages).
         optimizePackageImports: [
             'lucide-react',
             '@tanstack/react-query',
+            // Charting — visx submodules + motion load eagerly via the
+            // chart components on dashboard / risks / assets / etc.
+            'motion',
+            '@visx/shape',
+            '@visx/scale',
+            '@visx/curve',
+            '@visx/gradient',
+            '@visx/group',
+            '@visx/responsive',
+            '@visx/text',
+            '@visx/tooltip',
+            '@visx/axis',
+            '@visx/event',
         ],
     },
     async headers() {
