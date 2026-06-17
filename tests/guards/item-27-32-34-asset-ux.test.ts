@@ -66,6 +66,24 @@ describe('item 32 — three-way asset interaction (title / row / double-click)',
         expect(titleCell).toMatch(/tintOn === 'self' \? TITLE_CELL_LINK_HOVER : TITLE_CELL_ROW_HOVER/);
         expect(titleCell).toMatch(/group-hover\/row:text-\[var\(--brand-default\)\]/);
     });
+    it('the title quick-look button hugs the NAME (inline-block), not the whole cell — cursor/hover scope matches Controls/Risks', () => {
+        // Controls + Risks render the title as an INLINE <Link> whose
+        // footprint is the text. The asset title is a quick-look <button>;
+        // it must be `inline-block` (text-width), NOT the old full-cell
+        // `block w-full` target — otherwise the pointer cursor AND the
+        // brand-tint hover land anywhere in the cell instead of on the name.
+        // Grab the className on the element carrying the asset-title
+        // test id (the quick-look button).
+        const m = src.match(
+            /className="([^"]+)"\s*\n?\s*data-testid=\{`asset-title-/,
+        );
+        expect(m).not.toBeNull();
+        const cls = m![1];
+        expect(cls).toMatch(/inline-block/);
+        // The old full-cell footprint is gone.
+        expect(cls).not.toContain('block w-full');
+        expect(cls).not.toMatch(/(^|\s)w-full(\s|$)/);
+    });
 });
 
 describe('item 27 — arrow keys move between assets', () => {
