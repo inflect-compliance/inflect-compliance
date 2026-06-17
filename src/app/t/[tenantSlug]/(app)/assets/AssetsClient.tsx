@@ -450,12 +450,20 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                         e.stopPropagation();
                         setSelectedAssetId(row.original.id);
                     }}
-                    className="block w-full text-left rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    // `inline-block max-w-full` (NOT `block w-full`) — the
+                    // quick-look trigger's footprint hugs the NAME text, not
+                    // the whole cell. With a full-cell button the pointer
+                    // cursor + the brand-tint hover landed anywhere in the
+                    // cell; Controls/Risks render the title as an INLINE
+                    // <Link> (footprint = the text), so hover/cursor scope to
+                    // the name only. This matches that. `max-w-full` keeps a
+                    // long name inside the column; `truncate` clips overflow.
+                    className="inline-block max-w-full truncate text-left align-middle rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     data-testid={`asset-title-${row.original.id}`}
                 >
                     {/* tintOn="self" — the name tints brand-color only when the
-                        name itself is hovered (not the whole row), matching the
-                        controls table. */}
+                        name itself is hovered (not the whole row/cell),
+                        matching the Controls + Risks title links. */}
                     <TableTitleCell tintOn="self">{getValue()}</TableTitleCell>
                 </button>
             ),
