@@ -20,15 +20,15 @@
  *      as its colour path, filled with `url(#<glossId>)`. Two
  *      paths, same `d`, stacked — the chart-gloss.tsx contract.
  *
- *   4. The gloss overlay path is `pointerEvents="none"` — it sits
- *      ON TOP of the colour layer, so without this it would
- *      steal the hover that belongs to the segment's colour
- *      path's `<g>` wrapper. The hover-pop + flow-gradient
- *      effects depend on the colour layer keeping the pointer.
+ *   4. The gloss overlay is INERT to the pointer. As of the
+ *      hover-tremble fix the whole visual group (colour + gloss +
+ *      sheen) carries `pointer-events: none`; a SEPARATE stable hit
+ *      path owns the hover. Without that inertness the moving
+ *      (popped) geometry would steal — and oscillate — the hover.
  *
- *   5. The gloss overlay is `aria-hidden` — it carries no data,
- *      only light. The colour path's `<title>` already names the
- *      segment for assistive tech.
+ *   5. The visual group is `aria-hidden` — it carries no data, only
+ *      light + colour. The hit path's `<title>` + `aria-label` name
+ *      the segment for assistive tech.
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -86,12 +86,14 @@ describe('R18-PR4 — Donut gloss sheen', () => {
         );
     });
 
-    it('the gloss overlay is pointerEvents=none + aria-hidden', () => {
-        // pointerEvents=none — the overlay sits on top; without
-        // it, it steals the hover from the colour layer's <g>.
-        // aria-hidden — the gloss carries light, not data.
+    it('the visual group (colour+gloss+sheen) is pointerEvents=none + aria-hidden', () => {
+        // Hover-tremble fix: the popped visual group is inert to the
+        // pointer (so the moving geometry can't steal/oscillate the
+        // hover) and aria-hidden (it carries light, not data). The
+        // group-level inertness covers every layer inside it,
+        // including the gloss overlay.
         expect(SRC).toMatch(
-            /fill=\{`url\(#\$\{chartGlossId\(chartId\)\}\)`\}\s*\n?\s*pointerEvents="none"\s*\n?\s*aria-hidden="true"/,
+            /transform=\{popTransform\}\s*\n?\s*pointerEvents="none"\s*\n?\s*aria-hidden="true"/,
         );
     });
 });

@@ -69,16 +69,25 @@ describe('DonutChart geometry — arcs land inside the viewBox', () => {
             const fill = p.getAttribute('fill') ?? '';
             return fill.includes('-gloss') || fill.includes('-sheen');
         };
+        // Hover-tremble fix: each segment also renders a transparent
+        // STABLE hit path (the resting geometry that owns the hover) —
+        // neither colour nor overlay.
+        const isHit = (p: Element) =>
+            (p.getAttribute('fill') ?? '') === 'transparent';
         const allPaths = Array.from(
             centringGroup!.querySelectorAll('path'),
         );
-        const colourPaths = allPaths.filter((p) => !isOverlay(p));
+        const colourPaths = allPaths.filter(
+            (p) => !isOverlay(p) && !isHit(p),
+        );
         const overlayPaths = allPaths.filter(isOverlay);
+        const hitPaths = allPaths.filter(isHit);
         // 3 non-zero segments (Low=0 is filtered out by the
         // zero-value guard) → 3 colour paths + 6 overlay paths
-        // (3 gloss + 3 sheen).
+        // (3 gloss + 3 sheen) + 3 stable hit paths.
         expect(colourPaths.length).toBe(3);
         expect(overlayPaths.length).toBe(6);
+        expect(hitPaths.length).toBe(3);
     });
 
     it('renders one colour arc + gloss + sheen overlays per non-zero segment', () => {
@@ -93,18 +102,23 @@ describe('DonutChart geometry — arcs land inside the viewBox', () => {
                 ]}
             />,
         );
-        // 2 non-zero (A, C); B is filtered. Each gets a colour
-        // path + gloss overlay + sheen overlay → 6 total, 2 colour.
+        // 2 non-zero (A, C); B is filtered. Each gets a colour path +
+        // gloss overlay + sheen overlay + a transparent stable hit path
+        // → 8 total, 2 colour.
         const allPaths = Array.from(
             container.querySelectorAll('svg path'),
         );
         const colourPaths = allPaths.filter((p) => {
             const fill = p.getAttribute('fill') ?? '';
-            return !fill.includes('-gloss') && !fill.includes('-sheen');
+            return (
+                !fill.includes('-gloss') &&
+                !fill.includes('-sheen') &&
+                fill !== 'transparent'
+            );
         });
         expect(colourPaths.length).toBe(2);
-        // 2 segments × 3 layers (colour + gloss + sheen) = 6.
-        expect(allPaths.length).toBe(6);
+        // 2 segments × 4 layers (colour + gloss + sheen + hit) = 8.
+        expect(allPaths.length).toBe(8);
     });
 
     it('arc path coordinates are origin-centred (the visx d3-shape contract)', () => {
