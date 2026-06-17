@@ -1882,11 +1882,21 @@ model ComplianceSnapshot {
   evidenceDueSoon7d  Int @default(0)
   evidenceDueSoon30d Int @default(0)
   evidenceCurrent    Int @default(0)
+  // Status-bucket counts for the KPI cards. NULLABLE (not @default(0)) so
+  // pre-existence snapshot rows read NULL ("no data, don't plot") instead of a
+  // false 0 — forward-only fill, no backfill. See src/lib/charts/kpi-trends.ts.
+  evidenceDraft     Int?
+  evidenceSubmitted Int?
+  evidenceApproved  Int?
 
   // ── Policies ──
   policiesTotal         Int @default(0)
   policiesPublished     Int @default(0)
   policiesOverdueReview Int @default(0)
+  // Status-bucket counts for the KPI cards (nullable forward-only fill).
+  policiesDraft    Int?
+  policiesInReview Int?
+  policiesApproved Int?
 
   // ── Tasks ──
   tasksTotal   Int @default(0)
@@ -1896,6 +1906,9 @@ model ComplianceSnapshot {
   // ── Vendors ──
   vendorsTotal         Int @default(0)
   vendorsOverdueReview Int @default(0)
+  // Status/criticality counts for the KPI cards (nullable forward-only fill).
+  vendorsActive   Int?
+  vendorsCritical Int?
 
   // ── Assets ──
   assetsTotal           Int @default(0)

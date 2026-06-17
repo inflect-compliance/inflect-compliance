@@ -8,6 +8,7 @@
  */
 import {
     buildKpiSparklines,
+    buildKpiSparklineNullable,
     centeredSparklineDomain,
 } from '@/lib/charts/kpi-trends';
 import type { TrendDataPoint } from '@/app-layer/usecases/compliance-trends';
@@ -58,6 +59,34 @@ describe('buildKpiSparklines', () => {
             total: (d) => d.risksTotal,
         });
         expect(out.total).toHaveLength(2);
+    });
+});
+
+// Minimal points carrying a nullable bucket column (forward-only).
+const ptN = (date: string, draft: number | null): TrendDataPoint =>
+    ({ date, evidenceDraft: draft }) as unknown as TrendDataPoint;
+
+describe('buildKpiSparklineNullable', () => {
+    it('trims the leading NULL prefix (pre-existence rows) and keeps the rest', () => {
+        const points = [
+            ptN('2026-06-01', null), // before the column existed
+            ptN('2026-06-02', null),
+            ptN('2026-06-03', 0), // real 0 — kept (distinct from "no data")
+            ptN('2026-06-04', 5),
+        ];
+        const out = buildKpiSparklineNullable(points, (d) => d.evidenceDraft);
+        expect(out).toHaveLength(2);
+        expect(out.map((p) => p.value)).toEqual([0, 5]);
+        expect(out[0].date).toEqual(new Date('2026-06-03'));
+    });
+
+    it('returns empty while every point is NULL (no data yet → no sparkline)', () => {
+        const points = [ptN('2026-06-01', null), ptN('2026-06-02', null)];
+        expect(buildKpiSparklineNullable(points, (d) => d.evidenceDraft)).toEqual([]);
+    });
+
+    it('handles undefined input', () => {
+        expect(buildKpiSparklineNullable(undefined, (d) => d.evidenceDraft)).toEqual([]);
     });
 });
 

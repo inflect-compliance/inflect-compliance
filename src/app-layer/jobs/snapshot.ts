@@ -134,6 +134,12 @@ export async function generateSnapshotForTenant(
             vendorSummary,
             assetSummary,
             findingsOpen,
+            // KPI-card status buckets (forward-only; written real going forward,
+            // NULL on pre-existence rows). Grouped so each is one query.
+            evidenceByStatus,
+            policyByStatus,
+            vendorsActive,
+            vendorsCritical,
         ] = await Promise.all([
             DashboardRepository.getControlCoverage(db, ctx),
             DashboardRepository.getRiskBySeverity(db, ctx),
@@ -144,7 +150,24 @@ export async function generateSnapshotForTenant(
             DashboardRepository.getVendorSummary(db, ctx),
             DashboardRepository.getAssetSummary(db, ctx),
             db.finding.count({ where: { tenantId, status: { not: 'CLOSED' } } }),
+            db.evidence.groupBy({
+                by: ['status'],
+                where: { tenantId, deletedAt: null, isArchived: false },
+                _count: true,
+            }),
+            db.policy.groupBy({
+                by: ['status'],
+                where: { tenantId, deletedAt: null },
+                _count: true,
+            }),
+            db.vendor.count({ where: { tenantId, deletedAt: null, status: 'ACTIVE' } }),
+            db.vendor.count({ where: { tenantId, deletedAt: null, criticality: 'CRITICAL' } }),
         ]);
+
+        const evByStatus = (s: string) =>
+            evidenceByStatus.find((g) => g.status === s)?._count ?? 0;
+        const polByStatus = (s: string) =>
+            policyByStatus.find((g) => g.status === s)?._count ?? 0;
 
         // Coverage BPS = coveragePercent × 10 (e.g. 75.3% → 753)
         const controlCoverageBps = Math.round(controlCoverage.coveragePercent * 10);
@@ -175,11 +198,17 @@ export async function generateSnapshotForTenant(
             evidenceDueSoon7d: evidenceExpiry.dueSoon7d,
             evidenceDueSoon30d: evidenceExpiry.dueSoon30d,
             evidenceCurrent: evidenceExpiry.current,
+            evidenceDraft: evByStatus('DRAFT'),
+            evidenceSubmitted: evByStatus('SUBMITTED'),
+            evidenceApproved: evByStatus('APPROVED'),
 
             // Policies
             policiesTotal: policySummary.total,
             policiesPublished: policySummary.published,
             policiesOverdueReview: policySummary.overdueReview,
+            policiesDraft: polByStatus('DRAFT'),
+            policiesInReview: polByStatus('IN_REVIEW'),
+            policiesApproved: polByStatus('APPROVED'),
 
             // Tasks
             tasksTotal: taskSummary.total,
@@ -189,6 +218,8 @@ export async function generateSnapshotForTenant(
             // Vendors
             vendorsTotal: vendorSummary.total,
             vendorsOverdueReview: vendorSummary.overdueReview,
+            vendorsActive,
+            vendorsCritical,
 
             // Assets
             assetsTotal: assetSummary.total,

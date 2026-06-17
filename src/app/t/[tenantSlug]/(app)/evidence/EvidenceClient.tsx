@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useSWRConfig } from 'swr';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
-import { useKpiTrends, buildKpiSparklines, centeredSparklineDomain } from '@/lib/charts/kpi-trends';
+import { useKpiTrends, buildKpiSparklines, buildKpiSparklineNullable, centeredSparklineDomain } from '@/lib/charts/kpi-trends';
 import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
 import { UserCombobox } from '@/components/ui/user-combobox';
 import { ownerDisplayName } from '@/lib/owner-display';
@@ -415,17 +415,21 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     // guardrail-ignore: KPI counts across the loaded page, not a refilter.
     const totalEvidence = evidence.length;
 
-    // Canonical KPI-card sparkline (shared hook). Only `total` has a daily
-    // snapshot series; the status cards (draft/submitted/approved) have no
-    // snapshot column yet, so they stay value-only.
+    // Canonical KPI-card sparklines (shared hook). `total` is an always-present
+    // series; the status buckets (draft/submitted/approved) are forward-only
+    // nullable columns — empty until history accrues, never a fake ramp.
     const trendsQuery = useKpiTrends(tenantSlug);
-    const evidenceTrends = useMemo(
-        () =>
-            buildKpiSparklines(trendsQuery.data?.dataPoints, (d) => d.evidenceTotal, {
+    const evidenceTrends = useMemo(() => {
+        const points = trendsQuery.data?.dataPoints;
+        return {
+            total: buildKpiSparklines(points, (d) => d.evidenceTotal, {
                 total: (d) => d.evidenceTotal,
-            }),
-        [trendsQuery.data],
-    );
+            }).total,
+            draft: buildKpiSparklineNullable(points, (d) => d.evidenceDraft),
+            submitted: buildKpiSparklineNullable(points, (d) => d.evidenceSubmitted),
+            approved: buildKpiSparklineNullable(points, (d) => d.evidenceApproved),
+        };
+    }, [trendsQuery.data]);
     // guardrail-ignore: KPI count, not a refilter.
     const draftEvidence = evidence.filter((ev: any) => ev.status === 'DRAFT').length;
     // guardrail-ignore: KPI count, not a refilter.
@@ -1014,6 +1018,8 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                         label="Draft"
                         value={draftEvidence}
                         tone="attention"
+                        sparkline={evidenceTrends.draft}
+                        sparklineDomain={centeredSparklineDomain(evidenceTrends.draft)}
                         onClick={() => toggleEvidenceKpi('draft')}
                         selected={activeEvidenceKpi === 'draft'}
                     />
@@ -1021,6 +1027,8 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                         label="Submitted"
                         value={submittedEvidence}
                         tone="default"
+                        sparkline={evidenceTrends.submitted}
+                        sparklineDomain={centeredSparklineDomain(evidenceTrends.submitted)}
                         onClick={() => toggleEvidenceKpi('submitted')}
                         selected={activeEvidenceKpi === 'submitted'}
                     />
@@ -1028,6 +1036,8 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                         label="Approved"
                         value={approvedEvidence}
                         tone="success"
+                        sparkline={evidenceTrends.approved}
+                        sparklineDomain={centeredSparklineDomain(evidenceTrends.approved)}
                         onClick={() => toggleEvidenceKpi('approved')}
                         selected={activeEvidenceKpi === 'approved'}
                     />

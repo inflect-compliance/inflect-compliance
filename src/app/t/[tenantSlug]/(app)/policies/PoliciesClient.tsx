@@ -9,7 +9,7 @@ import { NewPolicyModal } from './NewPolicyModal';
 import { Button } from '@/components/ui/button';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
-import { useKpiTrends, buildKpiSparklines, centeredSparklineDomain } from '@/lib/charts/kpi-trends';
+import { useKpiTrends, buildKpiSparklines, buildKpiSparklineNullable, centeredSparklineDomain } from '@/lib/charts/kpi-trends';
 import { ownerDisplayName } from '@/lib/owner-display';
 import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
 import { UserCombobox } from '@/components/ui/user-combobox';
@@ -265,17 +265,21 @@ function PoliciesPageInner({
     // guardrail-ignore: KPI counts across the loaded page, not a refilter.
     const totalPolicies = policies.length;
 
-    // Canonical KPI-card sparkline (shared hook). Only `total` has a daily
-    // snapshot series; the status cards (draft/inReview/approved) have no
-    // snapshot column yet, so they stay value-only.
+    // Canonical KPI-card sparklines (shared hook). `total` is always present;
+    // the status buckets (draft/inReview/approved) are forward-only nullable
+    // columns — empty until history accrues, never a fake ramp.
     const trendsQuery = useKpiTrends(tenantSlug);
-    const policyTrends = useMemo(
-        () =>
-            buildKpiSparklines(trendsQuery.data?.dataPoints, (d) => d.policiesTotal, {
+    const policyTrends = useMemo(() => {
+        const points = trendsQuery.data?.dataPoints;
+        return {
+            total: buildKpiSparklines(points, (d) => d.policiesTotal, {
                 total: (d) => d.policiesTotal,
-            }),
-        [trendsQuery.data],
-    );
+            }).total,
+            draft: buildKpiSparklineNullable(points, (d) => d.policiesDraft),
+            inReview: buildKpiSparklineNullable(points, (d) => d.policiesInReview),
+            approved: buildKpiSparklineNullable(points, (d) => d.policiesApproved),
+        };
+    }, [trendsQuery.data]);
     // guardrail-ignore: KPI count, not a refilter.
     const draftPolicies = policies.filter((p: any) => p.status === 'DRAFT').length;
     // guardrail-ignore: KPI count, not a refilter.
@@ -537,6 +541,8 @@ function PoliciesPageInner({
                         label="Draft"
                         value={draftPolicies}
                         tone="attention"
+                        sparkline={policyTrends.draft}
+                        sparklineDomain={centeredSparklineDomain(policyTrends.draft)}
                         onClick={() => togglePolicyKpi('draft')}
                         selected={activePolicyKpi === 'draft'}
                     />
@@ -544,6 +550,8 @@ function PoliciesPageInner({
                         label="In review"
                         value={inReviewPolicies}
                         tone="default"
+                        sparkline={policyTrends.inReview}
+                        sparklineDomain={centeredSparklineDomain(policyTrends.inReview)}
                         onClick={() => togglePolicyKpi('inReview')}
                         selected={activePolicyKpi === 'inReview'}
                     />
@@ -551,6 +559,8 @@ function PoliciesPageInner({
                         label="Approved"
                         value={approvedPolicies}
                         tone="success"
+                        sparkline={policyTrends.approved}
+                        sparklineDomain={centeredSparklineDomain(policyTrends.approved)}
                         onClick={() => togglePolicyKpi('approved')}
                         selected={activePolicyKpi === 'approved'}
                     />

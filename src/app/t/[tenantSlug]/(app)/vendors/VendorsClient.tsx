@@ -11,7 +11,7 @@ import { NewVendorModal } from './NewVendorModal';
 import { Button } from '@/components/ui/button';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
-import { useKpiTrends, buildKpiSparklines, centeredSparklineDomain } from '@/lib/charts/kpi-trends';
+import { useKpiTrends, buildKpiSparklines, buildKpiSparklineNullable, centeredSparklineDomain } from '@/lib/charts/kpi-trends';
 import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
 import { UserCombobox } from '@/components/ui/user-combobox';
 import { Combobox } from '@/components/ui/combobox';
@@ -256,18 +256,22 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
         isOverdue(v.nextReviewAt ?? null, hydratedNow),
     ).length;
 
-    // Canonical KPI-card sparklines (shared hook). total + reviewOverdue have
-    // daily snapshot series; active + critical have none, so those cards stay
-    // value-only.
+    // Canonical KPI-card sparklines (shared hook). total + reviewOverdue are
+    // always-present series; active + critical are forward-only nullable
+    // columns — empty until history accrues, never a fake ramp.
     const trendsQuery = useKpiTrends(tenantSlug);
-    const vendorTrends = useMemo(
-        () =>
-            buildKpiSparklines(trendsQuery.data?.dataPoints, (d) => d.vendorsTotal, {
-                total: (d) => d.vendorsTotal,
-                reviewOverdue: (d) => d.vendorsOverdueReview,
-            }),
-        [trendsQuery.data],
-    );
+    const vendorTrends = useMemo(() => {
+        const points = trendsQuery.data?.dataPoints;
+        const base = buildKpiSparklines(points, (d) => d.vendorsTotal, {
+            total: (d) => d.vendorsTotal,
+            reviewOverdue: (d) => d.vendorsOverdueReview,
+        });
+        return {
+            ...base,
+            active: buildKpiSparklineNullable(points, (d) => d.vendorsActive),
+            critical: buildKpiSparklineNullable(points, (d) => d.vendorsCritical),
+        };
+    }, [trendsQuery.data]);
     const vendorKpiDefs: ReadonlyArray<KpiFilterDef<VendorKpiId>> = useMemo(
         () => [
             {
@@ -444,6 +448,8 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                         label="Active"
                         value={activeVendors}
                         tone="success"
+                        sparkline={vendorTrends.active}
+                        sparklineDomain={centeredSparklineDomain(vendorTrends.active)}
                         onClick={() => toggleVendorKpi('active')}
                         selected={activeVendorKpi === 'active'}
                     />
@@ -451,6 +457,8 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                         label="Critical"
                         value={criticalVendors}
                         tone={criticalVendors > 0 ? 'critical' : 'default'}
+                        sparkline={vendorTrends.critical}
+                        sparklineDomain={centeredSparklineDomain(vendorTrends.critical)}
                         onClick={() => toggleVendorKpi('critical')}
                         selected={activeVendorKpi === 'critical'}
                     />
