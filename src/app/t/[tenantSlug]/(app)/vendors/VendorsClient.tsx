@@ -11,6 +11,7 @@ import { NewVendorModal } from './NewVendorModal';
 import { Button } from '@/components/ui/button';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
+import { useKpiTrends, buildKpiSparklines, centeredSparklineDomain } from '@/lib/charts/kpi-trends';
 import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
 import { UserCombobox } from '@/components/ui/user-combobox';
 import { Combobox } from '@/components/ui/combobox';
@@ -254,6 +255,19 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
     const reviewOverdueVendors = vendors.filter((v: any) =>
         isOverdue(v.nextReviewAt ?? null, hydratedNow),
     ).length;
+
+    // Canonical KPI-card sparklines (shared hook). total + reviewOverdue have
+    // daily snapshot series; active + critical have none, so those cards stay
+    // value-only.
+    const trendsQuery = useKpiTrends(tenantSlug);
+    const vendorTrends = useMemo(
+        () =>
+            buildKpiSparklines(trendsQuery.data?.dataPoints, (d) => d.vendorsTotal, {
+                total: (d) => d.vendorsTotal,
+                reviewOverdue: (d) => d.vendorsOverdueReview,
+            }),
+        [trendsQuery.data],
+    );
     const vendorKpiDefs: ReadonlyArray<KpiFilterDef<VendorKpiId>> = useMemo(
         () => [
             {
@@ -421,6 +435,8 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                     <KpiFilterCard
                         label="Total vendors"
                         value={totalVendors}
+                        sparkline={vendorTrends.total}
+                        sparklineDomain={centeredSparklineDomain(vendorTrends.total)}
                         onClick={() => toggleVendorKpi('total')}
                         selected={activeVendorKpi === 'total'}
                     />
@@ -442,6 +458,8 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                         label="Review overdue"
                         value={reviewOverdueVendors}
                         tone={reviewOverdueVendors > 0 ? 'critical' : 'default'}
+                        sparkline={vendorTrends.reviewOverdue}
+                        sparklineDomain={centeredSparklineDomain(vendorTrends.reviewOverdue)}
                         onClick={() => toggleVendorKpi('reviewOverdue')}
                         selected={activeVendorKpi === 'reviewOverdue'}
                     />

@@ -25,8 +25,11 @@ export interface TrendDataPoint {
 
     // Controls
     controlCoveragePercent: number;
+    controlsTotal: number;
     controlsImplemented: number;
     controlsApplicable: number;
+    controlsInProgress: number;
+    controlsNotStarted: number;
 
     // Risks
     risksTotal: number;
@@ -35,6 +38,7 @@ export interface TrendDataPoint {
     risksHigh: number;
 
     // Evidence
+    evidenceTotal: number;
     evidenceOverdue: number;
     evidenceDueSoon7d: number;
     evidenceCurrent: number;
@@ -42,6 +46,10 @@ export interface TrendDataPoint {
     // Policies
     policiesTotal: number;
     policiesOverdueReview: number;
+
+    // Vendors
+    vendorsTotal: number;
+    vendorsOverdueReview: number;
 
     // Tasks
     tasksOpen: number;
@@ -82,17 +90,23 @@ function toDataPoint(s: ComplianceSnapshot): TrendDataPoint {
     return {
         date: s.snapshotDate.toISOString().slice(0, 10),
         controlCoveragePercent: s.controlCoverageBps / 10,
+        controlsTotal: s.controlsTotal,
         controlsImplemented: s.controlsImplemented,
         controlsApplicable: s.controlsApplicable,
+        controlsInProgress: s.controlsInProgress,
+        controlsNotStarted: s.controlsNotStarted,
         risksTotal: s.risksTotal,
         risksOpen: s.risksOpen,
         risksCritical: s.risksCritical,
         risksHigh: s.risksHigh,
+        evidenceTotal: s.evidenceTotal,
         evidenceOverdue: s.evidenceOverdue,
         evidenceDueSoon7d: s.evidenceDueSoon7d,
         evidenceCurrent: s.evidenceCurrent,
         policiesTotal: s.policiesTotal,
         policiesOverdueReview: s.policiesOverdueReview,
+        vendorsTotal: s.vendorsTotal,
+        vendorsOverdueReview: s.vendorsOverdueReview,
         tasksOpen: s.tasksOpen,
         tasksOverdue: s.tasksOverdue,
         assetsTotal: s.assetsTotal,

@@ -13,6 +13,7 @@ import { ownerDisplayName } from '@/lib/owner-display';
 import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
 import { UserCombobox } from '@/components/ui/user-combobox';
 import { Combobox } from '@/components/ui/combobox';
+import { useKpiTrends, buildKpiSparklines, centeredSparklineDomain } from '@/lib/charts/kpi-trends';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import type { CappedList } from '@/lib/list-backfill-cap';
 import { TruncationBanner } from '@/components/ui/TruncationBanner';
@@ -504,6 +505,19 @@ function RisksPageInner({
     const now = useHydratedNow();
     // guardrail-ignore: KPI count across the loaded page, not a refilter.
     const overdueRisks = now ? risks.filter(r => r.nextReviewAt && new Date(r.nextReviewAt) < now) : [];
+
+    // Canonical KPI-card sparklines (shared hook). total + open have daily
+    // snapshot series; avgScore + overdue have none, so those cards stay
+    // value-only (no fake line).
+    const trendsQuery = useKpiTrends(tenantSlug);
+    const riskTrends = useMemo(
+        () =>
+            buildKpiSparklines(trendsQuery.data?.dataPoints, (d) => d.risksTotal, {
+                total: (d) => d.risksTotal,
+                open: (d) => d.risksOpen,
+            }),
+        [trendsQuery.data],
+    );
 
     // R23-PR-B — Typed KPI definitions consumed by useKpiFilter. The
     // hook derives the active card from current filter state, so the
@@ -1021,14 +1035,16 @@ function RisksPageInner({
                                     | 'critical'
                                     | 'default';
                                 kpi?: RiskKpiId;
+                                sparkline?: typeof riskTrends.total;
                             }
                         > = {
-                            total: { value: total, kpi: 'total' },
+                            total: { value: total, kpi: 'total', sparkline: riskTrends.total },
                             avgScore: { value: avgScore, tone: 'attention' },
                             open: {
                                 value: openCount,
                                 tone: 'success',
                                 kpi: 'open',
+                                sparkline: riskTrends.open,
                             },
                             overdue: {
                                 value: overdueRisks.length,
@@ -1047,6 +1063,8 @@ function RisksPageInner({
                                 label={card.label}
                                 value={c.value}
                                 tone={c.tone}
+                                sparkline={c.sparkline}
+                                sparklineDomain={centeredSparklineDomain(c.sparkline)}
                                 onClick={
                                     kpiId ? () => toggleKpi(kpiId) : undefined
                                 }

@@ -27,15 +27,13 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
-import { firstAssetDataIndex, centeredSparklineDomain } from '@/lib/assets/asset-sparkline';
+import { useKpiTrends, buildKpiSparklines, centeredSparklineDomain } from '@/lib/charts/kpi-trends';
 import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
 import { UserCombobox } from '@/components/ui/user-combobox';
 import { Combobox } from '@/components/ui/combobox';
 import { ownerDisplayName } from '@/lib/owner-display';
 import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
 import { Plus } from '@/components/ui/icons/nucleo';
-import type { TrendPayload } from '@/app-layer/usecases/compliance-trends';
-import type { TimeSeriesPoint } from '@/components/ui/charts';
 import { NewAssetModal } from './NewAssetModal';
 import { AssetDetailSheet } from './AssetDetailSheet';
 import { getAssetCriticality } from './_form/asset-criticality';
@@ -315,41 +313,22 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
     // table the executive dashboard trend uses. A fresh tenant (or the
     // first day after this shipped) returns <2 points → cards render
     // without a sparkline until history accrues.
-    const trendsQuery = useQuery({
-        queryKey: queryKeys.assets.trends(tenantSlug),
-        queryFn: async (): Promise<TrendPayload> => {
-            const res = await fetch(apiUrl('/dashboard/trends?days=30'));
-            if (!res.ok) throw new Error('Failed to fetch asset trends');
-            return res.json();
-        },
-        staleTime: 5 * 60_000,
-    });
-    const assetTrends = useMemo(() => {
-        const points = trendsQuery.data?.dataPoints ?? [];
-        const series = (pick: (d: TrendPayload['dataPoints'][number]) => number): TimeSeriesPoint[] =>
-            points.map((d) => ({ date: new Date(d.date), value: pick(d) }));
-        const totalRaw = series((d) => d.assetsTotal);
-        const activeRaw = series((d) => d.assetsActive);
-        const criticalRaw = series((d) => d.assetsHighCriticality);
-        const retiredRaw = series((d) => d.assetsRetired);
-        // Trim the leading defaulted-zero prefix: the ComplianceSnapshot asset
-        // columns are @default(0) and shipped 2026-06-07, so snapshots from
-        // before then read 0 for every asset metric — a FALSE history that made
-        // the retired curve a fake "ramp from 0" instead of a truthful flat
-        // value. Slice all four series by the SAME index (gated on total>0) so
-        // they stay date-aligned and start where real data begins.
-        const start = firstAssetDataIndex(totalRaw);
-        const total = totalRaw.slice(start);
-        const active = activeRaw.slice(start);
-        const critical = criticalRaw.slice(start);
-        const retired = retiredRaw.slice(start);
-        // Each sparkline gets its OWN centered domain (computed per card at
-        // render via centeredSparklineDomain) so the four lines sit at the SAME
-        // vertical level — the row reads as uniform. The previous shared
-        // `[0, globalMax]` domain pinned low-value metrics to the bottom and
-        // high ones to the top ("some lower, some higher").
-        return { total, active, critical, retired };
-    }, [trendsQuery.data]);
+    // Canonical KPI-trends pipeline (shared across every entity's KPI cards):
+    // one cached /dashboard/trends fetch + a truthful per-card series builder
+    // that trims the leading defaulted-zero prefix (gated on assetsTotal>0) so
+    // a metric's pre-existence history doesn't render as a fake ramp. Each
+    // card centres its own domain at render via centeredSparklineDomain.
+    const trendsQuery = useKpiTrends(tenantSlug);
+    const assetTrends = useMemo(
+        () =>
+            buildKpiSparklines(trendsQuery.data?.dataPoints, (d) => d.assetsTotal, {
+                total: (d) => d.assetsTotal,
+                active: (d) => d.assetsActive,
+                critical: (d) => d.assetsHighCriticality,
+                retired: (d) => d.assetsRetired,
+            }),
+        [trendsQuery.data],
+    );
 
     const assetKpiDefs: ReadonlyArray<KpiFilterDef<AssetKpiId>> = useMemo(
         () => [

@@ -61,6 +61,7 @@ import {
 import { AiAssistRail } from '@/components/ui/ai-assist-rail';
 import { Sparkle3 } from '@/components/ui/icons/nucleo/sparkle3';
 import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
+import { useKpiTrends, buildKpiSparklines, centeredSparklineDomain } from '@/lib/charts/kpi-trends';
 import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
 import type { CappedList } from '@/lib/list-backfill-cap';
 import { TruncationBanner } from '@/components/ui/TruncationBanner';
@@ -393,6 +394,21 @@ function ControlsPageInner({
     const notStartedControls = controls.filter(
         (c) => c.status === 'NOT_STARTED',
     ).length;
+
+    // Canonical KPI-card sparklines — real per-day series from the daily
+    // compliance-snapshot trends (shared hook). Each card maps to its column;
+    // all four series exist + are populated for controls.
+    const trendsQuery = useKpiTrends(tenantSlug);
+    const controlTrends = useMemo(
+        () =>
+            buildKpiSparklines(trendsQuery.data?.dataPoints, (d) => d.controlsTotal, {
+                total: (d) => d.controlsTotal,
+                implemented: (d) => d.controlsImplemented,
+                inProgress: (d) => d.controlsInProgress,
+                notStarted: (d) => d.controlsNotStarted,
+            }),
+        [trendsQuery.data],
+    );
     const controlKpiDefs: ReadonlyArray<KpiFilterDef<ControlKpiId>> = useMemo(
         () => [
             {
@@ -1136,16 +1152,22 @@ function ControlsPageInner({
                                     | 'attention'
                                     | 'critical'
                                     | 'default';
+                                sparkline?: typeof controlTrends.total;
                             }
                         > = {
-                            total: { value: totalControls },
+                            total: {
+                                value: totalControls,
+                                sparkline: controlTrends.total,
+                            },
                             implemented: {
                                 value: implementedControls,
                                 tone: 'success',
+                                sparkline: controlTrends.implemented,
                             },
                             inProgress: {
                                 value: inProgressControls,
                                 tone: 'attention',
+                                sparkline: controlTrends.inProgress,
                             },
                             notStarted: {
                                 value: notStartedControls,
@@ -1153,6 +1175,7 @@ function ControlsPageInner({
                                     notStartedControls > 0
                                         ? 'critical'
                                         : 'default',
+                                sparkline: controlTrends.notStarted,
                             },
                         };
                         const c = cfg[card.id];
@@ -1163,6 +1186,8 @@ function ControlsPageInner({
                                 label={card.label}
                                 value={c.value}
                                 tone={c.tone}
+                                sparkline={c.sparkline}
+                                sparklineDomain={centeredSparklineDomain(c.sparkline)}
                                 onClick={() =>
                                     toggleControlKpi(card.id as ControlKpiId)
                                 }
