@@ -117,3 +117,6 @@ export {
     type TriggerUndoToast,
     type TriggerUndoToastInput,
 } from "./use-toast-with-undo";
+
+// ─── Responsive viewport (mobile PR-4) ────────────────────────────────
+export { useIsBelowMd } from "./use-is-below-md";
