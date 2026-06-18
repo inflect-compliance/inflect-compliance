@@ -2,6 +2,8 @@ export * from "./column-visibility-utils";
 export * from "./columns-dropdown";
 export * from "./use-columns-dropdown";
 export * from "./data-table";
+export { DataTableCards, type DataTableCardsProps } from "./data-table-cards";
+export { useIsBelowMd } from "./use-is-below-md";
 export * from "./edit-columns-button";
 export * from "./pagination-controls";
 export * from "./pagination-utils";
