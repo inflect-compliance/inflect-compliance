@@ -340,7 +340,8 @@ export function Combobox<
     const createOptionItem = (
         <Command.Item
             className={cn(
-                "text-content-default flex cursor-pointer items-center gap-compact whitespace-nowrap rounded-md px-3 py-2 text-left text-sm",
+                // Wrap the full "Create …" label — never truncate (canonical rule).
+                "text-content-default flex cursor-pointer items-center gap-compact whitespace-normal rounded-md px-3 py-2 text-left text-sm",
                 "data-[selected=true]:bg-bg-subtle",
                 optionClassName,
             )}
@@ -359,7 +360,7 @@ export function Combobox<
             ) : (
                 <CreateIcon className="size-4 shrink-0" />
             )}
-            <div className="grow truncate">
+            <div className="grow break-words">
                 {createLabel?.(search) ??
                     COMBOBOX_DEFAULT_MESSAGES.createLabel(search)}
             </div>

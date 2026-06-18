@@ -598,7 +598,9 @@ function OperatorFilterPill({
                           <Command.Item
                             key={option.value}
                             className={cn(
-                              "flex cursor-pointer items-center gap-compact whitespace-nowrap rounded-md px-3 py-2 text-left text-sm",
+                              // Option rows wrap their full label — never
+                              // truncate an option name (canonical rule).
+                              "flex cursor-pointer items-center gap-compact whitespace-normal rounded-md px-3 py-2 text-left text-sm",
                               "transition-[background-color] duration-100 ease-out motion-reduce:transition-none",
                               "active:scale-[0.99] motion-reduce:active:scale-100",
                               "text-content-default",
@@ -634,8 +636,8 @@ function OperatorFilterPill({
                                 <OptionIcon className="h-4 w-4" />
                               )}
                             </span>
-                            <span className="flex-1">
-                              {truncate(optionLabel, 48)}
+                            <span className="flex-1 break-words">
+                              {optionLabel}
                             </span>
                             <div className="ml-1 flex shrink-0 justify-end text-content-muted">
                               {(isAdvancedFilter || filter.multiple) &&

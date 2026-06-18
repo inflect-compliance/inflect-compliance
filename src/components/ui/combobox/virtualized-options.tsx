@@ -77,6 +77,78 @@ const TWO_LINE_OPTION_HEIGHT = 56;
 /** Max viewport height — matches the legacy ScrollContainer cap. */
 const MAX_VIEWPORT_PX = 250;
 
+// ── Wrapped-row sizing (canonical "never truncate an option name") ──
+// Virtualized rows wrap their full label instead of truncating, so each row's
+// height varies with how many lines the label wraps to. react-window needs a
+// deterministic per-index size, so we measure the label's wrapped line count
+// against the rendered panel width with an offscreen canvas (no DOM layout) and
+// derive the row height. Biased to OVER-estimate (generous chrome reserve) so a
+// row is never SHORTER than its content — under-estimating would overlap the
+// next row.
+const LABEL_FONT = "14px ui-sans-serif, system-ui, -apple-system, sans-serif"; // text-sm
+const LINE_HEIGHT_PX = 20; // text-sm line box
+const ROW_VPAD_PX = 16; // py-2 (8px top + 8px bottom)
+const DESC_EXTRA_PX = 18; // second (description) line
+// Horizontal chrome reserved per row before the label: px-3 (24) + checkbox /
+// icon / trailing check + gaps. Generous so available text width stays
+// conservative (→ more lines, taller row, never an overlap).
+const ROW_CHROME_PX = 80;
+
+let _measureCtx: CanvasRenderingContext2D | null | undefined;
+function getMeasureCtx(): CanvasRenderingContext2D | null {
+    if (_measureCtx !== undefined) return _measureCtx;
+    if (typeof document === "undefined") {
+        _measureCtx = null;
+        return null;
+    }
+    const ctx = document.createElement("canvas").getContext("2d");
+    if (ctx) ctx.font = LABEL_FONT;
+    _measureCtx = ctx;
+    return ctx;
+}
+
+const _wordWidthCache = new Map<string, number>();
+function measureWord(word: string, ctx: CanvasRenderingContext2D): number {
+    const hit = _wordWidthCache.get(word);
+    if (hit !== undefined) return hit;
+    const w = ctx.measureText(word).width;
+    _wordWidthCache.set(word, w);
+    return w;
+}
+
+/**
+ * Greedy word-wrap line count for `text` at `maxWidth` px — mirrors how the
+ * browser wraps `whitespace-normal break-words`. Returns 1 when we can't
+ * measure (SSR / jsdom has no canvas) so rows fall back to single-line height.
+ */
+function countWrappedLines(text: string, maxWidth: number): number {
+    if (maxWidth <= 0 || !text) return 1;
+    const ctx = getMeasureCtx();
+    if (!ctx) return 1;
+    const spaceW = measureWord(" ", ctx);
+    let lines = 1;
+    let cur = 0;
+    for (const word of text.split(/\s+/)) {
+        if (!word) continue;
+        const w = measureWord(word, ctx);
+        if (w > maxWidth) {
+            // A single word wider than the line: break-words splits it.
+            if (cur > 0) lines++;
+            const whole = Math.ceil(w / maxWidth);
+            lines += whole - 1;
+            cur = w - (whole - 1) * maxWidth;
+            continue;
+        }
+        if (cur === 0) cur = w;
+        else if (cur + spaceW + w <= maxWidth) cur += spaceW + w;
+        else {
+            lines++;
+            cur = w;
+        }
+    }
+    return Math.max(1, lines);
+}
+
 export interface VirtualizedComboboxOptionsProps<TMeta> {
     options: ComboboxOption<TMeta>[];
     selected: ComboboxOption<TMeta>[];
@@ -111,6 +183,23 @@ export function VirtualizedComboboxOptions<TMeta>({
 }: VirtualizedComboboxOptionsProps<TMeta>) {
     const [activeIndex, setActiveIndex] = React.useState(0);
     const listRef = React.useRef<VirtualizedListHandle>(null);
+
+    // Track the rendered panel width so row heights can be computed from the
+    // label's wrapped line count (canonical "never truncate"). Starts 0 →
+    // rows fall back to single-line height until the observer reports a width
+    // (and in jsdom, which lacks ResizeObserver + canvas, they stay there).
+    const containerRef = React.useRef<HTMLDivElement>(null);
+    const [contentWidth, setContentWidth] = React.useState(0);
+    React.useEffect(() => {
+        const el = containerRef.current;
+        if (!el || typeof ResizeObserver === "undefined") return;
+        const ro = new ResizeObserver((entries) => {
+            const w = entries[0]?.contentRect.width ?? 0;
+            if (w > 0) setContentWidth(w);
+        });
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
 
     // Reset active index when the options list changes shape (search
     // typed/cleared). Going to 0 mirrors cmdk's "select first match"
@@ -192,19 +281,49 @@ export function VirtualizedComboboxOptions<TMeta>({
         listRef.current?.scrollToItem(activeIndex);
     }, [activeIndex]);
 
-    // Item height — uniform per consumer-supplied `optionDescription`.
-    // We sample once for the typical case; if a future consumer needs
-    // mixed-height rows they can extend this primitive to take a
-    // function for itemSize.
-    const itemSize = optionDescription
-        ? TWO_LINE_OPTION_HEIGHT
-        : SINGLE_LINE_OPTION_HEIGHT;
+    // Per-row height — the label wraps to its FULL text (never truncated), so
+    // height grows with the wrapped line count measured against the panel
+    // width. Deterministic per index → safe for react-window's VariableSizeList.
+    const availTextWidth = contentWidth - ROW_CHROME_PX;
+    const getItemSize = React.useCallback(
+        (index: number) => {
+            const option = options[index];
+            if (!option) return SINGLE_LINE_OPTION_HEIGHT;
+            const hasDescription = optionDescription?.(option) != null;
+            // Only a string label can be measured; a ReactNode label falls back
+            // to single-line (it sizes itself and still wraps via break-words).
+            const label = typeof option.label === "string" ? option.label : "";
+            const lines = countWrappedLines(label, availTextWidth);
+            const base = ROW_VPAD_PX + lines * LINE_HEIGHT_PX;
+            const h = hasDescription ? base + DESC_EXTRA_PX : base;
+            // Floor at the single-line height so short labels keep their rhythm.
+            return Math.max(
+                h,
+                hasDescription ? TWO_LINE_OPTION_HEIGHT : SINGLE_LINE_OPTION_HEIGHT,
+            );
+        },
+        [options, optionDescription, availTextWidth],
+    );
 
-    // Cap viewport at MAX_VIEWPORT_PX, but show fewer rows when there
-    // are fewer options. Matches the legacy ScrollContainer cap.
-    const viewportHeight = Math.min(
+    // Invalidate react-window's cached offsets whenever the measured width or
+    // the option set changes (heights may now differ).
+    React.useEffect(() => {
+        listRef.current?.resetAfterIndex(0);
+    }, [getItemSize]);
+
+    // Cap viewport at MAX_VIEWPORT_PX; sum the leading rows' heights (bounded —
+    // stops once the cap is reached) so a short list shows fewer rows.
+    let viewportHeight = 0;
+    for (
+        let i = 0;
+        i < optionsLength && viewportHeight < MAX_VIEWPORT_PX;
+        i++
+    ) {
+        viewportHeight += getItemSize(i);
+    }
+    viewportHeight = Math.min(
         MAX_VIEWPORT_PX,
-        Math.max(itemSize, optionsLength * itemSize),
+        Math.max(getItemSize(0), viewportHeight),
     );
 
     // Empty state — match the existing data-combobox-empty contract.
@@ -219,6 +338,7 @@ export function VirtualizedComboboxOptions<TMeta>({
 
     return (
         <div
+            ref={containerRef}
             role="listbox"
             id={listboxId}
             aria-activedescendant={`${listboxId}-${activeIndex}`}
@@ -227,7 +347,7 @@ export function VirtualizedComboboxOptions<TMeta>({
             <VirtualizedList
                 ref={listRef}
                 itemCount={optionsLength}
-                itemSize={itemSize}
+                itemSize={getItemSize}
                 height={viewportHeight}
                 width="100%"
                 overscanCount={5}
@@ -269,10 +389,13 @@ export function VirtualizedComboboxOptions<TMeta>({
                                         onSelect(option);
                                     }}
                                     className={cn(
+                                        // Option rows wrap their FULL label —
+                                        // never truncate an option name. Row
+                                        // height grows via getItemSize().
                                         "flex cursor-pointer items-center gap-compact rounded-md px-3 py-2 text-left text-sm",
                                         description
                                             ? "whitespace-normal py-2.5"
-                                            : "whitespace-nowrap",
+                                            : "whitespace-normal",
                                         isActive && "bg-bg-subtle",
                                         isDisabled &&
                                             "cursor-not-allowed opacity-50",
@@ -309,10 +432,10 @@ export function VirtualizedComboboxOptions<TMeta>({
                                         )}
                                         <span
                                             className={cn(
-                                                "grow",
+                                                "grow break-words",
                                                 description
                                                     ? "text-content-emphasis"
-                                                    : "text-content-default truncate",
+                                                    : "text-content-default",
                                             )}
                                         >
                                             {option.label}

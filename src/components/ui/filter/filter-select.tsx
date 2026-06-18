@@ -5,7 +5,6 @@
 
 /* eslint-disable react-hooks/exhaustive-deps -- Various useEffect/useMemo dep arrays in this file deliberately omit identity-unstable callbacks (handlers recreated each render) or use selector functions whose change-detection happens elsewhere. Adding the deps would either trigger unnecessary re-runs OR cause infinite render loops; the proper structural fix is to wrap parent-level callbacks in useCallback. Tracked as follow-up. */
 import { cn } from "@/lib/cn";
-import { truncate } from "@/lib/text-utils";
 import { Command, useCommandState } from "cmdk";
 import { ChevronDown, ListFilter } from "lucide-react";
 import {
@@ -549,7 +548,9 @@ function FilterButton({
   return (
     <Command.Item
       className={cn(
-        "flex cursor-pointer items-center gap-compact whitespace-nowrap rounded-md px-3 py-2 text-left text-sm",
+        // Option rows wrap their full label — never truncate an option name
+        // (canonical dropdown rule). whitespace-normal + break-words below.
+        "flex cursor-pointer items-center gap-compact whitespace-normal rounded-md px-3 py-2 text-left text-sm",
         "transition-colors duration-100 ease-out motion-reduce:transition-none",
         "active:scale-[0.99] motion-reduce:active:scale-100",
         "text-content-default",
@@ -592,7 +593,7 @@ function FilterButton({
             from props. */}
         {isReactNode(Icon) ? Icon : <Icon className="h-4 w-4" />}
       </span>
-      <span className="flex-1">{truncate(label, 48)}</span>
+      <span className="flex-1 break-words">{label}</span>
       <div className="ml-1 flex shrink-0 justify-end text-content-muted">
         {right}
       </div>

@@ -259,7 +259,7 @@ const Item = forwardRef<HTMLButtonElement, PopoverItemProps>(function Item(
                     {icon}
                 </span>
             ) : null}
-            <span className="flex-1 truncate">{children}</span>
+            <span className="flex-1 break-words">{children}</span>
             {right ? (
                 <span className="ml-2 inline-flex shrink-0 items-center text-content-subtle">
                     {right}
