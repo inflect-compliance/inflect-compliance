@@ -14,7 +14,9 @@ const read = (p: string) => fs.readFileSync(path.join(ROOT, p), "utf8");
 describe("Mobile PR-2 — responsive DataTable", () => {
     const dt = read("src/components/ui/table/data-table.tsx");
     const cards = read("src/components/ui/table/data-table-cards.tsx");
-    const hook = read("src/components/ui/table/use-is-below-md.ts");
+    // The hook's canonical home is the shared hooks dir (mobile PR-4 promoted
+    // it; table/use-is-below-md re-exports for back-compat).
+    const hook = read("src/components/ui/hooks/use-is-below-md.ts");
 
     it("DataTable gates the card view on useIsBelowMd and real rows", () => {
         expect(dt).toMatch(/const belowMd = useIsBelowMd\(\)/);

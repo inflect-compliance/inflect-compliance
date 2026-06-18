@@ -61,6 +61,8 @@ import RGL, {
 import { useMemo, type ReactNode } from 'react';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
+import { cn } from '@/lib/cn';
+import { useIsBelowMd } from '@/components/ui/hooks';
 
 const ResponsiveGridLayout = WidthProvider(RGL);
 
@@ -201,6 +203,32 @@ export function DashboardGrid<T extends DashboardGridWidget>(
         () => visibleWidgets.map((w) => widgetToLayoutItem(w, editable)),
         [visibleWidgets, editable],
     );
+
+    // Mobile PR-4 — a 12-column drag-grid is unusable on a phone (cramped
+    // columns + touch drag/resize). Below `md` render the widgets as a simple
+    // full-width vertical stack (no RGL). `useIsBelowMd` is false on SSR/jsdom,
+    // so desktop + tests keep the grid. Widget order follows the laid-out
+    // top-to-bottom / left-to-right reading order.
+    const belowMd = useIsBelowMd();
+    if (belowMd) {
+        const stacked = [...visibleWidgets].sort((a, b) => {
+            const la = widgetToLayoutItem(a, false);
+            const lb = widgetToLayoutItem(b, false);
+            return la.y - lb.y || la.x - lb.x;
+        });
+        return (
+            <div
+                className={cn('flex flex-col gap-default', className)}
+                data-dashboard-stacked=""
+            >
+                {stacked.map((widget) => (
+                    <div key={widget.id} data-widget-id={widget.id}>
+                        {renderWidget(widget)}
+                    </div>
+                ))}
+            </div>
+        );
+    }
 
     return (
         <ResponsiveGridLayout
