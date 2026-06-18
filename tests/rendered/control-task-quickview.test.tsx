@@ -55,6 +55,10 @@ describe("ControlQuickView", () => {
             />,
         );
         expect(screen.getByTestId("control-quickview")).toBeInTheDocument();
+        // a11y — the panel is an announced region (PR-3).
+        expect(
+            screen.getByRole("region", { name: "Control quick view" }),
+        ).toBeInTheDocument();
         expect(screen.getByText("Access control policy")).toBeInTheDocument();
         expect(screen.getByText("Controls access to systems.")).toBeInTheDocument();
         expect(screen.getByText("Dana Lee")).toBeInTheDocument();
@@ -100,6 +104,9 @@ describe("TaskQuickView", () => {
         const onClose = jest.fn();
         render(<TaskQuickView task={TASK} onBack={onBack} onClose={onClose} />);
         expect(screen.getByTestId("task-quickview")).toBeInTheDocument();
+        expect(
+            screen.getByRole("region", { name: "Task quick view" }),
+        ).toBeInTheDocument();
         expect(screen.getByText("Implement SSO enforcement")).toBeInTheDocument();
         expect(screen.getByText("Sam Ray")).toBeInTheDocument();
         expect(screen.getByTestId("task-quickview-fullview")).toHaveAttribute(

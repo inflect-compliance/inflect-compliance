@@ -49,7 +49,12 @@ export function ControlQuickView({
     const code = control.code || control.annexId;
 
     return (
-        <div className="space-y-default" data-testid="control-quickview">
+        <div
+            className="space-y-default"
+            data-testid="control-quickview"
+            role="region"
+            aria-label="Control quick view"
+        >
             <div className="flex items-start justify-between gap-tight">
                 <div className="flex items-center gap-tight">
                     {code && (

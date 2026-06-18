@@ -36,7 +36,12 @@ export function TaskQuickView({
     const tenantHref = useTenantHref();
 
     return (
-        <div className="space-y-default" data-testid="task-quickview">
+        <div
+            className="space-y-default"
+            data-testid="task-quickview"
+            role="region"
+            aria-label="Task quick view"
+        >
             <div className="flex items-center justify-between gap-tight">
                 <button
                     type="button"

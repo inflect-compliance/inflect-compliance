@@ -48,7 +48,7 @@ import {
 } from '@/components/ui/filter';
 import { EntityListPage } from '@/components/layout/EntityListPage';
 import { TableLoadMoreFooter } from '@/components/ui/table-load-more-footer';
-import { useThresholdLoadMore } from '@/components/ui/hooks';
+import { useThresholdLoadMore, useKeyboardShortcut } from '@/components/ui/hooks';
 import { AsidePanel } from '@/components/ui/aside-panel';
 import { BestValueControls } from './_components/BestValueControls';
 import {
@@ -616,6 +616,14 @@ function ControlsPageInner({
         setSelectedTask(null);
         setSelectedControl(null);
     }, []);
+    // PR-3 — Escape closes the quick-view on the docked rail (≥xl). On < xl the
+    // Sheet owns Escape natively (the global-scope hook is skipped while an
+    // overlay is mounted) and its dismiss fires onClose → closeQuickView too.
+    useKeyboardShortcut(['Escape'], closeQuickView, {
+        enabled: !!(selectedControl || selectedTask),
+        scope: 'global',
+        description: 'Close the control quick view',
+    });
     const renderControlTaskRows = useCallback(
         (row: Row<ControlListItem>) => (
             <ControlTaskRows
