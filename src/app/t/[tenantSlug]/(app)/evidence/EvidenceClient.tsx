@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useSWRConfig } from 'swr';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
-import { useKpiTrends, buildKpiSparklines, buildKpiSparklineNullable, centeredSparklineDomain } from '@/lib/charts/kpi-trends';
+import { useKpiTrends, buildKpiSparklines, buildKpiSparklineNullable, centeredSparklineDomain, assignSparklineVariants } from '@/lib/charts/kpi-trends';
 import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
 import { UserCombobox } from '@/components/ui/user-combobox';
 import { ownerDisplayName } from '@/lib/owner-display';
@@ -430,6 +430,14 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             approved: buildKpiSparklineNullable(points, (d) => d.evidenceApproved),
         };
     }, [trendsQuery.data]);
+    // Distinct sparkline colour per card (canonical allocator) — no two cards
+    // on the row share a colour. Memo on [] so the random allocation is stable
+    // for this page view.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const sparkColors = useMemo(
+        () => assignSparklineVariants(['total', 'draft', 'submitted', 'approved']),
+        [],
+    );
     // guardrail-ignore: KPI count, not a refilter.
     const draftEvidence = evidence.filter((ev: any) => ev.status === 'DRAFT').length;
     // guardrail-ignore: KPI count, not a refilter.
@@ -1010,6 +1018,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                         label="Total evidence"
                         value={totalEvidence}
                         sparkline={evidenceTrends.total}
+                        sparklineVariant={sparkColors.total}
                         sparklineDomain={centeredSparklineDomain(evidenceTrends.total)}
                         onClick={() => toggleEvidenceKpi('total')}
                         selected={activeEvidenceKpi === 'total'}
@@ -1019,6 +1028,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                         value={draftEvidence}
                         tone="attention"
                         sparkline={evidenceTrends.draft}
+                        sparklineVariant={sparkColors.draft}
                         sparklineDomain={centeredSparklineDomain(evidenceTrends.draft)}
                         onClick={() => toggleEvidenceKpi('draft')}
                         selected={activeEvidenceKpi === 'draft'}
@@ -1028,6 +1038,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                         value={submittedEvidence}
                         tone="default"
                         sparkline={evidenceTrends.submitted}
+                        sparklineVariant={sparkColors.submitted}
                         sparklineDomain={centeredSparklineDomain(evidenceTrends.submitted)}
                         onClick={() => toggleEvidenceKpi('submitted')}
                         selected={activeEvidenceKpi === 'submitted'}
@@ -1037,6 +1048,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                         value={approvedEvidence}
                         tone="success"
                         sparkline={evidenceTrends.approved}
+                        sparklineVariant={sparkColors.approved}
                         sparklineDomain={centeredSparklineDomain(evidenceTrends.approved)}
                         onClick={() => toggleEvidenceKpi('approved')}
                         selected={activeEvidenceKpi === 'approved'}

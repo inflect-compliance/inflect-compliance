@@ -126,6 +126,10 @@ export async function generateSnapshotForTenant(
         // "now" for overdue cutoffs — captured once so every count in this
         // snapshot shares the same instant (matches the UI's overdue test).
         const snapshotComputedAt = new Date();
+        // +7 days — the "due this week" window for the Tasks KPI card.
+        const tasksDueSoonCutoff = new Date(
+            snapshotComputedAt.getTime() + 7 * 24 * 60 * 60 * 1000,
+        );
         // Run all aggregation queries in parallel within the transaction
         const [
             controlCoverage,
@@ -148,6 +152,7 @@ export async function generateSnapshotForTenant(
             risksOverdueReview,
             testPlanByStatus,
             testPlansTotal,
+            tasksDueSoon7d,
         ] = await Promise.all([
             DashboardRepository.getControlCoverage(db, ctx),
             DashboardRepository.getRiskBySeverity(db, ctx),
@@ -177,6 +182,14 @@ export async function generateSnapshotForTenant(
             // Test-plan KPI row (ControlTestPlan has no soft-delete).
             db.controlTestPlan.groupBy({ by: ['status'], where: { tenantId }, _count: true }),
             db.controlTestPlan.count({ where: { tenantId } }),
+            // Tasks "due this week" — dueAt within the next 7 days.
+            db.task.count({
+                where: {
+                    tenantId,
+                    deletedAt: null,
+                    dueAt: { gte: snapshotComputedAt, lte: tasksDueSoonCutoff },
+                },
+            }),
         ]);
 
         const evByStatus = (s: string) =>
@@ -233,6 +246,7 @@ export async function generateSnapshotForTenant(
             tasksTotal: taskSummary.total,
             tasksOpen: taskSummary.open,
             tasksOverdue: taskSummary.overdue,
+            tasksDueSoon7d,
 
             // Vendors
             vendorsTotal: vendorSummary.total,

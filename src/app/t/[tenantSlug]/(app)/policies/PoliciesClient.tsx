@@ -9,7 +9,7 @@ import { NewPolicyModal } from './NewPolicyModal';
 import { Button } from '@/components/ui/button';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
-import { useKpiTrends, buildKpiSparklines, buildKpiSparklineNullable, centeredSparklineDomain } from '@/lib/charts/kpi-trends';
+import { useKpiTrends, buildKpiSparklines, buildKpiSparklineNullable, centeredSparklineDomain, assignSparklineVariants } from '@/lib/charts/kpi-trends';
 import { ownerDisplayName } from '@/lib/owner-display';
 import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
 import { UserCombobox } from '@/components/ui/user-combobox';
@@ -280,6 +280,12 @@ function PoliciesPageInner({
             approved: buildKpiSparklineNullable(points, (d) => d.policiesApproved),
         };
     }, [trendsQuery.data]);
+    // Distinct sparkline colour per card (canonical allocator).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const sparkColors = useMemo(
+        () => assignSparklineVariants(['total', 'draft', 'inReview', 'approved']),
+        [],
+    );
     // guardrail-ignore: KPI count, not a refilter.
     const draftPolicies = policies.filter((p: any) => p.status === 'DRAFT').length;
     // guardrail-ignore: KPI count, not a refilter.
@@ -533,6 +539,7 @@ function PoliciesPageInner({
                         label="Total policies"
                         value={totalPolicies}
                         sparkline={policyTrends.total}
+                        sparklineVariant={sparkColors.total}
                         sparklineDomain={centeredSparklineDomain(policyTrends.total)}
                         onClick={() => togglePolicyKpi('total')}
                         selected={activePolicyKpi === 'total'}
@@ -542,6 +549,7 @@ function PoliciesPageInner({
                         value={draftPolicies}
                         tone="attention"
                         sparkline={policyTrends.draft}
+                        sparklineVariant={sparkColors.draft}
                         sparklineDomain={centeredSparklineDomain(policyTrends.draft)}
                         onClick={() => togglePolicyKpi('draft')}
                         selected={activePolicyKpi === 'draft'}
@@ -551,6 +559,7 @@ function PoliciesPageInner({
                         value={inReviewPolicies}
                         tone="default"
                         sparkline={policyTrends.inReview}
+                        sparklineVariant={sparkColors.inReview}
                         sparklineDomain={centeredSparklineDomain(policyTrends.inReview)}
                         onClick={() => togglePolicyKpi('inReview')}
                         selected={activePolicyKpi === 'inReview'}
@@ -560,6 +569,7 @@ function PoliciesPageInner({
                         value={approvedPolicies}
                         tone="success"
                         sparkline={policyTrends.approved}
+                        sparklineVariant={sparkColors.approved}
                         sparklineDomain={centeredSparklineDomain(policyTrends.approved)}
                         onClick={() => togglePolicyKpi('approved')}
                         selected={activePolicyKpi === 'approved'}

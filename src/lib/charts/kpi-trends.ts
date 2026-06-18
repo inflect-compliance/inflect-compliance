@@ -29,6 +29,7 @@ import type {
     TrendPayload,
 } from '@/app-layer/usecases/compliance-trends';
 import type { TimeSeriesPoint } from '@/components/ui/charts';
+import type { MiniAreaChartVariant } from '@/components/ui/mini-area-chart';
 
 /** Shared 30-day trends fetch — one cache entry across every KPI page. */
 export function useKpiTrends(tenantSlug: string) {
@@ -92,6 +93,52 @@ export function buildKpiSparklineNullable(
         date: new Date(d.date),
         value: pick(d) ?? 0,
     }));
+}
+
+/**
+ * The full sparkline colour palette — every distinct `MiniAreaChartVariant`.
+ * `assignSparklineVariants` draws from this so a row of KPI cards never
+ * repeats a colour (up to 6 cards; every entity page has ≤ 6).
+ */
+export const SPARKLINE_VARIANTS: readonly MiniAreaChartVariant[] = [
+    'brand',
+    'success',
+    'warning',
+    'error',
+    'info',
+    'neutral',
+];
+
+/**
+ * Allocate a DISTINCT sparkline colour to each KPI card on a page.
+ *
+ * Without this, `<KpiFilterCard>` defaults every sparkline to `brand`, so a
+ * row of cards reads as one colour (the pre-fix state on every page except
+ * Assets). This shuffles the palette with `rng` (default `Math.random`, so the
+ * allocation is RANDOM per call) and assigns one colour per key in order —
+ * guaranteeing no two cards on the same page share a colour as long as there
+ * are ≤ `SPARKLINE_VARIANTS.length` (6) keys. Beyond that it wraps (the only
+ * case a repeat is unavoidable; no entity page has that many KPI cards).
+ *
+ * Call it ONCE per mount (memoise on `[]`) so the colours stay stable across
+ * re-renders within a page view but reshuffle on the next load. `rng` is
+ * injectable so the distinctness invariant is unit-testable deterministically.
+ */
+export function assignSparklineVariants<K extends string>(
+    keys: readonly K[],
+    rng: () => number = Math.random,
+): Record<K, MiniAreaChartVariant> {
+    // Fisher–Yates over a copy of the palette.
+    const pal = [...SPARKLINE_VARIANTS];
+    for (let i = pal.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [pal[i], pal[j]] = [pal[j], pal[i]];
+    }
+    const out = {} as Record<K, MiniAreaChartVariant>;
+    keys.forEach((k, i) => {
+        out[k] = pal[i % pal.length];
+    });
+    return out;
 }
 
 /**

@@ -11,7 +11,7 @@ import { NewVendorModal } from './NewVendorModal';
 import { Button } from '@/components/ui/button';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
-import { useKpiTrends, buildKpiSparklines, buildKpiSparklineNullable, centeredSparklineDomain } from '@/lib/charts/kpi-trends';
+import { useKpiTrends, buildKpiSparklines, buildKpiSparklineNullable, centeredSparklineDomain, assignSparklineVariants } from '@/lib/charts/kpi-trends';
 import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
 import { UserCombobox } from '@/components/ui/user-combobox';
 import { Combobox } from '@/components/ui/combobox';
@@ -272,6 +272,12 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
             critical: buildKpiSparklineNullable(points, (d) => d.vendorsCritical),
         };
     }, [trendsQuery.data]);
+    // Distinct sparkline colour per card (canonical allocator).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const sparkColors = useMemo(
+        () => assignSparklineVariants(['total', 'active', 'critical', 'reviewOverdue']),
+        [],
+    );
     const vendorKpiDefs: ReadonlyArray<KpiFilterDef<VendorKpiId>> = useMemo(
         () => [
             {
@@ -440,6 +446,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                         label="Total vendors"
                         value={totalVendors}
                         sparkline={vendorTrends.total}
+                        sparklineVariant={sparkColors.total}
                         sparklineDomain={centeredSparklineDomain(vendorTrends.total)}
                         onClick={() => toggleVendorKpi('total')}
                         selected={activeVendorKpi === 'total'}
@@ -449,6 +456,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                         value={activeVendors}
                         tone="success"
                         sparkline={vendorTrends.active}
+                        sparklineVariant={sparkColors.active}
                         sparklineDomain={centeredSparklineDomain(vendorTrends.active)}
                         onClick={() => toggleVendorKpi('active')}
                         selected={activeVendorKpi === 'active'}
@@ -458,6 +466,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                         value={criticalVendors}
                         tone={criticalVendors > 0 ? 'critical' : 'default'}
                         sparkline={vendorTrends.critical}
+                        sparklineVariant={sparkColors.critical}
                         sparklineDomain={centeredSparklineDomain(vendorTrends.critical)}
                         onClick={() => toggleVendorKpi('critical')}
                         selected={activeVendorKpi === 'critical'}
@@ -467,6 +476,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                         value={reviewOverdueVendors}
                         tone={reviewOverdueVendors > 0 ? 'critical' : 'default'}
                         sparkline={vendorTrends.reviewOverdue}
+                        sparklineVariant={sparkColors.reviewOverdue}
                         sparklineDomain={centeredSparklineDomain(vendorTrends.reviewOverdue)}
                         onClick={() => toggleVendorKpi('reviewOverdue')}
                         selected={activeVendorKpi === 'reviewOverdue'}

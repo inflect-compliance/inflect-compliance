@@ -22,7 +22,7 @@ import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-bad
 import { Heading } from '@/components/ui/typography';
 import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
 import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
-import { useKpiTrends, buildKpiSparklines, buildKpiSparklineNullable, centeredSparklineDomain } from '@/lib/charts/kpi-trends';
+import { useKpiTrends, buildKpiSparklines, buildKpiSparklineNullable, centeredSparklineDomain, assignSparklineVariants } from '@/lib/charts/kpi-trends';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { AppIcon } from '@/components/icons/AppIcon';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -259,6 +259,12 @@ function TestsRollupContent() {
             archived: buildKpiSparklineNullable(points, (d) => d.testPlansArchived),
         };
     }, [trendsQuery.data]);
+    // Distinct sparkline colour per card (canonical allocator).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const sparkColors = useMemo(
+        () => assignSparklineVariants(['total', 'active', 'paused', 'archived']),
+        [],
+    );
 
     // Clickable-KPI → table-filter wiring. "Total" clears all filters; each
     // status card toggles the `status` filter to its bucket (mutually
@@ -397,6 +403,7 @@ function TestsRollupContent() {
                         label="Total plans"
                         value={totalPlans}
                         sparkline={testTrends.total}
+                        sparklineVariant={sparkColors.total}
                         sparklineDomain={centeredSparklineDomain(testTrends.total)}
                         onClick={() => toggleTestKpi('total')}
                         selected={activeTestKpi === 'total'}
@@ -406,6 +413,7 @@ function TestsRollupContent() {
                         value={activePlans}
                         tone="success"
                         sparkline={testTrends.active}
+                        sparklineVariant={sparkColors.active}
                         sparklineDomain={centeredSparklineDomain(testTrends.active)}
                         onClick={() => toggleTestKpi('active')}
                         selected={activeTestKpi === 'active'}
@@ -415,6 +423,7 @@ function TestsRollupContent() {
                         value={pausedPlans}
                         tone={pausedPlans > 0 ? 'attention' : 'default'}
                         sparkline={testTrends.paused}
+                        sparklineVariant={sparkColors.paused}
                         sparklineDomain={centeredSparklineDomain(testTrends.paused)}
                         onClick={() => toggleTestKpi('paused')}
                         selected={activeTestKpi === 'paused'}
@@ -423,6 +432,7 @@ function TestsRollupContent() {
                         label="Archived"
                         value={archivedPlans}
                         sparkline={testTrends.archived}
+                        sparklineVariant={sparkColors.archived}
                         sparklineDomain={centeredSparklineDomain(testTrends.archived)}
                         onClick={() => toggleTestKpi('archived')}
                         selected={activeTestKpi === 'archived'}

@@ -10,6 +10,8 @@ import {
     buildKpiSparklines,
     buildKpiSparklineNullable,
     centeredSparklineDomain,
+    assignSparklineVariants,
+    SPARKLINE_VARIANTS,
 } from '@/lib/charts/kpi-trends';
 import type { TrendDataPoint } from '@/app-layer/usecases/compliance-trends';
 
@@ -103,5 +105,52 @@ describe('centeredSparklineDomain', () => {
     it('returns undefined for empty/undefined', () => {
         expect(centeredSparklineDomain([])).toBeUndefined();
         expect(centeredSparklineDomain(undefined)).toBeUndefined();
+    });
+});
+
+describe('assignSparklineVariants', () => {
+    // A deterministic rng makes the assignment reproducible in tests; the
+    // distinctness invariant must hold for ANY rng (see the random sweep).
+    const seededRng = (seed: number) => {
+        let s = seed;
+        return () => {
+            s = (s * 1103515245 + 12345) & 0x7fffffff;
+            return s / 0x7fffffff;
+        };
+    };
+
+    it('assigns every card a distinct colour (≤ palette size)', () => {
+        const keys = ['total', 'active', 'paused', 'archived'] as const;
+        const out = assignSparklineVariants(keys, seededRng(1));
+        const colours = keys.map((k) => out[k]);
+        expect(new Set(colours).size).toBe(keys.length); // no repeats
+        // every key got a real palette colour
+        colours.forEach((c) => expect(SPARKLINE_VARIANTS).toContain(c));
+    });
+
+    it('is deterministic for a fixed rng', () => {
+        const keys = ['a', 'b', 'c'] as const;
+        expect(assignSparklineVariants(keys, seededRng(42))).toEqual(
+            assignSparklineVariants(keys, seededRng(42)),
+        );
+    });
+
+    it('never repeats a colour for 2..6 cards across many random shuffles', () => {
+        for (let trial = 0; trial < 500; trial++) {
+            const rng = seededRng(trial + 1);
+            for (let n = 2; n <= SPARKLINE_VARIANTS.length; n++) {
+                const keys = Array.from({ length: n }, (_, i) => `k${i}`);
+                const out = assignSparklineVariants(keys, rng);
+                const colours = keys.map((k) => out[k]);
+                expect(new Set(colours).size).toBe(n);
+            }
+        }
+    });
+
+    it('only wraps (allows a repeat) once keys exceed the palette', () => {
+        const keys = Array.from({ length: 8 }, (_, i) => `k${i}`);
+        const out = assignSparklineVariants(keys, seededRng(7));
+        // 8 keys, 6 colours → exactly 6 distinct, the last 2 wrap.
+        expect(new Set(keys.map((k) => out[k])).size).toBe(SPARKLINE_VARIANTS.length);
     });
 });

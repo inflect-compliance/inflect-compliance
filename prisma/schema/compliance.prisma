@@ -1907,6 +1907,8 @@ model ComplianceSnapshot {
   tasksTotal   Int @default(0)
   tasksOpen    Int @default(0)
   tasksOverdue Int @default(0)
+  // Due-within-7-days count for the KPI card (nullable forward-only fill).
+  tasksDueSoon7d Int?
 
   // ── Vendors ──
   vendorsTotal         Int @default(0)
