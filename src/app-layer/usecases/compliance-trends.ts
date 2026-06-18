@@ -36,6 +36,10 @@ export interface TrendDataPoint {
     risksOpen: number;
     risksCritical: number;
     risksHigh: number;
+    // KPI-card metrics — nullable (null on pre-existence snapshot rows). The
+    // chart pipeline trims the NULL prefix so the sparkline is truthful.
+    risksAvgScore: number | null;
+    risksOverdueReview: number | null;
 
     // Evidence
     evidenceTotal: number;
@@ -61,6 +65,12 @@ export interface TrendDataPoint {
     vendorsOverdueReview: number;
     vendorsActive: number | null;
     vendorsCritical: number | null;
+
+    // Test plans
+    testPlansTotal: number;
+    testPlansActive: number | null;
+    testPlansPaused: number | null;
+    testPlansArchived: number | null;
 
     // Tasks
     tasksOpen: number;
@@ -110,6 +120,8 @@ function toDataPoint(s: ComplianceSnapshot): TrendDataPoint {
         risksOpen: s.risksOpen,
         risksCritical: s.risksCritical,
         risksHigh: s.risksHigh,
+        risksAvgScore: s.risksAvgScore,
+        risksOverdueReview: s.risksOverdueReview,
         evidenceTotal: s.evidenceTotal,
         evidenceOverdue: s.evidenceOverdue,
         evidenceDueSoon7d: s.evidenceDueSoon7d,
@@ -126,6 +138,10 @@ function toDataPoint(s: ComplianceSnapshot): TrendDataPoint {
         vendorsOverdueReview: s.vendorsOverdueReview,
         vendorsActive: s.vendorsActive,
         vendorsCritical: s.vendorsCritical,
+        testPlansTotal: s.testPlansTotal,
+        testPlansActive: s.testPlansActive,
+        testPlansPaused: s.testPlansPaused,
+        testPlansArchived: s.testPlansArchived,
         tasksOpen: s.tasksOpen,
         tasksOverdue: s.tasksOverdue,
         assetsTotal: s.assetsTotal,

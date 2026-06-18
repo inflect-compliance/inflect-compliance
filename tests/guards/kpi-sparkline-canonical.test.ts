@@ -21,6 +21,7 @@ const CLIENTS: Record<string, string> = {
     Evidence: 'src/app/t/[tenantSlug]/(app)/evidence/EvidenceClient.tsx',
     Policies: 'src/app/t/[tenantSlug]/(app)/policies/PoliciesClient.tsx',
     Vendors: 'src/app/t/[tenantSlug]/(app)/vendors/VendorsClient.tsx',
+    Tests: 'src/app/t/[tenantSlug]/(app)/tests/page.tsx',
 };
 
 describe('Canonical KPI sparklines — shared pipeline adoption', () => {

@@ -76,6 +76,8 @@ function setupDashboardMocks() {
             { status: 'OPEN', _count: 5 },
             { status: 'CLOSED', _count: 2 },
         ]),
+        // PR3 — Risk avgScore KPI (avg inherent score across non-deleted risks).
+        aggregate: jest.fn(async () => ({ _avg: { inherentScore: 12 } })),
     };
     mockTx.evidence = {
         count: jest.fn(async () => 20),
@@ -104,6 +106,15 @@ function setupDashboardMocks() {
     };
     mockTx.vendor = {
         count: jest.fn(async () => 5),
+    };
+    mockTx.controlTestPlan = {
+        // PR3 — Test-plan KPI row: by-status group counts + total.
+        groupBy: jest.fn(async () => [
+            { status: 'ACTIVE', _count: 8 },
+            { status: 'PAUSED', _count: 2 },
+            { status: 'ARCHIVED', _count: 1 },
+        ]),
+        count: jest.fn(async () => 11),
     };
     mockTx.asset = {
         // getAssetSummary issues 4 counts (total/active/highCriticality/retired).
@@ -214,6 +225,24 @@ describe('Snapshot Job', () => {
         const upsertCall = mockUpsert.mock.calls[0][0];
         expect(upsertCall.create).toHaveProperty('risksOpen');
         expect(upsertCall.create).toHaveProperty('risksCritical');
+    });
+
+    it('stores the PR3 risk + test-plan KPI metrics', async () => {
+        setupDashboardMocks();
+        mockUpsert.mockResolvedValue({});
+
+        await runSnapshotJob({ tenantId: 'tenant-1' });
+
+        const upsertCall = mockUpsert.mock.calls[0][0];
+        expect(upsertCall.create).toMatchObject({
+            risksAvgScore: 12, // _avg.inherentScore from the risk.aggregate mock
+            risksOverdueReview: 3, // risk.count (overdue review cutoff)
+            testPlansTotal: 11,
+            testPlansActive: 8,
+            testPlansPaused: 2,
+            testPlansArchived: 1,
+        });
+        expect(upsertCall.update).toHaveProperty('testPlansTotal', 11);
     });
 
     it('stores the asset KPI buckets', async () => {
