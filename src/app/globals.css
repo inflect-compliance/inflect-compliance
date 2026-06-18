@@ -394,6 +394,36 @@ textarea.input { @apply resize-y min-h-[80px]; }
   [data-process-canvas="true"] [data-process-palette-item="true"] {
     min-height: 44px;
   }
+
+  /* ── App-wide touch targets (mobile PR-1, WCAG 2.5.5 / Apple HIG) ──
+   * Native inputs/selects using the `.input` utility get a 44px floor.
+   * The React <Input>/<Button> primitives handle this themselves via
+   * `pointer-coarse:min-h-11` in their cva. */
+  .input {
+    min-height: 44px;
+  }
+
+  /* Small toggle controls (Radix Checkbox/Radio/Switch render
+   * role=checkbox|radio|switch) keep their compact VISUAL size but gain a
+   * 44px transparent hit-target via a centred ::before — finger-friendly
+   * without changing the design. */
+  [role="checkbox"],
+  [role="radio"],
+  [role="switch"] {
+    position: relative;
+  }
+  [role="checkbox"]::before,
+  [role="radio"]::before,
+  [role="switch"]::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+    background: transparent;
+  }
 }
 @media (max-width: 767px) {
   [data-process-canvas="true"][data-mobile-layout="true"] [data-process-palette="true"] {
