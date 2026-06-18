@@ -11,7 +11,7 @@ import Link from "next/link";
 import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
 import { useTenantHref } from "@/lib/tenant-context-provider";
 
-interface ControlTask {
+export interface ControlTask {
     id: string;
     key?: string;
     title: string;
@@ -34,9 +34,16 @@ const TASK_STATUS_BADGE: Record<string, StatusBadgeVariant> = {
 export function ControlTaskRows({
     tenantSlug,
     controlId,
+    onTaskClick,
 }: {
     tenantSlug: string;
     controlId: string;
+    /**
+     * When provided, a task row is a button that opens the task quick-view
+     * (PR-2). Without it, the task title is a plain link to the task page
+     * (the PR-1 default).
+     */
+    onTaskClick?: (task: ControlTask) => void;
 }) {
     const tenantHref = useTenantHref();
     const [tasks, setTasks] = useState<ControlTask[] | null>(null);
@@ -81,12 +88,26 @@ export function ControlTaskRows({
                             className="flex items-center gap-default py-1.5"
                             data-control-task={t.id}
                         >
-                            <Link
-                                href={tenantHref(`/tasks/${t.id}`)}
-                                className="min-w-0 flex-1 truncate text-sm text-content-default hover:text-[var(--brand-default)] transition-colors"
-                            >
-                                {t.title}
-                            </Link>
+                            {onTaskClick ? (
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onTaskClick(t);
+                                    }}
+                                    className="min-w-0 flex-1 truncate text-left text-sm text-content-default hover:text-[var(--brand-default)] transition-colors"
+                                    data-task-quickview={t.id}
+                                >
+                                    {t.title}
+                                </button>
+                            ) : (
+                                <Link
+                                    href={tenantHref(`/tasks/${t.id}`)}
+                                    className="min-w-0 flex-1 truncate text-sm text-content-default hover:text-[var(--brand-default)] transition-colors"
+                                >
+                                    {t.title}
+                                </Link>
+                            )}
                             {t.assignee?.name && (
                                 <span className="shrink-0 text-xs text-content-subtle">
                                     {t.assignee.name}
