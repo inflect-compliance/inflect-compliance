@@ -85,17 +85,17 @@ declared in `dependencies`.
 | **Maintenance** | Active (last publish 2026-03), not deprecated. |
 | **Decision** | **Reviewed — correctly classified, at latest, no action.** |
 
-### nodemailer — `^8.0.7`
+### nodemailer — `^9.0.1`
 
 | | |
 |---|---|
 | **Direct?** | Yes (also a peer of `next-auth@4`, pinned to the root version via the `overrides` block — `"nodemailer": "$nodemailer"`). |
 | **Runtime use** | `src/lib/mailer.ts` — `NodemailerProvider` wraps `nodemailer.createTransport` for production SMTP; selected by `initMailerFromEnv()` when `SMTP_HOST` is set. Underpins all transactional email. |
 | **Classification** | `dependencies` — **correct**. The mailer ships and runs in production. |
-| **Version** | `8.0.7` is `latest`. A `2.4.0-beta.0` exists on the `beta` tag — *not* a newer major, just an unrelated pre-release line; ignore it. The repo is current. |
-| **Exposure** | Handles SMTP credentials + outbound network egress. nodemailer has a CVE history (header-injection classes); v8 is the current hardened line. The code passes only structured fields (`to`, `subject`, `text`/`html`, `bcc`) to `sendMail` — no raw header construction. |
-| **Maintenance** | Actively maintained; v8 line shipped eight patches Feb–Apr 2026. |
-| **Decision** | **Reviewed — correctly classified, at latest, no action.** |
+| **Version** | `9.0.1`. **8→9 reviewed 2026-06-18** (dependabot production-security group, advisory fix). v9's only breaking change is dropping Node < 18 support — prod runs Node 24. Our usage (`createTransport({host,port,secure,auth})` + `sendMail({to,subject,text,html,bcc,attachments})`) is stable core API, unchanged across the major. Typecheck passes against the existing `@types/nodemailer@^8` (the runtime API surface we touch is type-compatible). |
+| **Exposure** | Handles SMTP credentials + outbound network egress. nodemailer has a CVE history (header-injection classes); the 9.x line carries the latest fixes. The code passes only structured fields (`to`, `subject`, `text`/`html`, `bcc`) to `sendMail` — no raw header construction. |
+| **Maintenance** | Actively maintained. |
+| **Decision** | **Reviewed — 8→9 major bump accepted (security fix, API-compatible for our usage).** |
 
 ## Summary
 
@@ -104,7 +104,7 @@ declared in `dependencies`.
 | `js-yaml` | `dependencies` ✓ | `4.1.1` = latest | No action |
 | `jszip` | `dependencies` ✓ | `3.10.1` = latest | No action |
 | `pdfkit` | `dependencies` ✓ | `0.18.0` = latest | No action |
-| `nodemailer` | `dependencies` ✓ | `8.0.7` = latest | No action |
+| `nodemailer` | `dependencies` ✓ | `9.0.1` (8→9 reviewed) | Major bump accepted (security fix) |
 
 `npm audit --omit=dev --audit-level=moderate` reports **0
 vulnerabilities** in production dependencies. No package is
