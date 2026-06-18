@@ -96,6 +96,21 @@ export interface AsidePanelProps {
     defaultWidth?: number;
     /** Rail content — rendered once, in the docked panel or the Sheet. */
     children: ReactNode;
+    /**
+     * When true, the panel opens itself on mount: it expands the docked rail
+     * (≥xl) and opens the Sheet (<xl). Use for a panel that mounts in RESPONSE
+     * to a user action (e.g. a quick-view that appears when a row name is
+     * clicked) so the content shows immediately without a second tap. Default
+     * false (the rail respects its persisted collapse state).
+     */
+    openOnMount?: boolean;
+    /**
+     * Called when the user DISMISSES the panel below `xl` (closes the Sheet).
+     * Lets a controlled-content owner (e.g. the quick-view) clear its selection
+     * so the panel unmounts cleanly. No-op on the docked ≥xl rail (which
+     * collapses to a spine rather than closing).
+     */
+    onClose?: () => void;
 }
 
 const ICON_BUTTON_CLASS =
@@ -108,6 +123,8 @@ export function AsidePanel({
     defaultCollapsed = false,
     defaultWidth = DEFAULT_WIDTH,
     children,
+    openOnMount = false,
+    onClose,
 }: AsidePanelProps) {
     const [collapsed, setCollapsed] = useLocalStorage<boolean>(
         `aside:collapsed:${surfaceKey}`,
@@ -118,6 +135,16 @@ export function AsidePanel({
         Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, defaultWidth)),
     );
     const [sheetOpen, setSheetOpen] = useState(false);
+
+    // openOnMount — a panel that appears in response to a user action shows
+    // its content immediately: expand the docked rail (≥xl) + open the Sheet
+    // (<xl). Runs once on mount.
+    useEffect(() => {
+        if (!openOnMount) return;
+        setCollapsed(false);
+        setSheetOpen(true);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // ── Deep link ──────────────────────────────────────────────────
     // `?aside=<surfaceKey>` force-expands this panel once on arrival,
@@ -278,7 +305,14 @@ export function AsidePanel({
                 {icon && <span aria-hidden="true">{icon}</span>}
                 {title}
             </button>
-            <Sheet open={sheetOpen} onOpenChange={setSheetOpen} title={title}>
+            <Sheet
+                open={sheetOpen}
+                onOpenChange={(next) => {
+                    setSheetOpen(next);
+                    if (!next) onClose?.();
+                }}
+                title={title}
+            >
                 <Sheet.Header>
                     <Sheet.Title>{title}</Sheet.Title>
                 </Sheet.Header>

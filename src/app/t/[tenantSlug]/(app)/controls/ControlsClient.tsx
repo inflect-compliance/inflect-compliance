@@ -18,7 +18,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 // deterministic.
 import { NewControlModal } from './NewControlModal';
 import { ControlDetailSheet } from './ControlDetailSheet';
-import { ControlTaskRows } from './ControlTaskRows';
+import { ControlTaskRows, type ControlTask } from './ControlTaskRows';
+import { ControlQuickView } from './ControlQuickView';
+import { TaskQuickView } from './TaskQuickView';
 import { queryKeys } from '@/lib/queryKeys';
 import { ownerDisplayName } from '@/lib/owner-display';
 import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
@@ -601,9 +603,26 @@ function ControlsPageInner({
             (row.original.taskTotal ?? row.original._count?.controlTasks ?? 0) > 0,
         [],
     );
+    // Controls PR-2 — quick-view side panel. Clicking a control NAME opens the
+    // control quick-view; clicking a task (inline row OR panel) opens the task
+    // quick-view. Both surface in the docked AsidePanel (Sheet < xl).
+    const [selectedControl, setSelectedControl] = useState<ControlListItem | null>(null);
+    const [selectedTask, setSelectedTask] = useState<ControlTask | null>(null);
+    const openControlQuickView = useCallback((c: ControlListItem) => {
+        setSelectedTask(null);
+        setSelectedControl(c);
+    }, []);
+    const closeQuickView = useCallback(() => {
+        setSelectedTask(null);
+        setSelectedControl(null);
+    }, []);
     const renderControlTaskRows = useCallback(
         (row: Row<ControlListItem>) => (
-            <ControlTaskRows tenantSlug={tenantSlug} controlId={row.original.id} />
+            <ControlTaskRows
+                tenantSlug={tenantSlug}
+                controlId={row.original.id}
+                onTaskClick={setSelectedTask}
+            />
         ),
         [tenantSlug],
     );
@@ -644,13 +663,24 @@ function ControlsPageInner({
         {
             accessorKey: 'name',
             header: 'Title',
+            // PR-2 — single-click the NAME opens the control quick-view side
+            // panel (mirrors the Assets title-button pattern). It's a
+            // <button>, so the table's isClickOnInteractiveChild() skips the
+            // row's select/navigate handlers: name-click = quick-view; row
+            // single-click = select; row double-click = full detail page.
             cell: ({ row }) => (
-                <TableTitleCell
-                    href={tenantHref(`/controls/${row.original.id}`)}
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        openControlQuickView(row.original);
+                    }}
+                    className="inline-block max-w-full truncate text-left align-middle rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     id={`control-link-${row.original.id}`}
+                    data-testid={`control-title-${row.original.id}`}
                 >
-                    {row.original.name}
-                </TableTitleCell>
+                    <TableTitleCell tintOn="self">{row.original.name}</TableTitleCell>
+                </button>
             ),
         },
         {
@@ -831,7 +861,7 @@ function ControlsPageInner({
                 ) : null
             ),
         },
-    ]), [appPermissions, tenantHref, taskStats]);
+    ]), [appPermissions, tenantHref, taskStats, openControlQuickView]);
 
     // The bulk-action UI lives in the DataTable's header-row selection
     // toolbar via the canonical <BulkActionBar> (`selectionControls`) — the
@@ -1061,11 +1091,46 @@ function ControlsPageInner({
         </AsidePanel>
     ) : null;
 
-    // Compose the aside slot — selection summary first (only
-    // appears on multi-row selection), then the always-on browse
-    // rail, then the AI assist co-pilot. They stack vertically
-    // inside the docked third column.
-    const composedAside = (
+    // PR-2 — quick-view takeover. When a control name or a task is selected,
+    // the docked rail (Sheet < xl) shows the quick-view INSTEAD of the default
+    // browse/best-value/AI stack (Tidal-style); closing returns to the default
+    // rail. `openOnMount` expands the rail / opens the Sheet immediately so the
+    // panel "appears" on the click.
+    const quickViewAside = selectedTask ? (
+        <AsidePanel
+            title="Task"
+            surfaceKey="controls-quickview"
+            openOnMount
+            onClose={closeQuickView}
+        >
+            <TaskQuickView
+                task={selectedTask}
+                onBack={() => setSelectedTask(null)}
+                onClose={closeQuickView}
+            />
+        </AsidePanel>
+    ) : selectedControl ? (
+        <AsidePanel
+            title="Control"
+            surfaceKey="controls-quickview"
+            openOnMount
+            onClose={closeQuickView}
+        >
+            <ControlQuickView
+                tenantSlug={tenantSlug}
+                control={selectedControl}
+                onClose={closeQuickView}
+                onTaskClick={setSelectedTask}
+            />
+        </AsidePanel>
+    ) : null;
+
+    // Compose the aside slot — the quick-view takes over when active; otherwise
+    // the always-on browse rail + best-value + AI assist co-pilot stack
+    // vertically inside the docked third column.
+    const composedAside = quickViewAside ? (
+        <div className="flex flex-col gap-default">{quickViewAside}</div>
+    ) : (
         <div className="flex flex-col gap-default">
             {browseAside}
             {bestValueAside}

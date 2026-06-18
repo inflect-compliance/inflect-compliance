@@ -50,7 +50,12 @@ describe('B2 — table unification', () => {
             it(`${label} renders a click-handled title cell (href OR onRowClick)`, () => {
                 const src = read(file);
                 const hasTitleHref = /<TableTitleCell\b[\s\S]{0,300}href=/.test(src);
-                const hasRowClick = /onRowClick=\{/.test(src);
+                // Accept BOTH the JSX-prop form (`onRowClick={…}`) and the
+                // EntityListPage table-config object form (`onRowClick: …`) —
+                // Controls navigates via the latter (double-click → detail) now
+                // that its title cell opens a quick-view instead of carrying an
+                // href. The intent (no dead title cell) is unchanged.
+                const hasRowClick = /onRowClick\s*[=:]/.test(src);
                 expect(hasTitleHref || hasRowClick).toBe(true);
             });
         }
