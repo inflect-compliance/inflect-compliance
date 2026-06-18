@@ -34,6 +34,14 @@ describe("Controls quick-view interaction (TidalControl)", () => {
         expect(controls).toMatch(/openControlQuickView = useCallback/);
     });
 
+    it("clicking the name also expands the inline task rows (tasks list below the control)", () => {
+        // PR-4: name-click surfaces the related tasks inline in the table —
+        // openControlQuickView + toggleExpanded(true) in the same handler.
+        expect(controls).toMatch(
+            /openControlQuickView\(row\.original\);[\s\S]{0,120}row\.toggleExpanded\(true\)/,
+        );
+    });
+
     it("row selection stays on (single-click selects)", () => {
         // Controls wires selection (default-on select column) — never opts out.
         expect(controls).not.toMatch(/selectionEnabled=\{?false/);

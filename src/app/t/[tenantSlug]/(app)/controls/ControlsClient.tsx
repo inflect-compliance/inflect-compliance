@@ -671,10 +671,13 @@ function ControlsPageInner({
         {
             accessorKey: 'name',
             header: 'Title',
-            // PR-2 — single-click the NAME opens the control quick-view side
-            // panel (mirrors the Assets title-button pattern). It's a
-            // <button>, so the table's isClickOnInteractiveChild() skips the
-            // row's select/navigate handlers: name-click = quick-view; row
+            // PR-2/PR-4 — single-click the NAME opens the control quick-view
+            // side panel (mirrors the Assets title-button pattern) AND expands
+            // the control's inline task rows in the table, so the related
+            // tasks list appears right below the control (tasks live in the
+            // table, not the panel). It's a <button>, so the table's
+            // isClickOnInteractiveChild() skips the row's select/navigate
+            // handlers: name-click = quick-view + expand tasks; row
             // single-click = select; row double-click = full detail page.
             cell: ({ row }) => (
                 <button
@@ -682,6 +685,7 @@ function ControlsPageInner({
                     onClick={(e) => {
                         e.stopPropagation();
                         openControlQuickView(row.original);
+                        if (row.getCanExpand()) row.toggleExpanded(true);
                     }}
                     className="inline-block max-w-full truncate text-left align-middle rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     id={`control-link-${row.original.id}`}
