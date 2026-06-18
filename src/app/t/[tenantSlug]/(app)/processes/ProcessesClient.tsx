@@ -30,6 +30,9 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/cn";
 import { WorkspaceShell } from "@/components/layout/WorkspaceShell";
+import { useIsBelowMd } from "@/components/ui/hooks";
+import { cardVariants } from "@/components/ui/card";
+import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
 import { RulesTab } from "./RulesTab";
 import { AnalyticsTab } from "./AnalyticsTab";
 import { MonitorTab } from "./MonitorTab";
@@ -176,6 +179,16 @@ function CanvasWorkspace({
     setActiveId: (id: string | null) => void;
     setProcesses: (p: ProcessMapSummary[]) => void;
 }) {
+    // Mobile PR-5 — the xyflow canvas (pan/zoom/drag of a node graph) is
+    // unusable on a phone. Below `md` we render a read-only LIST of the
+    // process maps so mobile users can still browse them; editing the canvas
+    // stays a desktop affordance. `useIsBelowMd` is false on SSR/jsdom, so
+    // desktop + tests keep the canvas.
+    const belowMd = useIsBelowMd();
+    if (belowMd) {
+        return <ProcessListMobile processes={processes} />;
+    }
+
     return (
         // R31 Bundle 3 (PR 1) — Page header retired. Pre-R31 the
         // page above the canvas carried a CRUD-page header
@@ -212,5 +225,72 @@ function CanvasWorkspace({
                 </CanvasModeProvider>
             </WorkspaceShell.Body>
         </WorkspaceShell>
+    );
+}
+
+const PROCESS_STATUS_BADGE: Record<
+    ProcessMapSummary["status"],
+    StatusBadgeVariant
+> = {
+    ACTIVE: "success",
+    DRAFT: "warning",
+    ARCHIVED: "neutral",
+};
+
+/**
+ * Mobile PR-5 — read-only process-map list shown in place of the canvas on
+ * phones. Browse names / status / size; editing the canvas is desktop-only.
+ */
+function ProcessListMobile({
+    processes,
+}: {
+    processes: ProcessMapSummary[];
+}) {
+    return (
+        <div className="space-y-default" data-testid="processes-mobile-list">
+            <div className="rounded-lg border border-border-subtle bg-bg-subtle p-3 text-sm text-content-muted">
+                <p>
+                    Process maps are edited on a larger screen. Open this page on a
+                    desktop to design the canvas.
+                </p>
+            </div>
+            {processes.length === 0 ? (
+                <p className="px-1 py-8 text-center text-sm text-content-subtle">
+                    No process maps yet.
+                </p>
+            ) : (
+                <ul className="space-y-default">
+                    {processes.map((p) => (
+                        <li
+                            key={p.id}
+                            className={cn(cardVariants({ density: "compact" }), "space-y-tight")}
+                            data-process-id={p.id}
+                        >
+                            <div className="flex items-start justify-between gap-default">
+                                <span className="min-w-0 break-words font-medium text-content-emphasis">
+                                    {p.name}
+                                </span>
+                                <StatusBadge
+                                    variant={PROCESS_STATUS_BADGE[p.status]}
+                                    size="sm"
+                                >
+                                    {p.status}
+                                </StatusBadge>
+                            </div>
+                            {p.description && (
+                                <p className="break-words text-sm text-content-muted">
+                                    {p.description}
+                                </p>
+                            )}
+                            <p className="text-xs text-content-subtle">
+                                {p.nodeCount} {p.nodeCount === 1 ? "step" : "steps"} ·{" "}
+                                {p.edgeCount} {p.edgeCount === 1 ? "link" : "links"} · v
+                                {p.version}
+                            </p>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </div>
     );
 }

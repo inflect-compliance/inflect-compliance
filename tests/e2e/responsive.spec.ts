@@ -32,7 +32,10 @@ async function hasNoHorizontalOverflow(page: Page): Promise<boolean> {
 // ─────────────────────── Mobile (375×812) ───────────────────────
 
 test.describe('Mobile viewport (375×812)', () => {
-    test.use({ viewport: { width: 375, height: 812 } });
+    // `hasTouch` emulates a coarse pointer so the mobile touch-target rules
+    // (`pointer-coarse:` 44px floors from mobile PR-1) actually engage, and
+    // touch interactions match a real phone.
+    test.use({ viewport: { width: 375, height: 812 }, hasTouch: true });
 
     let tenant: IsolatedTenantCredentials;
     let slug: string;
@@ -83,6 +86,21 @@ test.describe('Mobile viewport (375×812)', () => {
         const noOverflow = await hasNoHorizontalOverflow(page);
         expect(noOverflow).toBe(true);
     });
+
+    // Overflow sweep across the main entity + dashboard surfaces (mobile PR-5).
+    // Each is self-contained (signs in, navigates, asserts) so a failure
+    // isolates to one page. The isolated tenant is empty — this guards the
+    // page CHROME (header, filter toolbar, empty state, dashboard grid stack)
+    // against forcing horizontal scroll on a 375px viewport.
+    for (const path of ['risks', 'policies', 'vendors', 'evidence', 'dashboard']) {
+        test(`${path} has no horizontal overflow`, async ({ page }) => {
+            slug = await signInAs(page, tenant);
+            await gotoAndVerify(page, `/t/${slug}/${path}`, 'main');
+
+            const noOverflow = await hasNoHorizontalOverflow(page);
+            expect(noOverflow).toBe(true);
+        });
+    }
 });
 
 // ─────────────────────── Desktop (1280×720) ───────────────────────
