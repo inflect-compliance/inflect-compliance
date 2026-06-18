@@ -18,6 +18,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 // deterministic.
 import { NewControlModal } from './NewControlModal';
 import { ControlDetailSheet } from './ControlDetailSheet';
+import { ControlTaskRows } from './ControlTaskRows';
 import { queryKeys } from '@/lib/queryKeys';
 import { ownerDisplayName } from '@/lib/owner-display';
 import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
@@ -592,6 +593,20 @@ function ControlsPageInner({
         [router, tenantHref],
     );
     const getControlRowId = useCallback((c: ControlListItem) => c.id, []);
+    // Controls PR-1 — expandable rows: a control with tasks shows a chevron;
+    // expanding renders its tasks inline (lazy-fetched). Stable refs so a
+    // selection/expand re-render doesn't rebuild the table model.
+    const getControlCanExpand = useCallback(
+        (row: Row<ControlListItem>) =>
+            (row.original.taskTotal ?? row.original._count?.controlTasks ?? 0) > 0,
+        [],
+    );
+    const renderControlTaskRows = useCallback(
+        (row: Row<ControlListItem>) => (
+            <ControlTaskRows tenantSlug={tenantSlug} controlId={row.original.id} />
+        ),
+        [tenantSlug],
+    );
     const handleRowSelectionChange = useCallback(
         (rows: Row<ControlListItem>[]) =>
             setRowSelection(
@@ -1240,6 +1255,8 @@ function ControlsPageInner({
                 // bespoke per-row affordances + the JS whole-row clip
                 // depend on the standard <table> layout.
                 virtualize: false,
+                getRowCanExpand: getControlCanExpand,
+                renderExpandedRow: renderControlTaskRows,
                 onRowClick: handleRowClick,
                 onRowPrefetch: (row) => router.prefetch(tenantHref(`/controls/${row.original.id}`)),
                 emptyState: hasActive ? (
