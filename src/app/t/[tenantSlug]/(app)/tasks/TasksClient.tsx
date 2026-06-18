@@ -42,6 +42,7 @@ import { toApiSearchParams } from '@/lib/filters/url-sync';
 import { buildTaskFilters, TASK_FILTER_KEYS } from './filter-defs';
 import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
 import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
+import { useKpiTrends, buildKpiSparklines, buildKpiSparklineNullable, centeredSparklineDomain, assignSparklineVariants } from '@/lib/charts/kpi-trends';
 import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import { UserCombobox } from '@/components/ui/user-combobox';
 import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
@@ -341,6 +342,29 @@ function TasksPageInner({
     );
     const { activeKpiId: activeTaskKpi, toggle: toggleTaskKpi } =
         useKpiFilter(taskKpiDefs);
+
+    // Canonical KPI-card sparklines (shared hook). total/open/overdue are
+    // always-present snapshot series; dueWeek is a forward-only nullable
+    // column — empty until history accrues, never a fake ramp.
+    const trendsQuery = useKpiTrends(tenantSlug);
+    const taskTrends = useMemo(() => {
+        const points = trendsQuery.data?.dataPoints;
+        const base = buildKpiSparklines(points, (d) => d.tasksTotal, {
+            total: (d) => d.tasksTotal,
+            open: (d) => d.tasksOpen,
+            overdue: (d) => d.tasksOverdue,
+        });
+        return {
+            ...base,
+            dueWeek: buildKpiSparklineNullable(points, (d) => d.tasksDueSoon7d),
+        };
+    }, [trendsQuery.data]);
+    // Distinct sparkline colour per card (canonical allocator).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const sparkColors = useMemo(
+        () => assignSparklineVariants(['total', 'open', 'overdue', 'dueWeek']),
+        [],
+    );
 
 
     // ─── Mutation: bulk actions (Epic 69 — useTenantMutation) ────
@@ -675,6 +699,9 @@ function TasksPageInner({
                     <KpiFilterCard
                         label="Total tasks"
                         value={totalTasks}
+                        sparkline={taskTrends.total}
+                        sparklineVariant={sparkColors.total}
+                        sparklineDomain={centeredSparklineDomain(taskTrends.total)}
                         onClick={() => toggleTaskKpi('total')}
                         selected={activeTaskKpi === 'total'}
                     />
@@ -682,6 +709,9 @@ function TasksPageInner({
                         label="Open"
                         value={openTasks}
                         tone="attention"
+                        sparkline={taskTrends.open}
+                        sparklineVariant={sparkColors.open}
+                        sparklineDomain={centeredSparklineDomain(taskTrends.open)}
                         onClick={() => toggleTaskKpi('open')}
                         selected={activeTaskKpi === 'open'}
                     />
@@ -689,6 +719,9 @@ function TasksPageInner({
                         label="Overdue"
                         value={overdueTasks}
                         tone={overdueTasks > 0 ? 'critical' : 'default'}
+                        sparkline={taskTrends.overdue}
+                        sparklineVariant={sparkColors.overdue}
+                        sparklineDomain={centeredSparklineDomain(taskTrends.overdue)}
                         onClick={() => toggleTaskKpi('overdue')}
                         selected={activeTaskKpi === 'overdue'}
                     />
@@ -696,6 +729,9 @@ function TasksPageInner({
                         label="Due this week"
                         value={dueWeekTasks}
                         tone="attention"
+                        sparkline={taskTrends.dueWeek}
+                        sparklineVariant={sparkColors.dueWeek}
+                        sparklineDomain={centeredSparklineDomain(taskTrends.dueWeek)}
                         onClick={() => toggleTaskKpi('dueWeek')}
                         selected={activeTaskKpi === 'dueWeek'}
                     />

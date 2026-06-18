@@ -73,8 +73,10 @@ export interface TrendDataPoint {
     testPlansArchived: number | null;
 
     // Tasks
+    tasksTotal: number;
     tasksOpen: number;
     tasksOverdue: number;
+    tasksDueSoon7d: number | null;
 
     // Assets
     assetsTotal: number;
@@ -142,8 +144,10 @@ function toDataPoint(s: ComplianceSnapshot): TrendDataPoint {
         testPlansActive: s.testPlansActive,
         testPlansPaused: s.testPlansPaused,
         testPlansArchived: s.testPlansArchived,
+        tasksTotal: s.tasksTotal,
         tasksOpen: s.tasksOpen,
         tasksOverdue: s.tasksOverdue,
+        tasksDueSoon7d: s.tasksDueSoon7d,
         assetsTotal: s.assetsTotal,
         assetsActive: s.assetsActive,
         assetsHighCriticality: s.assetsHighCriticality,

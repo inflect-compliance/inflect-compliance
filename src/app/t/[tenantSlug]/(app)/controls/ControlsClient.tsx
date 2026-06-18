@@ -61,7 +61,7 @@ import {
 import { AiAssistRail } from '@/components/ui/ai-assist-rail';
 import { Sparkle3 } from '@/components/ui/icons/nucleo/sparkle3';
 import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
-import { useKpiTrends, buildKpiSparklines, centeredSparklineDomain } from '@/lib/charts/kpi-trends';
+import { useKpiTrends, buildKpiSparklines, centeredSparklineDomain, assignSparklineVariants } from '@/lib/charts/kpi-trends';
 import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
 import type { CappedList } from '@/lib/list-backfill-cap';
 import { TruncationBanner } from '@/components/ui/TruncationBanner';
@@ -408,6 +408,12 @@ function ControlsPageInner({
                 notStarted: (d) => d.controlsNotStarted,
             }),
         [trendsQuery.data],
+    );
+    // Distinct sparkline colour per card (canonical allocator).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const sparkColors = useMemo(
+        () => assignSparklineVariants(['total', 'implemented', 'inProgress', 'notStarted']),
+        [],
     );
     const controlKpiDefs: ReadonlyArray<KpiFilterDef<ControlKpiId>> = useMemo(
         () => [
@@ -1187,6 +1193,7 @@ function ControlsPageInner({
                                 value={c.value}
                                 tone={c.tone}
                                 sparkline={c.sparkline}
+                                sparklineVariant={sparkColors[card.id as keyof typeof sparkColors]}
                                 sparklineDomain={centeredSparklineDomain(c.sparkline)}
                                 onClick={() =>
                                     toggleControlKpi(card.id as ControlKpiId)

@@ -13,7 +13,7 @@ import { ownerDisplayName } from '@/lib/owner-display';
 import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
 import { UserCombobox } from '@/components/ui/user-combobox';
 import { Combobox } from '@/components/ui/combobox';
-import { useKpiTrends, buildKpiSparklines, buildKpiSparklineNullable, centeredSparklineDomain } from '@/lib/charts/kpi-trends';
+import { useKpiTrends, buildKpiSparklines, buildKpiSparklineNullable, centeredSparklineDomain, assignSparklineVariants } from '@/lib/charts/kpi-trends';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import type { CappedList } from '@/lib/list-backfill-cap';
 import { TruncationBanner } from '@/components/ui/TruncationBanner';
@@ -522,6 +522,12 @@ function RisksPageInner({
             overdue: buildKpiSparklineNullable(points, (d) => d.risksOverdueReview),
         };
     }, [trendsQuery.data]);
+    // Distinct sparkline colour per card (canonical allocator).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const sparkColors = useMemo(
+        () => assignSparklineVariants(['total', 'avgScore', 'open', 'overdue']),
+        [],
+    );
 
     // R23-PR-B — Typed KPI definitions consumed by useKpiFilter. The
     // hook derives the active card from current filter state, so the
@@ -1073,6 +1079,7 @@ function RisksPageInner({
                                 value={c.value}
                                 tone={c.tone}
                                 sparkline={c.sparkline}
+                                sparklineVariant={sparkColors[card.id as keyof typeof sparkColors]}
                                 sparklineDomain={centeredSparklineDomain(c.sparkline)}
                                 onClick={
                                     kpiId ? () => toggleKpi(kpiId) : undefined
