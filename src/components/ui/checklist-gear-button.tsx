@@ -103,7 +103,9 @@ export function ChecklistGearButton({
                                     // stable + unique.
                                     value={item.id}
                                     className={cn(
-                                        'flex cursor-pointer select-none items-center gap-2.5 whitespace-nowrap rounded-md px-3 py-1.5',
+                                        // Option rows wrap their full label — never
+                                        // truncate an option name (canonical rule).
+                                        'flex cursor-pointer select-none items-center gap-2.5 whitespace-normal rounded-md px-3 py-1.5',
                                         'text-content-default hover:text-content-emphasis',
                                         'data-[selected=true]:bg-bg-muted',
                                     )}
@@ -198,7 +200,7 @@ export function ChecklistGearButton({
                                             {item.icon}
                                         </span>
                                     )}
-                                    <span className="truncate">{item.label}</span>
+                                    <span className="break-words">{item.label}</span>
                                 </Command.Item>
                             ))}
 

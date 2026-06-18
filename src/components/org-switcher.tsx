@@ -184,7 +184,7 @@ export function OrgSwitcher({
                         <span className="inline-flex size-4 shrink-0 items-center justify-center text-content-muted">
                             <LayoutDashboard className="size-3.5" aria-hidden="true" />
                         </span>
-                        <span className="flex-1 truncate">Portfolio overview</span>
+                        <span className="flex-1 break-words">Portfolio overview</span>
                         {portfolioActive && (
                             <Check className="size-3.5 text-content-info" aria-hidden="true" />
                         )}
@@ -243,7 +243,7 @@ export function OrgSwitcher({
                                     <span className="inline-flex size-4 shrink-0 items-center justify-center text-content-muted">
                                         <Building2 className="size-3.5" aria-hidden="true" />
                                     </span>
-                                    <span className="flex-1 truncate">{t.name}</span>
+                                    <span className="flex-1 break-words">{t.name}</span>
                                     {isActive && (
                                         <Check
                                             className="size-3.5 text-content-info"
