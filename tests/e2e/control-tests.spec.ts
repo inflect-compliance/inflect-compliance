@@ -24,6 +24,10 @@ test.describe('Control Tests (Test-of-Control)', () => {
     }) => {
         const { tenantSlug } = isolatedTenant;
         const uid = `${Date.now().toString(36)}-${randomUUID().slice(0, 8)}`;
+        // Captured after create so a later step can return to the control's
+        // detail page directly — the list's title cell now opens a quick-view
+        // (Controls TidalControl PR-2), it no longer navigates.
+        let controlDetailUrl = '';
 
         await test.step('create control + test plan', async () => {
             await gotoAndVerify(
@@ -35,6 +39,7 @@ test.describe('Control Tests (Test-of-Control)', () => {
             await page.fill('#control-code-input', `TC-${uid}`);
             await page.click('#create-control-btn');
             await page.waitForURL(/\/controls\/[a-z0-9]{20,}/, { timeout: 30000 });
+            controlDetailUrl = page.url();
             await page.waitForLoadState('networkidle').catch(() => {});
             await page.waitForSelector('#control-title', { timeout: 30000 });
             await expect(page.locator('#control-title')).toContainText(
@@ -109,9 +114,9 @@ test.describe('Control Tests (Test-of-Control)', () => {
         });
 
         await test.step('create another run, mark FAIL, verify finding', async () => {
-            // Back to the test-plan detail to start a 2nd run.
-            await gotoAndVerify(page, `/t/${tenantSlug}/controls`, 'h1');
-            await page.click(`text=Test Ctrl ${uid}`);
+            // Back to the control detail to start a 2nd run. Navigate directly
+            // (the list title cell now opens a quick-view, not the detail page).
+            await page.goto(controlDetailUrl);
             await page.waitForSelector('#control-title', { timeout: 10000 });
             await page.click('#tab-tests');
             await page.waitForLoadState('networkidle').catch(() => {});

@@ -187,14 +187,17 @@ test.describe('DataTable Platform — Row click navigation', () => {
 
         // R13-PR2 — row opens on double-click, not single-click.
         // Seed provisions 4 tenant controls; assert visibility.
-        // Target the second visible cell (the code cell), which is
-        // not interactive — DataTable ignores double-clicks landing
-        // on interactive children like the select checkbox or title
-        // link.
+        // Target a NON-interactive cell. The first visible content cell is the
+        // Title (Code is default-hidden), which is now a quick-view <button>
+        // (Controls TidalControl PR-2), and the cell after the select column
+        // carries the expand chevron — both are interactive children the
+        // DataTable's double-click ignores. The Category cell (nth 3:
+        // select=0, name=1, framework=2, category=3) is plain text, so a
+        // double-click there exercises the row's navigate handler.
         const rows = page.locator('tbody tr');
         await expect(rows.first()).toBeVisible({ timeout: 15_000 });
 
-        await rows.first().locator('td').nth(1).dblclick();
+        await rows.first().locator('td').nth(3).dblclick();
         await page.waitForURL(/\/controls\/[a-zA-Z0-9-]+$/, { timeout: 10_000 });
         await expect(page.locator('#control-title')).toBeVisible({ timeout: 10_000 });
     });
