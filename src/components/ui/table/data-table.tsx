@@ -30,6 +30,8 @@ import { Table, useTable } from "./table";
 import { cn } from "./table-utils";
 import type { UseTableProps } from "./types";
 import { VirtualTable } from "./virtual-table-body";
+import { DataTableCards } from "./data-table-cards";
+import { useIsBelowMd } from "./use-is-below-md";
 
 // ── Public Column Helper ────────────────────────────────────────────
 
@@ -474,6 +476,20 @@ export function DataTable<T>({
   //     today — when no rows exist there's nothing to virtualize, so
   //     <Table>'s richer empty/error chrome is the correct surface.
   const useVirtual = willVirtualizeEarly;
+
+  // Mobile PR-2 — below `md` (a phone) swap the wide table for a stacked card
+  // list so nothing overflows / truncates. Only when there are real rows;
+  // loading / error / empty keep the <Table>'s own chrome. `useIsBelowMd`
+  // resolves to `false` on SSR/first-render and under jsdom, so the desktop
+  // table is the default everywhere except a real narrow viewport.
+  const belowMd = useIsBelowMd();
+  if (belowMd && data.length > 0 && !error && !loading) {
+    return (
+      <div id={dataTestId} data-testid={dataTestId} className={wrapperClassName}>
+        <DataTableCards<T> table={table} onRowClick={onRowClick} />
+      </div>
+    );
+  }
 
   if (useVirtual) {
     return (
