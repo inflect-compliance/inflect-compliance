@@ -123,8 +123,12 @@ describe('PR-1 — tenant tables → org-level parity', () => {
         for (const r of rollouts) {
             describe(r.name, () => {
                 it('imports the shared threshold + footer primitives', () => {
+                    // Allow sibling named imports from the hooks barrel (e.g.
+                    // ControlsClient also pulls useKeyboardShortcut for the
+                    // quick-view Escape) — the parity intent is just that the
+                    // shared primitive is imported, not that it's imported alone.
                     expect(r.src).toMatch(
-                        /import\s*\{\s*useThresholdLoadMore\s*\}\s*from\s*['"]@\/components\/ui\/hooks['"]/,
+                        /import\s*\{[^}]*\buseThresholdLoadMore\b[^}]*\}\s*from\s*['"]@\/components\/ui\/hooks['"]/,
                     );
                     expect(r.src).toMatch(
                         /import\s*\{\s*TableLoadMoreFooter\s*\}\s*from\s*['"]@\/components\/ui\/table-load-more-footer['"]/,
