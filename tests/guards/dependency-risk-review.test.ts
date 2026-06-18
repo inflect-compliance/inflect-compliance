@@ -44,7 +44,13 @@ const REVIEWED: Record<string, { major: number }> = {
     'js-yaml': { major: 4 },
     jszip: { major: 3 },
     pdfkit: { major: 0 },
-    nodemailer: { major: 8 },
+    // Reviewed 2026-06-18 for the 8→9 major bump (security advisory fix,
+    // dependabot production-security group). Our only usage is
+    // `nodemailer.createTransport({host,port,secure,auth})` + `sendMail(...)`
+    // in src/lib/mailer.ts — both are stable core APIs unchanged in v9. v9's
+    // breaking change is dropping Node < 18; prod runs Node 24. Typecheck
+    // passes against the existing `@types/nodemailer`.
+    nodemailer: { major: 9 },
 };
 
 /** Major of a caret/tilde/plain semver range (`^8.0.7` → 8). */
