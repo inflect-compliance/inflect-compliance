@@ -123,6 +123,9 @@ export async function generateSnapshotForTenant(
     const ctx = makeSystemCtx(tenantId);
 
     await withTenantDb(tenantId, async (db) => {
+        // "now" for overdue cutoffs — captured once so every count in this
+        // snapshot shares the same instant (matches the UI's overdue test).
+        const snapshotComputedAt = new Date();
         // Run all aggregation queries in parallel within the transaction
         const [
             controlCoverage,
@@ -140,6 +143,11 @@ export async function generateSnapshotForTenant(
             policyByStatus,
             vendorsActive,
             vendorsCritical,
+            // PR3 — Risk avgScore + overdue-review, and the Test-plan KPI row.
+            riskAgg,
+            risksOverdueReview,
+            testPlanByStatus,
+            testPlansTotal,
         ] = await Promise.all([
             DashboardRepository.getControlCoverage(db, ctx),
             DashboardRepository.getRiskBySeverity(db, ctx),
@@ -162,12 +170,21 @@ export async function generateSnapshotForTenant(
             }),
             db.vendor.count({ where: { tenantId, deletedAt: null, status: 'ACTIVE' } }),
             db.vendor.count({ where: { tenantId, deletedAt: null, criticality: 'CRITICAL' } }),
+            // Risk avgScore — average inherent score across non-deleted risks.
+            // `_avg` is null when the tenant has no risks → writes NULL (no data).
+            db.risk.aggregate({ _avg: { inherentScore: true }, where: { tenantId, deletedAt: null } }),
+            db.risk.count({ where: { tenantId, deletedAt: null, nextReviewAt: { lt: snapshotComputedAt } } }),
+            // Test-plan KPI row (ControlTestPlan has no soft-delete).
+            db.controlTestPlan.groupBy({ by: ['status'], where: { tenantId }, _count: true }),
+            db.controlTestPlan.count({ where: { tenantId } }),
         ]);
 
         const evByStatus = (s: string) =>
             evidenceByStatus.find((g) => g.status === s)?._count ?? 0;
         const polByStatus = (s: string) =>
             policyByStatus.find((g) => g.status === s)?._count ?? 0;
+        const tpByStatus = (s: string) =>
+            testPlanByStatus.find((g) => g.status === s)?._count ?? 0;
 
         // Coverage BPS = coveragePercent × 10 (e.g. 75.3% → 753)
         const controlCoverageBps = Math.round(controlCoverage.coveragePercent * 10);
@@ -191,6 +208,8 @@ export async function generateSnapshotForTenant(
             risksMedium: riskBySeverity.medium,
             risksHigh: riskBySeverity.high,
             risksCritical: riskBySeverity.critical,
+            risksAvgScore: riskAgg._avg.inherentScore,
+            risksOverdueReview,
 
             // Evidence
             evidenceTotal: evidenceExpiry.overdue + evidenceExpiry.dueSoon30d + evidenceExpiry.noReviewDate + evidenceExpiry.current,
@@ -220,6 +239,12 @@ export async function generateSnapshotForTenant(
             vendorsOverdueReview: vendorSummary.overdueReview,
             vendorsActive,
             vendorsCritical,
+
+            // Test plans
+            testPlansTotal,
+            testPlansActive: tpByStatus('ACTIVE'),
+            testPlansPaused: tpByStatus('PAUSED'),
+            testPlansArchived: tpByStatus('ARCHIVED'),
 
             // Assets
             assetsTotal: assetSummary.total,

@@ -20,9 +20,10 @@ import { FilterProvider, useFilterContext, useFilters, useFilterCardVisibility, 
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
-import { KPIStat } from '@/components/ui/metric';
+import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
+import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
+import { useKpiTrends, buildKpiSparklines, buildKpiSparklineNullable, centeredSparklineDomain } from '@/lib/charts/kpi-trends';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
-import { cardVariants } from '@/components/ui/card';
 import { AppIcon } from '@/components/icons/AppIcon';
 import { Tooltip } from '@/components/ui/tooltip';
 import { buildTestFilters, TEST_FILTER_KEYS } from './filter-defs';
@@ -235,10 +236,64 @@ function TestsRollupContent() {
         });
     }, [plans, state, search]);
 
-    // Stats (display-only headline figures).
-    const dueCount = plans.filter((p) => p.nextDueAt && isOverdue(p.nextDueAt)).length;
-    const failedCount = plans.filter((p) => getLastResult(p) === 'FAIL').length;
-    const passedCount = plans.filter((p) => getLastResult(p) === 'PASS').length;
+    // KPI-card counts — total + the three TestPlanStatus buckets. These power
+    // the clickable KpiFilterCard row (each toggles the table's status filter).
+    const totalPlans = plans.length;
+    const activePlans = plans.filter((p) => p.status === 'ACTIVE').length;
+    const pausedPlans = plans.filter((p) => p.status === 'PAUSED').length;
+    const archivedPlans = plans.filter((p) => p.status === 'ARCHIVED').length;
+
+    // Canonical KPI-card sparklines (shared hook). total is an always-present
+    // series; active/paused/archived are forward-only nullable columns (PR3) —
+    // empty until ~2 days of snapshot history accrue, never a fake ramp.
+    const trendsQuery = useKpiTrends(tenantSlug);
+    const testTrends = useMemo(() => {
+        const points = trendsQuery.data?.dataPoints;
+        const base = buildKpiSparklines(points, (d) => d.testPlansTotal, {
+            total: (d) => d.testPlansTotal,
+        });
+        return {
+            ...base,
+            active: buildKpiSparklineNullable(points, (d) => d.testPlansActive),
+            paused: buildKpiSparklineNullable(points, (d) => d.testPlansPaused),
+            archived: buildKpiSparklineNullable(points, (d) => d.testPlansArchived),
+        };
+    }, [trendsQuery.data]);
+
+    // Clickable-KPI → table-filter wiring. "Total" clears all filters; each
+    // status card toggles the `status` filter to its bucket (mutually
+    // exclusive — the hook clears sibling status keys before applying).
+    type TestKpiId = 'total' | 'active' | 'paused' | 'archived';
+    const testKpiDefs: ReadonlyArray<KpiFilterDef<TestKpiId>> = useMemo(
+        () => [
+            {
+                id: 'total',
+                apply: (ctx) => ctx.clearAll(),
+                isActive: (s) => Object.keys(s).length === 0,
+            },
+            {
+                id: 'active',
+                apply: (ctx) => ctx.set('status', 'ACTIVE'),
+                isActive: (s) => (s.status ?? []).includes('ACTIVE'),
+                clear: (ctx) => ctx.removeAll('status'),
+            },
+            {
+                id: 'paused',
+                apply: (ctx) => ctx.set('status', 'PAUSED'),
+                isActive: (s) => (s.status ?? []).includes('PAUSED'),
+                clear: (ctx) => ctx.removeAll('status'),
+            },
+            {
+                id: 'archived',
+                apply: (ctx) => ctx.set('status', 'ARCHIVED'),
+                isActive: (s) => (s.status ?? []).includes('ARCHIVED'),
+                clear: (ctx) => ctx.removeAll('status'),
+            },
+        ],
+        [],
+    );
+    const { activeKpiId: activeTestKpi, toggle: toggleTestKpi } =
+        useKpiFilter(testKpiDefs);
 
     const planColumns = useMemo(
         () =>
@@ -336,20 +391,42 @@ function TestsRollupContent() {
             </ListPageShell.Header>
 
             <ListPageShell.Filters className="space-y-section">
-                {/* Headline stats (display-only). */}
+                {/* KPI strip — clickable cards filter the table by status. */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
-                    <div className={cardVariants({ density: 'compact' })}>
-                        <KPIStat value={plans.length} label="Total Plans" />
-                    </div>
-                    <div className={cardVariants({ density: 'compact' })}>
-                        <KPIStat value={dueCount} label="Overdue" tone={dueCount > 0 ? 'critical' : 'success'} />
-                    </div>
-                    <div className={cardVariants({ density: 'compact' })}>
-                        <KPIStat value={failedCount} label="Last Failed" tone={failedCount > 0 ? 'critical' : 'success'} />
-                    </div>
-                    <div className={cardVariants({ density: 'compact' })}>
-                        <KPIStat value={passedCount} label="Last Passed" tone="success" />
-                    </div>
+                    <KpiFilterCard
+                        label="Total plans"
+                        value={totalPlans}
+                        sparkline={testTrends.total}
+                        sparklineDomain={centeredSparklineDomain(testTrends.total)}
+                        onClick={() => toggleTestKpi('total')}
+                        selected={activeTestKpi === 'total'}
+                    />
+                    <KpiFilterCard
+                        label="Active"
+                        value={activePlans}
+                        tone="success"
+                        sparkline={testTrends.active}
+                        sparklineDomain={centeredSparklineDomain(testTrends.active)}
+                        onClick={() => toggleTestKpi('active')}
+                        selected={activeTestKpi === 'active'}
+                    />
+                    <KpiFilterCard
+                        label="Paused"
+                        value={pausedPlans}
+                        tone={pausedPlans > 0 ? 'attention' : 'default'}
+                        sparkline={testTrends.paused}
+                        sparklineDomain={centeredSparklineDomain(testTrends.paused)}
+                        onClick={() => toggleTestKpi('paused')}
+                        selected={activeTestKpi === 'paused'}
+                    />
+                    <KpiFilterCard
+                        label="Archived"
+                        value={archivedPlans}
+                        sparkline={testTrends.archived}
+                        sparklineDomain={centeredSparklineDomain(testTrends.archived)}
+                        onClick={() => toggleTestKpi('archived')}
+                        selected={activeTestKpi === 'archived'}
+                    />
                 </div>
 
                 {/* Filter bar (Status / Last Result / Frequency / Due) +

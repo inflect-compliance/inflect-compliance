@@ -1875,6 +1875,11 @@ model ComplianceSnapshot {
   risksMedium     Int @default(0)
   risksHigh       Int @default(0)
   risksCritical   Int @default(0)
+  // KPI-card metrics. NULLABLE (not @default) so pre-existence snapshot rows
+  // read NULL ("no data, don't plot") instead of a false 0 — forward-only
+  // fill, no backfill. See src/lib/charts/kpi-trends.ts.
+  risksAvgScore      Float?
+  risksOverdueReview Int?
 
   // ── Evidence ──
   evidenceTotal      Int @default(0)
@@ -1909,6 +1914,14 @@ model ComplianceSnapshot {
   // Status/criticality counts for the KPI cards (nullable forward-only fill).
   vendorsActive   Int?
   vendorsCritical Int?
+
+  // ── Test plans ──
+  // `testPlansTotal` anchors the trim (@default(0), like every other total);
+  // the status buckets are nullable forward-only fill. See kpi-trends.ts.
+  testPlansTotal    Int @default(0)
+  testPlansActive   Int?
+  testPlansPaused   Int?
+  testPlansArchived Int?
 
   // ── Assets ──
   assetsTotal           Int @default(0)

@@ -13,7 +13,7 @@ import { ownerDisplayName } from '@/lib/owner-display';
 import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
 import { UserCombobox } from '@/components/ui/user-combobox';
 import { Combobox } from '@/components/ui/combobox';
-import { useKpiTrends, buildKpiSparklines, centeredSparklineDomain } from '@/lib/charts/kpi-trends';
+import { useKpiTrends, buildKpiSparklines, buildKpiSparklineNullable, centeredSparklineDomain } from '@/lib/charts/kpi-trends';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import type { CappedList } from '@/lib/list-backfill-cap';
 import { TruncationBanner } from '@/components/ui/TruncationBanner';
@@ -506,18 +506,22 @@ function RisksPageInner({
     // guardrail-ignore: KPI count across the loaded page, not a refilter.
     const overdueRisks = now ? risks.filter(r => r.nextReviewAt && new Date(r.nextReviewAt) < now) : [];
 
-    // Canonical KPI-card sparklines (shared hook). total + open have daily
-    // snapshot series; avgScore + overdue have none, so those cards stay
-    // value-only (no fake line).
+    // Canonical KPI-card sparklines (shared hook). total + open are always-
+    // present series; avgScore + overdue are forward-only nullable columns
+    // (PR3) — empty until history accrues, never a fake ramp.
     const trendsQuery = useKpiTrends(tenantSlug);
-    const riskTrends = useMemo(
-        () =>
-            buildKpiSparklines(trendsQuery.data?.dataPoints, (d) => d.risksTotal, {
-                total: (d) => d.risksTotal,
-                open: (d) => d.risksOpen,
-            }),
-        [trendsQuery.data],
-    );
+    const riskTrends = useMemo(() => {
+        const points = trendsQuery.data?.dataPoints;
+        const base = buildKpiSparklines(points, (d) => d.risksTotal, {
+            total: (d) => d.risksTotal,
+            open: (d) => d.risksOpen,
+        });
+        return {
+            ...base,
+            avgScore: buildKpiSparklineNullable(points, (d) => d.risksAvgScore),
+            overdue: buildKpiSparklineNullable(points, (d) => d.risksOverdueReview),
+        };
+    }, [trendsQuery.data]);
 
     // R23-PR-B — Typed KPI definitions consumed by useKpiFilter. The
     // hook derives the active card from current filter state, so the
@@ -1039,7 +1043,11 @@ function RisksPageInner({
                             }
                         > = {
                             total: { value: total, kpi: 'total', sparkline: riskTrends.total },
-                            avgScore: { value: avgScore, tone: 'attention' },
+                            avgScore: {
+                                value: avgScore,
+                                tone: 'attention',
+                                sparkline: riskTrends.avgScore,
+                            },
                             open: {
                                 value: openCount,
                                 tone: 'success',
@@ -1052,6 +1060,7 @@ function RisksPageInner({
                                     overdueRisks.length > 0
                                         ? 'critical'
                                         : 'success',
+                                sparkline: riskTrends.overdue,
                             },
                         };
                         const c = cfg[card.id];
