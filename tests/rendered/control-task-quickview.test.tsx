@@ -1,11 +1,13 @@
 /**
- * Controls PR-2 — control + task quick-view panels.
+ * Controls PR-2/PR-4 — control + task quick-view panels.
  *
  * ControlQuickView renders a condensed control summary (from row data, no
- * fetch) + a lazy task list; clicking a task fires onTaskClick. TaskQuickView
- * renders from the passed task object with back + close + full-view affordances.
+ * fetch). Tasks are NOT listed in the panel — they live inline in the table
+ * (ControlTaskRows); clicking an inline task fires onTaskClick, which opens the
+ * task quick-view. TaskQuickView renders from the passed task object with
+ * back + close + full-view affordances.
  */
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import * as React from "react";
 
 // Tenant href hook → identity-ish so links render.
@@ -14,6 +16,7 @@ jest.mock("@/lib/tenant-context-provider", () => ({
 }));
 
 import { ControlQuickView } from "@/app/t/[tenantSlug]/(app)/controls/ControlQuickView";
+import { ControlTaskRows } from "@/app/t/[tenantSlug]/(app)/controls/ControlTaskRows";
 import { TaskQuickView } from "@/app/t/[tenantSlug]/(app)/controls/TaskQuickView";
 
 const CONTROL = {
@@ -38,22 +41,8 @@ const TASK = {
 };
 
 describe("ControlQuickView", () => {
-    beforeEach(() => {
-        global.fetch = jest.fn(async () => ({
-            ok: true,
-            json: async () => [TASK],
-        })) as unknown as typeof fetch;
-    });
-
     it("renders the control summary + full-view link", () => {
-        render(
-            <ControlQuickView
-                tenantSlug="acme"
-                control={CONTROL}
-                onClose={jest.fn()}
-                onTaskClick={jest.fn()}
-            />,
-        );
+        render(<ControlQuickView control={CONTROL} onClose={jest.fn()} />);
         expect(screen.getByTestId("control-quickview")).toBeInTheDocument();
         // a11y — the panel is an announced region (PR-3).
         expect(
@@ -68,27 +57,34 @@ describe("ControlQuickView", () => {
         );
     });
 
+    it("does NOT list tasks in the panel — they live inline in the table", () => {
+        render(<ControlQuickView control={CONTROL} onClose={jest.fn()} />);
+        // The task title belongs to ControlTaskRows (the table), never the panel.
+        expect(screen.queryByText("Implement SSO enforcement")).not.toBeInTheDocument();
+    });
+
     it("close button fires onClose", () => {
         const onClose = jest.fn();
-        render(
-            <ControlQuickView
-                tenantSlug="acme"
-                control={CONTROL}
-                onClose={onClose}
-                onTaskClick={jest.fn()}
-            />,
-        );
+        render(<ControlQuickView control={CONTROL} onClose={onClose} />);
         fireEvent.click(screen.getByRole("button", { name: /close quick view/i }));
         expect(onClose).toHaveBeenCalled();
+    });
+});
+
+describe("ControlTaskRows (inline table task-click → quick-view)", () => {
+    beforeEach(() => {
+        global.fetch = jest.fn(async () => ({
+            ok: true,
+            json: async () => [TASK],
+        })) as unknown as typeof fetch;
     });
 
     it("clicking a lazy-loaded task fires onTaskClick with the task", async () => {
         const onTaskClick = jest.fn();
         render(
-            <ControlQuickView
+            <ControlTaskRows
                 tenantSlug="acme"
-                control={CONTROL}
-                onClose={jest.fn()}
+                controlId="c1"
                 onTaskClick={onTaskClick}
             />,
         );
