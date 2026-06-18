@@ -101,7 +101,7 @@ export function BulkActionBar({
                 options={options}
                 placeholder="Choose action..."
                 matchTriggerWidth
-                buttonProps={{ className: 'text-sm' }}
+                buttonProps={{ size: 'sm' }}
             />
             {active?.renderInput?.({ value, setValue, setLabel })}
             <IconAction
@@ -110,7 +110,11 @@ export function BulkActionBar({
                 loading={applying}
                 onClick={() => onApply(action, value, label)}
                 id="bulk-apply-btn"
-                icon={<AppIcon name="checkCircle" size={16} />}
+                // One size smaller than the canonical icon button (h-9 → h-8,
+                // sm-equivalent square + sm icon rhythm) so it sits a notch
+                // below the row's text controls.
+                className="h-8 w-8 [&_svg]:size-3.5"
+                icon={<AppIcon name="checkCircle" size={14} />}
                 label="Apply"
             />
         </div>
