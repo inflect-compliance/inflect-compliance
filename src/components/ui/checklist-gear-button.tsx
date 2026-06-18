@@ -89,7 +89,7 @@ export function ChecklistGearButton({
             content={
                 <ScrollContainer className="max-h-[50vh]">
                     <Command tabIndex={0} loop>
-                        <Command.List className="flex w-screen flex-col gap-0.5 p-1 text-sm focus-visible:outline-none sm:w-auto sm:min-w-[200px]">
+                        <Command.List className="flex w-screen max-w-[calc(100vw-0.5rem)] flex-col gap-0.5 p-1 text-sm focus-visible:outline-none sm:w-auto sm:min-w-[200px]">
                             {items.map((item) => (
                                 <Command.Item
                                     key={item.id}

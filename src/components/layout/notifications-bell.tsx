@@ -283,7 +283,7 @@ export function NotificationsBell() {
             align="end"
             side="bottom"
             sideOffset={8}
-            popoverContentClassName="w-[340px] p-1"
+            popoverContentClassName="w-[340px] max-w-[calc(100vw-1rem)] p-1"
             content={
                 <Popover.Menu aria-label="Notifications">
                     {/* Header row — count + mark-all-read action */}

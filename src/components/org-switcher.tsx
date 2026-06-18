@@ -163,7 +163,7 @@ export function OrgSwitcher({
             align="start"
             side="bottom"
             sideOffset={6}
-            popoverContentClassName="w-[260px] p-1"
+            popoverContentClassName="w-[260px] max-w-[calc(100vw-1rem)] p-1"
             content={
                 <Popover.Menu aria-label="Switch context">
                     <p className="px-2.5 pt-1.5 pb-1 text-[10px] font-semibold uppercase tracking-widest text-content-subtle">
