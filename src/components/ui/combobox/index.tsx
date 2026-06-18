@@ -494,6 +494,10 @@ export function Combobox<
                     e.stopPropagation();
                 }}
                 popoverContentClassName={cn(
+                    // Mobile overflow guard — clamp the dropdown to the viewport
+                    // so a long-option list never forces horizontal scroll on a
+                    // phone. sm+ keeps matching the trigger width as before.
+                    "max-w-[calc(100vw-1rem)]",
                     matchTriggerWidth &&
                         "sm:w-[var(--radix-popover-trigger-width)]",
                     popoverProps?.contentClassName,

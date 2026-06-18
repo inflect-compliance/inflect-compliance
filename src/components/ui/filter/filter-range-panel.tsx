@@ -331,7 +331,7 @@ function FilterRangeContent({
 
   return (
     <div
-      className="flex w-full min-w-[282px] max-w-[282px] flex-col gap-compact p-2"
+      className="flex w-full flex-col gap-compact p-2 sm:min-w-[282px] sm:max-w-[282px]"
       onKeyDownCapture={(e) => {
         if (e.key !== "Backspace" && e.key !== "Delete") {
           return;
