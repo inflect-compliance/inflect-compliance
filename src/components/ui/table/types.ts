@@ -73,6 +73,15 @@ type BaseTableProps<T> = {
   // Misc. row props
   onRowClick?: (row: Row<T>, e: MouseEvent) => void;
   onRowAuxClick?: (row: Row<T>, e: MouseEvent) => void;
+  /**
+   * Expandable rows. When `getRowCanExpand(row)` returns true the row shows a
+   * leading chevron; toggling it renders `renderExpandedRow(row)` as a
+   * full-width sub-row beneath it (the canonical tanstack expanding
+   * sub-component). Default OFF — without `renderExpandedRow` no chevron
+   * renders and behaviour is unchanged, so every existing table is unaffected.
+   */
+  getRowCanExpand?: (row: Row<T>) => boolean;
+  renderExpandedRow?: (row: Row<T>) => ReactNode;
   rowProps?:
     | HTMLAttributes<HTMLTableRowElement>
     | ((row: Row<T>) => HTMLAttributes<HTMLTableRowElement>);

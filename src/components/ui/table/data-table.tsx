@@ -112,6 +112,16 @@ export interface DataTableProps<T> {
   /** Unique row ID extractor (required for selection). */
   getRowId?: (row: T) => string;
 
+  /**
+   * Expandable rows. `getRowCanExpand(row)` → true shows a leading chevron;
+   * toggling renders `renderExpandedRow(row)` as a full-width sub-row beneath
+   * it. Default off (no chevron / no behaviour change). Not supported in the
+   * virtualized branch — a consumer using expansion should keep the table
+   * non-virtualized (`virtualize={false}` or under the threshold).
+   */
+  getRowCanExpand?: (row: Row<T>) => boolean;
+  renderExpandedRow?: (row: Row<T>) => React.ReactNode;
+
   // ── Selection ──
 
   /** Callback when selected rows change. Enables selection checkboxes. */
@@ -298,6 +308,8 @@ export function DataTable<T>({
   onRowClick,
   onRowPrefetch,
   getRowId,
+  getRowCanExpand,
+  renderExpandedRow,
   onRowSelectionChange,
   selectedRows,
   selectionControls,
@@ -395,6 +407,8 @@ export function DataTable<T>({
         onSortChange,
         onRowClick,
         getRowId,
+        getRowCanExpand,
+        renderExpandedRow,
         onRowSelectionChange: effectiveOnRowSelectionChange,
         selectedRows: effectiveSelectedRows,
         selectionControls: effectiveSelectionControls,
@@ -421,6 +435,8 @@ export function DataTable<T>({
         onSortChange,
         onRowClick,
         getRowId,
+        getRowCanExpand,
+        renderExpandedRow,
         onRowSelectionChange: effectiveOnRowSelectionChange,
         selectedRows: effectiveSelectedRows,
         selectionControls: effectiveSelectionControls,

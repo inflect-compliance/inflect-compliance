@@ -10,8 +10,10 @@ import { cn, deepEqual, isClickOnInteractiveChild } from "./table-utils";
 import {
   Column,
   ColumnDef,
+  type ExpandedState,
   flexRender,
   getCoreRowModel,
+  getExpandedRowModel,
   Row,
   RowSelectionState,
   Table as TableType,
@@ -22,6 +24,7 @@ import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import {
   CSSProperties,
+  Fragment,
   HTMLAttributes,
   memo,
   MouseEvent,
@@ -129,6 +132,7 @@ export function useTable<T extends any>(
     pagination,
     onPaginationChange,
     getRowId,
+    getRowCanExpand,
     enableColumnResizing = false,
     columnResizeMode = "onChange",
   } = props;
@@ -147,6 +151,10 @@ export function useTable<T extends any>(
   const [rowSelection, setRowSelection] = useState<RowSelectionState>(
     props.selectedRows ?? {},
   );
+
+  // Expandable rows (default off — `getRowCanExpand` undefined → no row
+  // expands, no chevron, no behaviour change for existing tables).
+  const [expanded, setExpanded] = useState<ExpandedState>({});
 
   const lastSelectedRowId = useRef<string | null>(null);
 
@@ -397,6 +405,9 @@ export function useTable<T extends any>(
       ...defaultColumn,
     },
     getCoreRowModel: getCoreRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
+    getRowCanExpand,
+    onExpandedChange: setExpanded,
     onPaginationChange,
     onColumnVisibilityChange: (visibility) => setColumnVisibility(visibility),
     onRowSelectionChange: setRowSelection,
@@ -405,6 +416,7 @@ export function useTable<T extends any>(
       columnVisibility,
       columnPinning: { left: [], right: [], ...columnPinning },
       rowSelection,
+      expanded,
     },
     manualPagination: true,
     autoResetPageIndex: false,
@@ -643,6 +655,7 @@ export function Table<T>({
   rowProps,
   rowCount,
   children,
+  renderExpandedRow,
   enableColumnResizing = false,
 }: TableProps<T>) {
   const selectionEnabled = selectionEnabledProp ?? true;
@@ -1067,8 +1080,8 @@ export function Table<T>({
                       isSelected={row.getIsSelected()}
                     />
                   ) : (
+                    <Fragment key={row.id}>
                     <tr
-                      key={row.id}
                       className={cn(
                         "group/row",
                         // Each row is a snap point — combined with
@@ -1142,6 +1155,12 @@ export function Table<T>({
                         );
                         const disableTruncate =
                           !!cell.column.columnDef.meta?.disableTruncate;
+                        // Expand chevron rides the first content cell when the
+                        // row can expand (renderExpandedRow opt-in only).
+                        const showExpandChevron =
+                          !!renderExpandedRow &&
+                          cell.column.id === firstContentColumnId &&
+                          row.getCanExpand();
 
                         return (
                           <td
@@ -1199,6 +1218,29 @@ export function Table<T>({
                                       : "overflow-hidden truncate"),
                                 )}
                               >
+                                {showExpandChevron && (
+                                  <button
+                                    type="button"
+                                    aria-label={
+                                      row.getIsExpanded() ? "Collapse row" : "Expand row"
+                                    }
+                                    aria-expanded={row.getIsExpanded()}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      row.toggleExpanded();
+                                    }}
+                                    className="mr-1.5 -ml-1 flex size-5 shrink-0 items-center justify-center rounded text-content-muted transition-colors hover:bg-bg-muted hover:text-content-emphasis"
+                                  >
+                                    <ChevronRight
+                                      width={14}
+                                      height={14}
+                                      className={cn(
+                                        "transition-transform duration-150",
+                                        row.getIsExpanded() && "rotate-90",
+                                      )}
+                                    />
+                                  </button>
+                                )}
                                 <div
                                   className={cn(
                                     disableTruncate
@@ -1224,6 +1266,17 @@ export function Table<T>({
                         );
                       })}
                     </tr>
+                    {/* Expandable sub-row — full-width slot under the row.
+                        Only when the consumer opts in (renderExpandedRow) and
+                        the row is expanded; default tables never reach here. */}
+                    {renderExpandedRow && row.getIsExpanded() && (
+                      <tr data-expanded-subrow={row.id} className="bg-bg-subtle/40">
+                        <td colSpan={row.getVisibleCells().length} className="p-0">
+                          {renderExpandedRow(row)}
+                        </td>
+                      </tr>
+                    )}
+                    </Fragment>
                   );
                 })}
               </tbody>
