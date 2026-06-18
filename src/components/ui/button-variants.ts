@@ -414,6 +414,12 @@ export const buttonVariants = cva(
     // mirrors the tracking ladder: dense UI sizes stay restrained,
     // featured sizes climb in confidence. See the size block below.
     "text-sm transition-all duration-150",
+    // Mobile touch target (WCAG 2.5.5 / Apple HIG). On COARSE pointers
+    // (touch) every button gets a 44px minimum height regardless of its
+    // dense desktop size (h-7..h-10) — min-height only raises, so the
+    // fine-pointer/desktop density is untouched. Icon-only buttons also
+    // get a 44px min-width on the `icon` size below.
+    "pointer-coarse:min-h-11",
     // B3 — pill canonicalisation. Pre-B3 the base radius was
     // `rounded-[8px]` (R22 calibration). The Audit page's
     // Frameworks button shipped with `rounded-full` via a
@@ -635,7 +641,7 @@ export const buttonVariants = cva(
         // height as md so it lines up beside text buttons in the
         // detail-page header row. Callers MUST supply
         // `aria-label="…"` (lint enforces it for accessibility).
-        icon: "h-9 w-9 p-0 rounded-md tracking-normal font-medium [&_svg]:size-4",
+        icon: "h-9 w-9 p-0 rounded-md tracking-normal font-medium [&_svg]:size-4 pointer-coarse:min-w-11",
       },
     },
     defaultVariants: {

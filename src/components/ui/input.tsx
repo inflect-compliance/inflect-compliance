@@ -49,6 +49,9 @@ export const inputVariants = cva(
     [
         // R22-PR-A — radius mirror of button-variants.ts (12→10px).
         "w-full rounded-[8px] text-sm",
+        // Mobile touch target — 44px min height on coarse pointers (min-height
+        // only raises, so the dense desktop sizes h-8/9/10 are unchanged).
+        "pointer-coarse:min-h-11",
         "bg-bg-default text-content-emphasis placeholder-content-subtle",
         "focus:outline-none focus-visible:outline-none",
         "border border-[var(--ctrl-edge-rest)]",
@@ -75,6 +78,22 @@ export const inputVariants = cva(
 );
 
 // ─── Props ──────────────────────────────────────────────────────────
+
+/**
+ * Maps an HTML input `type` to the `inputMode` that brings up the right
+ * mobile keyboard. Used as the default when a caller doesn't pass an
+ * explicit `inputMode`.
+ */
+const TYPE_TO_INPUTMODE: Record<
+    string,
+    React.HTMLAttributes<HTMLInputElement>["inputMode"]
+> = {
+    email: "email",
+    tel: "tel",
+    number: "numeric",
+    search: "search",
+    url: "url",
+};
 
 type CvaInputProps = VariantProps<typeof inputVariants>;
 
@@ -110,6 +129,13 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         const isPassword = type === "password";
         const effectiveType = isPassword && isPasswordVisible ? "text" : type;
 
+        // Mobile keyboard affordance — derive `inputMode` from `type` when the
+        // caller hasn't set one, so a correctly-typed field (email/tel/number/
+        // search/url) brings up the right on-screen keyboard. Explicit
+        // `inputMode` on props always wins.
+        const derivedInputMode = TYPE_TO_INPUTMODE[type ?? ""];
+        const inputMode = props.inputMode ?? derivedInputMode;
+
         const hasError = Boolean(error);
         const effectiveInvalid = invalid || hasError;
 
@@ -127,6 +153,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
                 <div className="relative flex">
                     <input
                         type={effectiveType}
+                        inputMode={inputMode}
                         id={id}
                         ref={ref}
                         aria-invalid={effectiveInvalid || undefined}
