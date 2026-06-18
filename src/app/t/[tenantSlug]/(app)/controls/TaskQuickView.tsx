@@ -2,9 +2,10 @@
 
 /**
  * Controls PR-2 — task quick-view shown in the side panel when a task is
- * clicked (from a control's inline task rows or the control quick-view's Tasks
- * section). Renders from the task object already in hand (no fetch), with a
- * back-to-control affordance and a "Full view" link to the task page.
+ * clicked from a control's inline task rows in the table (tasks are never
+ * listed in the control quick-view panel itself). Renders from the task object
+ * already in hand (no fetch), with a back-to-control affordance and a
+ * "Full view" link to the task page.
  */
 import Link from "next/link";
 import { useTenantHref } from "@/lib/tenant-context-provider";

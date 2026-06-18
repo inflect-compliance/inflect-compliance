@@ -9,6 +9,9 @@
  *   - double-click the row → full detail page (onRowClick → /controls/:id)
  *   - a control's tasks expand inline (PR-1) and clicking a task → task
  *     quick-view; both quick-views render in the responsive AsidePanel
+ *   - tasks are listed ONLY inline in the table, never inside the control
+ *     quick-view panel (PR-4 product decision: tasks live below the control
+ *     in the table, not in the sidebar)
  *   - Escape closes the quick-view (≥xl rail); Sheet owns it < xl
  */
 import * as fs from "node:fs";
@@ -46,6 +49,15 @@ describe("Controls quick-view interaction (TidalControl)", () => {
         expect(controls).toMatch(/<ControlQuickView/);
         expect(controls).toMatch(/<TaskQuickView/);
         expect(controls).toMatch(/onTaskClick=\{setSelectedTask\}/);
+    });
+
+    it("tasks live ONLY inline in the table, never in the control quick-view panel", () => {
+        // The inline rows (renderExpandedRow) own the task list + click target.
+        expect(controls).toMatch(/renderExpandedRow:\s*renderControlTaskRows/);
+        // The control quick-view panel renders no task list — it must not
+        // import or mount <ControlTaskRows> (PR-4: tasks belong in the table).
+        expect(quick).not.toMatch(/ControlTaskRows/);
+        expect(quick).not.toMatch(/onTaskClick/);
     });
 
     it("the quick-view surfaces in the responsive AsidePanel (openOnMount + onClose)", () => {

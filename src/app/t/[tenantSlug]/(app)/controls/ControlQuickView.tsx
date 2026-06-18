@@ -3,8 +3,10 @@
 /**
  * Controls PR-2 — control quick-view shown in the side panel when a control
  * NAME is clicked (TidalControl pattern). Renders a condensed summary from the
- * row data already in hand (no fetch) + the control's tasks (lazy, via
- * <ControlTaskRows>); clicking a task swaps the panel to the task quick-view.
+ * row data already in hand (no fetch). The control's tasks are NOT listed here:
+ * they live inline in the table (expand the row), per the product decision that
+ * tasks appear below the control in the table, not in the sidebar. A task
+ * clicked in the table opens the task quick-view in this same panel.
  * "Full view" links to the complete detail page.
  */
 import Link from "next/link";
@@ -12,7 +14,6 @@ import { useTenantHref } from "@/lib/tenant-context-provider";
 import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
 import { Heading } from "@/components/ui/typography";
 import { Xmark } from "@/components/ui/icons/nucleo";
-import { ControlTaskRows, type ControlTask } from "./ControlTaskRows";
 
 export interface QuickViewControl {
     id: string;
@@ -35,15 +36,11 @@ const CONTROL_STATUS_BADGE: Record<string, StatusBadgeVariant> = {
 };
 
 export function ControlQuickView({
-    tenantSlug,
     control,
     onClose,
-    onTaskClick,
 }: {
-    tenantSlug: string;
     control: QuickViewControl;
     onClose: () => void;
-    onTaskClick: (task: ControlTask) => void;
 }) {
     const tenantHref = useTenantHref();
     const code = control.code || control.annexId;
@@ -124,17 +121,6 @@ export function ControlQuickView({
                     </div>
                 )}
             </dl>
-
-            <div className="space-y-1">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-content-subtle">
-                    Tasks
-                </p>
-                <ControlTaskRows
-                    tenantSlug={tenantSlug}
-                    controlId={control.id}
-                    onTaskClick={onTaskClick}
-                />
-            </div>
         </div>
     );
 }

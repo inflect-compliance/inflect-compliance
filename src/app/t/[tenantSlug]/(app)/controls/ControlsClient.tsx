@@ -1124,12 +1124,7 @@ function ControlsPageInner({
             openOnMount
             onClose={closeQuickView}
         >
-            <ControlQuickView
-                tenantSlug={tenantSlug}
-                control={selectedControl}
-                onClose={closeQuickView}
-                onTaskClick={setSelectedTask}
-            />
+            <ControlQuickView control={selectedControl} onClose={closeQuickView} />
         </AsidePanel>
     ) : null;
 
