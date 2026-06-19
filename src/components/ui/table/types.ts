@@ -82,6 +82,18 @@ type BaseTableProps<T> = {
    */
   getRowCanExpand?: (row: Row<T>) => boolean;
   renderExpandedRow?: (row: Row<T>) => ReactNode;
+  /**
+   * Aligned expandable sub-rows. Alternative to `renderExpandedRow` (the
+   * full-width colSpan slot): the consumer returns real `<tr>`/`<td>` rows
+   * rendered as direct `<tbody>` siblings, so the browser's table layout
+   * aligns their cells with the parent COLUMNS. `columnIds` is the ordered
+   * list of currently-visible column ids — render one `<td>` per id so the
+   * sub-row cells land under the matching columns (empty `<td>` for columns
+   * a sub-row has no value for). The chevron shows when either this or
+   * `renderExpandedRow` is set. Used by Controls to nest task rows that align
+   * on category / status / owner / evidence.
+   */
+  renderAlignedSubRows?: (row: Row<T>, columnIds: string[]) => ReactNode;
   rowProps?:
     | HTMLAttributes<HTMLTableRowElement>
     | ((row: Row<T>) => HTMLAttributes<HTMLTableRowElement>);

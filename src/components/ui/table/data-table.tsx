@@ -121,6 +121,13 @@ export interface DataTableProps<T> {
    */
   getRowCanExpand?: (row: Row<T>) => boolean;
   renderExpandedRow?: (row: Row<T>) => React.ReactNode;
+  /**
+   * Aligned expandable sub-rows — real `<tr>`/`<td>` rows whose cells align
+   * with the parent columns (one `<td>` per visible column id). See the
+   * `BaseTableProps` doc. Forces the non-virtualized `<Table>` (like
+   * `renderExpandedRow`).
+   */
+  renderAlignedSubRows?: (row: Row<T>, columnIds: string[]) => React.ReactNode;
 
   // ── Selection ──
 
@@ -310,6 +317,7 @@ export function DataTable<T>({
   getRowId,
   getRowCanExpand,
   renderExpandedRow,
+  renderAlignedSubRows,
   onRowSelectionChange,
   selectedRows,
   selectionControls,
@@ -389,6 +397,10 @@ export function DataTable<T>({
     data.length > 0 &&
     !error &&
     !loading &&
+    // Expandable rows (either mode) need the real <Table> — the virtualized
+    // grid can't host colSpan slots or aligned sub-rows.
+    !renderExpandedRow &&
+    !renderAlignedSubRows &&
     !(!!pagination && !!onPaginationChange && rowCount !== undefined);
   const resizingEnabled = enableColumnResizing && !willVirtualizeEarly;
 
@@ -409,6 +421,7 @@ export function DataTable<T>({
         getRowId,
         getRowCanExpand,
         renderExpandedRow,
+        renderAlignedSubRows,
         onRowSelectionChange: effectiveOnRowSelectionChange,
         selectedRows: effectiveSelectedRows,
         selectionControls: effectiveSelectionControls,
@@ -437,6 +450,7 @@ export function DataTable<T>({
         getRowId,
         getRowCanExpand,
         renderExpandedRow,
+        renderAlignedSubRows,
         onRowSelectionChange: effectiveOnRowSelectionChange,
         selectedRows: effectiveSelectedRows,
         selectionControls: effectiveSelectionControls,

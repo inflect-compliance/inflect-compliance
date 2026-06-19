@@ -624,16 +624,41 @@ function ControlsPageInner({
         scope: 'global',
         description: 'Close the control quick view',
     });
-    const renderControlTaskRows = useCallback(
-        (row: Row<ControlListItem>) => (
+    // Evidence cell renderer shared with the inline task sub-rows so their
+    // Evidence column matches the control row's exactly (same Paperclip glyph,
+    // size, and count colouring). Kept here because the lucide import lives on
+    // this page, not in ControlTaskRows.
+    const renderTaskEvidence = useCallback(
+        (n: number) => (
+            <span
+                className={`inline-flex items-center gap-1 text-xs ${n > 0 ? 'text-content-emphasis' : 'text-content-subtle'}`}
+            >
+                <Paperclip
+                    size={12}
+                    className={n > 0 ? 'text-content-success' : 'text-content-subtle'}
+                    aria-hidden
+                />
+                {n}
+            </span>
+        ),
+        [],
+    );
+    // Aligned task sub-rows: real <tr>/<td> rows whose cells line up under the
+    // parent CONTROL columns (category / status / owner / evidence). The
+    // inherited category uses the SAME `categorizeControl` value the Category
+    // column shows.
+    const renderControlTaskSubRows = useCallback(
+        (row: Row<ControlListItem>, columnIds: string[]) => (
             <ControlTaskRows
                 tenantSlug={tenantSlug}
                 controlId={row.original.id}
-                controlCategory={row.original.category}
+                controlCategory={categorizeControl(row.original)?.category ?? null}
+                columnIds={columnIds}
+                renderEvidence={renderTaskEvidence}
                 onTaskClick={setSelectedTask}
             />
         ),
-        [tenantSlug],
+        [tenantSlug, renderTaskEvidence],
     );
     const handleRowSelectionChange = useCallback(
         (rows: Row<ControlListItem>[]) =>
@@ -1339,7 +1364,7 @@ function ControlsPageInner({
                 // depend on the standard <table> layout.
                 virtualize: false,
                 getRowCanExpand: getControlCanExpand,
-                renderExpandedRow: renderControlTaskRows,
+                renderAlignedSubRows: renderControlTaskSubRows,
                 onRowClick: handleRowClick,
                 onRowPrefetch: (row) => router.prefetch(tenantHref(`/controls/${row.original.id}`)),
                 emptyState: hasActive ? (
