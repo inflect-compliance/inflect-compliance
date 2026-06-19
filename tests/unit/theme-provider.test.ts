@@ -14,8 +14,9 @@
  *     `useTheme()`.
  *   - globals.css legacy `--bg-primary` / `--brand` aliases resolve to the
  *     canonical semantic tokens.
- *   - layout.tsx seeds `data-theme="dark"` so SSR and first-client-paint
- *     agree on the baseline palette.
+ *   - layout.tsx seeds `data-theme` from the persisted theme COOKIE so SSR
+ *     and first paint agree without a client-script race (flash-proof);
+ *     `dark` is only the no-cookie first-visit fallback.
  */
 
 import * as fs from 'fs';
@@ -41,12 +42,21 @@ describe('ThemeProvider — source contract', () => {
         expect(src).toMatch(/STORAGE_KEY\s*=\s*['"]inflect:theme['"]/);
     });
 
+    it('also persists to a cookie so SSR can render the theme flash-free', () => {
+        // The cookie (server-readable) is what makes the layout flash-proof;
+        // localStorage stays as a back-compat mirror.
+        expect(src).toMatch(/THEME_COOKIE\s*=\s*['"]inflect_theme['"]/);
+        expect(src).toMatch(/document\.cookie\s*=\s*`\$\{THEME_COOKIE\}=/);
+        expect(src).toMatch(/function persistTheme/);
+    });
+
     it('flips the html[data-theme] attribute (not a class) so tokens.css matches', () => {
         expect(src).toMatch(/ATTR\s*=\s*['"]data-theme['"]/);
         expect(src).toMatch(/setAttribute\(ATTR/);
     });
 
-    it('resolves initial theme in the documented order: storage → media → dark', () => {
+    it('resolves initial theme in the documented order: cookie → storage → media → dark', () => {
+        expect(src).toMatch(/inflect_theme=\(light\|dark\)/); // cookie read first
         expect(src).toMatch(/localStorage\.getItem\(STORAGE_KEY\)/);
         expect(src).toMatch(/prefers-color-scheme: light/);
         // Dark is the documented fallback.
@@ -99,9 +109,13 @@ describe('Providers wiring — ThemeProvider mounts inside the app shell', () =>
         expect(providers).toMatch(/<ThemeProvider\b/);
     });
 
-    it('root layout seeds data-theme="dark" for SSR / first paint', () => {
+    it('root layout seeds data-theme from the persisted cookie (dark fallback)', () => {
         const layout = read('src/app/layout.tsx');
-        expect(layout).toMatch(/data-theme=["']dark["']/);
+        // Flash-proof: SSR data-theme comes from the cookie, not a hardcoded
+        // value; `dark` is only the no-cookie (first-visit) fallback.
+        expect(layout).toMatch(/data-theme=\{initialTheme\}/);
+        expect(layout).toMatch(/cookies\(\)\)\.get\(THEME_COOKIE\)/);
+        expect(layout).toMatch(/:\s*['"]dark['"]/); // ternary fallback
     });
 });
 
