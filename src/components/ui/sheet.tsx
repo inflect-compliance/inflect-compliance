@@ -62,6 +62,14 @@ type SheetRootBaseProps = Omit<DialogProps, "direction" | "children"> & {
     title?: string;
     /** Supplemental description wired to `aria-describedby`. */
     description?: string;
+    /**
+     * Override the backdrop overlay className. Default dims + blurs the page
+     * behind the sheet. Pass a transparent class to keep the content behind
+     * visible (e.g. the AsidePanel's mobile fallback, which should not blur
+     * the table). The overlay element stays mounted either way so
+     * click-outside-to-close keeps working.
+     */
+    overlayClassName?: string;
 };
 
 export type SheetRootProps = SheetRootBaseProps &
@@ -77,6 +85,7 @@ function SheetRoot({
     size,
     title,
     description,
+    overlayClassName,
     ...rest
 }: SheetRootProps) {
     const { isMobile } = useMediaQuery();
@@ -112,7 +121,7 @@ function SheetRoot({
         <RootComponent {...rootProps}>
             <Drawer.Portal>
                 <Drawer.Overlay
-                    className="fixed inset-0 z-40 bg-bg-overlay backdrop-blur-sm"
+                    className={overlayClassName ?? "fixed inset-0 z-40 bg-bg-overlay backdrop-blur-sm"}
                     data-sheet-overlay
                 />
                 <Drawer.Content

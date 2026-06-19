@@ -95,19 +95,23 @@ describe('ControlsClient — EntityListPage adoption', () => {
         expect(source).toContain('new-control-btn');
     });
 
-    it('preserves the rich domain cell behaviour (status / applicability / quick-edit)', () => {
+    it('preserves the rich domain cell behaviour (status / applicability)', () => {
         // The point of the refactor: keep Inflect's domain richness.
-        // These ids are E2E-load-bearing.
+        // These ids are E2E-load-bearing. (The quick-edit pencil column was
+        // retired 2026-06 — editing now happens in the one-click side panel.)
         expect(source).toMatch(/status-pill-\$\{c\.id\}/);
         expect(source).toMatch(/applicability-pill-\$\{c\.id\}/);
-        expect(source).toMatch(/control-quick-edit-\$\{row\.original\.id\}/);
+        // Title is a one-click button into the editable panel (no edit pencil).
+        expect(source).toMatch(/control-title-\$\{row\.original\.id\}/);
+        expect(source).not.toMatch(/control-quick-edit-/);
     });
 
-    it('renders modals + sheet as children (page-state lives next to the page)', () => {
-        // Modals/sheets must sit at the page level, not nested into the
+    it('renders modals + editable side panels as children (page-state lives next to the page)', () => {
+        // Modals/panels must sit at the page level, not nested into the
         // shell — they own the page's state, not the shell's tree.
         expect(source).toContain('<NewControlModal');
-        expect(source).toContain('<ControlDetailSheet');
+        expect(source).toContain('<ControlEditPanel');
+        expect(source).toContain('<TaskEditPanel');
         // The justification modal was hosted here pre-2026-05-19;
         // it left when the inline-edit dropdowns were retired. The
         // justification flow now lives on the per-control detail

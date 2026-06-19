@@ -53,6 +53,7 @@ export default async function ControlsPage({
             permissions={ctx.permissions}
             appPermissions={{
                 controls: ctx.appPermissions.controls,
+                tasks: { edit: ctx.appPermissions.tasks.edit },
             }}
         />
     );
