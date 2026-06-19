@@ -17,10 +17,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 // imports — the bundle cost is negligible and the E2E suite becomes
 // deterministic.
 import { NewControlModal } from './NewControlModal';
-import { ControlDetailSheet } from './ControlDetailSheet';
 import { ControlTaskRows, type ControlTask } from './ControlTaskRows';
-import { ControlQuickView } from './ControlQuickView';
-import { TaskQuickView } from './TaskQuickView';
+// One-click on a control name / task opens an EDITABLE side panel (docked
+// AsidePanel, no overlay → table stays visible). These replace the read-only
+// quick-views AND the separate quick-edit Sheet (so no table blur, no edit btn).
+import { ControlEditPanel } from './ControlEditPanel';
+import { TaskEditPanel } from './TaskEditPanel';
 import { queryKeys } from '@/lib/queryKeys';
 import { ownerDisplayName } from '@/lib/owner-display';
 import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
@@ -155,6 +157,8 @@ interface ControlsClientProps {
     };
     appPermissions: {
         controls: { create: boolean; edit: boolean };
+        // The inline task edit panel needs the task write permission.
+        tasks: { edit: boolean };
     };
 }
 
@@ -211,9 +215,6 @@ function ControlsPageInner({
     const { state, search, clearAll, hasActive } = filterCtx;
 
     // Justification modal state
-
-    // Detail / edit Sheet state — selected control id or null for closed.
-    const [sheetControlId, setSheetControlId] = useState<string | null>(null);
 
     // Create-control modal state. Auto-opens when the page is reached via
     // `/controls?create=1` — the `/controls/new` page redirects here so
@@ -616,6 +617,11 @@ function ControlsPageInner({
         setSelectedTask(null);
         setSelectedControl(null);
     }, []);
+    // After an inline panel edit, refresh the controls list so the new
+    // name / owner / category show without a manual reload.
+    const handlePanelSaved = useCallback(() => {
+        queryClient.invalidateQueries({ queryKey: queryKeys.controls.all(tenantSlug) });
+    }, [queryClient, tenantSlug]);
     // PR-3 — Escape closes the quick-view on the docked rail (≥xl). On < xl the
     // Sheet owns Escape natively (the global-scope hook is skipped while an
     // overlay is mounted) and its dismiss fires onClose → closeQuickView too.
@@ -878,27 +884,6 @@ function ControlsPageInner({
                 );
             },
         },
-        {
-            id: 'quick-edit',
-            header: '',
-            enableHiding: false,
-            cell: ({ row }) => (
-                appPermissions.controls.edit ? (
-                    <button
-                        type="button"
-                        aria-label="Open control detail sheet"
-                        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-content-muted transition-colors hover:bg-bg-muted hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        data-testid={`control-quick-edit-${row.original.id}`}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setSheetControlId(row.original.id);
-                        }}
-                    >
-                        <AppIcon name="edit" size={14} />
-                    </button>
-                ) : null
-            ),
-        },
     ]), [appPermissions, tenantHref, taskStats, openControlQuickView]);
 
     // The bulk-action UI lives in the DataTable's header-row selection
@@ -1150,10 +1135,13 @@ function ControlsPageInner({
             openOnMount
             onClose={closeQuickView}
         >
-            <TaskQuickView
+            <TaskEditPanel
+                tenantSlug={tenantSlug}
                 task={selectedTask}
+                canWrite={appPermissions.tasks.edit}
                 onBack={() => setSelectedTask(null)}
                 onClose={closeQuickView}
+                onSaved={handlePanelSaved}
             />
         </AsidePanel>
     ) : selectedControl ? (
@@ -1164,7 +1152,13 @@ function ControlsPageInner({
             openOnMount
             onClose={closeQuickView}
         >
-            <ControlQuickView control={selectedControl} onClose={closeQuickView} />
+            <ControlEditPanel
+                tenantSlug={tenantSlug}
+                control={selectedControl}
+                canWrite={appPermissions.controls.edit}
+                onClose={closeQuickView}
+                onSaved={handlePanelSaved}
+            />
         </AsidePanel>
     ) : null;
 
@@ -1423,16 +1417,6 @@ function ControlsPageInner({
                 open={isCreateOpen}
                 setOpen={setIsCreateOpen}
                 tenantSlug={tenantSlug}
-            />
-
-            {/* Control Detail / Edit Sheet (Epic 54) */}
-            <ControlDetailSheet
-                controlId={sheetControlId}
-                setControlId={setSheetControlId}
-                tenantSlug={tenantSlug}
-                apiUrl={apiUrl}
-                tenantHref={tenantHref}
-                canWrite={appPermissions.controls.edit}
             />
 
         </EntityListPage>

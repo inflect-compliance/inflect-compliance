@@ -312,6 +312,9 @@ export function AsidePanel({
                     if (!next) onClose?.();
                 }}
                 title={title}
+                // The aside panel is a co-resident context surface, not a modal
+                // — keep the page (the table) visible behind it: no dim, no blur.
+                overlayClassName="fixed inset-0 z-40"
             >
                 <Sheet.Header>
                     <Sheet.Title>{title}</Sheet.Title>

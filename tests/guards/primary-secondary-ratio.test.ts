@@ -144,7 +144,13 @@ const MIN_SECONDARY_TO_PRIMARY_RATIO = 0.9;
 // selector + Remove affordances are secondary/ghost, so the page
 // adds exactly +1 primary. Measured = 124; ceiling at 125 keeps one
 // slot of headroom.
-const MAX_PRIMARY_COUNT = 125;
+//
+// 2026-06-19 — bumped 125 → 127 for the editable control + task side
+// panels (ControlEditPanel / TaskEditPanel). Each panel's "Save changes"
+// is a genuinely-earned primary (the panel IS the edit surface now), and
+// each pairs with a secondary "Cancel" + the evidence box's secondary
+// "Add evidence", so the secondary:primary ratio still rises. +2 primary.
+const MAX_PRIMARY_COUNT = 127;
 
 describe("primary:secondary ratio direction", () => {
     const counts = (() => {

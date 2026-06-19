@@ -22,20 +22,25 @@ test.describe('Epic 54 — CRUD/detail surfaces mount on demand', () => {
 
     let tenantSlug: string;
 
-    test('Controls — quick-edit sheet opens from the list and exposes a full-detail link', async ({ page }) => {
+    test('Controls — clicking a control name opens the editable side panel', async ({ page }) => {
         tenantSlug = await loginAndGetTenant(page);
         await safeGoto(page, `/t/${tenantSlug}/controls`);
-        // Wait for at least one control row to have a quick-edit icon.
-        const quickEdit = page.locator('[data-testid^="control-quick-edit-"]').first();
-        await quickEdit.waitFor({ state: 'visible', timeout: 15000 });
+        // One-click on a control NAME opens the editable side panel (replaces
+        // the old quick-edit pencil + edit Sheet; no table blur, no edit btn).
+        const title = page.locator('[data-testid^="control-title-"]').first();
+        await title.waitFor({ state: 'visible', timeout: 15000 });
 
-        await quickEdit.click();
+        await title.click();
 
-        await expect(page.locator('[data-testid="control-sheet-open-full"]')).toBeVisible({
+        // The panel is the EDIT surface (the edit form is present). `.first()`
+        // because <AsidePanel> renders its content in BOTH the docked rail and
+        // the Sheet body (openOnMount opens both) — the testid matches twice.
+        await expect(page.locator('[data-testid="control-edit-panel"]').first()).toBeVisible({
             timeout: 5000,
         });
+        await expect(page.locator('[data-testid="control-edit-form"]').first()).toBeVisible();
 
-        // Close the sheet so its focus-trap doesn't leak into the next test.
+        // Escape closes the panel so no focus-trap leaks into the next test.
         await page.keyboard.press('Escape');
     });
 
