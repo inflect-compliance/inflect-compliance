@@ -93,13 +93,16 @@ describe('Dashboard Widget Composition', () => {
 
     test('uses DonutChart component', () => {
         const content = readAll();
-        expect(content).toContain("from '@/components/ui/DonutChart'");
+        // PR3 perf: charts are lazy-loaded via next/dynamic — referenced by
+        // `import('@/components/ui/DonutChart')` rather than a static `from`.
+        // The render usage `<DonutChart …>` is unchanged.
+        expect(content).toMatch(/@\/components\/ui\/DonutChart['"]/);
         expect(content).toContain('<DonutChart');
     });
 
     test('uses TrendCard component (Epic 59 — TimeSeriesChart-backed)', () => {
         const content = readAll();
-        expect(content).toContain("from '@/components/ui/TrendCard'");
+        expect(content).toMatch(/@\/components\/ui\/TrendCard['"]/);
         expect(content).toContain('<TrendCard');
     });
 
@@ -254,11 +257,13 @@ describe('Dashboard Empty State Handling', () => {
     });
 
     test('trend fetch failure degrades gracefully (catch path on the server)', () => {
-        // Server file owns the try/catch since it's the one that
-        // calls the usecase. Match catch + null fallback explicitly.
+        // Server file owns the fallback since it's the one that calls the
+        // usecase. PR3 perf moved trends into the page's Promise.all batch, so
+        // the best-effort null fallback is now `.catch(() => null)` on the
+        // trends promise rather than a `trends = null` assignment in a
+        // try/catch. The graceful-degradation intent is unchanged.
         const content = readPage();
-        expect(content).toContain('catch');
-        expect(content).toMatch(/trends\s*=\s*null/);
+        expect(content).toMatch(/getComplianceTrends\([\s\S]*?\)\.catch\([\s\S]*?=>\s*null\)/);
     });
 });
 

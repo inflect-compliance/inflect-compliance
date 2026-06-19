@@ -53,6 +53,7 @@
 'use client';
 
 import * as React from 'react';
+import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import {
     ShieldCheck,
@@ -68,16 +69,33 @@ import OnboardingBanner from '@/components/onboarding/OnboardingBanner';
 import { Skeleton } from '@/components/ui/skeleton';
 import KpiCard from '@/components/ui/KpiCard';
 import ProgressCard from '@/components/ui/ProgressCard';
-import DonutChart from '@/components/ui/DonutChart';
-import { TrendCard } from '@/components/ui/TrendCard';
+// PR3 perf: lazy-load the heavy viz components (visx + motion) so their code
+// splits into separate chunks loaded after the KPI/hero shell. `ssr: false`
+// keeps the heavy chart JS off the server-render + initial critical path; a
+// sized skeleton fallback holds the layout to avoid CLS while the chunk loads.
+// KPI numbers / hero / next-best-action stay statically imported (instant).
+const DonutChart = dynamic(() => import('@/components/ui/DonutChart'), {
+    ssr: false,
+    loading: () => <Skeleton className="h-full w-full min-h-[200px] rounded-lg" />,
+});
+const TrendCard = dynamic(
+    () => import('@/components/ui/TrendCard').then((m) => m.TrendCard),
+    { ssr: false, loading: () => <Skeleton className="h-full w-full min-h-[120px] rounded-lg" /> },
+);
 // PR-A — switched from the auto-wrapping default StatusBreakdown
 // to the non-wrapping primitive so the Evidence Status card can
 // host the breakdown + a trend mini-chart inside ONE Card without
 // nested-cards (the legacy default-export wraps itself in
 // cardVariants()).
 import { StatusBreakdown } from '@/components/ui/status-breakdown';
-import { RiskMatrix } from '@/components/ui/RiskMatrix';
-import ExpiryCalendar from '@/components/ui/ExpiryCalendar';
+const RiskMatrix = dynamic(
+    () => import('@/components/ui/RiskMatrix').then((m) => m.RiskMatrix),
+    { ssr: false, loading: () => <Skeleton className="h-full w-full min-h-[280px] rounded-lg" /> },
+);
+const ExpiryCalendar = dynamic(() => import('@/components/ui/ExpiryCalendar'), {
+    ssr: false,
+    loading: () => <Skeleton className="h-full w-full min-h-[240px] rounded-lg" />,
+});
 import { cn } from '@/lib/cn';
 
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';

@@ -32,6 +32,7 @@ process.env.REDIS_URL = 'redis://localhost:6379';
 
 import {
     cachedListRead,
+    cachedDashboardRead,
     bumpEntityCacheVersion,
     stableStringify,
 } from '@/lib/cache/list-cache';
@@ -314,6 +315,63 @@ describe('cachedListRead — error propagation', () => {
         });
 
         expect(second).toEqual(['recovered']);
+        expect(loader).toHaveBeenCalledTimes(2);
+    });
+});
+
+describe('cachedDashboardRead — short-TTL dashboard cache (PR3)', () => {
+    it('runs the loader once on miss; second call serves from cache', async () => {
+        const ctx = fakeCtx('t-1', 'u-1');
+        const loader = jest.fn(async () => ({ stats: { risks: 7 } }));
+
+        const a = await cachedDashboardRead({ ctx, operation: 'executive', loader });
+        const b = await cachedDashboardRead({ ctx, operation: 'executive', loader });
+
+        expect(a).toEqual(b);
+        expect(loader).toHaveBeenCalledTimes(1);
+    });
+
+    it('keys by USER as well as tenant — the payload carries user-specific data', async () => {
+        // unreadNotifications is per-user; a tenant-only key would leak one
+        // user's counts to another. Same tenant, different user → independent
+        // entries (both loaders fire).
+        const ctxU1 = fakeCtx('t-shared', 'u-1');
+        const ctxU2 = fakeCtx('t-shared', 'u-2');
+        const loader1 = jest.fn(async () => ({ unread: 1 }));
+        const loader2 = jest.fn(async () => ({ unread: 2 }));
+
+        const r1 = await cachedDashboardRead({ ctx: ctxU1, operation: 'executive', loader: loader1 });
+        const r2 = await cachedDashboardRead({ ctx: ctxU2, operation: 'executive', loader: loader2 });
+
+        expect(loader1).toHaveBeenCalledTimes(1);
+        expect(loader2).toHaveBeenCalledTimes(1);
+        expect(r1).toEqual({ unread: 1 });
+        expect(r2).toEqual({ unread: 2 });
+    });
+
+    it('two tenants get independent entries even with the same userId + operation', async () => {
+        const ctxA = fakeCtx('t-A', 'u-x');
+        const ctxB = fakeCtx('t-B', 'u-x');
+        const loaderA = jest.fn(async () => ({ t: 'A' }));
+        const loaderB = jest.fn(async () => ({ t: 'B' }));
+
+        await cachedDashboardRead({ ctx: ctxA, operation: 'executive', loader: loaderA });
+        await cachedDashboardRead({ ctx: ctxB, operation: 'executive', loader: loaderB });
+
+        expect(loaderA).toHaveBeenCalledTimes(1);
+        expect(loaderB).toHaveBeenCalledTimes(1);
+    });
+
+    it('passes through to the loader every time when REDIS_URL is unset (dev/test)', async () => {
+        await disconnectRedis();
+        delete process.env.REDIS_URL;
+
+        const ctx = fakeCtx('t-1', 'u-1');
+        const loader = jest.fn(async () => ({ stats: 1 }));
+
+        await cachedDashboardRead({ ctx, operation: 'executive', loader });
+        await cachedDashboardRead({ ctx, operation: 'executive', loader });
+
         expect(loader).toHaveBeenCalledTimes(2);
     });
 });
