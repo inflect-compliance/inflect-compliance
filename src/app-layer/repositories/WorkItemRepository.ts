@@ -46,6 +46,10 @@ const taskListSelect = {
     updatedAt: true,
     assigneeUserId: true,
     assignee: { select: { id: true, name: true, email: true } },
+    // Linked-evidence count — surfaced on the Controls table's inline task
+    // rows (category/status/owner/evidence). One correlated subquery; the
+    // three removed above (links/comments/watchers) stay removed.
+    _count: { select: { evidence: true } },
 } as const;
 
 // ─── Task Repository ───

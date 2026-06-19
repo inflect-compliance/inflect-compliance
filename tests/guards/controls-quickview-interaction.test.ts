@@ -75,6 +75,33 @@ describe("Controls quick-view interaction (TidalControl)", () => {
         expect(aside).toMatch(/onClose\?\:/);
     });
 
+    it("the quick-view AsidePanels carry distinct keys so openOnMount re-fires (task click opens reliably)", () => {
+        // Regression guard: without distinct keys React reuses the in-place
+        // AsidePanel when switching browse→quick-view or control→task, so
+        // openOnMount (a mount-only effect) never fires and a clicked task
+        // silently fails to open the rail.
+        expect(controls).toMatch(/key="qv-task"/);
+        expect(controls).toMatch(/key="qv-control"/);
+    });
+
+    it("the control name button shows the hand cursor (cursor-pointer)", () => {
+        // The name is a <button> (default arrow cursor); Risk's <Link> gets the
+        // pointer for free. Match Risk by adding cursor-pointer to the name
+        // button's canonical className.
+        expect(controls).toMatch(/inline-block max-w-full cursor-pointer truncate/);
+    });
+
+    it("inline task rows are a cursor-pointer whole-row button + show category/owner/evidence", () => {
+        const taskRows = read("src/app/t/[tenantSlug]/(app)/controls/ControlTaskRows.tsx");
+        expect(taskRows).toMatch(/cursor-pointer/);
+        // Whole-row button (not just the title) carries the click + testid.
+        expect(taskRows).toMatch(/data-task-quickview=\{t\.id\}/);
+        // Inherited category + owner + evidence count are displayed.
+        expect(taskRows).toMatch(/controlCategory/);
+        expect(taskRows).toMatch(/_count\?\.evidence/);
+        expect(taskRows).toMatch(/evidence/);
+    });
+
     it("Escape closes the quick-view", () => {
         expect(controls).toMatch(/useKeyboardShortcut\(\[['"]Escape['"]\], closeQuickView/);
     });

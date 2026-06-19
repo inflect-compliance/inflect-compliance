@@ -18,6 +18,8 @@ export interface ControlTask {
     status: string;
     severity?: string | null;
     assignee?: { name?: string | null } | null;
+    /** Linked-evidence count (from the task list `_count.evidence`). */
+    _count?: { evidence?: number } | null;
 }
 
 const TASK_STATUS_BADGE: Record<string, StatusBadgeVariant> = {
@@ -34,13 +36,21 @@ const TASK_STATUS_BADGE: Record<string, StatusBadgeVariant> = {
 export function ControlTaskRows({
     tenantSlug,
     controlId,
+    controlCategory,
     onTaskClick,
 }: {
     tenantSlug: string;
     controlId: string;
     /**
-     * When provided, a task row is a button that opens the task quick-view
-     * (PR-2). Without it, the task title is a plain link to the task page
+     * The parent control's category — tasks have no category of their own, so
+     * the inline row INHERITS and displays the control's. Display-only: it is
+     * NOT a filter dimension (the list filter targets controls, not the nested
+     * task sub-rows).
+     */
+    controlCategory?: string | null;
+    /**
+     * When provided, the whole task row is a button that opens the task
+     * quick-view (PR-2). Without it, the row is a plain link to the task page
      * (the PR-1 default).
      */
     onTaskClick?: (task: ControlTask) => void;
@@ -82,45 +92,62 @@ export function ControlTaskRows({
                 <p className="py-2 text-xs text-content-subtle">No tasks for this control.</p>
             ) : (
                 <ul className="divide-y divide-border-subtle">
-                    {tasks.map((t) => (
-                        <li
-                            key={t.id}
-                            className="flex items-center gap-default py-1.5"
-                            data-control-task={t.id}
-                        >
-                            {onTaskClick ? (
-                                <button
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onTaskClick(t);
-                                    }}
-                                    className="min-w-0 flex-1 truncate text-left text-sm text-content-default hover:text-[var(--brand-default)] transition-colors"
-                                    data-task-quickview={t.id}
-                                >
+                    {tasks.map((t) => {
+                        // Inline metadata shown on every task row: category
+                        // (inherited from the control), owner, evidence count,
+                        // and the task's own status. Display-only — not filterable.
+                        const evidenceCount = t._count?.evidence ?? 0;
+                        const meta = (
+                            <>
+                                <span className="min-w-0 flex-1 truncate text-sm text-content-default transition-colors group-hover:text-[var(--brand-default)]">
                                     {t.title}
-                                </button>
-                            ) : (
-                                <Link
-                                    href={tenantHref(`/tasks/${t.id}`)}
-                                    className="min-w-0 flex-1 truncate text-sm text-content-default hover:text-[var(--brand-default)] transition-colors"
-                                >
-                                    {t.title}
-                                </Link>
-                            )}
-                            {t.assignee?.name && (
-                                <span className="shrink-0 text-xs text-content-subtle">
-                                    {t.assignee.name}
                                 </span>
-                            )}
-                            <StatusBadge
-                                variant={TASK_STATUS_BADGE[t.status] ?? "neutral"}
-                                size="sm"
-                            >
-                                {t.status}
-                            </StatusBadge>
-                        </li>
-                    ))}
+                                {controlCategory && (
+                                    <span className="shrink-0 truncate text-xs text-content-subtle">
+                                        {controlCategory}
+                                    </span>
+                                )}
+                                {t.assignee?.name && (
+                                    <span className="shrink-0 truncate text-xs text-content-subtle">
+                                        {t.assignee.name}
+                                    </span>
+                                )}
+                                <span className="shrink-0 text-xs text-content-subtle">
+                                    {evidenceCount} evidence
+                                </span>
+                                <StatusBadge
+                                    variant={TASK_STATUS_BADGE[t.status] ?? "neutral"}
+                                    size="sm"
+                                >
+                                    {t.status}
+                                </StatusBadge>
+                            </>
+                        );
+                        return (
+                            <li key={t.id} data-control-task={t.id}>
+                                {onTaskClick ? (
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onTaskClick(t);
+                                        }}
+                                        className="group flex w-full cursor-pointer items-center gap-default rounded px-2 py-1.5 text-left transition-colors hover:bg-bg-muted/50"
+                                        data-task-quickview={t.id}
+                                    >
+                                        {meta}
+                                    </button>
+                                ) : (
+                                    <Link
+                                        href={tenantHref(`/tasks/${t.id}`)}
+                                        className="group flex w-full cursor-pointer items-center gap-default rounded px-2 py-1.5 transition-colors hover:bg-bg-muted/50"
+                                    >
+                                        {meta}
+                                    </Link>
+                                )}
+                            </li>
+                        );
+                    })}
                 </ul>
             )}
         </div>

@@ -437,7 +437,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                     // <Link> (footprint = the text), so hover/cursor scope to
                     // the name only. This matches that. `max-w-full` keeps a
                     // long name inside the column; `truncate` clips overflow.
-                    className="inline-block max-w-full truncate text-left align-middle rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="inline-block max-w-full cursor-pointer truncate text-left align-middle rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     data-testid={`asset-title-${row.original.id}`}
                 >
                     {/* tintOn="self" — the name tints brand-color only when the
