@@ -185,11 +185,11 @@ export function CanvasCommandPalette({ groups }: CanvasCommandPaletteProps) {
                                                 </span>
                                             )}
                                             <div className="flex min-w-0 flex-col">
-                                                <span className="truncate">
+                                                <span className="break-words">
                                                     {cmd.label}
                                                 </span>
                                                 {cmd.description && (
-                                                    <span className="truncate text-[10px] text-content-subtle">
+                                                    <span className="break-words text-[10px] text-content-subtle">
                                                         {cmd.description}
                                                     </span>
                                                 )}

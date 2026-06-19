@@ -114,10 +114,10 @@ export function OrgWorkspaceSwitcher({
                                     <span className="flex items-center gap-compact min-w-0">
                                         <InitialsAvatar value={o.slug} mode="slug" />
                                         <span className="flex flex-col min-w-0">
-                                            <span className="truncate text-content-emphasis">
+                                            <span className="break-words text-content-emphasis">
                                                 {o.slug}
                                             </span>
-                                            <span className="truncate text-[10px] text-content-subtle">
+                                            <span className="break-words text-[10px] text-content-subtle">
                                                 org · {o.role.toLowerCase().replace('org_', '')}
                                             </span>
                                         </span>
@@ -155,10 +155,10 @@ export function OrgWorkspaceSwitcher({
                                 <span className="flex items-center gap-compact min-w-0">
                                     <InitialsAvatar value={m.slug} mode="slug" />
                                     <span className="flex flex-col min-w-0">
-                                        <span className="truncate text-content-emphasis">
+                                        <span className="break-words text-content-emphasis">
                                             {m.slug}
                                         </span>
-                                        <span className="truncate text-[10px] text-content-subtle">
+                                        <span className="break-words text-[10px] text-content-subtle">
                                             {m.role.toLowerCase()}
                                         </span>
                                     </span>

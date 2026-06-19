@@ -108,6 +108,48 @@ describe("Dropdowns never truncate an option name", () => {
         });
     });
 
+    // ── Second wave: surfaces the first pass missed (the user still saw
+    // truncated options). Command palettes, the org/workspace switcher, and
+    // the notifications bell are all selectable option lists in a dropdown. ──
+
+    describe("Command palette (⌘K) option lists", () => {
+        const src = read("src/components/command-palette/command-palette.tsx");
+        it("command / result / shortcut / recent labels wrap, not truncate", () => {
+            // The four option-label spans (nav+action items, entity results,
+            // shortcut descriptions, recent items) all wrap now.
+            expect(src).not.toMatch(/flex-1 truncate"/);
+            expect(src).not.toMatch(/className="truncate">\{(s\.description|item\.title)\}/);
+            expect(src).toMatch(/min-w-0 flex-1 break-words">\{c\.label\}/);
+            expect(src).toMatch(/min-w-0 flex-1 break-words">\{r\.primary\}/);
+        });
+    });
+
+    describe("Canvas command palette (/ on the process canvas)", () => {
+        const src = read("src/components/processes/CanvasCommandPalette.tsx");
+        it("command label + description wrap, not truncate", () => {
+            expect(src).toMatch(/<span className="break-words">\s*\{cmd\.label\}/);
+            expect(src).not.toMatch(/<span className="truncate">\s*\{cmd\.label\}/);
+            expect(src).not.toMatch(/truncate text-\[10px\] text-content-subtle">\s*\{cmd\.description\}/);
+        });
+    });
+
+    describe("Org / workspace switcher rows", () => {
+        const src = read("src/components/layout/org-workspace-switcher.tsx");
+        it("org + workspace option rows wrap, not truncate", () => {
+            // The trigger keeps its own `max-w-trunc-tight truncate` (chrome).
+            expect(src).not.toMatch(/truncate text-content-emphasis/);
+            expect(src).not.toMatch(/truncate text-\[10px\] text-content-subtle/);
+        });
+    });
+
+    describe("Notifications bell dropdown items", () => {
+        const src = read("src/components/layout/notifications-bell.tsx");
+        it("the notification title wraps, not truncate", () => {
+            expect(src).not.toMatch(/truncate text-sm font-medium text-content-emphasis/);
+            expect(src).toMatch(/break-words text-sm font-medium text-content-emphasis/);
+        });
+    });
+
     // A small in-memory regression proof that the matcher actually catches a
     // truncating option label — so the structural checks above can't silently
     // pass against a future class rename.

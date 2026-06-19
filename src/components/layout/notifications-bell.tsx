@@ -335,7 +335,7 @@ export function NotificationsBell() {
                                 const row = (
                                     <>
                                         <div className="flex items-center justify-between gap-tight">
-                                            <p className="truncate text-sm font-medium text-content-emphasis">
+                                            <p className="min-w-0 flex-1 break-words text-sm font-medium text-content-emphasis">
                                                 {n.title}
                                             </p>
                                             <span className="flex-shrink-0 text-[10px] text-content-subtle tabular-nums">
