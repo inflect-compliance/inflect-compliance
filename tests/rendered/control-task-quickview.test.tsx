@@ -72,7 +72,7 @@ describe("ControlQuickView", () => {
     });
 });
 
-describe("ControlTaskRows (inline table task-click → quick-view)", () => {
+describe("ControlTaskRows (aligned inline sub-rows → quick-view)", () => {
     beforeEach(() => {
         global.fetch = jest.fn(async () => ({
             ok: true,
@@ -80,41 +80,48 @@ describe("ControlTaskRows (inline table task-click → quick-view)", () => {
         })) as unknown as typeof fetch;
     });
 
-    it("renders task metadata inline: category (inherited), owner, evidence, status", async () => {
-        const onTaskClick = jest.fn();
-        const { container } = render(
-            <ControlTaskRows
-                tenantSlug="acme"
-                controlId="c1"
-                controlCategory="Access Control"
-                onTaskClick={onTaskClick}
-            />,
+    // ControlTaskRows now renders REAL <tr>/<td> rows (aligned to the parent
+    // columns), so it must mount inside a <table><tbody>. Column ids mirror the
+    // controls table's visible columns.
+    const COLUMN_IDS = ["select", "name", "category", "status", "owner", "evidence", "menu"];
+    const renderRows = (onTaskClick = jest.fn()) => {
+        const utils = render(
+            <table>
+                <tbody>
+                    <ControlTaskRows
+                        tenantSlug="acme"
+                        controlId="c1"
+                        controlCategory="Access Control"
+                        columnIds={COLUMN_IDS}
+                        renderEvidence={(n) => <span>{n} evidence</span>}
+                        onTaskClick={onTaskClick}
+                    />
+                </tbody>
+            </table>,
         );
+        return { ...utils, onTaskClick };
+    };
+
+    it("renders task metadata in the matching columns: category / status / owner / evidence", async () => {
+        const { container } = renderRows();
         await screen.findByText("Implement SSO enforcement");
-        // Category inherited from the control.
+        // Category inherited from the control (a tag).
         expect(screen.getByText("Access Control")).toBeInTheDocument();
-        // Owner (task assignee).
+        // Owner (task assignee) by name.
         expect(screen.getByText("Sam Ray")).toBeInTheDocument();
-        // Evidence count (from _count.evidence).
+        // Evidence via the render-prop (matches the control row's cell).
         expect(screen.getByText("3 evidence")).toBeInTheDocument();
         // Status badge.
         expect(screen.getByText("OPEN")).toBeInTheDocument();
-        // The whole row is a cursor-pointer button (the hand affordance fix).
-        const rowBtn = container.querySelector('[data-task-quickview="t1"]');
-        expect(rowBtn?.tagName).toBe("BUTTON");
-        expect(rowBtn?.className).toContain("cursor-pointer");
+        // The row is a real <tr> with one <td> per column id (aligned).
+        const row = container.querySelector('[data-task-quickview="t1"]');
+        expect(row?.tagName).toBe("TR");
+        expect(row?.className).toContain("cursor-pointer");
+        expect(row?.querySelectorAll("td").length).toBe(COLUMN_IDS.length);
     });
 
     it("clicking anywhere on the task row fires onTaskClick (whole-row target)", async () => {
-        const onTaskClick = jest.fn();
-        render(
-            <ControlTaskRows
-                tenantSlug="acme"
-                controlId="c1"
-                controlCategory="Access Control"
-                onTaskClick={onTaskClick}
-            />,
-        );
+        const { onTaskClick } = renderRows();
         // Click the status badge area (NOT the title) — the whole row opens it.
         const badge = await screen.findByText("OPEN");
         fireEvent.click(badge);

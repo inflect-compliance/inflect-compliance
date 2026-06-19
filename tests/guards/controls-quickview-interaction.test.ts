@@ -60,10 +60,10 @@ describe("Controls quick-view interaction (TidalControl)", () => {
     });
 
     it("tasks live ONLY inline in the table, never in the control quick-view panel", () => {
-        // The inline rows (renderExpandedRow) own the task list + click target.
-        expect(controls).toMatch(/renderExpandedRow:\s*renderControlTaskRows/);
+        // The inline aligned sub-rows own the task list + click target.
+        expect(controls).toMatch(/renderAlignedSubRows:\s*renderControlTaskSubRows/);
         // The control quick-view panel renders no task list — it must not
-        // import or mount <ControlTaskRows> (PR-4: tasks belong in the table).
+        // import or mount <ControlTaskRows> (tasks belong in the table).
         expect(quick).not.toMatch(/ControlTaskRows/);
         expect(quick).not.toMatch(/onTaskClick/);
     });
