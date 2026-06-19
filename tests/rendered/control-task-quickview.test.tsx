@@ -38,6 +38,7 @@ const TASK = {
     status: "OPEN",
     severity: "HIGH",
     assignee: { name: "Sam Ray" },
+    _count: { evidence: 3 },
 };
 
 describe("ControlQuickView", () => {
@@ -79,17 +80,44 @@ describe("ControlTaskRows (inline table task-click → quick-view)", () => {
         })) as unknown as typeof fetch;
     });
 
-    it("clicking a lazy-loaded task fires onTaskClick with the task", async () => {
+    it("renders task metadata inline: category (inherited), owner, evidence, status", async () => {
+        const onTaskClick = jest.fn();
+        const { container } = render(
+            <ControlTaskRows
+                tenantSlug="acme"
+                controlId="c1"
+                controlCategory="Access Control"
+                onTaskClick={onTaskClick}
+            />,
+        );
+        await screen.findByText("Implement SSO enforcement");
+        // Category inherited from the control.
+        expect(screen.getByText("Access Control")).toBeInTheDocument();
+        // Owner (task assignee).
+        expect(screen.getByText("Sam Ray")).toBeInTheDocument();
+        // Evidence count (from _count.evidence).
+        expect(screen.getByText("3 evidence")).toBeInTheDocument();
+        // Status badge.
+        expect(screen.getByText("OPEN")).toBeInTheDocument();
+        // The whole row is a cursor-pointer button (the hand affordance fix).
+        const rowBtn = container.querySelector('[data-task-quickview="t1"]');
+        expect(rowBtn?.tagName).toBe("BUTTON");
+        expect(rowBtn?.className).toContain("cursor-pointer");
+    });
+
+    it("clicking anywhere on the task row fires onTaskClick (whole-row target)", async () => {
         const onTaskClick = jest.fn();
         render(
             <ControlTaskRows
                 tenantSlug="acme"
                 controlId="c1"
+                controlCategory="Access Control"
                 onTaskClick={onTaskClick}
             />,
         );
-        const taskBtn = await screen.findByText("Implement SSO enforcement");
-        fireEvent.click(taskBtn);
+        // Click the status badge area (NOT the title) — the whole row opens it.
+        const badge = await screen.findByText("OPEN");
+        fireEvent.click(badge);
         expect(onTaskClick).toHaveBeenCalledWith(expect.objectContaining({ id: "t1" }));
     });
 });

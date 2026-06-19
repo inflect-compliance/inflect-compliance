@@ -80,6 +80,9 @@ describe('item 32 — three-way asset interaction (title / row / double-click)',
         expect(m).not.toBeNull();
         const cls = m![1];
         expect(cls).toMatch(/inline-block/);
+        // Hand cursor on the name — a <button> defaults to the arrow cursor,
+        // unlike Risk's <Link>; cursor-pointer matches the Risk affordance.
+        expect(cls).toMatch(/cursor-pointer/);
         // The old full-cell footprint is gone.
         expect(cls).not.toContain('block w-full');
         expect(cls).not.toMatch(/(^|\s)w-full(\s|$)/);

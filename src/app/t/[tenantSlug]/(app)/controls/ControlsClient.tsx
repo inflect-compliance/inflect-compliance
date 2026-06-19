@@ -629,6 +629,7 @@ function ControlsPageInner({
             <ControlTaskRows
                 tenantSlug={tenantSlug}
                 controlId={row.original.id}
+                controlCategory={row.original.category}
                 onTaskClick={setSelectedTask}
             />
         ),
@@ -687,7 +688,7 @@ function ControlsPageInner({
                         openControlQuickView(row.original);
                         if (row.getCanExpand()) row.toggleExpanded(true);
                     }}
-                    className="inline-block max-w-full truncate text-left align-middle rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="inline-block max-w-full cursor-pointer truncate text-left align-middle rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     id={`control-link-${row.original.id}`}
                     data-testid={`control-title-${row.original.id}`}
                 >
@@ -1108,8 +1109,17 @@ function ControlsPageInner({
     // browse/best-value/AI stack (Tidal-style); closing returns to the default
     // rail. `openOnMount` expands the rail / opens the Sheet immediately so the
     // panel "appears" on the click.
+    //
+    // The `key` is LOAD-BEARING. `openOnMount` runs in a mount-only effect, and
+    // these panels share their tree position (and surfaceKey) with the browse
+    // stack. Without a distinct key React would REUSE the in-place AsidePanel
+    // instance when switching browse→quick-view (or control→task), so
+    // openOnMount never re-fires and a persisted-collapsed rail would stay
+    // collapsed — the quick-view (esp. a task click) would silently not appear.
+    // Distinct keys force a fresh mount each time → openOnMount fires → opens.
     const quickViewAside = selectedTask ? (
         <AsidePanel
+            key="qv-task"
             title="Task"
             surfaceKey="controls-quickview"
             openOnMount
@@ -1123,6 +1133,7 @@ function ControlsPageInner({
         </AsidePanel>
     ) : selectedControl ? (
         <AsidePanel
+            key="qv-control"
             title="Control"
             surfaceKey="controls-quickview"
             openOnMount
