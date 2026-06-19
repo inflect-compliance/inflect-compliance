@@ -139,31 +139,24 @@ describe('ControlDetailSheet — UX invariants', () => {
 });
 
 // ─── 4. ControlsClient wiring ────────────────────────────────────
+//
+// 2026-06-19 — the Controls LIST no longer wires this Sheet. Editing moved
+// into the one-click docked side panel (ControlEditPanel / TaskEditPanel); the
+// quick-edit pencil column + ControlDetailSheet mount were removed. The
+// ControlDetailSheet component above is still a valid, tested surface (kept for
+// potential detail-page reuse). The new panel wiring is covered by
+// `controls-quickview-interaction` + `controls-client-shell-adoption`.
 
-describe('ControlsClient — Sheet entry points', () => {
-    it('imports ControlDetailSheet', () => {
-        // Accept both static and dynamic imports (lazy-loading via next/dynamic)
-        const hasImport = /from ['"]\.\/ControlDetailSheet['"]/.test(CLIENT_SRC) ||
-            /import\(['"]\.\/ControlDetailSheet['"]\)/.test(CLIENT_SRC);
-        expect(hasImport).toBe(true);
+describe('ControlsClient — list no longer mounts the edit Sheet (moved to the side panel)', () => {
+    it('does NOT mount <ControlDetailSheet> or the quick-edit column anymore', () => {
+        expect(CLIENT_SRC).not.toMatch(/<ControlDetailSheet\b/);
+        expect(CLIENT_SRC).not.toMatch(/id:\s*['"]quick-edit['"]/);
+        expect(CLIENT_SRC).not.toMatch(/setSheetControlId/);
     });
 
-    it('owns sheetControlId state (null = closed)', () => {
-        expect(CLIENT_SRC).toMatch(/sheetControlId/);
-        expect(CLIENT_SRC).toMatch(/setSheetControlId/);
-    });
-
-    it('mounts <ControlDetailSheet> with tenant-scoped helpers + canWrite', () => {
-        expect(CLIENT_SRC).toMatch(/<ControlDetailSheet\b/);
-        expect(CLIENT_SRC).toMatch(/controlId=\{sheetControlId\}/);
-        expect(CLIENT_SRC).toMatch(/setControlId=\{setSheetControlId\}/);
-        expect(CLIENT_SRC).toMatch(/canWrite=\{appPermissions\.controls\.edit\}/);
-    });
-
-    it('adds a quick-edit icon column that opens the Sheet', () => {
-        expect(CLIENT_SRC).toMatch(/id:\s*['"]quick-edit['"]/);
-        expect(CLIENT_SRC).toMatch(/control-quick-edit-\$\{row\.original\.id\}/);
-        expect(CLIENT_SRC).toMatch(/setSheetControlId\(row\.original\.id\)/);
+    it('mounts the editable side panels instead', () => {
+        expect(CLIENT_SRC).toMatch(/<ControlEditPanel\b/);
+        expect(CLIENT_SRC).toMatch(/<TaskEditPanel\b/);
     });
 
     it('row-click navigation to the full detail page is preserved', () => {
