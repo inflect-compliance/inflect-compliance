@@ -20,6 +20,34 @@ const read = (p: string) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 describe('theme anti-FOUC', () => {
     const layout = read('src/app/layout.tsx');
     const provider = read('src/components/theme/ThemeProvider.tsx');
+    const constants = read('src/lib/theme-constants.ts');
+
+    describe('server-safe constants (the proxy-bug fix)', () => {
+        // REGRESSION GUARD. Theme constants MUST live in a server-safe module
+        // and the SERVER layout MUST import them from there. Importing them from
+        // ThemeProvider ('use client') hands the server a client-reference proxy
+        // (a function, not the string), which silently broke BOTH the SSR
+        // cookie read and the inline script's localStorage key — the bug that
+        // made the theme flash on every reload.
+        it('theme-constants.ts holds the literal values and is NOT a client module', () => {
+            expect(constants).not.toMatch(/^\s*['"]use client['"]/m);
+            expect(constants).toMatch(/export const THEME_STORAGE_KEY = 'inflect:theme'/);
+            expect(constants).toMatch(/export const THEME_COOKIE = 'inflect_theme'/);
+        });
+
+        it('the server layout imports theme constants from the server-safe module, NOT ThemeProvider', () => {
+            expect(layout).toMatch(
+                /import\s*\{[\s\S]*?\bTHEME_COOKIE\b[\s\S]*?\}\s*from\s*['"]@\/lib\/theme-constants['"]/,
+            );
+            expect(layout).toMatch(
+                /import\s*\{[\s\S]*?\bTHEME_STORAGE_KEY\b[\s\S]*?\}\s*from\s*['"]@\/lib\/theme-constants['"]/,
+            );
+            // Must NOT pull theme values from the 'use client' provider.
+            expect(layout).not.toMatch(
+                /import[\s\S]*?THEME_COOKIE[\s\S]*?from\s*['"]@\/components\/theme\/ThemeProvider['"]/,
+            );
+        });
+    });
 
     describe('primary: SSR data-theme from the cookie (flash-proof)', () => {
         it('renders <html data-theme={initialTheme}> seeded from the theme cookie', () => {
@@ -32,10 +60,10 @@ describe('theme anti-FOUC', () => {
             );
         });
 
-        it('ThemeProvider exports THEME_COOKIE and persists to the cookie', () => {
-            expect(provider).toMatch(/export const THEME_COOKIE = 'inflect_theme'/);
+        it('ThemeProvider persists to the cookie (and re-exports THEME_COOKIE)', () => {
             expect(provider).toMatch(/document\.cookie\s*=\s*`\$\{THEME_COOKIE\}=/);
             expect(provider).toMatch(/function persistTheme/);
+            expect(provider).toMatch(/THEME_COOKIE/);
         });
     });
 
@@ -46,15 +74,10 @@ describe('theme anti-FOUC', () => {
             expect(layout).toMatch(/prefers-color-scheme: light/);
         });
 
-        it('reads the SAME keys as ThemeProvider (imported, not duplicated)', () => {
-            // Broadened: the layout now imports STORAGE_KEY + THEME_COOKIE + Theme.
-            expect(layout).toMatch(
-                /import\s*\{[\s\S]*?STORAGE_KEY as THEME_STORAGE_KEY[\s\S]*?\}\s*from\s*['"]@\/components\/theme\/ThemeProvider['"]/,
-            );
-            expect(layout).toMatch(
-                /import\s*\{[\s\S]*?\bTHEME_COOKIE\b[\s\S]*?\}\s*from\s*['"]@\/components\/theme\/ThemeProvider['"]/,
-            );
-            expect(provider).toMatch(/export const STORAGE_KEY = 'inflect:theme'/);
+        it('reads the SAME keys the provider uses (from the shared server-safe module)', () => {
+            expect(layout).toMatch(/THEME_STORAGE_KEY/);
+            expect(layout).toMatch(/THEME_COOKIE/);
+            expect(constants).toMatch(/THEME_STORAGE_KEY = 'inflect:theme'/);
         });
 
         it('renders the script in <head> with the CSP nonce, before the body', () => {
