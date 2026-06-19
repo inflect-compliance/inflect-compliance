@@ -32,11 +32,13 @@ test.describe('Epic 54 — CRUD/detail surfaces mount on demand', () => {
 
         await title.click();
 
-        // The panel is the EDIT surface (the edit form is present).
-        await expect(page.locator('[data-testid="control-edit-panel"]')).toBeVisible({
+        // The panel is the EDIT surface (the edit form is present). `.first()`
+        // because <AsidePanel> renders its content in BOTH the docked rail and
+        // the Sheet body (openOnMount opens both) — the testid matches twice.
+        await expect(page.locator('[data-testid="control-edit-panel"]').first()).toBeVisible({
             timeout: 5000,
         });
-        await expect(page.locator('[data-testid="control-edit-form"]')).toBeVisible();
+        await expect(page.locator('[data-testid="control-edit-form"]').first()).toBeVisible();
 
         // Escape closes the panel so no focus-trap leaks into the next test.
         await page.keyboard.press('Escape');
