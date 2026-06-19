@@ -54,7 +54,9 @@ const ROOT = path.resolve(__dirname, '../..');
 // Raised 173 → 182 (2026-06-17): donut hover-stable-hit + data-table
 // prefetch + accumulated rendered-test gains.
 const RENDERED_TEST_FLOOR = 182;
-const E2E_SPEC_FLOOR = 36;
+// Raised 36 → 37 (2026-06-20): page-load-budget.spec.ts — the per-route
+// server-TTFB probe for the "instant pages" performance loop.
+const E2E_SPEC_FLOOR = 37;
 const REGISTRY_FLOOR = 5;
 
 /** Max a live count may exceed its floor before the floor must rise. */
