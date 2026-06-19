@@ -629,7 +629,7 @@ function CommandGroup({
                             aria-hidden="true"
                             className="size-4 shrink-0 text-content-muted"
                         />
-                        <span className="min-w-0 flex-1 truncate">{c.label}</span>
+                        <span className="min-w-0 flex-1 break-words">{c.label}</span>
                         {shortcutKey && (
                             <span
                                 className="flex shrink-0 items-center"
@@ -689,7 +689,7 @@ function EntityGroup({
                         aria-hidden="true"
                         className="size-4 shrink-0 text-content-muted"
                     />
-                    <span className="min-w-0 flex-1 truncate">{r.primary}</span>
+                    <span className="min-w-0 flex-1 break-words">{r.primary}</span>
                     {r.secondary && (
                         <span className="shrink-0 text-xs text-content-muted">
                             {r.secondary}
@@ -744,7 +744,7 @@ function ShortcutGroup({
                     )}
                     data-testid="command-palette-shortcut"
                 >
-                    <span className="truncate">{s.description}</span>
+                    <span className="min-w-0 flex-1 break-words">{s.description}</span>
                     <span className="flex items-center">
                         {s.keys.slice(0, 1).map((k) => (
                             <span key={k} className="flex items-center">
@@ -806,7 +806,7 @@ function RecentsGroup({
                         'data-[selected=true]:bg-bg-muted data-[selected=true]:text-content-emphasis',
                     )}
                 >
-                    <span className="truncate">{item.title}</span>
+                    <span className="min-w-0 flex-1 break-words">{item.title}</span>
                     <span className="text-[10px] uppercase tracking-wider text-content-subtle">
                         {SEARCH_TYPE_DEFAULTS[item.type].category}
                     </span>
