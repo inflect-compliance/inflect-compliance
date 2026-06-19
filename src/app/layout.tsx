@@ -4,11 +4,16 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import { Providers } from './providers';
 import { CSP_NONCE_HEADER } from '@/lib/security/csp';
+// Import the theme constants from the SERVER-SAFE module — NOT from
+// ThemeProvider ('use client'), whose exports resolve to client-reference
+// proxies (not their string values) on the server. That proxy bug is exactly
+// what made `cookies().get(THEME_COOKIE)` always miss and the inline script's
+// localStorage key resolve to `undefined`. See src/lib/theme-constants.ts.
 import {
-    STORAGE_KEY as THEME_STORAGE_KEY,
+    THEME_STORAGE_KEY,
     THEME_COOKIE,
     type Theme,
-} from '@/components/theme/ThemeProvider';
+} from '@/lib/theme-constants';
 import './globals.css';
 
 /**

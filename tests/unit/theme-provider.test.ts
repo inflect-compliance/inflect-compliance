@@ -30,6 +30,7 @@ function read(rel: string): string {
 
 describe('ThemeProvider — source contract', () => {
     const src = read('src/components/theme/ThemeProvider.tsx');
+    const constants = read('src/lib/theme-constants.ts');
 
     it('is a client module with named exports (no default)', () => {
         expect(src).toMatch(/^'use client'/);
@@ -38,14 +39,20 @@ describe('ThemeProvider — source contract', () => {
         expect(src).not.toMatch(/^export default/m);
     });
 
-    it('persists user choice under a namespaced localStorage key', () => {
-        expect(src).toMatch(/STORAGE_KEY\s*=\s*['"]inflect:theme['"]/);
+    it('theme keys live in a SERVER-SAFE module (not this client one)', () => {
+        // Load-bearing: the server layout imports these; defining them in a
+        // 'use client' module hands the server a client-reference proxy, not
+        // the string — the bug that broke the SSR cookie read + inline script.
+        expect(constants).not.toMatch(/^\s*['"]use client['"]/m);
+        expect(constants).toMatch(/THEME_STORAGE_KEY\s*=\s*['"]inflect:theme['"]/);
+        expect(constants).toMatch(/THEME_COOKIE\s*=\s*['"]inflect_theme['"]/);
+        // The provider imports + re-exports them for its client consumers.
+        expect(src).toMatch(/from\s*['"]@\/lib\/theme-constants['"]/);
     });
 
     it('also persists to a cookie so SSR can render the theme flash-free', () => {
         // The cookie (server-readable) is what makes the layout flash-proof;
         // localStorage stays as a back-compat mirror.
-        expect(src).toMatch(/THEME_COOKIE\s*=\s*['"]inflect_theme['"]/);
         expect(src).toMatch(/document\.cookie\s*=\s*`\$\{THEME_COOKIE\}=/);
         expect(src).toMatch(/function persistTheme/);
     });

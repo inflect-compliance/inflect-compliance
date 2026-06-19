@@ -28,7 +28,19 @@ import {
     type ReactNode,
 } from 'react';
 
-export type Theme = 'dark' | 'light';
+// Theme constants live in a SERVER-SAFE module (no 'use client') so the root
+// layout can import them as real string values — importing them from THIS
+// client module would hand the server a client-reference proxy, not the
+// literal, which silently breaks the SSR cookie read + the inline script. See
+// src/lib/theme-constants.ts. Re-exported here for existing client importers.
+import {
+    type Theme,
+    THEME_STORAGE_KEY as STORAGE_KEY,
+    THEME_COOKIE,
+} from '@/lib/theme-constants';
+
+export { STORAGE_KEY, THEME_COOKIE };
+export type { Theme };
 
 export interface ThemeContextValue {
     theme: Theme;
@@ -38,21 +50,6 @@ export interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-/**
- * localStorage key for the persisted theme. Exported so the anti-FOUC inline
- * script in the root layout (`src/app/layout.tsx`) reads the SAME key.
- */
-export const STORAGE_KEY = 'inflect:theme';
-
-/**
- * Cookie name for the persisted theme. THIS is the flash-proof channel: unlike
- * localStorage (client-only), a cookie is readable by the server, so the root
- * layout renders `<html data-theme>` correctly in the FIRST SSR byte — no
- * client script has to win a race against first paint. localStorage stays as a
- * back-compat mirror; the cookie is the source of truth for SSR. Cookie names
- * are RFC6265 tokens (no `:`), so this differs from STORAGE_KEY.
- */
-export const THEME_COOKIE = 'inflect_theme';
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 const ATTR = 'data-theme';
 
