@@ -5,7 +5,20 @@
 # Adding entries here is a structural escape hatch for the Trivy gate. Use
 # sparingly: prefer fixing the dep over ignoring it.
 #
-# ── Current exemptions: NONE ──
+# ── Current exemptions ──
+#
+# CVE-2026-12151 — undici DoS (unbounded memory), HIGH. Fixed in undici
+#   6.27.0 / 7.28.0 / 8.5.0.
+#   Affected path: the node:24-alpine base image's BUNDLED npm CLI
+#     (/usr/local/lib/node_modules/npm → node-gyp → undici@6.25.0). NOT an
+#     app runtime dependency — the server runs `next start` (node), never the
+#     npm CLI / node-gyp, so this undici is unreachable from request-handling
+#     code (blast radius = build-time only). Same class as the picomatch
+#     exemptions retired in the node:22→24 bump below.
+#   Retire when: the node:24-alpine base image refreshes its bundled npm CLI
+#     to one whose node-gyp carries undici ≥ 6.27.0 (next Node base-image
+#     bump / image rebuild). Re-check with `npm ls undici` in the image.
+CVE-2026-12151
 #
 # Historical note (cleanup-5-node-24-bump, 2026-06-14): the four
 # npm-CLI-bundled CVEs that lived here (picomatch DoS / method injection
