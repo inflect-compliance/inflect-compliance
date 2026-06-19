@@ -195,6 +195,94 @@ export async function cachedListRead<T>(opts: CachedReadOptions<T>): Promise<T> 
 }
 
 /**
+ * Short-TTL cache for the executive dashboard aggregate (PR3).
+ *
+ * Differs from `cachedListRead` in two deliberate ways:
+ *
+ *   • **Pure TTL, no version counter.** The dashboard aggregates ~13
+ *     entity types (assets, risks, controls, evidence, tasks, …); a
+ *     write to ANY of them would have to bump the dashboard version,
+ *     which is impractical to wire correctly from every write path.
+ *     A short TTL bounds staleness instead — an executive summary
+ *     that's at most `ttlSeconds` stale is an acceptable trade for
+ *     skipping ~30 COUNT/GROUP BY queries (and ~6 RLS transactions)
+ *     on every dashboard load.
+ *
+ *   • **Key includes BOTH tenantId AND userId.** The executive
+ *     payload carries user-specific data (the actor's unread
+ *     notification count), so a tenant-only key would leak one
+ *     user's counts to another. `tests/unit/list-cache.test.ts`
+ *     asserts both are present in the key.
+ *
+ * Same fail-open posture + no-Redis bypass as `cachedListRead`, so
+ * dev/test (no `REDIS_URL`) behave exactly as if uncached.
+ */
+const DASHBOARD_TTL_SECONDS = 30;
+
+export async function cachedDashboardRead<T>(opts: {
+    ctx: RequestContext;
+    /** Distinguishes read shapes, e.g. 'executive'. */
+    operation: string;
+    /** Params that distinguish results (e.g. trend window). Hashed into the key. */
+    params?: unknown;
+    /** TTL in seconds. Default 30. */
+    ttlSeconds?: number;
+    loader: () => Promise<T>;
+}): Promise<T> {
+    const redis = getRedis();
+    if (!redis) return opts.loader();
+
+    const tenantId = opts.ctx.tenantId;
+    const userId = opts.ctx.userId ?? 'anon';
+    const ttl = opts.ttlSeconds ?? DASHBOARD_TTL_SECONDS;
+
+    const filterHash = createHash('sha256')
+        .update(stableStringify(opts.params ?? null))
+        .digest('hex')
+        .slice(0, 16);
+
+    // tenantId + userId both in the key — see the user-specific-data note above.
+    const cacheKey =
+        `${CACHE_PREFIX}:dashboard:${opts.operation}:${tenantId}:${userId}:${filterHash}`;
+
+    try {
+        const raw = await redis.get(cacheKey);
+        if (raw !== null) {
+            try {
+                return JSON.parse(raw) as T;
+            } catch {
+                // Corrupted entry — fall through to loader; the `set` below
+                // overwrites it.
+                logger.warn('dashboard-cache parse error — refreshing', {
+                    component: 'dashboard-cache',
+                    operation: opts.operation,
+                    tenantId,
+                });
+            }
+        }
+    } catch (err) {
+        logger.warn('dashboard-cache get failed', {
+            component: 'dashboard-cache',
+            operation: opts.operation,
+            error: err instanceof Error ? err.message : String(err),
+        });
+        return opts.loader();
+    }
+
+    const result = await opts.loader();
+    try {
+        await redis.set(cacheKey, JSON.stringify(result), 'EX', ttl);
+    } catch (err) {
+        logger.warn('dashboard-cache set failed', {
+            component: 'dashboard-cache',
+            operation: opts.operation,
+            error: err instanceof Error ? err.message : String(err),
+        });
+    }
+    return result;
+}
+
+/**
  * Invalidate ALL cached list-reads for `(entity, tenant)` by
  * INCR'ing the version counter. Old entries become unreachable
  * immediately (next read computes a different cache key) and

@@ -241,7 +241,11 @@ describe('Dashboard Page Integration', () => {
     // selector preserved); the consuming component is now
     // `<RiskMatrix>` reading the tenant's `RiskMatrixConfig`.
     test('imports the config-driven RiskMatrix engine', () => {
-        expect(content).toContain("from '@/components/ui/RiskMatrix'");
+        // PR3 perf: charts are lazy-loaded via next/dynamic, so the module is
+        // referenced by `import('@/components/ui/RiskMatrix')` rather than a
+        // static `from '…'`. Match either form — the intent is that the
+        // dashboard pulls in the RiskMatrix engine.
+        expect(content).toMatch(/@\/components\/ui\/RiskMatrix['"]/);
     });
 
     test('fetches the tenant matrix config server-side', () => {
@@ -249,7 +253,7 @@ describe('Dashboard Page Integration', () => {
     });
 
     test('imports ExpiryCalendar', () => {
-        expect(content).toContain("from '@/components/ui/ExpiryCalendar'");
+        expect(content).toMatch(/@\/components\/ui\/ExpiryCalendar['"]/);
     });
 
     test('renders RiskMatrix with the legacy `risk-heatmap` id (E2E selector preserved)', () => {

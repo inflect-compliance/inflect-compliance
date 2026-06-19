@@ -56,22 +56,18 @@ export default async function DashboardPage({
     const { tenantSlug } = await params;
     const ctx = await getTenantCtx({ tenantSlug });
 
-    const [exec, matrixConfig] = await Promise.all([
+    // PR3 perf: fetch all three payloads in ONE parallel batch. Trends were
+    // previously awaited AFTER the exec+matrix Promise.all — a serial waterfall
+    // on the dashboard's hot path. The trend snapshot stays best-effort: a
+    // daily-snapshot row may not exist for the first few days of a fresh tenant
+    // (the client renders the empty state when `trends.daysAvailable < 2`), so
+    // its rejection resolves to `null` inside the batch rather than failing the
+    // whole page.
+    const [exec, matrixConfig, trends] = await Promise.all([
         getExecutiveDashboard(ctx),
         getRiskMatrixConfig(ctx),
+        getComplianceTrends(ctx, 30).catch((): TrendPayload | null => null),
     ]);
-
-    // Trend snapshot is best-effort. A daily-snapshot row may not
-    // exist for the first few days of a fresh tenant — the client
-    // renders the empty state when `trends.daysAvailable < 2`, so we
-    // pass `null` rather than crashing the whole page on a transient
-    // error.
-    let trends: TrendPayload | null = null;
-    try {
-        trends = await getComplianceTrends(ctx, 30);
-    } catch {
-        trends = null;
-    }
 
     return (
         <DashboardClient

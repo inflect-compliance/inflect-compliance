@@ -75,8 +75,14 @@ export async function runInTenantContext<T>(
         () =>
             p.$transaction(async (tx) => {
                 await tx.$executeRaw`SET LOCAL ROLE app_user`;
-                await tx.$executeRaw`SELECT set_config('app.tenant_id', ${ctx.tenantId}, true)`;
-                await tx.$executeRaw`SELECT set_config('app.request_id', ${ctx.requestId}, true)`;
+                // PR3 perf: combine the two GUC writes into ONE round-trip
+                // (was two separate `SELECT set_config(...)` calls). RLS
+                // isolation is unchanged — same transaction-local
+                // `app.tenant_id` (the RLS predicate) + `app.request_id`
+                // (audit correlation), same `app_user` role. Cuts per-context
+                // RLS setup from 3 round-trips to 2; the executive dashboard
+                // alone opens ~6 such contexts, removing ~6 round-trips/load.
+                await tx.$executeRaw`SELECT set_config('app.tenant_id', ${ctx.tenantId}, true), set_config('app.request_id', ${ctx.requestId}, true)`;
                 return callback(tx);
             }, txOptions)
     ) as Promise<T>;

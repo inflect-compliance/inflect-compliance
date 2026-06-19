@@ -14,6 +14,7 @@ import {
 } from '../repositories/DashboardRepository';
 import { assertCanRead } from '../policies/common';
 import { runInTenantContext } from '@/lib/db-context';
+import { cachedDashboardRead } from '@/lib/cache/list-cache';
 
 /**
  * Original dashboard data — used by the current dashboard page.
@@ -56,9 +57,18 @@ export async function getDashboardData(ctx: RequestContext) {
  * Expected latency: <100ms on a warm connection pool
  */
 export async function getExecutiveDashboard(ctx: RequestContext): Promise<ExecutiveDashboardPayload> {
+    // Authorization is enforced on EVERY call, before any cache lookup — the
+    // cache only ever holds data the requesting (tenant, user) is allowed to
+    // read, and a denied caller never reaches the cached payload.
     assertCanRead(ctx);
 
-    return runInTenantContext(ctx, async (db) => {
+    // PR3 perf: short-TTL cache (per tenant+user). Skips ~30 COUNT/GROUP BY
+    // queries + ~6 RLS transactions on a hit. Bypassed entirely without Redis
+    // (dev/test), so uncached behaviour is unchanged. Staleness ≤ TTL.
+    return cachedDashboardRead({
+        ctx,
+        operation: 'executive',
+        loader: () => runInTenantContext(ctx, async (db) => {
         const [
             stats,
             controlCoverage,
@@ -105,5 +115,6 @@ export async function getExecutiveDashboard(ctx: RequestContext): Promise<Execut
             treatmentPlans,
             computedAt: new Date().toISOString(),
         };
+        }),
     });
 }

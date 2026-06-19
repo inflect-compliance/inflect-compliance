@@ -250,27 +250,40 @@ export class DashboardRepository {
     static async getStats(db: PrismaTx, ctx: RequestContext): Promise<DashboardStats> {
         const tenantId = ctx.tenantId;
 
-        const [assetCount, riskCount, controlCount, evidenceCount, taskCount, findingCount] = await Promise.all([
+        // PR3 perf: every count is independent — run them ALL in one parallel
+        // batch instead of a parallel batch followed by 5 sequential awaits
+        // (the prior shape serialised highRisks → pendingEvidence →
+        // overdueEvidence → clauseProgress → unreadNotifications after the
+        // first Promise.all, ~5 extra round-trips on the dashboard's hot path).
+        const [
+            assetCount,
+            riskCount,
+            controlCount,
+            evidenceCount,
+            taskCount,
+            findingCount,
+            highRisks,
+            pendingEvidence,
+            overdueEvidence,
+            clauseProgress,
+            unreadNotifications,
+        ] = await Promise.all([
             db.asset.count({ where: { tenantId } }),
             db.risk.count({ where: { tenantId } }),
             db.control.count({ where: { OR: [{ tenantId }, { tenantId: null }] } }),
             db.evidence.count({ where: { tenantId } }),
             db.task.count({ where: { tenantId, status: { notIn: [...TERMINAL_WORK_ITEM_STATUSES] } } }),
             db.finding.count({ where: { tenantId, status: { not: 'CLOSED' } } }),
+            db.risk.count({ where: { tenantId, inherentScore: { gte: 15 } } }),
+            db.evidence.count({ where: { tenantId, status: 'SUBMITTED' } }),
+            db.evidence.count({
+                where: { tenantId, nextReviewDate: { lt: new Date() }, status: { not: 'APPROVED' } },
+            }),
+            db.clauseProgress.findMany({ where: { tenantId } }),
+            db.notification.count({ where: { tenantId, userId: ctx.userId, read: false } }),
         ]);
 
-        const highRisks = await db.risk.count({ where: { tenantId, inherentScore: { gte: 15 } } });
-        const pendingEvidence = await db.evidence.count({ where: { tenantId, status: 'SUBMITTED' } });
-        const overdueEvidence = await db.evidence.count({
-            where: { tenantId, nextReviewDate: { lt: new Date() }, status: { not: 'APPROVED' } },
-        });
-
-        const clauseProgress = await db.clauseProgress.findMany({ where: { tenantId } });
         const clausesReady = clauseProgress.filter((p) => p.status === 'READY').length;
-
-        const unreadNotifications = await db.notification.count({
-            where: { tenantId, userId: ctx.userId, read: false },
-        });
 
         return {
             assets: assetCount,
