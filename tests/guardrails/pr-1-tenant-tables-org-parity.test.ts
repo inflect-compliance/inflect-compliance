@@ -1,26 +1,34 @@
 /**
- * PR-1 — Tenant tables → org-level parity ratchet.
+ * Tenant list tables — load-on-scroll (infinite scroll) ratchet.
  *
- * Locks the reusable "Load more …" + sortable-headers pattern + the
- * representative tenant-page rollouts. The org pattern is
- * `useCursorPagination` (server cursor); the tenant pattern is
- * `useThresholdLoadMore` (in-memory). Both speak the same `hasMore`
- * + `loadMore` vocabulary so a shared `<TableLoadMoreFooter>` can
- * render either.
+ * Supersedes the original "Load more …" button parity (the manual
+ * `<TableLoadMoreFooter>` button was replaced by load-on-scroll: the
+ * windowing hook still slices the rows, but the next batch now appends
+ * automatically when an `IntersectionObserver` sentinel scrolls into
+ * view at the bottom of the table body).
+ *
+ * The engine:
+ *   `useThresholdLoadMore` (slice rows) → `<DataTable onReachEnd>` →
+ *   `<Table>` renders `<InfiniteScrollSentinel>` INSIDE the scroll
+ *   wrapper → `useInViewport(sentinel, { rootMargin })` fires
+ *   `loadMore` on the visibility edge. The sentinel is gated by the
+ *   consumer passing `onReachEnd={hasMore ? loadMore : undefined}` so
+ *   it (and its observer) unmount at the end of the data.
  *
  * Assertions:
- *
- *   1. `useThresholdLoadMore` exists, exports a default threshold,
- *      and is in the canonical hooks barrel.
- *   2. `<TableLoadMoreFooter>` exists and is gated on `hasMore`.
- *   3. `<EntityListPage>` carries a `tableFooter` slot rendered
- *      inside `ListPageShell.Body` AFTER the DataTable.
- *   4. ControlsClient consumes the hook + footer + the org-parity
- *      sortable headers (`sortableColumns`, `sortBy`, `sortOrder`,
- *      `onSortChange`).
- *   5. RisksClient + EvidenceClient match the same shape.
- *   6. Every tenant rollout uses a stable testId namespace so E2E
- *      specs can target the loaded-window state.
+ *   1. `useThresholdLoadMore` primitive + barrel export (unchanged).
+ *   2. `useInViewport` accepts a `rootMargin` (the pre-load lever).
+ *   3. `<InfiniteScrollSentinel>` exists, observes via useInViewport,
+ *      fires onReachEnd on the visibility edge.
+ *   4. `onReachEnd` is threaded Table → DataTable → EntityListPage,
+ *      and the `<Table>` renders the sentinel ONLY when onReachEnd is
+ *      set, INSIDE the scroll wrapper.
+ *   5. All seven tenant list pages consume `useThresholdLoadMore` and
+ *      pass `onReachEnd={hasMore… ? loadMore… : undefined}` to their
+ *      table — and NONE of them render the retired
+ *      `<TableLoadMoreFooter>` button.
+ *   6. The two pages whose page.tsx wrapper severed the viewport-clamp
+ *      flex chain (assets, vendors) render their client directly.
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -28,7 +36,9 @@ import * as path from 'node:path';
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 
-describe('PR-1 — tenant tables → org-level parity', () => {
+const APP = 'src/app/t/[tenantSlug]/(app)';
+
+describe('Tenant list tables — load-on-scroll', () => {
     describe('useThresholdLoadMore primitive', () => {
         const src = read('src/components/ui/hooks/use-threshold-load-more.ts');
         const barrel = read('src/components/ui/hooks/index.ts');
@@ -38,14 +48,10 @@ describe('PR-1 — tenant tables → org-level parity', () => {
             expect(src).toMatch(/export const DEFAULT_LOAD_MORE_THRESHOLD\s*=\s*50/);
         });
 
-        it('returns the org-parity `hasMore` + `loadMore` vocabulary', () => {
-            // The hook intentionally mirrors useCursorPagination's
-            // return surface (minus loading/error) so the shared
-            // <TableLoadMoreFooter> can consume either.
+        it('returns the hasMore + loadMore vocabulary the sentinel drives', () => {
             expect(src).toMatch(/hasMore:\s*boolean/);
             expect(src).toMatch(/loadMore:\s*\(\)\s*=>\s*void/);
             expect(src).toMatch(/visibleRows:\s*TRow\[\]/);
-            expect(src).toMatch(/totalCount:\s*number/);
         });
 
         it('is exported from the @/components/ui/hooks barrel', () => {
@@ -54,103 +60,128 @@ describe('PR-1 — tenant tables → org-level parity', () => {
         });
 
         it('narrowing input keeps remaining rows visible (no surprise collapse)', () => {
-            // The hook code uses `Math.min(prev + increment, ...)` only
-            // on loadMore — the rerender path doesn't shrink the
-            // window. Locking the JSX shape so a "simplify" PR can't
-            // accidentally re-collapse on filter narrow.
             expect(src).toMatch(/\.slice\(0,\s*windowSize\)/);
-            // No `useEffect`/`setWindowSize(threshold)` based on rows
-            // — the window only resets via the explicit `reset()`.
             expect(src).not.toMatch(/useEffect[\s\S]{0,400}setWindowSize\(threshold\)/);
         });
     });
 
-    describe('TableLoadMoreFooter primitive', () => {
-        const src = read('src/components/ui/table-load-more-footer.tsx');
+    describe('useInViewport — pre-load lever', () => {
+        const src = read('src/components/ui/hooks/use-in-viewport.tsx');
 
-        it('exports the footer component + props shape', () => {
-            expect(src).toMatch(/export function TableLoadMoreFooter/);
-            expect(src).toMatch(/export interface TableLoadMoreFooterProps/);
-        });
-
-        it('gates on hasMore (no footer when nothing more to reveal)', () => {
-            expect(src).toMatch(/if\s*\(!hasMore\)\s*return\s*null/);
-        });
-
-        it('renders the org-style "X of Y" count + Load more button', () => {
-            expect(src).toMatch(/`Load more \$\{resourceName\}/);
-            expect(src).toMatch(/visibleCount/);
-            expect(src).toMatch(/totalCount/);
+        it('accepts a rootMargin and forwards it to IntersectionObserver', () => {
+            expect(src).toMatch(/rootMargin\??:\s*string/);
+            expect(src).toMatch(/new IntersectionObserver\([\s\S]{0,200}rootMargin/);
         });
     });
 
-    describe('EntityListPage tableFooter slot', () => {
-        const src = read('src/components/layout/EntityListPage.tsx');
+    describe('InfiniteScrollSentinel primitive', () => {
+        const src = read('src/components/ui/table/infinite-scroll-sentinel.tsx');
+        const barrel = read('src/components/ui/table/index.ts');
 
-        it('declares the tableFooter prop on EntityListPageProps', () => {
-            expect(src).toMatch(/tableFooter\?:\s*ReactNode/);
+        it('exports the component + props', () => {
+            expect(src).toMatch(/export function InfiniteScrollSentinel/);
+            expect(src).toMatch(/export interface InfiniteScrollSentinelProps/);
         });
 
-        it('renders tableFooter inside ListPageShell.Body AFTER DataTable', () => {
-            // Locate the body block + confirm the order.
-            const bodyStart = src.indexOf('<ListPageShell.Body');
-            const bodyEnd = src.indexOf('</ListPageShell.Body>');
-            const block = src.slice(bodyStart, bodyEnd);
-            const tableIdx = block.indexOf('<DataTable');
-            const footerIdx = block.indexOf('{tableFooter}');
-            expect(tableIdx).toBeGreaterThan(0);
-            expect(footerIdx).toBeGreaterThan(tableIdx);
+        it('observes a ref via useInViewport with a rootMargin', () => {
+            expect(src).toMatch(/useInViewport\(\s*sentinelRef\s*,\s*\{\s*rootMargin/);
+        });
+
+        it('fires onReachEnd on the visibility edge (not on every render)', () => {
+            // The latest callback is stashed in a ref so the effect deps
+            // are [visible] only — one fire per crossing.
+            expect(src).toMatch(/onReachEndRef\.current\s*=\s*onReachEnd/);
+            expect(src).toMatch(/useEffect\([\s\S]{0,120}if\s*\(visible\)\s*onReachEndRef\.current\(\)[\s\S]{0,40}\[visible\]\)/);
+        });
+
+        it('is exported from the table barrel', () => {
+            expect(barrel).toMatch(/infinite-scroll-sentinel/);
         });
     });
 
-    describe('Tenant rollouts — Controls / Risks / Evidence', () => {
-        const controls = read(
-            'src/app/t/[tenantSlug]/(app)/controls/ControlsClient.tsx',
-        );
-        const risks = read(
-            'src/app/t/[tenantSlug]/(app)/risks/RisksClient.tsx',
-        );
-        const evidence = read(
-            'src/app/t/[tenantSlug]/(app)/evidence/EvidenceClient.tsx',
-        );
+    describe('onReachEnd threading + sentinel mount', () => {
+        const types = read('src/components/ui/table/types.ts');
+        const dataTable = read('src/components/ui/table/data-table.tsx');
+        const table = read('src/components/ui/table/table.tsx');
+        const entityListPage = read('src/components/layout/EntityListPage.tsx');
 
-        const rollouts = [
-            { name: 'ControlsClient', src: controls, testId: 'tenant-controls-load-more', sortKey: 'code' },
-            { name: 'RisksClient',    src: risks,    testId: 'tenant-risks-load-more',    sortKey: 'title' },
-            { name: 'EvidenceClient', src: evidence, testId: 'tenant-evidence-load-more', sortKey: 'title' },
+        it('onReachEnd is declared on the table props', () => {
+            expect(types).toMatch(/onReachEnd\?:\s*\(\)\s*=>\s*void/);
+            expect(dataTable).toMatch(/onReachEnd\?:\s*\(\)\s*=>\s*void/);
+        });
+
+        it('DataTable forwards onReachEnd to <Table>', () => {
+            expect(dataTable).toMatch(/<Table[\s\S]{0,200}onReachEnd=\{onReachEnd\}/);
+        });
+
+        it('EntityListPage exposes onReachEnd on its table Pick', () => {
+            expect(entityListPage).toMatch(/'onReachEnd'/);
+        });
+
+        it('Table renders the sentinel ONLY when onReachEnd is set, inside the scroll wrapper', () => {
+            expect(table).toMatch(/import \{ InfiniteScrollSentinel \}/);
+            // Sentinel is conditionally rendered after the table, before
+            // the scroll-wrapper close.
+            expect(table).toMatch(/\{onReachEnd && \(\s*<InfiniteScrollSentinel/);
+        });
+    });
+
+    describe('Seven tenant list pages consume load-on-scroll', () => {
+        // [client file, hasMore var, loadMore var]
+        const pages: Array<[string, string, string]> = [
+            [`${APP}/controls/ControlsClient.tsx`, 'hasMoreControls', 'loadMoreControls'],
+            [`${APP}/risks/RisksClient.tsx`, 'hasMoreRisks', 'loadMoreRisks'],
+            [`${APP}/tasks/TasksClient.tsx`, 'hasMoreTasks', 'loadMoreTasks'],
+            [`${APP}/evidence/EvidenceClient.tsx`, 'hasMoreEvidence', 'loadMoreEvidence'],
+            [`${APP}/assets/AssetsClient.tsx`, 'hasMoreAssets', 'loadMoreAssets'],
+            [`${APP}/vendors/VendorsClient.tsx`, 'hasMoreVendors', 'loadMoreVendors'],
+            [`${APP}/policies/PoliciesClient.tsx`, 'hasMorePolicies', 'loadMorePolicies'],
         ];
 
-        for (const r of rollouts) {
-            describe(r.name, () => {
-                it('imports the shared threshold + footer primitives', () => {
-                    // Allow sibling named imports from the hooks barrel (e.g.
-                    // ControlsClient also pulls useKeyboardShortcut for the
-                    // quick-view Escape) — the parity intent is just that the
-                    // shared primitive is imported, not that it's imported alone.
-                    expect(r.src).toMatch(
+        for (const [file, hasMore, loadMore] of pages) {
+            const name = file.split('/').pop();
+            describe(name, () => {
+                const src = read(file);
+
+                it('imports useThresholdLoadMore from the hooks barrel', () => {
+                    expect(src).toMatch(
                         /import\s*\{[^}]*\buseThresholdLoadMore\b[^}]*\}\s*from\s*['"]@\/components\/ui\/hooks['"]/,
                     );
-                    expect(r.src).toMatch(
-                        /import\s*\{\s*TableLoadMoreFooter\s*\}\s*from\s*['"]@\/components\/ui\/table-load-more-footer['"]/,
+                });
+
+                it(`passes onReachEnd={${hasMore} ? ${loadMore} : undefined} to its table`, () => {
+                    // Match both JSX (`onReachEnd={…}`) and object-literal
+                    // (`onReachEnd: …`) call shapes.
+                    expect(src).toMatch(
+                        new RegExp(`onReachEnd[=:]\\s*\\{?\\s*${hasMore}\\s*\\?\\s*${loadMore}\\s*:\\s*undefined`),
                     );
                 });
 
-                it('mounts a <TableLoadMoreFooter> with the canonical testId', () => {
-                    expect(r.src).toMatch(
-                        new RegExp(`<TableLoadMoreFooter[\\s\\S]{0,800}testId="${r.testId}"`),
-                    );
+                it('does NOT render the retired <TableLoadMoreFooter> button', () => {
+                    expect(src).not.toMatch(/<TableLoadMoreFooter/);
                 });
+            });
+        }
+    });
 
-                it('threads sortableColumns + sortBy + sortOrder + onSortChange', () => {
-                    expect(r.src).toMatch(/sortableColumns/);
-                    expect(r.src).toMatch(/sortBy/);
-                    expect(r.src).toMatch(/sortOrder/);
-                    expect(r.src).toMatch(/onSortChange/);
-                });
+    describe('Viewport-clamp: clamp-broken pages render their client directly', () => {
+        // A plain-block wrapper (`<div className="space-y-section
+        // animate-fadeIn">`) around the client severs ListPageShell's
+        // `md:flex-1 md:min-h-0` chain, so the whole page scrolls instead
+        // of the table body. These two were wrapped; both now render the
+        // client directly (animate-fadeIn moved onto the shell).
+        const clampFixed: Array<[string, string]> = [
+            [`${APP}/assets/page.tsx`, 'AssetsClient'],
+            [`${APP}/vendors/page.tsx`, 'VendorsClient'],
+        ];
 
-                it('first sortable column matches the canonical row id', () => {
-                    expect(r.src).toMatch(new RegExp(`'${r.sortKey}'`));
-                });
+        for (const [file, client] of clampFixed) {
+            it(`${file.split('/').slice(-2).join('/')} returns <${client}> without a wrapping <div>`, () => {
+                const src = read(file);
+                expect(src).toMatch(new RegExp(`return\\s*\\(\\s*<${client}`));
+                expect(src).not.toMatch(
+                    new RegExp(`<div className="space-y-section animate-fadeIn">\\s*<${client}`),
+                );
             });
         }
     });

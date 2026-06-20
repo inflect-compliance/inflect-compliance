@@ -18,7 +18,6 @@ import { useTenantMutation } from '@/lib/hooks/use-tenant-mutation';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import type { CappedList } from '@/lib/list-backfill-cap';
 import { TruncationBanner } from '@/components/ui/TruncationBanner';
-import { TableLoadMoreFooter } from '@/components/ui/table-load-more-footer';
 import { useThresholdLoadMore } from '@/components/ui/hooks';
 import { TimestampTooltip } from '@/components/ui/timestamp-tooltip';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -269,7 +268,6 @@ function TasksPageInner({
     // first slice and the footer reveals more; below it, all rows show.
     const {
         visibleRows: visibleTasks,
-        totalCount: totalTasksCount,
         hasMore: hasMoreTasks,
         loadMore: loadMoreTasks,
     } = useThresholdLoadMore(sortedTasks);
@@ -754,6 +752,7 @@ function TasksPageInner({
                 <TruncationBanner truncated={truncated} />
                 <DataTable<TaskListItem>
                     fillBody
+                    onReachEnd={hasMoreTasks ? loadMoreTasks : undefined}
                     data={visibleTasks}
                     columns={orderColumns(taskColumns)}
                     loading={loading}
@@ -807,17 +806,6 @@ function TasksPageInner({
                     resourceName={(p) => p ? 'tasks' : 'task'}
                     data-testid="tasks-table"
                     className="hover:bg-bg-muted"
-                />
-                {/* Org-parity load-more footer — same primitive as the
-                    Controls table; hidden by the primitive when every
-                    loaded task is already visible. */}
-                <TableLoadMoreFooter
-                    hasMore={hasMoreTasks}
-                    visibleCount={visibleTasks.length}
-                    totalCount={totalTasksCount}
-                    onLoadMore={loadMoreTasks}
-                    resourceName="tasks"
-                    testId="tenant-tasks-load-more"
                 />
             </ListPageShell.Body>
 

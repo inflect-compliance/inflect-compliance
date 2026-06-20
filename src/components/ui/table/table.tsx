@@ -43,6 +43,7 @@ import { LoadingSpinner, SortOrder } from "../icons";
 import { ChevronRight } from "../icons/nucleo/chevron-right";
 import { Tooltip } from "../tooltip";
 import { SelectionToolbar } from "./selection-toolbar";
+import { InfiniteScrollSentinel } from "./infinite-scroll-sentinel";
 import { TableProps, UseTableProps } from "./types";
 
 const SELECT_COLUMN_WIDTH = 48;
@@ -657,6 +658,7 @@ export function Table<T>({
   children,
   renderExpandedRow,
   renderAlignedSubRows,
+  onReachEnd,
   enableColumnResizing = false,
 }: TableProps<T>) {
   const selectionEnabled = selectionEnabledProp ?? true;
@@ -1293,6 +1295,16 @@ export function Table<T>({
               </tbody>
             </table>
             {children}
+            {/* Load-on-scroll sentinel — lives inside the scroll
+                wrapper so the fillBody inner-scroll clip gates it to
+                the table-body bottom. Rendered only while the consumer
+                says there is more (onReachEnd defined). */}
+            {onReachEnd && (
+              <InfiniteScrollSentinel
+                onReachEnd={onReachEnd}
+                testId="table-infinite-scroll-sentinel"
+              />
+            )}
           </div>
         </>
       ) : (

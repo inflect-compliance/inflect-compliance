@@ -36,9 +36,13 @@ export default async function AssetsPage({
 
     const assets = await listAssets(ctx, Object.keys(filters).length > 0 ? filters : undefined);
 
+    // Render the client directly (no wrapping <div>): the wrapper was a
+    // plain block that severed ListPageShell's `md:flex-1 md:min-h-0`
+    // flex chain, so the whole page scrolled instead of the table body
+    // clamping to the viewport like Controls. animate-fadeIn now rides
+    // the shell.
     return (
-        <div className="space-y-section animate-fadeIn">
-            <AssetsClient
+        <AssetsClient
                 initialAssets={JSON.parse(JSON.stringify(assets))}
                 initialFilters={filters}
                 tenantSlug={tenantSlug}
@@ -66,6 +70,5 @@ export default async function AssetsPage({
                     assetsRegistered: t('assetsRegistered', { count: assets.length }),
                 }}
             />
-        </div>
     );
 }

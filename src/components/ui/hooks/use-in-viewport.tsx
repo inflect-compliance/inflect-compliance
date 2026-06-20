@@ -23,9 +23,20 @@ import { RefObject, useEffect, useState } from "react";
  */
 export function useInViewport(
     elementRef: RefObject<Element | null>,
-    options: { root?: RefObject<Element | null>; defaultValue?: boolean } = {},
+    options: {
+        root?: RefObject<Element | null>;
+        defaultValue?: boolean;
+        /**
+         * Forwarded to `IntersectionObserver`. Grow the root's bounding
+         * box (e.g. `"0px 0px 320px 0px"`) so the target counts as
+         * "in viewport" a little BEFORE it physically scrolls in — the
+         * lever infinite-scroll uses to pre-load the next batch before
+         * the user hits the very bottom.
+         */
+        rootMargin?: string;
+    } = {},
 ) {
-    const { root, defaultValue = false } = options;
+    const { root, defaultValue = false, rootMargin } = options;
     const [visible, setVisible] = useState(defaultValue);
 
     useEffect(() => {
@@ -36,12 +47,12 @@ export function useInViewport(
 
         const observer = new IntersectionObserver(
             ([entry]) => setVisible(entry.isIntersecting),
-            { root: root?.current ?? null },
+            { root: root?.current ?? null, rootMargin },
         );
         observer.observe(node);
 
         return () => observer.disconnect();
-    }, [elementRef, root]);
+    }, [elementRef, root, rootMargin]);
 
     return visible;
 }

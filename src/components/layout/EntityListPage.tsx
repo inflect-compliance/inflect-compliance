@@ -159,6 +159,7 @@ export type EntityListPageTable<TRow> = Pick<
     | 'getRowCanExpand'
     | 'renderExpandedRow'
     | 'renderAlignedSubRows'
+    | 'onReachEnd'
     | 'onRowSelectionChange'
     | 'selectedRows'
     | 'selectionControls'
