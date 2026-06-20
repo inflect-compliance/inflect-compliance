@@ -139,7 +139,7 @@ describe('Tenant list tables — load-on-scroll', () => {
         ];
 
         for (const [file, hasMore, loadMore] of pages) {
-            const name = file.split('/').pop();
+            const name = file.split('/').pop() ?? file;
             describe(name, () => {
                 const src = read(file);
 
