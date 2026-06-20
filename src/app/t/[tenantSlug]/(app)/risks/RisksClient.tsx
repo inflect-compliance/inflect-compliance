@@ -46,7 +46,6 @@ import {
 } from '@/components/ui/filter';
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
 import { ListPageShell } from '@/components/layout/ListPageShell';
-import { TableLoadMoreFooter } from '@/components/ui/table-load-more-footer';
 import { useThresholdLoadMore } from '@/components/ui/hooks';
 import { AsidePanel } from '@/components/ui/aside-panel';
 import { AiAssistRail } from '@/components/ui/ai-assist-rail';
@@ -450,10 +449,9 @@ function RisksPageInner({
         [],
     );
 
-    // ─── PR-1: org-parity progressive disclosure ───
+    // ─── Progressive disclosure: load-on-scroll windowing ───
     const {
         visibleRows: visibleRisks,
-        totalCount: totalRisksCount,
         hasMore: hasMoreRisks,
         loadMore: loadMoreRisks,
     } = useThresholdLoadMore(risks);
@@ -1186,6 +1184,7 @@ function RisksPageInner({
                 ) : (
                     <DataTable<RiskListItem>
                         fillBody
+                        onReachEnd={hasMoreRisks ? loadMoreRisks : undefined}
                         data={visibleRisks}
                         columns={orderColumns(riskTableColumns)}
                         loading={loading}
@@ -1242,15 +1241,6 @@ function RisksPageInner({
                         className="hover:bg-bg-muted"
                     />
                 )}
-                {/* PR-1 — org-parity load-more footer. */}
-                <TableLoadMoreFooter
-                    hasMore={hasMoreRisks}
-                    visibleCount={visibleRisks.length}
-                    totalCount={totalRisksCount}
-                    onLoadMore={loadMoreRisks}
-                    resourceName="risks"
-                    testId="tenant-risks-load-more"
-                />
             </ListPageShell.Body>
 
             {permissions.canWrite && (

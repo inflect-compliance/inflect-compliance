@@ -40,16 +40,18 @@ export default async function VendorRegisterPage({
         { take: SSR_PAGE_LIMIT },
     );
 
+    // Render the client directly (no wrapping <div>): the plain-block
+    // wrapper severed ListPageShell's `md:flex-1 md:min-h-0` flex chain,
+    // so the whole page scrolled instead of the table body clamping to
+    // the viewport like Controls. animate-fadeIn now rides the shell.
     return (
-        <div className="space-y-section animate-fadeIn">
-            <VendorsClient
-                initialVendors={JSON.parse(JSON.stringify(vendors))}
-                initialFilters={filters}
-                tenantSlug={tenantSlug}
-                permissions={{
-                    canCreate: ctx.appPermissions.vendors.create,
-                }}
-            />
-        </div>
+        <VendorsClient
+            initialVendors={JSON.parse(JSON.stringify(vendors))}
+            initialFilters={filters}
+            tenantSlug={tenantSlug}
+            permissions={{
+                canCreate: ctx.appPermissions.vendors.create,
+            }}
+        />
     );
 }

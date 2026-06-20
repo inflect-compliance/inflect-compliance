@@ -49,7 +49,6 @@ import {
     type FilterType,
 } from '@/components/ui/filter';
 import { EntityListPage } from '@/components/layout/EntityListPage';
-import { TableLoadMoreFooter } from '@/components/ui/table-load-more-footer';
 import { useThresholdLoadMore, useKeyboardShortcut } from '@/components/ui/hooks';
 import { AsidePanel } from '@/components/ui/aside-panel';
 import { BestValueControls } from './_components/BestValueControls';
@@ -347,7 +346,6 @@ function ControlsPageInner({
     // the window so a narrowed result stays fully visible).
     const {
         visibleRows: visibleControls,
-        totalCount: totalControlsCount,
         hasMore: hasMoreControls,
         loadMore: loadMoreControls,
     } = useThresholdLoadMore(controls);
@@ -1180,21 +1178,6 @@ function ControlsPageInner({
             className="animate-fadeIn gap-section"
             aside={composedAside}
             banner={<TruncationBanner truncated={truncated} />}
-            // PR-1 — org-parity load-more footer. Renders below the
-            // DataTable inside the same body card; gated on
-            // `hasMore` inside the primitive so it stays hidden when
-            // every row is already visible (≤ threshold or after a
-            // narrowing filter).
-            tableFooter={
-                <TableLoadMoreFooter
-                    hasMore={hasMoreControls}
-                    visibleCount={visibleControls.length}
-                    totalCount={totalControlsCount}
-                    onLoadMore={loadMoreControls}
-                    resourceName="controls"
-                    testId="tenant-controls-load-more"
-                />
-            }
             header={{
                 breadcrumbs: [
                     // Was `tenantHref('/')` — that resolves to `/t/<slug>/`
@@ -1333,10 +1316,10 @@ function ControlsPageInner({
                 ),
             }}
             table={{
-                // PR-1 — sliced data via useThresholdLoadMore so the
-                // table never paints more than the windowed rows at
-                // once. The footer (see `tableFooter` below) handles
-                // progressive disclosure.
+                // Sliced data via useThresholdLoadMore so the table never
+                // paints more than the windowed rows at once; the
+                // `onReachEnd` sentinel (below) appends the next batch on
+                // scroll — load-on-scroll, no "Load more" button.
                 data: visibleControls,
                 columns: orderColumns(controlColumns),
                 loading,
@@ -1359,6 +1342,11 @@ function ControlsPageInner({
                 virtualize: false,
                 getRowCanExpand: getControlCanExpand,
                 renderAlignedSubRows: renderControlTaskSubRows,
+                // Load-on-scroll: auto-append the next windowed batch as
+                // the user nears the bottom. Undefined when every row is
+                // already visible so the sentinel unmounts. Replaces the
+                // old "Load more controls" button.
+                onReachEnd: hasMoreControls ? loadMoreControls : undefined,
                 onRowClick: handleRowClick,
                 onRowPrefetch: (row) => router.prefetch(tenantHref(`/controls/${row.original.id}`)),
                 emptyState: hasActive ? (

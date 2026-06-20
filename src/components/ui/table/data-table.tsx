@@ -128,6 +128,14 @@ export interface DataTableProps<T> {
    * `renderExpandedRow`).
    */
   renderAlignedSubRows?: (row: Row<T>, columnIds: string[]) => React.ReactNode;
+  /**
+   * Infinite-scroll (load-on-scroll). Forwarded to the non-virtualized
+   * `<Table>`, which renders a bottom sentinel inside the scroll
+   * wrapper and fires `onReachEnd` when it scrolls into view. Pair with
+   * `useThresholdLoadMore`: `onReachEnd={hasMore ? loadMore : undefined}`.
+   * Replaces the `<TableLoadMoreFooter>` button.
+   */
+  onReachEnd?: () => void;
 
   // ── Selection ──
 
@@ -318,6 +326,7 @@ export function DataTable<T>({
   getRowCanExpand,
   renderExpandedRow,
   renderAlignedSubRows,
+  onReachEnd,
   onRowSelectionChange,
   selectedRows,
   selectionControls,
@@ -548,6 +557,7 @@ export function DataTable<T>({
         table={table}
         data={data}
         rowProps={prefetchRowProps}
+        onReachEnd={onReachEnd}
       />
     </div>
   );

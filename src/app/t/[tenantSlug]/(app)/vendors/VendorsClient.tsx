@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/filter';
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
 import { ListPageShell } from '@/components/layout/ListPageShell';
+import { useThresholdLoadMore } from '@/components/ui/hooks';
 import { toApiSearchParams } from '@/lib/filters/url-sync';
 import { useHydratedNow } from '@/lib/hooks/use-hydrated-now';
 import { buildVendorFilters, VENDOR_FILTER_KEYS } from './filter-defs';
@@ -162,6 +163,14 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
 
     const vendors = vendorsQuery.data?.rows ?? [];
     const truncated = vendorsQuery.data?.truncated ?? false;
+
+    // Load-on-scroll windowing — render the first batch, append more as
+    // the user nears the bottom (DataTable onReachEnd sentinel).
+    const {
+        visibleRows: visibleVendors,
+        hasMore: hasMoreVendors,
+        loadMore: loadMoreVendors,
+    } = useThresholdLoadMore(vendors);
 
     // ─── Bulk actions (canonical BulkActionBar) ───
     const apiUrl = (path: string) => `/api/t/${tenantSlug}${path}`;
@@ -403,7 +412,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
     ])), [tenantHref, hydratedNow, orderColumns]);
 
     return (
-        <ListPageShell className="gap-section">
+        <ListPageShell className="animate-fadeIn gap-section">
             <ListPageShell.Header>
                 <div className="flex items-center justify-between">
                     <div>
@@ -497,7 +506,8 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                 <div className="border border-border-default rounded-lg overflow-hidden md:flex md:flex-col md:flex-1 md:min-h-0">
                     <DataTable
                         fillBody
-                        data={vendors}
+                        onReachEnd={hasMoreVendors ? loadMoreVendors : undefined}
+                        data={visibleVendors}
                         columns={vendorColumns}
                         getRowId={(v: any) => v.id}
                         columnVisibility={columnVisibility}

@@ -94,6 +94,16 @@ type BaseTableProps<T> = {
    * on category / status / owner / evidence.
    */
   renderAlignedSubRows?: (row: Row<T>, columnIds: string[]) => ReactNode;
+  /**
+   * Infinite-scroll (load-on-scroll). When set, a zero-height sentinel
+   * renders inside the scroll wrapper at the bottom of the rows; it
+   * fires `onReachEnd` when scrolled into view (with a pre-load margin)
+   * so the consumer's windowing hook can append the next batch. Pass
+   * `onReachEnd={hasMore ? loadMore : undefined}` so the sentinel — and
+   * its observer — go away at the end of the data. Replaces the manual
+   * `<TableLoadMoreFooter>` "Load more" button.
+   */
+  onReachEnd?: () => void;
   rowProps?:
     | HTMLAttributes<HTMLTableRowElement>
     | ((row: Row<T>) => HTMLAttributes<HTMLTableRowElement>);

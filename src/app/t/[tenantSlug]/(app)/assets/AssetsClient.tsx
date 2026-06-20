@@ -17,6 +17,7 @@ import { FilterToolbar } from '@/components/filters/FilterToolbar';
 import { Tooltip } from '@/components/ui/tooltip';
 import { AppIcon } from '@/components/icons/AppIcon';
 import { ListPageShell } from '@/components/layout/ListPageShell';
+import { useThresholdLoadMore } from '@/components/ui/hooks';
 import { toApiSearchParams } from '@/lib/filters/url-sync';
 import { buildAssetFilters, ASSET_FILTER_KEYS } from './filter-defs';
 import { Button } from '@/components/ui/button';
@@ -154,6 +155,14 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
         initialData: filtersMatchInitial ? initialAssets : undefined,
     });
     const assets = assetsQuery.data ?? [];
+
+    // Load-on-scroll windowing — render the first batch, append more as
+    // the user nears the bottom (DataTable onReachEnd sentinel).
+    const {
+        visibleRows: visibleAssets,
+        hasMore: hasMoreAssets,
+        loadMore: loadMoreAssets,
+    } = useThresholdLoadMore(assets);
 
     // ─── Bulk actions (canonical BulkActionBar) ───
     const queryClient = useQueryClient();
@@ -512,7 +521,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
     ]), [t]);
 
     return (
-        <ListPageShell className="gap-section">
+        <ListPageShell className="animate-fadeIn gap-section">
             <ListPageShell.Header>
                 <div className="flex items-center justify-between">
                     <div>
@@ -602,7 +611,8 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
             <ListPageShell.Body>
                 <DataTable
                     fillBody
-                    data={assets}
+                    onReachEnd={hasMoreAssets ? loadMoreAssets : undefined}
+                    data={visibleAssets}
                     columns={orderColumns(assetColumns)}
                     getRowId={(a: any) => a.id}
                     columnVisibility={columnVisibility}

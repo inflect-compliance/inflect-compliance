@@ -42,7 +42,6 @@ import {
 } from '@/components/ui/filter';
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
 import { ListPageShell } from '@/components/layout/ListPageShell';
-import { TableLoadMoreFooter } from '@/components/ui/table-load-more-footer';
 import { useThresholdLoadMore } from '@/components/ui/hooks';
 import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
 import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
@@ -549,7 +548,6 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     );
     const {
         visibleRows: visibleEvidence,
-        totalCount: totalEvidenceCount,
         hasMore: hasMoreEvidence,
         loadMore: loadMoreEvidence,
     } = useThresholdLoadMore(sortedEvidence);
@@ -1173,6 +1171,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                 ) : (
                     <DataTable
                         fillBody
+                        onReachEnd={hasMoreEvidence ? loadMoreEvidence : undefined}
                         data={visibleEvidence}
                         columns={orderColumns(evidenceColumns)}
                         getRowId={(ev: any) => ev.id}
@@ -1250,15 +1249,6 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                         className="hover:bg-bg-muted"
                     />
                 )}
-                {/* PR-1 — org-parity load-more footer. */}
-                <TableLoadMoreFooter
-                    hasMore={hasMoreEvidence}
-                    visibleCount={visibleEvidence.length}
-                    totalCount={totalEvidenceCount}
-                    onLoadMore={loadMoreEvidence}
-                    resourceName="evidence rows"
-                    testId="tenant-evidence-load-more"
-                />
             </ListPageShell.Body>
         </ListPageShell>
     );

@@ -29,6 +29,7 @@ import {
     selectVisibleFilters,
 } from '@/components/ui/filter';
 import { EntityListPage } from '@/components/layout/EntityListPage';
+import { useThresholdLoadMore } from '@/components/ui/hooks';
 import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
 import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
 import { buttonVariants } from '@/components/ui/button-variants';
@@ -183,6 +184,14 @@ function PoliciesPageInner({
 
     const policies = policiesQuery.data?.rows ?? [];
     const truncated = policiesQuery.data?.truncated ?? false;
+
+    // Load-on-scroll windowing — render the first batch, append more as
+    // the user nears the bottom (DataTable onReachEnd sentinel).
+    const {
+        visibleRows: visiblePolicies,
+        hasMore: hasMorePolicies,
+        loadMore: loadMorePolicies,
+    } = useThresholdLoadMore(policies);
     const loading = policiesQuery.isLoading && !policiesQuery.data;
 
     // ─── Bulk actions (canonical BulkActionBar — assign + archive) ───
@@ -588,7 +597,8 @@ function PoliciesPageInner({
                 ),
             }}
             table={{
-                data: policies,
+                data: visiblePolicies,
+                onReachEnd: hasMorePolicies ? loadMorePolicies : undefined,
                 columns: orderColumns(policyColumns),
                 loading,
                 getRowId: (p: any) => p.id,
