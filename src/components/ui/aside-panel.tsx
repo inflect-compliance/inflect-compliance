@@ -251,8 +251,11 @@ export function AsidePanel({
                     className={cn(
                         cardVariants({ density: 'none' }),
                         // `relative` anchors the absolutely-positioned
-                        // resize handle on the left edge.
-                        'relative hidden xl:flex flex-shrink-0 flex-col',
+                        // resize handle on the left edge. `max-h-full` +
+                        // `min-h-0` cap the card to the (bounded) aside
+                        // column so tall content scrolls inside the body
+                        // region below, rather than overflowing the fold.
+                        'relative hidden xl:flex xl:max-h-full xl:min-h-0 flex-shrink-0 flex-col',
                     )}
                     style={{ width }}
                     data-testid="aside-panel-docked"
@@ -304,7 +307,7 @@ export function AsidePanel({
                             />
                         </button>
                     </div>
-                    <div className="min-h-0 overflow-y-auto p-3">{children}</div>
+                    <div className="min-h-0 flex-1 overflow-y-auto p-3">{children}</div>
                 </div>
             )}
 

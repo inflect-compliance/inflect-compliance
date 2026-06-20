@@ -166,7 +166,12 @@ function ListPageShellBody({
             </div>
             {aside && (
                 <aside
-                    className="flex-shrink-0 xl:self-start"
+                    // Stretch to the body height (not `self-start` → content
+                    // height) + `min-h-0` so a tall docked panel (e.g. the
+                    // editable quick-view) is CAPPED to the viewport and its
+                    // own `overflow-y-auto` content scrolls, instead of the
+                    // panel growing past the fold and getting clipped.
+                    className="flex-shrink-0 xl:self-stretch xl:min-h-0"
                     aria-label="Context"
                     data-testid="list-page-aside"
                 >

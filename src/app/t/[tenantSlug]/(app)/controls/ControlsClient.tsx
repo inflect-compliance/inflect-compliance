@@ -1172,9 +1172,11 @@ function ControlsPageInner({
     // the always-on browse rail + best-value + AI assist co-pilot stack
     // vertically inside the docked third column.
     const composedAside = quickViewAside ? (
-        <div className="flex flex-col gap-default">{quickViewAside}</div>
+        // `xl:h-full xl:min-h-0` passes the bounded aside height down to the
+        // panel card so its content scrolls (the card caps via max-h-full).
+        <div className="flex flex-col gap-default xl:h-full xl:min-h-0">{quickViewAside}</div>
     ) : (
-        <div className="flex flex-col gap-default">
+        <div className="flex flex-col gap-default xl:h-full xl:min-h-0">
             {browseAside}
             {bestValueAside}
             {aiAssistAside}
