@@ -156,13 +156,55 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
     });
     const assets = assetsQuery.data ?? [];
 
+    // ─── Sortable headers (per-column asc/desc, parity with Controls) ───
+    // Clicking a sortable header re-orders the in-memory rows; sort runs
+    // BEFORE the load-more window so the visible slice reflects the order.
+    const [sortBy, setSortBy] = useState<string | undefined>(undefined);
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | undefined>(
+        undefined,
+    );
+    const sortableColumns = useMemo(
+        () => [
+            'code', 'name', 'type', 'criticality',
+            'classification', 'owner', 'controls', 'tasks',
+        ],
+        [],
+    );
+    const sortedAssets = useMemo(() => {
+        if (!sortBy) return assets;
+        const accessor = (a: (typeof assets)[number]): string | number => {
+            switch (sortBy) {
+                case 'code': return (a.key ?? '').toString().toLowerCase();
+                case 'name': return (a.name ?? '').toString().toLowerCase();
+                case 'type': return (a.type ?? '').toString().toLowerCase();
+                case 'criticality':
+                    return getAssetCriticality(
+                        a.confidentiality ?? 3, a.integrity ?? 3, a.availability ?? 3,
+                    ).score;
+                case 'classification': return (a.classification ?? '').toString().toLowerCase();
+                case 'owner': return (a.owner ?? '').toString().toLowerCase();
+                case 'controls': return a._count?.controls ?? 0;
+                case 'tasks': return a.taskTotal ?? 0;
+                default: return '';
+            }
+        };
+        const dir = sortOrder === 'asc' ? 1 : -1;
+        return [...assets].sort((a, b) => {
+            const av = accessor(a);
+            const bv = accessor(b);
+            if (av === bv) return 0;
+            if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir;
+            return String(av) > String(bv) ? dir : -dir;
+        });
+    }, [assets, sortBy, sortOrder]);
+
     // Load-on-scroll windowing — render the first batch, append more as
     // the user nears the bottom (DataTable onReachEnd sentinel).
     const {
         visibleRows: visibleAssets,
         hasMore: hasMoreAssets,
         loadMore: loadMoreAssets,
-    } = useThresholdLoadMore(assets);
+    } = useThresholdLoadMore(sortedAssets);
 
     // ─── Bulk actions (canonical BulkActionBar) ───
     const queryClient = useQueryClient();
@@ -614,6 +656,13 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                     onReachEnd={hasMoreAssets ? loadMoreAssets : undefined}
                     data={visibleAssets}
                     columns={orderColumns(assetColumns)}
+                    sortableColumns={sortableColumns}
+                    sortBy={sortBy}
+                    sortOrder={sortOrder}
+                    onSortChange={({ sortBy: nextBy, sortOrder: nextOrder }) => {
+                        setSortBy(nextBy);
+                        setSortOrder(nextOrder);
+                    }}
                     getRowId={(a: any) => a.id}
                     columnVisibility={columnVisibility}
                     onColumnVisibilityChange={setColumnVisibility}
