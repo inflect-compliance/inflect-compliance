@@ -160,18 +160,18 @@ test.describe('Epic 56 — tooltip + copy primitives', () => {
 
         // The tasks-table title is now a quick-view panel <button> (not a
         // link — clicking it opens the in-place side panel, matching the
-        // Controls page), so resolve the first seeded task id from the list
-        // API and navigate straight to its detail page. The CopyText
+        // Controls page). Derive the FIRST ROW's task id from its title
+        // button (`data-testid="task-title-<id>"`) and navigate straight to
+        // that task's detail page — the same first-row task the old link
+        // click reached, which the seed gives a `key`. The CopyText
         // affordance under test lives on the detail HEADER, not the panel.
-        const listRes = await page.request.get(
-            `/api/t/${tenantSlug}/tasks?limit=1`,
-        );
-        const listJson = await listRes.json();
-        const taskRows = Array.isArray(listJson)
-            ? listJson
-            : (listJson.rows ?? listJson.items ?? []);
-        const taskId = taskRows[0]?.id;
-        expect(taskId, 'seed should provision at least one task').toBeTruthy();
+        const firstTitle = page
+            .locator('[data-testid^="task-title-"]')
+            .first();
+        await expect(firstTitle).toBeVisible({ timeout: 30_000 });
+        const titleTestId = (await firstTitle.getAttribute('data-testid')) ?? '';
+        const taskId = titleTestId.replace('task-title-', '');
+        expect(taskId, 'first task row should expose its id').toBeTruthy();
         await safeGoto(page, `/t/${tenantSlug}/tasks/${taskId}`, {
             waitUntil: 'domcontentloaded',
         });
