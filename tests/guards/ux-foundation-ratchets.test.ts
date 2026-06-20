@@ -107,17 +107,19 @@ describe('Epic 64 — window.confirm() ceiling', () => {
     // sync-close rationale as the four sites above.
     //
     // Tasks-tab Phase 2 (2026-06-03) bumped 17 → 18 for the row-level
-    // task edit surface (opened from the Tasks list + every
-    // control/asset/risk Tasks tab). That surface is now
-    // `<TaskDetailSheet>` (a right-side Sheet that replaced the earlier
-    // EditTaskModal); it carries the SAME unsaved-changes discard guard
-    // as `NewTaskModal` — a synchronous `window.confirm` on close so a
-    // mis-click can't silently drop typed edits. The modal→sheet swap
-    // leaves the count unchanged (one confirm out, one in).
+    // task edit surface (`<TaskDetailSheet>`, a right-side Sheet with a
+    // `window.confirm` unsaved-changes discard guard).
+    //
+    // 2026-06-20 lowered 18 → 17: the Tasks list page moved off the modal
+    // `<TaskDetailSheet>` onto the non-modal `<AsidePanel>` + `<TaskEditPanel>`
+    // (matching the Controls page — click a task to switch the open panel in
+    // place, no close-first). `TaskDetailSheet` was deleted, removing its
+    // `window.confirm` call site. The non-modal panel mirrors the Controls
+    // task panel, which carries no confirm.
     //
     // To LOWER this number: migrate one or more remaining sites and
     // bump the constant down. Don't lower without a real migration.
-    const CONFIRM_CALL_CEILING = 18;
+    const CONFIRM_CALL_CEILING = 17;
 
     it(`has at most ${CONFIRM_CALL_CEILING} native-confirm call sites under the tenant app`, () => {
         const offenders: string[] = [];

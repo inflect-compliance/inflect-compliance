@@ -137,12 +137,21 @@ export function AsidePanel({
     const [sheetOpen, setSheetOpen] = useState(false);
 
     // openOnMount — a panel that appears in response to a user action shows
-    // its content immediately: expand the docked rail (≥xl) + open the Sheet
-    // (<xl). Runs once on mount.
+    // its content immediately. ≥xl: expand the docked rail (no Sheet — the
+    // rail IS the surface, and opening the Sheet too would float a
+    // full-viewport overlay over the page that swallows the next click, so a
+    // user had to close-then-reopen to switch rows). <xl: open the Sheet (the
+    // docked rail is hidden there). Viewport is read synchronously here so the
+    // decision is correct on first mount regardless of media-query hook timing.
+    // Runs once on mount.
     useEffect(() => {
         if (!openOnMount) return;
         setCollapsed(false);
-        setSheetOpen(true);
+        const belowXl =
+            typeof window !== 'undefined' && window.matchMedia
+                ? window.matchMedia('(max-width: 1279.98px)').matches
+                : false;
+        if (belowXl) setSheetOpen(true);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 

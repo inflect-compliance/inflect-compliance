@@ -10,7 +10,8 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { NewTaskModal } from './NewTaskModal';
-import { TaskDetailSheet } from './TaskDetailSheet';
+import { AsidePanel } from '@/components/ui/aside-panel';
+import { TaskEditPanel } from '@/app/t/[tenantSlug]/(app)/controls/TaskEditPanel';
 import { AppIcon } from '@/components/icons/AppIcon';
 import { useSWRConfig } from 'swr';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
@@ -137,10 +138,12 @@ function TasksPageInner({
     // (the redirect target from `/tasks/new`). Flag stripped after
     // open so back/forward doesn't reopen the modal.
     const [isCreateOpen, setIsCreateOpen] = useState(false);
-    // Row-level edit affordance. Mirrors the controls-table quick-edit
-    // pencil: it opens the task in the right-side <TaskDetailSheet>
-    // (non-null id = open) rather than routing to the detail page.
-    const [editTaskId, setEditTaskId] = useState<string | null>(null);
+    // Quick-view side panel — mirrors the Controls page. Single-click a task
+    // TITLE (or the row pencil) opens the editable task in a non-modal
+    // <AsidePanel> (docked rail ≥xl, Sheet <xl); the table stays visible so
+    // clicking another task switches the panel in place. Row double-click
+    // still navigates to the full detail page.
+    const [selectedTask, setSelectedTask] = useState<TaskListItem | null>(null);
     const searchParams = useSearchParams();
     useEffect(() => {
         if (searchParams?.get('create') === '1') {
@@ -569,10 +572,23 @@ function TasksPageInner({
                 // Status-tone signals are already in the dedicated
                 // Status + Severity columns; key prefix can land in a
                 // separate column in a follow-up.
+                // Single-click the TITLE opens the quick-view side panel (a
+                // <button>, so the table's isClickOnInteractiveChild() skips
+                // the row's select/navigate handlers). Row double-click still
+                // navigates to the full detail page.
                 cell: ({ row }) => (
-                    <TableTitleCell href={tenantHref(`/tasks/${row.original.id}`)}>
-                        {row.original.title}
-                    </TableTitleCell>
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedTask(row.original);
+                        }}
+                        className="inline-block max-w-full cursor-pointer truncate text-left align-middle rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        id={`task-link-${row.original.id}`}
+                        data-testid={`task-title-${row.original.id}`}
+                    >
+                        <TableTitleCell tintOn="self">{row.original.title}</TableTitleCell>
+                    </button>
                 ),
             },
             {
@@ -626,10 +642,10 @@ function TasksPageInner({
             },
         );
 
-        // Quick-edit affordance — same pattern as the controls table:
-        // a pencil that opens the row's entity in a modal. Gated on
-        // edit permission; `stopPropagation` so it doesn't also fire
-        // the row's navigate-to-detail click.
+        // Quick-edit affordance — opens the row's task in the non-modal
+        // quick-view side panel (same target as a title click). Gated on
+        // edit permission; `stopPropagation` so it doesn't also fire the
+        // row's navigate-to-detail click.
         if (appPermissions.tasks.edit) {
             cols.push({
                 id: 'quick-edit',
@@ -643,7 +659,7 @@ function TasksPageInner({
                         data-testid={`task-quick-edit-${row.original.id}`}
                         onClick={(e) => {
                             e.stopPropagation();
-                            setEditTaskId(row.original.id);
+                            setSelectedTask(row.original);
                         }}
                     >
                         <AppIcon name="edit" size={14} />
@@ -655,6 +671,35 @@ function TasksPageInner({
         return cols;
 
     }, [appPermissions.tasks.edit, selected, tasks.length, tenantHref, hydratedNow]);
+
+    // Quick-view side panel. Keyed by task id so switching to another task
+    // forces a fresh mount → openOnMount re-fires and TaskEditPanel re-seeds
+    // from the newly-clicked row (it seeds form state on mount only). The
+    // panel re-fetches full detail via GET /tasks/{id}, so a minimal seed
+    // object is enough.
+    const taskQuickViewAside = selectedTask ? (
+        <AsidePanel
+            key={`qv-task-${selectedTask.id}`}
+            title="Task"
+            surfaceKey="tasks-quickview"
+            openOnMount
+            onClose={() => setSelectedTask(null)}
+        >
+            <TaskEditPanel
+                tenantSlug={tenantSlug}
+                task={{
+                    id: selectedTask.id,
+                    title: selectedTask.title,
+                    status: selectedTask.status,
+                    severity: selectedTask.severity,
+                    key: selectedTask.key ?? undefined,
+                }}
+                canWrite={appPermissions.tasks.edit}
+                onClose={() => setSelectedTask(null)}
+                onSaved={() => void invalidateAllTasks()}
+            />
+        </AsidePanel>
+    ) : null;
 
     return (
         <ListPageShell className="animate-fadeIn gap-section" data-hydrated={hydrated || undefined}>
@@ -748,7 +793,7 @@ function TasksPageInner({
                 The toolbar owns the count + Clear; the form keeps only
                 action + value + Apply. */}
 
-            <ListPageShell.Body>
+            <ListPageShell.Body aside={taskQuickViewAside}>
                 <TruncationBanner truncated={truncated} />
                 <DataTable<TaskListItem>
                     fillBody
@@ -811,17 +856,6 @@ function TasksPageInner({
 
             {appPermissions.tasks.create && (
                 <NewTaskModal open={isCreateOpen} setOpen={setIsCreateOpen} />
-            )}
-            {appPermissions.tasks.edit && (
-                <TaskDetailSheet
-                    taskId={editTaskId}
-                    setTaskId={setEditTaskId}
-                    tenantSlug={tenantSlug}
-                    apiUrl={apiUrl}
-                    tenantHref={tenantHref}
-                    canWrite={appPermissions.tasks.edit}
-                    onSaved={() => void invalidateAllTasks()}
-                />
             )}
         </ListPageShell>
     );

@@ -78,7 +78,12 @@ export function TaskEditPanel({
     tenantSlug: string;
     task: ControlTask;
     canWrite: boolean;
-    onBack: () => void;
+    /**
+     * Optional "← Back" affordance. On the Controls page the task panel is
+     * reached from a parent control, so Back returns to it. On the Tasks list
+     * page there's no parent — omit it and only the Close button shows.
+     */
+    onBack?: () => void;
     onClose: () => void;
     onSaved: () => void;
 }) {
@@ -159,14 +164,18 @@ export function TaskEditPanel({
     return (
         <div className="space-y-default" role="region" aria-label="Task editor" data-testid="task-edit-panel">
             <div className="flex items-center justify-between gap-tight">
-                <button
-                    type="button"
-                    onClick={onBack}
-                    className="inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-content-muted transition-colors hover:text-content-emphasis"
-                    data-testid="task-edit-back"
-                >
-                    <ArrowLeft width={13} height={13} /> Back
-                </button>
+                {onBack ? (
+                    <button
+                        type="button"
+                        onClick={onBack}
+                        className="inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-content-muted transition-colors hover:text-content-emphasis"
+                        data-testid="task-edit-back"
+                    >
+                        <ArrowLeft width={13} height={13} /> Back
+                    </button>
+                ) : (
+                    <span />
+                )}
                 <button
                     type="button"
                     aria-label="Close quick view"
