@@ -48,10 +48,12 @@ describe("Controls editable side-panel interaction", () => {
         expect(controls).toMatch(/onSaved=\{handlePanelSaved\}/);
     });
 
-    it("the panels surface in the responsive AsidePanel with distinct keys", () => {
+    it("the panels surface in the responsive AsidePanel keyed by entity id", () => {
         expect(controls).toMatch(/<AsidePanel[\s\S]{0,200}openOnMount[\s\S]{0,200}onClose=\{closeQuickView\}/);
-        expect(controls).toMatch(/key="qv-task"/);
-        expect(controls).toMatch(/key="qv-control"/);
+        // Keyed by ID (not just type) so switching control→control forces a
+        // fresh mount → the panel re-seeds from the newly-clicked row.
+        expect(controls).toMatch(/key=\{`qv-task-\$\{selectedTask\.id\}`\}/);
+        expect(controls).toMatch(/key=\{`qv-control-\$\{selectedControl\.id\}`\}/);
     });
 
     it("Escape closes the panel", () => {
@@ -105,5 +107,14 @@ describe("Controls editable side-panel interaction", () => {
         // passes a transparent one so the page (table) stays visible.
         expect(sheet).toMatch(/overlayClassName/);
         expect(aside).toMatch(/overlayClassName="fixed inset-0 z-40"/);
+    });
+
+    it("openOnMount opens the Sheet ONLY below xl (≥xl uses the docked rail, no overlay)", () => {
+        // The bug this locks: opening the Sheet on ≥xl too floated a
+        // full-viewport overlay over the table that swallowed the next
+        // click, forcing a close-then-reopen to switch rows. ≥xl now relies
+        // solely on the docked rail.
+        expect(aside).toMatch(/max-width:\s*1279\.98px/);
+        expect(aside).toMatch(/if\s*\(belowXl\)\s*setSheetOpen\(true\)/);
     });
 });

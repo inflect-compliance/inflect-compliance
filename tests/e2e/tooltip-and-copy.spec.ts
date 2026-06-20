@@ -158,14 +158,23 @@ test.describe('Epic 56 — tooltip + copy primitives', () => {
         });
         await page.waitForLoadState('networkidle').catch(() => {});
 
-        // Seed provisions TSK-1/2/3 — first task ROW link inside the
-        // tasks table (not the page-level Dashboard / New Task nav
-        // buttons that share the `/tasks/` prefix).
-        const firstTask = page
-            .locator('[data-testid="tasks-table"] tbody tr a[href*="/tasks/"]')
+        // The tasks-table title is now a quick-view panel <button> (not a
+        // link — clicking it opens the in-place side panel, matching the
+        // Controls page). Derive the FIRST ROW's task id from its title
+        // button (`data-testid="task-title-<id>"`) and navigate straight to
+        // that task's detail page — the same first-row task the old link
+        // click reached, which the seed gives a `key`. The CopyText
+        // affordance under test lives on the detail HEADER, not the panel.
+        const firstTitle = page
+            .locator('[data-testid^="task-title-"]')
             .first();
-        await expect(firstTask).toBeVisible({ timeout: 30_000 });
-        await firstTask.click();
+        await expect(firstTitle).toBeVisible({ timeout: 30_000 });
+        const titleTestId = (await firstTitle.getAttribute('data-testid')) ?? '';
+        const taskId = titleTestId.replace('task-title-', '');
+        expect(taskId, 'first task row should expose its id').toBeTruthy();
+        await safeGoto(page, `/t/${tenantSlug}/tasks/${taskId}`, {
+            waitUntil: 'domcontentloaded',
+        });
         await page.waitForURL(/tasks\/[a-z0-9]+$/i, {
             waitUntil: 'domcontentloaded',
             timeout: 30_000,

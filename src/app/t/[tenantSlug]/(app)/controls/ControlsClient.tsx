@@ -1118,16 +1118,18 @@ function ControlsPageInner({
     // rail. `openOnMount` expands the rail / opens the Sheet immediately so the
     // panel "appears" on the click.
     //
-    // The `key` is LOAD-BEARING. `openOnMount` runs in a mount-only effect, and
-    // these panels share their tree position (and surfaceKey) with the browse
-    // stack. Without a distinct key React would REUSE the in-place AsidePanel
-    // instance when switching browse→quick-view (or control→task), so
-    // openOnMount never re-fires and a persisted-collapsed rail would stay
-    // collapsed — the quick-view (esp. a task click) would silently not appear.
-    // Distinct keys force a fresh mount each time → openOnMount fires → opens.
+    // The `key` is LOAD-BEARING and includes the ENTITY ID. `openOnMount` runs
+    // in a mount-only effect, and these panels share their tree position (and
+    // surfaceKey) with the browse stack. Without a distinct key React would
+    // REUSE the in-place AsidePanel — and, crucially, the inner
+    // Control/TaskEditPanel, which seeds its form from props ON MOUNT only — so
+    // switching control→control would leave the previous row's data in the
+    // fields (and openOnMount would never re-fire on a collapsed rail). Keying
+    // by id forces a fresh mount on every distinct selection → openOnMount
+    // fires AND the panel re-seeds from the newly-clicked row.
     const quickViewAside = selectedTask ? (
         <AsidePanel
-            key="qv-task"
+            key={`qv-task-${selectedTask.id}`}
             title="Task"
             surfaceKey="controls-quickview"
             openOnMount
@@ -1144,7 +1146,7 @@ function ControlsPageInner({
         </AsidePanel>
     ) : selectedControl ? (
         <AsidePanel
-            key="qv-control"
+            key={`qv-control-${selectedControl.id}`}
             title="Control"
             surfaceKey="controls-quickview"
             openOnMount
