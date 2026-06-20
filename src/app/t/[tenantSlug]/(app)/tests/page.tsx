@@ -236,6 +236,41 @@ function TestsRollupContent() {
         });
     }, [plans, state, search]);
 
+    // ─── Sortable headers (per-column asc/desc, parity with Controls) ───
+    const [sortBy, setSortBy] = useState<string | undefined>(undefined);
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | undefined>(
+        undefined,
+    );
+    const sortableColumns = useMemo(
+        () => ['name', 'status', 'control', 'frequency', 'nextDue', 'lastResult', 'runs'],
+        [],
+    );
+    const sortedPlans = useMemo(() => {
+        if (!sortBy) return filteredPlans;
+        const accessor = (p: TestPlanSummary): string | number => {
+            switch (sortBy) {
+                case 'name': return (p.name ?? '').toLowerCase();
+                case 'status': return (p.status ?? '').toLowerCase();
+                case 'control':
+                    return (p.control?.code || p.control?.name || '').toLowerCase();
+                case 'frequency':
+                    return (FREQ_LABELS[p.frequency] || p.frequency || '').toLowerCase();
+                case 'nextDue': return p.nextDueAt ?? '';
+                case 'lastResult': return (getLastResult(p) || '').toLowerCase();
+                case 'runs': return p._count?.runs ?? 0;
+                default: return '';
+            }
+        };
+        const dir = sortOrder === 'asc' ? 1 : -1;
+        return [...filteredPlans].sort((a, b) => {
+            const av = accessor(a);
+            const bv = accessor(b);
+            if (av === bv) return 0;
+            if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir;
+            return String(av) > String(bv) ? dir : -dir;
+        });
+    }, [filteredPlans, sortBy, sortOrder]);
+
     // KPI-card counts — total + the three TestPlanStatus buckets. These power
     // the clickable KpiFilterCard row (each toggles the table's status filter).
     const totalPlans = plans.length;
@@ -453,8 +488,15 @@ function TestsRollupContent() {
             <ListPageShell.Body>
                 <DataTable
                     fillBody
-                    data={filteredPlans}
+                    data={sortedPlans}
                     columns={planColumns}
+                    sortableColumns={sortableColumns}
+                    sortBy={sortBy}
+                    sortOrder={sortOrder}
+                    onSortChange={({ sortBy: nextBy, sortOrder: nextOrder }) => {
+                        setSortBy(nextBy);
+                        setSortOrder(nextOrder);
+                    }}
                     getRowId={(p) => p.id}
                     columnVisibility={columnVisibility}
                     onColumnVisibilityChange={setColumnVisibility}

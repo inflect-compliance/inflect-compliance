@@ -164,13 +164,49 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
     const vendors = vendorsQuery.data?.rows ?? [];
     const truncated = vendorsQuery.data?.truncated ?? false;
 
+    // ─── Sortable headers (per-column asc/desc, parity with Controls) ───
+    const [sortBy, setSortBy] = useState<string | undefined>(undefined);
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | undefined>(
+        undefined,
+    );
+    const sortableColumns = useMemo(
+        () => [
+            'name', 'status', 'criticality', 'risk',
+            'nextReviewAt', 'contractRenewalAt', 'owner',
+        ],
+        [],
+    );
+    const sortedVendors = useMemo(() => {
+        if (!sortBy) return vendors;
+        const accessor = (v: (typeof vendors)[number]): string | number => {
+            switch (sortBy) {
+                case 'name': return (v.name ?? '').toString().toLowerCase();
+                case 'status': return (v.status ?? '').toString().toLowerCase();
+                case 'criticality': return (v.criticality ?? '').toString().toLowerCase();
+                case 'risk': return (v.inherentRisk ?? '').toString().toLowerCase();
+                case 'nextReviewAt': return v.nextReviewAt ?? '';
+                case 'contractRenewalAt': return v.contractRenewalAt ?? '';
+                case 'owner': return (v.owner?.name ?? '').toString().toLowerCase();
+                default: return '';
+            }
+        };
+        const dir = sortOrder === 'asc' ? 1 : -1;
+        return [...vendors].sort((a, b) => {
+            const av = accessor(a);
+            const bv = accessor(b);
+            if (av === bv) return 0;
+            if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir;
+            return String(av) > String(bv) ? dir : -dir;
+        });
+    }, [vendors, sortBy, sortOrder]);
+
     // Load-on-scroll windowing — render the first batch, append more as
     // the user nears the bottom (DataTable onReachEnd sentinel).
     const {
         visibleRows: visibleVendors,
         hasMore: hasMoreVendors,
         loadMore: loadMoreVendors,
-    } = useThresholdLoadMore(vendors);
+    } = useThresholdLoadMore(sortedVendors);
 
     // ─── Bulk actions (canonical BulkActionBar) ───
     const apiUrl = (path: string) => `/api/t/${tenantSlug}${path}`;
@@ -509,6 +545,13 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                         onReachEnd={hasMoreVendors ? loadMoreVendors : undefined}
                         data={visibleVendors}
                         columns={vendorColumns}
+                        sortableColumns={sortableColumns}
+                        sortBy={sortBy}
+                        sortOrder={sortOrder}
+                        onSortChange={({ sortBy: nextBy, sortOrder: nextOrder }) => {
+                            setSortBy(nextBy);
+                            setSortOrder(nextOrder);
+                        }}
                         getRowId={(v: any) => v.id}
                         columnVisibility={columnVisibility}
                         onColumnVisibilityChange={setColumnVisibility}

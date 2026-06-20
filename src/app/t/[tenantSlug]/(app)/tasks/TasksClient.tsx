@@ -682,6 +682,9 @@ function TasksPageInner({
             key={`qv-task-${selectedTask.id}`}
             title="Task"
             surfaceKey="tasks-quickview"
+            // A wide dedicated PANEL for the tabbed editor — not the narrow
+            // browse/assist rail width.
+            defaultWidth={520}
             openOnMount
             onClose={() => setSelectedTask(null)}
         >

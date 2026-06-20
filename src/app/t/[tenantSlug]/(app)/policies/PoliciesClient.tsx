@@ -185,13 +185,51 @@ function PoliciesPageInner({
     const policies = policiesQuery.data?.rows ?? [];
     const truncated = policiesQuery.data?.truncated ?? false;
 
+    // ─── Sortable headers (per-column asc/desc, parity with Controls) ───
+    const [sortBy, setSortBy] = useState<string | undefined>(undefined);
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | undefined>(
+        undefined,
+    );
+    const sortableColumns = useMemo(
+        () => [
+            'title', 'status', 'category', 'owner',
+            'version', 'nextReviewAt', 'updatedAt',
+        ],
+        [],
+    );
+    const sortedPolicies = useMemo(() => {
+        if (!sortBy) return policies;
+        const accessor = (p: (typeof policies)[number]): string | number => {
+            switch (sortBy) {
+                case 'title': return (p.title ?? '').toString().toLowerCase();
+                case 'status': return (p.status ?? '').toString().toLowerCase();
+                case 'category': return (p.category ?? '').toString().toLowerCase();
+                case 'owner':
+                    return (p.owner?.name ?? p.owner?.email ?? '').toString().toLowerCase();
+                case 'version':
+                    return p.currentVersion?.versionNumber ?? p.lifecycleVersion ?? 0;
+                case 'nextReviewAt': return p.nextReviewAt ?? '';
+                case 'updatedAt': return p.updatedAt ?? '';
+                default: return '';
+            }
+        };
+        const dir = sortOrder === 'asc' ? 1 : -1;
+        return [...policies].sort((a, b) => {
+            const av = accessor(a);
+            const bv = accessor(b);
+            if (av === bv) return 0;
+            if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir;
+            return String(av) > String(bv) ? dir : -dir;
+        });
+    }, [policies, sortBy, sortOrder]);
+
     // Load-on-scroll windowing — render the first batch, append more as
     // the user nears the bottom (DataTable onReachEnd sentinel).
     const {
         visibleRows: visiblePolicies,
         hasMore: hasMorePolicies,
         loadMore: loadMorePolicies,
-    } = useThresholdLoadMore(policies);
+    } = useThresholdLoadMore(sortedPolicies);
     const loading = policiesQuery.isLoading && !policiesQuery.data;
 
     // ─── Bulk actions (canonical BulkActionBar — assign + archive) ───
@@ -601,6 +639,13 @@ function PoliciesPageInner({
                 onReachEnd: hasMorePolicies ? loadMorePolicies : undefined,
                 columns: orderColumns(policyColumns),
                 loading,
+                sortableColumns,
+                sortBy,
+                sortOrder,
+                onSortChange: ({ sortBy: nextBy, sortOrder: nextOrder }) => {
+                    setSortBy(nextBy);
+                    setSortOrder(nextOrder);
+                },
                 getRowId: (p: any) => p.id,
                 onRowClick: (row) =>
                     router.push(tenantHref(`/policies/${row.original.id}`)),

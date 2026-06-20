@@ -49,7 +49,7 @@ describe("Controls editable side-panel interaction", () => {
     });
 
     it("the panels surface in the responsive AsidePanel keyed by entity id", () => {
-        expect(controls).toMatch(/<AsidePanel[\s\S]{0,200}openOnMount[\s\S]{0,200}onClose=\{closeQuickView\}/);
+        expect(controls).toMatch(/<AsidePanel[\s\S]{0,400}openOnMount[\s\S]{0,200}onClose=\{closeQuickView\}/);
         // Keyed by ID (not just type) so switching control→control forces a
         // fresh mount → the panel re-seeds from the newly-clicked row.
         expect(controls).toMatch(/key=\{`qv-task-\$\{selectedTask\.id\}`\}/);
