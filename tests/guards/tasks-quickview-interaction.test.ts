@@ -24,7 +24,7 @@ describe('Tasks list page — non-modal quick-view side panel', () => {
     });
 
     it('mounts the non-modal AsidePanel + TaskEditPanel, keyed by task id', () => {
-        expect(tasks).toMatch(/<AsidePanel[\s\S]{0,200}openOnMount/);
+        expect(tasks).toMatch(/<AsidePanel[\s\S]{0,400}openOnMount/);
         // Keyed by id so switching task→task re-seeds the panel.
         expect(tasks).toMatch(/key=\{`qv-task-\$\{selectedTask\.id\}`\}/);
         expect(tasks).toMatch(/<TaskEditPanel/);

@@ -57,7 +57,11 @@ import { useLocalStorage } from '@/components/ui/hooks';
 // column at a 1280px viewport.
 const DEFAULT_WIDTH = 320;
 const MIN_WIDTH = 280;
-const MAX_WIDTH = 480;
+// 560 caps the bite the panel can take out of the main column at a 1280px
+// viewport. Raised from 480 so the editable quick-view (the tabbed
+// Details/Activity editor) can be a proper wide right-PANEL — distinct from
+// the narrow browse/assist rails — rather than a cramped rail-width column.
+const MAX_WIDTH = 560;
 const KEYBOARD_RESIZE_STEP = 16;
 
 export interface AsidePanelProps {

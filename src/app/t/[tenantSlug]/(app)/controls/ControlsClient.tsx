@@ -1132,6 +1132,9 @@ function ControlsPageInner({
             key={`qv-task-${selectedTask.id}`}
             title="Task"
             surfaceKey="controls-quickview"
+            // A wide dedicated PANEL for the tabbed editor — not the narrow
+            // browse/assist rail width.
+            defaultWidth={520}
             openOnMount
             onClose={closeQuickView}
         >
@@ -1149,6 +1152,9 @@ function ControlsPageInner({
             key={`qv-control-${selectedControl.id}`}
             title="Control"
             surfaceKey="controls-quickview"
+            // A wide dedicated PANEL for the tabbed editor — not the narrow
+            // browse/assist rail width.
+            defaultWidth={520}
             openOnMount
             onClose={closeQuickView}
         >

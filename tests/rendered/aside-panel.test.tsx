@@ -156,10 +156,10 @@ describe('<AsidePanel>', () => {
         const handle = screen.getByTestId('aside-panel-resize-handle');
         expect(handle).toHaveAttribute('role', 'separator');
         expect(handle).toHaveAttribute('aria-orientation', 'vertical');
-        // Default width 320, bounds 280–480.
+        // Default width 320, bounds 280–560.
         expect(handle).toHaveAttribute('aria-valuenow', '320');
         expect(handle).toHaveAttribute('aria-valuemin', '280');
-        expect(handle).toHaveAttribute('aria-valuemax', '480');
+        expect(handle).toHaveAttribute('aria-valuemax', '560');
     });
 
     it('drag-resizes the docked panel and clamps to the max width', () => {
@@ -176,11 +176,11 @@ describe('<AsidePanel>', () => {
         // 320 + (500 - 460) = 360.
         expect(handle).toHaveAttribute('aria-valuenow', '360');
 
-        // A drag far past the cap clamps at 480.
+        // A drag far past the cap clamps at 560.
         fireEvent.mouseDown(handle, { clientX: 500 });
         fireEvent.mouseMove(document, { clientX: 0 });
         fireEvent.mouseUp(document);
-        expect(handle).toHaveAttribute('aria-valuenow', '480');
+        expect(handle).toHaveAttribute('aria-valuenow', '560');
     });
 
     it('keyboard-resizes the panel and persists width per surfaceKey', () => {
