@@ -158,14 +158,23 @@ test.describe('Epic 56 — tooltip + copy primitives', () => {
         });
         await page.waitForLoadState('networkidle').catch(() => {});
 
-        // Seed provisions TSK-1/2/3 — first task ROW link inside the
-        // tasks table (not the page-level Dashboard / New Task nav
-        // buttons that share the `/tasks/` prefix).
-        const firstTask = page
-            .locator('[data-testid="tasks-table"] tbody tr a[href*="/tasks/"]')
-            .first();
-        await expect(firstTask).toBeVisible({ timeout: 30_000 });
-        await firstTask.click();
+        // The tasks-table title is now a quick-view panel <button> (not a
+        // link — clicking it opens the in-place side panel, matching the
+        // Controls page), so resolve the first seeded task id from the list
+        // API and navigate straight to its detail page. The CopyText
+        // affordance under test lives on the detail HEADER, not the panel.
+        const listRes = await page.request.get(
+            `/api/t/${tenantSlug}/tasks?limit=1`,
+        );
+        const listJson = await listRes.json();
+        const taskRows = Array.isArray(listJson)
+            ? listJson
+            : (listJson.rows ?? listJson.items ?? []);
+        const taskId = taskRows[0]?.id;
+        expect(taskId, 'seed should provision at least one task').toBeTruthy();
+        await safeGoto(page, `/t/${tenantSlug}/tasks/${taskId}`, {
+            waitUntil: 'domcontentloaded',
+        });
         await page.waitForURL(/tasks\/[a-z0-9]+$/i, {
             waitUntil: 'domcontentloaded',
             timeout: 30_000,
