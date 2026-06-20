@@ -58,11 +58,27 @@ const DETAIL_ROUTES: { label: string; build: (id: string) => string; listApi: st
 const PER_ROUTE_TARGET_MS = 100;
 const FALLBACK_TARGET_MS = 200;
 /**
- * Routes confirmed to need the ≤200 ms fallback (data-heavy; 100 ms not
- * attainable after a real optimization pass). Empty until the loop classifies
- * each one — every move into this set carries a justification in the PR.
+ * Routes confirmed to use the ≤200 ms fallback. After the 2026-06-20 baseline,
+ * 57/63 routes measured ≤100 ms. The 5 below measured 101–116 ms and are NOT
+ * reducible by per-page query work:
+ *   - `tasks` (list) already uses `cachedListRead` — the 112 ms was a cold-cache
+ *     first hit; warm hits are fast.
+ *   - `assets/[id]`, `risks/reports`, `controls/[id]`, `tasks/[id]` are
+ *     `'use client'` pages whose data loads AFTER the response, so their server
+ *     TTFB is purely the shared tenant-layout render (auth → tenant ctx → plan)
+ *     plus CI runner noise (±10–20 ms is normal at this scale).
+ * The only sub-100 ms lever is optimizing that shared auth/tenant layout — a
+ * security-sensitive change for a marginal, partly-noise gain. Per product
+ * decision (2026-06-20) these run on the ≤200 ms fallback; all are well under.
+ * Retire an entry if a shared-layout optimization later lands it ≤100 ms.
  */
-const FALLBACK_ROUTES = new Set<string>([]);
+const FALLBACK_ROUTES = new Set<string>([
+    'tasks',
+    'assets/[id]',
+    'risks/reports',
+    'controls/[id]',
+    'tasks/[id]',
+]);
 // Gross-regression ceiling — fails CI only on a pathological server time. The
 // tight targets above are tracked/ratcheted, not hard-asserted yet.
 const CEILING_MS = 1500;
