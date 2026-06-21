@@ -144,7 +144,18 @@ const CAPS: Record<string, number> = {
     // from `createColumns<Row>` / the typed SWR `rows`. Both files' now-unused
     // file-level `no-explicit-any` disables removed. 31 cleared.
     //   : any 355 → 324
-    ': any': 324,
+    // any-paydown wave PR15 (2026-06-21) — `: any` cont. (Evidence + Reports).
+    // EvidenceClient: props/source arrays → `EvidenceRow[]` + a new
+    // `EvidenceControlOption` interface; dropped all cell/accessorFn/filter/
+    // getRowId `: any`; helper + gallery callbacks typed `EvidenceRow`. Tightened
+    // the (single-consumer) `EvidenceGallery` row type by removing its loose
+    // `[otherKey: string]: unknown` index signature so `EvidenceRow` satisfies it
+    // strictly (rather than widening EvidenceRow Record-style). ReportsClient:
+    // `riskRegister` → `RiskRegisterRow[]`, unused `soa` → `unknown[]`, downloadCSV
+    // param typed (indexed via `keyof RiskRegisterRow`), callbacks dropped. Both
+    // files' file-level disables removed. 35 cleared.
+    //   : any 324 → 289
+    ': any': 289,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,

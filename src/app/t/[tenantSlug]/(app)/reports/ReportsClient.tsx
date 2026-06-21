@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any -- Client component receiving server-rendered domain data; tanstack column callbacks; or library-boundary callbacks. Per-site narrowing requires generated DTOs / per-cell CellContext imports — out of scope for the lint cleanup PR. */
 import { useState, useMemo } from 'react';
 import { Download } from 'lucide-react';
 import { SoAClient } from './soa/SoAClient';
@@ -24,7 +23,9 @@ interface ControlOption {
 
 interface ReportsClientProps {
 
-    data: { soa: any[]; riskRegister: any[] };
+    // `soa` is not consumed here — the SoA tab renders <SoAClient> from the
+    // separate `soaReport` prop — so it stays `unknown[]` (honest, not `any`).
+    data: { soa: unknown[]; riskRegister: RiskRegisterRow[] };
     soaReport: SoAReportDTO;
     controls: ControlOption[];
     tenantSlug: string;
@@ -52,10 +53,10 @@ export function ReportsClient({ data, soaReport, controls, tenantSlug, canEdit, 
     const [tab, setTab] = useState<'soa' | 'risk'>('soa');
 
 
-    const downloadCSV = (rows: any[], filename: string) => {
+    const downloadCSV = (rows: RiskRegisterRow[], filename: string) => {
         if (!rows.length) return;
         const headers = Object.keys(rows[0]);
-        const csv = [headers.join(','), ...rows.map(r => headers.map(h => `"${String(r[h] ?? '').replace(/"/g, '""')}"`).join(','))].join('\n');
+        const csv = [headers.join(','), ...rows.map(r => headers.map(h => `"${String(r[h as keyof RiskRegisterRow] ?? '').replace(/"/g, '""')}"`).join(','))].join('\n');
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
@@ -70,47 +71,47 @@ export function ReportsClient({ data, soaReport, controls, tenantSlug, canEdit, 
             accessorKey: 'title',
             header: t.risk,
 
-            cell: ({ getValue }: any) => <span className="font-medium text-content-emphasis">{getValue()}</span>,
+            cell: ({ getValue }) => <span className="font-medium text-content-emphasis">{getValue()}</span>,
         },
         {
             accessorKey: 'threat',
             header: t.threat,
 
-            cell: ({ getValue }: any) => <span className="text-content-muted">{getValue()}</span>,
+            cell: ({ getValue }) => <span className="text-content-muted">{getValue()}</span>,
         },
         {
             id: 'lxi',
             header: 'L×I',
 
-            accessorFn: (r: any) => `${r.likelihood}×${r.impact}`,
+            accessorFn: (r) => `${r.likelihood}×${r.impact}`,
 
-            cell: ({ getValue }: any) => <span>{getValue()}</span>,
+            cell: ({ getValue }) => <span>{getValue()}</span>,
         },
         {
             accessorKey: 'score',
             header: t.score,
 
-            cell: ({ getValue }: any) => <span className="font-bold">{getValue()}</span>,
+            cell: ({ getValue }) => <span className="font-bold">{getValue()}</span>,
         },
         {
             accessorKey: 'treatment',
             header: t.treatment,
 
-            cell: ({ getValue }: any) => <span>{getValue()}</span>,
+            cell: ({ getValue }) => <span>{getValue()}</span>,
         },
         {
             accessorKey: 'owner',
             header: t.owner,
 
-            cell: ({ getValue }: any) => <span>{getValue()}</span>,
+            cell: ({ getValue }) => <span>{getValue()}</span>,
         },
         {
             id: 'controls',
             header: t.controls,
 
-            accessorFn: (r: any) => r.controls || '—',
+            accessorFn: (r) => r.controls || '—',
 
-            cell: ({ getValue }: any) => <span className="text-content-muted">{getValue()}</span>,
+            cell: ({ getValue }) => <span className="text-content-muted">{getValue()}</span>,
         },
     ]), [t]);
 
@@ -212,7 +213,7 @@ export function ReportsClient({ data, soaReport, controls, tenantSlug, canEdit, 
                         fillBody
                         data={data.riskRegister}
                         columns={riskColumns}
-                        getRowId={(r: any) => r.id}
+                        getRowId={(r) => r.id}
                         emptyState="No risks in the register"
                         resourceName={(p) => p ? 'risks' : 'risk'}
                         data-testid="risk-table"

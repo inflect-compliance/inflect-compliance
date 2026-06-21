@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any -- Client component receiving server-rendered domain data; tanstack column callbacks; or library-boundary callbacks. Per-site narrowing requires generated DTOs / per-cell CellContext imports — out of scope for the lint cleanup PR. */
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useSWRConfig } from 'swr';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
@@ -86,7 +85,7 @@ const ICON_ACTION_CLASS =
 type RetentionFilter = 'active' | 'expiring' | 'archived';
 
 
-function getRetentionStatus(ev: any, now: Date | null): { label: string; badge: StatusBadgeVariant; icon: string } {
+function getRetentionStatus(ev: EvidenceRow, now: Date | null): { label: string; badge: StatusBadgeVariant; icon: string } {
     if (ev.isArchived) return { label: 'Archived', badge: 'neutral', icon: '' };
     if (ev.expiredAt) return { label: 'Expired', badge: 'error', icon: '' };
     if (ev.retentionUntil) {
@@ -124,11 +123,20 @@ interface EvidenceRow {
     fileRecord: { id: string; mimeType: string | null } | null;
 }
 
+// Minimal control shape this page consumes (filter builder + upload modal).
+// Sourced from controlListSelect; nullable to match the serialized payload.
+interface EvidenceControlOption {
+    id: string;
+    name: string;
+    code: string | null;
+    annexId: string | null;
+}
+
 interface EvidenceClientProps {
 
-    initialEvidence: any[];
+    initialEvidence: EvidenceRow[];
 
-    initialControls: any[];
+    initialControls: EvidenceControlOption[];
     tenantSlug: string;
     permissions: Permissions;
     translations: Record<string, string>;
@@ -257,15 +265,14 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     // Stabilise the array identity across renders so dependent hooks
     // (`useEffect` at line ~330 reads `evidence`) don't re-fire on
     // every render. Without the `useMemo` the `?? []` produces a new
-    // empty array instance every cycle. eslint-disable for the inner
-    // `any[]`; tightening the type is a separate cleanup.
+    // empty array instance every cycle.
 
-    const evidence: any[] = useMemo(
+    const evidence: EvidenceRow[] = useMemo(
         () => evidenceQuery.data?.rows ?? [],
         [evidenceQuery.data],
     );
 
-    const [controls] = useState<any[]>(initialControls);
+    const [controls] = useState<EvidenceControlOption[]>(initialControls);
     const retentionFilter = (filters.tab || 'active') as RetentionFilter;
     const { celebrate } = useCelebration();
     const viewMode: 'list' | 'gallery' =
@@ -367,7 +374,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                     : action === 'APPROVED'
                         ? 'APPROVED'
                         : 'REJECTED';
-            const rows = (current?.rows ?? []).map((ev: any) =>
+            const rows = (current?.rows ?? []).map((ev) =>
                 ev.id === id ? { ...ev, status: newStatus } : ev,
             );
             return { rows, truncated: current?.truncated ?? false };
@@ -462,11 +469,11 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
         [],
     );
     // guardrail-ignore: KPI count, not a refilter.
-    const draftEvidence = evidence.filter((ev: any) => ev.status === 'DRAFT').length;
+    const draftEvidence = evidence.filter((ev) => ev.status === 'DRAFT').length;
     // guardrail-ignore: KPI count, not a refilter.
-    const submittedEvidence = evidence.filter((ev: any) => ev.status === 'SUBMITTED').length;
+    const submittedEvidence = evidence.filter((ev) => ev.status === 'SUBMITTED').length;
     // guardrail-ignore: KPI count, not a refilter.
-    const approvedEvidence = evidence.filter((ev: any) => ev.status === 'APPROVED').length;
+    const approvedEvidence = evidence.filter((ev) => ev.status === 'APPROVED').length;
     const evidenceKpiDefs: ReadonlyArray<KpiFilterDef<EvidenceKpiId>> = useMemo(
         () => [
             {
@@ -522,12 +529,9 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     );
     const sortedEvidence = useMemo(() => {
         if (!sortBy) return displayEvidence;
-        // PR-1 — minimal typed shape for the sort accessor. The
-        // top-level `evidence` array is intentionally `any[]` per
-        // the file's existing convention (see comment at L184),
-        // but the sort path doesn't need the rest of the surface.
-        // A local `Sortable` shape lets the accessor stay typed
-        // without forcing a global rewrite.
+        // Minimal structural shape for the sort accessor — the sort
+        // path only touches these fields, so a local `Sortable` keeps
+        // the accessor narrow without re-deriving the full EvidenceRow.
         type Sortable = {
             title?: string | null;
             type?: string | null;
@@ -674,7 +678,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             // page's baseline. File type information is still in the
             // dedicated Type column.
 
-            cell: ({ row }: { row: any }) => (
+            cell: ({ row }) => (
                 // Evidence has no dedicated detail page yet — the
                 // record opens via the master/detail pattern from
                 // this list page. Wiring a navigation href here is
@@ -687,7 +691,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             accessorKey: 'type',
             header: t.type,
 
-            cell: ({ row }: { row: any }) => {
+            cell: ({ row }) => {
                 const ev = row.original;
                 // Mixed-file aware: pick the actual file kind by
                 // extension/MIME when this row is a file; fall back to
@@ -716,7 +720,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             id: 'control',
             header: t.control,
 
-            accessorFn: (ev: any) => ev.control ? `${ev.control.annexId || ''} ${ev.control.name}` : '\u2014',
+            accessorFn: (ev) => ev.control ? `${ev.control.annexId || ''} ${ev.control.name}` : '\u2014',
             cell: ({ getValue }: { getValue: () => string }) => (
                 <span className="text-xs text-content-muted">{getValue()}</span>
             ),
@@ -743,7 +747,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             id: 'retention',
             header: 'Retention',
 
-            cell: ({ row }: { row: any }) => {
+            cell: ({ row }) => {
                 const ev = row.original;
                 const rs = getRetentionStatus(ev, hydratedNow);
                 // Retention is now edited from the evidence Edit modal
@@ -770,7 +774,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             id: 'freshness',
             header: 'Freshness',
 
-            cell: ({ row }: { row: any }) => {
+            cell: ({ row }) => {
                 const ev = row.original;
                 // `lastRefreshedAt` is not yet a discrete column on
                 // Evidence — `updatedAt` is the closest existing
@@ -793,7 +797,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             accessorKey: 'status',
             header: t.status,
 
-            cell: ({ row }: { row: any }) => {
+            cell: ({ row }) => {
                 const ev = row.original;
                 return <StatusBadge variant={STATUS_BADGE[ev.status]}>{statusLabel(ev.status)}</StatusBadge>;
             },
@@ -802,7 +806,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             id: 'owner',
             header: t.ownerLabel,
 
-            accessorFn: (ev: any) => ev.owner || '\u2014',
+            accessorFn: (ev) => ev.owner || '\u2014',
             cell: ({ getValue }: { getValue: () => string }) => (
                 <span className="text-xs">{getValue()}</span>
             ),
@@ -813,7 +817,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             id: 'edit',
             header: '',
             enableHiding: false,
-            cell: ({ row }: { row: any }) => {
+            cell: ({ row }) => {
                 const ev = row.original;
                 if (!permissions.canWrite || ev.id?.startsWith('temp:')) return null;
                 return (
@@ -849,7 +853,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             id: 'archive',
             header: '',
             enableHiding: false,
-            cell: ({ row }: { row: any }) => {
+            cell: ({ row }) => {
                 const ev = row.original;
                 if (!permissions.canWrite || ev.id?.startsWith('temp:')) return null;
                 const archived = !!ev.isArchived;
@@ -879,7 +883,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             id: 'download',
             header: '',
             enableHiding: false,
-            cell: ({ row }: { row: any }) => {
+            cell: ({ row }) => {
                 const ev = row.original;
                 if (ev.type !== 'FILE' || !ev.fileRecordId || ev.id?.startsWith('temp:')) return null;
                 return (
@@ -905,7 +909,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             header: t.actions,
             enableHiding: false,
 
-            cell: ({ row }: { row: any }) => {
+            cell: ({ row }) => {
                 const ev = row.original;
                 const isPending = ev.id?.startsWith('temp:');
                 if (isPending) return <span className="text-xs text-content-subtle">Uploading...</span>;
@@ -1180,13 +1184,13 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                                 />
                             )
                         }
-                        fileUrl={(ev: any) =>
+                        fileUrl={(ev) =>
                             ev.fileRecordId
                                 ? apiUrl(`/evidence/files/${ev.fileRecordId}/download`)
                                 : null
                         }
                         statusBadgeVariant={(s) => STATUS_BADGE[s] ?? 'neutral'}
-                        retentionStatus={(ev: any) => {
+                        retentionStatus={(ev) => {
                             const rs = getRetentionStatus(ev, hydratedNow);
                             return { label: rs.label, badge: rs.badge };
                         }}
@@ -1198,7 +1202,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                         onReachEnd={hasMoreEvidence ? loadMoreEvidence : undefined}
                         data={visibleEvidence}
                         columns={orderColumns(evidenceColumns)}
-                        getRowId={(ev: any) => ev.id}
+                        getRowId={(ev) => ev.id}
                         // Column resizing is opt-in per table (disabled
                         // by default since #823). Re-enabled here only —
                         // the Evidence Library's wide title/folder/owner
