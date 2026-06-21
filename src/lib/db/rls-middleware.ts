@@ -315,7 +315,7 @@ export function withRlsTripwireExtension<T extends { $extends: any }>(
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     args: any;
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    query: (a: any) => Promise<any>;
+                    query: (a: any) => Promise<unknown>;
                 }) {
                     if (!isTenantScopedModel(model)) {
                         return query(args);

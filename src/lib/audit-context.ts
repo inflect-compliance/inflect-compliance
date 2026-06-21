@@ -39,7 +39,7 @@ const contextStack: AuditContextData[] = [];
  * PrismaPromise objects that are thenable but not instanceof Promise.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isThenable(value: any): value is PromiseLike<any> {
+function isThenable(value: any): value is PromiseLike<unknown> {
     return value != null && typeof value.then === 'function';
 }
 

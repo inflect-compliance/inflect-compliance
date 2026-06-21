@@ -518,9 +518,8 @@ export const piiEncryptionMiddleware = async (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     params: any,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    next: (p: any) => Promise<any>,
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-): Promise<any> => runPiiEncryption(params, next);
+    next: (p: any) => Promise<unknown>,
+): Promise<unknown> => runPiiEncryption(params, next);
 
 /**
  * Wire the PII encryption extension onto a Prisma 7 client.
@@ -562,7 +561,7 @@ export function withPiiEncryptionExtension<T extends { $extends: any }>(
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     args: any;
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    query: (a: any) => Promise<any>;
+                    query: (a: any) => Promise<unknown>;
                 }) {
                     return runPiiEncryption(
                         { action: operation, model, args },
