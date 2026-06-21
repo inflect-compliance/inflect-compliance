@@ -27,13 +27,29 @@ const ENTITY_ICON: Record<string, AppIconName> = {
     READINESS_REPORT: 'dashboard', FRAMEWORK_COVERAGE: 'frameworks',
 };
 
+// getAuditPack (audit-readiness/packs.ts) — fields this page reads.
+interface PackItem {
+    id: string;
+    entityType: string;
+    snapshotJson: string | null;
+}
+interface PackDetail {
+    name: string;
+    status: string;
+    frozenAt: string | null;
+    cycle?: { frameworkKey: string } | null;
+    frozenBy?: { name: string | null; email: string } | null;
+    _count?: { items: number };
+    items: PackItem[];
+}
+
 export default function PackDetailPage() {
     const params = useParams();
     const tenantSlug = params.tenantSlug as string;
     const packId = params.packId as string;
     const apiUrl = useCallback((path: string) => `/api/t/${tenantSlug}${path}`, [tenantSlug]);
 
-    const [pack, setPack] = useState<any>(null);
+    const [pack, setPack] = useState<PackDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [freezing, setFreezing] = useState(false);
     const [sharing, setSharing] = useState(false);

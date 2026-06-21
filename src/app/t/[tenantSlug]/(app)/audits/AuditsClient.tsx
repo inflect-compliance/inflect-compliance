@@ -52,12 +52,33 @@ interface AuditsClientProps {
     };
 }
 
+// getAudit → AuditRepository.getById (full Audit + ordered checklist + findings).
+interface AuditChecklistItemRow {
+    id: string;
+    prompt: string;
+    result: string;
+    notes: string | null;
+}
+interface AuditFindingRow {
+    id: string;
+    title: string;
+    severity: string;
+}
+interface AuditDetail {
+    id: string;
+    title: string;
+    status: string;
+    auditScope: string | null;
+    checklist: AuditChecklistItemRow[];
+    findings: AuditFindingRow[];
+}
+
 /**
  * Client island for audits — handles master/detail, create form, checklist interactions.
  * Data is pre-fetched server-side and passed via props.
  */
 export function AuditsClient({ initialAudits, tenantSlug, translations: t }: AuditsClientProps) {
-    const [selected, setSelected] = useState<any>(null);
+    const [selected, setSelected] = useState<AuditDetail | null>(null);
 
     // Modal-form follow-up — create-audit modal mounted off the list,
     // auto-opening on `?create=1` (the redirect target from
@@ -212,7 +233,7 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
                                     {selected.status === 'IN_PROGRESS' && <Button variant="secondary" size="sm" onClick={() => updateAuditStatus('COMPLETED')}>{t.completed}</Button>}
                                 </div>
                             </div>
-                            {selected.scope && <p className="text-sm text-content-muted">{selected.scope}</p>}
+                            {selected.auditScope && <p className="text-sm text-content-muted">{selected.auditScope}</p>}
 
                             <div>
                                 <CardHeader title={`${t.checklist} (${selected.checklist?.length || 0})`} className="mb-3" />

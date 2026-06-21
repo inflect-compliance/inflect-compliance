@@ -54,12 +54,26 @@ const STATUS_COLORS: Record<string, string> = {
     ACTIVE: 'bg-bg-success', ONBOARDING: 'bg-bg-info', OFFBOARDING: 'bg-bg-warning', OFFBOARDED: 'bg-border-emphasis',
 };
 
+// getVendorMetrics (vendor.ts) — explicit object literal; the by* maps are
+// genuinely dynamic enum-keyed counters.
+interface VendorMetrics {
+    totalVendors: number;
+    byCriticality: Record<string, number>;
+    byStatus: Record<string, number>;
+    byRiskRating: Record<string, number>;
+    overdueReview: number;
+    upcomingReview: number;
+    overdueRenewal: number;
+    upcomingRenewal: number;
+    highRiskNoAssessment: number;
+    expiringDocuments: number;
+}
+
 export default function VendorDashboardPage() {
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [metrics, setMetrics] = useState<any>(null);
+    const [metrics, setMetrics] = useState<VendorMetrics | null>(null);
     const [loading, setLoading] = useState(true);
 
     const fetchMetrics = useCallback(async () => {

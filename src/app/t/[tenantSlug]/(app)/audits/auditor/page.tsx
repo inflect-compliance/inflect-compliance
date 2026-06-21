@@ -17,6 +17,21 @@ const FW_META: Record<string, { icon: AppIconName; label: string }> = {
     NIS2: { icon: 'globe', label: 'NIS2 Directive' },
 };
 
+// getAuditPack (audit-readiness/packs.ts) — only the fields this page reads.
+interface AuditorPackItem {
+    id: string;
+    entityType: string;
+    snapshotJson: string | null;
+}
+interface AuditorPackDetail {
+    id: string;
+    name: string;
+    status: string;
+    frozenAt: string | null;
+    _count?: { items: number };
+    items: AuditorPackItem[];
+}
+
 export default function AuditorPortalPage() {
     const params = useParams();
     const tenantSlug = params.tenantSlug as string;
@@ -24,7 +39,7 @@ export default function AuditorPortalPage() {
 
     const [packs, setPacks] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedPack, setSelectedPack] = useState<any>(null);
+    const [selectedPack, setSelectedPack] = useState<AuditorPackDetail | null>(null);
 
     useEffect(() => {
         fetch(apiUrl('/audits/auditor/packs'))

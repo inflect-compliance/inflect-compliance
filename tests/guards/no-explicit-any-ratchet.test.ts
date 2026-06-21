@@ -73,9 +73,14 @@ const CAPS: Record<string, number> = {
     // framework-detail (framework/coverage) + vendor-detail (vendor/editForm)
     // pages. 4 more cleared; `<any>` drops by the same 4.
     //   useState<any> 15 → 11 · <any> 54 → 50
+    // any-paydown wave PR3 (2026-06-21) — typed `useState<any>` in the 3 audit
+    // pages (AuditsClient/auditor/pack-detail) + vendors-dashboard + mapping.
+    // 5 cleared; `<any>` drops by the same 5. Two latent read-bugs fixed in
+    // passing: AuditsClient `selected.scope` → `auditScope`.
+    //   useState<any> 11 → 6 · <any> 50 → 45
     ': any': 357,
-    '<any>': 50,
-    'useState<any>': 11,
+    '<any>': 45,
+    'useState<any>': 6,
     'as any': 15,
     '// @ts-ignore': 0,
 };
