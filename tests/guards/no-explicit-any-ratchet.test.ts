@@ -155,7 +155,15 @@ const CAPS: Record<string, number> = {
     // param typed (indexed via `keyof RiskRegisterRow`), callbacks dropped. Both
     // files' file-level disables removed. 35 cleared.
     //   : any 324 → 289
-    ': any': 289,
+    // any-paydown wave PR16 (2026-06-22) — `: any` cont. (4 list clients).
+    // AssetsClient (AssetListRow) + FindingsClient (FindingRow) + AuditLogClient
+    // (AuditLogRow) + CoverageClient (UnmappedRiskRow/UncoveredAssetRow): typed
+    // each `initial*`/`auditLog` prop to its existing Row[] and dropped every
+    // cell / accessorFn / `.filter` / `.map` / getRowId `: any` (all infer from
+    // `createColumns<Row>` / the typed source array). All four file-level
+    // `no-explicit-any` disables now unused and removed. 40 cleared.
+    //   : any 289 → 249
+    ': any': 249,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,

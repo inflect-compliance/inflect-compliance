@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import Link from 'next/link';
 import { useMemo } from 'react';
 import { ShieldCheck, AlertTriangle, Cpu, Flame } from 'lucide-react';
@@ -89,14 +88,14 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
         {
             accessorKey: 'title',
             header: 'Risk',
-            cell: ({ getValue }: any) => (
+            cell: ({ getValue }) => (
                 <span className="font-medium text-content-emphasis">{getValue()}</span>
             ),
         },
         {
             accessorKey: 'score',
             header: 'Score',
-            cell: ({ getValue }: any) => {
+            cell: ({ getValue }) => {
                 const score = getValue() as number;
                 return (
                     <span className={`text-sm font-semibold tabular-nums ${
@@ -110,7 +109,7 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
         {
             accessorKey: 'status',
             header: 'Status',
-            cell: ({ getValue }: any) => (
+            cell: ({ getValue }) => (
                 <StatusBadge variant={statusBadge(getValue())}>
                     {String(getValue()).replace(/_/g, ' ')}
                 </StatusBadge>
@@ -122,21 +121,21 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
         {
             accessorKey: 'name',
             header: 'Asset',
-            cell: ({ getValue }: any) => (
+            cell: ({ getValue }) => (
                 <span className="font-medium text-content-emphasis">{getValue()}</span>
             ),
         },
         {
             accessorKey: 'type',
             header: 'Type',
-            cell: ({ getValue }: any) => (
+            cell: ({ getValue }) => (
                 <StatusBadge variant="info">{String(getValue()).replace(/_/g, ' ')}</StatusBadge>
             ),
         },
         {
             accessorKey: 'criticality',
             header: 'Criticality',
-            cell: ({ getValue }: any) => (
+            cell: ({ getValue }) => (
                 <StatusBadge variant={critBadge(getValue())}>{getValue()}</StatusBadge>
             ),
         },
@@ -228,7 +227,7 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
                     <DataTable
                         data={data.uncoveredCriticalAssets}
                         columns={uncoveredAssetCols}
-                        getRowId={(a: any) => a.id}
+                        getRowId={(a) => a.id}
                         onRowClick={(row) => window.location.href = tenantHref(`/assets/${row.original.id}`)}
                         emptyState="All critical assets are covered by controls"
                         resourceName={(p) => p ? 'assets' : 'asset'}
@@ -252,7 +251,7 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
                     <DataTable
                         data={data.unmappedRisks}
                         columns={unmappedRiskCols}
-                        getRowId={(r: any) => r.id}
+                        getRowId={(r) => r.id}
                         onRowClick={(row) => window.location.href = tenantHref(`/risks/${row.original.id}`)}
                         emptyState="All risks are mitigated by controls"
                         resourceName={(p) => p ? 'risks' : 'risk'}

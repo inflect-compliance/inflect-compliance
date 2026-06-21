@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -70,7 +69,7 @@ interface AssetListRow {
 }
 
 interface AssetsClientProps {
-    initialAssets: any[];
+    initialAssets: AssetListRow[];
     initialFilters: Record<string, string>;
     tenantSlug: string;
     permissions: { canWrite: boolean };
@@ -370,11 +369,11 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
     // guardrail-ignore: KPI counts across the loaded page, not a refilter.
     const totalAssets = assets.length;
     // guardrail-ignore: KPI count, not a refilter.
-    const activeAssets = assets.filter((a: any) => a.status === 'ACTIVE').length;
+    const activeAssets = assets.filter((a) => a.status === 'ACTIVE').length;
     // guardrail-ignore: KPI count, not a refilter.
-    const criticalAssets = assets.filter((a: any) => a.criticality === 'HIGH').length;
+    const criticalAssets = assets.filter((a) => a.criticality === 'HIGH').length;
     // guardrail-ignore: KPI count, not a refilter.
-    const retiredAssets = assets.filter((a: any) => a.status === 'RETIRED').length;
+    const retiredAssets = assets.filter((a) => a.status === 'RETIRED').length;
 
     // Sparkline data per KPI — cumulative count by `createdAt`, so each
     // tile shows how its current number was built up over time. Derived
@@ -493,7 +492,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
             // handlers for title clicks — the title never toggles selection
             // or navigates to the full page (those are the row's job:
             // single-click row = select, double-click row = full view).
-            cell: ({ row, getValue }: any) => (
+            cell: ({ row, getValue }) => (
                 <button
                     type="button"
                     onClick={(e) => {
@@ -521,7 +520,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
         {
             accessorKey: 'type',
             header: t.type,
-            cell: ({ getValue }: any) => <StatusBadge variant="info" size="sm">{String(getValue()).replace(/_/g, ' ')}</StatusBadge>,
+            cell: ({ getValue }) => <StatusBadge variant="info" size="sm">{String(getValue()).replace(/_/g, ' ')}</StatusBadge>,
         },
         {
             // Item 34 — derived criticality (top-two-mean of C/I/A with a
@@ -546,25 +545,25 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
         {
             id: 'classification',
             header: t.classification,
-            accessorFn: (a: any) => a.classification || '—',
+            accessorFn: (a) => a.classification || '—',
         },
         {
             id: 'owner',
             header: t.owner,
-            accessorFn: (a: any) => a.owner || '—',
+            accessorFn: (a) => a.owner || '—',
         },
         {
             id: 'controls',
             header: t.controlsCol,
-            accessorFn: (a: any) => a._count?.controls || 0,
-            cell: ({ getValue }: any) => <span className="text-xs">{getValue()}</span>,
+            accessorFn: (a) => a._count?.controls || 0,
+            cell: ({ getValue }) => <span className="text-xs">{getValue()}</span>,
         },
         {
             // B7 — unified linked-task count (done/total), matching Controls.
             id: 'tasks',
             header: 'Tasks',
-            accessorFn: (a: any) => `${a.taskDone ?? 0}/${a.taskTotal ?? 0}`,
-            cell: ({ row }: any) => {
+            accessorFn: (a) => `${a.taskDone ?? 0}/${a.taskTotal ?? 0}`,
+            cell: ({ row }) => {
                 const total = row.original.taskTotal ?? 0;
                 const done = row.original.taskDone ?? 0;
                 return (
@@ -683,7 +682,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                         setSortBy(nextBy);
                         setSortOrder(nextOrder);
                     }}
-                    getRowId={(a: any) => a.id}
+                    getRowId={(a) => a.id}
                     columnVisibility={columnVisibility}
                     onColumnVisibilityChange={setColumnVisibility}
                     // Three-way interaction model:

@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any -- Client component receiving server-rendered domain data; tanstack column callbacks; or library-boundary callbacks. Per-site narrowing requires generated DTOs / per-cell CellContext imports — out of scope for the lint cleanup PR. */
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
@@ -36,7 +35,7 @@ interface FindingRow {
 
 interface FindingsClientProps {
 
-    initialFindings: any[];
+    initialFindings: FindingRow[];
     tenantSlug: string;
     translations: {
         title: string;
@@ -107,7 +106,7 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
                     queryKeys.findings.list(tenantSlug),
                     {
                         ...prev,
-                        rows: prev.rows.map((f: any) => (f.id === id ? { ...f, status } : f)),
+                        rows: prev.rows.map((f) => (f.id === id ? { ...f, status } : f)),
                     },
                 );
             }
@@ -169,19 +168,19 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
             accessorKey: 'title',
             header: t.findingTitle,
 
-            cell: ({ getValue }: any) => <TableTitleCell>{getValue()}</TableTitleCell>,
+            cell: ({ getValue }) => <TableTitleCell>{getValue()}</TableTitleCell>,
         },
         {
             accessorKey: 'severity',
             header: t.severity,
 
-            cell: ({ row }: any) => <StatusBadge variant={SEV_BADGE[row.original.severity]}>{sevLabel(row.original.severity)}</StatusBadge>,
+            cell: ({ row }) => <StatusBadge variant={SEV_BADGE[row.original.severity]}>{sevLabel(row.original.severity)}</StatusBadge>,
         },
         {
             accessorKey: 'type',
             header: t.type,
 
-            cell: ({ row }: any) => <span className="text-xs">{typeLabel(row.original.type)}</span>,
+            cell: ({ row }) => <span className="text-xs">{typeLabel(row.original.type)}</span>,
         },
         {
             id: 'owner',
@@ -189,10 +188,10 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
 
             // Prefer the assignee (the canonical owner relation); fall
             // back to the legacy free-text `owner` for older findings.
-            accessorFn: (f: any) =>
+            accessorFn: (f) =>
                 ownerDisplayName(f.assignee?.name, f.assignee?.email) ?? f.owner ?? '—',
 
-            cell: ({ getValue }: any) => <span className="text-xs">{getValue()}</span>,
+            cell: ({ getValue }) => <span className="text-xs">{getValue()}</span>,
         },
         {
             accessorKey: 'status',
@@ -202,14 +201,14 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
             // so the loud severity badge in the prior column reads as the
             // primary state signal. Keeps the workflow tone visible without
             // creating a two-loud-badge wall per row.
-            cell: ({ row }: any) => <StatusBadge tone="subtle" variant={STATUS_BADGE[row.original.status]}>{statusLabel(row.original.status)}</StatusBadge>,
+            cell: ({ row }) => <StatusBadge tone="subtle" variant={STATUS_BADGE[row.original.status]}>{statusLabel(row.original.status)}</StatusBadge>,
         },
         {
             id: 'actions',
             header: t.actions,
             enableHiding: false,
 
-            cell: ({ row }: any) => {
+            cell: ({ row }) => {
                 const f = row.original;
                 return (
                     <div className="flex gap-1" onClick={e => e.stopPropagation()}>
@@ -255,7 +254,7 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
                     fillBody
                     data={findings}
                     columns={orderColumns(findingColumns)}
-                    getRowId={(f: any) => f.id}
+                    getRowId={(f) => f.id}
                     columnVisibility={columnVisibility}
                     onColumnVisibilityChange={setColumnVisibility}
                     emptyState={
