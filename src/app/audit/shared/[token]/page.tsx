@@ -15,11 +15,28 @@ const ENTITY_ICON: Record<string, AppIconName> = {
     READINESS_REPORT: 'dashboard', FRAMEWORK_COVERAGE: 'frameworks',
 };
 
+// getPackByShareToken (audit-readiness/sharing.ts) — public share payload.
+interface SharedPackData {
+    pack: {
+        id: string;
+        name: string;
+        status: 'DRAFT' | 'FROZEN' | 'EXPORTED';
+        frozenAt: string | null;
+    };
+    cycle: { name: string; frameworkKey: string; frameworkVersion: string };
+    items: Array<{
+        id: string;
+        entityType: 'CONTROL' | 'POLICY' | 'EVIDENCE' | 'FILE' | 'ISSUE' | 'READINESS_REPORT' | 'FRAMEWORK_COVERAGE';
+        entityId: string;
+        snapshotJson: string;
+    }>;
+}
+
 export default function SharedPackPage() {
     const params = useParams();
     const token = params.token as string;
 
-    const [data, setData] = useState<any>(null);
+    const [data, setData] = useState<SharedPackData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 

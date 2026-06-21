@@ -39,6 +39,27 @@ const TraceabilityPanel = dynamic(() => import('@/components/TraceabilityPanel')
     ssr: false,
 });
 
+// getAsset → AssetRepository.getById (the Asset model; controls relation
+// fetched but unread here).
+interface AssetDetail {
+    id: string;
+    name: string;
+    type: 'INFORMATION' | 'SYSTEM' | 'SERVICE' | 'DATA_STORE' | 'VENDOR' | 'PEOPLE_PROCESS' | 'APPLICATION' | 'INFRASTRUCTURE' | 'PROCESS' | 'OTHER';
+    classification: string | null;
+    owner: string | null;
+    ownerUserId: string | null;
+    location: string | null;
+    criticality: 'LOW' | 'MEDIUM' | 'HIGH' | null;
+    status: 'ACTIVE' | 'RETIRED';
+    dataResidency: string | null;
+    externalRef: string | null;
+    confidentiality: number | null;
+    integrity: number | null;
+    availability: number | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export default function AssetDetailPage() {
     const params = useParams();
     const apiUrl = useTenantApiUrl();
@@ -46,7 +67,7 @@ export default function AssetDetailPage() {
     const { permissions, tenantSlug } = useTenantContext();
     const assetId = params.id as string;
 
-    const [asset, setAsset] = useState<any>(null);
+    const [asset, setAsset] = useState<AssetDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 

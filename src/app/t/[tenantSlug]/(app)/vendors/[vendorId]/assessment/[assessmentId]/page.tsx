@@ -23,6 +23,32 @@ const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
     DRAFT: 'neutral', IN_REVIEW: 'warning', APPROVED: 'success', REJECTED: 'error',
 };
 
+// getVendorAssessment → AssessmentRepository.getById (assessment + template
+// w/ questions + requestedBy/decidedBy + answers). template is genuinely
+// nullable (legacy templateId vs versioned split); Json columns → unknown.
+interface AssessmentQuestion {
+    id: string;
+    section: string;
+    prompt: string;
+    answerType: 'YES_NO' | 'SINGLE_SELECT' | 'MULTI_SELECT' | 'TEXT' | 'NUMBER' | 'SCALE' | 'FILE_UPLOAD';
+    optionsJson: unknown;
+    weight: number;
+    required: boolean;
+    sortOrder: number;
+}
+interface VendorAssessmentDetail {
+    id: string;
+    status: 'DRAFT' | 'IN_REVIEW' | 'APPROVED' | 'REJECTED' | 'SENT' | 'IN_PROGRESS' | 'SUBMITTED' | 'REVIEWED' | 'CLOSED';
+    score: number | null;
+    riskRating: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | null;
+    notes: string | null;
+    decidedAt: string | null;
+    template: { name: string; questions: AssessmentQuestion[] } | null;
+    requestedBy: { id: string; name: string | null } | null;
+    decidedBy: { id: string; name: string | null } | null;
+    answers: Array<{ questionId: string; answerJson: unknown }>;
+}
+
 export default function AssessmentPage(
     props: { params: Promise<{ tenantSlug: string; vendorId: string; assessmentId: string }> }
 ) {
@@ -32,8 +58,7 @@ export default function AssessmentPage(
     const canWrite = permissions?.canWrite;
     const isAdmin = role === 'ADMIN';
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [assessment, setAssessment] = useState<any>(null);
+    const [assessment, setAssessment] = useState<VendorAssessmentDetail | null>(null);
     const [loading, setLoading] = useState(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [answers, setAnswers] = useState<Record<string, any>>({});

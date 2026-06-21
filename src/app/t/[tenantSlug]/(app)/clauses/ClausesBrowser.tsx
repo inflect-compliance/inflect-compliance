@@ -21,12 +21,26 @@ interface ClausesBrowserProps {
  * Client island for clause browsing — handles selection state and status updates.
  * Data is pre-fetched server-side and passed via props.
  */
+// listClauses → ClauseRepository.list (Clause model + progress-derived
+// status/notes/checklist). Element type of the `clauses` list + `selected`.
+interface ClauseRow {
+    id: string;
+    number: string;
+    title: string;
+    description: string | null;
+    artifacts: string | null;
+    sortOrder: number;
+    status: 'NOT_STARTED' | 'IN_PROGRESS' | 'READY' | 'NEEDS_REVIEW';
+    notes: string;
+    checklist: string[];
+    progressId: string | undefined;
+}
+
 export function ClausesBrowser({ clauses: initialClauses, tenantSlug }: ClausesBrowserProps) {
     const t = useTranslations('clauses');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [clauses, setClauses] = useState<any[]>(initialClauses);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [selected, setSelected] = useState<any>(null);
+    const [selected, setSelected] = useState<ClauseRow | null>(null);
 
     const apiUrl = (path: string) => `/api/t/${tenantSlug}${path}`;
 

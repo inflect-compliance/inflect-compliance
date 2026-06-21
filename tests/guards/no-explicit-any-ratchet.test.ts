@@ -78,9 +78,13 @@ const CAPS: Record<string, number> = {
     // 5 cleared; `<any>` drops by the same 5. Two latent read-bugs fixed in
     // passing: AuditsClient `selected.scope` → `auditScope`.
     //   useState<any> 11 → 6 · <any> 50 → 45
+    // any-paydown wave PR4 (2026-06-21) — typed the final 6 `useState<any>`
+    // (audit-share, asset detail, clauses browser, framework diff/templates,
+    // vendor assessment). The category is now ZERO; `<any>` drops by the same 6.
+    //   useState<any> 6 → 0 · <any> 45 → 39
     ': any': 357,
-    '<any>': 45,
-    'useState<any>': 6,
+    '<any>': 39,
+    'useState<any>': 0,
     'as any': 15,
     '// @ts-ignore': 0,
 };
