@@ -15,6 +15,44 @@ import { KPIStat } from '@/components/ui/metric';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 
+// Shapes cross-walked from the framework install API:
+//   framework → getFramework (framework/catalog.ts)
+//   preview   → previewPackInstall (framework/install.ts)
+//   result    → installPack (framework/install.ts)
+interface InstallFramework {
+    id: string;
+    key: string;
+    name: string;
+    version: string | null;
+    description: string | null;
+    kind: string;
+    _count: { requirements: number; packs: number };
+}
+interface InstallPreviewTemplate {
+    code: string;
+    title: string;
+    tasks: number;
+    requirements: { code: string; title: string }[];
+    alreadyInstalled: boolean;
+}
+interface InstallPreview {
+    packKey: string;
+    packName: string;
+    framework: { key: string; name: string; version: string | null };
+    totalTemplates: number;
+    newControls: number;
+    existingControls: number;
+    templates: InstallPreviewTemplate[];
+}
+interface InstallResult {
+    packKey: string;
+    packName: string;
+    framework: string;
+    controlsCreated: number;
+    tasksCreated: number;
+    mappingsCreated: number;
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export default function InstallWizardPage() {
     const params = useParams();
@@ -25,13 +63,13 @@ export default function InstallWizardPage() {
     const apiUrl = useCallback((path: string) => `/api/t/${tenantSlug}${path}`, [tenantSlug]);
     const tenantHref = useCallback((path: string) => `/t/${tenantSlug}${path}`, [tenantSlug]);
 
-    const [framework, setFramework] = useState<any>(null);
+    const [framework, setFramework] = useState<InstallFramework | null>(null);
     const [packs, setPacks] = useState<any[]>([]);
     const [selectedPack, setSelectedPack] = useState<string>('');
-    const [preview, setPreview] = useState<any>(null);
+    const [preview, setPreview] = useState<InstallPreview | null>(null);
     const [loading, setLoading] = useState(true);
     const [installing, setInstalling] = useState(false);
-    const [result, setResult] = useState<any>(null);
+    const [result, setResult] = useState<InstallResult | null>(null);
     const [error, setError] = useState('');
 
     // Step: 'select' | 'preview' | 'done'

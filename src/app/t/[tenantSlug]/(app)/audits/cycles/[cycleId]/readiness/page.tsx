@@ -10,6 +10,7 @@ import { Heading } from '@/components/ui/typography';
 import { cardVariants } from '@/components/ui/card';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 import { cn } from '@/lib/cn';
+import type { ReadinessResult } from '@/app-layer/usecases/audit-readiness-scoring';
 
 function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
     const r = (size - 8) / 2;
@@ -44,8 +45,8 @@ export default function CycleReadinessPage() {
     const cycleId = params.cycleId as string;
     const apiUrl = useCallback((path: string) => `/api/t/${tenantSlug}${path}`, [tenantSlug]);
 
-    const [result, setResult] = useState<any>(null);
-    const [cycle, setCycle] = useState<any>(null);
+    const [result, setResult] = useState<ReadinessResult | null>(null);
+    const [cycle, setCycle] = useState<{ name: string } | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {

@@ -63,9 +63,15 @@ const CAPS: Record<string, number> = {
     // `a.template`, and the rest of those rows are typed loosely
     // (the existing page-level `assessments` and `subs` arrays are
     // `any[]` upstream — typing them properly is a separate cleanup).
+    // any-paydown wave PR1 (2026-06-21) — typed `useState<any>` → real
+    // interfaces in the framework-install + audit-cycle + cycle-readiness
+    // pages (cross-walked from each API route's repository select / usecase
+    // return). 7 `useState<any>` cleared; because `/<any>/` also matches the
+    // `<any>` inside `useState<any>`, the `<any>` cap drops by the same 7.
+    //   useState<any> 24 → 15 · <any> 63 → 54
     ': any': 357,
-    '<any>': 63,
-    'useState<any>': 24,
+    '<any>': 54,
+    'useState<any>': 15,
     'as any': 15,
     '// @ts-ignore': 0,
 };
