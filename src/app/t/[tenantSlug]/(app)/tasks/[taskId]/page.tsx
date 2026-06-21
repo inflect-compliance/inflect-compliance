@@ -1,7 +1,6 @@
 'use client';
 
 import { formatDate, formatDateTime } from '@/lib/format-date';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -36,7 +35,7 @@ import { cardVariants } from '@/components/ui/card';
 // Shared evidence sub-table — lives under the control detail route's
 // `_tabs/` (kept there so existing guard exemptions + a unit test keyed
 // on that path stay valid). Imported here via the `@/app` alias.
-import { EvidenceSubTable } from '@/app/t/[tenantSlug]/(app)/controls/[controlId]/_tabs/EvidenceSubTable';
+import { EvidenceSubTable, type EvidenceTabData } from '@/app/t/[tenantSlug]/(app)/controls/[controlId]/_tabs/EvidenceSubTable';
 import { EvidenceAddForm } from '@/components/EvidenceAddForm';
 import { EditTaskModal, type EditTaskForm } from './_modals/EditTaskModal';
 import { toYMD } from '@/components/ui/date-picker/date-utils';
@@ -98,6 +97,23 @@ interface TaskDetail {
     createdBy: { name: string | null } | null;
     control: { id: string; code: string | null; name: string } | null;
     _count: { evidence: number; links: number; comments: number };
+}
+
+// Comments tab — TaskCommentRepository.listByTask (include createdBy).
+interface TaskCommentRow {
+    id: string;
+    body: string;
+    createdAt: string;
+    createdBy: { name: string | null } | null;
+}
+
+// Activity tab — auditLog.findMany (include user).
+interface TaskActivityRow {
+    id: string;
+    action: string;
+    details: string | null;
+    createdAt: string;
+    user: { name: string | null } | null;
 }
 
 export default function TaskDetailPage() {
@@ -171,7 +187,7 @@ export default function TaskDetailPage() {
             : 'Task not found')
         : '';
 
-    const linksQuery = useTenantSWR<any[]>(
+    const linksQuery = useTenantSWR<TaskLinkRow[]>(
         taskId && tab === 'links' ? `/tasks/${taskId}/links` : null,
     );
     const links = linksQuery.data ?? [];
@@ -179,17 +195,17 @@ export default function TaskDetailPage() {
 
     // Task Evidence tab — same `{ links, evidence }` payload the control
     // evidence tab fetches, so the shared <EvidenceSubTable> renders it.
-    const evidenceQuery = useTenantSWR<{ links: any[]; evidence: any[] }>(
+    const evidenceQuery = useTenantSWR<EvidenceTabData>(
         taskId && tab === 'evidence' ? `/tasks/${taskId}/evidence` : null,
     );
 
-    const commentsQuery = useTenantSWR<any[]>(
+    const commentsQuery = useTenantSWR<TaskCommentRow[]>(
         taskId && tab === 'comments' ? `/tasks/${taskId}/comments` : null,
     );
     const comments = commentsQuery.data ?? [];
     const commentsLoading = commentsQuery.isLoading;
 
-    const activityQuery = useTenantSWR<any[]>(
+    const activityQuery = useTenantSWR<TaskActivityRow[]>(
         taskId && tab === 'activity' ? `/tasks/${taskId}/activity` : null,
     );
     const activity = activityQuery.data ?? [];
@@ -221,7 +237,7 @@ export default function TaskDetailPage() {
         try {
             // Optimistic — the new status shows instantly, no spinner.
             await taskQuery.mutate(
-                (cur: any) => (cur ? { ...cur, status } : cur),
+                (cur: TaskDetail | undefined) => (cur ? { ...cur, status } : cur),
                 { revalidate: false },
             );
             const res = await fetch(apiUrl(`/tasks/${taskId}/status`), {
@@ -260,7 +276,7 @@ export default function TaskDetailPage() {
         const assigneeUserId = assigneeValue || null;
         try {
             await taskQuery.mutate(
-                (cur: any) => (cur ? { ...cur, assigneeUserId } : cur),
+                (cur: TaskDetail | undefined) => (cur ? { ...cur, assigneeUserId } : cur),
                 { revalidate: false },
             );
             await fetch(apiUrl(`/tasks/${taskId}/assign`), {
@@ -298,7 +314,7 @@ export default function TaskDetailPage() {
     const removeLink = (linkId: string) => {
         const previous = linksQuery.data ?? [];
         void linksQuery.mutate(
-            previous.filter((l: any) => l.id !== linkId),
+            previous.filter((l) => l.id !== linkId),
             { revalidate: false },
         );
         triggerUndoToast({
@@ -395,7 +411,7 @@ export default function TaskDetailPage() {
         const previous = evidenceQuery.data;
         void evidenceQuery.mutate(
             previous
-                ? { ...previous, evidence: (previous.evidence ?? []).filter((ev: any) => ev.id !== evidenceId) }
+                ? { ...previous, evidence: (previous.evidence ?? []).filter((ev) => ev.id !== evidenceId) }
                 : previous,
             { revalidate: false },
         );
@@ -875,7 +891,7 @@ export default function TaskDetailPage() {
                             />
                         ) : (
                             <div className="divide-y divide-border-default/50">
-                                {comments.map((c: any) => (
+                                {comments.map((c) => (
                                     <div key={c.id} className="px-5 py-3">
                                         <div className="flex items-center gap-tight mb-1">
                                             <span className="text-sm font-medium text-content-emphasis">{c.createdBy?.name || 'Unknown'}</span>
@@ -912,7 +928,7 @@ export default function TaskDetailPage() {
                         />
                     ) : (
                         <div className="divide-y divide-border-default/50">
-                            {activity.map((evt: any) => (
+                            {activity.map((evt) => (
                                 <div key={evt.id} className="px-5 py-3 flex items-start gap-compact">
                                     <div className="w-2 h-2 rounded-full bg-[var(--brand-default)] mt-2 shrink-0" />
                                     <div className="flex-1 min-w-0">

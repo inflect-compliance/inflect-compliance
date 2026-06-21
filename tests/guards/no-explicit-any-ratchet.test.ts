@@ -163,7 +163,19 @@ const CAPS: Record<string, number> = {
     // `createColumns<Row>` / the typed source array). All four file-level
     // `no-explicit-any` disables now unused and removed. 40 cleared.
     //   : any 289 → 249
-    ': any': 249,
+    // any-paydown wave PR17 (2026-06-22) — `: any` cont. (2 detail pages).
+    // vendors/[vendorId]: 6 `useState<any[]>` → existing/new row types (added
+    // VendorTemplateRow/VendorLinkRow/VendorBundleRow + `notes` on VendorDocRow);
+    // `body: any` → `Record<string,string>`; setEditForm updaters + array
+    // callbacks dropped; the two sub-table prop types → VendorAssessmentRow[] /
+    // VendorSubprocessorRow[]; cell/getRowId typed (the actions cell sits in a
+    // conditional spread so it carries an explicit `{ row: { original: Row } }`,
+    // not `any`). tasks/[taskId]: 4 `useTenantSWR<any[]>`/inline → TaskLinkRow[]/
+    // EvidenceTabData/TaskCommentRow[]/TaskActivityRow[]; optimistic `(cur: any)`
+    // → `TaskDetail | undefined`; array callbacks dropped. Both file disables +
+    // 5 inner vendor disables removed. 25 cleared.
+    //   : any 249 → 224
+    ': any': 224,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,
