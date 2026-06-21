@@ -96,8 +96,12 @@ const CAPS: Record<string, number> = {
     // AuditsClient (useQuery CappedList → AuditListRow) + AuditLogClient
     // (createColumns → AuditLogRow). 3 cleared.
     //   <any> 27 → 24
+    // any-paydown wave PR8 (2026-06-21) — `<any>` cont.: typed EvidenceClient's
+    // useTenantSWR + useTenantMutation `CappedList<…>` payloads + createColumns
+    // to EvidenceRow (evidenceListSelect). 4 cleared.
+    //   <any> 24 → 20
     ': any': 357,
-    '<any>': 24,
+    '<any>': 20,
     'useState<any>': 0,
     'as any': 15,
     '// @ts-ignore': 0,

@@ -100,6 +100,30 @@ function getRetentionStatus(ev: any, now: Date | null): { label: string; badge: 
     return { label: 'No policy', badge: 'neutral', icon: '—' };
 }
 
+// listEvidence → EvidenceRepository.list (evidenceListSelect). Cell/accessor/
+// filter callbacks stay untyped (file-level disable above — the colon-any
+// category); this types the query payload, mutation cache + column factory.
+interface EvidenceRow {
+    id: string;
+    title: string;
+    type: string;
+    status: string;
+    fileName: string | null;
+    owner: string | null;
+    ownerUserId: string | null;
+    folder: string | null;
+    isArchived: boolean;
+    expiredAt: string | null;
+    deletedAt: string | null;
+    retentionUntil: string | null;
+    updatedAt: string;
+    dateCollected: string;
+    fileRecordId: string | null;
+    content: string | null;
+    control: { id: string; name: string; annexId: string | null } | null;
+    fileRecord: { id: string; mimeType: string | null } | null;
+}
+
 interface EvidenceClientProps {
 
     initialEvidence: any[];
@@ -176,7 +200,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     // `rows` for the table and `truncated` for the banner. SSR
     // initial wraps with `truncated: false` (cap is 5000, SSR cap is
     // 100, so the SSR slice never trips truncation by itself).
-    const evidenceQuery = useTenantSWR<CappedList<any>>(evidenceKey, {
+    const evidenceQuery = useTenantSWR<CappedList<EvidenceRow>>(evidenceKey, {
         fallbackData: anyFilterActive
             ? undefined
             : { rows: initialEvidence, truncated: false },
@@ -323,9 +347,9 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     // default restores the prior list on failure. After success
     // SWR revalidates the current key, and `invalidateEvidence()`
     // fans out to sibling filter variants.
-    // PR-5 — cache value is `CappedList<any>` (the API returns
+    // PR-5 — cache value is `CappedList<EvidenceRow>` (the API returns
     // `{ rows, truncated }`); preserve `truncated` and only rewrite `rows`.
-    const reviewMutation = useTenantMutation<CappedList<any>, { id: string; action: string; comment: string }, unknown>({
+    const reviewMutation = useTenantMutation<CappedList<EvidenceRow>, { id: string; action: string; comment: string }, unknown>({
         key: evidenceKey,
         mutationFn: async ({ id, action, comment }) => {
             const res = await fetch(apiUrl(`/evidence/${id}/review`), {
@@ -640,7 +664,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
 
     // ── Evidence Column Definitions ──
 
-    const evidenceColumns = useMemo(() => createColumns<any>([
+    const evidenceColumns = useMemo(() => createColumns<EvidenceRow>([
         {
             accessorKey: 'title',
             header: t.evidenceTitle,
