@@ -505,7 +505,7 @@ export function withEncryptionExtension<T extends { $extends: any }>(
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     args: any;
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    query: (a: any) => Promise<any>;
+                    query: (a: any) => Promise<unknown>;
                 }) {
                     const isWrite = WRITE_ACTIONS.has(operation);
                     const isRead = RESULT_DECRYPT_ACTIONS.has(operation);

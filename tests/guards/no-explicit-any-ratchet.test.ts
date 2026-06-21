@@ -117,8 +117,17 @@ const CAPS: Record<string, number> = {
     // `Promise<any>` → `Promise<unknown>` (1), table pinning helpers
     // `Column<any>` → generic `<TData>(column: Column<TData>)` (2). 7 cleared.
     //   <any> 15 → 8
+    // any-paydown wave PR12 (2026-06-21) — `<any>` cont., Prisma-middleware
+    // boundary: the `query`/`next` callbacks and `isThenable` predicate carried
+    // `Promise<any>` / `PromiseLike<any>` return types at the dynamic Prisma
+    // call boundary. Tightened to `unknown` (rls-middleware, encryption-middleware,
+    // pii-middleware ×3, audit-context) — the query result already flows into
+    // `unknown`-typed sinks (`walkReadResult(result: unknown)`, pass-through
+    // returns, `runPiiEncryption`'s `Promise<unknown>` next). The `: any` PARAM
+    // annotations stay (separate category); their eslint-disables remain. 6 cleared.
+    //   <any> 8 → 2
     ': any': 355,
-    '<any>': 8,
+    '<any>': 2,
     'useState<any>': 0,
     'as any': 15,
     '// @ts-ignore': 0,
