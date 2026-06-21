@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any -- Tanstack-react-table cell callbacks (tanstack cell callbacks where row/getValue carry the implicit-any annotation) — typing each callback with `CellContext<TData, TValue>` requires importing the right generic per column and adds significant ceremony. The implicit any here is at the render-time boundary; row.original is type-narrowed by the column's accessorKey at runtime. */
 import { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { DataTable, createColumns } from '@/components/ui/table';
@@ -209,11 +208,11 @@ export default function NotificationSettingsPage() {
                 <div>
                     {stats ? (() => {
                         const statsColumns = createColumns<{ label: string; pending: number; sent: number; failed: number; total: number }>([
-                            { accessorKey: 'label', header: 'Period', cell: ({ getValue }: any) => <span className="font-medium">{getValue()}</span> },
-                            { accessorKey: 'pending', header: 'Pending', cell: ({ getValue }: any) => <StatusBadge variant="warning">{getValue()}</StatusBadge> },
-                            { accessorKey: 'sent', header: 'Sent', cell: ({ getValue }: any) => <StatusBadge variant="success">{getValue()}</StatusBadge> },
-                            { accessorKey: 'failed', header: 'Failed', cell: ({ getValue }: any) => <StatusBadge variant="error">{getValue()}</StatusBadge> },
-                            { accessorKey: 'total', header: 'Total', cell: ({ getValue }: any) => <span className="text-content-muted">{getValue()}</span> },
+                            { accessorKey: 'label', header: 'Period', cell: ({ getValue }) => <span className="font-medium">{getValue()}</span> },
+                            { accessorKey: 'pending', header: 'Pending', cell: ({ getValue }) => <StatusBadge variant="warning">{getValue()}</StatusBadge> },
+                            { accessorKey: 'sent', header: 'Sent', cell: ({ getValue }) => <StatusBadge variant="success">{getValue()}</StatusBadge> },
+                            { accessorKey: 'failed', header: 'Failed', cell: ({ getValue }) => <StatusBadge variant="error">{getValue()}</StatusBadge> },
+                            { accessorKey: 'total', header: 'Total', cell: ({ getValue }) => <span className="text-content-muted">{getValue()}</span> },
                         ]);
                         const statsData = [
                             { label: 'Last 24 hours', ...stats.last24h, total: stats.last24h.pending + stats.last24h.sent + stats.last24h.failed },

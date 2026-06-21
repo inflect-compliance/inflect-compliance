@@ -182,7 +182,18 @@ const CAPS: Record<string, number> = {
     // `Prisma.ControlTemplateWhereInput` (mirrors coverage.ts). File-level disable
     // removed. 32 cleared.
     //   : any 224 → 192
-    ': any': 192,
+    // any-paydown wave PR19 (2026-06-22) — `: any` cont. (4 fetch+setState client
+    // pages): controls/templates, risks/import, admin/integrations,
+    // admin/notifications. Dropped tanstack cell/accessorFn/getRowId `: any`
+    // (infer from `createColumns<Row>`); typed templates' state to its existing
+    // `ControlTemplateRow`; two `catch (e: any)` → bare `catch (e)` + `instanceof
+    // Error` narrowing; risks/import payload `Record<string, any>` → inferred. The
+    // existing DTO/interfaces (ConnectionDTO, NotificationSettings, OutboxStats,
+    // ParsedRow) already matched the sources. All 4 file-level disables removed.
+    // 25 `: any` cleared (the useState<any[]>/Record<,any> tidy-ups aren't matched
+    // by the `: any` regex but were required to drop the disables cleanly).
+    //   : any 192 → 167
+    ': any': 167,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,
