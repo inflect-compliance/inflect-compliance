@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any -- Client component receiving server-rendered domain data; tanstack column callbacks carry implicit-any on `row` / `getValue` and the per-cell narrowing requires importing CellContext generics from tanstack — outside the scope of this layout move. */
 import { formatDateTime } from '@/lib/format-date';
 import { useMemo } from 'react';
 import { DataTable, createColumns } from '@/components/ui/table';
@@ -19,7 +18,7 @@ interface AuditLogRow {
 }
 
 interface AuditLogClientProps {
-    auditLog: any[];
+    auditLog: AuditLogRow[];
     translations: {
         time: string;
         user: string;
@@ -40,29 +39,29 @@ export function AuditLogClient({ auditLog, translations: t }: AuditLogClientProp
         {
             id: 'time',
             header: t.time,
-            accessorFn: (e: any) => e.createdAt,
-            cell: ({ getValue }: any) => <span className="whitespace-nowrap">{formatDateTime(getValue())}</span>,
+            accessorFn: (e) => e.createdAt,
+            cell: ({ getValue }) => <span className="whitespace-nowrap">{formatDateTime(getValue())}</span>,
         },
         {
             id: 'user',
             header: t.user,
-            accessorFn: (e: any) => e.user?.name || '—',
-            cell: ({ getValue }: any) => <span>{getValue()}</span>,
+            accessorFn: (e) => e.user?.name || '—',
+            cell: ({ getValue }) => <span>{getValue()}</span>,
         },
         {
             accessorKey: 'action',
             header: t.action,
-            cell: ({ getValue }: any) => <StatusBadge variant="info">{getValue()}</StatusBadge>,
+            cell: ({ getValue }) => <StatusBadge variant="info">{getValue()}</StatusBadge>,
         },
         {
             accessorKey: 'entity',
             header: t.entity,
-            cell: ({ getValue }: any) => <span>{getValue()}</span>,
+            cell: ({ getValue }) => <span>{getValue()}</span>,
         },
         {
             accessorKey: 'details',
             header: t.details,
-            cell: ({ getValue }: any) => <span className="text-content-muted max-w-xs truncate">{getValue()}</span>,
+            cell: ({ getValue }) => <span className="text-content-muted max-w-xs truncate">{getValue()}</span>,
         },
     ]), [t]);
 
@@ -72,7 +71,7 @@ export function AuditLogClient({ auditLog, translations: t }: AuditLogClientProp
                 fillBody
                 data={auditLog}
                 columns={logColumns}
-                getRowId={(e: any) => e.id}
+                getRowId={(e) => e.id}
                 emptyState={t.noEntries}
                 resourceName={(p) => (p ? 'log entries' : 'log entry')}
                 data-testid="audit-log-table"
