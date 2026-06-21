@@ -42,9 +42,12 @@ test-results/
 tests/load/results/
 playwright-report/
 blob-report/
-playwright-results*.json  # ad-hoc Playwright JSON reporter dumps (debugging)
-next_error*.html          # Next.js error-overlay HTML saved while debugging
-nul                       # Windows `> nul` redirect mistake — never a real file
+# ad-hoc Playwright JSON reporter dumps (debugging)
+playwright-results*.json
+# Next.js error-overlay HTML saved while debugging
+next_error*.html
+# Windows `> nul` redirect mistake — never a real file
+nul
 # GAP-23: Playwright tenant-tracker (created by createIsolatedTenant,
 # consumed by tests/e2e/global-teardown.ts). Per-run artefact.
 tests/e2e/.tenant-tracker.jsonl
