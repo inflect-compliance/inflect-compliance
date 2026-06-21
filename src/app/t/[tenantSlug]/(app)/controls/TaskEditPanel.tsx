@@ -19,11 +19,11 @@ import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { UserCombobox } from "@/components/ui/user-combobox";
 import { FormField } from "@/components/ui/form-field";
 import { RequiredMarker } from "@/components/ui/required-marker";
-import { ArrowLeft, Xmark } from "@/components/ui/icons/nucleo";
 import { PanelTabs } from "./PanelTabs";
 import { DatePicker } from "@/components/ui/date-picker/date-picker";
 import { parseYMD, startOfUtcDay, toYMD } from "@/components/ui/date-picker/date-utils";
 import { PanelActivityFeed } from "./PanelActivityFeed";
+import { EvidenceUploadSection } from "@/components/evidence/EvidenceUploadSection";
 import type { ControlTask } from "./ControlTaskRows";
 
 const SEVERITY_OPTIONS: ComboboxOption[] = [
@@ -71,19 +71,12 @@ export function TaskEditPanel({
     tenantSlug,
     task,
     canWrite,
-    onBack,
     onClose,
     onSaved,
 }: {
     tenantSlug: string;
     task: ControlTask;
     canWrite: boolean;
-    /**
-     * Optional "← Back" affordance. On the Controls page the task panel is
-     * reached from a parent control, so Back returns to it. On the Tasks list
-     * page there's no parent — omit it and only the Close button shows.
-     */
-    onBack?: () => void;
     onClose: () => void;
     onSaved: () => void;
 }) {
@@ -163,29 +156,6 @@ export function TaskEditPanel({
 
     return (
         <div className="space-y-default" role="region" aria-label="Task editor" data-testid="task-edit-panel">
-            <div className="flex items-center justify-between gap-tight">
-                {onBack ? (
-                    <button
-                        type="button"
-                        onClick={onBack}
-                        className="inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-content-muted transition-colors hover:text-content-emphasis"
-                        data-testid="task-edit-back"
-                    >
-                        <ArrowLeft width={13} height={13} /> Back
-                    </button>
-                ) : (
-                    <span />
-                )}
-                <button
-                    type="button"
-                    aria-label="Close quick view"
-                    onClick={onClose}
-                    className="inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded text-content-muted transition-colors hover:bg-bg-muted hover:text-content-emphasis"
-                >
-                    <Xmark width={14} height={14} />
-                </button>
-            </div>
-
             <div className="flex items-center gap-tight">
                 {task.key && <span className="font-mono text-xs text-content-muted">{task.key}</span>}
                 <StatusBadge variant={TASK_STATUS_BADGE[task.status] ?? "neutral"} size="sm">
@@ -201,6 +171,7 @@ export function TaskEditPanel({
             />
 
             {tab === "details" ? (
+                <div className="space-y-default">
                 <form onSubmit={save} className="space-y-default" data-testid="task-edit-form">
                     {error && (
                         <div className="rounded-lg border border-border-error bg-bg-error px-3 py-2 text-sm text-content-error" role="alert">
@@ -245,7 +216,7 @@ export function TaskEditPanel({
                                 hideSearch
                                 matchTriggerWidth
                                 forceDropdown
-                                buttonProps={{ className: "w-full" }}
+                                buttonProps={{ className: "w-full", size: "sm" }}
                                 caret
                             />
                         </div>
@@ -262,7 +233,7 @@ export function TaskEditPanel({
                                     hideSearch
                                     matchTriggerWidth
                                     forceDropdown
-                                    buttonProps={{ className: "w-full" }}
+                                    buttonProps={{ className: "w-full", size: "sm" }}
                                     caret
                                 />
                             </div>
@@ -278,7 +249,7 @@ export function TaskEditPanel({
                                     hideSearch
                                     matchTriggerWidth
                                     forceDropdown
-                                    buttonProps={{ className: "w-full" }}
+                                    buttonProps={{ className: "w-full", size: "sm" }}
                                     caret
                                 />
                             </div>
@@ -329,6 +300,16 @@ export function TaskEditPanel({
                         </div>
                     )}
                 </form>
+                {/* Drag-and-drop evidence upload (canonical FileDropzone). */}
+                <EvidenceUploadSection
+                    tenantSlug={tenantSlug}
+                    linkField="taskId"
+                    linkId={task.id}
+                    canWrite={canWrite}
+                    listEndpoint={`/tasks/${task.id}/evidence`}
+                    urlLinkEndpoint={`/tasks/${task.id}/evidence`}
+                />
+                </div>
             ) : (
                 <PanelActivityFeed tenantSlug={tenantSlug} endpoint={`/tasks/${task.id}/activity`} />
             )}

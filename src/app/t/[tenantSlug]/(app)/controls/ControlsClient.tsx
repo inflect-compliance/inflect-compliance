@@ -1142,7 +1142,6 @@ function ControlsPageInner({
                 tenantSlug={tenantSlug}
                 task={selectedTask}
                 canWrite={appPermissions.tasks.edit}
-                onBack={() => setSelectedTask(null)}
                 onClose={closeQuickView}
                 onSaved={handlePanelSaved}
             />

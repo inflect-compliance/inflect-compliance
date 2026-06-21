@@ -313,6 +313,7 @@ export default function AssetDetailPage() {
                     <div className="space-y-default">
                         <Heading level={3}>Attached evidence</Heading>
                         <AttachedEvidencePanel
+                            tenantSlug={tenantSlug}
                             entityId={assetId}
                             entity="asset"
                             endpoint={`/assets/${assetId}/evidence/attached`}
