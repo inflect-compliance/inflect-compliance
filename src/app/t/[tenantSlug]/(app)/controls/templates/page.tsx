@@ -4,7 +4,6 @@
  * carries an inline disable directive; collectively they should
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
-/* eslint-disable @typescript-eslint/no-explicit-any -- Tanstack-react-table cell callbacks (tanstack cell callbacks where row/getValue carry the implicit-any annotation) — typing each callback with `CellContext<TData, TValue>` requires importing the right generic per column and adds significant ceremony. The implicit any here is at the render-time boundary; row.original is type-narrowed by the column's accessorKey at runtime. */
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -37,7 +36,7 @@ export default function ControlTemplatesPage() {
     const { permissions } = useTenantContext();
 
 
-    const [templates, setTemplates] = useState<any[]>([]);
+    const [templates, setTemplates] = useState<ControlTemplateRow[]>([]);
     const [loading, setLoading] = useState(true);
     // R14-PR7 — search state retired. Users find templates via the
     // global command palette (⌘K) or by scanning the list. The
@@ -93,8 +92,8 @@ export default function ControlTemplatesPage() {
             setSuccess(`Installed ${count} control(s) successfully!`);
             setTimeout(() => router.push(tenantHref('/controls')), 1500);
 
-        } catch (e: any) {
-            setError(e.message);
+        } catch (e) {
+            setError(e instanceof Error ? e.message : String(e));
         } finally {
             setInstalling(false);
         }
@@ -158,23 +157,23 @@ export default function ControlTemplatesPage() {
                                 id: 'select', header: () => (
                                     <input type="checkbox" checked={selectedIds.size === filtered.length && filtered.length > 0} onChange={toggleAll} className="rounded" />
                                 ),
-                                cell: ({ row }: any) => (
+                                cell: ({ row }) => (
                                     <input type="checkbox" checked={selectedIds.has(row.original.id)} onChange={() => toggle(row.original.id)} className="rounded" />
                                 ),
                             },
-                            { accessorKey: 'code', header: 'Code', cell: ({ getValue }: any) => <span className="text-xs text-content-muted font-mono">{getValue() || '—'}</span> },
-                            { accessorKey: 'title', header: 'Name', cell: ({ getValue }: any) => <span className="font-medium text-content-emphasis">{getValue()}</span> },
+                            { accessorKey: 'code', header: 'Code', cell: ({ getValue }) => <span className="text-xs text-content-muted font-mono">{getValue() || '—'}</span> },
+                            { accessorKey: 'title', header: 'Name', cell: ({ getValue }) => <span className="font-medium text-content-emphasis">{getValue()}</span> },
                             {
                                 accessorKey: 'category', header: 'Category',
-                                cell: ({ getValue }: any) => getValue() ? <StatusBadge variant="info">{getValue()}</StatusBadge> : null,
+                                cell: ({ getValue }) => getValue() ? <StatusBadge variant="info">{getValue()}</StatusBadge> : null,
                             },
-                            { accessorKey: 'description', header: 'Description', cell: ({ getValue }: any) => <span className="text-xs text-content-subtle truncate max-w-xs">{getValue() || '—'}</span> },
+                            { accessorKey: 'description', header: 'Description', cell: ({ getValue }) => <span className="text-xs text-content-subtle truncate max-w-xs">{getValue() || '—'}</span> },
                         ]);
                         return (
                             <DataTable
                                 data={filtered}
                                 columns={templateCols}
-                                getRowId={(t: any) => t.id}
+                                getRowId={(t) => t.id}
                                 onRowClick={(row) => toggle(row.original.id)}
                                 emptyState={
                                     <TableEmptyState

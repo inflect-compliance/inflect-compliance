@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any -- Tanstack-react-table cell callbacks (tanstack cell callbacks where row/getValue carry the implicit-any annotation) — typing each callback with `CellContext<TData, TValue>` requires importing the right generic per column and adds significant ceremony. The implicit any here is at the render-time boundary; row.original is type-narrowed by the column's accessorKey at runtime. */
 import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -90,7 +89,7 @@ export default function RiskImportPage() {
             const row = rows[i];
             try {
 
-                const payload: Record<string, any> = {
+                const payload = {
                     title: row.title,
                     description: row.description,
                     category: row.category,
@@ -109,8 +108,8 @@ export default function RiskImportPage() {
                 }
                 created++;
 
-            } catch (err: any) {
-                errors.push(`Row ${i + 1} "${row.title}": ${err.message}`);
+            } catch (err) {
+                errors.push(`Row ${i + 1} "${row.title}": ${err instanceof Error ? err.message : String(err)}`);
             }
         }
         setResult({ created, errors });
@@ -169,11 +168,11 @@ export default function RiskImportPage() {
                     </div>
                     {(() => {
                         const previewCols = createColumns<ParsedRow & { _idx: number }>([
-                            { id: 'num', header: '#', accessorKey: '_idx', cell: ({ getValue }: any) => <span className="text-xs text-content-subtle">{getValue()}</span> },
-                            { accessorKey: 'title', header: t('colTitle'), cell: ({ getValue }: any) => <span className="text-sm">{getValue()}</span> },
-                            { id: 'category', header: t('colCategory'), accessorKey: 'category', cell: ({ getValue }: any) => <span className="text-xs text-content-muted">{getValue() || '—'}</span> },
-                            { id: 'lxi', header: t('colLxI'), accessorFn: (r: any) => `${r.likelihood ?? 3}×${r.impact ?? 3}`, cell: ({ getValue }: any) => <span className="text-xs">{getValue()}</span> },
-                            { id: 'owner', header: t('colOwner'), accessorKey: 'owner', cell: ({ getValue }: any) => <span className="text-xs text-content-muted">{getValue() || '—'}</span> },
+                            { id: 'num', header: '#', accessorKey: '_idx', cell: ({ getValue }) => <span className="text-xs text-content-subtle">{getValue()}</span> },
+                            { accessorKey: 'title', header: t('colTitle'), cell: ({ getValue }) => <span className="text-sm">{getValue()}</span> },
+                            { id: 'category', header: t('colCategory'), accessorKey: 'category', cell: ({ getValue }) => <span className="text-xs text-content-muted">{getValue() || '—'}</span> },
+                            { id: 'lxi', header: t('colLxI'), accessorFn: (r) => `${r.likelihood ?? 3}×${r.impact ?? 3}`, cell: ({ getValue }) => <span className="text-xs">{getValue()}</span> },
+                            { id: 'owner', header: t('colOwner'), accessorKey: 'owner', cell: ({ getValue }) => <span className="text-xs text-content-muted">{getValue() || '—'}</span> },
                         ]);
                         const previewData = rows.slice(0, 20).map((r, i) => ({ ...r, _idx: i + 1 }));
                         return (

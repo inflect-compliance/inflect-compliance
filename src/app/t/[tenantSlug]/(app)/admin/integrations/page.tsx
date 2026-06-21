@@ -4,7 +4,6 @@
  * carries an inline disable directive; collectively they should
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
-/* eslint-disable @typescript-eslint/no-explicit-any -- Tanstack-react-table cell callbacks (tanstack cell callbacks where row/getValue carry the implicit-any annotation) — typing each callback with `CellContext<TData, TValue>` requires importing the right generic per column and adds significant ceremony. The implicit any here is at the render-time boundary; row.original is type-narrowed by the column's accessorKey at runtime. */
 import { formatDate } from '@/lib/format-date';
 import { useEffect, useState, useCallback } from 'react';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
@@ -254,26 +253,26 @@ export default function AdminIntegrationsPage() {
                     ) : (
                         (() => {
                             const connCols = createColumns<ConnectionDTO>([
-                                { accessorKey: 'provider', header: 'Provider', cell: ({ getValue }: any) => <StatusBadge variant="info">{getValue()}</StatusBadge> },
-                                { accessorKey: 'name', header: 'Name', cell: ({ getValue }: any) => <span className="font-medium">{getValue()}</span> },
+                                { accessorKey: 'provider', header: 'Provider', cell: ({ getValue }) => <StatusBadge variant="info">{getValue()}</StatusBadge> },
+                                { accessorKey: 'name', header: 'Name', cell: ({ getValue }) => <span className="font-medium">{getValue()}</span> },
                                 {
                                     id: 'status', header: 'Status', accessorKey: 'isEnabled',
-                                    cell: ({ row }: any) => <StatusBadge variant={row.original.isEnabled ? 'success' : 'error'}>{row.original.isEnabled ? 'Active' : 'Disabled'}</StatusBadge>,
+                                    cell: ({ row }) => <StatusBadge variant={row.original.isEnabled ? 'success' : 'error'}>{row.original.isEnabled ? 'Active' : 'Disabled'}</StatusBadge>,
                                 },
                                 { id: 'secrets', header: 'Secrets', cell: () => <span className="text-content-subtle font-mono">••••••••</span> },
                                 {
                                     id: 'lastTest', header: 'Last Test', accessorKey: 'lastTestedAt',
-                                    cell: ({ row }: any) => row.original.lastTestedAt ? (
+                                    cell: ({ row }) => row.original.lastTestedAt ? (
                                         <span className="flex items-center gap-1 text-content-muted">
                                             {row.original.lastTestStatus === 'ok' ? <CheckCircle className="w-3.5 h-3.5 text-content-success" /> : <XCircle className="w-3.5 h-3.5 text-content-error" />}
                                             {formatDate(row.original.lastTestedAt)}
                                         </span>
                                     ) : <span className="text-content-subtle">—</span>,
                                 },
-                                { id: 'executions', header: 'Executions', accessorFn: (c: ConnectionDTO) => c._count?.executions ?? 0, cell: ({ getValue }: any) => <span>{getValue()}</span> },
+                                { id: 'executions', header: 'Executions', accessorFn: (c: ConnectionDTO) => c._count?.executions ?? 0, cell: ({ getValue }) => <span>{getValue()}</span> },
                                 {
                                     id: 'actions', header: 'Actions',
-                                    cell: ({ row }: any) => (
+                                    cell: ({ row }) => (
                                         <div className="flex gap-1">
                                             <Tooltip content="Test connection">
                                                 <Button variant="secondary" size="xs" onClick={() => handleTest(row.original)} disabled={testing === row.original.id} aria-label="Test connection">
