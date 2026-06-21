@@ -933,11 +933,20 @@ function VendorDocsTable({
 // + open-link action. The "Open →" cell stays a plain Link (no
 // per-row write affordance), so this is the cleanest of the four
 // migrations — purely a primitive swap, no behaviour change.
+// AssessmentRepository.listByVendor — VendorAssessment scalars + template.
+interface VendorAssessmentRow {
+    id: string;
+    status: string;
+    score: number | null;
+    riskRating: string | null;
+    startedAt: string;
+    template: { name: string } | null;
+}
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function VendorAssessmentsTable({ assessments, vendorId, tenantHref }: { assessments: any[]; vendorId: string; tenantHref: (path: string) => string }) {
     const columns = useMemo(
         () =>
-            createColumns<any>([   // eslint-disable-line @typescript-eslint/no-explicit-any
+            createColumns<VendorAssessmentRow>([
                 {
                     id: 'template',
                     header: 'Template',
@@ -1015,12 +1024,25 @@ function VendorAssessmentsTable({ assessments, vendorId, tenantHref }: { assessm
 // ─── Subprocessors sub-table (R10-PR3 follow-up) ────────────────────
 // Tracks the vendor's nested subprocessors with per-row Remove
 // (canWrite-gated). Same shape as the R11-PR8 task-links template:
+// listSubprocessors — VendorRelationship + nested subprocessor Vendor select.
+interface VendorSubprocessorRow {
+    id: string;
+    subprocessorVendorId: string;
+    purpose: string | null;
+    country: string | null;
+    subprocessor: {
+        name: string;
+        country: string | null;
+        criticality: string;
+        inherentRisk: string | null;
+    };
+}
 // Actions column produced via the gated-spread idiom.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function VendorSubprocessorsTable({ subs, canWrite, onRemove }: { subs: any[]; canWrite: boolean; onRemove: (relationId: string) => void | Promise<void> }) {
     const columns = useMemo(
         () =>
-            createColumns<any>([   // eslint-disable-line @typescript-eslint/no-explicit-any
+            createColumns<VendorSubprocessorRow>([
                 {
                     id: 'name',
                     header: 'Subprocessor',
