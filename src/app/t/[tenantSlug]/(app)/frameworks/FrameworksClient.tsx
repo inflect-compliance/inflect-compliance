@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 /**
  * Epic 66 — frameworks page client island.
@@ -55,9 +54,20 @@ const FW_DEFAULT: { icon: LucideIcon; color: string } = {
 };
 
 export interface FrameworksClientProps {
-    frameworks: any[];
-    coverages: Record<string, any>;
+    frameworks: FrameworkListItem[];
+    coverages: Record<string, { coveragePercent: number; mapped: number; total: number }>;
     tenantSlug: string;
+}
+
+// listFrameworks row (Framework + _count).
+interface FrameworkListItem {
+    id: string;
+    key: string;
+    name: string;
+    description: string | null;
+    version: string | null;
+    kind: string;
+    _count: { requirements: number; packs: number };
 }
 
 interface FwRow {
@@ -115,7 +125,7 @@ export function FrameworksClient({
     // CTA target. Falls back to the first framework when everything
     // is already installed; if there are none at all the CTA hides.
     const importHref = useMemo(() => {
-        const uninstalled = frameworks.find((fw: any) => {
+        const uninstalled = frameworks.find((fw) => {
             const cov = coverages[fw.key];
             return !cov || cov.mapped === 0;
         });
@@ -126,14 +136,14 @@ export function FrameworksClient({
 
     const rows: FwRow[] = useMemo(
         () =>
-            frameworks.map((fw: any): FwRow => {
+            frameworks.map((fw): FwRow => {
                 const cov = coverages[fw.key];
                 const coveragePercent = cov?.coveragePercent ?? 0;
                 return {
                     id: fw.id,
                     key: fw.key,
                     name: fw.name,
-                    description: fw.description,
+                    description: fw.description ?? undefined,
                     version: fw.version,
                     kind: fw.kind,
                     requirementCount: fw._count?.requirements ?? 0,

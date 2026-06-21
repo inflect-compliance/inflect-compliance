@@ -18,7 +18,32 @@ interface FrameworkSummary {
     version: string | null;
 }
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+// listTemplates catalog row (catalog.ts return shape).
+interface TemplateRequirement {
+    code: string;
+    title: string;
+    section: string | null;
+    framework: { key: string; name: string };
+}
+interface TemplateTask {
+    id: string;
+    title: string;
+    description: string | null;
+}
+interface CatalogTemplate {
+    id: string;
+    code: string;
+    title: string;
+    description: string | null;
+    category: string | null;
+    defaultFrequency: string | null;
+    isGlobal: boolean;
+    installed: boolean;
+    tasks: TemplateTask[];
+    requirements: TemplateRequirement[];
+    packs: { key: string; name: string }[];
+}
+
 export default function TemplateLibraryPage() {
     const params = useParams();
     const searchParams = useSearchParams();
@@ -26,7 +51,7 @@ export default function TemplateLibraryPage() {
     const frameworkKey = params.frameworkKey as string;
     const apiUrl = useCallback((path: string) => `/api/t/${tenantSlug}${path}`, [tenantSlug]);
 
-    const [templates, setTemplates] = useState<any[]>([]);
+    const [templates, setTemplates] = useState<CatalogTemplate[]>([]);
     const [framework, setFramework] = useState<FrameworkSummary | null>(null);
     const [loading, setLoading] = useState(true);
     // R14-PR7 — standalone search input retired. The server-side
@@ -114,7 +139,7 @@ export default function TemplateLibraryPage() {
     };
 
     const categories = [...new Set(templates.map(t => t.category).filter(Boolean))];
-    const sections = [...new Set(templates.flatMap(t => t.requirements.map((r: any) => r.section)).filter(Boolean))];
+    const sections = [...new Set(templates.flatMap(t => t.requirements.map((r) => r.section)).filter(Boolean))];
     const installed = templates.filter(t => t.installed).length;
     const available = templates.filter(t => !t.installed).length;
 
@@ -260,7 +285,7 @@ export default function TemplateLibraryPage() {
                                             <div>
                                                 <Eyebrow>Mapped Requirements</Eyebrow>
                                                 <div className="space-y-1">
-                                                    {t.requirements.map((r: any, i: number) => (
+                                                    {t.requirements.map((r, i: number) => (
                                                         <div key={i} className="flex items-center gap-tight text-xs">
                                                             <code className="text-[var(--brand-default)] font-mono">{r.code}</code>
                                                             <span className="text-content-muted">{r.title}</span>
@@ -274,7 +299,7 @@ export default function TemplateLibraryPage() {
                                             <div>
                                                 <Eyebrow>Default Tasks</Eyebrow>
                                                 <div className="space-y-1">
-                                                    {t.tasks.map((task: any, i: number) => (
+                                                    {t.tasks.map((task, i: number) => (
                                                         <div key={i} className="flex items-center gap-tight text-xs">
                                                             <span className="w-1.5 h-1.5 rounded-full bg-border-emphasis" />
                                                             <span className="text-content-default">{task.title}</span>

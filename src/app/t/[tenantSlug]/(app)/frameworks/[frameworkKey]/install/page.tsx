@@ -53,7 +53,16 @@ interface InstallResult {
     mappingsCreated: number;
 }
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+// Pack summary — listFrameworkPacks (FrameworkPack + _count).
+interface FrameworkPackSummary {
+    id: string;
+    key: string;
+    name: string;
+    description: string | null;
+    version: string | null;
+    _count: { templateLinks: number };
+}
+
 export default function InstallWizardPage() {
     const params = useParams();
     const searchParams = useSearchParams();
@@ -64,7 +73,7 @@ export default function InstallWizardPage() {
     const tenantHref = useCallback((path: string) => `/t/${tenantSlug}${path}`, [tenantSlug]);
 
     const [framework, setFramework] = useState<InstallFramework | null>(null);
-    const [packs, setPacks] = useState<any[]>([]);
+    const [packs, setPacks] = useState<FrameworkPackSummary[]>([]);
     const [selectedPack, setSelectedPack] = useState<string>('');
     const [preview, setPreview] = useState<InstallPreview | null>(null);
     const [loading, setLoading] = useState(true);
@@ -124,8 +133,8 @@ export default function InstallWizardPage() {
             const data = await res.json();
             setResult(data);
             setStep('done');
-        } catch (e: any) {
-            setError(e.message || 'Network error');
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'Network error');
         } finally {
             setInstalling(false);
         }
@@ -212,7 +221,7 @@ export default function InstallWizardPage() {
 
                         {/* Template list */}
                         <div className="max-h-64 overflow-y-auto space-y-1 border-t border-border-default/50 pt-3">
-                            {preview.templates?.map((t: any) => (
+                            {preview.templates?.map((t) => (
                                 <div key={t.code} className="flex items-center gap-compact px-3 py-1.5 rounded-md text-sm">
                                     <span className={`w-2 h-2 rounded-full flex-shrink-0 ${t.alreadyInstalled ? 'bg-bg-success-emphasis' : 'bg-[var(--brand-default)]'}`} />
                                     <code className="text-xs text-content-subtle font-mono w-24 flex-shrink-0">{t.code}</code>

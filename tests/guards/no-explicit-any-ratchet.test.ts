@@ -193,7 +193,16 @@ const CAPS: Record<string, number> = {
     // 25 `: any` cleared (the useState<any[]>/Record<,any> tidy-ups aren't matched
     // by the `: any` regex but were required to drop the disables cleanly).
     //   : any 192 → 167
-    ': any': 167,
+    // any-paydown wave PR20 (2026-06-22) — `: any` cont. (frameworks cluster, 5
+    // files). Added local row interfaces (FrameworkListItem, FrameworkPackSummary
+    // ×2, CatalogTemplate+TemplateRequirement+TemplateTask) and typed the props /
+    // `useState<any[]>` state to them; dropped the `.map`/`.find` callback `: any`
+    // (infer from typed state or already-typed coverage/diff arrays); one
+    // `catch (e: any)` → `catch (e)` + narrowing; coerced FrameworkListItem
+    // `description` (string|null) → undefined at the FwRow derive. All 5 disables
+    // removed. 14 `: any` cleared.
+    //   : any 167 → 153
+    ': any': 153,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,
