@@ -52,8 +52,10 @@ describe('Policies list — Epic 45.1 shell + column wiring', () => {
         expect(clientSrc).toContain('POLICY_FILTER_KEYS');
     });
 
-    it('mounts <EntityListPage<any>> and threads the canonical props', () => {
-        expect(clientSrc).toContain('<EntityListPage<any>');
+    it('mounts a typed <EntityListPage<…>> and threads the canonical props', () => {
+        // Generic is the page's real row type (PolicyRow) since the any-paydown
+        // wave; match the shell mount, not the specific type argument.
+        expect(clientSrc).toMatch(/<EntityListPage<\w+>/);
         expect(clientSrc).toMatch(/header=\{\{[\s\S]{0,200}title:/);
         expect(clientSrc).toMatch(/filters=\{\{[\s\S]{0,200}defs:\s*visibleFilterDefs/);
         expect(clientSrc).toMatch(/table=\{\{[\s\S]{0,260}columns:\s*orderColumns\(policyColumns/);

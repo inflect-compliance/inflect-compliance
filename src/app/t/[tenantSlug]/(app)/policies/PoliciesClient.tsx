@@ -56,6 +56,21 @@ const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
     ARCHIVED: 'warning',
 };
 
+// listPolicies → PolicyRepository.list (policyListSelect). Cell/accessor
+// callbacks stay explicitly-untyped (separate ratchet category); this types
+// the query payload, the column factory + the list-page generic.
+interface PolicyRow {
+    id: string;
+    title: string;
+    status: string;
+    category: string | null;
+    owner: { id: string; name: string | null; email: string | null } | null;
+    currentVersion: { id: string; versionNumber: number } | null;
+    lifecycleVersion: number;
+    nextReviewAt: string | null;
+    updatedAt: string;
+}
+
 interface PoliciesClientProps {
     initialPolicies: any[];
     initialFilters?: Record<string, string>;
@@ -176,7 +191,7 @@ function PoliciesPageInner({
 
     // PR-5 — API returns `{ rows, truncated }`. SSR initial wraps
     // with `truncated: false` (the SSR cap is below the backfill cap).
-    const policiesQuery = useTenantSWR<CappedList<any>>(policiesKey, {
+    const policiesQuery = useTenantSWR<CappedList<PolicyRow>>(policiesKey, {
         fallbackData: filtersMatchInitial
             ? { rows: initialPolicies, truncated: false }
             : undefined,
@@ -395,7 +410,7 @@ function PoliciesPageInner({
         columns: policyColumnList,
     });
 
-    const policyColumns = useMemo(() => createColumns<any>([
+    const policyColumns = useMemo(() => createColumns<PolicyRow>([
         {
             accessorKey: 'title',
             header: 'Title',
@@ -544,7 +559,7 @@ function PoliciesPageInner({
     ]), [tenantHref, hydratedNow]);
 
     return (
-        <EntityListPage<any>
+        <EntityListPage<PolicyRow>
             className="animate-fadeIn gap-section"
             banner={<TruncationBanner truncated={truncated} />}
             header={{
