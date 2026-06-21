@@ -50,8 +50,7 @@ const EXCLUDED_MODELS = new Set([
 function buildDiffJson(
     action: string,
     data: Record<string, unknown> | null | undefined,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- result is the raw Prisma return value; its shape is model-specific and unknown at the middleware layer
-    result: any,
+    result: unknown,
 ): Record<string, unknown> | null {
     if (!DIFF_ACTIONS.has(action) || !data) return null;
 
@@ -61,8 +60,8 @@ function buildDiffJson(
     // Build redacted "after" snapshot from result, limited to changed fields
     const afterRaw: Record<string, unknown> = {};
     for (const field of changedFields) {
-        if (result && field in result) {
-            afterRaw[field] = result[field];
+        if (result && typeof result === 'object' && field in result) {
+            afterRaw[field] = (result as Record<string, unknown>)[field];
         }
     }
 
@@ -144,8 +143,7 @@ function buildAuditExtension() {
                 : (argsRecord.data as Record<string, unknown> | null | undefined) ?? null;
 
         // Execute the original operation first — never block it
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- query() returns the Prisma result whose shape depends on the model/operation; narrowing it generically is impossible without generated overloads
-        const result: any = await query(args);
+        const result = await query(args);
 
         // Best-effort audit logging — never throw
         try {
@@ -161,13 +159,13 @@ function buildAuditExtension() {
                 operation === 'upsert' ||
                 operation === 'delete'
             ) {
-                entityId = result?.id || 'unknown';
+                entityId = (result as { id?: string } | null)?.id || 'unknown';
             } else if (operation === 'createMany') {
                 entityId = 'batch';
-                recordIds = { count: result?.count ?? 0 };
+                recordIds = { count: (result as { count?: number } | null)?.count ?? 0 };
             } else if (operation === 'updateMany' || operation === 'deleteMany') {
                 entityId = 'batch';
-                recordIds = { count: result?.count ?? 0 };
+                recordIds = { count: (result as { count?: number } | null)?.count ?? 0 };
             }
 
             const metadataJson: Record<string, unknown> = { source };

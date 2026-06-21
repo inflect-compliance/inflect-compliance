@@ -22,6 +22,7 @@
  * @module app-layer/jobs/deadline-monitor
  */
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { runJob } from '@/lib/observability/job-runner';
 import { logger } from '@/lib/observability/logger';
 import type { DueItem, DueItemUrgency, JobRunResult } from './types';
@@ -93,8 +94,7 @@ async function scanControls(
 ): Promise<DueItem[]> {
     const horizon = new Date(now.getTime() + maxWindow * 86_400_000);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {
+    const where: Prisma.ControlWhereInput = {
         deletedAt: null,
         applicability: 'APPLICABLE',
         nextDueAt: { not: null, lte: horizon },
@@ -148,8 +148,7 @@ async function scanPolicies(
 ): Promise<DueItem[]> {
     const horizon = new Date(now.getTime() + maxWindow * 86_400_000);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {
+    const where: Prisma.PolicyWhereInput = {
         deletedAt: null,
         status: { notIn: ['ARCHIVED'] },
         nextReviewAt: { not: null, lte: horizon },
@@ -203,8 +202,7 @@ async function scanTasks(
 ): Promise<DueItem[]> {
     const horizon = new Date(now.getTime() + maxWindow * 86_400_000);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {
+    const where: Prisma.TaskWhereInput = {
         deletedAt: null,
         status: { notIn: [...TERMINAL_WORK_ITEM_STATUSES] },
         dueAt: { not: null, lte: horizon },
@@ -257,8 +255,7 @@ async function scanRisks(
 ): Promise<DueItem[]> {
     const horizon = new Date(now.getTime() + maxWindow * 86_400_000);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {
+    const where: Prisma.RiskWhereInput = {
         deletedAt: null,
         status: { notIn: ['CLOSED', 'ACCEPTED'] },
         nextReviewAt: { not: null, lte: horizon },
@@ -311,8 +308,7 @@ async function scanTestPlans(
 ): Promise<DueItem[]> {
     const horizon = new Date(now.getTime() + maxWindow * 86_400_000);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {
+    const where: Prisma.ControlTestPlanWhereInput = {
         status: 'ACTIVE',
         nextDueAt: { not: null, lte: horizon },
     };
@@ -369,8 +365,7 @@ async function scanTreatmentPlans(
     tenantId?: string,
 ): Promise<DueItem[]> {
     const horizon = new Date(now.getTime() + maxWindow * 86_400_000);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {
+    const where: Prisma.RiskTreatmentPlanWhereInput = {
         deletedAt: null,
         status: { in: ['DRAFT', 'ACTIVE', 'OVERDUE'] },
         targetDate: { lte: horizon },
@@ -425,8 +420,7 @@ async function scanTreatmentMilestones(
     tenantId?: string,
 ): Promise<DueItem[]> {
     const horizon = new Date(now.getTime() + maxWindow * 86_400_000);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {
+    const where: Prisma.TreatmentMilestoneWhereInput = {
         completedAt: null,
         dueDate: { lte: horizon },
         treatmentPlan: { deletedAt: null, status: { in: ['DRAFT', 'ACTIVE', 'OVERDUE'] } },
@@ -482,8 +476,7 @@ async function transitionPlansToOverdue(
     now: Date,
     tenantId?: string,
 ): Promise<number> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {
+    const where: Prisma.RiskTreatmentPlanWhereInput = {
         deletedAt: null,
         status: { in: ['DRAFT', 'ACTIVE'] },
         targetDate: { lt: now },
