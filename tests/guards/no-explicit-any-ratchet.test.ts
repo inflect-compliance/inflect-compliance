@@ -87,8 +87,12 @@ const CAPS: Record<string, number> = {
     // coverage + vendors + policies clients to real row interfaces. Per-cell
     // callback params stay untyped (the `: any` category). 7 cleared.
     //   <any> 39 → 32
+    // any-paydown wave PR6 (2026-06-21) — `<any>` category cont.: typed the
+    // FindingsClient list-table generics (useQuery/getQueryData/setQueryData
+    // CappedList + createColumns) to FindingRow. 5 cleared.
+    //   <any> 32 → 27
     ': any': 357,
-    '<any>': 32,
+    '<any>': 27,
     'useState<any>': 0,
     'as any': 15,
     '// @ts-ignore': 0,

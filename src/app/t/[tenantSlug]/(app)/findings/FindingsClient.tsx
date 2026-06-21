@@ -19,6 +19,21 @@ import { CreateFindingModal } from './CreateFindingModal';
 const SEV_BADGE: Record<string, StatusBadgeVariant> = { LOW: 'info', MEDIUM: 'warning', HIGH: 'error', CRITICAL: 'error' };
 const STATUS_BADGE: Record<string, StatusBadgeVariant> = { OPEN: 'error', IN_PROGRESS: 'info', READY_FOR_VERIFICATION: 'warning', CLOSED: 'success' };
 
+// listFindings → FindingRepository.list (findingListSelect). Cell/accessor
+// callbacks stay explicitly-untyped (the file-level disable above covers them
+// — a separate ratchet category); this types the query payload + factory.
+interface FindingRow {
+    id: string;
+    title: string;
+    severity: string;
+    type: string;
+    status: string;
+    owner: string | null;
+    assignee: { id: string; name: string | null; email: string | null } | null;
+    control: { id: string; code: string | null; name: string } | null;
+    _count: { riskLinks: number };
+}
+
 interface FindingsClientProps {
 
     initialFindings: any[];
@@ -64,7 +79,7 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
 
     // PR-5 — API returns `{ rows, truncated }`; SSR initial wraps
     // with `truncated: false` (SSR cap < backfill cap).
-    const findingsQuery = useQuery<CappedList<any>>({
+    const findingsQuery = useQuery<CappedList<FindingRow>>({
         queryKey: queryKeys.findings.list(tenantSlug),
         queryFn: async () => {
             const res = await fetch(apiUrl('/findings'));
@@ -85,10 +100,10 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
 
         onMutate: async ({ id, status }: { id: string; status: string }) => {
             await queryClient.cancelQueries({ queryKey: queryKeys.findings.list(tenantSlug) });
-            // PR-5 — cache value is now `CappedList<any>` not the bare array.
-            const prev = queryClient.getQueryData<CappedList<any>>(queryKeys.findings.list(tenantSlug));
+            // PR-5 — cache value is now `CappedList<FindingRow>` not the bare array.
+            const prev = queryClient.getQueryData<CappedList<FindingRow>>(queryKeys.findings.list(tenantSlug));
             if (prev) {
-                queryClient.setQueryData<CappedList<any>>(
+                queryClient.setQueryData<CappedList<FindingRow>>(
                     queryKeys.findings.list(tenantSlug),
                     {
                         ...prev,
@@ -149,7 +164,7 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
     });
 
 
-    const findingColumns = useMemo(() => createColumns<any>([
+    const findingColumns = useMemo(() => createColumns<FindingRow>([
         {
             accessorKey: 'title',
             header: t.findingTitle,
