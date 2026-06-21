@@ -32,7 +32,6 @@ interface RequirementsDiff {
     };
 }
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 export default function DiffPage() {
     const params = useParams();
     const searchParams = useSearchParams();
@@ -128,7 +127,7 @@ export default function DiffPage() {
 
                     {/* Content */}
                     <div className="space-y-tight" id="diff-content">
-                        {activeTab === 'added' && diff.added.map((r: any, i: number) => (
+                        {activeTab === 'added' && diff.added.map((r, i: number) => (
                             <div key={i} className={cn(cardVariants({ density: 'none' }), 'flex items-center gap-compact')}>
                                 <span className="text-content-success text-lg font-bold">+</span>
                                 <code className="text-xs text-[var(--brand-default)] font-mono w-28 flex-shrink-0">{r.code}</code>
@@ -137,7 +136,7 @@ export default function DiffPage() {
                             </div>
                         ))}
 
-                        {activeTab === 'removed' && diff.removed.map((r: any, i: number) => (
+                        {activeTab === 'removed' && diff.removed.map((r, i: number) => (
                             <div key={i} className={cn(cardVariants({ density: 'none' }), 'flex items-center gap-compact')}>
                                 <span className="text-content-error text-lg font-bold">−</span>
                                 <code className="text-xs text-content-muted font-mono w-28 flex-shrink-0 line-through">{r.code}</code>
@@ -146,7 +145,7 @@ export default function DiffPage() {
                             </div>
                         ))}
 
-                        {activeTab === 'changed' && diff.changed.map((r: any, i: number) => (
+                        {activeTab === 'changed' && diff.changed.map((r, i: number) => (
                             <div key={i} className={cardVariants({ density: 'none' })}>
                                 <div className="flex items-center gap-compact mb-2">
                                     <span className="text-content-warning text-lg font-bold">~</span>

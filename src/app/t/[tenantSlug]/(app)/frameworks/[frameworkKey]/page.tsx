@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -60,6 +59,16 @@ interface FrameworkCoverage {
     }[];
 }
 
+// Pack summary — listFrameworkPacks (FrameworkPack + _count).
+interface FrameworkPackSummary {
+    id: string;
+    key: string;
+    name: string;
+    description: string | null;
+    version: string | null;
+    _count: { templateLinks: number };
+}
+
 export default function FrameworkDetailPage() {
     const params = useParams();
     const tenantSlug = params.tenantSlug as string;
@@ -70,7 +79,7 @@ export default function FrameworkDetailPage() {
     const [activeTab, setActiveTab] = useState<Tab>('requirements');
     const [framework, setFramework] = useState<FrameworkDetail | null>(null);
     const [tree, setTree] = useState<FrameworkTreePayload | null>(null);
-    const [packs, setPacks] = useState<any[]>([]);
+    const [packs, setPacks] = useState<FrameworkPackSummary[]>([]);
     const [coverage, setCoverage] = useState<FrameworkCoverage | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -232,7 +241,7 @@ export default function FrameworkDetailPage() {
             {/* Packs Tab */}
             {activeTab === 'packs' && (
                 <div className="space-y-default" id="packs-panel">
-                    {packs.map((p: any) => (
+                    {packs.map((p) => (
                         <div key={p.id} className={cardVariants({ density: 'none' })}>
                             <div className="flex items-start justify-between">
                                 <div>
@@ -302,7 +311,7 @@ export default function FrameworkDetailPage() {
                         <div className={cardVariants({ density: 'none' })}>
                             <Heading level={3} className="mb-3">Coverage by Section</Heading>
                             <div className="space-y-compact">
-                                {coverage.bySection.map((s: any) => (
+                                {coverage.bySection.map((s) => (
                                     <div key={s.section}>
                                         <div className="flex items-center justify-between text-xs mb-1">
                                             <span className="text-content-default">{s.section}</span>
@@ -333,7 +342,7 @@ export default function FrameworkDetailPage() {
                                 Unmapped Requirements ({coverage.unmappedRequirements.length})
                             </Heading>
                             <div className="space-y-1 max-h-64 overflow-y-auto">
-                                {coverage.unmappedRequirements.map((r: any, i: number) => (
+                                {coverage.unmappedRequirements.map((r, i: number) => (
                                     <div key={i} className="flex items-center gap-compact px-3 py-1.5 rounded-md hover:bg-bg-muted/50 text-sm">
                                         <span className="w-2 h-2 rounded-full bg-border-emphasis flex-shrink-0" />
                                         <code className="text-xs text-content-subtle font-mono w-16 sm:w-28 flex-shrink-0 truncate">{r.code}</code>
