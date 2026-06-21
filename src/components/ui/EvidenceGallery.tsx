@@ -65,7 +65,6 @@ export interface EvidenceGalleryRow {
     isArchived?: boolean;
     expiredAt?: string | null;
     deletedAt?: string | null;
-    [otherKey: string]: unknown;
 }
 
 export interface EvidenceGalleryProps<T extends EvidenceGalleryRow> {
