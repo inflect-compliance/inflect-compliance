@@ -18,6 +18,36 @@ const FW_META: Record<string, { icon: AppIconName; label: string }> = {
     NIS2: { icon: 'globe', label: 'NIS2 Directive' },
 };
 
+// cycle   → getAuditCycle (audit-readiness/cycles.ts)
+// preview → previewDefaultPack (audit-readiness/packs.ts)
+interface AuditCyclePack {
+    id: string;
+    name: string;
+    status: string;
+}
+interface AuditCycleDetail {
+    id: string;
+    name: string;
+    frameworkKey: string;
+    frameworkVersion: string;
+    status: string;
+    packs: AuditCyclePack[];
+}
+interface DefaultPackSelectionBucket {
+    count: number;
+    ids: string[];
+}
+interface DefaultPackPreview {
+    frameworkKey: string;
+    selection: {
+        controls: DefaultPackSelectionBucket;
+        policies: DefaultPackSelectionBucket;
+        evidence: DefaultPackSelectionBucket;
+        issues: DefaultPackSelectionBucket;
+    };
+    totalItems: number;
+}
+
 export default function CycleDetailPage() {
     const params = useParams();
     const router = useRouter();
@@ -25,8 +55,8 @@ export default function CycleDetailPage() {
     const cycleId = params.cycleId as string;
     const apiUrl = useCallback((path: string) => `/api/t/${tenantSlug}${path}`, [tenantSlug]);
 
-    const [cycle, setCycle] = useState<any>(null);
-    const [preview, setPreview] = useState<any>(null);
+    const [cycle, setCycle] = useState<AuditCycleDetail | null>(null);
+    const [preview, setPreview] = useState<DefaultPackPreview | null>(null);
     const [loading, setLoading] = useState(true);
     const [creating, setCreating] = useState(false);
 
@@ -38,6 +68,7 @@ export default function CycleDetailPage() {
     }, [apiUrl, cycleId]);
 
     const createDefaultPack = async () => {
+        if (!cycle) return;
         setCreating(true);
         try {
             // 1) Create pack
