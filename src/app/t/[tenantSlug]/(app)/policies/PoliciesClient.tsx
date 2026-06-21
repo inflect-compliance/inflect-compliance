@@ -1,6 +1,5 @@
 'use client';
 /* eslint-disable react-hooks/exhaustive-deps -- Various useEffect/useMemo dep arrays in this file deliberately omit identity-unstable callbacks (handlers recreated each render) or use selector functions whose change-detection happens elsewhere. Adding the deps would either trigger unnecessary re-runs OR cause infinite render loops; the proper structural fix is to wrap parent-level callbacks in useCallback. Tracked as follow-up. */
-/* eslint-disable @typescript-eslint/no-explicit-any -- Server payload is loosely typed at the page boundary; per-cell TanStack column callbacks need a per-row narrowing pass to remove the `any`s, tracked as follow-up. */
 import { TimestampTooltip } from '@/components/ui/timestamp-tooltip';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -72,7 +71,7 @@ interface PolicyRow {
 }
 
 interface PoliciesClientProps {
-    initialPolicies: any[];
+    initialPolicies: PolicyRow[];
     initialFilters?: Record<string, string>;
     tenantSlug: string;
     permissions: {
@@ -349,12 +348,12 @@ function PoliciesPageInner({
         [],
     );
     // guardrail-ignore: KPI count, not a refilter.
-    const draftPolicies = policies.filter((p: any) => p.status === 'DRAFT').length;
+    const draftPolicies = policies.filter((p) => p.status === 'DRAFT').length;
     // guardrail-ignore: KPI count, not a refilter.
-    const inReviewPolicies = policies.filter((p: any) => p.status === 'IN_REVIEW').length;
+    const inReviewPolicies = policies.filter((p) => p.status === 'IN_REVIEW').length;
     // guardrail-ignore: KPI count, not a refilter.
     const approvedPolicies = policies.filter(
-        (p: any) => p.status === 'APPROVED' || p.status === 'PUBLISHED',
+        (p) => p.status === 'APPROVED' || p.status === 'PUBLISHED',
     ).length;
     const policyKpiDefs: ReadonlyArray<KpiFilterDef<PolicyKpiId>> = useMemo(
         () => [
@@ -420,7 +419,7 @@ function PoliciesPageInner({
             // ~44px height (the DataTable primitive's `py-2.5
             // leading-6` baseline). Description is still visible on
             // the policy detail page.
-            cell: ({ row }: any) => (
+            cell: ({ row }) => (
                 <TableTitleCell
                     href={tenantHref(`/policies/${row.original.id}`)}
                 >
@@ -433,7 +432,7 @@ function PoliciesPageInner({
             header: 'Status',
             // Pulls labels from the canonical POLICY_STATUS_LABELS so
             // the badge copy and the filter copy cannot drift.
-            cell: ({ row }: any) => {
+            cell: ({ row }) => {
                 const status = row.original.status as string;
                 const cls = STATUS_BADGE[status] ?? 'neutral';
                 const label =
@@ -449,8 +448,8 @@ function PoliciesPageInner({
         {
             id: 'category',
             header: 'Category',
-            accessorFn: (p: any) => p.category || '—',
-            cell: ({ getValue }: any) => (
+            accessorFn: (p) => p.category || '—',
+            cell: ({ getValue }) => (
                 <span className="text-xs text-content-muted">{getValue()}</span>
             ),
         },
@@ -459,9 +458,9 @@ function PoliciesPageInner({
             header: 'Owner',
             // UI-14 (capstone): name-only via ownerDisplayName — name, or the
             // email local-part as a username, never the full email address.
-            accessorFn: (p: any) =>
+            accessorFn: (p) =>
                 ownerDisplayName(p.owner?.name, p.owner?.email) ?? '—',
-            cell: ({ row }: any) => {
+            cell: ({ row }) => {
                 const p = row.original;
                 const display = ownerDisplayName(p.owner?.name, p.owner?.email);
                 if (!display) {
@@ -498,11 +497,11 @@ function PoliciesPageInner({
             // publish). Falls back to `lifecycleVersion` (which
             // matches CISO-Assistant's editing_version) and finally
             // a dash for policies without any version row yet.
-            accessorFn: (p: any) =>
+            accessorFn: (p) =>
                 p.currentVersion?.versionNumber ??
                 p.lifecycleVersion ??
                 null,
-            cell: ({ getValue, row }: any) => {
+            cell: ({ getValue, row }) => {
                 const v = getValue();
                 if (v == null) {
                     return (
@@ -522,8 +521,8 @@ function PoliciesPageInner({
         {
             id: 'nextReviewAt',
             header: 'Next Review',
-            accessorFn: (p: any) => p.nextReviewAt || '',
-            cell: ({ row }: any) => {
+            accessorFn: (p) => p.nextReviewAt || '',
+            cell: ({ row }) => {
                 const p = row.original;
                 if (!p.nextReviewAt) {
                     return <span className="text-xs text-content-muted">—</span>;
@@ -548,8 +547,8 @@ function PoliciesPageInner({
         {
             id: 'updatedAt',
             header: 'Updated',
-            accessorFn: (p: any) => p.updatedAt,
-            cell: ({ getValue }: any) => (
+            accessorFn: (p) => p.updatedAt,
+            cell: ({ getValue }) => (
                 <TimestampTooltip
                     date={getValue() as string | null | undefined}
                     className="text-xs text-content-subtle"
@@ -661,7 +660,7 @@ function PoliciesPageInner({
                     setSortBy(nextBy);
                     setSortOrder(nextOrder);
                 },
-                getRowId: (p: any) => p.id,
+                getRowId: (p) => p.id,
                 onRowClick: (row) =>
                     router.push(tenantHref(`/policies/${row.original.id}`)),
                 onRowPrefetch: (row) => router.prefetch(tenantHref(`/policies/${row.original.id}`)),

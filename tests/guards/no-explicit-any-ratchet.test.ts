@@ -135,7 +135,16 @@ const CAPS: Record<string, number> = {
     // stub → `Promise<{ id: string }>`, the structural contract its caller
     // reads). 2 cleared; the category is now 0 and ratcheted there.
     //   <any> 2 → 0
-    ': any': 355,
+    // any-paydown wave PR14 (2026-06-21) — FIRST `: any` category PR (list
+    // clients). PoliciesClient (17) + VendorsClient (14): typed the `initial*`
+    // props to the existing `PolicyRow[]`/`VendorRow[]` (clean at the page's
+    // `JSON.parse(JSON.stringify())` boundary — the Row interfaces model the
+    // post-serialization string-date shape), and dropped every cell /
+    // accessorFn / array-filter / getRowId `: any` — each param now infers
+    // from `createColumns<Row>` / the typed SWR `rows`. Both files' now-unused
+    // file-level `no-explicit-any` disables removed. 31 cleared.
+    //   : any 355 → 324
+    ': any': 324,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,

@@ -3,7 +3,6 @@
 import { TimestampTooltip } from '@/components/ui/timestamp-tooltip';
 import { Tooltip } from '@/components/ui/tooltip';
 import { AppIcon } from '@/components/icons/AppIcon';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -82,7 +81,7 @@ interface VendorRow {
 }
 
 interface VendorsClientProps {
-    initialVendors: any[];
+    initialVendors: VendorRow[];
     initialFilters: Record<string, string>;
     tenantSlug: string;
     permissions: {
@@ -306,13 +305,13 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
     // guardrail-ignore: KPI counts across the loaded page, not a refilter.
     const totalVendors = vendors.length;
     // guardrail-ignore: KPI count, not a refilter.
-    const activeVendors = vendors.filter((v: any) => v.status === 'ACTIVE').length;
+    const activeVendors = vendors.filter((v) => v.status === 'ACTIVE').length;
     // guardrail-ignore: KPI count, not a refilter.
     const criticalVendors = vendors.filter(
-        (v: any) => v.criticality === 'CRITICAL',
+        (v) => v.criticality === 'CRITICAL',
     ).length;
     // guardrail-ignore: KPI count, not a refilter.
-    const reviewOverdueVendors = vendors.filter((v: any) =>
+    const reviewOverdueVendors = vendors.filter((v) =>
         isOverdue(v.nextReviewAt ?? null, hydratedNow),
     ).length;
 
@@ -400,7 +399,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
             // cell to its own column (visible via the gear). Title
             // cell stays single-element so every row in the product
             // reads at the same height.
-            cell: ({ row }: any) => (
+            cell: ({ row }) => (
                 <TableTitleCell
                     href={tenantHref(`/vendors/${row.original.id}`)}
                     id={`vendor-link-${row.original.id}`}
@@ -412,22 +411,22 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
         {
             accessorKey: 'status',
             header: 'Status',
-            cell: ({ row }: any) => (
+            cell: ({ row }) => (
                 <StatusBadge variant={STATUS_VARIANT[row.original.status] || 'neutral'} icon={null}>{row.original.status}</StatusBadge>
             ),
         },
         {
             accessorKey: 'criticality',
             header: 'Criticality',
-            cell: ({ row }: any) => (
+            cell: ({ row }) => (
                 <StatusBadge variant={CRIT_VARIANT[row.original.criticality] || 'neutral'} icon={null}>{row.original.criticality}</StatusBadge>
             ),
         },
         {
             id: 'risk',
             header: 'Risk',
-            accessorFn: (v: any) => v.inherentRisk || '',
-            cell: ({ row }: any) => {
+            accessorFn: (v) => v.inherentRisk || '',
+            cell: ({ row }) => {
                 const v = row.original;
                 return v.inherentRisk
                     ? <StatusBadge variant={CRIT_VARIANT[v.inherentRisk] || 'neutral'} icon={null}>{v.inherentRisk}</StatusBadge>
@@ -437,7 +436,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
         {
             id: 'nextReviewAt',
             header: 'Next Review',
-            cell: ({ row }: any) => (
+            cell: ({ row }) => (
                 <span>
                     <TimestampTooltip date={row.original.nextReviewAt} />
                     {isOverdue(row.original.nextReviewAt, hydratedNow) && <span className="ml-1 text-xs text-content-error font-semibold">Overdue</span>}
@@ -447,7 +446,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
         {
             id: 'contractRenewalAt',
             header: 'Contract Renewal',
-            cell: ({ row }: any) => (
+            cell: ({ row }) => (
                 <span>
                     <TimestampTooltip date={row.original.contractRenewalAt} />
                     {isOverdue(row.original.contractRenewalAt, hydratedNow) && <span className="ml-1 text-xs text-content-warning font-semibold">Due</span>}
@@ -457,8 +456,8 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
         {
             id: 'owner',
             header: 'Owner',
-            accessorFn: (v: any) => v.owner?.name || '—',
-            cell: ({ getValue }: any) => <span className="text-content-muted">{getValue()}</span>,
+            accessorFn: (v) => v.owner?.name || '—',
+            cell: ({ getValue }) => <span className="text-content-muted">{getValue()}</span>,
         },
     ])), [tenantHref, hydratedNow, orderColumns]);
 
@@ -567,7 +566,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                             setSortBy(nextBy);
                             setSortOrder(nextOrder);
                         }}
-                        getRowId={(v: any) => v.id}
+                        getRowId={(v) => v.id}
                         columnVisibility={columnVisibility}
                         onColumnVisibilityChange={setColumnVisibility}
                         onRowClick={(row) => router.push(tenantHref(`/vendors/${row.original.id}`))}
