@@ -507,6 +507,7 @@ export default function RiskDetailPage() {
                     <div className="space-y-default">
                         <Heading level={3}>Attached evidence</Heading>
                         <AttachedEvidencePanel
+                            tenantSlug={tenant.tenantSlug}
                             entityId={riskId}
                             entity="risk"
                             endpoint={`/risks/${riskId}/evidence/attached`}

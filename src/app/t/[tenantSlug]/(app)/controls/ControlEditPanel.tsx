@@ -20,7 +20,7 @@ import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { UserCombobox } from "@/components/ui/user-combobox";
 import { FormField } from "@/components/ui/form-field";
 import { RequiredMarker } from "@/components/ui/required-marker";
-import { Xmark } from "@/components/ui/icons/nucleo";
+import { EvidenceUploadSection } from "@/components/evidence/EvidenceUploadSection";
 import { PanelTabs } from "./PanelTabs";
 import { PanelActivityFeed } from "./PanelActivityFeed";
 
@@ -54,14 +54,6 @@ const CATEGORY_OPTIONS: ComboboxOption[] = [
 ].map((c) => ({ value: c, label: c }));
 
 type Tab = "details" | "activity";
-
-interface EvidenceItem {
-    id: string;
-    title?: string | null;
-    url?: string | null;
-    note?: string | null;
-    kind?: string;
-}
 
 export function ControlEditPanel({
     tenantSlug,
@@ -127,25 +119,15 @@ export function ControlEditPanel({
 
     return (
         <div className="space-y-default" role="region" aria-label="Control editor" data-testid="control-edit-panel">
-            <div className="flex items-start justify-between gap-tight">
-                <div className="flex items-center gap-tight">
-                    {(control.code || control.annexId) && (
-                        <span className="font-mono text-xs text-content-muted">
-                            {control.code || control.annexId}
-                        </span>
-                    )}
-                    {control.status && (
-                        <StatusBadge size="sm">{control.status.replace(/_/g, " ")}</StatusBadge>
-                    )}
-                </div>
-                <button
-                    type="button"
-                    aria-label="Close quick view"
-                    onClick={onClose}
-                    className="inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded text-content-muted transition-colors hover:bg-bg-muted hover:text-content-emphasis"
-                >
-                    <Xmark width={14} height={14} />
-                </button>
+            <div className="flex items-center gap-tight">
+                {(control.code || control.annexId) && (
+                    <span className="font-mono text-xs text-content-muted">
+                        {control.code || control.annexId}
+                    </span>
+                )}
+                {control.status && (
+                    <StatusBadge size="sm">{control.status.replace(/_/g, " ")}</StatusBadge>
+                )}
             </div>
 
             <Heading level={3} className="break-words">{control.name}</Heading>
@@ -206,7 +188,7 @@ export function ControlEditPanel({
                                     disabled={!canWrite}
                                     matchTriggerWidth
                                     forceDropdown
-                                    buttonProps={{ className: "w-full" }}
+                                    buttonProps={{ className: "w-full", size: "sm" }}
                                     caret
                                 />
                             </div>
@@ -225,7 +207,7 @@ export function ControlEditPanel({
                                     hideSearch
                                     matchTriggerWidth
                                     forceDropdown
-                                    buttonProps={{ className: "w-full" }}
+                                    buttonProps={{ className: "w-full", size: "sm" }}
                                     caret
                                 />
                             </div>
@@ -263,158 +245,19 @@ export function ControlEditPanel({
                         )}
                     </form>
 
-                    {/* Evidence upload box — replaces the old Intent field. */}
-                    <ControlEvidenceBox tenantSlug={tenantSlug} controlId={control.id} canWrite={canWrite} />
+                    {/* Drag-and-drop evidence upload (canonical FileDropzone). */}
+                    <EvidenceUploadSection
+                        tenantSlug={tenantSlug}
+                        linkField="controlId"
+                        linkId={control.id}
+                        canWrite={canWrite}
+                        listEndpoint={`/controls/${control.id}/evidence`}
+                        urlLinkEndpoint={`/controls/${control.id}/evidence`}
+                        urlLinkBody={(url, note) => ({ kind: "LINK", url, note: note || undefined })}
+                    />
                 </div>
             ) : (
                 <PanelActivityFeed tenantSlug={tenantSlug} endpoint={`/controls/${control.id}/activity`} />
-            )}
-        </div>
-    );
-}
-
-// ─── Evidence upload + list (control-scoped) ─────────────────────────
-function ControlEvidenceBox({
-    tenantSlug,
-    controlId,
-    canWrite,
-}: {
-    tenantSlug: string;
-    controlId: string;
-    canWrite: boolean;
-}) {
-    const [items, setItems] = useState<EvidenceItem[] | null>(null);
-    const [file, setFile] = useState<File | null>(null);
-    const [title, setTitle] = useState("");
-    const [url, setUrl] = useState("");
-    const [busy, setBusy] = useState(false);
-    const [err, setErr] = useState("");
-    const fileRef = useRef<HTMLInputElement>(null);
-
-    const load = async () => {
-        try {
-            const res = await fetch(`/api/t/${tenantSlug}/controls/${controlId}/evidence`);
-            if (!res.ok) throw new Error();
-            const data = await res.json();
-            const links = (data?.links ?? []).map((l: Record<string, unknown>) => ({
-                id: l.id, title: l.url ?? "Link", url: l.url, note: l.note, kind: (l.kind as string) ?? "LINK",
-            }));
-            const ev = (data?.evidence ?? []).map((e: Record<string, unknown>) => ({
-                id: e.id, title: (e.title as string) ?? "Evidence", kind: (e.type as string) ?? "FILE",
-            }));
-            setItems([...links, ...ev]);
-        } catch {
-            setItems([]);
-        }
-    };
-
-    useEffect(() => {
-        void load();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tenantSlug, controlId]);
-
-    const submit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setErr("");
-        setBusy(true);
-        try {
-            if (file) {
-                const fd = new FormData();
-                fd.append("file", file);
-                if (title) fd.append("title", title);
-                fd.append("controlId", controlId);
-                const res = await fetch(`/api/t/${tenantSlug}/evidence/uploads`, { method: "POST", body: fd });
-                if (!res.ok) throw new Error("Upload failed");
-            } else if (url.trim()) {
-                const res = await fetch(`/api/t/${tenantSlug}/controls/${controlId}/evidence`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ kind: "LINK", url: url.trim() }),
-                });
-                if (!res.ok) throw new Error("Failed to link evidence");
-            } else {
-                setErr("Choose a file or enter a URL.");
-                return;
-            }
-            setFile(null);
-            setTitle("");
-            setUrl("");
-            if (fileRef.current) fileRef.current.value = "";
-            await load();
-        } catch (e2) {
-            setErr(e2 instanceof Error ? e2.message : "Failed");
-        } finally {
-            setBusy(false);
-        }
-    };
-
-    return (
-        <div className="space-y-default rounded-lg border border-border-subtle bg-bg-subtle/40 p-3" data-testid="control-evidence-box">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-content-subtle">Evidence</p>
-            {canWrite && (
-                <form onSubmit={submit} className="space-y-tight" data-testid="control-evidence-form">
-                    <input
-                        ref={fileRef}
-                        type="file"
-                        className="block w-full text-xs text-content-muted file:mr-2 file:cursor-pointer file:rounded file:border-0 file:bg-bg-muted file:px-2 file:py-1 file:text-content-default"
-                        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                        data-testid="control-evidence-file"
-                    />
-                    {file && (
-                        <input
-                            type="text"
-                            className="input w-full"
-                            placeholder="Title (optional)"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                        />
-                    )}
-                    <div className="flex items-center gap-tight text-[10px] uppercase text-content-subtle">or</div>
-                    <input
-                        type="url"
-                        className="input w-full"
-                        placeholder="Evidence URL"
-                        value={url}
-                        onChange={(e) => setUrl(e.target.value)}
-                        data-testid="control-evidence-url"
-                    />
-                    {err && <p className="text-xs text-content-error">{err}</p>}
-                    <Button
-                        type="submit"
-                        variant="secondary"
-                        size="sm"
-                        disabled={busy || (!file && !url.trim())}
-                        data-testid="control-evidence-submit"
-                        text={busy ? "Uploading…" : "Add evidence"}
-                    />
-                </form>
-            )}
-            {items === null ? (
-                <p className="text-xs text-content-subtle">Loading evidence…</p>
-            ) : items.length === 0 ? (
-                <p className="text-xs text-content-subtle">No evidence attached.</p>
-            ) : (
-                <ul className="space-y-tight">
-                    {items.map((it) => (
-                        <li key={it.id} className="flex items-center gap-tight text-xs">
-                            <StatusBadge size="sm" variant={it.kind === "FILE" ? "success" : "info"}>
-                                {it.kind}
-                            </StatusBadge>
-                            {it.url ? (
-                                <a
-                                    href={it.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="min-w-0 flex-1 truncate text-[var(--brand-default)] hover:opacity-80"
-                                >
-                                    {it.title}
-                                </a>
-                            ) : (
-                                <span className="min-w-0 flex-1 truncate text-content-default">{it.title}</span>
-                            )}
-                        </li>
-                    ))}
-                </ul>
             )}
         </div>
     );

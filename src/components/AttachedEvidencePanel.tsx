@@ -1,29 +1,31 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any -- self-contained
- * panel consuming server-rendered evidence rows + form events. */
+ * panel consuming server-rendered evidence rows. */
 
 /**
  * Attached-evidence panel — the writable, Control-style evidence
- * surface for a Risk or Asset detail page. Mirrors the Control / Task
- * Evidence tab: upload a file OR link a URL, both scoped to the entity
- * via `Evidence.riskId` / `Evidence.assetId`, rendered through the
- * shared <EvidenceSubTable>.
+ * surface for a Risk or Asset detail page. Upload files via the shared
+ * drag-and-drop `<EvidenceUploadSection>` (scoped to the entity through
+ * `Evidence.riskId` / `Evidence.assetId`), rendered through the shared
+ * `<EvidenceSubTable>`.
  *
  * This is DISTINCT from `<InheritedEvidencePanel>` (read-only evidence
  * aggregated from the entity's mapped controls). The Risk/Asset Evidence
  * tab stacks both: this panel for attached evidence, the inherited panel
  * below it.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { InlineEmptyState } from '@/components/ui/inline-empty-state';
 import { useToastWithUndo } from '@/components/ui/hooks';
-import { EvidenceAddForm } from '@/components/EvidenceAddForm';
+import { EvidenceUploadSection } from '@/components/evidence/EvidenceUploadSection';
 import {
     EvidenceSubTable,
     type EvidenceTabData,
 } from '@/app/t/[tenantSlug]/(app)/controls/[controlId]/_tabs/EvidenceSubTable';
 
 interface AttachedEvidencePanelProps {
+    /** Tenant slug — drives the evidence-upload endpoint. */
+    tenantSlug: string;
     /** Risk or asset id. */
     entityId: string;
     /** Drives the upload field name + element ids + copy. */
@@ -31,8 +33,7 @@ interface AttachedEvidencePanelProps {
     /**
      * Attached-evidence endpoint WITHOUT the `/api/t/<slug>` prefix —
      * e.g. `/risks/<id>/evidence/attached`. GET returns
-     * `{ links, evidence }`; POST links a URL; DELETE `${endpoint}/<id>`
-     * detaches.
+     * `{ links, evidence }`; DELETE `${endpoint}/<id>` detaches.
      */
     endpoint: string;
     apiUrl: (path: string) => string;
@@ -41,6 +42,7 @@ interface AttachedEvidencePanelProps {
 }
 
 export function AttachedEvidencePanel({
+    tenantSlug,
     entityId,
     entity,
     endpoint,
@@ -52,17 +54,6 @@ export function AttachedEvidencePanel({
     const [data, setData] = useState<EvidenceTabData | undefined>(undefined);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
-
-    const [showForm, setShowForm] = useState(false);
-    const [url, setUrl] = useState('');
-    const [note, setNote] = useState('');
-    const [file, setFile] = useState<File | null>(null);
-    const [fileTitle, setFileTitle] = useState('');
-    const [formError, setFormError] = useState('');
-    const [saving, setSaving] = useState(false);
-    const fileRef = useRef<HTMLInputElement>(null);
-
-    const uploadField = entity === 'risk' ? 'riskId' : 'assetId';
 
     const refetch = useCallback(async () => {
         try {
@@ -81,69 +72,6 @@ export function AttachedEvidencePanel({
         // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch-on-mount; setState lands async inside refetch (mirrors InheritedEvidencePanel).
         void refetch();
     }, [refetch]);
-
-    const resetForm = () => {
-        setUrl('');
-        setNote('');
-        setFile(null);
-        setFileTitle('');
-        setFormError('');
-        if (fileRef.current) fileRef.current.value = '';
-        setShowForm(false);
-    };
-
-    // Unified add — a chosen file uploads via /evidence/uploads (tagged
-    // with this entity); otherwise a non-empty URL links a LINK row.
-    const addEvidence = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setFormError('');
-        if (file) {
-            setSaving(true);
-            try {
-                const fd = new FormData();
-                fd.append('file', file);
-                if (fileTitle) fd.append('title', fileTitle);
-                fd.append(uploadField, entityId);
-                const res = await fetch(apiUrl('/evidence/uploads'), {
-                    method: 'POST',
-                    body: fd,
-                });
-                if (!res.ok) {
-                    const err = await res.json().catch(() => ({}));
-                    throw new Error(err.error || err.message || 'Upload failed');
-                }
-                resetForm();
-                await refetch();
-            } catch (err: unknown) {
-                setFormError(err instanceof Error ? err.message : 'Upload failed');
-            } finally {
-                setSaving(false);
-            }
-            return;
-        }
-        if (!url.trim()) {
-            setFormError('Choose a file to upload, or enter an evidence URL.');
-            return;
-        }
-        setSaving(true);
-        try {
-            const res = await fetch(apiUrl(endpoint), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url: url.trim(), note: note || undefined }),
-            });
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(err.error || err.message || 'Failed to link evidence');
-            }
-            resetForm();
-            await refetch();
-        } catch (err: unknown) {
-            setFormError(err instanceof Error ? err.message : 'Failed to link evidence');
-        } finally {
-            setSaving(false);
-        }
-    };
 
     // Epic 67 — delayed-commit removal (detach the FK). Optimistic
     // filter, undo restores, commit-failure rolls back.
@@ -171,36 +99,13 @@ export function AttachedEvidencePanel({
 
     return (
         <div className="space-y-default" data-testid={`${entity}-attached-evidence`}>
-            <EvidenceAddForm
-                ids={{
-                    trigger: `add-${entity}-evidence-btn`,
-                    form: `${entity}-evidence-form`,
-                    title: `${entity}-evidence-title`,
-                    file: `${entity}-evidence-file`,
-                    url: `${entity}-evidence-url`,
-                    note: `${entity}-evidence-note`,
-                    error: `${entity}-evidence-error`,
-                    submit: `submit-${entity}-evidence-btn`,
-                }}
+            <EvidenceUploadSection
+                tenantSlug={tenantSlug}
+                linkField={entity === 'risk' ? 'riskId' : 'assetId'}
+                linkId={entityId}
                 canWrite={canWrite}
-                show={showForm}
-                onToggleShow={() => setShowForm(!showForm)}
-                file={file}
-                onFileChange={(f) => {
-                    setFile(f);
-                    if (f && !fileTitle) setFileTitle(f.name);
-                }}
-                fileInputRef={fileRef}
-                title={fileTitle}
-                onTitleChange={setFileTitle}
-                url={url}
-                onUrlChange={setUrl}
-                note={note}
-                onNoteChange={setNote}
-                onSubmit={addEvidence}
-                error={formError}
-                uploading={saving && !!file}
-                saving={saving && !file}
+                onUploaded={refetch}
+                urlLinkEndpoint={endpoint}
             />
             {error ? (
                 <InlineEmptyState

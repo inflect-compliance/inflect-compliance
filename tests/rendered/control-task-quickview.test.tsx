@@ -119,7 +119,9 @@ describe("ControlEditPanel (editable control side panel)", () => {
         expect(screen.getByTestId("control-edit-panel")).toBeInTheDocument();
         expect(screen.getByTestId("control-edit-form")).toBeInTheDocument();
         expect(screen.getByTestId("control-edit-save")).toBeInTheDocument();
-        expect(screen.getByTestId("control-evidence-box")).toBeInTheDocument();
+        // Drag-and-drop evidence upload (shared FileDropzone section).
+        expect(screen.getByTestId("evidence-upload-section")).toBeInTheDocument();
+        expect(screen.getByTestId("evidence-upload-dropzone")).toBeInTheDocument();
         // The old Intent field is gone, replaced by evidence upload.
         expect(screen.queryByText("Intent")).not.toBeInTheDocument();
         // Seeded from the row.

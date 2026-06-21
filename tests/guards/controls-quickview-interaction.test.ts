@@ -23,6 +23,8 @@ const editPanel = read("src/app/t/[tenantSlug]/(app)/controls/ControlEditPanel.t
 const taskPanel = read("src/app/t/[tenantSlug]/(app)/controls/TaskEditPanel.tsx");
 const aside = read("src/components/ui/aside-panel.tsx");
 const sheet = read("src/components/ui/sheet.tsx");
+const evidenceSection = read("src/components/evidence/EvidenceUploadSection.tsx");
+const activityFeed = read("src/app/t/[tenantSlug]/(app)/controls/PanelActivityFeed.tsx");
 
 describe("Controls editable side-panel interaction", () => {
     it("the title cell is a <button> that opens the panel + expands inline tasks", () => {
@@ -66,18 +68,30 @@ describe("Controls editable side-panel interaction", () => {
         expect(controls).not.toMatch(/setSheetControlId/);
     });
 
-    describe("control panel = editable + evidence (replaces Intent) + Activity tab", () => {
+    it("the panels have NO back / close (✕) chrome buttons", () => {
+        // Removed by request — the AsidePanel collapse chevron + Escape +
+        // clicking another row remain the close/switch affordances.
+        expect(editPanel).not.toMatch(/aria-label="Close quick view"/);
+        expect(taskPanel).not.toMatch(/aria-label="Close quick view"/);
+        expect(taskPanel).not.toMatch(/data-testid="task-edit-back"/);
+    });
+
+    it("the dropdowns are one size smaller (sm trigger)", () => {
+        // Combobox triggers pass `size: "sm"` (h-8) instead of the md default.
+        expect(editPanel).toMatch(/buttonProps=\{\{[^}]*size:\s*["']sm["']/);
+        expect(taskPanel).toMatch(/buttonProps=\{\{[^}]*size:\s*["']sm["']/);
+    });
+
+    describe("control panel = editable + drag-drop evidence + Activity tab", () => {
         it("is an edit form with a Save action", () => {
             expect(editPanel).toMatch(/data-testid="control-edit-form"/);
             expect(editPanel).toMatch(/data-testid="control-edit-save"/);
             expect(editPanel).toMatch(/method:\s*["']PATCH["']/);
             expect(editPanel).toMatch(/role="region"/);
         });
-        it("replaces the Intent field with an evidence-upload box", () => {
-            expect(editPanel).toMatch(/data-testid="control-evidence-box"/);
-            expect(editPanel).toMatch(/evidence\/uploads/);
-            // No intent FORM field (old id / state / label) — only the comment
-            // may mention the word, so match the field shapes, not "Intent".
+        it("mounts the shared drag-drop EvidenceUploadSection (controlId), no Intent field", () => {
+            expect(editPanel).toMatch(/<EvidenceUploadSection/);
+            expect(editPanel).toMatch(/linkField="controlId"/);
             expect(editPanel).not.toMatch(/sheet-intent-input/);
             expect(editPanel).not.toMatch(/panel-intent/);
             expect(editPanel).not.toMatch(/\bintent:\s*draft|form\.intent|update\('intent'/);
@@ -89,16 +103,51 @@ describe("Controls editable side-panel interaction", () => {
         });
     });
 
-    describe("task panel = editable + Activity tab", () => {
+    describe("task panel = editable + drag-drop evidence + Activity tab", () => {
         it("is an edit form with a Save action", () => {
             expect(taskPanel).toMatch(/data-testid="task-edit-form"/);
             expect(taskPanel).toMatch(/data-testid="task-edit-save"/);
             expect(taskPanel).toMatch(/method:\s*["']PATCH["']/);
             expect(taskPanel).toMatch(/role="region"/);
         });
+        it("mounts the shared drag-drop EvidenceUploadSection (taskId)", () => {
+            expect(taskPanel).toMatch(/<EvidenceUploadSection/);
+            expect(taskPanel).toMatch(/linkField="taskId"/);
+        });
         it("has an Activity tab backed by the activity feed", () => {
             expect(taskPanel).toMatch(/PanelActivityFeed/);
             expect(taskPanel).toMatch(/\/tasks\/\$\{task\.id\}\/activity/);
+        });
+    });
+
+    describe("EvidenceUploadSection = canonical drag-drop uploader", () => {
+        it("wraps FileDropzone and links via the /evidence/uploads POST", () => {
+            expect(evidenceSection).toMatch(/<FileDropzone/);
+            expect(evidenceSection).toMatch(/evidence\/uploads/);
+            expect(evidenceSection).toMatch(/fd\.append\(linkField, linkId\)/);
+        });
+        it("also offers a URL-link affordance beneath the dropzone", () => {
+            expect(evidenceSection).toMatch(/urlLinkEndpoint/);
+            expect(evidenceSection).toMatch(/data-testid="evidence-link-url-form"/);
+            // Each surface wires its URL-link endpoint.
+            expect(editPanel).toMatch(/urlLinkEndpoint=/);
+            expect(editPanel).toMatch(/kind: "LINK"/);
+            expect(taskPanel).toMatch(/urlLinkEndpoint=/);
+        });
+        it("the risk/asset attached-evidence panel adopts it (drops EvidenceAddForm)", () => {
+            const attached = read("src/components/AttachedEvidencePanel.tsx");
+            expect(attached).toMatch(/<EvidenceUploadSection/);
+            expect(attached).not.toMatch(/EvidenceAddForm/);
+        });
+    });
+
+    describe("Activity feed reads as human sentences, not a log", () => {
+        it("uses relative time + an action→phrase map, not a raw code dump", () => {
+            expect(activityFeed).toMatch(/formatRelativeTime/);
+            expect(activityFeed).toMatch(/phraseFor/);
+            expect(activityFeed).toMatch(/ACTION_PHRASE/);
+            // The old raw-timestamp log column is gone.
+            expect(activityFeed).not.toMatch(/formatDateTime/);
         });
     });
 
