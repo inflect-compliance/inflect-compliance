@@ -175,7 +175,14 @@ const CAPS: Record<string, number> = {
     // → `TaskDetail | undefined`; array callbacks dropped. Both file disables +
     // 5 inner vendor disables removed. 25 cleared.
     //   : any 249 → 224
-    ': any': 224,
+    // any-paydown wave PR18 (2026-06-22) — `: any` cont. (framework/install.ts).
+    // All 32 were noise: 31 `.map`/`.filter`/`.some` callback params on arrays
+    // Prisma already fully types via include/select (annotations deleted, TS
+    // infers the precise element); 1 accumulator `const where: any = {}` →
+    // `Prisma.ControlTemplateWhereInput` (mirrors coverage.ts). File-level disable
+    // removed. 32 cleared.
+    //   : any 224 → 192
+    ': any': 192,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,
