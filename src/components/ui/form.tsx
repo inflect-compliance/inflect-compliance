@@ -23,7 +23,7 @@ export function Form({
   helpText?: string | ReactNode;
   buttonText?: string;
   disabledTooltip?: string | ReactNode;
-  handleSubmit: (data: any) => Promise<any>;
+  handleSubmit: (data: any) => Promise<unknown>;
 }) {
   const [value, setValue] = useState(inputAttrs.defaultValue);
   const [saving, setSaving] = useState(false);

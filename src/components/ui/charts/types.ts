@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any --
- * The `any` defaults on the chart generics (`T extends Datum = any`,
- * `Record<string, any>`, `ReactElement<any>`) are load-bearing for
+ * The `any` defaults on the chart generics (the `= any` generic
+ * fallbacks and the `Record` value type) are load-bearing for
  * downstream specialization. Replacing them with `Datum` or `unknown`
  * defaults breaks 9 consumer files (chart-context, time-series-chart,
  * use-tooltip, examples) because the chart system's generic
@@ -49,7 +49,7 @@ type ChartRequiredProps<T extends Datum = any> = {
 
 type ChartOptionalProps<T extends Datum = any> = {
   type?: "area" | "bar";
-  tooltipContent?: (datum: TimeSeriesDatum<T>) => ReactElement<any> | string;
+  tooltipContent?: (datum: TimeSeriesDatum<T>) => ReactElement | string;
   tooltipClassName?: string;
   defaultTooltipIndex?: number | null;
   /**
