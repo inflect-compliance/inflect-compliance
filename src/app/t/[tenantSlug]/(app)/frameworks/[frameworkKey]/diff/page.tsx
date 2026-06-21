@@ -7,6 +7,31 @@ import { KPIStat } from '@/components/ui/metric';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 
+// computeRequirementsDiff (framework/fixtures.ts) — inline literal return.
+interface DiffRequirement {
+    code: string;
+    title: string;
+    section: string | null | undefined;
+}
+interface RequirementsDiff {
+    from: { key: string; name: string; version: string | null };
+    to: { key: string; name: string; version: string | null };
+    added: DiffRequirement[];
+    removed: DiffRequirement[];
+    changed: Array<{
+        code: string;
+        changes: string[];
+        from: { title: string; section: string | null | undefined };
+        to: { title: string; section: string | null | undefined };
+    }>;
+    summary: {
+        added: number;
+        removed: number;
+        changed: number;
+        unmappedNewRequirements: number;
+    };
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export default function DiffPage() {
     const params = useParams();
@@ -16,7 +41,7 @@ export default function DiffPage() {
     const apiUrl = useCallback((path: string) => `/api/t/${tenantSlug}${path}`, [tenantSlug]);
 
     const fromKey = searchParams.get('from') || '';
-    const [diff, setDiff] = useState<any>(null);
+    const [diff, setDiff] = useState<RequirementsDiff | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [activeTab, setActiveTab] = useState<'added' | 'removed' | 'changed'>('added');

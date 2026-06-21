@@ -10,6 +10,14 @@ import { Heading, Eyebrow } from '@/components/ui/typography';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 
+// getFramework (framework/catalog.ts) — only the name is read here.
+interface FrameworkSummary {
+    id: string;
+    key: string;
+    name: string;
+    version: string | null;
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export default function TemplateLibraryPage() {
     const params = useParams();
@@ -19,7 +27,7 @@ export default function TemplateLibraryPage() {
     const apiUrl = useCallback((path: string) => `/api/t/${tenantSlug}${path}`, [tenantSlug]);
 
     const [templates, setTemplates] = useState<any[]>([]);
-    const [framework, setFramework] = useState<any>(null);
+    const [framework, setFramework] = useState<FrameworkSummary | null>(null);
     const [loading, setLoading] = useState(true);
     // R14-PR7 — standalone search input retired. The server-side
     // `?search=` query param remains supported by the API; users
