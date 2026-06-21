@@ -1,4 +1,4 @@
-﻿/* eslint-disable @typescript-eslint/no-explicit-any */
+﻿import { Prisma } from '@prisma/client';
 import { RequestContext } from '../../types';
 import { assertCanViewFrameworks, assertCanInstallFrameworkPack } from '../../policies/framework.policies';
 import { logEvent } from '../../events/audit';
@@ -29,25 +29,25 @@ export async function previewPackInstall(ctx: RequestContext, packKey: string) {
     // Check which controls already exist for this tenant
     const existingControls = await runInTenantContext(ctx, (db) =>
         db.control.findMany({
-            where: { tenantId: ctx.tenantId, code: { in: pack.templateLinks.map((l: any) => l.template.code) } },
+            where: { tenantId: ctx.tenantId, code: { in: pack.templateLinks.map((l) => l.template.code) } },
             select: { code: true },
         })
     );
 
-    const existingCodes = new Set(existingControls.map((c: any) => c.code));
+    const existingCodes = new Set(existingControls.map((c) => c.code));
 
     return {
         packKey: pack.key,
         packName: pack.name,
         framework: { key: pack.framework.key, name: pack.framework.name, version: pack.framework.version },
         totalTemplates: pack.templateLinks.length,
-        newControls: pack.templateLinks.filter((l: any) => !existingCodes.has(l.template.code)).length,
-        existingControls: pack.templateLinks.filter((l: any) => existingCodes.has(l.template.code)).length,
-        templates: pack.templateLinks.map((l: any) => ({
+        newControls: pack.templateLinks.filter((l) => !existingCodes.has(l.template.code)).length,
+        existingControls: pack.templateLinks.filter((l) => existingCodes.has(l.template.code)).length,
+        templates: pack.templateLinks.map((l) => ({
             code: l.template.code,
             title: l.template.title,
             tasks: l.template.tasks.length,
-            requirements: l.template.requirementLinks.map((rl: any) => ({ code: rl.requirement.code, title: rl.requirement.title })),
+            requirements: l.template.requirementLinks.map((rl) => ({ code: rl.requirement.code, title: rl.requirement.title })),
             alreadyInstalled: existingCodes.has(l.template.code),
         })),
     };
@@ -179,7 +179,7 @@ export async function computeCoverage(ctx: RequestContext, frameworkKey: string,
     // Get all tenant control requirement links for this framework
     const links = await runInTenantContext(ctx, (tdb) =>
         tdb.controlRequirementLink.findMany({
-            where: { tenantId: ctx.tenantId, requirementId: { in: requirements.map((r: any) => r.id) } },
+            where: { tenantId: ctx.tenantId, requirementId: { in: requirements.map((r) => r.id) } },
             include: {
                 control: { select: { id: true, code: true, name: true, status: true } },
                 requirement: { select: { id: true, code: true, title: true } },
@@ -188,17 +188,17 @@ export async function computeCoverage(ctx: RequestContext, frameworkKey: string,
     );
 
 
-    const mappedReqIds = new Set(links.map((l: any) => l.requirementId));
-    const mapped = requirements.filter((r: any) => mappedReqIds.has(r.id));
-    const unmapped = requirements.filter((r: any) => !mappedReqIds.has(r.id));
+    const mappedReqIds = new Set(links.map((l) => l.requirementId));
+    const mapped = requirements.filter((r) => mappedReqIds.has(r.id));
+    const unmapped = requirements.filter((r) => !mappedReqIds.has(r.id));
     const total = requirements.length;
     const coveragePercent = total > 0 ? Math.round((mapped.length / total) * 100) : 0;
 
     // Group by section
-    const sections = [...new Set(requirements.map((r: any) => r.section || r.category || 'Other'))];
-    const bySection = sections.map((s: any) => {
-        const sectionReqs = requirements.filter((r: any) => (r.section || r.category || 'Other') === s);
-        const sectionMapped = sectionReqs.filter((r: any) => mappedReqIds.has(r.id));
+    const sections = [...new Set(requirements.map((r) => r.section || r.category || 'Other'))];
+    const bySection = sections.map((s) => {
+        const sectionReqs = requirements.filter((r) => (r.section || r.category || 'Other') === s);
+        const sectionMapped = sectionReqs.filter((r) => mappedReqIds.has(r.id));
         return {
             section: s,
             total: sectionReqs.length,
@@ -214,9 +214,9 @@ export async function computeCoverage(ctx: RequestContext, frameworkKey: string,
         unmapped: unmapped.length,
         coveragePercent,
         bySection,
-        unmappedRequirements: unmapped.map((r: any) => ({ code: r.code, title: r.title, section: r.section || r.category })),
+        unmappedRequirements: unmapped.map((r) => ({ code: r.code, title: r.title, section: r.section || r.category })),
 
-        controlMappings: links.map((l: any) => ({
+        controlMappings: links.map((l) => ({
             requirementCode: l.requirement.code,
             requirementTitle: l.requirement.title,
             controlCode: l.control.code,
@@ -236,7 +236,7 @@ export async function listTemplates(
     const db = prisma;
 
 
-    const where: any = {};
+    const where: Prisma.ControlTemplateWhereInput = {};
     if (filters.frameworkKey) {
         const fw = await db.framework.findFirst({ where: { key: filters.frameworkKey } });
         if (!fw) throw notFound('Framework not found');
@@ -265,23 +265,23 @@ export async function listTemplates(
     // Check install status per template for this tenant
     const existingControls = await runInTenantContext(ctx, (tdb) =>
         tdb.control.findMany({
-            where: { tenantId: ctx.tenantId, code: { in: templates.map((t: any) => t.code) } },
+            where: { tenantId: ctx.tenantId, code: { in: templates.map((t) => t.code) } },
             select: { code: true },
         })
     );
 
-    const installedCodes = new Set(existingControls.map((c: any) => c.code));
+    const installedCodes = new Set(existingControls.map((c) => c.code));
 
     // Filter by section if specified (section comes from linked requirement)
     let result = templates;
     if (filters.section) {
-        result = templates.filter((t: any) =>
+        result = templates.filter((t) =>
 
-            t.requirementLinks.some((rl: any) => (rl.requirement.section || rl.requirement.category) === filters.section)
+            t.requirementLinks.some((rl) => (rl.requirement.section || rl.requirement.category) === filters.section)
         );
     }
 
-    return result.map((t: any) => ({
+    return result.map((t) => ({
         id: t.id,
         code: t.code,
         title: t.title,
@@ -290,16 +290,16 @@ export async function listTemplates(
         defaultFrequency: t.defaultFrequency,
         isGlobal: t.isGlobal,
         installed: installedCodes.has(t.code),
-        tasks: t.tasks.map((tt: any) => ({ id: tt.id, title: tt.title, description: tt.description })),
+        tasks: t.tasks.map((tt) => ({ id: tt.id, title: tt.title, description: tt.description })),
 
-        requirements: t.requirementLinks.map((rl: any) => ({
+        requirements: t.requirementLinks.map((rl) => ({
             code: rl.requirement.code,
             title: rl.requirement.title,
             section: rl.requirement.section || rl.requirement.category,
             framework: { key: rl.requirement.framework.key, name: rl.requirement.framework.name },
         })),
 
-        packs: t.packLinks.map((pl: any) => ({ key: pl.pack.key, name: pl.pack.name })),
+        packs: t.packLinks.map((pl) => ({ key: pl.pack.key, name: pl.pack.name })),
     }));
 }
 
@@ -406,20 +406,20 @@ export async function bulkMapControls(
         where: { frameworkId: fw.id, id: { in: reqIds } },
         select: { id: true },
     });
-    const validReqIds = new Set(validReqs.map((r: any) => r.id));
-    const invalidReqIds = reqIds.filter((id: any) => !validReqIds.has(id));
+    const validReqIds = new Set(validReqs.map((r) => r.id));
+    const invalidReqIds = reqIds.filter((id) => !validReqIds.has(id));
     if (invalidReqIds.length > 0) throw badRequest(`Invalid requirement IDs: ${invalidReqIds.join(', ')}`);
 
     return runInTenantContext(ctx, async (tdb) => {
         // Validate all control IDs belong to this tenant
-        const controlIds = [...new Set(mappings.map((m: any) => m.controlId))];
+        const controlIds = [...new Set(mappings.map((m) => m.controlId))];
         const validControls = await tdb.control.findMany({
             where: { tenantId: ctx.tenantId, id: { in: controlIds } },
             select: { id: true },
         });
 
-        const validCtrlIds = new Set(validControls.map((c: any) => c.id));
-        const invalidCtrlIds = controlIds.filter((id: any) => !validCtrlIds.has(id));
+        const validCtrlIds = new Set(validControls.map((c) => c.id));
+        const invalidCtrlIds = controlIds.filter((id) => !validCtrlIds.has(id));
         if (invalidCtrlIds.length > 0) throw badRequest(`Invalid control IDs: ${invalidCtrlIds.join(', ')}`);
 
         let created = 0;
@@ -466,8 +466,8 @@ export async function bulkInstallTemplates(
         where: { code: { in: templateCodes } },
         include: { tasks: true, requirementLinks: true },
     });
-    const foundCodes = new Set(templates.map((t: any) => t.code));
-    const notFound_codes = templateCodes.filter((c: any) => !foundCodes.has(c));
+    const foundCodes = new Set(templates.map((t) => t.code));
+    const notFound_codes = templateCodes.filter((c) => !foundCodes.has(c));
     if (notFound_codes.length > 0) throw badRequest(`Templates not found: ${notFound_codes.join(', ')}`);
 
     return runInTenantContext(ctx, async (tdb) => {
