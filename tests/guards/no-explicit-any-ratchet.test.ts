@@ -126,8 +126,17 @@ const CAPS: Record<string, number> = {
     // returns, `runPiiEncryption`'s `Promise<unknown>` next). The `: any` PARAM
     // annotations stay (separate category); their eslint-disables remain. 6 cleared.
     //   <any> 8 → 2
+    // any-paydown wave PR13 (2026-06-21) — `<any>` category ZEROED. The last
+    // two: executor-registry's heterogeneous `Map<string, JobExecutor<any>>`
+    // (erase the payload to `never` on store — every `JobExecutor<T>` is
+    // assignable to `JobExecutor<never>` by param contravariance — and
+    // re-narrow with a non-`any` cast on retrieval in `execute`); and
+    // EvidenceBundleRepository.create's `Promise<any>` (deprecated throwing
+    // stub → `Promise<{ id: string }>`, the structural contract its caller
+    // reads). 2 cleared; the category is now 0 and ratcheted there.
+    //   <any> 2 → 0
     ': any': 355,
-    '<any>': 2,
+    '<any>': 0,
     'useState<any>': 0,
     'as any': 15,
     '// @ts-ignore': 0,

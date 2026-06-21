@@ -86,7 +86,19 @@ export type JobExecutor<T extends JobName> = (
  * Internal storage for registered executors.
  * Uses `Map` for O(1) lookup and safe iteration.
  */
-const executors = new Map<string, JobExecutor<any>>(); // eslint-disable-line @typescript-eslint/no-explicit-any
+/**
+ * Storage type for the heterogeneous registry. A `Map` value cannot
+ * preserve the per-job `JobExecutor<T>` relationship: function params
+ * are contravariant, so a concrete `JobExecutor<'somejob'>` is NOT
+ * assignable to `JobExecutor<JobName>` (it can't accept the full
+ * payload union). We erase the payload to `never` on store — every
+ * concrete `JobExecutor<T>` IS assignable to `JobExecutor<never>`
+ * (a bottom param accepts any specific argument) — and re-narrow with
+ * a cast on retrieval in `execute`, where the `name: T` argument makes
+ * the `JobExecutor<T>` target sound.
+ */
+type StoredExecutor = JobExecutor<never>;
+const executors = new Map<string, StoredExecutor>();
 
 /**
  * The executor registry — singleton service.
@@ -135,7 +147,9 @@ export const executorRegistry = {
         payload: JobPayload<T>,
         ctx?: JobExecutorContext,
     ): Promise<JobRunResult> {
-        const executor = executors.get(name);
+        // Re-narrow the payload-erased StoredExecutor back to this job's
+        // concrete executor — sound because `name: T` keys the lookup.
+        const executor = executors.get(name) as JobExecutor<T> | undefined;
         const startedAt = new Date().toISOString();
         const startMs = performance.now();
         const jobRunId = crypto.randomUUID();
