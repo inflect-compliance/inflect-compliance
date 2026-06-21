@@ -63,6 +63,51 @@ const VENDOR_LINK_RELATION_OPTIONS: ComboboxOption[] = [
 
 type Tab = 'overview' | 'documents' | 'assessments' | 'links' | 'bundles' | 'subprocessors';
 
+// vendor → getVendor → VendorRepository.getById (vendor scalars + owner + _count).
+// owner/_count optional: absent on the scalar-only PATCH/enrich responses that
+// also setVendor. `contractEnd` has no model field (the MetaStrip branch that
+// reads it is dead) — kept optional so the read compiles without modelling it.
+interface VendorOwner {
+    id: string;
+    name: string | null;
+    email: string;
+}
+interface VendorDetail {
+    id: string;
+    name: string;
+    legalName: string | null;
+    websiteUrl: string | null;
+    domain: string | null;
+    country: string | null;
+    description: string | null;
+    status: string;
+    criticality: string;
+    inherentRisk: string | null;
+    residualRisk: string | null;
+    dataAccess: string | null;
+    isSubprocessor: boolean;
+    nextReviewAt: string | null;
+    contractRenewalAt: string | null;
+    contractEnd?: string | null;
+    certificationsJson: string[] | null;
+    enrichmentLastRunAt: string | null;
+    enrichmentStatus: string | null;
+    privacyPolicyUrl: string | null;
+    securityPageUrl: string | null;
+    owner?: VendorOwner | null;
+    _count?: { documents: number; assessments: number; contacts: number; links: number };
+}
+interface VendorEditForm {
+    name: string;
+    legalName: string;
+    websiteUrl: string;
+    domain: string;
+    country: string;
+    description: string;
+    criticality: string;
+    status: string;
+}
+
 export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: string; vendorId: string }> }) {
     const params = use(props.params);
     const apiUrl = useTenantApiUrl();
@@ -71,14 +116,17 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
     const canWrite = permissions?.canWrite;
     const triggerUndoToast = useToastWithUndo();
 
-    const [vendor, setVendor] = useState<any>(null);
+    const [vendor, setVendor] = useState<VendorDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [tab, setTab] = useState<Tab>('overview');
     const [docs, setDocs] = useState<any[]>([]);
     const [assessments, setAssessments] = useState<any[]>([]);
     const [templates, setTemplates] = useState<any[]>([]);
     const [editing, setEditing] = useState(false);
-    const [editForm, setEditForm] = useState<any>({});
+    const [editForm, setEditForm] = useState<VendorEditForm>({
+        name: '', legalName: '', websiteUrl: '', domain: '',
+        country: '', description: '', criticality: '', status: '',
+    });
 
     // Doc form
     const [showDocForm, setShowDocForm] = useState(false);

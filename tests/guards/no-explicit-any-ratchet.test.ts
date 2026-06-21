@@ -69,9 +69,13 @@ const CAPS: Record<string, number> = {
     // return). 7 `useState<any>` cleared; because `/<any>/` also matches the
     // `<any>` inside `useState<any>`, the `<any>` cap drops by the same 7.
     //   useState<any> 24 → 15 · <any> 63 → 54
+    // any-paydown wave PR2 (2026-06-21) — typed `useState<any>` in the
+    // framework-detail (framework/coverage) + vendor-detail (vendor/editForm)
+    // pages. 4 more cleared; `<any>` drops by the same 4.
+    //   useState<any> 15 → 11 · <any> 54 → 50
     ': any': 357,
-    '<any>': 54,
-    'useState<any>': 15,
+    '<any>': 50,
+    'useState<any>': 11,
     'as any': 15,
     '// @ts-ignore': 0,
 };

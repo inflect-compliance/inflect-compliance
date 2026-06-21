@@ -20,6 +20,46 @@ import { cn } from '@/lib/cn';
 
 type Tab = 'requirements' | 'packs' | 'coverage' | 'builder';
 
+// framework → getFramework (framework/catalog.ts)
+// coverage  → computeCoverage (framework/coverage.ts) — a superset of the
+//             narrow CoveragePayload that <FrameworkExplorer> consumes.
+interface FrameworkDetail {
+    id: string;
+    key: string;
+    name: string;
+    version: string | null;
+    description: string | null;
+    kind: string;
+    _count: { requirements: number; packs: number };
+}
+interface FrameworkCoverageSection {
+    section: string;
+    total: number;
+    mapped: number;
+    coveragePercent: number;
+}
+interface FrameworkCoverageUnmapped {
+    code: string;
+    title: string;
+    section: string | null;
+}
+interface FrameworkCoverage {
+    framework: { key: string; name: string; version: string | null };
+    total: number;
+    mapped: number;
+    unmapped: number;
+    coveragePercent: number;
+    bySection: FrameworkCoverageSection[];
+    unmappedRequirements: FrameworkCoverageUnmapped[];
+    controlMappings: {
+        requirementCode: string;
+        requirementTitle: string;
+        controlCode: string;
+        controlName: string;
+        controlStatus: string;
+    }[];
+}
+
 export default function FrameworkDetailPage() {
     const params = useParams();
     const tenantSlug = params.tenantSlug as string;
@@ -28,10 +68,10 @@ export default function FrameworkDetailPage() {
     const tenantHref = useCallback((path: string) => `/t/${tenantSlug}${path}`, [tenantSlug]);
 
     const [activeTab, setActiveTab] = useState<Tab>('requirements');
-    const [framework, setFramework] = useState<any>(null);
+    const [framework, setFramework] = useState<FrameworkDetail | null>(null);
     const [tree, setTree] = useState<FrameworkTreePayload | null>(null);
     const [packs, setPacks] = useState<any[]>([]);
-    const [coverage, setCoverage] = useState<any>(null);
+    const [coverage, setCoverage] = useState<FrameworkCoverage | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
