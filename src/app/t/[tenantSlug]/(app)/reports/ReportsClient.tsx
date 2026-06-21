@@ -35,6 +35,19 @@ interface ReportsClientProps {
 /**
  * Client island for reports — tab toggle between full SoA and risk register.
  */
+// getReports (report.ts) — the risk-register row literal. (The page never
+// produces an `asset` field, so the always-blank Asset column was removed.)
+interface RiskRegisterRow {
+    id: string;
+    title: string;
+    threat: string | null;
+    likelihood: number;
+    impact: number;
+    score: number;
+    treatment: string;
+    owner: string;
+    controls: string;
+}
 export function ReportsClient({ data, soaReport, controls, tenantSlug, canEdit, translations: t }: ReportsClientProps) {
     const [tab, setTab] = useState<'soa' | 'risk'>('soa');
 
@@ -52,18 +65,12 @@ export function ReportsClient({ data, soaReport, controls, tenantSlug, canEdit, 
     // register renders at the DataTable primitive's default
     // `text-sm leading-6`, matching Controls.
 
-    const riskColumns = useMemo(() => createColumns<any>([
+    const riskColumns = useMemo(() => createColumns<RiskRegisterRow>([
         {
             accessorKey: 'title',
             header: t.risk,
 
             cell: ({ getValue }: any) => <span className="font-medium text-content-emphasis">{getValue()}</span>,
-        },
-        {
-            accessorKey: 'asset',
-            header: t.asset,
-
-            cell: ({ getValue }: any) => <span>{getValue()}</span>,
         },
         {
             accessorKey: 'threat',

@@ -21,6 +21,15 @@ import { cardVariants } from '@/components/ui/card';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { cn } from '@/lib/cn';
 
+// listControlTemplates → ControlTemplateRepository.list (ControlTemplate model).
+interface ControlTemplateRow {
+    id: string;
+    code: string;
+    title: string;
+    category: string | null;
+    description: string | null;
+}
+
 export default function ControlTemplatesPage() {
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
@@ -144,7 +153,7 @@ export default function ControlTemplatesPage() {
                     />
                 ) : (
                     (() => {
-                        const templateCols = createColumns<any>([
+                        const templateCols = createColumns<ControlTemplateRow>([
                             {
                                 id: 'select', header: () => (
                                     <input type="checkbox" checked={selectedIds.size === filtered.length && filtered.length > 0} onChange={toggleAll} className="rounded" />
@@ -154,14 +163,10 @@ export default function ControlTemplatesPage() {
                                 ),
                             },
                             { accessorKey: 'code', header: 'Code', cell: ({ getValue }: any) => <span className="text-xs text-content-muted font-mono">{getValue() || '—'}</span> },
-                            { accessorKey: 'name', header: 'Name', cell: ({ getValue }: any) => <span className="font-medium text-content-emphasis">{getValue()}</span> },
+                            { accessorKey: 'title', header: 'Name', cell: ({ getValue }: any) => <span className="font-medium text-content-emphasis">{getValue()}</span> },
                             {
                                 accessorKey: 'category', header: 'Category',
                                 cell: ({ getValue }: any) => getValue() ? <StatusBadge variant="info">{getValue()}</StatusBadge> : null,
-                            },
-                            {
-                                accessorKey: 'frameworkTag', header: 'Framework',
-                                cell: ({ getValue }: any) => getValue() ? <StatusBadge variant="neutral">{getValue()}</StatusBadge> : null,
                             },
                             { accessorKey: 'description', header: 'Description', cell: ({ getValue }: any) => <span className="text-xs text-content-subtle truncate max-w-xs">{getValue() || '—'}</span> },
                         ]);

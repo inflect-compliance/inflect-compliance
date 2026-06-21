@@ -104,8 +104,15 @@ const CAPS: Record<string, number> = {
     // detail sub-tables (VendorAssessmentRow / VendorSubprocessorRow) +
     // tasks/[taskId] useTenantSWR (TaskDetail). 3 cleared.
     //   <any> 20 → 17
-    ': any': 357,
-    '<any>': 17,
+    // any-paydown wave PR10 (2026-06-21) — `<any>` cont. + latent-bug fixes:
+    // typed createColumns in controls/templates (ControlTemplateRow) +
+    // reports (RiskRegisterRow). Typing exposed always-blank columns: fixed
+    // templates `name`→`title`, removed the dead `frameworkTag` + `asset`
+    // columns (no backing field). 2 `<any>` cleared; removing the dead-column
+    // cells also dropped 2 colon-any.
+    //   <any> 17 → 15 · : any 357 → 355
+    ': any': 355,
+    '<any>': 15,
     'useState<any>': 0,
     'as any': 15,
     '// @ts-ignore': 0,
