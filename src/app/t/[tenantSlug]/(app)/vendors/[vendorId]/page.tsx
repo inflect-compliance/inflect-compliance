@@ -4,7 +4,6 @@
  * carries an inline disable directive; collectively they should
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { formatDate } from '@/lib/format-date';
 import { useEffect, useMemo, useState, useCallback, use } from 'react';
 import Link from 'next/link';
@@ -108,6 +107,30 @@ interface VendorEditForm {
     status: string;
 }
 
+// Questionnaire templates — QuestionnaireRepository.listTemplates.
+interface VendorTemplateRow {
+    key: string;
+    name: string;
+    _count?: { questions: number };
+}
+// Cross-entity links — GET /vendors/[id]/links.
+interface VendorLinkRow {
+    id: string;
+    entityType: string;
+    entityId: string;
+    relation: string;
+    createdAt: string;
+}
+// Evidence bundles — GET /vendors/[id]/bundles.
+interface VendorBundleRow {
+    id: string;
+    name: string;
+    frozenAt: string | null;
+    createdAt: string;
+    createdBy: { name: string | null } | null;
+    _count?: { items: number };
+}
+
 export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: string; vendorId: string }> }) {
     const params = use(props.params);
     const apiUrl = useTenantApiUrl();
@@ -119,9 +142,9 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
     const [vendor, setVendor] = useState<VendorDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [tab, setTab] = useState<Tab>('overview');
-    const [docs, setDocs] = useState<any[]>([]);
-    const [assessments, setAssessments] = useState<any[]>([]);
-    const [templates, setTemplates] = useState<any[]>([]);
+    const [docs, setDocs] = useState<VendorDocRow[]>([]);
+    const [assessments, setAssessments] = useState<VendorAssessmentRow[]>([]);
+    const [templates, setTemplates] = useState<VendorTemplateRow[]>([]);
     const [editing, setEditing] = useState(false);
     const [editForm, setEditForm] = useState<VendorEditForm>({
         name: '', legalName: '', websiteUrl: '', domain: '',
@@ -144,14 +167,14 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
     // Enrichment
     const [enriching, setEnriching] = useState(false);
     // Links
-    const [links, setLinks] = useState<any[]>([]);
+    const [links, setLinks] = useState<VendorLinkRow[]>([]);
     const [showLinkForm, setShowLinkForm] = useState(false);
     const [linkForm, setLinkForm] = useState({ entityType: 'ASSET', entityId: '', relation: 'RELATED' });
     // Bundles
-    const [bundles, setBundles] = useState<any[]>([]);
+    const [bundles, setBundles] = useState<VendorBundleRow[]>([]);
     const [bundleName, setBundleName] = useState('');
     // Subprocessors
-    const [subs, setSubs] = useState<any[]>([]);
+    const [subs, setSubs] = useState<VendorSubprocessorRow[]>([]);
     const [subForm, setSubForm] = useState({ subprocessorVendorId: '', purpose: '' });
 
     const fetchVendor = useCallback(async () => {
@@ -219,7 +242,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
 
     const addDoc = async (e: React.FormEvent) => {
         e.preventDefault();
-        const body: any = { type: docForm.type };
+        const body: Record<string, string> = { type: docForm.type };
         if (docForm.title) body.title = docForm.title;
         if (docForm.externalUrl) body.externalUrl = docForm.externalUrl;
         if (docForm.notes) body.notes = docForm.notes;
@@ -414,24 +437,24 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                     <div className="grid grid-cols-2 gap-default">
                         <div>
                             <label className="block text-sm text-content-muted mb-1">Name</label>
-                            <input className="input w-full" value={editForm.name} onChange={e => setEditForm((p: any) => ({ ...p, name: e.target.value }))} />
+                            <input className="input w-full" value={editForm.name} onChange={e => setEditForm((p) => ({ ...p, name: e.target.value }))} />
                         </div>
                         <div>
                             <label className="block text-sm text-content-muted mb-1">Legal Name</label>
-                            <input className="input w-full" value={editForm.legalName} onChange={e => setEditForm((p: any) => ({ ...p, legalName: e.target.value }))} />
+                            <input className="input w-full" value={editForm.legalName} onChange={e => setEditForm((p) => ({ ...p, legalName: e.target.value }))} />
                         </div>
                         <div>
                             <label className="block text-sm text-content-muted mb-1">Status</label>
-                            <Combobox hideSearch selected={VENDOR_STATUS_OPTIONS.find(o => o.value === editForm.status) ?? null} setSelected={(opt) => setEditForm((p: any) => ({ ...p, status: opt?.value ?? p.status }))} options={VENDOR_STATUS_OPTIONS} matchTriggerWidth />
+                            <Combobox hideSearch selected={VENDOR_STATUS_OPTIONS.find(o => o.value === editForm.status) ?? null} setSelected={(opt) => setEditForm((p) => ({ ...p, status: opt?.value ?? p.status }))} options={VENDOR_STATUS_OPTIONS} matchTriggerWidth />
                         </div>
                         <div>
                             <label className="block text-sm text-content-muted mb-1">Criticality</label>
-                            <Combobox hideSearch selected={VENDOR_CRIT_OPTIONS.find(o => o.value === editForm.criticality) ?? null} setSelected={(opt) => setEditForm((p: any) => ({ ...p, criticality: opt?.value ?? p.criticality }))} options={VENDOR_CRIT_OPTIONS} matchTriggerWidth />
+                            <Combobox hideSearch selected={VENDOR_CRIT_OPTIONS.find(o => o.value === editForm.criticality) ?? null} setSelected={(opt) => setEditForm((p) => ({ ...p, criticality: opt?.value ?? p.criticality }))} options={VENDOR_CRIT_OPTIONS} matchTriggerWidth />
                         </div>
                     </div>
                     <div>
                         <label className="block text-sm text-content-muted mb-1">Description</label>
-                        <textarea className="input w-full h-20" value={editForm.description} onChange={e => setEditForm((p: any) => ({ ...p, description: e.target.value }))} />
+                        <textarea className="input w-full h-20" value={editForm.description} onChange={e => setEditForm((p) => ({ ...p, description: e.target.value }))} />
                     </div>
                     <div className="flex gap-compact">
                         <Button variant="primary" onClick={saveEdit} id="save-vendor-btn">Save</Button>
@@ -574,7 +597,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                         filter is the right shape for a tab with at
                         most a few dozen rows per vendor. */}
                     <VendorDocsTable
-                        docs={docs.filter((d: any) => {
+                        docs={docs.filter((d) => {
                             if (docTypeFilter && d.type !== docTypeFilter) return false;
                             // B8 — folder filter. `''` keeps every
                             // doc; `'__none__'` keeps only unfoldered;
@@ -613,9 +636,9 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                 <div className="flex items-center gap-tight">
                                     <Combobox
                                         id="template-select"
-                                        selected={templates.map((t: any) => ({ value: t.key, label: `${t.name} (${t._count?.questions || 0} Q)` })).find((o: ComboboxOption) => o.value === selectedTemplate) ?? null}
+                                        selected={templates.map((t) => ({ value: t.key, label: `${t.name} (${t._count?.questions || 0} Q)` })).find((o: ComboboxOption) => o.value === selectedTemplate) ?? null}
                                         setSelected={(opt) => setSelectedTemplate(opt?.value ?? '')}
-                                        options={templates.map((t: any) => ({ value: t.key, label: `${t.name} (${t._count?.questions || 0} Q)` }))}
+                                        options={templates.map((t) => ({ value: t.key, label: `${t.name} (${t._count?.questions || 0} Q)` }))}
                                         placeholder="Select template…"
                                         matchTriggerWidth
                                         buttonProps={{ className: 'w-48' }}
@@ -684,12 +707,12 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                         </div>
                     )}
                     {['ASSET', 'RISK', 'ISSUE', 'CONTROL'].map(type => {
-                        const typeLinks = links.filter((l: any) => l.entityType === type);
+                        const typeLinks = links.filter((l) => l.entityType === type);
                         if (typeLinks.length === 0) return null;
                         return (
                             <div key={type} className={cn(cardVariants({ density: 'compact' }), 'space-y-tight')}>
                                 <Heading level={3}>{type}s ({typeLinks.length})</Heading>
-                                {typeLinks.map((l: any) => (
+                                {typeLinks.map((l) => (
                                     <div key={l.id} className="flex items-center justify-between text-sm border-b border-border-subtle py-1">
                                         <span><code className="text-xs text-content-info">{l.entityId}</code> <StatusBadge variant="neutral" className="ml-1">{l.relation}</StatusBadge></span>
                                         {canWrite && <button className="text-content-error text-xs" onClick={async () => {
@@ -725,7 +748,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                             }}>Create Bundle</Button>
                         </div>
                     )}
-                    {bundles.map((b: any) => (
+                    {bundles.map((b) => (
                         <div key={b.id} className={cn(cardVariants({ density: 'compact' }), 'space-y-tight')}>
                             <div className="flex items-center justify-between">
                                 <div>
@@ -823,6 +846,7 @@ interface VendorDocRow {
     validTo?: string | null;
     uploadedBy?: { name?: string | null } | null;
     externalUrl?: string | null;
+    notes?: string | null;
 }
 
 function VendorDocsTable({
@@ -942,8 +966,7 @@ interface VendorAssessmentRow {
     startedAt: string;
     template: { name: string } | null;
 }
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function VendorAssessmentsTable({ assessments, vendorId, tenantHref }: { assessments: any[]; vendorId: string; tenantHref: (path: string) => string }) {
+function VendorAssessmentsTable({ assessments, vendorId, tenantHref }: { assessments: VendorAssessmentRow[]; vendorId: string; tenantHref: (path: string) => string }) {
     const columns = useMemo(
         () =>
             createColumns<VendorAssessmentRow>([
@@ -1007,8 +1030,7 @@ function VendorAssessmentsTable({ assessments, vendorId, tenantHref }: { assessm
     return (
         <DataTable
             data={assessments}
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            getRowId={(a: any) => a.id}
+            getRowId={(a) => a.id}
             columns={columns}
             selectionEnabled={false}
             emptyState={
@@ -1038,8 +1060,7 @@ interface VendorSubprocessorRow {
     };
 }
 // Actions column produced via the gated-spread idiom.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function VendorSubprocessorsTable({ subs, canWrite, onRemove }: { subs: any[]; canWrite: boolean; onRemove: (relationId: string) => void | Promise<void> }) {
+function VendorSubprocessorsTable({ subs, canWrite, onRemove }: { subs: VendorSubprocessorRow[]; canWrite: boolean; onRemove: (relationId: string) => void | Promise<void> }) {
     const columns = useMemo(
         () =>
             createColumns<VendorSubprocessorRow>([
@@ -1100,8 +1121,7 @@ function VendorSubprocessorsTable({ subs, canWrite, onRemove }: { subs: any[]; c
                           {
                               id: 'actions',
                               header: '',
-                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                              cell: ({ row }: { row: { original: any } }) => (
+                              cell: ({ row }: { row: { original: VendorSubprocessorRow } }) => (
                                   <button
                                       className="text-content-error text-xs"
                                       onClick={() => onRemove(row.original.id)}
@@ -1118,8 +1138,7 @@ function VendorSubprocessorsTable({ subs, canWrite, onRemove }: { subs: any[]; c
     return (
         <DataTable
             data={subs}
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            getRowId={(s: any) => s.id}
+            getRowId={(s) => s.id}
             columns={columns}
             selectionEnabled={false}
             emptyState={
