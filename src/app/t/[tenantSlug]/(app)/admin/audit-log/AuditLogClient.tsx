@@ -6,6 +6,18 @@ import { DataTable, createColumns } from '@/components/ui/table';
 import { ListPageShell } from '@/components/layout/ListPageShell';
 import { StatusBadge } from '@/components/ui/status-badge';
 
+// listAuditLogs → AuditLogRepository.list (AuditLog model + user relation).
+// createdAt is a string (JSON round-trip via the server page). Cell callbacks
+// stay untyped (file-level disable; the colon-any category).
+interface AuditLogRow {
+    id: string;
+    createdAt: string;
+    action: string;
+    entity: string;
+    details: string | null;
+    user: { name: string | null; email: string } | null;
+}
+
 interface AuditLogClientProps {
     auditLog: any[];
     translations: {
@@ -24,7 +36,7 @@ interface AuditLogClientProps {
  * dedicated page so admin landing reads as a pure pill-nav surface.
  */
 export function AuditLogClient({ auditLog, translations: t }: AuditLogClientProps) {
-    const logColumns = useMemo(() => createColumns<any>([
+    const logColumns = useMemo(() => createColumns<AuditLogRow>([
         {
             id: 'time',
             header: t.time,
