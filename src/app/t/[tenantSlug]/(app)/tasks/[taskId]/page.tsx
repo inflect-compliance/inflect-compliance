@@ -78,6 +78,28 @@ const GAP_TYPE_LABELS: Record<string, string> = {
 };
 
 
+// getTask → WorkItemRepository.getById (full Task + relations + _count).
+interface TaskDetail {
+    id: string;
+    title: string;
+    description: string | null;
+    type: string;
+    severity: string;
+    priority: string;
+    status: string;
+    dueAt: string | null;
+    createdAt: string;
+    completedAt: string | null;
+    resolution: string | null;
+    key: string | null;
+    assigneeUserId: string | null;
+    metadataJson: { findingSource?: string | null; controlGapType?: string | null } | null;
+    assignee: { name: string | null } | null;
+    createdBy: { name: string | null } | null;
+    control: { id: string; code: string | null; name: string } | null;
+    _count: { evidence: number; links: number; comments: number };
+}
+
 export default function TaskDetailPage() {
     const params = useParams();
     const apiUrl = useTenantApiUrl();
@@ -140,7 +162,7 @@ export default function TaskDetailPage() {
     // null SWR key while its tab is inactive; mutations write the
     // cache through `mutate` — optimistic for instant feedback, then
     // revalidate to reconcile server-derived fields.
-    const taskQuery = useTenantSWR<any>(taskId ? `/tasks/${taskId}` : null);
+    const taskQuery = useTenantSWR<TaskDetail>(taskId ? `/tasks/${taskId}` : null);
     const task = taskQuery.data ?? null;
     const loading = taskQuery.isLoading;
     const error = taskQuery.error

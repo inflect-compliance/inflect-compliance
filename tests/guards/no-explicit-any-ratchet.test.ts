@@ -100,8 +100,12 @@ const CAPS: Record<string, number> = {
     // useTenantSWR + useTenantMutation `CappedList<…>` payloads + createColumns
     // to EvidenceRow (evidenceListSelect). 4 cleared.
     //   <any> 24 → 20
+    // any-paydown wave PR9 (2026-06-21) — `<any>` cont.: typed the two vendor
+    // detail sub-tables (VendorAssessmentRow / VendorSubprocessorRow) +
+    // tasks/[taskId] useTenantSWR (TaskDetail). 3 cleared.
+    //   <any> 20 → 17
     ': any': 357,
-    '<any>': 20,
+    '<any>': 17,
     'useState<any>': 0,
     'as any': 15,
     '// @ts-ignore': 0,
