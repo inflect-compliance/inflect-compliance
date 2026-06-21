@@ -30,6 +30,38 @@ const RISK_STATUS_BADGE: Record<string, StatusBadgeVariant> = {
 const traceabilityKey = (tenantSlug: string, entityType: string, entityId: string) =>
     ['traceability', tenantSlug, entityType, entityId] as const;
 
+// Shape returned by `/{controls,risks,assets}/{id}/traceability` and held
+// in the react-query cache. The three sections share one entry shape; the
+// linked entity carries the superset of fields the three entity types
+// surface (risk: title/status/score · control: code/name/status · asset:
+// name/type/criticality), all optional so the optimistic temp-entry write
+// (which fills a generic "Loading…" placeholder) type-checks. All three
+// sections being `TraceLinkEntry[]` is what keeps the dynamic-key write
+// `updated[section] = …` assignable.
+interface TraceLinkedEntity {
+    id: string;
+    title?: string;
+    name?: string;
+    code?: string;
+    status?: string;
+    score?: number;
+    type?: string;
+    criticality?: string;
+}
+interface TraceLinkEntry {
+    id: string;
+    rationale: string | null;
+    risk?: TraceLinkedEntity;
+    control?: TraceLinkedEntity;
+    asset?: TraceLinkedEntity;
+}
+type TraceSection = 'risks' | 'controls' | 'assets';
+interface TraceabilityData {
+    risks: TraceLinkEntry[];
+    controls: TraceLinkEntry[];
+    assets: TraceLinkEntry[];
+}
+
 export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, entityId, canWrite, tenantHref, tenantSlug: tenantSlugProp }: TraceabilityPanelProps) {
     // Callers pass `apiUrl('')` which yields `/api/t/<slug>/` with a
     // trailing slash. Concatenating `${apiBase}/risks/…` then produces a
@@ -139,13 +171,13 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
         onMutate: async ({ type, linkedId, rationale }) => {
             await queryClient.cancelQueries({ queryKey: traceabilityKey(tenantSlug, entityType, entityId) });
 
-            const previous = queryClient.getQueryData<any>(traceabilityKey(tenantSlug, entityType, entityId));
+            const previous = queryClient.getQueryData<TraceabilityData>(traceabilityKey(tenantSlug, entityType, entityId));
 
             if (previous) {
 
                 const updated = { ...previous };
-                const section = type === 'risk' ? 'risks' : type === 'control' ? 'controls' : 'assets';
-                const tempEntry = {
+                const section: TraceSection = type === 'risk' ? 'risks' : type === 'control' ? 'controls' : 'assets';
+                const tempEntry: TraceLinkEntry = {
                     id: `temp:${crypto.randomUUID()}`,
                     rationale: rationale || null,
                     [type]: { id: linkedId, title: 'Loading...', name: 'Loading...', status: '—', code: '' },
@@ -222,11 +254,11 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
         // what the user saw — not a stale snapshot from before some
         // other concurrent mutation.
 
-        const previous = queryClient.getQueryData<any>(cacheKey);
+        const previous = queryClient.getQueryData<TraceabilityData>(cacheKey);
 
         if (previous) {
             const updated = { ...previous };
-            const section = type === 'risk' ? 'risks' : type === 'control' ? 'controls' : 'assets';
+            const section: TraceSection = type === 'risk' ? 'risks' : type === 'control' ? 'controls' : 'assets';
 
             updated[section] = (updated[section] || []).filter((l: any) => {
                 const linked = l[type];

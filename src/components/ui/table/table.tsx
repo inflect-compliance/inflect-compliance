@@ -1405,8 +1405,8 @@ export function Table<T>({
   );
 }
 
-const getCommonPinningClassNames = (
-  column: Column<any>,
+const getCommonPinningClassNames = <TData,>(
+  column: Column<TData>,
   isLastRow: boolean,
 ): string => {
   const isPinned = column.getIsPinned();
@@ -1418,7 +1418,7 @@ const getCommonPinningClassNames = (
   );
 };
 
-const getCommonPinningStyles = (column: Column<any>): CSSProperties => {
+const getCommonPinningStyles = <TData,>(column: Column<TData>): CSSProperties => {
   const isPinned = column.getIsPinned();
 
   return {

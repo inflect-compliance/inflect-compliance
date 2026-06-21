@@ -111,8 +111,14 @@ const CAPS: Record<string, number> = {
     // columns (no backing field). 2 `<any>` cleared; removing the dead-column
     // cells also dropped 2 colon-any.
     //   <any> 17 → 15 · : any 357 → 355
+    // any-paydown wave PR11 (2026-06-21) — `<any>` cont., frontend generics:
+    // TraceabilityPanel `getQueryData<any>` → `TraceabilityData` (2), charts
+    // `ReactElement<any>` → `ReactElement` (2: 1 real + 1 docstring), form
+    // `Promise<any>` → `Promise<unknown>` (1), table pinning helpers
+    // `Column<any>` → generic `<TData>(column: Column<TData>)` (2). 7 cleared.
+    //   <any> 15 → 8
     ': any': 355,
-    '<any>': 15,
+    '<any>': 8,
     'useState<any>': 0,
     'as any': 15,
     '// @ts-ignore': 0,
