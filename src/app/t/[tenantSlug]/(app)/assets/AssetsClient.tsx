@@ -49,6 +49,26 @@ const CRITICALITY_VARIANT: Record<string, StatusBadgeVariant> = {
     success: 'success',
 };
 
+// listAssets → AssetRepository.list (full Asset model + _count.controls +
+// usecase-added taskTotal/taskDone). Cells/KPI callbacks stay untyped
+// (file-level disable; the colon-any category) — this types the column factory.
+interface AssetListRow {
+    id: string;
+    key: string | null;
+    name: string;
+    type: string;
+    classification: string | null;
+    owner: string | null;
+    confidentiality: number | null;
+    integrity: number | null;
+    availability: number | null;
+    criticality: string | null;
+    status: string;
+    _count: { controls: number };
+    taskTotal: number;
+    taskDone: number;
+}
+
 interface AssetsClientProps {
     initialAssets: any[];
     initialFilters: Record<string, string>;
@@ -144,7 +164,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
         return true;
     }, [queryKeyFilters, initialFilters, serverHadFilters, hasActive]);
 
-    const assetsQuery = useQuery({
+    const assetsQuery = useQuery<AssetListRow[]>({
         queryKey: queryKeys.assets.list(tenantSlug, queryKeyFilters),
         queryFn: async () => {
             const qs = fetchParams.toString();
@@ -443,7 +463,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
         columns: assetColumnList,
     });
 
-    const assetColumns = useMemo(() => createColumns<any>([
+    const assetColumns = useMemo(() => createColumns<AssetListRow>([
         {
             // First-column convention — `AST-N` Code leads. Mono +
             // tabular-nums so the digits align column-wise; muted

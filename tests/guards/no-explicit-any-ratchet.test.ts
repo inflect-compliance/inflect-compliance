@@ -91,8 +91,13 @@ const CAPS: Record<string, number> = {
     // FindingsClient list-table generics (useQuery/getQueryData/setQueryData
     // CappedList + createColumns) to FindingRow. 5 cleared.
     //   <any> 32 → 27
+    // any-paydown wave PR7 (2026-06-21) — `<any>` cont.: typed the list-table
+    // generics in AssetsClient (createColumns + the useQuery payload),
+    // AuditsClient (useQuery CappedList → AuditListRow) + AuditLogClient
+    // (createColumns → AuditLogRow). 3 cleared.
+    //   <any> 27 → 24
     ': any': 357,
-    '<any>': 27,
+    '<any>': 24,
     'useState<any>': 0,
     'as any': 15,
     '// @ts-ignore': 0,

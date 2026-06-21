@@ -26,6 +26,15 @@ const RESULT_BADGE: Record<string, StatusBadgeVariant> = {
     NOT_TESTED: 'neutral', PASS: 'success', FAIL: 'error',
 };
 
+// listAudits → AuditRepository.list (auditListSelect). The lighter LIST row
+// (distinct from the detail AuditDetail). List map callback stays untyped.
+interface AuditListRow {
+    id: string;
+    title: string;
+    status: string;
+    _count: { checklist: number; findings: number };
+}
+
 interface AuditsClientProps {
     initialAudits: any[];
     tenantSlug: string;
@@ -107,7 +116,7 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
 
     // PR-5 — API returns `{ rows, truncated }`; SSR initial wraps
     // with `truncated: false` (SSR cap < backfill cap).
-    const auditsQuery = useQuery<CappedList<any>>({
+    const auditsQuery = useQuery<CappedList<AuditListRow>>({
         queryKey: queryKeys.audits.list(tenantSlug),
         queryFn: async () => {
             const res = await fetch(apiUrl('/audits'));
