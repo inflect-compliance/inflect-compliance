@@ -8,12 +8,29 @@ import { Heading } from '@/components/ui/typography';
 import { Card } from '@/components/ui/card';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 
+// getFrameworkMappings (mapping.ts) — soc2/nis2 requirement rows augmented
+// with computed coverage. (Element fields documented for the typed `data`
+// access; the per-row map callback keeps its untyped param for now — a
+// separate ratchet category.)
+interface MappingItem {
+    code: string;
+    title: string;
+    description: string;
+    coverage: number;
+    implementedCount: number;
+    controlCount: number;
+}
+interface FrameworkMappings {
+    soc2: MappingItem[];
+    nis2: MappingItem[];
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export default function MappingPage() {
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const t = useTranslations('mapping');
-    const [data, setData] = useState<any>(null);
+    const [data, setData] = useState<FrameworkMappings | null>(null);
     const [tab, setTab] = useState<'soc2' | 'nis2'>('soc2');
 
     useEffect(() => { fetch(apiUrl('/mapping')).then(r => r.json()).then(setData); }, [apiUrl]);
