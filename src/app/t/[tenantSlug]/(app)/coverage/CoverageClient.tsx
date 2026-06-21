@@ -36,6 +36,11 @@ interface CoverageClientProps {
     tenantSlug: string;
 }
 
+// Row element types for the two coverage sub-tables — derived from
+// CoverageData so there's a single source of truth.
+type UnmappedRiskRow = CoverageData['unmappedRisks'][number];
+type UncoveredAssetRow = CoverageData['uncoveredCriticalAssets'][number];
+
 // ─── Helpers ────────────────────────────────────────────────────────
 
 /**
@@ -80,7 +85,7 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
 
     // ── Column definitions ────────────────────────────────────────
 
-    const unmappedRiskCols = useMemo(() => createColumns<any>([
+    const unmappedRiskCols = useMemo(() => createColumns<UnmappedRiskRow>([
         {
             accessorKey: 'title',
             header: 'Risk',
@@ -113,7 +118,7 @@ export function CoverageClient({ data, tenantSlug }: CoverageClientProps) {
         },
     ]), []);
 
-    const uncoveredAssetCols = useMemo(() => createColumns<any>([
+    const uncoveredAssetCols = useMemo(() => createColumns<UncoveredAssetRow>([
         {
             accessorKey: 'name',
             header: 'Asset',

@@ -66,6 +66,21 @@ const VENDOR_STATUS_OPTIONS = [
     { value: 'OFFBOARDED', label: 'Offboarded' },
 ];
 
+// listVendors → VendorRepository.list (vendorListSelect). Cells/accessors are
+// still explicitly-untyped callbacks (a separate ratchet category); this types
+// the query payload + the column factory.
+interface VendorRow {
+    id: string;
+    name: string;
+    status: string;
+    criticality: string;
+    inherentRisk: string | null;
+    nextReviewAt: string | null;
+    contractRenewalAt: string | null;
+    owner: { name: string | null } | null;
+    isSubprocessor: boolean;
+}
+
 interface VendorsClientProps {
     initialVendors: any[];
     initialFilters: Record<string, string>;
@@ -155,7 +170,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
 
     // PR-5 — API returns `{ rows, truncated }`. SSR initial wraps
     // with `truncated: false` (the SSR cap is below the backfill cap).
-    const vendorsQuery = useTenantSWR<CappedList<any>>(vendorsKey, {
+    const vendorsQuery = useTenantSWR<CappedList<VendorRow>>(vendorsKey, {
         fallbackData: filtersMatchInitial
             ? { rows: initialVendors, truncated: false }
             : undefined,
@@ -377,7 +392,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
         columns: vendorColumnList,
     });
 
-    const vendorColumns = useMemo(() => orderColumns(createColumns<any>([
+    const vendorColumns = useMemo(() => orderColumns(createColumns<VendorRow>([
         {
             accessorKey: 'name',
             header: 'Name',

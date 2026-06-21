@@ -82,8 +82,13 @@ const CAPS: Record<string, number> = {
     // (audit-share, asset detail, clauses browser, framework diff/templates,
     // vendor assessment). The category is now ZERO; `<any>` drops by the same 6.
     //   useState<any> 6 → 0 · <any> 45 → 39
+    // any-paydown wave PR5 (2026-06-21) — first of the `<any>` category: typed
+    // the list-table generics (CappedList / createColumns / EntityListPage) in
+    // coverage + vendors + policies clients to real row interfaces. Per-cell
+    // callback params stay untyped (the `: any` category). 7 cleared.
+    //   <any> 39 → 32
     ': any': 357,
-    '<any>': 39,
+    '<any>': 32,
     'useState<any>': 0,
     'as any': 15,
     '// @ts-ignore': 0,
