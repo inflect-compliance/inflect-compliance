@@ -18,8 +18,11 @@ export class EvidenceBundleRepository {
         return null;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    static async create(_db: PrismaTx, _ctx: RequestContext, _issueId: string, _name: string): Promise<any> {
+    // Return type is the structural contract the (now-dead) caller in
+    // issue.ts::createBundle reads (`bundle.id`). The body only throws —
+    // the shape is a compile-time contract, never a runtime value — so the
+    // deprecated stub stays honest without an `any` return.
+    static async create(_db: PrismaTx, _ctx: RequestContext, _issueId: string, _name: string): Promise<{ id: string }> {
         throw deprecatedResource('Evidence bundles are no longer supported on the Issue model. Use Task links instead.');
     }
 
