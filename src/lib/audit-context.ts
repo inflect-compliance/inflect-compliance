@@ -38,9 +38,8 @@ const contextStack: AuditContextData[] = [];
  * This is more robust than instanceof Promise because Prisma returns
  * PrismaPromise objects that are thenable but not instanceof Promise.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isThenable(value: any): value is PromiseLike<unknown> {
-    return value != null && typeof value.then === 'function';
+function isThenable(value: unknown): value is PromiseLike<unknown> {
+    return value != null && typeof (value as { then?: unknown }).then === 'function';
 }
 
 /**

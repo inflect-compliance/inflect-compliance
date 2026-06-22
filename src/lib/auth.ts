@@ -179,9 +179,7 @@ export async function hasTenantRole(
 // under `.default`, and `bcrypt.compare` is undefined.
 async function loadBcrypt(): Promise<typeof import('bcryptjs')> {
     const m = await import('bcryptjs');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const ns: any = m;
-    return (ns.default ?? ns) as typeof import('bcryptjs');
+    return (m as unknown as { default?: typeof m }).default ?? m;
 }
 
 export async function hashPassword(password: string): Promise<string> {

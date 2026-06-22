@@ -327,7 +327,16 @@ const CAPS: Record<string, number> = {
     // → `Prisma.TaskWhereInput` / `Prisma.PolicyWhereInput`; sync-pull logger
     // `(syncEvent: any)` → `unknown`. 5 cleared.
     //   : any 48 → 43
-    ': any': 43,
+    // any-paydown wave PR33 (2026-06-22) — `: any` cont. (lib auth/interop). bcryptjs
+    // ESM-default-interop in auth.ts + passwords.ts (`const ns: any = m`) →
+    // `(m as unknown as { default?: typeof m }).default ?? m`; api-key-auth
+    // `scopesToPermissions` accumulator `result: any` → `Record<string,
+    // Record<string, boolean>>` (already cast to PermissionSet at return);
+    // audit-context `isThenable(value: any)` → `unknown` + a `{ then?: unknown }`
+    // narrowing. 4 cleared. (saml-client deferred — its `SamlConfig` constructor
+    // type rejects the `cert` key the literal sets.)
+    //   : any 43 → 39
+    ': any': 39,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,

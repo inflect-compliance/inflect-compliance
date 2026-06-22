@@ -34,9 +34,7 @@
 // silently returns false for every login attempt — locking out every
 // credentials user.
 const bcryptModule = import('bcryptjs').then((m) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const namespace: any = m;
-    return namespace.default ?? namespace;
+    return (m as unknown as { default?: typeof m }).default ?? m;
 });
 
 /** Current default bcrypt work factor. OWASP 2024 floor for bcrypt is 10. */
