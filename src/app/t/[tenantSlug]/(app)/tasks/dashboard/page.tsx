@@ -5,7 +5,6 @@
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
 import { formatDate } from '@/lib/format-date';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button-variants';
@@ -77,12 +76,22 @@ interface Metrics {
     topLinkedEntities: { entityType: string; entityId: string; count: number }[];
 }
 
+// Task list rows from /tasks (taskListSelect); only these fields are read here.
+interface TaskRow {
+    id: string;
+    key: string;
+    title: string;
+    status: string;
+    severity: string;
+    dueAt: string | null;
+}
+
 export default function TaskDashboardPage() {
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const [metrics, setMetrics] = useState<Metrics | null>(null);
-    const [overdueTasks, setOverdueTasks] = useState<any[]>([]);
-    const [myTasks, setMyTasks] = useState<any[]>([]);
+    const [overdueTasks, setOverdueTasks] = useState<TaskRow[]>([]);
+    const [myTasks, setMyTasks] = useState<TaskRow[]>([]);
     const [loading, setLoading] = useState(true);
 
     const fetchData = useCallback(async () => {
@@ -97,7 +106,7 @@ export default function TaskDashboardPage() {
         if (myRes.ok) {
             const all = await myRes.json();
             // Show only open tasks assigned to current user
-            setMyTasks(Array.isArray(all) ? all.filter((t: any) => !(TERMINAL_WORK_ITEM_STATUSES as readonly string[]).includes(t.status)).slice(0, 10) : []);
+            setMyTasks(Array.isArray(all) ? all.filter((t: TaskRow) => !(TERMINAL_WORK_ITEM_STATUSES as readonly string[]).includes(t.status)).slice(0, 10) : []);
         }
         setLoading(false);
     }, [apiUrl]);
@@ -156,7 +165,7 @@ export default function TaskDashboardPage() {
                     <p className="text-content-subtle text-sm text-center py-4">No open tasks assigned to you</p>
                 ) : (
                     <div className="space-y-1">
-                        {myTasks.map((task: any) => (
+                        {myTasks.map((task: TaskRow) => (
                             <Link
                                 key={task.id}
                                 href={tenantHref(`/tasks/${task.id}`)}
@@ -297,7 +306,7 @@ export default function TaskDashboardPage() {
                 <div className={cardVariants({ density: 'compact' })} id="overdue-tasks-section">
                     <Heading level={3} className="mb-3 text-content-error"><AlertOctagon size={14} className="inline-block mr-1" /> Overdue Tasks</Heading>
                     <div className="space-y-tight">
-                        {overdueTasks.slice(0, 10).map((task: any) => (
+                        {overdueTasks.slice(0, 10).map((task: TaskRow) => (
                             <Link
                                 key={task.id}
                                 href={tenantHref(`/tasks/${task.id}`)}
