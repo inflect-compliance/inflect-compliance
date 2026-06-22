@@ -7,10 +7,10 @@
  * unsaved-changes guard + `Modal.Form` pinned-footer shell.
  */
 import { useCallback, type Dispatch, type SetStateAction } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useSWRConfig } from 'swr';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
-import { queryKeys } from '@/lib/queryKeys';
+import { CACHE_KEYS } from '@/lib/swr-keys';
 import { useNewAuditForm } from './_form/useNewAuditForm';
 import {
     NewAuditFields,
@@ -41,13 +41,13 @@ export function NewAuditModal({
     onCreated,
     labels,
 }: NewAuditModalProps) {
-    const queryClient = useQueryClient();
+    const { mutate: swrMutate } = useSWRConfig();
 
     const form = useNewAuditForm({
         onSuccess: (audit) => {
-            queryClient.invalidateQueries({
-                queryKey: queryKeys.audits.all(tenantSlug),
-            });
+            // Revalidate the controls-style static audits list key; the
+            // list filters client-side so there are no ?qs variants to match.
+            swrMutate(`/api/t/${tenantSlug}${CACHE_KEYS.audits.list()}`);
             setOpen(false);
             onCreated?.(audit);
         },

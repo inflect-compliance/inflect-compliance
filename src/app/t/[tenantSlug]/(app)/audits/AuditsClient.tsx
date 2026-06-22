@@ -2,8 +2,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '@/lib/queryKeys';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
+import { CACHE_KEYS } from '@/lib/swr-keys';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
@@ -111,19 +111,15 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
     }, []);
 
     const apiUrl = (path: string) => `/api/t/${tenantSlug}${path}`;
-    const queryClient = useQueryClient();
 
     // PR-5 — API returns `{ rows, truncated }`; SSR initial wraps
     // with `truncated: false` (SSR cap < backfill cap).
-    const auditsQuery = useQuery<CappedList<AuditListRow>>({
-        queryKey: queryKeys.audits.list(tenantSlug),
-        queryFn: async () => {
-            const res = await fetch(apiUrl('/audits'));
-            if (!res.ok) throw new Error('Failed to fetch audits');
-            return res.json();
-        },
-        initialData: { rows: initialAudits, truncated: false },
-    });
+    // `/audits` is fetched whole and filtered client-side, so the key is
+    // static — the SSR payload always matches and seeds the cache directly.
+    const auditsQuery = useTenantSWR<CappedList<AuditListRow>>(
+        CACHE_KEYS.audits.list(),
+        { fallbackData: { rows: initialAudits, truncated: false } },
+    );
     const audits = auditsQuery.data?.rows ?? [];
     const truncated = auditsQuery.data?.truncated ?? false;
 
@@ -142,7 +138,7 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
         if (!selected) return;
         await fetch(apiUrl(`/audits/${selected.id}`), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
         setSelected((s) => (s ? { ...s, status } : s));
-        queryClient.invalidateQueries({ queryKey: queryKeys.audits.list(tenantSlug) });
+        auditsQuery.mutate();
     };
 
     const statusLabel = (status: string) => {
