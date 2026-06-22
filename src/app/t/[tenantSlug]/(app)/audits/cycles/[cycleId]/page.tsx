@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -82,7 +81,7 @@ export default function CycleDetailPage() {
 
             // 2) Add all items from preview
             if (preview?.selection) {
-                const items: any[] = [];
+                const items: { entityType: string; entityId: string; sortOrder: number }[] = [];
                 const sel = preview.selection;
                 sel.controls?.ids?.forEach((id: string, i: number) => items.push({ entityType: 'CONTROL', entityId: id, sortOrder: i }));
                 sel.policies?.ids?.forEach((id: string, i: number) => items.push({ entityType: 'POLICY', entityId: id, sortOrder: 100 + i }));
@@ -183,7 +182,7 @@ export default function CycleDetailPage() {
             {cycle.packs?.length > 0 && (
                 <div className="space-y-compact">
                     <Heading level={2}>Packs</Heading>
-                    {cycle.packs.map((p: any) => (
+                    {cycle.packs.map((p) => (
                         <Link key={p.id} href={`/t/${tenantSlug}/audits/packs/${p.id}`}
                             className={cn(cardVariants({ density: 'compact' }), 'flex items-center justify-between hover:bg-bg-muted/50 transition block')} id={`pack-link-${p.id}`}>
                             <div>

@@ -336,7 +336,13 @@ const CAPS: Record<string, number> = {
     // narrowing. 4 cleared. (saml-client deferred — its `SamlConfig` constructor
     // type rejects the `cert` key the literal sets.)
     //   : any 43 → 39
-    ': any': 39,
+    // any-paydown wave PR34 (2026-06-22) — `: any` cont. (client tail). clauses
+    // prop/state → `ClauseRow[]` + setState updater (status cast to ClauseRow['status']);
+    // audits/cycles items accumulator → inline `{entityType;entityId;sortOrder}[]` +
+    // `cycle.packs.map((p))` infers `AuditCyclePack`; login two `catch (err: any)` →
+    // bare + `instanceof Error`; TreeExpandCollapseToggle prose `: any` reworded. 7 cleared.
+    //   : any 39 → 32
+    ': any': 32,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,

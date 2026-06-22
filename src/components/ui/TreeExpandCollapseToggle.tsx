@@ -4,7 +4,7 @@
  * Epic 46 — Generic expand-all / collapse-all control for any
  * `<TreeView>` consumer.
  *
- * Reusable beyond the framework explorer: any caller that holds an
+ * Reusable beyond the framework explorer — any caller that holds an
  * expansion `Set<string>` plus the total number of expandable nodes
  * can drop this in. The toggle owns no state of its own — it's a
  * tiny stateless control that fires `onExpandAll` /

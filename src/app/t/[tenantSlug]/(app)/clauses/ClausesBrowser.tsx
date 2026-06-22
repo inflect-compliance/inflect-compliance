@@ -12,8 +12,7 @@ const STATUS_COLORS: Record<string, StatusBadgeVariant> = {
 };
 
 interface ClausesBrowserProps {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    clauses: any[];
+    clauses: ClauseRow[];
     tenantSlug: string;
 }
 
@@ -38,17 +37,15 @@ interface ClauseRow {
 
 export function ClausesBrowser({ clauses: initialClauses, tenantSlug }: ClausesBrowserProps) {
     const t = useTranslations('clauses');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [clauses, setClauses] = useState<any[]>(initialClauses);
+    const [clauses, setClauses] = useState<ClauseRow[]>(initialClauses);
     const [selected, setSelected] = useState<ClauseRow | null>(null);
 
     const apiUrl = (path: string) => `/api/t/${tenantSlug}${path}`;
 
     const updateStatus = async (clauseId: string, status: string) => {
         await fetch(apiUrl(`/clauses/${clauseId}`), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
-        setClauses(prev => prev.map(c => c.id === clauseId ? { ...c, status } : c));
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (selected?.id === clauseId) setSelected((s: any) => ({ ...s, status }));
+        setClauses(prev => prev.map(c => c.id === clauseId ? { ...c, status: status as ClauseRow['status'] } : c));
+        if (selected?.id === clauseId) setSelected((s) => (s ? { ...s, status: status as ClauseRow['status'] } : s));
     };
 
     const statusLabel = (status: string) => {
