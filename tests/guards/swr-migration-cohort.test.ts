@@ -26,6 +26,10 @@ const MIGRATED_FILES: string[] = [
     // Wave 1 — assets
     'app/t/[tenantSlug]/(app)/assets/AssetsClient.tsx',
     'app/t/[tenantSlug]/(app)/assets/NewAssetModal.tsx',
+    // Wave 2 — controls
+    'app/t/[tenantSlug]/(app)/controls/ControlsClient.tsx',
+    'app/t/[tenantSlug]/(app)/controls/NewControlModal.tsx',
+    'app/t/[tenantSlug]/(app)/controls/ControlDetailSheet.tsx',
 ];
 
 // Flipped to true by the final cleanup wave (after @tanstack/react-query is

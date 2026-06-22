@@ -117,9 +117,11 @@ describe('NewControlModal — business behaviour preserved', () => {
         );
     });
 
-    it('invalidates the Controls react-query cache on success', () => {
-        expect(MODAL_SRC).toMatch(/queryClient\.invalidateQueries/);
-        expect(MODAL_SRC).toMatch(/queryKeys\.controls\.all\(tenantSlug\)/);
+    it('revalidates the Controls SWR list key on success (every ?qs variant)', () => {
+        expect(MODAL_SRC).toMatch(/useSWRConfig/);
+        expect(MODAL_SRC).toMatch(/CACHE_KEYS\.controls\.list\(\)/);
+        // Predicate matcher hits the bare list key and every filter variant.
+        expect(MODAL_SRC).toMatch(/key\.startsWith\(`\$\{controlsUrlPrefix\}\?`\)/);
     });
 
     it('navigates to the new control detail page after create (preserves downstream E2E chain)', () => {

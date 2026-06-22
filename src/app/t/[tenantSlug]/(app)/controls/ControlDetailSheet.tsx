@@ -4,7 +4,6 @@
  * carries an inline disable directive; collectively they should
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
-/* eslint-disable react-hooks/exhaustive-deps -- Various useEffect/useMemo dep arrays in this file deliberately omit identity-unstable callbacks (handlers recreated each render) or use selector functions whose change-detection happens elsewhere. Adding the deps would either trigger unnecessary re-runs OR cause infinite render loops; the proper structural fix is to wrap parent-level callbacks in useCallback. Tracked as follow-up. */
 /**
  * Epic 54 — Control quick-inspect / edit Sheet.
  *
@@ -32,7 +31,8 @@
  */
 
 import Link from 'next/link';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSWRConfig } from 'swr';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { Sheet } from '@/components/ui/sheet';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -41,7 +41,7 @@ import { UserCombobox } from '@/components/ui/user-combobox';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { FormField } from '@/components/ui/form-field';
 import { RequiredMarker } from '@/components/ui/required-marker';
-import { queryKeys } from '@/lib/queryKeys';
+import { CACHE_KEYS } from '@/lib/swr-keys';
 import { extractMutationError } from '@/lib/mutations';
 
 // ─── Types ──────────────────────────────────────────────────────────
@@ -130,24 +130,15 @@ export function ControlDetailSheet({
     canWrite,
 }: ControlDetailSheetProps) {
     const open = controlId !== null;
-    const queryClient = useQueryClient();
+    const { mutate: swrMutate } = useSWRConfig();
     const nameInputRef = useRef<HTMLInputElement>(null);
 
     // ── Load the control ──
-    const detailQuery = useQuery<ControlDetailResponse>({
-        queryKey: controlId
-            ? queryKeys.controls.detail(tenantSlug, controlId)
-            : ['control-sheet', 'idle'],
-        queryFn: async () => {
-            const res = await fetch(apiUrl(`/controls/${controlId}`));
-            if (!res.ok) throw new Error('Failed to load control');
-            return res.json();
-        },
-        enabled: open,
-        // Keep any cache written by the full detail page; this Sheet and
-        // that page share the same query key so edits propagate both ways.
-        staleTime: 30_000,
-    });
+    // Conditional fetch via the null-key idiom (skips when closed). Shares
+    // the `controls.detail(id)` key so reads dedupe across openings.
+    const detailQuery = useTenantSWR<ControlDetailResponse>(
+        controlId ? CACHE_KEYS.controls.detail(controlId) : null,
+    );
 
     const control = detailQuery.data;
 
@@ -190,10 +181,13 @@ export function ControlDetailSheet({
         setDirty(true);
     };
 
-    // ── Mutation: save edits ──
-    const mutation = useMutation({
-        mutationFn: async (draft: EditForm) => {
-            if (!controlId) throw new Error('No control selected');
+    // ── Save edits ──
+    const [saving, setSaving] = useState(false);
+    const handleSave = async (draft: EditForm) => {
+        if (!controlId) return;
+        setSaving(true);
+        setError('');
+        try {
             const res = await fetch(apiUrl(`/controls/${controlId}`), {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
@@ -222,33 +216,40 @@ export function ControlDetailSheet({
                     throw new Error(extractMutationError(data, 'Owner update failed'));
                 }
             }
-            return draft;
-        },
-        onSuccess: () => {
-            // Refresh the list (so the new name / owner show without a full
-            // refetch wait) and the detail cache (so if the user opens the
-            // full detail page next, it's pre-warmed).
-            queryClient.invalidateQueries({ queryKey: queryKeys.controls.all(tenantSlug) });
+            // Revalidate this Sheet's detail cache, the full detail page's
+            // page-data cache, and every variant of the controls list key —
+            // so the edit shows everywhere without a manual reload.
+            await detailQuery.mutate();
+            const listPrefix = apiUrl(CACHE_KEYS.controls.list());
+            swrMutate(
+                (key) =>
+                    typeof key === 'string' &&
+                    (key === listPrefix || key.startsWith(`${listPrefix}?`)),
+                undefined,
+                { revalidate: true },
+            );
+            swrMutate(apiUrl(CACHE_KEYS.controls.pageData(controlId)));
             setControlId(null);
-        },
-        onError: (err) => {
+        } catch (err) {
             setError(err instanceof Error ? err.message : 'Update failed');
-        },
-    });
+        } finally {
+            setSaving(false);
+        }
+    };
 
-    const canSave = canWrite && dirty && form.name.trim().length >= 3 && !mutation.isPending;
+    const canSave = canWrite && dirty && form.name.trim().length >= 3 && !saving;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!canSave) return;
         setError('');
-        mutation.mutate(form);
+        void handleSave(form);
     };
 
     // Guard against dropping unsaved edits on accidental close.
     const handleOpenChange = (next: boolean) => {
         if (next) return;
-        if (dirty && !mutation.isPending) {
+        if (dirty && !saving) {
             const ok = typeof window !== 'undefined'
                 ? window.confirm('Discard unsaved changes?')
                 : true;
@@ -297,7 +298,7 @@ export function ControlDetailSheet({
                         </div>
                     </Sheet.Body>
                 </>
-            ) : detailQuery.isError ? (
+            ) : detailQuery.error ? (
                 <>
                     <Sheet.Header title="Control" />
                     <Sheet.Body>
@@ -357,7 +358,7 @@ export function ControlDetailSheet({
                                 </div>
                             )}
 
-                            <fieldset className="space-y-default" disabled={!canWrite || mutation.isPending}>
+                            <fieldset className="space-y-default" disabled={!canWrite || saving}>
                                 <div>
                                     <label
                                         className="mb-1 block text-sm text-content-default"
@@ -500,7 +501,7 @@ export function ControlDetailSheet({
                                     size="sm"
                                     data-testid="control-sheet-save"
                                     disabled={!canSave}
-                                    text={mutation.isPending ? 'Saving…' : 'Save changes'}
+                                    text={saving ? 'Saving…' : 'Save changes'}
                                 />
                             </div>
                         </Sheet.Actions>

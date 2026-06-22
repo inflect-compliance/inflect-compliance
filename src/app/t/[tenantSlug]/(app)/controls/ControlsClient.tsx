@@ -7,7 +7,6 @@
 /* eslint-disable react-hooks/exhaustive-deps -- Various useMemo dep arrays in this file deliberately omit identity-unstable callbacks (handlers/derived arrays recreated each render). The proper structural fix is wrapping parent-level callbacks in useCallback. Tracked as follow-up; existing per-line eslint-disable-next-line markers preserved. */
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Row, RowSelectionState } from '@tanstack/react-table';
 import { useRouter, useSearchParams } from 'next/navigation';
 // NewControlModal and ControlDetailSheet were previously lazy-loaded
@@ -23,7 +22,8 @@ import { ControlTaskRows, type ControlTask } from './ControlTaskRows';
 // quick-views AND the separate quick-edit Sheet (so no table blur, no edit btn).
 import { ControlEditPanel } from './ControlEditPanel';
 import { TaskEditPanel } from './TaskEditPanel';
-import { queryKeys } from '@/lib/queryKeys';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
+import { CACHE_KEYS } from '@/lib/swr-keys';
 import { ownerDisplayName } from '@/lib/owner-display';
 import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
 import { UserCombobox } from '@/components/ui/user-combobox';
@@ -207,7 +207,6 @@ function ControlsPageInner({
         (path: string) => `/t/${tenantSlug}${path}`,
         [tenantSlug],
     );
-    const queryClient = useQueryClient();
     const router = useRouter();
 
     const filterCtx = useFilters();
@@ -271,24 +270,14 @@ function ControlsPageInner({
     // with `truncated: false` because the SSR cap (100) is well below
     // the backfill cap (5000), so the SSR slice never trips truncation
     // by itself.
-    const controlsQuery = useQuery<CappedList<ControlListItem>>({
-        queryKey: queryKeys.controls.list(tenantSlug, queryKeyFilters),
-        queryFn: async () => {
-            const qs = filtersForQuery.toString();
-            const res = await fetch(apiUrl(`/controls${qs ? `?${qs}` : ''}`));
-            if (!res.ok) throw new Error('Failed to fetch controls');
-            return res.json();
-        },
-        initialData: filtersMatchInitial
+    const controlsKey = useMemo(() => {
+        const qs = filtersForQuery.toString();
+        return qs ? `${CACHE_KEYS.controls.list()}?${qs}` : CACHE_KEYS.controls.list();
+    }, [filtersForQuery]);
+    const controlsQuery = useTenantSWR<CappedList<ControlListItem>>(controlsKey, {
+        fallbackData: filtersMatchInitial
             ? { rows: initialControls, truncated: false }
             : undefined,
-        // `initialDataUpdatedAt: Date.now()` tells React Query the SSR
-        // payload is "fresh as of now" so it doesn't immediately
-        // refetch on hydration. The exact ms doesn't matter — only the
-        // relative ordering against staleTime — so the impurity is benign.
-        // eslint-disable-next-line react-hooks/purity
-        initialDataUpdatedAt: filtersMatchInitial ? Date.now() : 0,
-        staleTime: 30_000,
     });
 
     const rawControls = controlsQuery.data?.rows ?? [];
@@ -514,8 +503,11 @@ function ControlsPageInner({
     // Canonical bulk path — one `updateMany`-backed endpoint instead of the
     // former per-id status loop (kills the N+1). status + assign mirror the
     // Tasks/Assets bars.
-    const bulkMutation = useMutation({
-        mutationFn: async ({ action, value }: { action: string; value: string; label: string }) => {
+    const [bulkApplying, setBulkApplying] = useState(false);
+    const handleBulkApply = async (action: string, value: string, _label: string) => {
+        if (!action || selectedIds.length === 0) return;
+        setBulkApplying(true);
+        try {
             const ids = selectedIds;
             const url =
                 action === 'status'
@@ -531,16 +523,12 @@ function ControlsPageInner({
                 body: JSON.stringify(body),
             });
             if (!res.ok) throw new Error('Bulk action failed');
-            return res.json();
-        },
-        onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.controls.all(tenantSlug) });
+            // Revalidate the same key the table reads (the active filtered list).
+            await controlsQuery.mutate();
             setRowSelection({});
-        },
-    });
-    const handleBulkApply = (action: string, value: string, label: string) => {
-        if (!action || selectedIds.length === 0) return;
-        bulkMutation.mutate({ action, value, label });
+        } finally {
+            setBulkApplying(false);
+        }
     };
     const controlBulkActions: BulkActionDef[] = useMemo(
         () => [
@@ -618,8 +606,8 @@ function ControlsPageInner({
     // After an inline panel edit, refresh the controls list so the new
     // name / owner / category show without a manual reload.
     const handlePanelSaved = useCallback(() => {
-        queryClient.invalidateQueries({ queryKey: queryKeys.controls.all(tenantSlug) });
-    }, [queryClient, tenantSlug]);
+        controlsQuery.mutate();
+    }, [controlsQuery]);
     // PR-3 — Escape closes the quick-view on the docked rail (≥xl). On < xl the
     // Sheet owns Escape natively (the global-scope hook is skipped while an
     // overlay is mounted) and its dismiss fires onClose → closeQuickView too.
@@ -1399,7 +1387,7 @@ function ControlsPageInner({
                           <BulkActionBar
                               actions={controlBulkActions}
                               onApply={handleBulkApply}
-                              applying={bulkMutation.isPending}
+                              applying={bulkApplying}
                           />
                       )
                     : undefined,

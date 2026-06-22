@@ -45,7 +45,12 @@ const MODAL_SURFACES: ModalSurface[] = [
     {
         label: 'Create Control',
         file: 'src/app/t/[tenantSlug]/(app)/controls/NewControlModal.tsx',
-        cacheKey: 'queryKeys.controls.all',
+        // SWR migration Wave 2 moved this surface off React Query onto
+        // `useSWRConfig().mutate(matcher)` against `CACHE_KEYS.controls.list()`.
+        // The `queryKeys.controls.all` literal is gone; empty string disables
+        // the invalidation assertion below. SWR equivalent is covered by
+        // `tests/unit/new-control-modal.test.ts`.
+        cacheKey: '',
         expectedSize: 'lg',
     },
     {
@@ -134,7 +139,12 @@ const SHEET_SURFACES: SheetSurface[] = [
         label: 'Control detail sheet',
         file: 'src/app/t/[tenantSlug]/(app)/controls/ControlDetailSheet.tsx',
         expectedSize: 'md',
-        cacheKey: 'queryKeys.controls.all',
+        // SWR migration Wave 2 moved this Sheet off React Query. Its save now
+        // revalidates three SWR keys (detail / list / pageData) via
+        // `detailQuery.mutate()` + `swrMutate(...)`; the `queryKeys.controls.all`
+        // literal is gone. Empty string disables the invalidation assertion;
+        // SWR equivalent is covered by `tests/unit/control-detail-sheet.test.ts`.
+        cacheKey: '',
     },
 ];
 

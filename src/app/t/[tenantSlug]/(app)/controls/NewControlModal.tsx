@@ -28,7 +28,7 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQueryClient } from '@tanstack/react-query';
+import { useSWRConfig } from 'swr';
 import { useRouter } from 'next/navigation';
 import {
     useCallback,
@@ -46,7 +46,7 @@ import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { InfoTooltip } from '@/components/ui/tooltip';
-import { queryKeys } from '@/lib/queryKeys';
+import { CACHE_KEYS } from '@/lib/swr-keys';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import { useFormTelemetry } from '@/lib/telemetry/form-telemetry';
 
@@ -156,7 +156,7 @@ export function NewControlModal({ open, setOpen, tenantSlug }: NewControlModalPr
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const router = useRouter();
-    const queryClient = useQueryClient();
+    const { mutate: swrMutate } = useSWRConfig();
     const telemetry = useFormTelemetry('NewControlModal');
 
     const {
@@ -249,9 +249,16 @@ export function NewControlModal({ open, setOpen, tenantSlug }: NewControlModalPr
                 });
             }
 
-            queryClient.invalidateQueries({
-                queryKey: queryKeys.controls.all(tenantSlug),
-            });
+            // Revalidate every variant of the controls list key (unfiltered +
+            // each `?<filters>`) so the new control appears under any filter.
+            const controlsUrlPrefix = apiUrl(CACHE_KEYS.controls.list());
+            swrMutate(
+                (key) =>
+                    typeof key === 'string' &&
+                    (key === controlsUrlPrefix || key.startsWith(`${controlsUrlPrefix}?`)),
+                undefined,
+                { revalidate: true },
+            );
 
             telemetry.trackSuccess({ controlId: created.id });
             close();
