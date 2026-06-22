@@ -34,8 +34,7 @@ export interface NewAuditFormReturn {
 }
 
 export interface UseNewAuditFormOptions {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onSuccess: (audit: any) => void;
+    onSuccess: (audit: { id: string }) => void;
 }
 
 const INITIAL: NewAuditFormFields = {

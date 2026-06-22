@@ -357,7 +357,12 @@ const CAPS: Record<string, number> = {
     // listFrameworks. 3 cleared. (mapping + policies/templates deferred — the former
     // reads a `name` not on MappingItem, the latter needs a fuller template row type.)
     //   : any 26 → 23
-    ': any': 23,
+    // any-paydown wave PR37 (2026-06-22) — `: any` cont. (callbacks). NewAuditModal
+    // `onCreated?: (audit: any)` + useNewAuditForm `onSuccess: (audit: any)` →
+    // `(audit: { id: string })` (consumers read only `.id`); RecentActivityCard
+    // `recentActivity.map((log: any))` → infers from `getRecentActivity`. 3 cleared.
+    //   : any 23 → 20
+    ': any': 20,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,

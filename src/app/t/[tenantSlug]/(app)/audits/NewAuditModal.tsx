@@ -26,8 +26,7 @@ export interface NewAuditModalProps {
      * load the freshly-minted audit into its master/detail pane so
      * the modal close lands the user on the new row's detail view.
      */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onCreated?: (audit: any) => void;
+    onCreated?: (audit: { id: string }) => void;
     labels: NewAuditFieldsLabels & {
         cancel: string;
         createAudit: string;

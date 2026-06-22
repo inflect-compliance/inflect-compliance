@@ -45,8 +45,7 @@ export default async function RecentActivityCard({
                 role="region"
                 aria-labelledby="recent-activity-heading"
             >
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {recentActivity.map((log: any) => (
+                {recentActivity.map((log) => (
                     <div key={log.id} className="flex flex-col sm:flex-row items-start gap-1 sm:gap-tight text-xs">
                         <span className="text-content-subtle whitespace-nowrap">{formatDateTime(log.createdAt)}</span>
                         <span className="text-content-muted">
