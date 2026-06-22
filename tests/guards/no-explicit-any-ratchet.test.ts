@@ -405,7 +405,13 @@ const CAPS: Record<string, number> = {
     // IS assignable to `new (c: never)`) and cast `config as never` / `options as
     // never` at the two `createClient`/`createMapper` factory sites. 2 cleared.
     //   : any 5 → 3
-    ': any': 3,
+    // any-paydown wave PR44 (2026-06-22) — `: any` cont. `FilterOption.value: any`
+    // → `string | number`. The disable claimed "heterogeneous incl. object", but
+    // every internal consumer indexes through the `FilterOption["value"]` alias
+    // (Set membership, `.includes`, `toggleValue`, React `key`, typeof-guards), so a
+    // concrete scalar union propagates cleanly — full tsc confirms zero cascade. 1 cleared.
+    //   : any 3 → 2
+    ': any': 2,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,
