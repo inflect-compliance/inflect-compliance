@@ -1,4 +1,5 @@
 import { PrismaTx } from '@/lib/db-context';
+import type { Prisma } from '@prisma/client';
 import { RequestContext } from '../types';
 import { AssessmentStatus, VendorCriticality } from '@prisma/client';
 
@@ -100,18 +101,17 @@ export class VendorAssessmentRepository {
 }
 
 export class VendorAnswerRepository {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- answerJson is an opaque questionnaire answer blob typed as any at the usecase boundary
-    static async upsertMany(db: PrismaTx, ctx: RequestContext, assessmentId: string, answers: { questionId: string; answerJson: any; computedPoints: number }[]) {
+    static async upsertMany(db: PrismaTx, ctx: RequestContext, assessmentId: string, answers: { questionId: string; answerJson: unknown; computedPoints: number }[]) {
         const results = [];
         for (const a of answers) {
             const result = await db.vendorAssessmentAnswer.upsert({
                 where: { assessmentId_questionId: { assessmentId, questionId: a.questionId } },
-                update: { answerJson: a.answerJson, computedPoints: a.computedPoints },
+                update: { answerJson: a.answerJson as Prisma.InputJsonValue, computedPoints: a.computedPoints },
                 create: {
                     tenantId: ctx.tenantId,
                     assessmentId,
                     questionId: a.questionId,
-                    answerJson: a.answerJson,
+                    answerJson: a.answerJson as Prisma.InputJsonValue,
                     computedPoints: a.computedPoints,
                 },
             });

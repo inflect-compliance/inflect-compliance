@@ -320,7 +320,14 @@ const CAPS: Record<string, number> = {
     // false-positives reworded (traceability-graph / policy-attestation /
     // library-updater). 5 cleared.
     //   : any 53 → 48
-    ': any': 48,
+    // any-paydown wave PR32 (2026-06-22) — `: any` cont. (app-layer tail 2).
+    // AssessmentRepository `answerJson: any` → `unknown` + `as Prisma.InputJsonValue`
+    // at the upsert writes; enqueue `isPrismaUniqueConstraintError(error: any)` →
+    // `unknown` + narrowing; task-due-notification + policyReviewReminder `where: any`
+    // → `Prisma.TaskWhereInput` / `Prisma.PolicyWhereInput`; sync-pull logger
+    // `(syncEvent: any)` → `unknown`. 5 cleared.
+    //   : any 48 → 43
+    ': any': 43,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,

@@ -27,7 +27,7 @@
  *   - Task has no assignee — no recipient (query filter).
  *   - `dueAt` is not on a {7,1,0}-day window (skipped silently).
  */
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient, Prisma } from '@prisma/client';
 import { logger } from '@/lib/observability/logger';
 import { TERMINAL_WORK_ITEM_STATUSES } from '../domain/work-item-status';
 import {
@@ -109,8 +109,7 @@ export async function processTaskDueNotifications(
     const horizonStart = new Date(utcMidnight.getTime() - MS_PER_DAY);
     const horizonEnd = new Date(utcMidnight.getTime() + 9 * MS_PER_DAY);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {
+    const where: Prisma.TaskWhereInput = {
         deletedAt: null,
         assigneeUserId: { not: null },
         status: { notIn: [...TERMINAL_WORK_ITEM_STATUSES] },

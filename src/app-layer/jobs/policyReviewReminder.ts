@@ -21,7 +21,7 @@
  * - Schedule with: `cron.schedule('0 8 * * *', () => processOverdueReminders(getDbClient()))`
  */
 
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient, Prisma } from '@prisma/client';
 import { logger } from '@/lib/observability/logger';
 import { emitAutomationEvent } from '../automation';
 import type { RequestContext } from '../types';
@@ -80,8 +80,7 @@ export async function findOverduePolicies(
         ...(tenantId ? { tenantId } : {}),
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {
+    const where: Prisma.PolicyWhereInput = {
         nextReviewAt: { lt: now },
         status: { not: 'ARCHIVED' },
     };
