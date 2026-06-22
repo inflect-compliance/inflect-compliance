@@ -134,15 +134,13 @@ export default function AssessmentPage(
     const questions = assessment.template?.questions || [];
 
     // Group questions by section
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sections: Record<string, any[]> = {};
+    const sections: Record<string, AssessmentQuestion[]> = {};
     for (const q of questions) {
         if (!sections[q.section]) sections[q.section] = [];
         sections[q.section].push(q);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const renderInput = (q: any) => {
+    const renderInput = (q: AssessmentQuestion) => {
         const value = answers[q.id];
         const disabled = !isDraft || !canWrite;
 

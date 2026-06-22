@@ -25,7 +25,6 @@ interface FrameworkMappings {
     nis2: MappingItem[];
 }
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 export default function MappingPage() {
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
@@ -66,12 +65,12 @@ export default function MappingPage() {
             />
 
             <div className="space-y-compact">
-                {items.map((item: any) => (
+                {items.map((item) => (
                     <Card key={item.code}>
                         <div className="flex items-center justify-between mb-2">
                             <div>
                                 <span className="text-xs font-mono text-[var(--brand-default)] mr-2">{item.code}</span>
-                                <span className="font-medium text-sm">{item.name}</span>
+                                <span className="font-medium text-sm">{item.title}</span>
                             </div>
                             <span
                                 className={`text-sm font-bold ${
@@ -99,7 +98,7 @@ export default function MappingPage() {
                                                 ? 'warning'
                                                 : 'error'
                                     }
-                                    aria-label={`${item.name} coverage`}
+                                    aria-label={`${item.title} coverage`}
                                 />
                             </div>
                             <span className="text-xs text-content-subtle">{t('controls', { implemented: item.implementedCount, total: item.controlCount })}</span>

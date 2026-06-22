@@ -376,7 +376,15 @@ const CAPS: Record<string, number> = {
     // SubTable's; AttachedEvidencePanel's `(ev: any)` filter drops to the inferred
     // row + its file-level disable removed. 4 cleared.
     //   : any 15 → 11
-    ': any': 11,
+    // any-paydown wave PR40 (2026-06-22) — `: any` cont. vendors/assessment
+    // `renderInput(q: any)` + `sections` → existing `AssessmentQuestion`; mapping
+    // `items.map((item: any))` → inferred `MappingItem` AND fixed a latent bug it
+    // had masked (`item.name` is undefined on the produced data — the label is
+    // `item.title`; corrected the card title + aria-label); policies/templates
+    // state/handler → a new `PolicyTemplateRow` (+ narrowed the category filter to
+    // `string`). 3 `: any` cleared.
+    //   : any 11 → 8
+    ': any': 8,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,
