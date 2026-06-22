@@ -19,8 +19,7 @@ export interface PolicyTemplate {
     id: string;
     title: string;
     category?: string | null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 export interface NewPolicyFormFields {
@@ -58,8 +57,7 @@ export interface UseNewPolicyFormOptions {
     /** When true, the form is in template-picker mode. */
     isTemplateMode?: boolean;
     /** Called after a successful POST with the created policy row. */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onSuccess: (policy: any) => void;
+    onSuccess: (policy: { id: string }) => void;
 }
 
 export function useNewPolicyForm({
@@ -129,8 +127,7 @@ export function useNewPolicyForm({
         });
 
         try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const body: any = {
+            const body: { title: string; description: string | null; category: string | null; templateId?: string; content?: string | null } = {
                 title: fields.title,
                 description: fields.description || null,
                 category: fields.category || null,
@@ -164,10 +161,9 @@ export function useNewPolicyForm({
             // doesn't fire on the post-success close.
             setIsDirty(false);
             onSuccess(policy);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
+        } catch (err) {
             telemetry.trackError(err);
-            setError(err.message);
+            setError(err instanceof Error ? err.message : 'Failed to create policy');
         } finally {
             setSubmitting(false);
         }

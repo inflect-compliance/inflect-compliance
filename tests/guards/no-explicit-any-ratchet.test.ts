@@ -255,7 +255,15 @@ const CAPS: Record<string, number> = {
     // shape — tightening makes `client.$extends({...})` error with `never`); their 3
     // disables remain. 11 of 14 sites cleared.
     //   : any 109 → 98
-    ': any': 98,
+    // any-paydown wave PR24 (2026-06-22) — `: any` cont. (3 create-form hooks).
+    // useNewPolicyForm/useNewVendorForm/useNewTaskForm: `onSuccess: (x: any)` →
+    // `(x: { id: string })` (every caller modal reads only `.id`); each `const body:
+    // any` POST payload → a concrete inline shape (filtered subset of the form
+    // values); policy's `[key: string]: any` template index sig → `unknown`; policy's
+    // `catch (err: any)` → bare `catch (err)` + `instanceof Error` narrowing. All
+    // disables removed. 8 `: any` cleared.
+    //   : any 98 → 90
+    ': any': 90,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,
