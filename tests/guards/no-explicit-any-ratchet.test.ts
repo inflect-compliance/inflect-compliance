@@ -288,7 +288,16 @@ const CAPS: Record<string, number> = {
     // `rows.map((r: any) => r?.id)` → `(r: { id?: string })` with an `id is string`
     // filter predicate. File disable removed. 6 `: any` cleared.
     //   : any 69 → 63
-    ': any': 63,
+    // any-paydown wave PR28 (2026-06-22) — `: any` cont. (app-layer, clean pair).
+    // vendor-scoring: `riskPointsJson`/`answerJson` (Prisma Json columns, read only
+    // under `typeof` guards / an existing `as Record<string,number>` cast) → `unknown`.
+    // WorkItemRepository: the two `metadataJson?: any` write-input fields → `unknown`
+    // + an `as Prisma.InputJsonValue` cast at the local write site (typing them
+    // `InputJsonValue` directly would cascade to the task.ts callers). 4 cleared.
+    // (asset.ts + soa-checks deferred — schema-string-vs-Prisma-enum casts + test
+    // fixture shape, handled in PR29.)
+    //   : any 63 → 59
+    ': any': 59,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,
