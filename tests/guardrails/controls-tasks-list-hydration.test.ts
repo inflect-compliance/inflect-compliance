@@ -32,9 +32,18 @@ describe('list-page hydration shape', () => {
         'src/app/t/[tenantSlug]/(app)/tasks/TasksClient.tsx',
     );
 
-    test('ControlsClient sets initialDataUpdatedAt + staleTime on the list useQuery', () => {
-        expect(controlsClient).toMatch(/initialDataUpdatedAt:\s*filtersMatchInitial\s*\?\s*Date\.now\(\)/);
-        expect(controlsClient).toMatch(/staleTime:\s*30_000/);
+    test('ControlsClient gates fallbackData on filtersMatchInitial (SWR migration, Wave 2)', () => {
+        // Wave 2 migrated ControlsClient from React Query to
+        // `useTenantSWR`. The prior `initialDataUpdatedAt:
+        // filtersMatchInitial ? Date.now() : 0` + `staleTime` shape became
+        // `fallbackData: filtersMatchInitial ? { rows: initialControls,
+        // truncated: false } : undefined` — the same SSR-honouring gate the
+        // already-migrated TasksClient uses (below). Pin the gate predicate
+        // AND the wrapped CappedList shape.
+        expect(controlsClient).toMatch(/useTenantSWR<CappedList<ControlListItem>>/);
+        expect(controlsClient).toMatch(
+            /fallbackData:\s*filtersMatchInitial\s*\?\s*\{\s*rows:\s*initialControls,\s*truncated:\s*false\s*\}/,
+        );
     });
 
     test('TasksClient gates fallbackData on filtersMatchInitial + tunes dedupingInterval (Epic 69)', () => {

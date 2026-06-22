@@ -61,12 +61,13 @@ describe('ControlDetailSheet — shared Sheet composition', () => {
 // ─── 2. Data flow ────────────────────────────────────────────────
 
 describe('ControlDetailSheet — data flow', () => {
-    it('loads the control via queryKeys.controls.detail (shared cache with the full detail page)', () => {
-        expect(SHEET_SRC).toMatch(/queryKeys\.controls\.detail\(tenantSlug,\s*controlId\)/);
+    it('loads the control via useTenantSWR(CACHE_KEYS.controls.detail) — shared cache with the full detail page', () => {
+        expect(SHEET_SRC).toMatch(/useTenantSWR<ControlDetailResponse>/);
+        expect(SHEET_SRC).toMatch(/CACHE_KEYS\.controls\.detail\(controlId\)/);
     });
 
-    it('enables the query only when a controlId is selected', () => {
-        expect(SHEET_SRC).toMatch(/enabled:\s*open/);
+    it('skips the fetch until a controlId is selected (null-key idiom)', () => {
+        expect(SHEET_SRC).toMatch(/controlId\s*\?\s*CACHE_KEYS\.controls\.detail\(controlId\)\s*:\s*null/);
     });
 
     it('PATCHes /controls/:id with the legacy field set', () => {
@@ -82,8 +83,13 @@ describe('ControlDetailSheet — data flow', () => {
         expect(SHEET_SRC).toMatch(/apiUrl\(`\/controls\/\$\{controlId\}\/owner`\)/);
     });
 
-    it('invalidates controls.all(tenantSlug) on success — list reflects new values', () => {
-        expect(SHEET_SRC).toMatch(/invalidateQueries\(\{\s*queryKey:\s*queryKeys\.controls\.all\(tenantSlug\)/);
+    it('revalidates all three caches on success — own detail, the list, and the full page', () => {
+        // The Sheet reads controls.detail(id); the list reads controls.list();
+        // the full [controlId] page reads controls.pageData(id) — a SEPARATE
+        // cache entry. An edit must invalidate all three or one goes stale.
+        expect(SHEET_SRC).toMatch(/await detailQuery\.mutate\(\)/);
+        expect(SHEET_SRC).toMatch(/CACHE_KEYS\.controls\.list\(\)/);
+        expect(SHEET_SRC).toMatch(/swrMutate\(apiUrl\(CACHE_KEYS\.controls\.pageData\(controlId\)\)\)/);
     });
 
     it('closes the Sheet on save success (setControlId(null))', () => {
@@ -103,12 +109,12 @@ describe('ControlDetailSheet — UX invariants', () => {
         expect(SHEET_SRC).toMatch(/nameInputRef\.current\?\.focus\(\)/);
     });
 
-    it('gates save behind canWrite + dirty + name length ≥ 3 + not pending', () => {
-        expect(SHEET_SRC).toMatch(/canWrite\s*&&\s*dirty\s*&&\s*form\.name\.trim\(\)\.length\s*>=\s*3\s*&&\s*!mutation\.isPending/);
+    it('gates save behind canWrite + dirty + name length ≥ 3 + not saving', () => {
+        expect(SHEET_SRC).toMatch(/canWrite\s*&&\s*dirty\s*&&\s*form\.name\.trim\(\)\.length\s*>=\s*3\s*&&\s*!saving/);
     });
 
     it('fieldset disables edits when the user lacks write permission', () => {
-        expect(SHEET_SRC).toMatch(/<fieldset[\s\S]*?disabled=\{!canWrite\s*\|\|\s*mutation\.isPending\}/);
+        expect(SHEET_SRC).toMatch(/<fieldset[\s\S]*?disabled=\{!canWrite\s*\|\|\s*saving\}/);
     });
 
     it('unsaved-changes guard prompts before close', () => {
