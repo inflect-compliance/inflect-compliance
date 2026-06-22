@@ -71,8 +71,7 @@ export type Filter = {
 };
 
 export type FilterOption = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- filter option values are heterogeneous (string | number | object) across all filter types; `unknown` would require casts at every consumer
-  value: any;
+  value: string | number;
   /** The human-facing label — what users see in the dropdown/pill. */
   label: string;
   /**
