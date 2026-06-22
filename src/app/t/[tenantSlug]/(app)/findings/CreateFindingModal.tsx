@@ -23,8 +23,9 @@ import {
     type Dispatch,
     type SetStateAction,
 } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '@/lib/queryKeys';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
+import { useSWRConfig } from 'swr';
+import { CACHE_KEYS } from '@/lib/swr-keys';
 import type { CappedList } from '@/lib/list-backfill-cap';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
@@ -93,7 +94,7 @@ export function CreateFindingModal({
     apiUrl,
 }: CreateFindingModalProps) {
     const close = useCallback(() => setOpen(false), [setOpen]);
-    const queryClient = useQueryClient();
+    const { mutate: swrMutate } = useSWRConfig();
     const titleRef = useRef<HTMLInputElement>(null);
     const telemetry = useFormTelemetry('CreateFindingModal');
 
@@ -107,35 +108,32 @@ export function CreateFindingModal({
         setForm((prev) => ({ ...prev, [field]: value }));
 
     // ── Lookups load while the modal is open ──
-    const controlsQuery = useQuery<ControlOption[]>({
-        queryKey: ['findings', tenantSlug, 'controls-for-new-finding'],
-        enabled: open,
-        queryFn: async () => {
-            const res = await fetch(apiUrl('/controls'));
-            if (!res.ok) throw new Error(`Controls: ${res.status}`);
-            const data = await res.json();
-            if (!Array.isArray(data)) return [];
-            return data.map((c: ControlOption) => ({
-                id: c.id,
-                annexId: c.annexId ?? null,
-                name: c.name,
-            }));
-        },
-    });
-    const controls = useMemo(() => controlsQuery.data ?? [], [controlsQuery.data]);
+    // Null-key idiom gates the fetch on `open` (replaces `enabled: open`).
+    const controlsQuery = useTenantSWR<CappedList<ControlOption> | ControlOption[]>(
+        open ? CACHE_KEYS.controls.list() : null,
+    );
+    const controls = useMemo<ControlOption[]>(() => {
+        const data = controlsQuery.data;
+        // Behaviour preserved from the React Query version: this branch only
+        // recognised a bare array. (Latent shape gap vs the CappedList the
+        // controls endpoint returns — flagged separately, unchanged here to
+        // keep the migration purely mechanical.)
+        if (!Array.isArray(data)) return [];
+        return data.map((c) => ({
+            id: c.id,
+            annexId: c.annexId ?? null,
+            name: c.name,
+        }));
+    }, [controlsQuery.data]);
 
-    const risksQuery = useQuery<RiskOption[]>({
-        queryKey: ['findings', tenantSlug, 'risks-for-new-finding'],
-        enabled: open,
-        queryFn: async () => {
-            const res = await fetch(apiUrl('/risks'));
-            if (!res.ok) throw new Error(`Risks: ${res.status}`);
-            const data: CappedList<RiskOption> | RiskOption[] = await res.json();
-            const rows = Array.isArray(data) ? data : (data?.rows ?? []);
-            return rows.map((r) => ({ id: r.id, key: r.key ?? null, title: r.title }));
-        },
-    });
-    const risks = useMemo(() => risksQuery.data ?? [], [risksQuery.data]);
+    const risksQuery = useTenantSWR<CappedList<RiskOption> | RiskOption[]>(
+        open ? CACHE_KEYS.risks.list() : null,
+    );
+    const risks = useMemo<RiskOption[]>(() => {
+        const data = risksQuery.data;
+        const rows = Array.isArray(data) ? data : (data?.rows ?? []);
+        return rows.map((r) => ({ id: r.id, key: r.key ?? null, title: r.title }));
+    }, [risksQuery.data]);
 
     const controlOptions = useMemo<ComboboxOption[]>(
         () =>
@@ -221,7 +219,7 @@ export function CreateFindingModal({
                 );
             }
             const finding = await res.json();
-            queryClient.invalidateQueries({ queryKey: queryKeys.findings.all(tenantSlug) });
+            swrMutate(`/api/t/${tenantSlug}${CACHE_KEYS.findings.list()}`);
             telemetry.trackSuccess({ findingId: finding.id });
             close();
         } catch (err) {

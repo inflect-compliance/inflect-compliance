@@ -1,7 +1,8 @@
 'use client';
 import { useState, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '@/lib/queryKeys';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
+import { useTenantMutation } from '@/lib/hooks/use-tenant-mutation';
+import { CACHE_KEYS } from '@/lib/swr-keys';
 import { ownerDisplayName } from '@/lib/owner-display';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -74,56 +75,53 @@ export function FindingsClient({ initialFindings, tenantSlug, translations: t }:
     const [showForm, setShowForm] = useState(false);
 
     const apiUrl = (path: string) => `/api/t/${tenantSlug}${path}`;
-    const queryClient = useQueryClient();
 
     // PR-5 — API returns `{ rows, truncated }`; SSR initial wraps
     // with `truncated: false` (SSR cap < backfill cap).
-    const findingsQuery = useQuery<CappedList<FindingRow>>({
-        queryKey: queryKeys.findings.list(tenantSlug),
-        queryFn: async () => {
-            const res = await fetch(apiUrl('/findings'));
-            if (!res.ok) throw new Error('Failed to fetch findings');
-            return res.json();
-        },
-        initialData: { rows: initialFindings, truncated: false },
-    });
+    // `/findings` is fetched whole and filtered client-side, so the key is
+    // static — the SSR payload always matches and seeds the cache directly.
+    const findingsQuery = useTenantSWR<CappedList<FindingRow>>(
+        CACHE_KEYS.findings.list(),
+        { fallbackData: { rows: initialFindings, truncated: false } },
+    );
     const findings = findingsQuery.data?.rows ?? [];
     const truncated = findingsQuery.data?.truncated ?? false;
 
-    const statusMutation = useMutation({
-        mutationFn: async ({ id, status }: { id: string, status: string }) => {
-            const res = await fetch(apiUrl(`/findings/${id}`), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+    // Optimistic status flip on the static findings list key: the hook
+    // applies `optimisticUpdate` synchronously, runs the PUT, then
+    // revalidates (background GET) to reconcile — rolling back the row on
+    // error. Replaces the hand-rolled cancel/getQueryData/setQueryData dance.
+    const statusMutation = useTenantMutation<
+        CappedList<FindingRow>,
+        { id: string; status: string },
+        FindingRow
+    >({
+        key: CACHE_KEYS.findings.list(),
+        optimisticUpdate: (current, { id, status }) => {
+            // `current` is always populated in practice (the status button
+            // only shows on a loaded row); the empty fallback just satisfies
+            // the non-optional OptimisticUpdater return contract.
+            const base = current ?? { rows: [], truncated: false };
+            return {
+                ...base,
+                rows: base.rows.map((f) =>
+                    f.id === id ? { ...f, status } : f,
+                ),
+            };
+        },
+        mutationFn: async ({ id, status }) => {
+            const res = await fetch(apiUrl(`/findings/${id}`), {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status }),
+            });
             if (!res.ok) throw new Error('Failed to update status');
             return res.json();
         },
-
-        onMutate: async ({ id, status }: { id: string; status: string }) => {
-            await queryClient.cancelQueries({ queryKey: queryKeys.findings.list(tenantSlug) });
-            // PR-5 — cache value is now `CappedList<FindingRow>` not the bare array.
-            const prev = queryClient.getQueryData<CappedList<FindingRow>>(queryKeys.findings.list(tenantSlug));
-            if (prev) {
-                queryClient.setQueryData<CappedList<FindingRow>>(
-                    queryKeys.findings.list(tenantSlug),
-                    {
-                        ...prev,
-                        rows: prev.rows.map((f) => (f.id === id ? { ...f, status } : f)),
-                    },
-                );
-            }
-            return { prev };
-        },
-        onError: (_err, _variables, context) => {
-            if (context?.prev) {
-                queryClient.setQueryData(queryKeys.findings.list(tenantSlug), context.prev);
-            }
-        },
-        onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.findings.list(tenantSlug) });
-        }
     });
 
     const updateStatus = (id: string, status: string) => {
-        statusMutation.mutate({ id, status });
+        void statusMutation.trigger({ id, status });
     };
 
     const sevLabel = (sev: string) => {

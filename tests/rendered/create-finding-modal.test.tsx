@@ -8,6 +8,7 @@
  */
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import * as React from 'react';
+import { SWRConfig } from 'swr';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 jest.mock('next/navigation', () => ({
@@ -15,6 +16,15 @@ jest.mock('next/navigation', () => ({
     usePathname: () => '/t/acme/findings',
     useSearchParams: () => new URLSearchParams(),
     useParams: () => ({ tenantSlug: 'acme' }),
+}));
+
+// The modal's dropdowns now read via `useTenantSWR`, which resolves the
+// tenant-relative path through `useTenantApiUrl`. Mock that seam (mirrors
+// the evidence-upload-optimistic harness) so no TenantProvider is required.
+jest.mock('@/lib/tenant-context-provider', () => ({
+    useTenantApiUrl:
+        () => (path: string) =>
+            `/api/t/acme${path.startsWith('/') ? path : `/${path}`}`,
 }));
 
 import { CreateFindingModal } from '@/app/t/[tenantSlug]/(app)/findings/CreateFindingModal';
@@ -27,11 +37,17 @@ beforeEach(() => {
 });
 
 function renderModal() {
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const apiUrl = (p: string) => `/api/t/acme${p}`;
+    // SWRConfig backs the modal's own migrated dropdowns; QueryClientProvider
+    // is still required by the nested <UserCombobox> (useTenantMembers), a
+    // shared component that migrates to SWR in Wave 5. Remove the RQ wrapper
+    // once that lands.
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     return render(
         <QueryClientProvider client={client}>
-            <CreateFindingModal open setOpen={() => {}} tenantSlug="acme" apiUrl={apiUrl} />
+            <SWRConfig value={{ provider: () => new Map(), shouldRetryOnError: false }}>
+                <CreateFindingModal open setOpen={() => {}} tenantSlug="acme" apiUrl={apiUrl} />
+            </SWRConfig>
         </QueryClientProvider>,
     );
 }
