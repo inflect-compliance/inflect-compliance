@@ -16,11 +16,9 @@ export default async function FrameworksPage({
     const frameworks = await listFrameworks(ctx);
 
     // Fetch coverage for each framework in parallel.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const coverages: Record<string, any> = {};
+    const coverages: Record<string, Awaited<ReturnType<typeof computeCoverage>>> = {};
     await Promise.all(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        frameworks.map(async (fw: any) => {
+        frameworks.map(async (fw) => {
             try {
                 coverages[fw.key] = await computeCoverage(ctx, fw.key);
             } catch {

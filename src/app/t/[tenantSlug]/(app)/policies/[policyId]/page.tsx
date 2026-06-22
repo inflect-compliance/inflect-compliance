@@ -111,9 +111,8 @@ export default function PolicyDetailPage() {
             setPolicy(data);
             setReviewDays(data.reviewFrequencyDays?.toString() || '');
             setNextReview(data.nextReviewAt ? data.nextReviewAt.substring(0, 10) : '');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
         } finally {
             setLoading(false);
         }
