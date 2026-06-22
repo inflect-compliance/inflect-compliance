@@ -40,7 +40,7 @@ const TraceabilityPanel = dynamic(() => import('@/components/TraceabilityPanel')
 
 // getAsset → AssetRepository.getById (the Asset model; controls relation
 // fetched but unread here).
-interface AssetDetail {
+export interface AssetDetail {
     id: string;
     name: string;
     type: 'INFORMATION' | 'SYSTEM' | 'SERVICE' | 'DATA_STORE' | 'VENDOR' | 'PEOPLE_PROCESS' | 'APPLICATION' | 'INFRASTRUCTURE' | 'PROCESS' | 'OTHER';
