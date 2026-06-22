@@ -411,7 +411,13 @@ const CAPS: Record<string, number> = {
     // (Set membership, `.includes`, `toggleValue`, React `key`, typeof-guards), so a
     // concrete scalar union propagates cleanly — full tsc confirms zero cascade. 1 cleared.
     //   : any 3 → 2
-    ': any': 2,
+    // any-paydown wave PR45 (2026-06-22) — `: any` cont. saml-client `samlOptions: any`
+    // → `ConstructorParameters<typeof SAML>[0]`. Typing surfaced a real bug the `any`
+    // hid: the option key was `cert`, but @node-saml v5 renamed it to `idpCert` — the
+    // IdP signing cert was NOT being applied. Fixed `cert` → `idpCert` (behavior change:
+    // SAML response signature validation now uses the configured cert). 1 cleared.
+    //   : any 2 → 1
+    ': any': 1,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,
