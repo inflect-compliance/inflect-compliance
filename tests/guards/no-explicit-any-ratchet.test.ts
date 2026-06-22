@@ -390,7 +390,14 @@ const CAPS: Record<string, number> = {
     // so the modal → form → `setAsset` chain is type-coherent (the runtime value is
     // already the full PATCH-returned asset). 1 `: any` cleared.
     //   : any 8 → 7
-    ': any': 7,
+    // any-paydown wave PR42 (2026-06-22) — `: any` cont. (soa-checks). `runSoAChecks`
+    // `entries: any[]` + `(c: any)` → a narrow `SoAEntry`/`SoAEntryControl` (only the
+    // fields the rules read, control fields optional). Narrow-by-design: the
+    // production callers pass `getSoA().entries` (`SoAEntryDTO[]`, a structural
+    // superset → assignable), while the minimal unit-test fixtures (which omit
+    // control fields) also satisfy the optional shape — zero caller/test churn. 2 cleared.
+    //   : any 7 → 5
+    ': any': 5,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,
