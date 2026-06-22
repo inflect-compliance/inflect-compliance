@@ -465,8 +465,7 @@ function walkReadResult(
  * calls need to migrate to `withEncryptionExtension` and rebind
  * their `prisma` reference. FIXME — remove once migrated.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function registerEncryptionMiddleware(_client: any): void {
+export function registerEncryptionMiddleware(_client: unknown): void {
     /* no-op — see docstring */
 }
 
@@ -502,10 +501,8 @@ export function withEncryptionExtension<T extends { $extends: any }>(
                 }: {
                     model: string;
                     operation: string;
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    args: any;
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    query: (a: any) => Promise<unknown>;
+                    args: { data?: unknown; create?: unknown; update?: unknown };
+                    query: (a: unknown) => Promise<unknown>;
                 }) {
                     const isWrite = WRITE_ACTIONS.has(operation);
                     const isRead = RESULT_DECRYPT_ACTIONS.has(operation);
