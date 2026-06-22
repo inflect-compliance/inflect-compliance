@@ -45,8 +45,7 @@ export interface NewVendorFormReturn {
 }
 
 export interface UseNewVendorFormOptions {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onSuccess: (vendor: any) => void;
+    onSuccess: (vendor: { id: string }) => void;
 }
 
 const INITIAL: NewVendorFormFields = {
@@ -76,8 +75,7 @@ export function useNewVendorForm({
             // POST. The frontend schema's `default('')` produces
             // empty strings on optional fields; only forward the
             // non-empty ones to match the legacy POST body shape.
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const body: any = {
+            const body: { name: string; criticality: string; status: string; isSubprocessor: boolean; legalName?: string; websiteUrl?: string; domain?: string; country?: string; description?: string; dataAccess?: string; nextReviewAt?: string; contractRenewalAt?: string } = {
                 name: payload.name,
                 criticality: payload.criticality,
                 status: payload.status,

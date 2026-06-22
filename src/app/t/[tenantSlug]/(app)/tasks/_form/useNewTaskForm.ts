@@ -69,8 +69,7 @@ export interface NewTaskFormReturn {
 }
 
 export interface UseNewTaskFormOptions {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onSuccess: (task: any) => void;
+    onSuccess: (task: { id: string }) => void;
     /**
      * PR-C — optional pre-fill for the `dueAt` field. The calendar
      * page double-click flow seeds this with the day cell's YMD so
@@ -138,8 +137,7 @@ export function useNewTaskForm({
                 if (findingSource) metadataJson.findingSource = findingSource;
                 if (controlGapType) metadataJson.controlGapType = controlGapType;
 
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const body: any = {
+                const body: { title: string; type: string; severity: string; priority: string; description?: string; dueAt?: string; assigneeUserId?: string; controlId?: string; metadataJson?: Record<string, string> } = {
                     title: payload.title,
                     type: payload.type,
                     severity: payload.severity,
