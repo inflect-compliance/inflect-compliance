@@ -8,7 +8,7 @@
  * `@/lib/traceability-graph/types` — and renders an interactive
  * canvas with sensible defaults for medium-sized graphs.
  *
- * Reusable beyond traceability: any caller with a payload that
+ * Reusable beyond traceability — any caller with a payload that
  * structurally satisfies `GraphExplorerProps` (a typed-node /
  * typed-edge graph + category metadata) can mount this directly.
  *
