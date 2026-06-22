@@ -362,7 +362,14 @@ const CAPS: Record<string, number> = {
     // `(audit: { id: string })` (consumers read only `.id`); RecentActivityCard
     // `recentActivity.map((log: any))` → infers from `getRecentActivity`. 3 cleared.
     //   : any 23 → 20
-    ': any': 20,
+    // any-paydown wave PR38 (2026-06-22) — `: any` cont. prisma-sync-store
+    // `toSyncMapping(row: any)` → `IntegrationSyncMapping`; openrouter `const data:
+    // any` → `{ choices?: { message?: { content?: string } }[] }`; tests/due cell
+    // callback dropped (infers from createColumns<DuePlan>); readiness
+    // `result.gaps.map((g: any))` → infers `ReadinessGap`; use-calendar-badge prose
+    // reworded. 5 cleared.
+    //   : any 20 → 15
+    ': any': 15,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,

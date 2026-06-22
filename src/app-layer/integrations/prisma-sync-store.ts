@@ -10,6 +10,7 @@
  * @module integrations/prisma-sync-store
  */
 import type { SyncMappingStore } from './sync-orchestrator';
+import type { IntegrationSyncMapping } from '@prisma/client';
 import type { SyncMapping, SyncMappingKey, SyncMappingCreateData, SyncMappingStatusUpdate } from './sync-types';
 import { withTenantDb, type PrismaTx } from '@/lib/db-context';
 import { logger } from '@/lib/observability/logger';
@@ -20,8 +21,7 @@ import { logger } from '@/lib/observability/logger';
  * Convert Prisma model result to app-layer SyncMapping.
  * Prisma returns string enums; our app-layer uses the same literals.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function toSyncMapping(row: any): SyncMapping {
+function toSyncMapping(row: IntegrationSyncMapping): SyncMapping {
     return {
         id: row.id,
         tenantId: row.tenantId,
