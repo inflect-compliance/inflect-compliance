@@ -190,16 +190,14 @@ import type { BaseSyncOrchestrator } from './sync-orchestrator';
  * each concrete subclass narrows config to its own shape (e.g. GitHubConnectionConfig),
  * but the registry must accept any subclass — `BaseConnectionConfig` would break callers.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- contravariant constructor parameter; see comment above
-export type IntegrationClientConstructor<T extends BaseIntegrationClient = BaseIntegrationClient> = new (config: any, fetchImpl?: typeof globalThis.fetch) => T;
+export type IntegrationClientConstructor<T extends BaseIntegrationClient = BaseIntegrationClient> = new (config: never, fetchImpl?: typeof globalThis.fetch) => T;
 
 /**
  * Constructor type for BaseFieldMapper subclasses.
  * `options` is typed `any` for the same contravariant constructor reason —
  * each concrete mapper may narrow the options shape.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- contravariant constructor parameter; see comment above
-export type FieldMapperConstructor<T extends BaseFieldMapper = BaseFieldMapper> = new (options?: any) => T;
+export type FieldMapperConstructor<T extends BaseFieldMapper = BaseFieldMapper> = new (options?: never) => T;
 
 /**
  * Orchestrator constructor options type.
@@ -357,7 +355,7 @@ class IntegrationRegistryImpl {
         fetchImpl?: typeof globalThis.fetch,
     ): import('./base-client').BaseIntegrationClient<TConfig> {
         const bundle = this.requireBundle(providerName);
-        return new bundle.clientClass(config, fetchImpl) as BaseIntegrationClient<TConfig>;
+        return new bundle.clientClass(config as never, fetchImpl) as BaseIntegrationClient<TConfig>;
     }
 
     /**
@@ -368,7 +366,7 @@ class IntegrationRegistryImpl {
         options?: { customMappings?: Record<string, string> },
     ): BaseFieldMapper {
         const bundle = this.requireBundle(providerName);
-        return new bundle.mapperClass(options);
+        return new bundle.mapperClass(options as never);
     }
 
     /**
