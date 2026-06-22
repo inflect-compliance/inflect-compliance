@@ -349,7 +349,15 @@ const CAPS: Record<string, number> = {
     // 3 prose `: any` reworded (risk-matrix-config / verify-email-resend /
     // automation/events). 6 cleared.
     //   : any 32 → 26
-    ': any': 26,
+    // any-paydown wave PR36 (2026-06-22) — `: any` cont. TasksClient bulk-mutation
+    // body `: any` → inline `{ taskIds; assigneeUserId?; status?; dueAt? }`;
+    // policies/[policyId] `catch (err: any)` → bare + narrowing; frameworks/page
+    // server `coverages: Record<string,any>` → `Record<string, Awaited<ReturnType<
+    // typeof computeCoverage>>>` and `frameworks.map((fw: any))` infers from
+    // listFrameworks. 3 cleared. (mapping + policies/templates deferred — the former
+    // reads a `name` not on MappingItem, the latter needs a fuller template row type.)
+    //   : any 26 → 23
+    ': any': 23,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,

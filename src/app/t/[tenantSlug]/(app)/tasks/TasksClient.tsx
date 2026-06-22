@@ -406,8 +406,7 @@ function TasksPageInner({
         key: tasksKey,
         mutationFn: async ({ action, value, ids }) => {
             let url = '';
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const body: any = { taskIds: ids };
+            const body: { taskIds: string[]; assigneeUserId?: string | null; status?: string; dueAt?: string | null } = { taskIds: ids };
 
             if (action === 'assign') {
                 url = apiUrl('/tasks/bulk/assign');
