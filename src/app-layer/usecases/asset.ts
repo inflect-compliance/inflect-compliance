@@ -1,7 +1,7 @@
 import { RequestContext } from '../types';
 import { AssetRepository, AssetListParams, AssetFilters } from '../repositories/AssetRepository';
 import { WorkItemRepository } from '../repositories/WorkItemRepository';
-import type { TaskLinkEntityType } from '@prisma/client';
+import type { TaskLinkEntityType, AssetType } from '@prisma/client';
 import { assertCanRead, assertCanWrite, assertCanAdmin } from '../policies/common';
 import { logEvent } from '../events/audit';
 import { notFound } from '@/lib/errors/types';
@@ -47,14 +47,35 @@ export async function getAsset(ctx: RequestContext, id: string) {
     });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function createAsset(ctx: RequestContext, data: any) {
+// Asset create/update input — mirrors CreateAssetSchema/UpdateAssetSchema, but
+// written by hand because those schemas use `z.coerce` (input type `unknown`) and
+// the usecase is also called directly in tests before the write gate. `type` is
+// optional so the permission-gate test path (which throws before validation) holds.
+interface CreateAssetInput {
+    name: string;
+    type?: string;
+    status?: 'ACTIVE' | 'RETIRED';
+    classification?: string;
+    owner?: string;
+    ownerUserId?: string | null;
+    location?: string;
+    confidentiality?: number;
+    integrity?: number;
+    availability?: number;
+    dependencies?: string | null;
+    businessProcesses?: string | null;
+    dataResidency?: string | null;
+    retention?: string | null;
+}
+type UpdateAssetInput = Partial<CreateAssetInput>;
+
+export async function createAsset(ctx: RequestContext, data: CreateAssetInput) {
     assertCanWrite(ctx);
 
     return runInTenantContext(ctx, async (db) => {
         const asset = await AssetRepository.create(db, ctx, {
             name: data.name,
-            type: data.type,
+            type: data.type as AssetType,
             ...(data.status ? { status: data.status } : {}),
             classification: data.classification,
             owner: data.owner,
@@ -87,8 +108,7 @@ export async function createAsset(ctx: RequestContext, data: any) {
     });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function updateAsset(ctx: RequestContext, id: string, data: any) {
+export async function updateAsset(ctx: RequestContext, id: string, data: UpdateAssetInput) {
     assertCanWrite(ctx);
 
     const { asset: updated, previousOwnerId } = await runInTenantContext(ctx, async (db) => {
@@ -99,7 +119,7 @@ export async function updateAsset(ctx: RequestContext, id: string, data: any) {
 
         const asset = await AssetRepository.update(db, ctx, id, {
             name: data.name,
-            type: data.type,
+            type: data.type as AssetType | undefined,
             classification: data.classification,
             owner: data.owner,
             // "Assigned to" — undefined leaves it untouched; '' or null
@@ -129,7 +149,7 @@ export async function updateAsset(ctx: RequestContext, id: string, data: any) {
                 category: 'entity_lifecycle',
                 entityName: 'Asset',
                 operation: 'updated',
-                changedFields: Object.keys(data).filter(k => data[k] !== undefined),
+                changedFields: Object.keys(data).filter(k => (data as unknown as Record<string, unknown>)[k] !== undefined),
                 after: { name: data.name, type: data.type, classification: data.classification },
                 summary: `Asset updated`,
             },
