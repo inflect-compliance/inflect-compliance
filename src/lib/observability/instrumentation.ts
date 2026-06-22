@@ -45,9 +45,7 @@ export async function initTelemetry(): Promise<void> {
     const otlpEndpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318';
 
     // Dynamic imports to avoid loading heavy modules when OTel is disabled
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const resourcesMod: any = await import('@opentelemetry/resources');
-    const Resource = resourcesMod.Resource ?? resourcesMod.default?.Resource;
+    const { resourceFromAttributes } = await import('@opentelemetry/resources');
     const semConvMod = await import('@opentelemetry/semantic-conventions');
     const ATTR_SERVICE_NAME = semConvMod.ATTR_SERVICE_NAME ?? 'service.name';
     const ATTR_SERVICE_VERSION = semConvMod.ATTR_SERVICE_VERSION ?? 'service.version';
@@ -56,7 +54,7 @@ export async function initTelemetry(): Promise<void> {
     const { MeterProvider, PeriodicExportingMetricReader } = await import('@opentelemetry/sdk-metrics');
     const { OTLPMetricExporter } = await import('@opentelemetry/exporter-metrics-otlp-http');
 
-    const resource = new Resource({
+    const resource = resourceFromAttributes({
         [ATTR_SERVICE_NAME]: serviceName,
         [ATTR_SERVICE_VERSION]: process.env.npm_package_version || '0.0.0',
         'deployment.environment': process.env.NODE_ENV || 'development',

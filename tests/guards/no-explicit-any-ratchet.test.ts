@@ -417,7 +417,14 @@ const CAPS: Record<string, number> = {
     // IdP signing cert was NOT being applied. Fixed `cert` → `idpCert` (behavior change:
     // SAML response signature validation now uses the configured cert). 1 cleared.
     //   : any 2 → 1
-    ': any': 1,
+    // any-paydown wave PR46 (2026-06-22) — `: any` category ZEROED. instrumentation
+    // `resourcesMod: any` → migrated to @opentelemetry/resources v2 API: the package
+    // dropped the `Resource` class export (v2.8), so `new Resource({...})` →
+    // `resourceFromAttributes({...})` (BEHAVIOR: OTel resource creation now works on
+    // the installed major; was referencing a non-existent export when OTel is enabled).
+    // 1 cleared — the `: any` category is now 0 and ratcheted there.
+    //   : any 1 → 0
+    ': any': 0,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,
