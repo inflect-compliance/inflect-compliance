@@ -31,6 +31,7 @@ import {
     purgeSoftDeleted,
     listSoftDeleted,
 } from '@/app-layer/usecases/soft-delete-lifecycle';
+import type { PrismaTx } from '@/lib/db-context';
 
 function makeDelegate(overrides: Partial<{ findFirst: any; findMany: any; update: any }> = {}) {
     return {
@@ -41,11 +42,11 @@ function makeDelegate(overrides: Partial<{ findFirst: any; findMany: any; update
     };
 }
 
-function makeTx(delegates: Record<string, any>) {
+function makeTx(delegates: Record<string, unknown>): PrismaTx {
     return {
         ...delegates,
         $executeRawUnsafe: jest.fn().mockResolvedValue(undefined),
-    };
+    } as unknown as PrismaTx;
 }
 
 // ──────────────────────────────────────────────────────────────────────

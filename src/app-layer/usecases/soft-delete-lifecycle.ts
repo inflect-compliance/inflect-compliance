@@ -15,6 +15,16 @@
  */
 import { SOFT_DELETE_MODELS, withDeleted } from '@/lib/soft-delete';
 import { badRequest, notFound } from '@/lib/errors/types';
+import type { PrismaTx } from '@/lib/db-context';
+
+// Structural shape of the runtime-selected Prisma model delegate. The
+// model is chosen by string at runtime, so payloads are `unknown`; the
+// only typed read is the soft-delete existence check (`{ id } | null`).
+interface SoftDeleteDelegate {
+    findFirst(args: unknown): Promise<{ id: string } | null>;
+    findMany(args: unknown): Promise<unknown[]>;
+    update(args: unknown): Promise<unknown>;
+}
 
 
 
@@ -30,8 +40,7 @@ interface SoftDeleteLifecycleInput {
  * @throws Error if model doesn't support soft-delete or record not found/not deleted
  */
 export async function restoreSoftDeleted(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    tx: any, // PrismaClient or transaction client
+    tx: PrismaTx,
     input: SoftDeleteLifecycleInput,
 ): Promise<{ id: string; model: string; restoredAt: Date }> {
     const { model, id } = input;
@@ -71,8 +80,7 @@ export async function restoreSoftDeleted(
  * @throws Error if model doesn't support soft-delete or record not found/not deleted
  */
 export async function purgeSoftDeleted(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    tx: any,
+    tx: PrismaTx,
     input: SoftDeleteLifecycleInput,
 ): Promise<{ id: string; model: string; purgedAt: Date }> {
     const { model, id } = input;
@@ -106,13 +114,11 @@ export async function purgeSoftDeleted(
  * List soft-deleted records for a model (admin view).
  */
 export async function listSoftDeleted(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    tx: any,
+    tx: PrismaTx,
     model: string,
     tenantId: string,
     options?: { take?: number; skip?: number },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-): Promise<any[]> {
+): Promise<unknown[]> {
     if (!SOFT_DELETE_MODELS.has(model)) {
         throw badRequest(`Model "${model}" does not support soft-delete`);
     }
@@ -132,10 +138,9 @@ export async function listSoftDeleted(
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getDelegate(tx: any, model: string): any {
+function getDelegate(tx: PrismaTx, model: string): SoftDeleteDelegate {
     const key = model.charAt(0).toLowerCase() + model.slice(1);
-    const delegate = tx[key];
+    const delegate = (tx as unknown as Record<string, SoftDeleteDelegate>)[key];
     if (!delegate) {
         throw badRequest(`Prisma delegate not found for model "${model}"`);
     }
