@@ -81,8 +81,7 @@ export function registerSoftDeleteMiddleware(_client: unknown): void {
  *
  * Returns the extended client so callers can chain further extensions.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function withSoftDeleteExtension<T extends { $extends: any }>(
+export function withSoftDeleteExtension<T extends object>(
     client: T,
 ): T {
     // Internal alias — the extended client carries per-model query
@@ -105,7 +104,7 @@ export function withSoftDeleteExtension<T extends { $extends: any }>(
     const modelOps = (model: string): ModelOps =>
         c[model.charAt(0).toLowerCase() + model.slice(1)];
 
-    return client.$extends({
+    return (client as { $extends: (cfg: unknown) => unknown }).$extends({
         name: 'soft-delete',
         query: {
             $allModels: {

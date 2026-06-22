@@ -549,11 +549,10 @@ export const piiEncryptionMiddleware = async (
  *
  * The chain order is enforced in `src/lib/prisma.ts`.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function withPiiEncryptionExtension<T extends { $extends: any }>(
+export function withPiiEncryptionExtension<T extends object>(
     client: T,
 ): T {
-    return client.$extends({
+    return (client as { $extends: (cfg: unknown) => unknown }).$extends({
         name: 'pii-encryption',
         query: {
             $allModels: {

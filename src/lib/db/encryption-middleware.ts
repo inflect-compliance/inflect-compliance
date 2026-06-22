@@ -485,11 +485,10 @@ export function registerEncryptionMiddleware(_client: unknown): void {
  * `rls-middleware.ts`) wire it exactly once on the inner
  * transactional client.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function withEncryptionExtension<T extends { $extends: any }>(
+export function withEncryptionExtension<T extends object>(
     client: T,
 ): T {
-    return client.$extends({
+    return (client as { $extends: (cfg: unknown) => unknown }).$extends({
         name: 'field-encryption',
         query: {
             $allModels: {
