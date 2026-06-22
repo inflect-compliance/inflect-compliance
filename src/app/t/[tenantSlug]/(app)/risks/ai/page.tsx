@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import Link from 'next/link';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
@@ -58,6 +57,13 @@ interface AssetOption {
     type: string;
     criticality: string | null;
 }
+// Inline edit buffer for a suggestion row.
+interface SuggestionEditForm {
+    title?: string;
+    description?: string;
+    likelihoodSuggested?: number;
+    impactSuggested?: number;
+}
 
 type ItemDecision = 'accept' | 'reject' | 'pending';
 type Phase = 'form' | 'generating' | 'review' | 'applying' | 'done';
@@ -84,7 +90,7 @@ export default function AIRiskAssessmentPage() {
     const [session, setSession] = useState<Session | null>(null);
     const [decisions, setDecisions] = useState<Record<string, ItemDecision>>({});
     const [editingItem, setEditingItem] = useState<string | null>(null);
-    const [editForm, setEditForm] = useState<Record<string, any>>({});
+    const [editForm, setEditForm] = useState<SuggestionEditForm>({});
     const [appliedCount, setAppliedCount] = useState(0);
 
     // ─── Load Assets ───
@@ -95,7 +101,7 @@ export default function AIRiskAssessmentPage() {
             if (!res.ok) return;
             const data = await res.json();
             const list = Array.isArray(data) ? data : data.data ?? [];
-            setAssets(list.map((a: any) => ({ id: a.id, name: a.name, type: a.type, criticality: a.criticality })));
+            setAssets(list.map((a: AssetOption) => ({ id: a.id, name: a.name, type: a.type, criticality: a.criticality })));
             setAssetsLoaded(true);
         } catch { /* ignore */ }
     };
@@ -131,8 +137,8 @@ export default function AIRiskAssessmentPage() {
             }
             setDecisions(decs);
             setPhase('review');
-        } catch (e: any) {
-            setError(e.message);
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'Generation failed');
             setPhase('form');
         }
     };
@@ -159,8 +165,8 @@ export default function AIRiskAssessmentPage() {
             setSession(updated);
             setAppliedCount(accepted.length);
             setPhase('done');
-        } catch (e: any) {
-            setError(e.message);
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'Apply failed');
             setPhase('review');
         }
     };
@@ -464,7 +470,7 @@ export default function AIRiskAssessmentPage() {
                                                             hideSearch
                                                             id={`edit-likelihood-${idx}`}
                                                             selected={SCALE_OPTIONS.find(o => o.value === String(editForm.likelihoodSuggested)) ?? null}
-                                                            setSelected={(opt) => setEditForm(p => ({ ...p, likelihoodSuggested: +(opt?.value ?? p.likelihoodSuggested) }))}
+                                                            setSelected={(opt) => setEditForm(p => ({ ...p, likelihoodSuggested: +(opt?.value ?? p.likelihoodSuggested ?? 0) }))}
                                                             options={SCALE_OPTIONS}
                                                             matchTriggerWidth
                                                             buttonProps={{ className: 'text-xs w-16 inline-block ml-1' }}
@@ -475,7 +481,7 @@ export default function AIRiskAssessmentPage() {
                                                             hideSearch
                                                             id={`edit-impact-${idx}`}
                                                             selected={SCALE_OPTIONS.find(o => o.value === String(editForm.impactSuggested)) ?? null}
-                                                            setSelected={(opt) => setEditForm(p => ({ ...p, impactSuggested: +(opt?.value ?? p.impactSuggested) }))}
+                                                            setSelected={(opt) => setEditForm(p => ({ ...p, impactSuggested: +(opt?.value ?? p.impactSuggested ?? 0) }))}
                                                             options={SCALE_OPTIONS}
                                                             matchTriggerWidth
                                                             buttonProps={{ className: 'text-xs w-16 inline-block ml-1' }}

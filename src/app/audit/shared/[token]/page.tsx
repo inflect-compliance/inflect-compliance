@@ -9,7 +9,6 @@ import { Heading } from '@/components/ui/typography';
 import { Card, cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 const ENTITY_ICON: Record<string, AppIconName> = {
     CONTROL: 'controls', POLICY: 'policies', EVIDENCE: 'evidence', FILE: 'overview', ISSUE: 'warning',
     READINESS_REPORT: 'dashboard', FRAMEWORK_COVERAGE: 'frameworks',
@@ -30,6 +29,20 @@ interface SharedPackData {
         entityId: string;
         snapshotJson: string;
     }>;
+}
+
+type PackItem = SharedPackData['items'][number];
+// Parsed `snapshotJson` blob — heterogeneous per entity type, all optional.
+interface PackSnapshot {
+    code?: string;
+    title?: string;
+    name?: string;
+    status?: string;
+    description?: string;
+    taskCompletion?: { done: number; total: number };
+    evidenceCount?: number;
+    mappedRequirements?: { code: string }[];
+    severity?: string;
 }
 
 export default function SharedPackPage() {
@@ -74,8 +87,8 @@ export default function SharedPackPage() {
     const cycle = data?.cycle;
     const items = data?.items || [];
 
-    const grouped: Record<string, any[]> = {};
-    items.forEach((item: any) => {
+    const grouped: Record<string, PackItem[]> = {};
+    items.forEach((item) => {
         if (!grouped[item.entityType]) grouped[item.entityType] = [];
         grouped[item.entityType].push(item);
     });
@@ -119,8 +132,8 @@ export default function SharedPackPage() {
                             <span className="text-slate-500">({typeItems.length})</span>
                         </Heading>
                         <div className={cn(cardVariants({ density: 'none' }), 'divide-y divide-slate-700/50')}>
-                            {typeItems.map((item: any) => {
-                                let snap: any = {};
+                            {typeItems.map((item) => {
+                                let snap: PackSnapshot = {};
                                 try { snap = JSON.parse(item.snapshotJson || '{}'); } catch { /* */ }
                                 const name = snap.code || snap.title || snap.name || item.entityId;
                                 return (
@@ -133,8 +146,8 @@ export default function SharedPackPage() {
                                         <div className="flex gap-default mt-1 text-xs text-slate-500">
                                             {snap.taskCompletion && <span>Tasks: {snap.taskCompletion.done}/{snap.taskCompletion.total}</span>}
                                             {snap.evidenceCount !== undefined && <span>Evidence: {snap.evidenceCount}</span>}
-                                            {snap.mappedRequirements?.length > 0 && (
-                                                <span>Requirements: {snap.mappedRequirements.map((r: any) => r.code).join(', ')}</span>
+                                            {snap.mappedRequirements && snap.mappedRequirements.length > 0 && (
+                                                <span>Requirements: {snap.mappedRequirements.map((r) => r.code).join(', ')}</span>
                                             )}
                                             {snap.severity && <span>Severity: {snap.severity}</span>}
                                         </div>

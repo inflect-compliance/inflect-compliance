@@ -263,7 +263,17 @@ const CAPS: Record<string, number> = {
     // `catch (err: any)` → bare `catch (err)` + `instanceof Error` narrowing. All
     // disables removed. 8 `: any` cleared.
     //   : any 98 → 90
-    ': any': 90,
+    // any-paydown wave PR25 (2026-06-22) — `: any` cont. (5 pages). audit/shared:
+    // `PackItem`/`PackSnapshot` types for the share payload + parsed snapshotJson
+    // (mappedRequirements guard restructured for the optional type). tasks/dashboard:
+    // `TaskRow` for the 2 list states + callbacks (a route-shape latent bug noted,
+    // out of scope). risks/[riskId]: payload `Record<string,any>` → inline shape, 3
+    // `catch (err: any)` → bare + narrowing. risks/ai: `SuggestionEditForm` edit
+    // buffer, asset `.map` → AssetOption, catches narrowed, `?? 0` coercions.
+    // dashboard: `t` translator param `opts?: any` → typed values bag. All file
+    // disables removed. 15 `: any` cleared.
+    //   : any 90 → 75
+    ': any': 75,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,

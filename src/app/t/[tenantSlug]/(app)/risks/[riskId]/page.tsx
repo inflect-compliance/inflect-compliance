@@ -197,9 +197,8 @@ export default function RiskDetailPage() {
             if (!res.ok) throw new Error(`Failed to load risk (${res.status})`);
             const data = await res.json();
             setRisk(data);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
         } finally {
             setLoading(false);
         }
@@ -241,8 +240,7 @@ export default function RiskDetailPage() {
         setSaving(true);
         setError(null);
         try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const payload: Record<string, any> = {
+            const payload: { title: string | undefined; description: string | null; category: string | null; likelihood: number | undefined; impact: number | undefined; treatmentOwner: string | null; ownerUserId: string | null; treatment: string | null; treatmentNotes: string | null; nextReviewAt?: string | null } = {
                 title: editForm.title,
                 description: editForm.description || null,
                 category: editForm.category || null,
@@ -271,9 +269,8 @@ export default function RiskDetailPage() {
             const { risk: updated } = await res.json();
             setRisk(updated);
             setEditing(false);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
         } finally {
             setSaving(false);
         }
@@ -293,9 +290,8 @@ export default function RiskDetailPage() {
             }
             const updated = await res.json();
             setRisk(updated);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
         }
     };
 

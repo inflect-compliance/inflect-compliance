@@ -526,7 +526,7 @@ function InteractiveKpiGrid({
 }: {
     exec: ExecutiveDashboardPayload;
     trendBundle: KpiTrendBundle | undefined;
-    t: (key: string, opts?: any) => string;
+    t: (key: string, values?: Record<string, string | number | Date>) => string;
 }) {
     const { selectedKpi, toggleSelectedKpi } = useDashboardChartFilter();
     const isSelected = (kpi: DashboardKpiKey) => selectedKpi === kpi;
@@ -865,8 +865,7 @@ function EvidenceStatusSection({
 
 // ─── Compliance Alerts ───────────────────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function ComplianceAlerts({ exec, t }: { exec: ExecutiveDashboardPayload; t: (key: string, opts?: any) => string }) {
+function ComplianceAlerts({ exec, t }: { exec: ExecutiveDashboardPayload; t: (key: string, values?: Record<string, string | number | Date>) => string }) {
     const { stats, evidenceExpiry, taskSummary, vendorSummary, policySummary } = exec;
     const alerts: { color: string; text: string }[] = [];
 
