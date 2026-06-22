@@ -27,9 +27,25 @@ export interface SoAChecksResult {
     issues: SoACheck[];
 }
 
+// SoA report entry shape (the `getSoA().entries` rows the checks scan).
+interface SoAEntryControl {
+    applicability: string;
+    justification?: string | null;
+    code?: string | null;
+    controlId?: string;
+}
+interface SoAEntry {
+    requirementCode: string;
+    requirementTitle: string;
+    applicable: boolean | null;
+    implementationStatus?: string | null;
+    mappedControls: SoAEntryControl[];
+    evidenceCount?: number;
+    openTaskCount?: number;
+}
+
 export function runSoAChecks(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    entries: any[]
+    entries: SoAEntry[]
 ): SoAChecksResult {
     const issues: SoACheck[] = [];
 
@@ -50,8 +66,7 @@ export function runSoAChecks(
         // Rule 2: Missing justification
         if (entry.applicable === false) {
             const missing = entry.mappedControls.filter(
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (c: any) => c.applicability === 'NOT_APPLICABLE' && !c.justification
+                (c) => c.applicability === 'NOT_APPLICABLE' && !c.justification
             );
             for (const c of missing) {
                 issues.push({
