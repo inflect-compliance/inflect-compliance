@@ -2,8 +2,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '@/lib/queryKeys';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
+import { CACHE_KEYS } from '@/lib/swr-keys';
 import { DataTable, createColumns, useColumnsDropdown } from '@/components/ui/table';
 import {
     FilterProvider,
@@ -163,15 +163,12 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
         return true;
     }, [queryKeyFilters, initialFilters, serverHadFilters, hasActive]);
 
-    const assetsQuery = useQuery<AssetListRow[]>({
-        queryKey: queryKeys.assets.list(tenantSlug, queryKeyFilters),
-        queryFn: async () => {
-            const qs = fetchParams.toString();
-            const res = await fetch(apiUrl(`/assets${qs ? `?${qs}` : ''}`));
-            if (!res.ok) throw new Error('Failed to fetch assets');
-            return res.json();
-        },
-        initialData: filtersMatchInitial ? initialAssets : undefined,
+    const assetsKey = useMemo(() => {
+        const qs = fetchParams.toString();
+        return qs ? `${CACHE_KEYS.assets.list()}?${qs}` : CACHE_KEYS.assets.list();
+    }, [fetchParams]);
+    const assetsQuery = useTenantSWR<AssetListRow[]>(assetsKey, {
+        fallbackData: filtersMatchInitial ? initialAssets : undefined,
     });
     const assets = assetsQuery.data ?? [];
 
@@ -226,17 +223,12 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
     } = useThresholdLoadMore(sortedAssets);
 
     // ─── Bulk actions (canonical BulkActionBar) ───
-    const queryClient = useQueryClient();
     const [selected, setSelected] = useState<Set<string>>(new Set());
-    const bulkMutation = useMutation({
-        mutationFn: async ({
-            action,
-            value,
-        }: {
-            action: string;
-            value: string;
-            label: string;
-        }) => {
+    const [bulkApplying, setBulkApplying] = useState(false);
+    const handleBulkApply = async (action: string, value: string, _label: string) => {
+        if (!action || selected.size === 0) return;
+        setBulkApplying(true);
+        try {
             const ids = Array.from(selected);
             const url =
                 action === 'status'
@@ -252,16 +244,12 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                 body: JSON.stringify(body),
             });
             if (!res.ok) throw new Error('Bulk action failed');
-            return res.json();
-        },
-        onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.assets.all(tenantSlug) });
+            // Revalidate the same key the table reads (the active filtered list).
+            await assetsQuery.mutate();
             setSelected(new Set());
-        },
-    });
-    const handleBulkApply = (action: string, value: string, label: string) => {
-        if (!action || selected.size === 0) return;
-        bulkMutation.mutate({ action, value, label });
+        } finally {
+            setBulkApplying(false);
+        }
     };
     const assetBulkActions: BulkActionDef[] = useMemo(
         () => [
@@ -705,7 +693,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                         <BulkActionBar
                             actions={assetBulkActions}
                             onApply={handleBulkApply}
-                            applying={bulkMutation.isPending}
+                            applying={bulkApplying}
                         />
                     )}
                     onRowClick={(row) =>

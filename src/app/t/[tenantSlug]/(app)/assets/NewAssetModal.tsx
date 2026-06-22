@@ -8,11 +8,11 @@
  */
 import { useCallback, type Dispatch, type SetStateAction } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQueryClient } from '@tanstack/react-query';
-import { useTenantHref } from '@/lib/tenant-context-provider';
+import { useSWRConfig } from 'swr';
+import { useTenantHref, useTenantApiUrl } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
-import { queryKeys } from '@/lib/queryKeys';
+import { CACHE_KEYS } from '@/lib/swr-keys';
 import { useNewAssetForm } from './_form/useNewAssetForm';
 import {
     NewAssetFields,
@@ -38,13 +38,22 @@ export function NewAssetModal({
 }: NewAssetModalProps) {
     const tenantHref = useTenantHref();
     const router = useRouter();
-    const queryClient = useQueryClient();
+    const { mutate: swrMutate } = useSWRConfig();
+    const buildApiUrl = useTenantApiUrl();
 
     const form = useNewAssetForm({
         onSuccess: (asset) => {
-            queryClient.invalidateQueries({
-                queryKey: queryKeys.assets.all(tenantSlug),
-            });
+            // Revalidate every variant of the Assets list key (unfiltered +
+            // each `?<filters>`), so the new asset appears regardless of the
+            // filter the list is currently showing (dual-cache failure mode).
+            const assetsUrlPrefix = buildApiUrl(CACHE_KEYS.assets.list());
+            swrMutate(
+                (key) =>
+                    typeof key === 'string' &&
+                    (key === assetsUrlPrefix || key.startsWith(`${assetsUrlPrefix}?`)),
+                undefined,
+                { revalidate: true },
+            );
             setOpen(false);
             router.push(tenantHref(`/assets/${asset.id}`));
         },
