@@ -296,11 +296,10 @@ const PRISMA_WRITE_ACTIONS = new Set([
  * before soft-delete / PII rewrite the args. That way the logged
  * `model` / `action` match the caller's intent in the source.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function withRlsTripwireExtension<T extends { $extends: any }>(
+export function withRlsTripwireExtension<T extends object>(
     client: T,
 ): T {
-    return client.$extends({
+    return (client as { $extends: (cfg: unknown) => unknown }).$extends({
         name: 'rls-tripwire',
         query: {
             $allModels: {

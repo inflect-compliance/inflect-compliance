@@ -305,7 +305,15 @@ const CAPS: Record<string, number> = {
     // fields are concrete `number?`. `data.type` cast `as AssetType` at the repo calls;
     // the audit-diff dynamic key uses `as unknown as Record<string, unknown>`. 2 cleared.
     //   : any 59 → 57
-    ': any': 57,
+    // any-paydown wave PR30 (2026-06-22) — `: any` cont. (the 4 `$extends` generic
+    // constraints). rls/encryption/pii/soft-delete extension helpers used
+    // `<T extends { $extends: any }>` (kept as `any` in PR23 because Prisma's real
+    // `$extends` signature isn't assignable to a tighter shape). Resolved by relaxing
+    // the constraint to `<T extends object>` and casting inside the body —
+    // `(client as { $extends: (cfg: unknown) => unknown }).$extends({...}) as T` —
+    // so the call site stays sound without an `any` on the public signature. 4 cleared.
+    //   : any 57 → 53
+    ': any': 53,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,
