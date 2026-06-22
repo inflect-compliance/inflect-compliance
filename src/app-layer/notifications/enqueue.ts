@@ -193,7 +193,7 @@ function buildEmailContent(
     }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isPrismaUniqueConstraintError(error: any): boolean {
-    return error?.code === 'P2002' || error?.message?.includes('Unique constraint');
+function isPrismaUniqueConstraintError(error: unknown): boolean {
+    const e = error as { code?: unknown; message?: unknown } | null | undefined;
+    return e?.code === 'P2002' || (typeof e?.message === 'string' && e.message.includes('Unique constraint'));
 }
