@@ -39,8 +39,7 @@ export interface NewAssetFormReturn {
 }
 
 export interface UseNewAssetFormOptions {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onSuccess: (asset: any) => void;
+    onSuccess: (asset: { id: string }) => void;
 }
 
 const INITIAL: NewAssetFormFields = {
@@ -64,8 +63,7 @@ export function useNewAssetForm({
         schema: NewAssetFormSchema,
         initial: INITIAL,
         onSubmit: async (payload) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const body: any = {
+            const body: { name: string; type: string; status: string; confidentiality: number; integrity: number; availability: number; classification?: string; ownerUserId?: string; location?: string; dataResidency?: string } = {
                 name: payload.name,
                 type: payload.type,
                 status: payload.status,

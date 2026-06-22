@@ -281,7 +281,14 @@ const CAPS: Record<string, number> = {
     // (the Form constructs the `{[name]: value}` bag) + removed its now-unused
     // disable; GraphExplorer prose `: any` reworded. 6 `: any` cleared.
     //   : any 75 → 69
-    ': any': 69,
+    // any-paydown wave PR27 (2026-06-22) — `: any` cont. (asset client files).
+    // useNewAssetForm/useEditAssetForm: `onSuccess: (asset: any)` → `(asset: { id:
+    // string })`; create body `: any` → inline shape (CIA fields are `number`);
+    // edit catch narrowed. assets/[id]: `catch (err: any)` → bare + narrowing;
+    // `rows.map((r: any) => r?.id)` → `(r: { id?: string })` with an `id is string`
+    // filter predicate. File disable removed. 6 `: any` cleared.
+    //   : any 69 → 63
+    ': any': 63,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,

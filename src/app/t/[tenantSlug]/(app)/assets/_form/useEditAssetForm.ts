@@ -50,8 +50,7 @@ export interface EditAssetFormReturn {
 export interface UseEditAssetFormOptions {
     assetId: string;
     initial: Partial<EditAssetFormFields>;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onSuccess: (asset: any) => void;
+    onSuccess: (asset: { id: string }) => void;
 }
 
 const DEFAULTS: EditAssetFormFields = {
@@ -115,9 +114,8 @@ export function useEditAssetForm({
             const updated = payload?.asset ?? payload;
             setIsDirty(false);
             onSuccess(updated);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to save asset');
         } finally {
             setSubmitting(false);
         }

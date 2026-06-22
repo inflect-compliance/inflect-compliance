@@ -6,7 +6,6 @@
 
 import { formatDate } from '@/lib/format-date';
 import { SkeletonCard } from '@/components/ui/skeleton';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
@@ -134,8 +133,8 @@ export default function AssetDetailPage() {
             if (!res.ok) throw new Error(`Failed to load (${res.status})`);
             const data = await res.json();
             setAsset(data);
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
         } finally {
             setLoading(false);
         }
@@ -157,7 +156,7 @@ export default function AssetDetailPage() {
                 if (!res.ok) return;
                 const rows = await res.json();
                 const ids = Array.isArray(rows)
-                    ? rows.map((r: any) => r?.id).filter(Boolean)
+                    ? rows.map((r: { id?: string }) => r?.id).filter((id): id is string => Boolean(id))
                     : [];
                 // eslint-disable-next-line react-hooks/set-state-in-effect
                 if (!cancelled) setAssetIds(ids);
