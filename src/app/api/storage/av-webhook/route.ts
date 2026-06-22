@@ -190,7 +190,7 @@ export async function POST(req: NextRequest) {
             });
 
             // Log via the canonical hash-chained audit writer. The
-            // earlier `(prisma as any).auditEvent.create({...})` hid
+            // earlier cast `prisma.auditEvent.create({...})` hid
             // the fact that no `AuditEvent` model exists — this write
             // never landed. Route to the real `AuditLog` chain so
             // quarantine events are durably evidence-grade.

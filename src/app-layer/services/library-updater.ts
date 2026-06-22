@@ -106,7 +106,7 @@ export interface RequirementDiff {
     changed: ChangedRequirement[];
     /** Requirements that are identical in both */
     unchanged: string[];
-    /** Whether this diff has any score-impacting changes */
+    /** Whether this diff has score-impacting changes */
     hasScoreImpact: boolean;
     /** Summary statistics */
     summary: {

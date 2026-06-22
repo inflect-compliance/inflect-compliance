@@ -131,7 +131,7 @@ export async function runEvidenceRetentionNotifications(
         // Background job has no actor — attribute to the evidence's own
         // owner if available, else the tenant's first ACTIVE OWNER.
         // Either way Task.createdByUserId is properly populated (no more
-        // `as any` cast; runtime crash that would have hit the legacy
+        // `as`-cast; runtime crash that would have hit the legacy
         // path on every run is now prevented). If neither resolves the
         // row is skipped — better to lose ONE notification than crash
         // the sweep.

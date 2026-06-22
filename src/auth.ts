@@ -26,7 +26,7 @@
  *     session (selective field exposure to client).
  *   - Module augmentation in `next-auth` (Session.user) and
  *     `next-auth/jwt` (custom token fields) — eliminates the 8
- *     `as any` casts the v5-beta type drift required.
+ *     `as`-casts the v5-beta type drift required.
  */
 
 import type { NextAuthOptions, Session } from 'next-auth';
@@ -49,7 +49,7 @@ import { hashForLookup } from '@/lib/security/encryption';
 
 // ─── Type augmentation ──────────────────────────────────────────────
 //
-// GAP-04 — the v5-beta type instability that drove 8 `as any` casts
+// GAP-04 — the v5-beta type instability that drove 8 `as`-casts
 // across auth.ts/auth.config.ts/middleware.ts is resolved here by
 // declaring both Session.user AND the JWT shape so middleware +
 // server-component reads are typed end-to-end.

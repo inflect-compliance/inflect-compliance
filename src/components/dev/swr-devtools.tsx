@@ -115,7 +115,7 @@ function SWRDevToolsImpl() {
             // SWR's cache exposes `keys()` per spec. Some adapters
             // also implement Symbol.iterator; we use the explicit
             // method for portability. The structural cast keeps us
-            // out of the `as any` ratchet — we read one optional
+            // out of the explicit-`any` ratchet — we read one optional
             // method, nothing more.
             const cacheKeys = (
                 cache as unknown as {

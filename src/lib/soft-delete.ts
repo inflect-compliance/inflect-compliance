@@ -88,8 +88,8 @@ export function withSoftDeleteExtension<T extends object>(
     // methods (`client.asset.update`, `.updateMany`, …) but the
     // generic `T` doesn't expose them statically. Cast through
     // `unknown` to a keyed record once; per-action handlers
-    // dispatch into it without restating `as any` at every call
-    // site, which keeps the file under the `as any` ratchet.
+    // dispatch into it without restating the cast at every call
+    // site, which keeps the file under the explicit-`any` ratchet.
     type ModelOps = {
         update: (a: {
             where?: Record<string, unknown>;

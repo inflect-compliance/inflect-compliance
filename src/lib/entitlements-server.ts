@@ -5,7 +5,7 @@ import type { BillingPlan } from '@prisma/client';
 /**
  * Typed error thrown when a tenant's plan doesn't include a requested
  * feature. Replaces the previous pattern of mutating `Error` with
- * untyped `(error as any).code = ...` assignments. The route-layer
+ * untyped `(error as { code?: string }).code = …` assignments. The route-layer
  * error mapper can now `instanceof EntitlementError` and pull the
  * fields type-safely.
  */
