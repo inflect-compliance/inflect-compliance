@@ -24,18 +24,20 @@
  *   - After the risk is created, sequential best-effort POSTs to
  *     `/risks/:id/controls` for every selected control id — identical
  *     to the legacy wizard's two-phase behaviour.
- *   - `queryKeys.risks.all(tenantSlug)` invalidated on success — fixes
- *     the latent bug on the legacy wizard where open tabs wouldn't
- *     refresh after a redirect back to the list.
+ *   - The risks SWR list key is revalidated on success (every `?qs`
+ *     filter variant) — fixes the latent bug on the legacy wizard where
+ *     open tabs wouldn't refresh after a redirect back to the list.
  *
  * Preserved form IDs (`risk-title`, `risk-category`, `risk-description`,
  * `risk-owner`, `risk-review-date`, `submit-risk`) so the existing E2E
  * suite continues to match against the modal surface.
  */
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import useSWR from 'swr';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useSWRConfig } from 'swr';
 import { CACHE_KEYS } from '@/lib/swr-keys';
+import type { CappedList } from '@/lib/list-backfill-cap';
 import {
     useCallback,
     useEffect,
@@ -62,7 +64,6 @@ import {
     startOfUtcDay,
     toYMD,
 } from '@/components/ui/date-picker/date-utils';
-import { queryKeys } from '@/lib/queryKeys';
 import { useFormTelemetry } from '@/lib/telemetry/form-telemetry';
 
 // ─── Constants ──────────────────────────────────────────────────────
@@ -119,7 +120,6 @@ export function NewRiskModal({
     apiUrl,
 }: NewRiskModalProps) {
     const close = useCallback(() => setOpen(false), [setOpen]);
-    const queryClient = useQueryClient();
     // Epic 69 — bridge cache invalidation. RisksClient now reads
     // from `useTenantSWR(CACHE_KEYS.risks.list())`, so the React
     // Query invalidation alone wouldn't refresh the page. We
@@ -146,42 +146,38 @@ export function NewRiskModal({
     const [error, setError] = useState('');
 
     // ─── Lookups — controls + templates load while the modal is open ───
-    const controlsQuery = useQuery<ControlOption[]>({
-        queryKey: ['risks', tenantSlug, 'controls-for-new-risk'],
-        enabled: open,
-        queryFn: async () => {
-            const res = await fetch(apiUrl('/controls'));
-            if (!res.ok) throw new Error(`Controls: ${res.status}`);
-            const data = await res.json();
-            // GET /controls returns the backfill-capped shape
-            // `{ rows, truncated }` (applyBackfillCap), not a bare array —
-            // the previous `Array.isArray` guard always fell through to []
-            // so the link-controls list was permanently empty.
-            const list: ControlOption[] = Array.isArray(data)
-                ? data
-                : Array.isArray(data?.rows)
-                  ? data.rows
-                  : [];
-            return list.map((c: ControlOption) => ({
-                id: c.id,
-                annexId: c.annexId ?? null,
-                name: c.name,
-                status: c.status,
-            }));
-        },
-    });
-    const controls = controlsQuery.data ?? [];
+    const controlsQuery = useTenantSWR<CappedList<ControlOption> | ControlOption[]>(
+        open ? CACHE_KEYS.controls.list() : null,
+    );
+    const controls = useMemo<ControlOption[]>(() => {
+        const data = controlsQuery.data;
+        // GET /controls returns the backfill-capped `{ rows, truncated }`
+        // shape, not a bare array — unwrap both forms.
+        const list = Array.isArray(data)
+            ? data
+            : Array.isArray(data?.rows)
+              ? data.rows
+              : [];
+        return list.map((c) => ({
+            id: c.id,
+            annexId: c.annexId ?? null,
+            name: c.name,
+            status: c.status,
+        }));
+    }, [controlsQuery.data]);
 
-    const templatesQuery = useQuery<RiskTemplate[]>({
-        queryKey: ['risks', tenantSlug, 'templates'],
-        enabled: open,
-        queryFn: async () => {
-            const res = await fetch('/api/risk-templates');
+    // Risk templates live on a NON-tenant endpoint (`/api/risk-templates`),
+    // so this uses raw `useSWR` rather than `useTenantSWR` (which would
+    // prepend `/api/t/{slug}`). Null-key gates the fetch on `open`.
+    const templatesQuery = useSWR<RiskTemplate[]>(
+        open ? '/api/risk-templates' : null,
+        async (url: string) => {
+            const res = await fetch(url);
             if (!res.ok) return [];
             const data = await res.json();
             return Array.isArray(data) ? data : [];
         },
-    });
+    );
     const templates = templatesQuery.data ?? [];
     const selectedTemplate = useMemo(
         () => templates.find((t) => t.id === templateId) ?? null,
@@ -316,9 +312,6 @@ export function NewRiskModal({
                 });
             }
 
-            queryClient.invalidateQueries({
-                queryKey: queryKeys.risks.all(tenantSlug),
-            });
             // Bridge to the SWR cache that RisksClient reads from.
             const risksUrlPrefix = apiUrl(CACHE_KEYS.risks.list());
             swrMutate(

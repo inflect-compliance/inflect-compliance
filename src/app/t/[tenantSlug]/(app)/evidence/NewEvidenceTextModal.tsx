@@ -16,7 +16,6 @@
  * Preserved form ID: `text-evidence-form` (used by existing E2E).
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSWRConfig } from 'swr';
 import {
     useCallback,
@@ -32,7 +31,6 @@ import { Modal } from '@/components/ui/modal';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { FormField } from '@/components/ui/form-field';
 import { RequiredMarker } from '@/components/ui/required-marker';
-import { queryKeys } from '@/lib/queryKeys';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import { useFormTelemetry } from '@/lib/telemetry/form-telemetry';
 
@@ -59,7 +57,6 @@ export function NewEvidenceTextModal({
     controls,
 }: NewEvidenceTextModalProps) {
     const close = useCallback(() => setOpen(false), [setOpen]);
-    const queryClient = useQueryClient();
     // Epic 69 — bridge cache invalidation. EvidenceClient now reads
     // from `useTenantSWR(CACHE_KEYS.evidence.list())`, so the React
     // Query invalidation below alone wouldn't refresh the page. We
@@ -114,12 +111,27 @@ export function NewEvidenceTextModal({
         [controls],
     );
 
-    const mutation = useMutation({
-        mutationFn: async (body: typeof form) => {
+    const [submitting, setSubmitting] = useState(false);
+
+    const telemetry = useFormTelemetry('NewEvidenceTextModal');
+
+    const canSubmit =
+        form.title.trim().length > 0 && !submitting;
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!canSubmit) return;
+        setError('');
+        telemetry.trackSubmit({
+            hasControlLink: Boolean(form.controlId),
+            contentLength: form.content?.length ?? 0,
+        });
+        setSubmitting(true);
+        try {
             const res = await fetch(apiUrl('/evidence'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...body, type: 'TEXT' }),
+                body: JSON.stringify({ ...form, type: 'TEXT' }),
             });
             if (!res.ok) {
                 const err = await res
@@ -129,16 +141,9 @@ export function NewEvidenceTextModal({
                     err.error || err.message || 'Failed to create evidence',
                 );
             }
-            return res.json();
-        },
-        onSuccess: (data) => {
-            // Invalidate React Query cache for any RQ-using consumers.
-            queryClient.invalidateQueries({
-                queryKey: queryKeys.evidence.all(tenantSlug),
-            });
-            // Invalidate every `/evidence?…` SWR cache entry so the
-            // list page (Epic 69 SWR-first) refreshes regardless of
-            // which filter view the user uploaded from.
+            const data = await res.json();
+            // Revalidate every `/evidence?…` SWR cache entry so the list
+            // page refreshes regardless of which filter view was active.
             const evidenceUrlPrefix = apiUrl(CACHE_KEYS.evidence.list());
             swrMutate(
                 (key) =>
@@ -152,29 +157,14 @@ export function NewEvidenceTextModal({
                 evidenceId: (data as { id?: string })?.id,
             });
             close();
-        },
-        onError: (err) => {
+        } catch (err) {
             telemetry.trackError(err);
             setError(
                 err instanceof Error ? err.message : 'Failed to create evidence',
             );
-        },
-    });
-
-    const telemetry = useFormTelemetry('NewEvidenceTextModal');
-
-    const canSubmit =
-        form.title.trim().length > 0 && !mutation.isPending;
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!canSubmit) return;
-        setError('');
-        telemetry.trackSubmit({
-            hasControlLink: Boolean(form.controlId),
-            contentLength: form.content?.length ?? 0,
-        });
-        mutation.mutate(form);
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     return (
@@ -184,7 +174,7 @@ export function NewEvidenceTextModal({
             size="lg"
             title="Add evidence"
             description="Record a link, narrative, or attestation against a control."
-            preventDefaultClose={mutation.isPending}
+            preventDefaultClose={submitting}
         >
             <Modal.Header
                 title="Add evidence"
@@ -205,7 +195,7 @@ export function NewEvidenceTextModal({
 
                     <fieldset
                         className="space-y-default"
-                        disabled={mutation.isPending}
+                        disabled={submitting}
                     >
                         <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
                             <div>
@@ -340,9 +330,9 @@ export function NewEvidenceTextModal({
                         size="sm"
                         id="text-evidence-cancel-btn"
                         onClick={() => {
-                            if (!mutation.isPending) close();
+                            if (!submitting) close();
                         }}
-                        disabled={mutation.isPending}
+                        disabled={submitting}
                     >
                         Cancel
                     </Button>
@@ -353,7 +343,7 @@ export function NewEvidenceTextModal({
                         id="create-text-evidence-btn"
                         disabled={!canSubmit}
                     >
-                        {mutation.isPending ? 'Creating…' : 'Add evidence'}
+                        {submitting ? 'Creating…' : 'Add evidence'}
                     </Button>
                 </Modal.Actions>
             </Modal.Form>

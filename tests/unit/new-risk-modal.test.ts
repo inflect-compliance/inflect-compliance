@@ -128,9 +128,12 @@ describe('NewRiskModal — business contract preserved', () => {
         expect(MODAL_SRC).toMatch(/for \(const controlId of selectedControlIds/);
     });
 
-    it('invalidates queryKeys.risks.all(tenantSlug) on success', () => {
-        expect(MODAL_SRC).toMatch(/queryKeys\.risks\.all\(tenantSlug\)/);
-        expect(MODAL_SRC).toMatch(/invalidateQueries/);
+    it('revalidates the risks SWR list key on success (every ?qs variant)', () => {
+        // SWR migration Wave 4b — was queryClient.invalidateQueries; now a
+        // useSWRConfig predicate matcher against CACHE_KEYS.risks.list().
+        expect(MODAL_SRC).toMatch(/useSWRConfig/);
+        expect(MODAL_SRC).toMatch(/CACHE_KEYS\.risks\.list\(\)/);
+        expect(MODAL_SRC).toMatch(/key\.startsWith\(`\$\{risksUrlPrefix\}\?`\)/);
     });
 
     it('closes the modal on success (no full-page redirect)', () => {

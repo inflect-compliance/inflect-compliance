@@ -18,7 +18,8 @@
  * a sibling of the established controls drill-down.
  */
 import { useMemo, type Dispatch, type SetStateAction } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
+import { CACHE_KEYS } from '@/lib/swr-keys';
 import { Sheet } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
@@ -97,15 +98,9 @@ export function EvidenceDetailSheet({
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
 
-    const detailQuery = useQuery<EvidenceDetailPayload>({
-        queryKey: ['evidence', 'detail', evidenceId],
-        queryFn: async () => {
-            const res = await fetch(apiUrl(`/evidence/${evidenceId}`));
-            if (!res.ok) throw new Error('Failed to load evidence');
-            return res.json();
-        },
-        enabled: open && !!evidenceId,
-    });
+    const detailQuery = useTenantSWR<EvidenceDetailPayload>(
+        open && evidenceId ? CACHE_KEYS.evidence.detail(evidenceId) : null,
+    );
 
     const evidence = detailQuery.data;
 
@@ -207,7 +202,7 @@ export function EvidenceDetailSheet({
                         </div>
                     </Sheet.Body>
                 </>
-            ) : detailQuery.isError ? (
+            ) : detailQuery.error ? (
                 <>
                     <Sheet.Header title="Evidence" />
                     <Sheet.Body>

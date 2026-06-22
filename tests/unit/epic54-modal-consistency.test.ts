@@ -69,13 +69,19 @@ const MODAL_SURFACES: ModalSurface[] = [
     {
         label: 'Add Text Evidence',
         file: 'src/app/t/[tenantSlug]/(app)/evidence/NewEvidenceTextModal.tsx',
-        cacheKey: 'queryKeys.evidence.all',
+        // SWR migration Wave 4b moved this off React Query onto
+        // `useSWRConfig().mutate(matcher)` against `CACHE_KEYS.evidence.list()`.
+        // Empty string disables the RQ-invalidation assertion; SWR equivalent
+        // is covered by `tests/unit/evidence-upload-modal.test.ts`.
+        cacheKey: '',
         expectedSize: 'lg',
     },
     {
         label: 'Create Risk',
         file: 'src/app/t/[tenantSlug]/(app)/risks/NewRiskModal.tsx',
-        cacheKey: 'queryKeys.risks.all',
+        // SWR migration Wave 4b — now revalidates the risks SWR list key via
+        // useSWRConfig. SWR equivalent covered by tests/unit/new-risk-modal.test.ts.
+        cacheKey: '',
         expectedSize: 'lg',
     },
 ];
