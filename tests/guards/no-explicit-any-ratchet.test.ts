@@ -220,7 +220,18 @@ const CAPS: Record<string, number> = {
     // test fixtures — passed as a const/spread — need no validFrom/validTo churn).
     // 4 inner disables removed; zero test changes. 4 `: any` cleared.
     //   : any 142 → 138
-    ': any': 138,
+    // any-paydown wave PR21c (2026-06-22) — `: any` cont. (soft-delete-lifecycle).
+    // The 3 `tx: any` params → `PrismaTx` (the production callers pass the real
+    // tenant tx); `getDelegate(tx: any): any` → `(tx: PrismaTx): SoftDeleteDelegate`
+    // (new structural interface with `unknown` payloads — the model is chosen by
+    // runtime string, so the one dynamic `tx[key]` lookup uses `as unknown as
+    // Record<string, SoftDeleteDelegate>`, not `as any`); `Promise<any[]>` →
+    // `Promise<unknown[]>`. Tightening `tx` surfaced two under-typed test mocks —
+    // fixed in the same diff: `makeTx` now returns `PrismaTx` (one cast), and the
+    // integration test casts the `unknown[]` list result before `.map`. 5 `: any`
+    // cleared.
+    //   : any 138 → 133
+    ': any': 133,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,

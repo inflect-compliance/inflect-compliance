@@ -296,7 +296,7 @@ describeFn('Soft-Delete & Retention', () => {
 
             const deleted = await listSoftDeleted(prisma, 'Risk', testTenantId);
 
-            const deletedIds = deleted.map((r: { id: string }) => r.id);
+            const deletedIds = (deleted as { id: string }[]).map((r) => r.id);
             expect(deletedIds).toContain(risk1.id);
             expect(deletedIds).not.toContain(risk2.id);
         });
