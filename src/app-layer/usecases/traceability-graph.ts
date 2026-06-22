@@ -7,7 +7,7 @@
  * typed, capped, category-tagged graph payload via
  * `buildTraceabilityGraph`.
  *
- * Authz: any authenticated tenant member (read-only). Mirrors the
+ * Authz — any authenticated tenant member (read-only). Mirrors the
  * existing `getControlTraceability` etc. usecases — those are also
  * unconditionally readable per `assertCanRead` in
  * `traceability.ts`.

@@ -313,7 +313,14 @@ const CAPS: Record<string, number> = {
     // `(client as { $extends: (cfg: unknown) => unknown }).$extends({...}) as T` —
     // so the call site stays sound without an `any` on the public signature. 4 cleared.
     //   : any 57 → 53
-    ': any': 53,
+    // any-paydown wave PR31 (2026-06-22) — `: any` cont. (app-layer tail). scim-users
+    // `memberWhere: any` → `Prisma.TenantMembershipWhereInput`; vendor-audit freeze
+    // `snapshot: any` → a 2-variant union (doc | assessment) with an
+    // `as Prisma.InputJsonValue` cast at the Json write; 3 prose `: any`
+    // false-positives reworded (traceability-graph / policy-attestation /
+    // library-updater). 5 cleared.
+    //   : any 53 → 48
+    ': any': 48,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,
