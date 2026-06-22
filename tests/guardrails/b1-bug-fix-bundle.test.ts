@@ -105,8 +105,10 @@ describe('B1 — bug-fix bundle', () => {
             // The helper recognises bare arrays, `{ rows }` cap shape,
             // entity-keyed shape, and `{ items }` pagination shape.
             expect(src).toMatch(/const unwrap/);
-            expect(src).toMatch(/Array\.isArray\(d\.rows\)/);
-            expect(src).toMatch(/Array\.isArray\(d\.items\)/);
+            // Variable-name-agnostic: the helper was typed (`d: unknown` →
+            // narrowed via a local `o`), so match `<ident>.rows`/`.items`.
+            expect(src).toMatch(/Array\.isArray\(\w+\.rows\)/);
+            expect(src).toMatch(/Array\.isArray\(\w+\.items\)/);
         });
 
         it('all three fetchers route through `unwrap`', () => {

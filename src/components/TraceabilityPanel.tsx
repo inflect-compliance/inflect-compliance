@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any -- Tanstack-react-table cell callbacks (tanstack cell callbacks where row/getValue carry the implicit-any annotation) — typing each callback with `CellContext<TData, TValue>` requires importing the right generic per column and adds significant ceremony. The implicit any here is at the render-time boundary; row.original is type-narrowed by the column's accessorKey at runtime. */
 import { useState, useEffect } from 'react';
 import { AppIcon } from '@/components/icons/AppIcon';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -62,6 +61,11 @@ interface TraceabilityData {
     assets: TraceLinkEntry[];
 }
 
+// Dropdown option shapes for the link pickers (cap'd list endpoints).
+interface RiskOption { id: string; title: string; status?: string; }
+interface ControlOption { id: string; code?: string | null; name: string; status?: string; }
+interface AssetOption { id: string; name: string; type?: string; }
+
 export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, entityId, canWrite, tenantHref, tenantSlug: tenantSlugProp }: TraceabilityPanelProps) {
     // Callers pass `apiUrl('')` which yields `/api/t/<slug>/` with a
     // trailing slash. Concatenating `${apiBase}/risks/…` then produces a
@@ -84,11 +88,11 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
 
     // Available items for dropdown
 
-    const [availableRisks, setAvailableRisks] = useState<any[]>([]);
+    const [availableRisks, setAvailableRisks] = useState<RiskOption[]>([]);
 
-    const [availableControls, setAvailableControls] = useState<any[]>([]);
+    const [availableControls, setAvailableControls] = useState<ControlOption[]>([]);
 
-    const [availableAssets, setAvailableAssets] = useState<any[]>([]);
+    const [availableAssets, setAvailableAssets] = useState<AssetOption[]>([]);
 
     const traceUrl = entityType === 'control'
         ? `${apiBase}/controls/${entityId}/traceability`
@@ -97,7 +101,7 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
             : `${apiBase}/assets/${entityId}/traceability`;
 
     // ─── Query: traceability data ───
-    const traceQuery = useQuery({
+    const traceQuery = useQuery<TraceabilityData | null>({
         queryKey: traceabilityKey(tenantSlug, entityType, entityId),
         queryFn: async () => {
             const res = await fetch(traceUrl);
@@ -121,12 +125,12 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
     // returned for these endpoints; new shapes need an explicit
     // entry.
     //
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const unwrap = (d: any, entityKey: 'risks' | 'controls' | 'assets'): any[] => {
-        if (Array.isArray(d)) return d;
-        if (d && Array.isArray(d.rows)) return d.rows;
-        if (d && Array.isArray(d[entityKey])) return d[entityKey];
-        if (d && Array.isArray(d.items)) return d.items;
+    const unwrap = <T,>(d: unknown, entityKey: 'risks' | 'controls' | 'assets'): T[] => {
+        if (Array.isArray(d)) return d as T[];
+        const o = d as Record<string, unknown> | null;
+        if (o && Array.isArray(o.rows)) return o.rows as T[];
+        if (o && Array.isArray(o[entityKey])) return o[entityKey] as T[];
+        if (o && Array.isArray(o.items)) return o.items as T[];
         return [];
     };
     useEffect(() => {
@@ -144,7 +148,7 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
         mutationFn: async ({ type, linkedId, rationale }: { type: 'risk' | 'control' | 'asset'; linkedId: string; rationale?: string }) => {
             let url = '';
 
-            let body: any = {};
+            let body: Record<string, string | undefined> = {};
             if (entityType === 'control' && type === 'risk') {
                 url = `${apiBase}/controls/${entityId}/risks`;
                 body = { riskId: linkedId, rationale: rationale || undefined };
@@ -260,7 +264,7 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
             const updated = { ...previous };
             const section: TraceSection = type === 'risk' ? 'risks' : type === 'control' ? 'controls' : 'assets';
 
-            updated[section] = (updated[section] || []).filter((l: any) => {
+            updated[section] = (updated[section] || []).filter((l) => {
                 const linked = l[type];
                 return linked?.id !== linkedId;
             });
@@ -321,9 +325,9 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
                         <div className={cn(cardVariants({ density: 'compact' }), 'mb-3 space-y-tight')}>
                             <Combobox
                                 id="risk-select"
-                                selected={availableRisks.map((r: any) => ({ value: r.id, label: r.title, meta: { status: r.status } })).find((o: { value: string }) => o.value === addId) ?? null}
+                                selected={availableRisks.map((r) => ({ value: r.id, label: r.title, meta: { status: r.status } })).find((o: { value: string }) => o.value === addId) ?? null}
                                 setSelected={(opt) => setAddId(opt?.value ?? '')}
-                                options={availableRisks.map((r: any) => ({ value: r.id, label: r.title, meta: { status: r.status } }))}
+                                options={availableRisks.map((r) => ({ value: r.id, label: r.title, meta: { status: r.status } }))}
                                 optionDescription={(o) => (o.meta?.status ? `Status: ${o.meta.status}` : null)}
                                 placeholder="Select risk..."
                                 matchTriggerWidth
@@ -342,18 +346,18 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
                                 <thead><tr><th>Risk</th><th>Status</th><th>Score</th><th>Rationale</th>{canWrite && <th>Actions</th>}</tr></thead>
                                 <tbody>
                                     { }
-                                    {risks.map((l: any) => {
+                                    {risks.map((l) => {
                                         const r = l.risk;
                                         return (
                                             <tr key={l.id} className={l.id?.startsWith('temp:') ? 'opacity-50 animate-pulse' : ''}>
                                                 <td className="text-sm text-content-default">{r?.title || '—'}</td>
-                                                <td><StatusBadge variant={RISK_STATUS_BADGE[r?.status] || 'neutral'}>{r?.status || '—'}</StatusBadge></td>
+                                                <td><StatusBadge variant={RISK_STATUS_BADGE[r?.status ?? ''] || 'neutral'}>{r?.status || '—'}</StatusBadge></td>
                                                 <td className="text-sm text-content-emphasis font-medium">{r?.score ?? '—'}</td>
                                                 <td className="text-xs text-content-muted">{l.rationale || '—'}</td>
                                                 {canWrite && (
                                                     <td>
                                                         <Tooltip content="Unlink risk">
-                                                            <button className="text-content-error text-xs hover:text-content-error" onClick={() => handleUnlink('risk', r?.id)} id={`unlink-risk-${r?.id}`} aria-label="Unlink risk">×</button>
+                                                            <button className="text-content-error text-xs hover:text-content-error" onClick={() => handleUnlink('risk', r?.id ?? '')} id={`unlink-risk-${r?.id}`} aria-label="Unlink risk">×</button>
                                                         </Tooltip>
                                                     </td>
                                                 )}
@@ -380,9 +384,9 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
                         <div className={cn(cardVariants({ density: 'compact' }), 'mb-3 space-y-tight')}>
                             <Combobox
                                 id="control-select"
-                                selected={availableControls.map((c: any) => ({ value: c.id, label: c.code ? `${c.code} — ${c.name}` : c.name, meta: { status: c.status } })).find((o: { value: string }) => o.value === addId) ?? null}
+                                selected={availableControls.map((c) => ({ value: c.id, label: c.code ? `${c.code} — ${c.name}` : c.name, meta: { status: c.status } })).find((o: { value: string }) => o.value === addId) ?? null}
                                 setSelected={(opt) => setAddId(opt?.value ?? '')}
-                                options={availableControls.map((c: any) => ({ value: c.id, label: c.code ? `${c.code} — ${c.name}` : c.name, meta: { status: c.status } }))}
+                                options={availableControls.map((c) => ({ value: c.id, label: c.code ? `${c.code} — ${c.name}` : c.name, meta: { status: c.status } }))}
                                 optionDescription={(o) => (o.meta?.status ? `Status: ${o.meta.status}` : null)}
                                 placeholder="Select control..."
                                 matchTriggerWidth
@@ -401,7 +405,7 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
                                 <thead><tr><th>Code</th><th>Name</th><th>Status</th><th>Rationale</th>{canWrite && <th>Actions</th>}</tr></thead>
                                 <tbody>
                                     { }
-                                    {controls.map((l: any) => {
+                                    {controls.map((l) => {
                                         const c = l.control;
                                         return (
                                             <tr key={l.id} className={l.id?.startsWith('temp:') ? 'opacity-50 animate-pulse' : ''}>
@@ -412,7 +416,7 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
                                                 {canWrite && (
                                                     <td>
                                                         <Tooltip content="Unlink control">
-                                                            <button className="text-content-error text-xs hover:text-content-error" onClick={() => handleUnlink('control', c?.id)} id={`unlink-control-${c?.id}`} aria-label="Unlink control">×</button>
+                                                            <button className="text-content-error text-xs hover:text-content-error" onClick={() => handleUnlink('control', c?.id ?? '')} id={`unlink-control-${c?.id}`} aria-label="Unlink control">×</button>
                                                         </Tooltip>
                                                     </td>
                                                 )}
@@ -439,9 +443,9 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
                         <div className={cn(cardVariants({ density: 'compact' }), 'mb-3 space-y-tight')}>
                             <Combobox
                                 id="asset-select"
-                                selected={availableAssets.map((a: any) => ({ value: a.id, label: a.name, meta: { type: a.type } })).find((o: { value: string }) => o.value === addId) ?? null}
+                                selected={availableAssets.map((a) => ({ value: a.id, label: a.name, meta: { type: a.type } })).find((o: { value: string }) => o.value === addId) ?? null}
                                 setSelected={(opt) => setAddId(opt?.value ?? '')}
-                                options={availableAssets.map((a: any) => ({ value: a.id, label: a.name, meta: { type: a.type } }))}
+                                options={availableAssets.map((a) => ({ value: a.id, label: a.name, meta: { type: a.type } }))}
                                 optionDescription={(o) => (o.meta?.type ? `Type: ${o.meta.type}` : null)}
                                 placeholder="Select asset..."
                                 matchTriggerWidth
@@ -460,7 +464,7 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
                                 <thead><tr><th>Name</th><th>Type</th><th>Criticality</th><th>Rationale</th>{canWrite && <th>Actions</th>}</tr></thead>
                                 <tbody>
                                     { }
-                                    {assets.map((l: any) => {
+                                    {assets.map((l) => {
                                         const a = l.asset;
                                         return (
                                             <tr key={l.id} className={l.id?.startsWith('temp:') ? 'opacity-50 animate-pulse' : ''}>
@@ -471,7 +475,7 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
                                                 {canWrite && (
                                                     <td>
                                                         <Tooltip content="Unlink asset">
-                                                            <button className="text-content-error text-xs hover:text-content-error" onClick={() => handleUnlink('asset', a?.id)} id={`unlink-asset-${a?.id}`} aria-label="Unlink asset">×</button>
+                                                            <button className="text-content-error text-xs hover:text-content-error" onClick={() => handleUnlink('asset', a?.id ?? '')} id={`unlink-asset-${a?.id}`} aria-label="Unlink asset">×</button>
                                                         </Tooltip>
                                                     </td>
                                                 )}
