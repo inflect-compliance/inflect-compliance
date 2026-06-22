@@ -217,7 +217,7 @@ export function setFilterValue(
 // ── Query Helpers ───────────────────────────────────────────────────
 
 /**
- * Check if a filter key has any active values.
+ * Check whether a filter key has active values.
  */
 export function isFilterActive(state: FilterState, key: string): boolean {
   return (state[key]?.length ?? 0) > 0;

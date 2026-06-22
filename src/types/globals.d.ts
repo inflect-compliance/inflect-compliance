@@ -5,7 +5,7 @@
  * when a module is evaluated in the Edge Runtime; it's `undefined`
  * in the Node runtime. Declaring it as a global lets us
  * branch on `typeof EdgeRuntime === 'undefined'` without resorting
- * to `(globalThis as any).EdgeRuntime`.
+ * to a structural cast on `globalThis`.
  *
  * Reference:
  * https://nextjs.org/docs/app/api-reference/edge#edge-runtime-globals

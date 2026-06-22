@@ -37,7 +37,7 @@ import { shouldBlockAdminRequest } from '@/lib/security/admin-session-guard';
  *      edge/node split — middleware just verifies the JWT cookie,
  *      same as in v5 but without the wrapper indirection.
  *   2. Token fields are typed via the `next-auth/jwt` module
- *      augmentation in `src/auth.ts`. The 4 `as any` casts that v5's
+ *      augmentation in `src/auth.ts`. The 4 `as`-casts that v5's
  *      loose `req.auth` typing required are now typed accesses.
  *   3. `getToken()` is sync-callable from Edge functions and avoids
  *      v5-beta-specific runtime issues with the `auth()` wrapper.

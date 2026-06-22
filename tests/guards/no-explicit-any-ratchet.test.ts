@@ -424,10 +424,17 @@ const CAPS: Record<string, number> = {
     // the installed major; was referencing a non-existent export when OTel is enabled).
     // 1 cleared — the `: any` category is now 0 and ratcheted there.
     //   : any 1 → 0
+    // any-paydown wave PR47 (2026-06-22) — WAVE CAPSTONE. The code-level `as any`
+    // count was already 0; the cap's 15 were all docstring/comment mentions (the
+    // ratchet counts comments). Reworded every remaining mention (`as any` →
+    // `as`-cast / explicit-`any` / a concrete shape; two were the regex matching the
+    // English "h-as any" in "has any" → reworded to "has active/score-impacting").
+    // The `as any` cap goes 15→0. Every pattern in this ratchet is now ZERO:
+    // `: any` 0 · `<any>` 0 · `useState<any>` 0 · `as any` 0 · `@ts-ignore` 0.
     ': any': 0,
     '<any>': 0,
     'useState<any>': 0,
-    'as any': 15,
+    'as any': 0,
     '// @ts-ignore': 0,
 };
 
