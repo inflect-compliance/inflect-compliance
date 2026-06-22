@@ -37,7 +37,7 @@ export interface AttestPolicyResult {
  * Record an attestation for the current user against the policy's
  * currently-published version.
  *
- * Authorization: any tenant member can attest a policy they have
+ * Authorization — any tenant member can attest a policy they have
  * read access to (`assertCanRead`). Attestation is a "I have read
  * this" gesture — not a privileged write.
  *

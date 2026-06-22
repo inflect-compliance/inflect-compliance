@@ -41,6 +41,7 @@
  * 5. All mutations emit structured audit events (SCIM_USER_*)
  */
 import prisma from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { logger } from '@/lib/observability/logger';
 import { hashForLookup } from '@/lib/security/encryption';
 import type { ScimContext } from '@/lib/scim/auth';
@@ -166,8 +167,7 @@ export async function scimListUsers(
 ) {
     const { startIndex = 1, count = 100, filter } = options;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const memberWhere: any = {
+    const memberWhere: Prisma.TenantMembershipWhereInput = {
         tenantId: ctx.tenantId,
         status: { in: ['ACTIVE', 'DEACTIVATED', 'INVITED'] },
     };

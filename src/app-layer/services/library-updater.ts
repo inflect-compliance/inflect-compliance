@@ -208,7 +208,7 @@ export function computeRequirementDiff(
         }
     }
 
-    // Score impact: any add/remove/change to requirements affects coverage calculations
+    // Score impact — any add/remove/change to requirements affects coverage calculations
     const hasScoreImpact = added.length > 0 || removed.length > 0;
 
     return {

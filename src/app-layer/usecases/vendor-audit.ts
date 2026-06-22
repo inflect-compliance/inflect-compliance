@@ -2,6 +2,7 @@
  * Evidence Bundle + Subprocessor Usecases
  */
 import { RequestContext } from '../types';
+import { Prisma } from '@prisma/client';
 import { assertCanManageVendors, assertCanReadVendors, assertCanManageVendorDocs } from '../policies/vendor.policies';
 import { logEvent } from '../events/audit';
 import { runInTenantContext } from '@/lib/db-context';
@@ -78,8 +79,10 @@ export async function freezeBundle(ctx: RequestContext, bundleId: string) {
 
         // Freeze: snapshot entity metadata into each item
         for (const item of bundle.items) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            let snapshot: any = null;
+            let snapshot:
+                | { type: string; title: string | null; externalUrl: string | null; validTo: Date | null }
+                | { status: string; score: number | null; riskRating: string | null; startedAt: Date }
+                | null = null;
             if (item.entityType === 'VENDOR_DOCUMENT') {
                 const doc = await db.vendorDocument.findFirst({ where: { id: item.entityId, tenantId: ctx.tenantId } });
                 if (doc) snapshot = { type: doc.type, title: doc.title, externalUrl: doc.externalUrl, validTo: doc.validTo };
@@ -88,7 +91,7 @@ export async function freezeBundle(ctx: RequestContext, bundleId: string) {
                 if (a) snapshot = { status: a.status, score: a.score, riskRating: a.riskRating, startedAt: a.startedAt };
             }
             if (snapshot) {
-                await db.vendorEvidenceBundleItem.update({ where: { id: item.id }, data: { snapshotJson: snapshot } });
+                await db.vendorEvidenceBundleItem.update({ where: { id: item.id }, data: { snapshotJson: snapshot as Prisma.InputJsonValue } });
             }
         }
 
