@@ -113,8 +113,7 @@ export function validateScopes(scopes: unknown): string[] {
 export function scopesToPermissions(scopes: string[]): PermissionSet {
     // Start with all-false
     const base = getPermissionsForRole('READER');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result: any = {};
+    const result: Record<string, Record<string, boolean>> = {};
     for (const [resource, actions] of Object.entries(base)) {
         result[resource] = {};
         for (const action of Object.keys(actions as Record<string, boolean>)) {
