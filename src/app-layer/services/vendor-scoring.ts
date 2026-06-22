@@ -6,14 +6,12 @@
 export interface ScoringQuestion {
     id: string;
     weight: number;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    riskPointsJson: any; // { "YES": 0, "NO": 10 } etc
+    riskPointsJson: unknown; // { "YES": 0, "NO": 10 } etc
 }
 
 export interface ScoringAnswer {
     questionId: string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    answerJson: any;
+    answerJson: unknown;
 }
 
 /**

@@ -328,8 +328,7 @@ export class WorkItemRepository {
         assigneeUserId?: string | null;
         reviewerUserId?: string | null;
         controlId?: string | null;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- caller-supplied JSON blob from Zod parse, typed as any at the usecase boundary
-        metadataJson?: any;
+        metadataJson?: unknown;
     }) {
         // #102 item 2 — mint the `TSK-N` key from an atomic
         // per-tenant counter. The upsert compiles to a native
@@ -360,7 +359,7 @@ export class WorkItemRepository {
                 reviewerUserId: data.reviewerUserId || null,
                 controlId: data.controlId || null,
                 createdByUserId: ctx.userId,
-                metadataJson: data.metadataJson != null ? data.metadataJson : Prisma.JsonNull,
+                metadataJson: data.metadataJson != null ? (data.metadataJson as Prisma.InputJsonValue) : Prisma.JsonNull,
             },
             include: {
                 assignee: { select: { id: true, name: true, email: true } },
@@ -378,8 +377,7 @@ export class WorkItemRepository {
         dueAt?: string | null;
         controlId?: string | null;
         reviewerUserId?: string | null;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- caller-supplied JSON blob from Zod parse, typed as any at the usecase boundary
-        metadataJson?: any;
+        metadataJson?: unknown;
     }) {
         const existing = await db.task.findFirst({ where: { id, tenantId: ctx.tenantId } });
         if (!existing) return null;
@@ -393,7 +391,7 @@ export class WorkItemRepository {
             ...(data.dueAt !== undefined && { dueAt: data.dueAt ? new Date(data.dueAt) : null }),
             ...(data.controlId !== undefined && { controlId: data.controlId }),
             ...(data.reviewerUserId !== undefined && { reviewerUserId: data.reviewerUserId }),
-            ...(data.metadataJson !== undefined && { metadataJson: data.metadataJson != null ? data.metadataJson : Prisma.JsonNull }),
+            ...(data.metadataJson !== undefined && { metadataJson: data.metadataJson != null ? (data.metadataJson as Prisma.InputJsonValue) : Prisma.JsonNull }),
         };
         return db.task.update({ where: { id }, data: updateData });
     }
