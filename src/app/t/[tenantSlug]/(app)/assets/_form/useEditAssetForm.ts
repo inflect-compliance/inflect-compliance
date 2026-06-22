@@ -15,6 +15,7 @@
  * `docs/implementation-notes/2026-05-24-modal-form-architecture.md`.
  */
 import { useState } from 'react';
+import type { AssetDetail } from '../[id]/page';
 import { useTenantApiUrl } from '@/lib/tenant-context-provider';
 
 export interface EditAssetFormFields {
@@ -50,7 +51,7 @@ export interface EditAssetFormReturn {
 export interface UseEditAssetFormOptions {
     assetId: string;
     initial: Partial<EditAssetFormFields>;
-    onSuccess: (asset: { id: string }) => void;
+    onSuccess: (asset: AssetDetail) => void;
 }
 
 const DEFAULTS: EditAssetFormFields = {

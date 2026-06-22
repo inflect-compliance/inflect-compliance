@@ -14,6 +14,7 @@
  * applies the updated row to the detail-page state.
  */
 import { useCallback, type Dispatch, type SetStateAction } from 'react';
+import type { AssetDetail } from './[id]/page';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { useTenantContext } from '@/lib/tenant-context-provider';
@@ -28,8 +29,7 @@ export interface EditAssetModalProps {
     setOpen: Dispatch<SetStateAction<boolean>>;
     assetId: string;
     initial: Partial<EditAssetFormFields>;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onSaved: (updated: any) => void;
+    onSaved: (updated: AssetDetail) => void;
 }
 
 export function EditAssetModal({

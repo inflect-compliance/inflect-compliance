@@ -384,7 +384,13 @@ const CAPS: Record<string, number> = {
     // state/handler → a new `PolicyTemplateRow` (+ narrowed the category filter to
     // `string`). 3 `: any` cleared.
     //   : any 11 → 8
-    ': any': 8,
+    // any-paydown wave PR41 (2026-06-22) — `: any` cont. (EditAssetModal chain).
+    // Exported `AssetDetail` from assets/[id]/page and threaded it through
+    // `useEditAssetForm.onSuccess` + `EditAssetModal.onSaved` (was `(updated: any)`),
+    // so the modal → form → `setAsset` chain is type-coherent (the runtime value is
+    // already the full PATCH-returned asset). 1 `: any` cleared.
+    //   : any 8 → 7
+    ': any': 7,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,
