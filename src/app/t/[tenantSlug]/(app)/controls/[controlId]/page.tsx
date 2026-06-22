@@ -14,7 +14,7 @@ import { Heading } from '@/components/ui/typography';
 import { EditControlModal } from './_modals/EditControlModal';
 import { ControlReverseLookupModal } from '@/components/controls/ControlReverseLookupModal';
 import { ControlMappingsTab } from './_tabs/ControlMappingsTab';
-import { EvidenceSubTable } from './_tabs/EvidenceSubTable';
+import { EvidenceSubTable, type EvidenceTabData } from './_tabs/EvidenceSubTable';
 import { EvidenceAddForm } from '@/components/EvidenceAddForm';
 import { MetaStrip } from '@/components/ui/meta-strip';
 import { CONTROL_STATUS_VARIANT } from '@/app-layer/domain/entity-status-mapping';
@@ -108,11 +108,7 @@ type Tab = 'overview' | 'tasks' | 'evidence' | 'mappings' | 'traceability' | 'ac
  * Carries both the manual evidence links and the `Evidence` entities
  * attached directly to the control.
  */
-interface EvidenceTabData {
-    links: EvidenceLinkDTO[];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    evidence: any[];
-}
+
 
 const EVENT_LABELS: Record<string, string> = {
     CONTROL_CREATED: 'Created', CONTROL_UPDATED: 'Updated', CONTROL_STATUS_CHANGED: 'Status Changed',

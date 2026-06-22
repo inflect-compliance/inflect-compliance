@@ -1,6 +1,4 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any -- self-contained
- * panel consuming server-rendered evidence rows. */
 
 /**
  * Attached-evidence panel — the writable, Control-style evidence
@@ -79,7 +77,7 @@ export function AttachedEvidencePanel({
         const previous = data;
         setData((prev) =>
             prev
-                ? { ...prev, evidence: (prev.evidence ?? []).filter((ev: any) => ev.id !== evidenceId) }
+                ? { ...prev, evidence: (prev.evidence ?? []).filter((ev) => ev.id !== evidenceId) }
                 : prev,
         );
         triggerUndoToast({

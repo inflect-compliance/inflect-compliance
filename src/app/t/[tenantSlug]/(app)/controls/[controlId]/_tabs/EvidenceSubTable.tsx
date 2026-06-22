@@ -33,10 +33,21 @@ import { textLinkVariants } from '@/components/ui/typography';
 import { formatDate } from '@/lib/format-date';
 import type { EvidenceLinkDTO } from '@/lib/dto';
 
+// Evidence rows on the control/risk/asset evidence tabs — the `Evidence`
+// model fields the table renders (Dates serialize to ISO strings on the wire).
+export interface EvidenceTabRow {
+    id: string;
+    type: 'FILE' | 'LINK' | 'TEXT';
+    title: string;
+    content: string | null;
+    status: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'NEEDS_REVIEW';
+    fileRecordId: string | null;
+    createdAt: string;
+}
+
 export interface EvidenceTabData {
     links: EvidenceLinkDTO[];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    evidence: any[];
+    evidence: EvidenceTabRow[];
 }
 
 interface EvidenceTableRow {
@@ -83,9 +94,8 @@ export function EvidenceSubTable({
             links.map((l) => l.fileId).filter(Boolean) as string[],
         );
         const directEvidence = evidenceRows.filter(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (e: any) =>
-                !e.fileRecordId || !linkedFileIds.has(e.fileRecordId as string),
+            (e) =>
+                !e.fileRecordId || !linkedFileIds.has(e.fileRecordId),
         );
 
         const out: EvidenceTableRow[] = [];
@@ -123,7 +133,7 @@ export function EvidenceSubTable({
                               : 'info',
                 },
                 titleCell: isUrlEvidence ? 'link-href' : 'evidence-title',
-                titleHref: isUrlEvidence ? ev.content : undefined,
+                titleHref: isUrlEvidence ? (ev.content ?? undefined) : undefined,
                 titleNote: isUrlEvidence ? ev.title : undefined,
                 titleText: ev.title,
                 evidenceId: ev.id,
