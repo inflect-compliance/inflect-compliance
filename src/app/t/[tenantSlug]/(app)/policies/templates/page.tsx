@@ -14,14 +14,22 @@ import { Card, cardVariants } from '@/components/ui/card';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { cn } from '@/lib/cn';
 
+interface PolicyTemplateRow {
+    id: string;
+    title: string;
+    category: string | null;
+    language: string | null;
+    tags: string | null;
+    contentText: string;
+}
+
 export default function TemplatesPage() {
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const router = useRouter();
     const tenant = useTenantContext();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [templates, setTemplates] = useState<any[]>([]);
+    const [templates, setTemplates] = useState<PolicyTemplateRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [categoryFilter, setCategoryFilter] = useState('');
     const [creating, setCreating] = useState('');
@@ -34,7 +42,7 @@ export default function TemplatesPage() {
     }, [apiUrl]);
 
     const categories = useMemo(() =>
-        [...new Set(templates.map(t => t.category).filter(Boolean))].sort(),
+        [...new Set(templates.map(t => t.category).filter((c): c is string => Boolean(c)))].sort(),
         [templates]
     );
 
@@ -49,8 +57,7 @@ export default function TemplatesPage() {
         return templates.filter(t => t.category === categoryFilter);
     }, [templates, categoryFilter]);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleUseTemplate = async (tpl: any) => {
+    const handleUseTemplate = async (tpl: PolicyTemplateRow) => {
         if (!tenant.permissions.canWrite) return;
         setCreating(tpl.id);
         try {
