@@ -22,7 +22,9 @@
  */
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
+import { useSWRConfig } from 'swr';
+import { CACHE_KEYS } from '@/lib/swr-keys';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { MetaStrip } from '@/components/ui/meta-strip';
 import { Button } from '@/components/ui/button';
@@ -102,19 +104,14 @@ export function AccessReviewDetailClient({
     currentUserId,
     isAdmin,
 }: Props) {
-    const queryClient = useQueryClient();
+    const { mutate: swrMutate } = useSWRConfig();
     const router = useRouter();
     const apiBase = `/api/t/${tenantSlug}/access-reviews/${initialReview.id}`;
 
-    const reviewQuery = useQuery<ReviewDetail>({
-        queryKey: ['access-review', tenantSlug, initialReview.id],
-        queryFn: async () => {
-            const res = await fetch(apiBase);
-            if (!res.ok) throw new Error('Failed to fetch access review');
-            return res.json();
-        },
-        initialData: initialReview,
-    });
+    const reviewQuery = useTenantSWR<ReviewDetail>(
+        CACHE_KEYS.accessReviews.detail(initialReview.id),
+        { fallbackData: initialReview },
+    );
     const review = reviewQuery.data!;
 
     const isReviewer = currentUserId === review.reviewerUserId;
@@ -329,9 +326,7 @@ export function AccessReviewDetailClient({
                     onClose={() => setActiveDecision(null)}
                     onSuccess={() => {
                         setActiveDecision(null);
-                        queryClient.invalidateQueries({
-                            queryKey: ['access-review', tenantSlug, initialReview.id],
-                        });
+                        reviewQuery.mutate();
                     }}
                 />
             ) : null}
@@ -342,13 +337,11 @@ export function AccessReviewDetailClient({
                     onClose={() => setClosing(false)}
                     onSuccess={() => {
                         setClosing(false);
-                        queryClient.invalidateQueries({
-                            queryKey: ['access-review', tenantSlug, initialReview.id],
-                        });
+                        reviewQuery.mutate();
                         // List page sees the new CLOSED state too.
-                        queryClient.invalidateQueries({
-                            queryKey: ['access-reviews', tenantSlug, 'list'],
-                        });
+                        swrMutate(
+                            `/api/t/${tenantSlug}${CACHE_KEYS.accessReviews.list()}`,
+                        );
                         router.refresh();
                     }}
                 />
@@ -379,9 +372,11 @@ function DecisionDialog({
         [decision.row.snapshotRole],
     );
 
-    const submit = useMutation({
-        mutationFn: async () => {
-            setError(null);
+    const [submitting, setSubmitting] = useState(false);
+    const handleSubmit = async () => {
+        setSubmitting(true);
+        setError(null);
+        try {
             const body =
                 decision.type === 'MODIFY'
                     ? { decision: 'MODIFY', modifiedToRole, notes: notes || undefined }
@@ -398,12 +393,13 @@ function DecisionDialog({
                 const text = await res.text();
                 throw new Error(text || 'Failed to submit decision');
             }
-            return res.json();
-        },
-        onSuccess,
-        onError: (err) =>
-            setError(err instanceof Error ? err.message : 'Unknown error'),
-    });
+            onSuccess();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Unknown error');
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     const titleByType: Record<DecisionType, string> = {
         CONFIRM: 'Confirm access',
@@ -476,11 +472,11 @@ function DecisionDialog({
                     Cancel
                 </Button>
                 <Button
-                    onClick={() => submit.mutate()}
-                    disabled={submit.isPending}
+                    onClick={() => void handleSubmit()}
+                    disabled={submitting}
                     data-testid="decision-modal-submit"
                 >
-                    {submit.isPending ? 'Submitting…' : 'Submit decision'}
+                    {submitting ? 'Submitting…' : 'Submit decision'}
                 </Button>
             </Modal.Footer>
         </Modal>
@@ -500,9 +496,11 @@ function CloseDialog({
 }) {
     const [error, setError] = useState<string | null>(null);
 
-    const close = useMutation({
-        mutationFn: async () => {
-            setError(null);
+    const [submitting, setSubmitting] = useState(false);
+    const handleCloseCampaign = async () => {
+        setSubmitting(true);
+        setError(null);
+        try {
             const res = await fetch(`${apiBase}/close`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -511,12 +509,13 @@ function CloseDialog({
                 const text = await res.text();
                 throw new Error(text || 'Failed to close campaign');
             }
-            return res.json();
-        },
-        onSuccess,
-        onError: (err) =>
-            setError(err instanceof Error ? err.message : 'Unknown error'),
-    });
+            onSuccess();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Unknown error');
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     return (
         <Modal showModal={true} setShowModal={(v) => !v && onClose()}>
@@ -544,11 +543,11 @@ function CloseDialog({
                     Cancel
                 </Button>
                 <Button
-                    onClick={() => close.mutate()}
-                    disabled={close.isPending}
+                    onClick={() => void handleCloseCampaign()}
+                    disabled={submitting}
                     data-testid="close-modal-submit"
                 >
-                    {close.isPending ? 'Closing…' : 'Close + generate evidence'}
+                    {submitting ? 'Closing…' : 'Close + generate evidence'}
                 </Button>
             </Modal.Footer>
         </Modal>

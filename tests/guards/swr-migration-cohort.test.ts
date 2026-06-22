@@ -35,6 +35,10 @@ const MIGRATED_FILES: string[] = [
     'app/t/[tenantSlug]/(app)/audits/NewAuditModal.tsx',
     'app/t/[tenantSlug]/(app)/findings/FindingsClient.tsx',
     'app/t/[tenantSlug]/(app)/findings/CreateFindingModal.tsx',
+    // Wave 4a — calendar + access-reviews
+    'app/t/[tenantSlug]/(app)/calendar/CalendarClient.tsx',
+    'app/t/[tenantSlug]/(app)/access-reviews/AccessReviewsClient.tsx',
+    'app/t/[tenantSlug]/(app)/access-reviews/[reviewId]/AccessReviewDetailClient.tsx',
 ];
 
 // Flipped to true by the final cleanup wave (after @tanstack/react-query is

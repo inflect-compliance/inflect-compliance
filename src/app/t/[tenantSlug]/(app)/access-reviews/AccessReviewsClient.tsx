@@ -11,7 +11,8 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
+import { CACHE_KEYS } from '@/lib/swr-keys';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
 import { ProgressBar } from '@/components/ui/progress-bar';
@@ -66,18 +67,12 @@ interface Props {
 export function AccessReviewsClient({ tenantSlug, initialReviews }: Props) {
     const apiUrl = (path: string) =>
         `/api/t/${tenantSlug}/access-reviews${path}`;
-    const queryClient = useQueryClient();
     const router = useRouter();
 
-    const reviewsQuery = useQuery<CappedList<AccessReviewSummary>>({
-        queryKey: ['access-reviews', tenantSlug, 'list'],
-        queryFn: async () => {
-            const res = await fetch(apiUrl(''));
-            if (!res.ok) throw new Error('Failed to fetch access reviews');
-            return res.json();
-        },
-        initialData: { rows: initialReviews, truncated: false },
-    });
+    const reviewsQuery = useTenantSWR<CappedList<AccessReviewSummary>>(
+        CACHE_KEYS.accessReviews.list(),
+        { fallbackData: { rows: initialReviews, truncated: false } },
+    );
 
     const reviews = reviewsQuery.data?.rows ?? [];
     const truncated = reviewsQuery.data?.truncated ?? false;
@@ -185,9 +180,7 @@ export function AccessReviewsClient({ tenantSlug, initialReviews }: Props) {
                     <CreateCampaignButton
                         tenantSlug={tenantSlug}
                         onCreated={(reviewId) => {
-                            queryClient.invalidateQueries({
-                                queryKey: ['access-reviews', tenantSlug],
-                            });
+                            reviewsQuery.mutate();
                             router.push(
                                 `/t/${tenantSlug}/access-reviews/${reviewId}`,
                             );
@@ -255,9 +248,11 @@ function CreateCampaignButton({
 
     const apiUrl = `/api/t/${tenantSlug}/access-reviews`;
 
-    const createMutation = useMutation({
-        mutationFn: async () => {
-            setError(null);
+    const [submitting, setSubmitting] = useState(false);
+    const handleCreate = async () => {
+        setSubmitting(true);
+        setError(null);
+        try {
             const body = {
                 name,
                 description: description || undefined,
@@ -274,27 +269,26 @@ function CreateCampaignButton({
                 const text = await res.text();
                 throw new Error(text || 'Failed to create campaign');
             }
-            return (await res.json()) as { accessReviewId: string };
-        },
-        onSuccess: (data) => {
+            const data = (await res.json()) as { accessReviewId: string };
             setOpen(false);
             setName('');
             setDescription('');
             setReviewerUserId('');
             setDueAt(null);
             onCreated(data.accessReviewId);
-        },
-        onError: (err) => {
+        } catch (err) {
             setError(err instanceof Error ? err.message : 'Unknown error');
-        },
-    });
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     const submit = () => {
         if (!name.trim() || !reviewerUserId.trim()) {
             setError('Name and reviewer are required.');
             return;
         }
-        createMutation.mutate();
+        void handleCreate();
     };
 
     return (
@@ -407,12 +401,10 @@ function CreateCampaignButton({
                         </Button>
                         <Button
                             onClick={submit}
-                            disabled={createMutation.isPending}
+                            disabled={submitting}
                             data-testid="access-review-new-submit"
                         >
-                            {createMutation.isPending
-                                ? 'Creating…'
-                                : 'Create campaign'}
+                            {submitting ? 'Creating…' : 'Create campaign'}
                         </Button>
                     </Modal.Footer>
                 </Modal>

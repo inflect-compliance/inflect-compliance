@@ -130,6 +130,14 @@ export const CACHE_KEYS = {
     findings: makeResource('findings'),
     frameworks: makeResource('frameworks'),
     issues: makeResource('issues'),
+    accessReviews: makeResource('access-reviews'),
+    // Calendar is a range read-model, not a list/detail resource — the key
+    // carries the from/to window so each view caches independently.
+    calendar: {
+        all: () => '/calendar' as const,
+        range: (from: string, to: string) =>
+            `/calendar?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}` as const,
+    },
 
     // ─── Workflow automation (Automation Epics 1–10) ─────────────
     automation: {

@@ -11,7 +11,7 @@
  */
 import * as React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SWRConfig } from 'swr';
 
 jest.mock('next/navigation', () => ({
     useRouter: () => ({
@@ -30,13 +30,25 @@ jest.mock('next-intl', () => ({
     useTranslations: () => (key: string) => key,
 }));
 
+// The detail client now reads via `useTenantSWR`, which resolves the
+// tenant-relative path through `useTenantApiUrl`. Mock that seam so the
+// component renders without a real TenantProvider.
+jest.mock('@/lib/tenant-context-provider', () => ({
+    useTenantApiUrl:
+        () => (path: string) =>
+            `/api/t/acme${path.startsWith('/') ? path : `/${path}`}`,
+}));
+
 import { AccessReviewDetailClient } from '@/app/t/[tenantSlug]/(app)/access-reviews/[reviewId]/AccessReviewDetailClient';
 
 function withClient(ui: React.ReactNode) {
-    const qc = new QueryClient({
-        defaultOptions: { queries: { retry: false } },
-    });
-    return <QueryClientProvider client={qc}>{ui}</QueryClientProvider>;
+    // Fresh per-render SWR cache; no React Query — this client has no
+    // not-yet-migrated RQ children.
+    return (
+        <SWRConfig value={{ provider: () => new Map(), shouldRetryOnError: false }}>
+            {ui}
+        </SWRConfig>
+    );
 }
 
 function makeReview(overrides: Record<string, unknown> = {}) {
