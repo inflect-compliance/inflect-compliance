@@ -212,7 +212,15 @@ const CAPS: Record<string, number> = {
     // the `$extends({...}) as T` call). 11 `: any` cleared. (RequirementMapping +
     // soft-delete-lifecycle deferred to PR21b/c — they need paired test-mock edits.)
     //   : any 153 → 142
-    ': any': 142,
+    // any-paydown wave PR21b (2026-06-22) — `: any` cont. (RequirementMappingRepo).
+    // 3 `const where: any` → `Prisma.RequirementMappingWhereInput` (new Prisma
+    // import); `validStrengths` map → `as MappingStrengthValue` so `{ in }` matches
+    // the enum filter; `resolveEdge(raw: any)` → a narrow inline structural type of
+    // exactly the fields it reads (chosen over `Prisma.…GetPayload` so the existing
+    // test fixtures — passed as a const/spread — need no validFrom/validTo churn).
+    // 4 inner disables removed; zero test changes. 4 `: any` cleared.
+    //   : any 142 → 138
+    ': any': 138,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,

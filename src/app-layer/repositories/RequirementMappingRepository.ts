@@ -12,6 +12,7 @@
  * - Framework pair uniqueness on MappingSet: one canonical set per direction.
  */
 import { PrismaTx } from '@/lib/db-context';
+import { Prisma } from '@prisma/client';
 import { badRequest } from '@/lib/errors/types';
 import type {
     CreateMappingSetInput,
@@ -193,8 +194,7 @@ export class RequirementMappingRepository {
         db: PrismaTx,
         query: MappingsBySourceQuery,
     ) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const where: any = {
+        const where: Prisma.RequirementMappingWhereInput = {
             sourceRequirementId: query.sourceRequirementId,
             // Audit Coherence S9 — exclude historical / superseded
             // mappings. Auditors querying the row directly still see
@@ -210,7 +210,7 @@ export class RequirementMappingRepository {
             const minRank = MAPPING_STRENGTH_RANK[query.minStrength];
             const validStrengths = Object.entries(MAPPING_STRENGTH_RANK)
                 .filter(([, rank]) => rank >= minRank)
-                .map(([strength]) => strength);
+                .map(([strength]) => strength as MappingStrengthValue);
             where.strength = { in: validStrengths };
         }
 
@@ -229,8 +229,7 @@ export class RequirementMappingRepository {
         db: PrismaTx,
         query: MappingsByFrameworkPairQuery,
     ) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const where: any = {
+        const where: Prisma.RequirementMappingWhereInput = {
             mappingSet: {
                 sourceFrameworkId: query.sourceFrameworkId,
                 targetFrameworkId: query.targetFrameworkId,
@@ -243,7 +242,7 @@ export class RequirementMappingRepository {
             const minRank = MAPPING_STRENGTH_RANK[query.minStrength];
             const validStrengths = Object.entries(MAPPING_STRENGTH_RANK)
                 .filter(([, rank]) => rank >= minRank)
-                .map(([strength]) => strength);
+                .map(([strength]) => strength as MappingStrengthValue);
             where.strength = { in: validStrengths };
         }
 
@@ -265,8 +264,7 @@ export class RequirementMappingRepository {
         db: PrismaTx,
         query: MappingsByTargetQuery,
     ) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const where: any = {
+        const where: Prisma.RequirementMappingWhereInput = {
             targetRequirementId: query.targetRequirementId,
             // Audit Coherence S9 — currently-active window.
             ...activeMappingWindow(),
@@ -280,7 +278,7 @@ export class RequirementMappingRepository {
             const minRank = MAPPING_STRENGTH_RANK[query.minStrength];
             const validStrengths = Object.entries(MAPPING_STRENGTH_RANK)
                 .filter(([, rank]) => rank >= minRank)
-                .map(([strength]) => strength);
+                .map(([strength]) => strength as MappingStrengthValue);
             where.strength = { in: validStrengths };
         }
 
@@ -296,8 +294,13 @@ export class RequirementMappingRepository {
      * Convenience method for converting raw Prisma results to domain DTOs.
      */
     static resolveEdge(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        raw: any,
+        raw: {
+            id: string;
+            strength: string;
+            rationale: string | null;
+            sourceRequirement: { id: string; code: string; title: string; frameworkId: string; framework: { key: string; name: string } };
+            targetRequirement: { id: string; code: string; title: string; frameworkId: string; framework: { key: string; name: string } };
+        },
     ): ResolvedMappingEdge {
         return {
             id: raw.id,
