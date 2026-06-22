@@ -13,8 +13,8 @@
  *   - Members are loaded from `/api/t/{tenantSlug}/admin/members`, which
  *     already enforces tenant scoping + admin/auditor RBAC on the
  *     server. We do not touch cross-tenant data.
- *   - The query key is namespaced via `queryKeys.members.list(tenantSlug)`
- *     so the cache is isolated per tenant.
+ *   - The SWR key is the resolved `/users/assignable` URL (tenant in
+ *     the path) so the cache is isolated per tenant.
  *
  * Modes:
  *   - Single-select (default) — the typical assignee / owner picker.
@@ -29,11 +29,10 @@
  * untouched.
  */
 
-import { useQuery } from "@tanstack/react-query";
+import useSWR from 'swr';
 import * as React from "react";
 import { Combobox, type ComboboxOption } from "./combobox";
 import { InitialsAvatar } from "@/components/ui/initials-avatar";
-import { queryKeys } from "@/lib/queryKeys";
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -104,28 +103,24 @@ export function useTenantMembers(
     tenantSlug: string,
     options?: { enabled?: boolean },
 ) {
-    return useQuery<Member[]>({
-        queryKey: queryKeys.members.list(tenantSlug),
-        enabled: options?.enabled ?? true,
-        queryFn: async () => {
-            // B1 — the picker now reads from the non-admin
-            // `/users/assignable` endpoint (gated by `assertCanRead`,
-            // which every signed-in tenant member has). Pre-B1 the
-            // picker read from `/admin/members` and silently
-            // rendered an empty dropdown for EDITOR / READER users.
-            //
-            // Admin-only callers that need session counts /
-            // invite-state / deactivated rows still go through
-            // `/admin/members` directly — this hook is the assignment-
-            // picker seam, not the admin-roster seam.
-            const res = await fetch(
-                `/api/t/${tenantSlug}/users/assignable`,
-            );
+    const enabled = options?.enabled ?? true;
+    // Raw `useSWR` (not `useTenantSWR`) because this hook needs a custom
+    // fetcher: it fails SILENTLY to an empty roster on a non-OK response
+    // (the picker must never crash on an auth miss) and projects the raw
+    // payload into `Member[]` — neither fits useTenantSWR's fixed apiGet
+    // fetcher. The tenant slug is in the URL, so the cache is per-tenant.
+    return useSWR<Member[]>(
+        enabled ? `/api/t/${tenantSlug}/users/assignable` : null,
+        async (url: string): Promise<Member[]> => {
+            // B1 — the picker reads from the non-admin `/users/assignable`
+            // endpoint (gated by `assertCanRead`, which every signed-in
+            // tenant member has). Pre-B1 it read `/admin/members` and
+            // silently rendered an empty dropdown for EDITOR / READER users.
+            // Admin-only callers needing session counts / invite-state /
+            // deactivated rows still hit `/admin/members` directly.
+            const res = await fetch(url);
             if (!res.ok) {
-                // Fallback: surface an empty roster rather than
-                // crashing the picker. Server-side error logs cover
-                // the API-broken case from the route side; the
-                // client-side path stays silent on auth misses.
+                // Fallback: empty roster rather than crashing the picker.
                 return [];
             }
             const data: Array<{
@@ -141,8 +136,8 @@ export function useTenantMembers(
                 image: m.image,
             }));
         },
-        staleTime: 60_000,
-    });
+        { dedupingInterval: 60_000 },
+    );
 }
 
 // ─── Option projection ─────────────────────────────────────────────

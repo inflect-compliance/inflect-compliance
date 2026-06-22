@@ -23,7 +23,7 @@
  *   //                sparklineDomain={centeredSparklineDomain(spark.total)} />
  */
 
-import { useQuery } from '@tanstack/react-query';
+import useSWR from 'swr';
 import type {
     TrendDataPoint,
     TrendPayload,
@@ -33,16 +33,18 @@ import type { MiniAreaChartVariant } from '@/components/ui/mini-area-chart';
 
 /** Shared 30-day trends fetch — one cache entry across every KPI page. */
 export function useKpiTrends(tenantSlug: string) {
-    return useQuery<TrendPayload>({
-        // Tenant-scoped + shared key so all entity pages reuse one fetch.
-        queryKey: ['kpi-trends', tenantSlug, 30],
-        queryFn: async (): Promise<TrendPayload> => {
-            const res = await fetch(`/api/t/${tenantSlug}/dashboard/trends?days=30`);
+    // Raw `useSWR` keyed by the resolved URL — tenant-scoped + shared so
+    // every entity page reuses one fetch (this is a library hook taking an
+    // explicit tenantSlug, not a context-bound component).
+    return useSWR<TrendPayload>(
+        `/api/t/${tenantSlug}/dashboard/trends?days=30`,
+        async (url: string): Promise<TrendPayload> => {
+            const res = await fetch(url);
             if (!res.ok) throw new Error('Failed to fetch KPI trends');
             return res.json();
         },
-        staleTime: 5 * 60_000,
-    });
+        { dedupingInterval: 5 * 60_000 },
+    );
 }
 
 /**
