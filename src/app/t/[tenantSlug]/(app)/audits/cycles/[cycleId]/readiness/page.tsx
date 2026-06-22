@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
@@ -153,7 +152,7 @@ export default function CycleReadinessPage() {
                 <div className="space-y-compact" id="gaps-section">
                     <Heading level={3}>Top Gaps ({result.gaps.length})</Heading>
                     <div className={cn(cardVariants({ density: 'none' }), 'divide-y divide-border-default/50')}>
-                        {result.gaps.map((g: any, i: number) => (
+                        {result.gaps.map((g, i: number) => (
                             <div key={i} className="p-3 flex items-center justify-between text-sm">
                                 <div className="flex items-center gap-compact min-w-0">
                                     <AppIcon name={GAP_ICON[g.type] || 'overview'} size={16} />

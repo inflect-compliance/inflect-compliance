@@ -13,7 +13,7 @@
  *   - Lazy: the hook only runs in the rendered sidebar tree, so no
  *     cost on logged-out pages.
  *   - Cheap: backed by Prisma `count` queries with `take` short-circuits.
- *   - Resilient: any error returns undefined rather than disrupting the nav.
+ *   - Resilient — any error returns undefined rather than disrupting the nav.
  *   - Provider-free: zero React Query / Context dependencies — the
  *     sidebar must work in any tree.
  *

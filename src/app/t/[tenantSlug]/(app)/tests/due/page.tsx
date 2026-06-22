@@ -4,7 +4,6 @@
  * carries an inline disable directive; collectively they should
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
-/* eslint-disable @typescript-eslint/no-explicit-any -- Client component receiving server-rendered domain data; tanstack column callbacks; or library-boundary callbacks. Per-site narrowing requires generated DTOs / per-cell CellContext imports — out of scope for the lint cleanup PR. */
 import { formatDate } from '@/lib/format-date';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
@@ -183,7 +182,7 @@ export default function DueQueuePage() {
                             </span>
                         ),
                     },
-                    { id: 'owner', header: 'Owner', accessorFn: (p) => p.owner?.name || p.owner?.email || '—', cell: ({ getValue }: any) => <span className="text-content-muted text-xs">{getValue()}</span> },
+                    { id: 'owner', header: 'Owner', accessorFn: (p) => p.owner?.name || p.owner?.email || '—', cell: ({ getValue }) => <span className="text-content-muted text-xs">{getValue()}</span> },
                     {
                         id: 'status', header: 'Status',
                         cell: ({ row }) => row.original.hasPendingRun

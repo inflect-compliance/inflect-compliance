@@ -66,8 +66,7 @@ export class OpenRouterRiskSuggestionProvider implements RiskSuggestionProvider 
             throw new Error(`OpenRouter API error ${response.status}: ${errorText}`);
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const data: any = await response.json();
+        const data: { choices?: { message?: { content?: string } }[] } = await response.json();
         const content = data?.choices?.[0]?.message?.content;
 
         if (!content) {
