@@ -14,7 +14,7 @@
  * each linked to its entity detail page.
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import * as React from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalIcon } from 'lucide-react';
 import Link from 'next/link';
@@ -26,10 +26,9 @@ import { CalendarHeatmap } from '@/components/ui/CalendarHeatmap';
 import { CalendarMonth } from '@/components/ui/CalendarMonth';
 import { GanttTimeline } from '@/components/ui/GanttTimeline';
 import { ToggleGroup } from '@/components/ui/toggle-group';
-import { queryKeys } from '@/lib/queryKeys';
+import { CACHE_KEYS } from '@/lib/swr-keys';
 import { formatDate } from '@/lib/format-date';
 import { NewTaskModal } from '@/app/t/[tenantSlug]/(app)/tasks/NewTaskModal';
-import { useQueryClient } from '@tanstack/react-query';
 import type {
     CalendarEvent,
     CalendarResponse,
@@ -101,7 +100,6 @@ export function CalendarClient({
     const [taskCreateDate, setTaskCreateDate] = React.useState<string | null>(
         null,
     );
-    const queryClient = useQueryClient();
 
     // Pull `getTime()` into a stable primitive so the dep array is
     // statically checkable. We deliberately depend on `monthCursorMs`
@@ -121,17 +119,10 @@ export function CalendarClient({
     const initialMatches =
         initialRange.from === fromKey && initialRange.to === toKey;
 
-    const calQuery = useQuery({
-        queryKey: queryKeys.calendar.range(tenantSlug, fromKey, toKey),
-        queryFn: async (): Promise<CalendarResponse> => {
-            const url = `/api/t/${tenantSlug}/calendar?from=${encodeURIComponent(fromKey)}&to=${encodeURIComponent(toKey)}`;
-            const res = await fetch(url);
-            if (!res.ok) throw new Error('Failed to load calendar');
-            return res.json();
-        },
-        initialData: initialMatches ? initial : undefined,
-        staleTime: 60_000,
-    });
+    const calQuery = useTenantSWR<CalendarResponse>(
+        CACHE_KEYS.calendar.range(fromKey, toKey),
+        { fallbackData: initialMatches ? initial : undefined },
+    );
 
     // Stabilise the array identity — the `?? []` produces a fresh
     // empty array each render, which destabilises the useMemos
@@ -240,7 +231,7 @@ export function CalendarClient({
             )}
 
             {/* Loading + error states */}
-            {calQuery.isError && (
+            {calQuery.error && (
                 <div className="rounded-lg border border-border-error bg-bg-error px-4 py-3 text-sm text-content-error">
                     Failed to load calendar events. Try refreshing.
                 </div>
@@ -338,9 +329,9 @@ export function CalendarClient({
                 Mounted unconditionally; the `open` prop controls
                 visibility. `initialDueAt` seeds the form's dueAt
                 field with the YMD of the clicked day. After create,
-                we stay on the calendar (the queryClient
-                invalidation surfaces the new task immediately on
-                the affected day cell). */}
+                we stay on the calendar (the SWR revalidation
+                surfaces the new task immediately on the affected
+                day cell). */}
             <NewTaskModal
                 open={taskCreateDate !== null}
                 setOpen={(next) => {
@@ -353,9 +344,9 @@ export function CalendarClient({
                 initialDueAt={taskCreateDate ?? undefined}
                 onCreated={() => {
                     setTaskCreateDate(null);
-                    queryClient.invalidateQueries({
-                        queryKey: queryKeys.calendar.all(tenantSlug),
-                    });
+                    // Revalidate the currently-visible range; switching views
+                    // refetches its own range key on demand.
+                    calQuery.mutate();
                 }}
             />
         </div>
