@@ -73,14 +73,13 @@ export function buildSamlInstance(
     callbackUrl: string,
     issuer: string
 ): SAML {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const samlOptions: any = {
+    const samlOptions: ConstructorParameters<typeof SAML>[0] = {
         callbackUrl,
         issuer,
         // IdP configuration
         entryPoint: config.ssoUrl,
         idpIssuer: config.entityId,
-        cert: config.certificate ?? '',
+        idpCert: config.certificate ?? '',
         // Request signing
         wantAuthnResponseSigned: true,
         wantAssertionsSigned: false,
