@@ -202,7 +202,17 @@ const CAPS: Record<string, number> = {
     // `description` (string|null) → undefined at the FwRow derive. All 5 disables
     // removed. 14 `: any` cleared.
     //   : any 167 → 153
-    ': any': 153,
+    // any-paydown wave PR21a (2026-06-22) — `: any` cont. (server/lib, clean trio).
+    // deadline-monitor.ts: 8 `const where: any` → `Prisma.<Model>WhereInput` (new
+    // Prisma import). prisma.ts: 2 audit-middleware boundary `result: any` →
+    // `unknown` + `typeof === 'object'`/cast narrowing (query() already returns
+    // Promise<unknown>). soft-delete.ts: `withDeleted` constraint `Record<string,
+    // any>` → `unknown`, no-op `registerSoftDeleteMiddleware(_client: any)` →
+    // `unknown` (the `$extends: any` generic constraint stays — tightening it risks
+    // the `$extends({...}) as T` call). 11 `: any` cleared. (RequirementMapping +
+    // soft-delete-lifecycle deferred to PR21b/c — they need paired test-mock edits.)
+    //   : any 153 → 142
+    ': any': 142,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,
