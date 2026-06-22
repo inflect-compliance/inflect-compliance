@@ -174,8 +174,7 @@ export type ComboboxProps<
 
 function isMultipleSelection(
     multiple: boolean | undefined,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    setSelected: any,
+    setSelected: unknown,
 ): setSelected is (tags: ComboboxOption[]) => void {
     return multiple === true;
 }
@@ -770,8 +769,7 @@ const DisabledTooltip = ({
     );
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const isReactNode = (element: any): element is ReactNode =>
+const isReactNode = (element: unknown): element is ReactNode =>
     isValidElement(element);
 
 // Custom Empty component because our current cmdk version has an issue

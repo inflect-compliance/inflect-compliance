@@ -273,7 +273,15 @@ const CAPS: Record<string, number> = {
     // dashboard: `t` translator param `opts?: any` → typed values bag. All file
     // disables removed. 15 `: any` cleared.
     //   : any 90 → 75
-    ': any': 75,
+    // any-paydown wave PR26 (2026-06-22) — `: any` cont. (UI primitives). table.tsx
+    // `columns.map((column: any))` → inferred (`ColumnDef<T, any>` element; its
+    // file disable stays — `ColumnDef<T, any>` generics remain) + comment reword;
+    // combobox two type-guard params (`setSelected`, `isReactNode` element) → guard
+    // from `unknown`; form `handleSubmit(data: any)` → `Record<string, unknown>`
+    // (the Form constructs the `{[name]: value}` bag) + removed its now-unused
+    // disable; GraphExplorer prose `: any` reworded. 6 `: any` cleared.
+    //   : any 75 → 69
+    ': any': 69,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,

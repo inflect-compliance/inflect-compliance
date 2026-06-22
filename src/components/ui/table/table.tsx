@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any --
  * Tanstack-react-table primitive wrapper. Remaining `any` usages are
  * structural — `getValue<T>()`, generic `T extends any` bounds, and the
- * heterogeneous `column: any` param in sort helpers. The `ColumnMeta`
+ * heterogeneous column param in sort helpers. The `ColumnMeta`
  * fields (disableTruncate / headerTooltip) are now typed via the module
  * augmentation in `./tanstack-table.d.ts` and no longer require casts.
  */
@@ -201,7 +201,7 @@ export function useTable<T extends any>(
 
   const normalizedColumns = useMemo(
     () =>
-      columns.map((column: any) =>
+      columns.map((column) =>
         column?.id === "menu"
           ? {
               ...column,

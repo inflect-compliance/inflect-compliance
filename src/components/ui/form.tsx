@@ -1,8 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any --
- * Form primitive — generic over arbitrary input value shapes. The
- * 2 `any` sites here are in onSubmit/onChange handlers that pass
- * through whatever shape the caller's <input> element produces.
- */
 import { cn } from "@/lib/cn";
 import { InputHTMLAttributes, ReactNode, useMemo, useState } from "react";
 import { Button } from "./button";
@@ -23,7 +18,7 @@ export function Form({
   helpText?: string | ReactNode;
   buttonText?: string;
   disabledTooltip?: string | ReactNode;
-  handleSubmit: (data: any) => Promise<unknown>;
+  handleSubmit: (data: Record<string, unknown>) => Promise<unknown>;
 }) {
   const [value, setValue] = useState(inputAttrs.defaultValue);
   const [saving, setSaving] = useState(false);
