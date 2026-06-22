@@ -312,10 +312,8 @@ export function withRlsTripwireExtension<T extends { $extends: any }>(
                 }: {
                     model: string;
                     operation: string;
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    args: any;
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    query: (a: any) => Promise<unknown>;
+                    args: unknown;
+                    query: (a: unknown) => Promise<unknown>;
                 }) {
                     if (!isTenantScopedModel(model)) {
                         return query(args);
@@ -359,8 +357,7 @@ export function withRlsTripwireExtension<T extends { $extends: any }>(
  *
  * @deprecated Remove once `instrumentation.ts` stops calling it.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function installRlsTripwire(_client: any): void {
+export function installRlsTripwire(_client: unknown): void {
     /* no-op — see docstring */
 }
 

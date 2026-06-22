@@ -244,7 +244,18 @@ const CAPS: Record<string, number> = {
     // shape (not `any`), added `entityId` to AuditorPackItem/PackItem. All 6
     // disables removed. 24 `: any` cleared.
     //   : any 133 → 109
-    ': any': 109,
+    // any-paydown wave PR23 (2026-06-22) — `: any` cont. (Prisma middleware
+    // boundary params): rls/encryption/pii `$allOperations` handlers. `args` →
+    // `unknown` (rls never reads it) or `{ data?; create?; update?; where?: unknown }`
+    // (enc/pii read those keys); `query`/`next` callback INPUT → `unknown`
+    // (pass-through only); pii's legacy v5 wrapper `params`/`next` → a
+    // `LegacyMiddlewareParams` type (carries the optional v5 dataPath/runInTransaction
+    // the test suite passes). The three `T extends { $extends: any }` constraints
+    // STAY `any` (Prisma's real `$extends` signature isn't assignable to any tighter
+    // shape — tightening makes `client.$extends({...})` error with `never`); their 3
+    // disables remain. 11 of 14 sites cleared.
+    //   : any 109 → 98
+    ': any': 98,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,

@@ -405,8 +405,7 @@ async function runPiiEncryption(
     params: {
         action: string;
         model?: string;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        args: any;
+        args: { data?: unknown; create?: unknown; update?: unknown; where?: unknown };
     },
     next: (p: typeof params) => Promise<unknown>,
 ): Promise<unknown> {
@@ -514,11 +513,19 @@ async function runPiiEncryption(
  * `$extends` API. Production code paths use
  * `withPiiEncryptionExtension` below.
  */
+// Legacy Prisma v5 `$use` params shape the test suite still exercises
+// (carries the optional `dataPath`/`runInTransaction` v5 extras). Forwarded
+// to `runPiiEncryption`, whose narrower param it is assignable to.
+type LegacyMiddlewareParams = {
+    action: string;
+    model?: string;
+    args: { data?: unknown; create?: unknown; update?: unknown; where?: unknown };
+    dataPath?: unknown;
+    runInTransaction?: boolean;
+};
 export const piiEncryptionMiddleware = async (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    params: any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    next: (p: any) => Promise<unknown>,
+    params: LegacyMiddlewareParams,
+    next: (p: LegacyMiddlewareParams) => Promise<unknown>,
 ): Promise<unknown> => runPiiEncryption(params, next);
 
 /**
@@ -558,10 +565,8 @@ export function withPiiEncryptionExtension<T extends { $extends: any }>(
                 }: {
                     model: string;
                     operation: string;
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    args: any;
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    query: (a: any) => Promise<unknown>;
+                    args: { data?: unknown; create?: unknown; update?: unknown; where?: unknown };
+                    query: (a: unknown) => Promise<unknown>;
                 }) {
                     return runPiiEncryption(
                         { action: operation, model, args },
