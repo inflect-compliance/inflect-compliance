@@ -25,7 +25,6 @@
  * the worker. The modal is a thin coordinator + status surface.
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSWRConfig } from 'swr';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import {
@@ -44,7 +43,6 @@ import {
     FileDropzone,
     type FileDropzoneHandle,
 } from '@/components/ui/FileDropzone';
-import { queryKeys } from '@/lib/queryKeys';
 import {
     uploadWithProgress,
     UploadHttpError,
@@ -98,9 +96,8 @@ export function EvidenceBulkImportModal({
     apiUrl,
 }: EvidenceBulkImportModalProps) {
     const close = useCallback(() => setOpen(false), [setOpen]);
-    const queryClient = useQueryClient();
-    // Epic 69 — bridge cache invalidation to SWR (EvidenceClient
-    // now reads from `useTenantSWR(CACHE_KEYS.evidence.list())`).
+    // EvidenceClient reads from `useTenantSWR(CACHE_KEYS.evidence.list())`;
+    // revalidate that key on import completion.
     const { mutate: swrMutate } = useSWRConfig();
     const dropzoneRef = useRef<FileDropzoneHandle>(null);
 
@@ -138,10 +135,8 @@ export function EvidenceBulkImportModal({
                     next.state === 'completed' ||
                     next.state === 'failed'
                 ) {
-                    queryClient.invalidateQueries({
-                        queryKey: queryKeys.evidence.all(tenantSlug),
-                    });
-                    // Bridge to the SWR cache the list page reads from.
+                    // Revalidate every `/evidence?…` SWR cache entry so the
+                    // list page refreshes regardless of the active filter.
                     const evidenceUrlPrefix = apiUrl(CACHE_KEYS.evidence.list());
                     swrMutate(
                         (key) =>
@@ -163,46 +158,13 @@ export function EvidenceBulkImportModal({
         return () => {
             cancelled = true;
         };
-    }, [jobId, apiUrl, queryClient, tenantSlug, swrMutate]);
+    }, [jobId, apiUrl, swrMutate]);
 
-    const mutation = useMutation({
-        mutationFn: async (vars: {
-            file: File;
-            onProgress: (percent: number | null) => void;
-            signal: AbortSignal;
-        }) => {
-            const formData = new FormData();
-            formData.append('file', vars.file);
-            const res = await uploadWithProgress<{ jobId: string }>(
-                apiUrl('/evidence/imports'),
-                formData,
-                {
-                    onProgress: (p) => vars.onProgress(p.percent),
-                    signal: vars.signal,
-                },
-            );
-            return res;
-        },
-        onSuccess: (data) => {
-            if (data?.jobId) setJobId(data.jobId);
-        },
-        onError: (err) => {
-            const msg =
-                err instanceof UploadHttpError
-                    ? (() => {
-                          const body = err.parsedBody as
-                              | { error?: string; message?: string }
-                              | null;
-                          return body?.error || body?.message || err.message;
-                      })()
-                    : err instanceof Error
-                      ? err.message
-                      : 'Bulk import failed';
-            setError(msg);
-            setBusy(false);
-        },
-    });
-
+    // Per-file upload handler driven by <FileDropzone>. Folds the former
+    // useMutation (mutationFn + onSuccess + onError) into one async fn:
+    // on success it seeds the jobId (kicking off the poll loop above); on
+    // error it surfaces the message and re-throws so the dropzone's
+    // per-file promise rejects.
     const onUpload = useCallback(
         async (
             file: File,
@@ -210,8 +172,38 @@ export function EvidenceBulkImportModal({
                 onProgress: (p: number | null) => void;
                 signal: AbortSignal;
             },
-        ) => mutation.mutateAsync({ file, ...ctx }),
-        [mutation],
+        ) => {
+            const formData = new FormData();
+            formData.append('file', file);
+            try {
+                const res = await uploadWithProgress<{ jobId: string }>(
+                    apiUrl('/evidence/imports'),
+                    formData,
+                    {
+                        onProgress: (p) => ctx.onProgress(p.percent),
+                        signal: ctx.signal,
+                    },
+                );
+                if (res?.jobId) setJobId(res.jobId);
+                return res;
+            } catch (err) {
+                const msg =
+                    err instanceof UploadHttpError
+                        ? (() => {
+                              const body = err.parsedBody as
+                                  | { error?: string; message?: string }
+                                  | null;
+                              return body?.error || body?.message || err.message;
+                          })()
+                        : err instanceof Error
+                          ? err.message
+                          : 'Bulk import failed';
+                setError(msg);
+                setBusy(false);
+                throw err;
+            }
+        },
+        [apiUrl],
     );
 
     const handleSubmit = (e: React.FormEvent) => {
