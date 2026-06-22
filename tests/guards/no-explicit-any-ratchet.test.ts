@@ -397,7 +397,15 @@ const CAPS: Record<string, number> = {
     // superset → assignable), while the minimal unit-test fixtures (which omit
     // control fields) also satisfy the optional shape — zero caller/test churn. 2 cleared.
     //   : any 7 → 5
-    ': any': 5,
+    // any-paydown wave PR43 (2026-06-22) — `: any` cont. (integrations registry).
+    // The two heterogeneous constructor types `IntegrationClientConstructor` /
+    // `FieldMapperConstructor` used `new (config: any, …)` to accept any subclass
+    // (params are contravariant — a base-config param would reject narrower
+    // subclasses). Erased the param to `never` (every concrete `new (c: SubConfig)`
+    // IS assignable to `new (c: never)`) and cast `config as never` / `options as
+    // never` at the two `createClient`/`createMapper` factory sites. 2 cleared.
+    //   : any 5 → 3
+    ': any': 3,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,
