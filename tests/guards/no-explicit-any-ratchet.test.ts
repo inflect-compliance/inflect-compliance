@@ -369,7 +369,14 @@ const CAPS: Record<string, number> = {
     // `result.gaps.map((g: any))` → infers `ReadinessGap`; use-calendar-badge prose
     // reworded. 5 cleared.
     //   : any 20 → 15
-    ': any': 15,
+    // any-paydown wave PR39 (2026-06-22) — `: any` cont. (evidence-row DTO cluster).
+    // Defined a shared `EvidenceTabRow` in EvidenceSubTable and typed
+    // `EvidenceTabData.evidence` to it (+ dropped the dedup filter annotation);
+    // controls/[controlId] deleted its duplicate `EvidenceTabData` and imports the
+    // SubTable's; AttachedEvidencePanel's `(ev: any)` filter drops to the inferred
+    // row + its file-level disable removed. 4 cleared.
+    //   : any 15 → 11
+    ': any': 11,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,
