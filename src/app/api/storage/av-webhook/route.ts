@@ -115,8 +115,7 @@ export async function POST(req: NextRequest) {
         }
 
         // ─── Lookup file record ───
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let fileRecord: any;
+        let fileRecord: Awaited<ReturnType<typeof prisma.fileRecord.findUnique>> = null;
         if (payload.fileId) {
 
             fileRecord = await prisma.fileRecord.findUnique({

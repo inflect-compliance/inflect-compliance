@@ -3,7 +3,7 @@
  *
  * An AutomationRule.triggerEvent is a free-form string in the database so
  * new events can be emitted without a schema migration. This file is the
- * *producer-side* contract: any code that either emits an event (audit
+ * *producer-side* contract — any code that either emits an event (audit
  * writers, usecase hooks) or lets a user pick one (builder UI) imports
  * from here. Typos at the producer side become compile errors; typos in
  * stored rules become runtime "no matching event" non-firings.

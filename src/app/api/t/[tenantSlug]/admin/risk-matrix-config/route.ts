@@ -4,7 +4,7 @@
  *
  *   - GET — same payload as `/risk-matrix-config`, mirrored here so
  *     the admin UI can read + write off a single base path.
- *   - PUT — validate + upsert. Patch-shaped: any subset of the
+ *   - PUT — validate + upsert. Patch-shaped — any subset of the
  *     fields can land; the usecase merges over the prior effective
  *     config, validates cross-field invariants (band coverage,
  *     label-array length), and writes a single row.

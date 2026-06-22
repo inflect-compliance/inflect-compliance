@@ -30,15 +30,13 @@ export const POST = withApiErrorHandling(withValidatedBody(AuthActionSchema, asy
         // net so a DB error during registration returns JSON instead of
         // bubbling as an HTML 500 page.
         return await handleRegister(body);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
+    } catch (error) {
         logger.error('Auth error', { component: 'auth', error: error instanceof Error ? error.message : String(error) });
-        return jsonResponse({ error: error.message || 'Auth failed' }, { status: 500 });
+        return jsonResponse({ error: error instanceof Error ? error.message : 'Auth failed' }, { status: 500 });
     }
 }));
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function handleRegister(body: any) {
+async function handleRegister(body: { email: string; password: string; name: string; orgName: string }) {
     const { email: rawEmail, password, name, orgName } = body;
     if (!rawEmail || !password || !name || !orgName) {
         return jsonResponse({ error: 'Missing required fields' }, { status: 400 });

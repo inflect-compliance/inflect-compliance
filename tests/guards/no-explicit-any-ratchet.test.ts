@@ -342,7 +342,14 @@ const CAPS: Record<string, number> = {
     // `cycle.packs.map((p))` infers `AuditCyclePack`; login two `catch (err: any)` →
     // bare + `instanceof Error`; TreeExpandCollapseToggle prose `: any` reworded. 7 cleared.
     //   : any 39 → 32
-    ': any': 32,
+    // any-paydown wave PR35 (2026-06-22) — `: any` cont. (API routes + prose).
+    // register/route `catch (error: any)` → bare + narrowing, `handleRegister(body:
+    // any)` → the destructured `{ email; password; name; orgName }` shape; av-webhook
+    // `let fileRecord: any` → `Awaited<ReturnType<typeof prisma.fileRecord.findUnique>>`;
+    // 3 prose `: any` reworded (risk-matrix-config / verify-email-resend /
+    // automation/events). 6 cleared.
+    //   : any 32 → 26
+    ': any': 26,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,

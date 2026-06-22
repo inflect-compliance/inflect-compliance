@@ -8,7 +8,7 @@
  *   - the rate limit is tripped
  *   - the mailer itself errored
  *
- * That uniform response is deliberate: any variation in status code,
+ * That uniform response is deliberate — any variation in status code,
  * body, or latency would leak whether a given address is registered.
  *
  * Per-identifier rate limiting still runs (via the same Upstash/
