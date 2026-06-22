@@ -297,7 +297,15 @@ const CAPS: Record<string, number> = {
     // (asset.ts + soa-checks deferred — schema-string-vs-Prisma-enum casts + test
     // fixture shape, handled in PR29.)
     //   : any 63 → 59
-    ': any': 59,
+    // any-paydown wave PR29 (2026-06-22) — `: any` cont. (asset usecase). createAsset/
+    // updateAsset `data: any` → hand-written `CreateAssetInput` / `UpdateAssetInput`
+    // (= Partial). Hand-written rather than `z.infer`/`z.input` of the schema because
+    // the schema uses `z.coerce` (input type `unknown`) and the usecase is called in
+    // tests before the write gate with partial objects — so `type` is optional and CIA
+    // fields are concrete `number?`. `data.type` cast `as AssetType` at the repo calls;
+    // the audit-diff dynamic key uses `as unknown as Record<string, unknown>`. 2 cleared.
+    //   : any 59 → 57
+    ': any': 57,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,
