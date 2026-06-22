@@ -231,7 +231,20 @@ const CAPS: Record<string, number> = {
     // integration test casts the `unknown[]` list result before `.map`. 5 `: any`
     // cleared.
     //   : any 138 → 133
-    ': any': 133,
+    // any-paydown wave PR22 (2026-06-22) — `: any` cont. (Traceability + 3 audit
+    // files). TraceabilityPanel: typed the 3 dropdown-option states (RiskOption/
+    // ControlOption/AssetOption), `useQuery<TraceabilityData|null>`, generic
+    // `unwrap<T>(d: unknown)` with runtime-guarded `as T[]`, `body` →
+    // `Record<string, string|undefined>`, dropped raw-table/option `.map` callbacks
+    // (now infer TraceLinkEntry / option types) + `?? ''` coercions where the
+    // optional linked entity's id/status fed a string slot. AuditsClient: props/
+    // optimistic-updater/cell `.map` → AuditListRow/AuditDetail. auditor + packs:
+    // typed the packs list (new AuditorPackListRow), grouped `Record<string,
+    // PackItem[]>`, the `snapshotJson` `JSON.parse` `snap` → a small optional-field
+    // shape (not `any`), added `entityId` to AuditorPackItem/PackItem. All 6
+    // disables removed. 24 `: any` cleared.
+    //   : any 133 → 109
+    ': any': 109,
     '<any>': 0,
     'useState<any>': 0,
     'as any': 15,

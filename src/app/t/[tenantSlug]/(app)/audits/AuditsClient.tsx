@@ -18,7 +18,6 @@ import { cn } from '@/lib/cn';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { NewAuditModal } from './NewAuditModal';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 const STATUS_BADGE: Record<string, StatusBadgeVariant> = {
     PLANNED: 'neutral', IN_PROGRESS: 'info', COMPLETED: 'success', CANCELLED: 'warning',
 };
@@ -36,7 +35,7 @@ interface AuditListRow {
 }
 
 interface AuditsClientProps {
-    initialAudits: any[];
+    initialAudits: AuditListRow[];
     tenantSlug: string;
     translations: {
         title: string;
@@ -142,7 +141,7 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
     const updateAuditStatus = async (status: string) => {
         if (!selected) return;
         await fetch(apiUrl(`/audits/${selected.id}`), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
-        setSelected((s: any) => ({ ...s, status }));
+        setSelected((s) => (s ? { ...s, status } : s));
         queryClient.invalidateQueries({ queryKey: queryKeys.audits.list(tenantSlug) });
     };
 
@@ -220,7 +219,7 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-default">
                 <div className="space-y-tight">
-                    {audits.map((a: any) => (
+                    {audits.map((a) => (
                         <button key={a.id} onClick={() => loadAudit(a.id)}
                             className={cn(cardVariants({ density: 'compact' }), 'w-full text-left hover:bg-bg-muted/50 transition', selected?.id === a.id && 'ring-2 ring-[var(--ring)]')}>
                             <div className="flex items-center justify-between">
@@ -247,7 +246,7 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
                             <div>
                                 <CardHeader title={`${t.checklist} (${selected.checklist?.length || 0})`} className="mb-3" />
                                 <div className="space-y-tight">
-                                    {selected.checklist?.map((item: any) => (
+                                    {selected.checklist?.map((item) => (
                                         <div key={item.id} className="flex flex-col sm:flex-row items-start gap-compact p-3 border border-border-default/50 rounded-lg">
                                             <Combobox
                                                 hideSearch
@@ -273,7 +272,7 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
                             {selected.findings?.length > 0 && (
                                 <div>
                                     <Heading level={3} className="mb-2">{t.findingsTab} ({selected.findings.length})</Heading>
-                                    {selected.findings.map((f: any) => (
+                                    {selected.findings.map((f) => (
                                         <div key={f.id} className="p-3 border border-border-default/50 rounded-lg mb-2">
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm font-medium">{f.title}</span>

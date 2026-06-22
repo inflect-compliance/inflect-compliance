@@ -1,6 +1,5 @@
 'use client';
 import { formatDateTime } from '@/lib/format-date';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AppIcon, type AppIconName } from '@/components/icons/AppIcon';
@@ -31,6 +30,7 @@ const ENTITY_ICON: Record<string, AppIconName> = {
 interface PackItem {
     id: string;
     entityType: string;
+    entityId: string;
     snapshotJson: string | null;
 }
 interface PackDetail {
@@ -141,8 +141,8 @@ export default function PackDetailPage() {
     const isFrozen = pack.status === 'FROZEN' || pack.status === 'EXPORTED';
 
     // Group items by entity type
-    const grouped: Record<string, any[]> = {};
-    (pack.items || []).forEach((item: any) => {
+    const grouped: Record<string, PackItem[]> = {};
+    (pack.items || []).forEach((item) => {
         if (!grouped[item.entityType]) grouped[item.entityType] = [];
         grouped[item.entityType].push(item);
     });
@@ -268,8 +268,8 @@ export default function PackDetailPage() {
                             <span className="text-content-subtle">({items.length})</span>
                         </Heading>
                         <div className={cn(cardVariants({ density: 'none' }), 'divide-y divide-border-default/50')}>
-                            {items.slice(0, 50).map((item: any) => {
-                                let snap: any = {};
+                            {items.slice(0, 50).map((item) => {
+                                let snap: { code?: string; title?: string; name?: string; description?: string; status?: string; taskCompletion?: { done: number; total: number }; evidenceCount?: number } = {};
                                 try { snap = JSON.parse(item.snapshotJson || '{}'); } catch { /* */ }
                                 const name = snap.code || snap.title || snap.name || item.entityId;
                                 const status = snap.status || '';

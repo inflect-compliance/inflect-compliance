@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { formatDate } from '@/lib/format-date';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { useState, useEffect, useCallback } from 'react';
@@ -21,7 +20,16 @@ const FW_META: Record<string, { icon: AppIconName; label: string }> = {
 interface AuditorPackItem {
     id: string;
     entityType: string;
+    entityId: string;
     snapshotJson: string | null;
+}
+// Assigned-packs list row — getAuditorAssignedPacks.
+interface AuditorPackListRow {
+    id: string;
+    name: string;
+    status: string;
+    cycle: { frameworkKey: string } | null;
+    items: { id: string }[];
 }
 interface AuditorPackDetail {
     id: string;
@@ -37,7 +45,7 @@ export default function AuditorPortalPage() {
     const tenantSlug = params.tenantSlug as string;
     const apiUrl = useCallback((path: string) => `/api/t/${tenantSlug}${path}`, [tenantSlug]);
 
-    const [packs, setPacks] = useState<any[]>([]);
+    const [packs, setPacks] = useState<AuditorPackListRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedPack, setSelectedPack] = useState<AuditorPackDetail | null>(null);
 
@@ -85,7 +93,7 @@ export default function AuditorPortalPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-default">
                     <div className="space-y-tight">
                         {packs.map(p => {
-                            const meta = FW_META[p.cycle?.frameworkKey] || { icon: 'shield' as AppIconName, label: p.cycle?.frameworkKey || '' };
+                            const meta = FW_META[p.cycle?.frameworkKey ?? ''] || { icon: 'shield' as AppIconName, label: p.cycle?.frameworkKey || '' };
                             return (
                                 <button key={p.id} onClick={() => loadPack(p.id)}
                                     className={cn(cardVariants({ density: 'compact' }), 'w-full text-left hover:bg-bg-muted/50 transition', selectedPack?.id === p.id && 'ring-2 ring-[var(--ring)]')}>
@@ -119,8 +127,8 @@ export default function AuditorPortalPage() {
 
                                 {/* Items grouped */}
                                 {selectedPack.items?.length > 0 && (() => {
-                                    const grouped: Record<string, any[]> = {};
-                                    selectedPack.items.forEach((item: any) => {
+                                    const grouped: Record<string, AuditorPackItem[]> = {};
+                                    selectedPack.items.forEach((item) => {
                                         if (!grouped[item.entityType]) grouped[item.entityType] = [];
                                         grouped[item.entityType].push(item);
                                     });
@@ -128,8 +136,8 @@ export default function AuditorPortalPage() {
                                         <div key={type}>
                                             <Heading level={3} className="mb-1">{type} ({items.length})</Heading>
                                             <div className="border border-border-default/50 rounded-lg divide-y divide-border-default/50">
-                                                {items.map((item: any) => {
-                                                    let snap: any = {};
+                                                {items.map((item) => {
+                                                    let snap: { code?: string; title?: string; name?: string; description?: string } = {};
                                                     try { snap = JSON.parse(item.snapshotJson || '{}'); } catch { /* */ }
                                                     return (
                                                         <div key={item.id} className="p-2 text-sm">
