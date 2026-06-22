@@ -113,9 +113,8 @@ function LoginForm() {
             // Using router.push() + router.refresh() synchronously causes App Router transition 
             // cancellations/race conditions, leaving the user stuck on /login permanently.
             window.location.href = callbackUrl;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
         } finally {
             setLoading(false);
         }
@@ -145,9 +144,8 @@ function LoginForm() {
         setLoading(true);
         try {
             await signIn(provider, { callbackUrl });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
             setLoading(false);
         }
     };
