@@ -21,6 +21,25 @@ const CI = fs.readFileSync(
     'utf8',
 );
 
+const SETUP_ACTION = fs.readFileSync(
+    path.resolve(__dirname, '../../.github/actions/setup-node-prisma/action.yml'),
+    'utf8',
+);
+
+/** All workflow + composite-action YAML files under .github. */
+function githubYamlFiles(): string[] {
+    const root = path.resolve(__dirname, '../../.github');
+    const out: string[] = [];
+    (function walk(dir: string) {
+        for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+            const full = path.join(dir, e.name);
+            if (e.isDirectory()) walk(full);
+            else if (/\.ya?ml$/.test(e.name)) out.push(full);
+        }
+    })(root);
+    return out;
+}
+
 /** First `timeout-minutes` after a job's `name:` line. */
 function jobTimeout(jobName: string): number {
     const re = new RegExp(
@@ -46,5 +65,18 @@ describe('CI flake hardening', () => {
 
     it('the Docker Build job has headroom for a cold npm-ci layer (>= 40 min)', () => {
         expect(jobTimeout('Docker Build')).toBeGreaterThanOrEqual(40);
+    });
+
+    it('npm ci is retried (no bare `run: npm ci`) so a transient registry ECONNRESET does not fail the job', () => {
+        // The shared setup action installs deps for most jobs; its npm ci
+        // must retry like prisma generate already does (2026-06: a registry
+        // ECONNRESET during npm ci failed an otherwise-green Build job).
+        expect(SETUP_ACTION).toMatch(/for attempt in 1 2 3;[\s\S]{0,160}npm ci/);
+        // No workflow or composite action may regress to a bare,
+        // un-retried `run: npm ci`.
+        const offenders = githubYamlFiles().filter((f) =>
+            /run: npm ci\s*$/m.test(fs.readFileSync(f, 'utf8')),
+        );
+        expect(offenders).toEqual([]);
     });
 });
