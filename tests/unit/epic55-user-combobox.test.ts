@@ -3,15 +3,14 @@
  *
  * Asserts:
  *   1. The <UserCombobox> wrapper fetches members through a single
- *      tenant-scoped React Query key, projects them into Combobox
- *      options, and exposes a narrow single-vs-multi API.
+ *      tenant-scoped SWR key (the resolved `/users/assignable` URL),
+ *      projects them into Combobox options, and exposes a narrow
+ *      single-vs-multi API. (Per-tenant cache isolation comes from the
+ *      tenantSlug in that URL.)
  *   2. Three free-text UUID inputs are gone — replaced by UserCombobox:
  *        a. ControlDetailSheet   (#sheet-owner-input)
  *        b. NewTaskPage          (#task-assignee-input)
  *        c. TaskDetailPage       (#task-assignee-input)
- *   3. Tenant safety: the shared queryKeys.members entry is namespaced
- *      per tenant, the fetch path carries the tenantSlug, and the
- *      wrapper never leaks raw admin data into the picker option labels.
  */
 
 import * as fs from 'fs';
@@ -23,7 +22,6 @@ function read(rel: string): string {
 }
 
 const USER_COMBO_SRC = read('src/components/ui/user-combobox.tsx');
-const QUERY_KEYS_SRC = read('src/lib/queryKeys.ts');
 const SHEET_SRC = read(
     'src/app/t/[tenantSlug]/(app)/controls/ControlDetailSheet.tsx',
 );
@@ -160,25 +158,7 @@ describe('UserCombobox — contract', () => {
     });
 });
 
-// ─── 2. queryKeys.members — tenant scoping ──────────────────────
-
-describe('queryKeys.members — tenant scoping', () => {
-    it('exposes members.all(tenantSlug) and members.list(tenantSlug)', () => {
-        expect(QUERY_KEYS_SRC).toMatch(
-            /members:\s*\{\s*all:\s*\(tenantSlug:\s*string\)\s*=>\s*\['members',\s*tenantSlug\]/,
-        );
-        expect(QUERY_KEYS_SRC).toMatch(
-            /list:\s*\(tenantSlug:\s*string\)\s*=>\s*\['members',\s*tenantSlug,\s*['"]list['"]\]/,
-        );
-    });
-
-    it('tenantSlug is part of the cache key — no cross-tenant bleed', () => {
-        const re = /members:\s*\{[\s\S]*?tenantSlug[\s\S]*?\}/;
-        expect(QUERY_KEYS_SRC).toMatch(re);
-    });
-});
-
-// ─── 3. ControlDetailSheet — owner picker migration ─────────────
+// ─── 2. ControlDetailSheet — owner picker migration ─────────────
 
 describe('ControlDetailSheet — owner UserCombobox', () => {
     it('imports UserCombobox + FormField', () => {
