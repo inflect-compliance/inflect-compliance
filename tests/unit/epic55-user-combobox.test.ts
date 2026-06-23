@@ -60,11 +60,12 @@ describe('UserCombobox — contract', () => {
         expect(USER_COMBO_SRC).toMatch(/<Combobox\b/);
     });
 
-    it('fetches members via React Query, keyed on tenantSlug', () => {
-        expect(USER_COMBO_SRC).toMatch(/useQuery</);
-        expect(USER_COMBO_SRC).toMatch(
-            /queryKeys\.members\.list\(tenantSlug\)/,
-        );
+    it('fetches members via SWR, keyed on the tenant-scoped URL', () => {
+        // SWR migration Wave 5a — was React Query (useQuery +
+        // queryKeys.members.list); now raw useSWR keyed by the resolved
+        // `/users/assignable` URL (tenant slug in the path → per-tenant cache).
+        expect(USER_COMBO_SRC).toMatch(/useSWR</);
+        expect(USER_COMBO_SRC).not.toMatch(/useQuery</);
         // B1 — the assignment picker reads from the non-admin
         // `/users/assignable` endpoint so EDITOR / READER users see
         // the roster. The legacy `/admin/members` URL is no longer
