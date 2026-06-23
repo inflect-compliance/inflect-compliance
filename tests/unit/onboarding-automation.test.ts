@@ -3,60 +3,21 @@
  *
  * Tests the deterministic risk catalog, asset type inference,
  * idempotency contracts, and starter task generation.
+ *
+ * These bind to the REAL source symbols (`inferAssetType`,
+ * `STARTER_RISKS`, `selectApplicableRisks`) — never a local shadow
+ * copy. A shadow copy is exactly what let the `DATASTORE` (vs the real
+ * `DATA_STORE` Prisma enum) asset-type mismatch ship undetected: the
+ * test validated its own copy of the bug.
  */
+import { AssetType } from '@prisma/client';
+import {
+    inferAssetType,
+    selectApplicableRisks,
+    STARTER_RISKS,
+} from '@/app-layer/usecases/onboarding-automation';
 
-// ─── Asset Type Inference ───
-
-const ASSET_TYPE_KEYWORDS: Record<string, string[]> = {
-    APPLICATION: ['app', 'application', 'software', 'platform', 'portal', 'saas', 'web', 'mobile', 'api', 'system'],
-    DATASTORE: ['database', 'db', 'data', 'storage', 'warehouse', 'lake', 'backup', 'archive', 'repository'],
-    INFRASTRUCTURE: ['server', 'cloud', 'network', 'firewall', 'infrastructure', 'cluster', 'vpc', 'aws', 'azure', 'gcp', 'kubernetes'],
-    VENDOR: ['vendor', 'partner', 'supplier', 'third-party', 'contractor', 'outsourced'],
-    PROCESS: ['process', 'workflow', 'procedure', 'policy', 'operation', 'hr', 'finance', 'payroll'],
-};
-
-function inferAssetType(name: string): string {
-    const lower = name.toLowerCase();
-    for (const [type, keywords] of Object.entries(ASSET_TYPE_KEYWORDS)) {
-        if (keywords.some(kw => lower.includes(kw))) return type;
-    }
-    return 'APPLICATION';
-}
-
-// ─── Starter Risk Catalog (copied for testing) ───
-
-interface StarterRisk {
-    title: string;
-    category: string;
-    assetTypes: string[];
-    frameworks: string[];
-}
-
-const STARTER_RISKS: StarterRisk[] = [
-    { title: 'Unauthorized Access to Application', category: 'Access Control', assetTypes: ['APPLICATION'], frameworks: ['iso27001', 'nis2'] },
-    { title: 'Application Vulnerability Exploitation', category: 'Vulnerability Management', assetTypes: ['APPLICATION'], frameworks: ['iso27001'] },
-    { title: 'Insufficient Application Logging', category: 'Logging & Monitoring', assetTypes: ['APPLICATION'], frameworks: ['iso27001'] },
-    { title: 'Application Availability Disruption', category: 'Availability', assetTypes: ['APPLICATION'], frameworks: ['iso27001', 'nis2'] },
-    { title: 'Data Backup Failure', category: 'Business Continuity', assetTypes: ['DATASTORE'], frameworks: ['iso27001', 'nis2'] },
-    { title: 'Data Confidentiality Breach', category: 'Confidentiality', assetTypes: ['DATASTORE'], frameworks: ['iso27001', 'nis2'] },
-    { title: 'Data Integrity Compromise', category: 'Data Integrity', assetTypes: ['DATASTORE'], frameworks: ['iso27001'] },
-    { title: 'Network Perimeter Breach', category: 'Network Security', assetTypes: ['INFRASTRUCTURE'], frameworks: ['iso27001', 'nis2'] },
-    { title: 'Cloud Misconfiguration', category: 'Cloud Security', assetTypes: ['INFRASTRUCTURE'], frameworks: ['iso27001'] },
-    { title: 'Third-Party Data Processing Risk', category: 'Vendor Management', assetTypes: ['VENDOR'], frameworks: ['iso27001', 'nis2'] },
-    { title: 'Supply Chain Dependency Risk', category: 'Supply Chain', assetTypes: ['VENDOR'], frameworks: ['nis2'] },
-    { title: 'Insider Threat', category: 'Human Resources', assetTypes: ['PROCESS'], frameworks: ['iso27001', 'nis2'] },
-    { title: 'Incident Response Failure', category: 'Incident Management', assetTypes: ['PROCESS'], frameworks: ['iso27001', 'nis2'] },
-    { title: 'Regulatory Non-Compliance', category: 'Compliance', assetTypes: [], frameworks: ['iso27001', 'nis2'] },
-    { title: 'Physical Security Breach', category: 'Physical Security', assetTypes: [], frameworks: ['iso27001'] },
-];
-
-function selectApplicableRisks(selectedFrameworks: string[], assetTypes: Set<string>): StarterRisk[] {
-    return STARTER_RISKS.filter(risk => {
-        const fwMatch = risk.frameworks.length === 0 || risk.frameworks.some(fw => selectedFrameworks.includes(fw));
-        const typeMatch = risk.assetTypes.length === 0 || risk.assetTypes.some(at => assetTypes.has(at));
-        return fwMatch && typeMatch;
-    });
-}
+const VALID_ASSET_TYPES = new Set<string>(Object.values(AssetType));
 
 // ─── Tests ───
 
@@ -69,10 +30,10 @@ describe('Onboarding Automation', () => {
             expect(inferAssetType('SaaS Platform')).toBe('APPLICATION');
         });
 
-        it('infers DATASTORE for data-like names', () => {
-            expect(inferAssetType('Customer Database')).toBe('DATASTORE');
-            expect(inferAssetType('Data Warehouse')).toBe('DATASTORE');
-            expect(inferAssetType('Backup Storage')).toBe('DATASTORE');
+        it('infers DATA_STORE for data-like names', () => {
+            expect(inferAssetType('Customer Database')).toBe('DATA_STORE');
+            expect(inferAssetType('Data Warehouse')).toBe('DATA_STORE');
+            expect(inferAssetType('Backup Storage')).toBe('DATA_STORE');
         });
 
         it('infers INFRASTRUCTURE for infra-like names', () => {
@@ -96,19 +57,33 @@ describe('Onboarding Automation', () => {
             expect(inferAssetType('CRM')).toBe('APPLICATION');
             expect(inferAssetType('Something Else')).toBe('APPLICATION');
         });
+
+        it('only ever returns values that exist in the Prisma AssetType enum', () => {
+            // Regression guard for the DATASTORE→DATA_STORE bug: a value that
+            // is not a real enum member would be rejected by Prisma at
+            // asset-create time. Cover every keyword bucket + the default.
+            const names = [
+                'Mobile App', 'Customer Database', 'Backup Storage', 'Data Warehouse',
+                'Cloud Infrastructure', 'AWS VPC', 'Payment Vendor', 'HR Onboarding Process',
+                'CRM', 'Totally Unknown Thing',
+            ];
+            for (const name of names) {
+                expect(VALID_ASSET_TYPES.has(inferAssetType(name))).toBe(true);
+            }
+        });
     });
 
     describe('Risk Catalog Selection', () => {
         it('returns APPLICATION risks for iso27001 with app assets', () => {
-            const risks = selectApplicableRisks(['iso27001'], new Set(['APPLICATION']));
+            const risks = selectApplicableRisks(['iso27001'], new Set([AssetType.APPLICATION]));
             expect(risks.some(r => r.title === 'Unauthorized Access to Application')).toBe(true);
             expect(risks.some(r => r.title === 'Application Vulnerability Exploitation')).toBe(true);
             // General risks should also be included
             expect(risks.some(r => r.title === 'Regulatory Non-Compliance')).toBe(true);
         });
 
-        it('returns DATASTORE risks for nis2 with data assets', () => {
-            const risks = selectApplicableRisks(['nis2'], new Set(['DATASTORE']));
+        it('returns DATA_STORE risks for nis2 with data assets', () => {
+            const risks = selectApplicableRisks(['nis2'], new Set([AssetType.DATA_STORE]));
             expect(risks.some(r => r.title === 'Data Backup Failure')).toBe(true);
             expect(risks.some(r => r.title === 'Data Confidentiality Breach')).toBe(true);
             // iso27001-only risks should NOT be included
@@ -116,13 +91,13 @@ describe('Onboarding Automation', () => {
         });
 
         it('returns VENDOR risks for nis2 with vendor assets', () => {
-            const risks = selectApplicableRisks(['nis2'], new Set(['VENDOR']));
+            const risks = selectApplicableRisks(['nis2'], new Set([AssetType.VENDOR]));
             expect(risks.some(r => r.title === 'Supply Chain Dependency Risk')).toBe(true);
             expect(risks.some(r => r.title === 'Third-Party Data Processing Risk')).toBe(true);
         });
 
         it('returns comprehensive risks for both frameworks + multiple asset types', () => {
-            const risks = selectApplicableRisks(['iso27001', 'nis2'], new Set(['APPLICATION', 'DATASTORE', 'INFRASTRUCTURE']));
+            const risks = selectApplicableRisks(['iso27001', 'nis2'], new Set([AssetType.APPLICATION, AssetType.DATA_STORE, AssetType.INFRASTRUCTURE]));
             // Should include all asset-specific risks plus generals
             expect(risks.length).toBeGreaterThanOrEqual(10);
             expect(risks.some(r => r.title === 'Unauthorized Access to Application')).toBe(true);
@@ -132,16 +107,16 @@ describe('Onboarding Automation', () => {
         });
 
         it('excludes risks for unselected asset types', () => {
-            const risks = selectApplicableRisks(['iso27001'], new Set(['APPLICATION']));
-            // Should NOT include DATASTORE, INFRASTRUCTURE, VENDOR, PROCESS risks
+            const risks = selectApplicableRisks(['iso27001'], new Set([AssetType.APPLICATION]));
+            // Should NOT include DATA_STORE, INFRASTRUCTURE, VENDOR, PROCESS risks
             expect(risks.some(r => r.title === 'Data Backup Failure')).toBe(false);
             expect(risks.some(r => r.title === 'Network Perimeter Breach')).toBe(false);
             expect(risks.some(r => r.title === 'Third-Party Data Processing Risk')).toBe(false);
         });
 
         it('selection is deterministic — same inputs always produce same outputs', () => {
-            const run1 = selectApplicableRisks(['iso27001'], new Set(['APPLICATION']));
-            const run2 = selectApplicableRisks(['iso27001'], new Set(['APPLICATION']));
+            const run1 = selectApplicableRisks(['iso27001'], new Set([AssetType.APPLICATION]));
+            const run2 = selectApplicableRisks(['iso27001'], new Set([AssetType.APPLICATION]));
             expect(run1.map(r => r.title)).toEqual(run2.map(r => r.title));
         });
     });
@@ -160,6 +135,17 @@ describe('Onboarding Automation', () => {
 
         it('total catalog has 15 risks', () => {
             expect(STARTER_RISKS.length).toBe(15);
+        });
+
+        it('every catalog assetType is a real Prisma AssetType enum member', () => {
+            // Catalog drift guard: a stray value like the old `DATASTORE`
+            // would never match an inferred type and would corrupt risk
+            // seeding silently. Bind the catalog to the enum.
+            for (const risk of STARTER_RISKS) {
+                for (const at of risk.assetTypes) {
+                    expect(VALID_ASSET_TYPES.has(at)).toBe(true);
+                }
+            }
         });
     });
 

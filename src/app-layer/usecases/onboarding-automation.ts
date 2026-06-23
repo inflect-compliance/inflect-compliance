@@ -29,46 +29,50 @@ const FRAMEWORK_PACK_KEYS: Record<string, string> = {
 
 // ─── Asset type inference ───
 
-const ASSET_TYPE_KEYWORDS: Record<string, string[]> = {
+// Keyed by the real Prisma `AssetType` enum values — typing the map as
+// `Partial<Record<AssetType, ...>>` makes a bad key (e.g. `DATASTORE`
+// instead of `DATA_STORE`) a compile error rather than a runtime Prisma
+// enum rejection at asset-create time.
+const ASSET_TYPE_KEYWORDS: Partial<Record<AssetType, string[]>> = {
     APPLICATION: ['app', 'application', 'software', 'platform', 'portal', 'saas', 'web', 'mobile', 'api', 'system'],
-    DATASTORE: ['database', 'db', 'data', 'storage', 'warehouse', 'lake', 'backup', 'archive', 'repository'],
+    DATA_STORE: ['database', 'db', 'data', 'storage', 'warehouse', 'lake', 'backup', 'archive', 'repository'],
     INFRASTRUCTURE: ['server', 'cloud', 'network', 'firewall', 'infrastructure', 'cluster', 'vpc', 'aws', 'azure', 'gcp', 'kubernetes'],
     VENDOR: ['vendor', 'partner', 'supplier', 'third-party', 'contractor', 'outsourced'],
     PROCESS: ['process', 'workflow', 'procedure', 'policy', 'operation', 'hr', 'finance', 'payroll'],
 };
 
-function inferAssetType(name: string): string {
+export function inferAssetType(name: string): AssetType {
     const lower = name.toLowerCase();
     for (const [type, keywords] of Object.entries(ASSET_TYPE_KEYWORDS)) {
-        if (keywords.some(kw => lower.includes(kw))) return type;
+        if (keywords.some(kw => lower.includes(kw))) return type as AssetType;
     }
     return 'APPLICATION'; // sensible default
 }
 
 // ─── Risk catalog (deterministic rules) ───
 
-interface StarterRisk {
+export interface StarterRisk {
     title: string;
     category: string;
     threat: string;
     vulnerability: string;
     likelihood: number;
     impact: number;
-    assetTypes: string[];
+    assetTypes: AssetType[];
     frameworks: string[];
 }
 
-const STARTER_RISKS: StarterRisk[] = [
+export const STARTER_RISKS: StarterRisk[] = [
     // APPLICATION risks
     { title: 'Unauthorized Access to Application', category: 'Access Control', threat: 'Unauthorized user access', vulnerability: 'Weak authentication or authorization', likelihood: 3, impact: 4, assetTypes: ['APPLICATION'], frameworks: ['iso27001', 'nis2'] },
     { title: 'Application Vulnerability Exploitation', category: 'Vulnerability Management', threat: 'Exploitation of software vulnerabilities', vulnerability: 'Unpatched application dependencies', likelihood: 3, impact: 4, assetTypes: ['APPLICATION'], frameworks: ['iso27001'] },
     { title: 'Insufficient Application Logging', category: 'Logging & Monitoring', threat: 'Undetected security incidents', vulnerability: 'Inadequate log collection and monitoring', likelihood: 2, impact: 3, assetTypes: ['APPLICATION'], frameworks: ['iso27001'] },
     { title: 'Application Availability Disruption', category: 'Availability', threat: 'Service outage or degraded performance', vulnerability: 'Single point of failure in architecture', likelihood: 2, impact: 4, assetTypes: ['APPLICATION'], frameworks: ['iso27001', 'nis2'] },
 
-    // DATASTORE risks
-    { title: 'Data Backup Failure', category: 'Business Continuity', threat: 'Data loss due to backup failure', vulnerability: 'Untested or misconfigured backup procedures', likelihood: 2, impact: 5, assetTypes: ['DATASTORE'], frameworks: ['iso27001', 'nis2'] },
-    { title: 'Data Confidentiality Breach', category: 'Confidentiality', threat: 'Unauthorized data access or exfiltration', vulnerability: 'Insufficient encryption or access controls', likelihood: 3, impact: 5, assetTypes: ['DATASTORE'], frameworks: ['iso27001', 'nis2'] },
-    { title: 'Data Integrity Compromise', category: 'Data Integrity', threat: 'Unauthorized data modification', vulnerability: 'Lack of integrity verification mechanisms', likelihood: 2, impact: 4, assetTypes: ['DATASTORE'], frameworks: ['iso27001'] },
+    // DATA_STORE risks
+    { title: 'Data Backup Failure', category: 'Business Continuity', threat: 'Data loss due to backup failure', vulnerability: 'Untested or misconfigured backup procedures', likelihood: 2, impact: 5, assetTypes: ['DATA_STORE'], frameworks: ['iso27001', 'nis2'] },
+    { title: 'Data Confidentiality Breach', category: 'Confidentiality', threat: 'Unauthorized data access or exfiltration', vulnerability: 'Insufficient encryption or access controls', likelihood: 3, impact: 5, assetTypes: ['DATA_STORE'], frameworks: ['iso27001', 'nis2'] },
+    { title: 'Data Integrity Compromise', category: 'Data Integrity', threat: 'Unauthorized data modification', vulnerability: 'Lack of integrity verification mechanisms', likelihood: 2, impact: 4, assetTypes: ['DATA_STORE'], frameworks: ['iso27001'] },
 
     // INFRASTRUCTURE risks
     { title: 'Network Perimeter Breach', category: 'Network Security', threat: 'External network attack', vulnerability: 'Misconfigured firewall or security groups', likelihood: 3, impact: 4, assetTypes: ['INFRASTRUCTURE'], frameworks: ['iso27001', 'nis2'] },
@@ -86,6 +90,22 @@ const STARTER_RISKS: StarterRisk[] = [
     { title: 'Regulatory Non-Compliance', category: 'Compliance', threat: 'Regulatory penalties or sanctions', vulnerability: 'Insufficient compliance monitoring', likelihood: 2, impact: 4, assetTypes: [], frameworks: ['iso27001', 'nis2'] },
     { title: 'Physical Security Breach', category: 'Physical Security', threat: 'Unauthorized physical access', vulnerability: 'Weak physical access controls', likelihood: 1, impact: 3, assetTypes: [], frameworks: ['iso27001'] },
 ];
+
+/**
+ * Filter the starter-risk catalog to the rules applicable for the chosen
+ * frameworks and inferred asset types. A risk with no frameworks/assetTypes
+ * is treated as universal. Exported so tests exercise the real catalog +
+ * matching logic rather than a drift-prone shadow copy.
+ */
+export function selectApplicableRisks(selectedFrameworks: string[], assetTypes: Set<AssetType>): StarterRisk[] {
+    return STARTER_RISKS.filter(risk => {
+        // Framework match: if risk specifies frameworks, at least one must be selected
+        const fwMatch = risk.frameworks.length === 0 || risk.frameworks.some(fw => selectedFrameworks.includes(fw));
+        // Asset type match: if risk specifies asset types, at least one must exist
+        const typeMatch = risk.assetTypes.length === 0 || risk.assetTypes.some(at => assetTypes.has(at));
+        return fwMatch && typeMatch;
+    });
+}
 
 // ─── Run Step Action ───
 
@@ -171,7 +191,7 @@ async function executeAssetCreation(ctx: RequestContext, allData: StepData): Pro
                 continue;
             }
 
-            const type = inferAssetType(name) as AssetType;
+            const type = inferAssetType(name);
             await db.asset.create({
                 data: {
                     tenantId: ctx.tenantId,
@@ -233,13 +253,7 @@ async function executeRiskGeneration(ctx: RequestContext, allData: StepData): Pr
     if (assetTypes.size === 0) assetTypes.add('APPLICATION');
 
     // Select applicable risks
-    const applicableRisks = STARTER_RISKS.filter(risk => {
-        // Framework match: if risk specifies frameworks, at least one must be selected
-        const fwMatch = risk.frameworks.length === 0 || risk.frameworks.some(fw => selectedFrameworks.includes(fw));
-        // Asset type match: if risk specifies asset types, at least one must exist
-        const typeMatch = risk.assetTypes.length === 0 || risk.assetTypes.some(at => assetTypes.has(at));
-        return fwMatch && typeMatch;
-    });
+    const applicableRisks = selectApplicableRisks(selectedFrameworks, assetTypes);
 
     let created = 0;
     let skipped = 0;

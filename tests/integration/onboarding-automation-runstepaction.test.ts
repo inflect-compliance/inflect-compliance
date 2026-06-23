@@ -206,22 +206,28 @@ describeFn('onboarding-automation — runStepAction & storeActionResult (integra
     });
 
     it('ASSET_SETUP creates assets (covers inferAssetType branches) and skips existing on re-run', async () => {
-        // Names chosen so inferAssetType returns ONLY enum-valid types:
+        // One name per inferAssetType branch — every inferred value must be a
+        // real Prisma AssetType enum member or asset.create() throws. The
+        // 'Customer Database' → DATA_STORE case is the regression guard for the
+        // DATASTORE/DATA_STORE bug: before the fix it inferred 'DATASTORE',
+        // which is NOT an enum member, so this create threw P2006-style.
         //   'Customer Portal'   → APPLICATION (keyword "portal")
+        //   'Customer Database' → DATA_STORE (keyword "database")
         //   'AWS Cloud Network' → INFRASTRUCTURE (keyword "cloud"/"network")
         //   'Key Vendor Co'     → VENDOR (keyword "vendor")
         //   'Payroll Process'   → PROCESS (keyword "process"/"payroll")
         //   'Brandnewthing'     → APPLICATION (default fallback, no keyword)
-        const assets = ['Customer Portal', 'AWS Cloud Network', 'Key Vendor Co', 'Payroll Process', 'Brandnewthing'];
+        const assets = ['Customer Portal', 'Customer Database', 'AWS Cloud Network', 'Key Vendor Co', 'Payroll Process', 'Brandnewthing'];
         const allData = { ASSET_SETUP: { assets } };
 
         const res = await runStepAction(ctx(), 'ASSET_SETUP', {}, allData);
-        expect(res).toMatchObject({ action: 'ASSET_CREATION', created: 5, skipped: 0 });
+        expect(res).toMatchObject({ action: 'ASSET_CREATION', created: 6, skipped: 0 });
 
         const rows = await globalPrisma.asset.findMany({ where: { tenantId: TENANT_ID }, orderBy: { name: 'asc' } });
-        expect(rows).toHaveLength(5);
+        expect(rows).toHaveLength(6);
         const byName = Object.fromEntries(rows.map(r => [r.name, r.type]));
         expect(byName['Customer Portal']).toBe('APPLICATION');
+        expect(byName['Customer Database']).toBe('DATA_STORE');
         expect(byName['AWS Cloud Network']).toBe('INFRASTRUCTURE');
         expect(byName['Key Vendor Co']).toBe('VENDOR');
         expect(byName['Payroll Process']).toBe('PROCESS');
@@ -232,8 +238,8 @@ describeFn('onboarding-automation — runStepAction & storeActionResult (integra
 
         // Re-run: every asset already exists → all skipped, no new audit row.
         const again = await runStepAction(ctx(), 'ASSET_SETUP', {}, allData);
-        expect(again).toMatchObject({ action: 'ASSET_CREATION', created: 0, skipped: 5 });
-        expect(await globalPrisma.asset.count({ where: { tenantId: TENANT_ID } })).toBe(5);
+        expect(again).toMatchObject({ action: 'ASSET_CREATION', created: 0, skipped: 6 });
+        expect(await globalPrisma.asset.count({ where: { tenantId: TENANT_ID } })).toBe(6);
         expect(await globalPrisma.auditLog.count({ where: { tenantId: TENANT_ID, action: 'ONBOARDING_ASSETS_CREATED' } })).toBe(1);
     });
 
@@ -287,15 +293,15 @@ describeFn('onboarding-automation — runStepAction & storeActionResult (integra
     it('INITIAL_RISK_REGISTER with frameworks + assets filters by framework AND asset type, then is idempotent', async () => {
         const allData = {
             FRAMEWORK_SELECTION: { selectedFrameworks: ['nis2'] },
-            // 'Customer database' → DATASTORE (in-memory only; not persisted here)
+            // 'Customer database' → DATA_STORE (in-memory only; not persisted here)
             ASSET_SETUP: { assets: ['Customer database'] },
         };
         const res = await runStepAction(ctx(), 'INITIAL_RISK_REGISTER', {}, allData);
         const titles = (await globalPrisma.risk.findMany({ where: { tenantId: TENANT_ID }, select: { title: true, score: true } }));
         const names = titles.map(t => t.title);
-        // DATASTORE + nis2 → 'Data Backup Failure' (DATASTORE, nis2) matches.
+        // DATA_STORE + nis2 → 'Data Backup Failure' (DATA_STORE, nis2) matches.
         expect(names).toContain('Data Backup Failure');
-        // 'Data Integrity Compromise' is DATASTORE but iso27001-only → fwMatch false.
+        // 'Data Integrity Compromise' is DATA_STORE but iso27001-only → fwMatch false.
         expect(names).not.toContain('Data Integrity Compromise');
         // APPLICATION-only risks should NOT appear (no APPLICATION asset).
         expect(names).not.toContain('Unauthorized Access to Application');
