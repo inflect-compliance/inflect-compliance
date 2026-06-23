@@ -79,20 +79,14 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v6
+      # Node + npm ci + `prisma generate` (all with retry). The seed
+      # step (`tsx prisma/seed.ts`) needs the generated client — a bare
+      # `npm ci` does NOT generate it (postinstall only runs
+      # patch-package), so use the same composite as ci.yml's DB jobs.
+      - name: Setup Node + Prisma client
+        uses: ./.github/actions/setup-node-prisma
         with:
           node-version: '24'
-          cache: 'npm'
-
-      - name: Install dependencies
-        # CI hardening — retry npm ci on transient registry network errors.
-        run: |
-          for attempt in 1 2 3; do
-            if npm ci; then exit 0; fi
-            echo "::warning::npm ci failed (attempt ${attempt}/3) — retrying"
-            sleep $((attempt * 10))
-          done
-          exit 1
 
       - name: Setup k6
         uses: grafana/setup-k6-action@v1
