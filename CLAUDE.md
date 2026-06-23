@@ -751,8 +751,8 @@ fixed, delete the entry in the same diff.
 Three codebase-hygiene invariants are held by structural guardrails
 — **see `docs/codebase-hygiene.md`** for the contributor guide:
 
-- **`as any` stays on a downward ratchet.** The `src/` count is 4
-  (documented staged debt). `tests/guardrails/no-explicit-any-ratchet.test.ts`
+- **`as any` stays on a downward ratchet.** The `src/` count is 0
+  (the staged debt has been fully eliminated). `tests/guardrails/no-explicit-any-ratchet.test.ts`
   caps it via `CURRENT_BASELINE` with a drift sentinel (slack cannot
   accumulate); `tests/guards/no-explicit-any-ratchet.test.ts` caps
   `: any` / `<any>` / `as any` / `@ts-ignore`. Removing casts ⇒
