@@ -37,7 +37,15 @@ export default defineConfig({
     // Parallel workers in CI; local stays auto (Playwright picks ~half the
     // cores). Each worker gets its own browser; per-test isolated tenants
     // keep DB state from colliding across workers.
-    workers: isCI ? 4 : undefined,
+    //
+    // Tuned 4 → 2 after the initial rollout: 4 workers oversubscribed the
+    // single shared `next start` server + one Postgres, and the resulting
+    // contention made timing-sensitive specs flake (control-tests' async
+    // finding render, page-load-budget's TTFB ceiling) on ~half of runs —
+    // intermittently red-flagging unrelated PRs. 2 keeps a large speedup
+    // (~15 min serial → ~8 min) while leaving the server enough headroom to
+    // stay deterministic. Revisit upward only with a bigger CI runner.
+    workers: isCI ? 2 : undefined,
     reporter: isCI ? [['list'], ['html', { open: 'never' }]] : 'list',
     use: {
         baseURL: process.env.URL || 'http://localhost:3006',
