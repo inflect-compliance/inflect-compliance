@@ -62,7 +62,14 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        # CI hardening — retry npm ci on transient registry network errors.
+        run: |
+          for attempt in 1 2 3; do
+            if npm ci; then exit 0; fi
+            echo "::warning::npm ci failed (attempt ${attempt}/3) — retrying"
+            sleep $((attempt * 10))
+          done
+          exit 1
 
       # semantic-release reads .releaserc.json and does everything:
       # analyze commits → determine version → generate notes → publish

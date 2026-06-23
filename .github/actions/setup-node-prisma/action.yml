@@ -25,7 +25,17 @@ runs:
 
     - name: Install dependencies
       shell: bash
-      run: npm ci
+      # CI hardening — `npm ci` intermittently fails with a transient
+      # registry ECONNRESET (observed failing the Build job 2026-06).
+      # Retry up to 3× with backoff so a network blip never fails an
+      # otherwise-green job. Mirrors the prisma-generate retry below.
+      run: |
+        for attempt in 1 2 3; do
+          if npm ci; then exit 0; fi
+          echo "::warning::npm ci failed (attempt ${attempt}/3) — retrying"
+          sleep $((attempt * 10))
+        done
+        exit 1
 
     - name: Generate Prisma client
       shell: bash
