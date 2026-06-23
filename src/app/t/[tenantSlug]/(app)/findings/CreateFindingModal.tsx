@@ -114,12 +114,13 @@ export function CreateFindingModal({
     );
     const controls = useMemo<ControlOption[]>(() => {
         const data = controlsQuery.data;
-        // Behaviour preserved from the React Query version: this branch only
-        // recognised a bare array. (Latent shape gap vs the CappedList the
-        // controls endpoint returns — flagged separately, unchanged here to
-        // keep the migration purely mechanical.)
-        if (!Array.isArray(data)) return [];
-        return data.map((c) => ({
+        // GET /controls returns the backfill-capped `{ rows, truncated }`
+        // shape, not a bare array — unwrap both forms (mirrors the risks
+        // dropdown below). The prior bare-array-only guard silently rendered
+        // an EMPTY control picker, so a finding could never be linked to a
+        // control at create time.
+        const rows = Array.isArray(data) ? data : (data?.rows ?? []);
+        return rows.map((c) => ({
             id: c.id,
             annexId: c.annexId ?? null,
             name: c.name,

@@ -8,6 +8,8 @@
  */
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import * as React from 'react';
+import * as fs from 'fs';
+import * as path from 'path';
 import { SWRConfig } from 'swr';
 
 jest.mock('next/navigation', () => ({
@@ -86,5 +88,36 @@ describe('CreateFindingModal', () => {
             target: { value: 'What was observed' },
         });
         await waitFor(() => expect(submit).not.toBeDisabled());
+    });
+
+    // Regression lock — the controls lookup must unwrap the backfill-capped
+    // `{ rows, truncated }` response shape that GET /controls returns. The
+    // pre-fix bare-`Array.isArray` guard fell through to `[]`, so the control
+    // picker was permanently EMPTY and a finding could never be linked to a
+    // control at create time. Asserted at the source so it's deterministic
+    // (cmdk option rendering is awkward to drive in jsdom).
+    it('controls lookup unwraps the CappedList { rows } shape (not bare-array-only)', () => {
+        const src = fs.readFileSync(
+            path.resolve(
+                __dirname,
+                '../../src/app/t/[tenantSlug]/(app)/findings/CreateFindingModal.tsx',
+            ),
+            'utf-8',
+        );
+        // Extract just the controls memo block so the assertion can't be
+        // satisfied by the sibling risks memo (which has the same unwrap).
+        const controlsMemo =
+            src.match(
+                /const controls = useMemo<ControlOption\[\]>\(\(\) => \{[\s\S]*?\}, \[controlsQuery\.data\]\)/,
+            )?.[0] ?? '';
+        expect(controlsMemo).not.toBe('');
+        // Must read `data?.rows` (cap shape), mirroring the risks memo.
+        expect(controlsMemo).toMatch(
+            /Array\.isArray\(data\)\s*\?\s*data\s*:\s*\(data\?\.rows\s*\?\?\s*\[\]\)/,
+        );
+        // And must NOT regress to the empty-on-cap-shape guard.
+        expect(controlsMemo).not.toMatch(
+            /if \(!Array\.isArray\(data\)\) return \[\];/,
+        );
     });
 });
