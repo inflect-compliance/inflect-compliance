@@ -50,11 +50,18 @@ lowered, raised whenever a PR earns it.
 
 | Scope | Branches now → target | Functions now → target | Lines now → target |
 |-------|----------------------|------------------------|--------------------|
-| `usecases/` | **66** → **70** | **62** → **70** | **77** → **80** |
-| `policies/` | **78** → 75† | **88** → 75 | **88** → 80 |
-| `events/` | **72** → 65† | **60** → 65 | **78** → 75 |
-| `lib/` | **66** → 65 | **61** → 65 | **71** → 75 |
-| global | **56** → 65 | **54** → 65 | **70** → 78 |
+| `usecases/` | **72** → 70 ✅ | **76** → 70 ✅ | **85** → 80 ✅ |
+| `policies/` | **86** → 75† | **95** → 75 | **93** → 80 |
+| `events/` | **75** → 65† | **60** → 65 | **78** → 75 |
+| `lib/` | **78** → 65† | **80** → 65 | **88** → 75 |
+| global | **62** → 65 | **61** → 65 | **76** → 78 |
+
+`usecases/` (Tier A) has now MET and passed its end-state target on
+all three metrics — the floor (72/76/85) sits above the 70/70/80
+target, held by the ratchet. The remaining staged climb is the
+GLOBAL number, which is still below its 65/65/78 target (see below):
+the global branch floor is **62** against an enforcement actual of
+**62.54%**.
 
 †`policies/` and `events/` already SURPASS their tier targets on
 branches — the tier target stays as written for parity with the
@@ -89,9 +96,10 @@ the same diff so the gain is locked.
 | 3f | **63 / 58 / 74 / 71** | ✅ done — stage-3f wave: 49 tests across TWO files in one PR. `framework/coverage.ts` (313 lines, **previously had duplicate exports tested under framework/install but not the unique `exportCoverageData` / `generateReadinessReport` / `exportReadinessReport`**): file-level **98/78/95/98**. `control/queries.ts` (337 lines, **completely untested**): file-level **100/95/100/100** — dashboard aggregator + consistency-check RBAC + 3 not-found paths + topOwners fold. Floor bumped +1 across all (conservative after stages 3d/3e showed broader-tree dilution). | |
 | 3g | **64 / 59 / 75 / 72** | ✅ done — stage-3g wave: 40 tests across 3 files. `soft-delete-lifecycle.ts` (143 lines) at **100/100/100/100** — perfect file-level coverage on restore + purge + list with all model/delegate/not-found guards. `vendor-assessment-reminder.ts` (129 lines) at **100/96/100/100** — all 5 reject paths (not-found / status / no-email / expired token / missing relations) plus dedup behavior. `org-dashboard-widgets.ts` (225 lines) at **100/96/100/100** — cross-org-id leak defence locked across update + delete; partial-update branch coverage on title / position / size / enabled / chartType+config revalidation. Floor +1 across all (consistent with stage 3f's broader-tree-dilution pattern). | |
 | 3h | **66 / 62 / 77 / 74** | ✅ done — stage-3h wave: 54 tests across 5 files in one PR. `control/page-data.ts` (originally on the candidate list) was dropped as already-covered (100/94/100/100); `soft-delete-operations.ts` replaced it. `test-readiness.ts` (105 lines) at **100/75/100/100**. `soft-delete-operations.ts` (117 lines) at **100/100/100/100** — generic restore + purge for every soft-deletable entity. `org-tenants.ts` (149 lines) at **100/100/100/100** — `createTenantUnderOrg` with tx + best-effort provisioning + P2002 → ConflictError translation. `framework/fixtures.ts` (196 lines) at **100/95/100/100** — `upsertRequirements` + `computeRequirementsDiff`. `org-dashboard-presets.ts` seeder (218 lines) at **100/80/100/100** — the existing preset-shape test covered only 25/0/0/25; extended with 8 tests for `seedDefaultOrgDashboard` idempotency + payload mapping. CI full-suite measured usecases/: branches **67.78%**, fn 65.55%, lines 77.99%, stmts 76.32%. Conservative bump matched measured headroom: branches +2, functions +3, lines +2, statements +2. Leaves ~1-2pp slack. | |
-| 4 (target) | **70** | — | end state; held by the ratchet. Stage 3h landed branches at 66/measured 67.78% — one more focused wave or accumulated drift across small file additions should clear the 70 bar. |
+| 4 (target) | **70** | ✅ REACHED — Wave C | end state; held by the ratchet. Wave C (below) carried four previously-0% usecase files and the authoritative gate (run WITH the integration DB) measured usecases/ branches at **72.93%** — past the 70 end-state. Floor raised to **72/76/85/83**. |
+| Wave C | **usecases 72 / 76 / 85 / 83** (gate actual 72.93 / 77.35 / 86.03 / 84.43) | ✅ done — Wave C (2026-06-24): branch tests for four previously-0% usecase files — `onboarding-automation` (the prior test re-implemented the logic as a LOCAL COPY and covered the real module 0%; replaced with one that imports the real exports → 96% branches), `vendor-audit` (evidence-bundle frozen-guards + freeze snapshot loop + self-subprocessor reject → 97%), `framework/catalog` (version-vs-key resolution + not-found arms → 100%), `framework/tree` (`getFrameworkTree` + the four `reorderFrameworkRequirements` validation branches → 95%). usecases/ floor raised to 72/76/85/83 (≤ gate actual, ~1pp slack); RATCHET_FLOOR hardened to the pre-wave-C enforced level 69/73/81/80. **GLOBAL branches stayed 62.54% — the ≥65 global goal is NOT met by this batch and remains deferred** (the global is dominated by never-loaded `.ts` files in `src/app-layer` + `src/lib` — repositories, `reports/pdf`, `lib/hooks`, schemas — not by usecase gains). See `2026-06-24-coverage-wave-c.md`. |
 | Wave B (batch 1) | global 62.13 (branches) | ⚠️ CORRECTED — coverage Wave B batch 1: real branch-exercising tests for 11 previously-zero-coverage files across 4 jobs (`data-lifecycle`, `tenant-dek-rotation`, `retention-notifications`, `retention`), 4 repositories (`SsoConfig`, `Onboarding`, `File`, `Framework`), 2 hash-chained audit writers (`audit-writer`, `org-audit-writer`), and `mailer`. **The original entry cited `coverage-summary.json`'s `total` (B 69.28 / F 72.95 / L 81.90 / S 80.59) as the global — those are LOADED-files-only numbers, NOT the enforcement universe.** The authoritative enforcement-universe global at the end of batch 1 was **branches 62.13** (the gate counts every `collectCoverageFrom` file, including the thousands of never-loaded branches as 0%). See the loaded-vs-enforcement table below. |
-| Wave B (batch 2) | **global branches 62** (enforcement actual 62.54) | ✅ done — batch 2: tests for 13 more never-loaded backend files (`test-hardening`, `stripe`, `compliance-digest`, `library-importer`, `control-taxonomy`, `traceability-graph`, `inherited-control-data`, `org-audit`, `report-delivery-jobs`, `sharepoint-policy-jobs`, `register-schedules`, `processOutbox`, `ClauseRepository`). Enforcement-universe globals (the binding CI gate, read from the `Jest: Coverage for … does not meet` lines): **branches 62.54 / functions 62.09 / lines 77.14 / statements 75.63**. The backend-file pool was largely exhausted — batch 2 moved enforcement branches only 62.13 → 62.54 (the original ≥65 goal was calibrated against the misleading loaded-only ~69%; the remaining 0% mass is the React UI/page surface, `src/app` + `src/components`, which yields few branches per file and needs rendering tests). `jest.thresholds.json` global set to branches **62**, functions **61**, lines **76**, statements **75** (≤ enforcement actual, up from the original 56/54/70/69). **A true global ≥65 is deferred to a dedicated UI-testing wave.** Per-cohort floors left as set in batch 1 (already passing the gate). See implementation note `2026-06-23-coverage-wave-b.md`. |
+| Wave B (batch 2) | **global branches 62** (enforcement actual 62.54) | ✅ done — batch 2: tests for 13 more never-loaded backend files (`test-hardening`, `stripe`, `compliance-digest`, `library-importer`, `control-taxonomy`, `traceability-graph`, `inherited-control-data`, `org-audit`, `report-delivery-jobs`, `sharepoint-policy-jobs`, `register-schedules`, `processOutbox`, `ClauseRepository`). Enforcement-universe globals (the binding CI gate, read from the `Jest: Coverage for … does not meet` lines): **branches 62.54 / functions 62.09 / lines 77.14 / statements 75.63**. The backend-file pool was largely exhausted — batch 2 moved enforcement branches only 62.13 → 62.54 (the original ≥65 goal was calibrated against the misleading loaded-only ~69%; the remaining 0% mass is **never-loaded `.ts` files inside the coverage universe itself** — `src/app-layer/repositories/*`, `reports/pdf/*`, `lib/hooks/*`, schemas, etc.). ⚠️ The original text here said the remaining mass was "the React UI/page surface (`src/app` + `src/components`)" — that is WRONG and was corrected in Wave C: `collectCoverageFrom` is ONLY `src/app-layer/**/*.ts` + `src/lib/**/*.ts`, so React `.tsx` components and `src/app` pages are not in the gate universe at all and rendering tests for them move the global by zero. `jest.thresholds.json` global set to branches **62**, functions **61**, lines **76**, statements **75** (≤ enforcement actual, up from the original 56/54/70/69). **A true global ≥65 is deferred to a wave that covers the never-loaded backend `.ts` files above.** Per-cohort floors left as set in batch 1 (already passing the gate). See implementation note `2026-06-23-coverage-wave-b.md`. |
 
 ### Loaded-files vs enforcement-universe (the Wave B gotcha)
 
@@ -111,13 +119,19 @@ threshold to surface the true number). NEVER read the global off
 `coverage-summary.json`'s `total`: that file lists only files a test
 loaded, so it overstates the gate's full-universe global by ~7pp.
 
-The enforcement global branch trajectory: **56 → 62.13 → 62.54**. The
-global branch floor is **62** (enforcement actual 62.54). Reaching a
-true ≥65 is **deferred to a dedicated UI-testing wave**: the testable
-backend pool is now largely exhausted (batch 2 added 13 files for only
-+0.4pp), and the remaining 0% mass is the React UI/page surface. Global
-rises as a *consequence* of A/B-tier gains plus standard-tier hygiene —
-it is not chased directly.
+The enforcement global branch trajectory: **56 → 62.13 → 62.54 → 62.54**
+(Wave C added four usecase files — real cohort gains, but too few
+branches to move the full-universe global to two decimals). The global
+branch floor is **62** (enforcement actual 62.54). Reaching a true ≥65
+is **deferred to a dedicated wave over the never-loaded backend `.ts`
+files** — `src/app-layer/repositories/*`, `reports/pdf/*`,
+`integrations/*`, `lib/hooks/*`, schemas — which still sit at ~0% and
+dominate the full-universe denominator. (NOTE: an earlier draft of this
+section misattributed the remaining mass to the React `src/app` /
+`src/components` surface — those are NOT in `collectCoverageFrom`, so
+they cannot move the gate; corrected in Wave C.) Global rises as a
+*consequence* of A/B-tier gains plus standard-tier hygiene — it is not
+chased directly.
 
 Two rules keep the ratchet honest, both already CI-enforced via
 `jest.config.js` + the `Coverage (≥60%)` job:

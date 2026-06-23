@@ -117,7 +117,22 @@ const RATCHET_FLOOR: Record<string, Metrics> = {
     //   - lines: 75 → 77 (+2)
     //   - statements: 72 → 74 (+2)
     // Leaves ~1-2pp slack against measured for single-test flake.
-    './src/app-layer/usecases/': { branches: 66, functions: 62, lines: 77, statements: 74 },
+    //
+    // Coverage Wave C (2026-06-24) — branch tests for four
+    // previously-0% usecase files (`onboarding-automation`,
+    // `vendor-audit`, `framework/catalog`, `framework/tree`), each
+    // now 95-100% file-level. The authoritative gate (the CI
+    // `--coverageThreshold` "does not meet" lines, run WITH the
+    // integration DB) measured usecases/ at branches **72.93%**,
+    // fn 77.35%, lines 86.03%, stmts 84.43%. `jest.thresholds.json`
+    // was raised to 72/76/85/83 (~1pp slack); the hard floor below
+    // is bumped to the PRE-wave-C enforced level (69/73/81/80) so a
+    // future PR can never slip beneath what wave-C locked without a
+    // visible RATCHET_FLOOR edit. NB the wave-B-documented loaded-vs-
+    // enforcement gotcha: read these from the gate "does not meet"
+    // lines, NEVER from `coverage-summary.json`'s total (which
+    // overstated usecases by ~loaded-only bias).
+    './src/app-layer/usecases/': { branches: 69, functions: 73, lines: 81, statements: 80 },
     // `policies/` — quality roadmap P3. Authorization decisions —
     // a wrong branch is a security hole. Measured ≈82 branches /
     // 91 funcs / 91 lines; seeded a few points below.
