@@ -17,7 +17,7 @@
  */
 import * as React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SWRConfig } from 'swr';
 
 jest.mock('next/navigation', () => ({
     useRouter: () => ({
@@ -39,10 +39,14 @@ jest.mock('next-intl', () => ({
 import { RiskTreatmentPlanCard } from '@/components/RiskTreatmentPlanCard';
 
 function withClient(ui: React.ReactNode) {
-    const qc = new QueryClient({
-        defaultOptions: { queries: { retry: false } },
-    });
-    return <QueryClientProvider client={qc}>{ui}</QueryClientProvider>;
+    // Fresh per-test SWR cache (these panels read via useSWR); a shared
+    // global cache would leak optimistic mutations + dedupe stale data
+    // across tests. dedupingInterval 0 keeps mutate→revalidate deterministic.
+    return (
+        <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
+            {ui}
+        </SWRConfig>
+    );
 }
 
 const ownerChoices = [
