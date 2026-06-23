@@ -49,17 +49,17 @@ package as part of a risk review.
 Scope: `js-yaml`, `jszip`, `pdfkit`, `nodemailer`. All four are
 declared in `dependencies`.
 
-### js-yaml — `^4.1.1`
+### js-yaml — `^5.0.0`
 
 | | |
 |---|---|
 | **Direct?** | Yes (also transitive via `eslint`, `semantic-release`, `ts-jest`). |
 | **Runtime use** | `src/app-layer/libraries/library-loader.ts` and `src/app-layer/services/mapping-set-importer.ts` — both `yaml.load()` the framework-library + mapping-set YAML files. This is `src/app-layer` code that ships in the production build. Also `prisma/catalog-loader.ts` (seed-time) and six `tests/guards/*` workflow-lint tests. |
 | **Classification** | `dependencies` — **correct**. `src/app-layer` is shipped code; the library-import service path is reachable at runtime. |
-| **Version** | `4.1.1` is `latest` (`dist-tags.latest = 4.1.1`). The `^4.1.1` caret stays inside the safe major. |
-| **Exposure** | Parses YAML. v4 dropped the unsafe `yaml.load` default that made v3 dangerous — v4's `load` is the old `safeLoad` (no arbitrary type construction). All three call sites use bare `yaml.load()`, which is the safe schema in v4. The transitive `js-yaml@3.14.2` under `ts-jest` is dev-only and never touches request input. |
-| **Maintenance** | Mature, stable, widely used. No open advisories against v4. |
-| **Decision** | **Reviewed — correctly classified, at latest, no action.** |
+| **Version** | `5.0.0`. **4→5 reviewed 2026-06-23** (dependabot). Every call site is a bare `yaml.load(content)` with NO options object, so the v5 option removals (`onWarning`, `legacy`, `listener`, `styles`, `replacer`, `noCompatMode`, …) don't touch us. v5 still ships a CommonJS `require` export, so `import * as yaml from 'js-yaml'` + `yaml.load` resolves unchanged under ts-jest. The two behavioural v5 changes that *could* bite — `load('')` now throws (we only load non-empty first-party fixture files) and the default schema moving YAML 1.1 → 1.2 `CORE_SCHEMA` (our YAML uses no 1.1-only constructs) — are both validated by the full test sweep: all library-loader / mapping-set-importer / workflow-lint suites pass against v5. |
+| **Exposure** | Parses YAML. v4 dropped the unsafe `yaml.load` default that made v3 dangerous; v5 keeps that safe-by-default `load` (no arbitrary type construction). All call sites parse trusted first-party YAML (framework libraries, mapping sets, our own workflow/helm files in tests) — never request input. The transitive older `js-yaml` under `ts-jest` is dev-only and never touches request input. |
+| **Maintenance** | Mature, stable, widely used. No open advisories against v5. |
+| **Decision** | **Reviewed — 4→5 major bump accepted (load-only usage is API-compatible; behavioural changes verified safe by the test sweep).** |
 
 ### jszip — `^3.10.1`
 
@@ -101,7 +101,7 @@ declared in `dependencies`.
 
 | Package | Classification | Version vs latest | Decision |
 |---------|----------------|-------------------|----------|
-| `js-yaml` | `dependencies` ✓ | `4.1.1` = latest | No action |
+| `js-yaml` | `dependencies` ✓ | `5.0.0` (4→5 reviewed) | Major bump accepted (load-only, verified by sweep) |
 | `jszip` | `dependencies` ✓ | `3.10.1` = latest | No action |
 | `pdfkit` | `dependencies` ✓ | `0.18.0` = latest | No action |
 | `nodemailer` | `dependencies` ✓ | `9.0.1` (8→9 reviewed) | Major bump accepted (security fix) |
