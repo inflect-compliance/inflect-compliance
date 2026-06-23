@@ -41,7 +41,14 @@ const pkg = JSON.parse(
  * any to devDependencies is a production-image regression.
  */
 const REVIEWED: Record<string, { major: number }> = {
-    'js-yaml': { major: 4 },
+    // Reviewed 2026-06-23 for the 4→5 major bump (dependabot). Every call
+    // site is a bare `yaml.load(content)` (no options object), so v5's option
+    // removals don't apply; v5 keeps the CommonJS `require` export so
+    // `import * as yaml` is unchanged. The behavioural v5 changes (`load('')`
+    // now throws; default schema YAML 1.1 → 1.2 CORE_SCHEMA) don't affect our
+    // non-empty, first-party, 1.2-compatible YAML — verified by the full test
+    // sweep. See docs/dependency-risk-review.md.
+    'js-yaml': { major: 5 },
     jszip: { major: 3 },
     pdfkit: { major: 0 },
     // Reviewed 2026-06-18 for the 8→9 major bump (security advisory fix,
