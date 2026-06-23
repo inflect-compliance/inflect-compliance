@@ -1,7 +1,5 @@
 'use client';
 
-import { QueryClientProvider } from '@tanstack/react-query';
-import { getQueryClient } from '@/lib/query-client';
 import { OnboardingTourProvider } from '@/components/ui/OnboardingTour';
 import SWRDevTools from '@/components/dev/swr-devtools';
 import { WebVitalsReporter } from '@/components/observability/WebVitalsReporter';
@@ -13,8 +11,6 @@ import { WebVitalsReporter } from '@/components/observability/WebVitalsReporter'
  * layouts, making the server/client boundary explicit and clean.
  *
  * Currently wraps:
- *   - QueryClientProvider (react-query) — required by pages that use
- *     useQuery/useMutation for data fetching
  *   - OnboardingTourProvider (Driver.js-based product tour) — owns the
  *     auto-trigger gate + completion persistence; <StartTourButton>
  *     in the sidebar consumes it via useOnboardingTour()
@@ -61,23 +57,21 @@ export function ClientProviders({
         process.env.NEXT_PUBLIC_TEST_MODE !== '1' &&
         process.env.NODE_ENV !== 'test';
     return (
-        <QueryClientProvider client={getQueryClient()}>
-            <OnboardingTourProvider
-                userId={userId ?? null}
-                autoTriggerOnFirstLogin={autoTrigger}
-            >
-                {children}
-                {/* RUM — beacons Core Web Vitals + Next navigation timing to
-                    /api/telemetry/vitals. Renders nothing; inert in test mode. */}
-                <WebVitalsReporter />
-                {/*
-                  Epic 69 — dev-only floating SWR cache inspector.
-                  Self-gated against NODE_ENV !== 'development' AND
-                  NEXT_PUBLIC_TEST_MODE === '1'; renders nothing in
-                  prod / E2E runs. Tree-shaken from prod bundles.
-                */}
-                <SWRDevTools />
-            </OnboardingTourProvider>
-        </QueryClientProvider>
+        <OnboardingTourProvider
+            userId={userId ?? null}
+            autoTriggerOnFirstLogin={autoTrigger}
+        >
+            {children}
+            {/* RUM — beacons Core Web Vitals + Next navigation timing to
+                /api/telemetry/vitals. Renders nothing; inert in test mode. */}
+            <WebVitalsReporter />
+            {/*
+              Epic 69 — dev-only floating SWR cache inspector.
+              Self-gated against NODE_ENV !== 'development' AND
+              NEXT_PUBLIC_TEST_MODE === '1'; renders nothing in
+              prod / E2E runs. Tree-shaken from prod bundles.
+            */}
+            <SWRDevTools />
+        </OnboardingTourProvider>
     );
 }
