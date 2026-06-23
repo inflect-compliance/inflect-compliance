@@ -19,9 +19,18 @@ jest.mock('@/lib/auth', () => ({
 import { POST as TasksPost } from '@/app/api/tasks/route';
 import { POST as PoliciesPost } from '@/app/api/t/[tenantSlug]/policies/route';
 
-// Mock getTenantCtx to avoid real DB lookups
+// Mock getTenantCtx to avoid real DB lookups. The tenant routes now gate
+// with `requirePermission(...)`, which resolves ctx + checks the granular
+// permission BEFORE the handler parses the body — so the mock must RESOLVE
+// with an appPermissions bag that grants the needed key (policies.create),
+// otherwise the route 403s before reaching the body-validation under test.
 jest.mock('@/app-layer/context', () => ({
-    getTenantCtx: jest.fn().mockRejectedValue(new Error('Not reached - validation should fail first')),
+    getTenantCtx: jest.fn().mockResolvedValue({
+        tenantId: 't-test',
+        userId: 'u-test',
+        role: 'OWNER',
+        appPermissions: { policies: { view: true, create: true, edit: true, approve: true } },
+    }),
 }));
 
 import { PUT as RisksPut } from '@/app/api/risks/[id]/route';

@@ -1,7 +1,6 @@
-import { NextRequest } from 'next/server';
 import { withApiErrorHandling } from '@/lib/errors/api';
-import { withValidatedBody } from '@/lib/validation/route';
-import { getTenantCtx } from '@/app-layer/context';
+import { requirePermission } from '@/lib/security/permission-middleware';
+import { parseJsonBody } from '@/lib/validation/route';
 import { CreatePolicySchema } from '@/lib/schemas';
 import * as policyUsecases from '@/app-layer/usecases/policy';
 import { z } from 'zod';
@@ -21,9 +20,7 @@ const PolicyQuerySchema = z.object({
 }).strip();
 
 // GET /api/t/[tenantSlug]/policies — list with filters + pagination
-export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
-  const params = await paramsPromise;
-  const ctx = await getTenantCtx(params, req);
+export const GET = withApiErrorHandling(requirePermission<{ tenantSlug: string }>('policies.view', async (req, _routeArgs, ctx) => {
   const sp = Object.fromEntries(req.nextUrl.searchParams.entries());
   const query = PolicyQuerySchema.parse(sp);
 
@@ -67,13 +64,12 @@ export const GET = withApiErrorHandling(async (req: NextRequest, { params: param
     tenantId: ctx.tenantId,
   });
   return jsonResponse(result);
-});
+}));
 
 // POST /api/t/[tenantSlug]/policies — create (blank or from template)
 export const POST = withApiErrorHandling(
-  withValidatedBody(CreatePolicySchema, async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }, body) => {
-    const params = await paramsPromise;
-    const ctx = await getTenantCtx(params, req);
+  requirePermission<{ tenantSlug: string }>('policies.create', async (req, _routeArgs, ctx) => {
+    const body = await parseJsonBody(req, CreatePolicySchema);
 
     let policy;
     if (body.templateId) {
