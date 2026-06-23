@@ -1,5 +1,6 @@
-import { test, expect } from '@playwright/test';
-import { loginAndGetTenant } from './e2e-utils';
+import { randomUUID } from 'node:crypto';
+import { test, expect } from './fixtures';
+import type { Page } from '@playwright/test';
 
 /**
  * Controls list — read-only Status + Applicability badges.
@@ -21,17 +22,41 @@ import { loginAndGetTenant } from './e2e-utils';
  * regression that re-introduces the inline editor on the list
  * fails CI; the transition flows themselves are covered by the
  * per-control detail-page specs.
+ *
+ * Isolation: each `test()` runs against its own fresh, empty tenant
+ * via the `isolatedTenant` fixture (see `./fixtures`). The tenant
+ * starts empty, so each test mints one control up front to give the
+ * list a row carrying the status / applicability pills it asserts on.
  */
 
+/**
+ * Create a single control on the current (isolated) tenant so the
+ * controls list has exactly one row carrying the pill ids.
+ * Self-contained: nothing is shared across tests.
+ */
+async function createControl(page: Page, slug: string): Promise<void> {
+    const uid = `${Date.now().toString(36)}-${randomUUID().slice(0, 8)}`;
+    await page.goto(`/t/${slug}/controls/new`);
+    await page.waitForSelector('#control-name-input', { timeout: 15000 });
+    await page.fill('#control-name-input', `E2E Control ${uid}`);
+    await page.fill('#control-code-input', `CTRL-${uid}`);
+    await page.fill('#control-description-input', 'Test control from e2e');
+    await page.click('#create-control-btn');
+    await page.waitForSelector('#control-title', { timeout: 15000 });
+}
+
 test.describe('Controls list — read-only status/applicability badges', () => {
-    test.describe.configure({ mode: 'serial' });
+    test('status pill renders as a <span> (NOT a <select>)', async ({
+        authedPage,
+        isolatedTenant,
+    }) => {
+        const { tenantSlug } = isolatedTenant;
+        await createControl(authedPage, tenantSlug);
 
-    test('status pill renders as a <span> (NOT a <select>)', async ({ page }) => {
-        const tenantSlug = await loginAndGetTenant(page);
-        await page.goto(`/t/${tenantSlug}/controls`);
-        await page.waitForSelector('#controls-table', { timeout: 15000 });
+        await authedPage.goto(`/t/${tenantSlug}/controls`);
+        await authedPage.waitForSelector('#controls-table', { timeout: 15000 });
 
-        const firstRow = page.locator('#controls-table tbody tr').first();
+        const firstRow = authedPage.locator('#controls-table tbody tr').first();
         const statusPill = firstRow.locator('[id^="status-pill-"]');
         await expect(statusPill).toBeVisible({ timeout: 5000 });
 
@@ -44,12 +69,17 @@ test.describe('Controls list — read-only status/applicability badges', () => {
         expect(tagName).not.toBe('select');
     });
 
-    test('applicability pill renders as a <span> (NOT a <select>)', async ({ page }) => {
-        const tenantSlug = await loginAndGetTenant(page);
-        await page.goto(`/t/${tenantSlug}/controls`);
-        await page.waitForSelector('#controls-table', { timeout: 15000 });
+    test('applicability pill renders as a <span> (NOT a <select>)', async ({
+        authedPage,
+        isolatedTenant,
+    }) => {
+        const { tenantSlug } = isolatedTenant;
+        await createControl(authedPage, tenantSlug);
 
-        const firstRow = page.locator('#controls-table tbody tr').first();
+        await authedPage.goto(`/t/${tenantSlug}/controls`);
+        await authedPage.waitForSelector('#controls-table', { timeout: 15000 });
+
+        const firstRow = authedPage.locator('#controls-table tbody tr').first();
         const applicabilityPill = firstRow.locator(
             '[id^="applicability-pill-"]',
         );
@@ -61,15 +91,20 @@ test.describe('Controls list — read-only status/applicability badges', () => {
         expect(tagName).not.toBe('select');
     });
 
-    test('justification modal is NOT mounted on the list page', async ({ page }) => {
+    test('justification modal is NOT mounted on the list page', async ({
+        authedPage,
+        isolatedTenant,
+    }) => {
         // Pre-retirement, picking N/A in the list opened the
         // modal here. The modal infrastructure moved to the
         // detail page; the list no longer carries it.
-        const tenantSlug = await loginAndGetTenant(page);
-        await page.goto(`/t/${tenantSlug}/controls`);
-        await page.waitForSelector('#controls-table', { timeout: 15000 });
+        const { tenantSlug } = isolatedTenant;
+        await createControl(authedPage, tenantSlug);
 
-        await expect(page.locator('#justification-input')).toHaveCount(0);
-        await expect(page.locator('#justification-save-btn')).toHaveCount(0);
+        await authedPage.goto(`/t/${tenantSlug}/controls`);
+        await authedPage.waitForSelector('#controls-table', { timeout: 15000 });
+
+        await expect(authedPage.locator('#justification-input')).toHaveCount(0);
+        await expect(authedPage.locator('#justification-save-btn')).toHaveCount(0);
     });
 });

@@ -1,53 +1,32 @@
 /**
  * Audit Readiness — E2E.
  *
- * Tenant strategy: stays on the SHARED seeded `acme-corp` tenant.
- * Both flows create audit cycles for the seeded ISO27001 / NIS2
- * frameworks; `createIsolatedTenant` yields an empty tenant with no
- * installed frameworks, so this spec cannot migrate until the
- * factory gains a framework-install option (same carve-out as
- * `frameworks.spec.ts` / `reporting.spec.ts`).
+ * Tenant strategy: per-test ISOLATED tenant (`authedPage` +
+ * `isolatedTenant` fixtures). Each flow installs exactly the
+ * framework it exercises into its own fresh, empty tenant via
+ * `installFramework` before creating an audit cycle — so the two
+ * flows share no state and the spec is fully parallel-safe.
  *
- * Cascade fix: the previous shape had each flow split into many
- * serial `test()`s sharing module-level `let cycleId / packId /
- * shareToken` assigned inside one `test()` and read by later ones —
- * a failure in "create cycle" cascaded into every downstream test.
- * Each flow is one sequential scenario, so it is now a single
+ * Each flow is one sequential scenario, expressed as a single
  * `test()` with `test.step(...)` sub-steps and zero cross-test
- * state. (`let page` is still hoisted, but it is assigned in
- * `beforeAll` — not inside a `test()` — which is the correct shared-
- * fixture pattern, not the cascade anti-pattern.)
+ * state (the previous module-level `let cycleId / shareToken`
+ * cascade is gone).
  */
-import { test, expect, type Page } from '@playwright/test';
-import { loginAndGetTenant, safeGoto } from './e2e-utils';
+import { test, expect } from './fixtures';
+import { installFramework } from './e2e-utils';
 
 test.describe('Audit Readiness', () => {
     test.describe.configure({ timeout: 180_000 });
 
-    let tenantSlug: string;
-    let page: Page;
-
-    test.beforeAll(async ({ browser }) => {
-        page = await browser.newPage();
-        // Retry loop: cold-start server may need several attempts.
-        for (let attempt = 0; attempt < 5; attempt++) {
-            await safeGoto(page, '/login').catch(() => null);
-            const emailInput = page.locator('input[type="email"][name="email"]');
-            if (await emailInput.isVisible({ timeout: 10000 }).catch(() => false)) {
-                break;
-            }
-            await page.waitForTimeout(5000);
-        }
-        tenantSlug = await loginAndGetTenant(page);
-    });
-
-    test.afterAll(async () => {
-        await page.close();
-    });
-
     // ─── ISO27001 Flow (one scenario) ────────────────────────────────
 
-    test('ISO27001 — cycle → pack → freeze → share → shared view', async () => {
+    test('ISO27001 — cycle → pack → freeze → share → shared view', async ({
+        authedPage: page,
+        isolatedTenant,
+    }) => {
+        const tenantSlug = isolatedTenant.tenantSlug;
+        await installFramework(page, tenantSlug, 'ISO27001', 'ISO27001_2022_BASE');
+
         let cycleId = '';
         let shareToken = '';
 
@@ -184,7 +163,13 @@ test.describe('Audit Readiness', () => {
 
     // ─── NIS2 Flow (one scenario) ────────────────────────────────────
 
-    test('NIS2 — cycle → preview → pack', async () => {
+    test('NIS2 — cycle → preview → pack', async ({
+        authedPage: page,
+        isolatedTenant,
+    }) => {
+        const tenantSlug = isolatedTenant.tenantSlug;
+        await installFramework(page, tenantSlug, 'NIS2', 'NIS2_BASELINE');
+
         await test.step('create NIS2 cycle', async () => {
             await page.goto(`/t/${tenantSlug}/audits/cycles`);
             await page.waitForLoadState('networkidle').catch(() => {});

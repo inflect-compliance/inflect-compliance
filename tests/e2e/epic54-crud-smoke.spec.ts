@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test';
-import { loginAndGetTenant, safeGoto } from './e2e-utils';
+import { test, expect } from './fixtures';
+import { safeGoto } from './e2e-utils';
 
 /**
  * Epic 54 — cross-entity CRUD/detail smoke.
@@ -11,23 +11,31 @@ import { loginAndGetTenant, safeGoto } from './e2e-utils';
  * verifies the Sheet-surface (which no per-entity spec tests) and the
  * `/new` redirect shims (which span Controls + Risks in one pass).
  *
- * We deliberately keep this short — running the per-entity scenarios
- * here as well was flaky under serial mode because multiple describe
- * blocks in the same browser context left Radix/Vaul focus-trap state
- * attached to `body`, and the duplicate coverage added no signal.
+ * Isolation: each `test()` runs against its own fresh, empty tenant via
+ * the `isolatedTenant` fixture (see `./fixtures`). The control-panel test
+ * mints its own control first — the tenant starts empty.
  */
 
 test.describe('Epic 54 — CRUD/detail surfaces mount on demand', () => {
-    test.describe.configure({ mode: 'serial' });
+    test('Controls — clicking a control name opens the editable side panel', async ({
+        authedPage,
+        isolatedTenant,
+    }) => {
+        const { tenantSlug } = isolatedTenant;
+        const uid = Date.now().toString(36);
 
-    let tenantSlug: string;
+        // The tenant starts empty — mint a control so the list has a row.
+        await safeGoto(authedPage, `/t/${tenantSlug}/controls/new`);
+        await authedPage.waitForSelector('#control-name-input', { timeout: 15000 });
+        await authedPage.fill('#control-name-input', `E2E Smoke Control ${uid}`);
+        await authedPage.fill('#control-code-input', `CTRL-${uid}`);
+        await authedPage.click('#create-control-btn');
+        await authedPage.waitForSelector('#control-title', { timeout: 15000 });
 
-    test('Controls — clicking a control name opens the editable side panel', async ({ page }) => {
-        tenantSlug = await loginAndGetTenant(page);
-        await safeGoto(page, `/t/${tenantSlug}/controls`);
+        await safeGoto(authedPage, `/t/${tenantSlug}/controls`);
         // One-click on a control NAME opens the editable side panel (replaces
         // the old quick-edit pencil + edit Sheet; no table blur, no edit btn).
-        const title = page.locator('[data-testid^="control-title-"]').first();
+        const title = authedPage.locator('[data-testid^="control-title-"]').first();
         await title.waitFor({ state: 'visible', timeout: 15000 });
 
         await title.click();
@@ -35,24 +43,27 @@ test.describe('Epic 54 — CRUD/detail surfaces mount on demand', () => {
         // The panel is the EDIT surface (the edit form is present). `.first()`
         // because <AsidePanel> renders its content in BOTH the docked rail and
         // the Sheet body (openOnMount opens both) — the testid matches twice.
-        await expect(page.locator('[data-testid="control-edit-panel"]').first()).toBeVisible({
+        await expect(authedPage.locator('[data-testid="control-edit-panel"]').first()).toBeVisible({
             timeout: 5000,
         });
-        await expect(page.locator('[data-testid="control-edit-form"]').first()).toBeVisible();
+        await expect(authedPage.locator('[data-testid="control-edit-form"]').first()).toBeVisible();
 
         // Escape closes the panel so no focus-trap leaks into the next test.
-        await page.keyboard.press('Escape');
+        await authedPage.keyboard.press('Escape');
     });
 
-    test('Redirect shims — /controls/new and /risks/new open their modals', async ({ page }) => {
-        tenantSlug = await loginAndGetTenant(page);
+    test('Redirect shims — /controls/new and /risks/new open their modals', async ({
+        authedPage,
+        isolatedTenant,
+    }) => {
+        const { tenantSlug } = isolatedTenant;
 
-        await safeGoto(page, `/t/${tenantSlug}/controls/new`);
-        await expect(page.locator('#control-name-input')).toBeVisible({ timeout: 15000 });
-        await expect(page).toHaveURL(/\/controls(\?|$)/);
+        await safeGoto(authedPage, `/t/${tenantSlug}/controls/new`);
+        await expect(authedPage.locator('#control-name-input')).toBeVisible({ timeout: 15000 });
+        await expect(authedPage).toHaveURL(/\/controls(\?|$)/);
 
-        await safeGoto(page, `/t/${tenantSlug}/risks/new`);
-        await expect(page.locator('#risk-title')).toBeVisible({ timeout: 15000 });
-        await expect(page).toHaveURL(/\/risks(\?|$)/);
+        await safeGoto(authedPage, `/t/${tenantSlug}/risks/new`);
+        await expect(authedPage.locator('#risk-title')).toBeVisible({ timeout: 15000 });
+        await expect(authedPage).toHaveURL(/\/risks(\?|$)/);
     });
 });

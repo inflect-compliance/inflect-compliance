@@ -332,3 +332,106 @@ describe('E2E test isolation — no cross-test `let` cascade', () => {
         expect(detectCascade('slug', src, spans)).toBeNull();
     });
 });
+
+// ───────────────────────────────────────────────────────────────────
+// Shared-seed allowlist — default-isolated invariant (2026-06-23).
+//
+// The suite runs `fullyParallel: true` (playwright.config.ts). That is
+// only safe because every MUTATING spec provisions its own fresh, empty
+// tenant via `./fixtures` (`isolatedTenant`/`authedPage`) — two parallel
+// tests can never write to the same tenant.
+//
+// A spec that imports the `test` RUNNER from `@playwright/test` (rather
+// than from `./fixtures`) runs against the SHARED seeded tenant. That is
+// safe ONLY when the spec is read-only (concurrent reads don't corrupt),
+// self-isolating (it builds its own tenant via `createIsolatedTenant`),
+// or a known additive mutator pinned `mode: 'serial'` so it can't race
+// itself. Every such spec MUST be listed below with a reason.
+//
+// This is the enforceable form of "a new mutating spec can't sneak onto
+// the shared seed": a new spec defaults to `./fixtures` (isolated); if it
+// instead imports `@playwright/test` it fails CI here until it is either
+// isolated or added to this allowlist with a reviewed reason. (A pure
+// "mutating-verb regex" was rejected as the gate — it false-positives on
+// read-only specs that click filter/tab buttons, e.g. admin-members opens
+// the invite form but never submits it.)
+const SHARED_SEED_ALLOWLIST: ReadonlyArray<{ file: string; reason: string }> = [
+    // ── Read-only: navigate + assert chrome/role-gates, no DB writes ──
+    { file: 'a11y.spec.ts', reason: 'read-only accessibility scan over seeded pages' },
+    { file: 'admin-members.spec.ts', reason: 'read-only: opens the invite form + asserts its fields; never clicks #send-invite-btn' },
+    { file: 'admin-regression.spec.ts', reason: 'read-only admin-page regression assertions' },
+    { file: 'admin-sso.spec.ts', reason: 'read-only: asserts SSO config UI; no save' },
+    { file: 'auth.spec.ts', reason: 'auth/login flows on dedicated users; no shared-seed DATA mutation (rate-limit disabled in E2E)' },
+    { file: 'credentials-hardening.spec.ts', reason: 'login-throttle/credential hardening on dedicated attempts; no shared-seed data write' },
+    { file: 'controls-filter-epic53.spec.ts', reason: 'read-only filter chrome — the FilterSelect command-palette listbox only renders when the controls list has seeded rows; needs the shared seed (empty isolated tenant → no rows → no palette)' },
+    { file: 'data-table-platform.spec.ts', reason: 'read-only cross-page table chrome; needs the rich seed (rows on 10 surfaces)' },
+    { file: 'filters.spec.ts', reason: 'read-only: FilterToolbar URL-param chrome (static enum-derived options)' },
+    { file: 'filter-toolbar-coverage.spec.ts', reason: 'read-only filter-toolbar chrome coverage' },
+    { file: 'frameworks.spec.ts', reason: 'read-only: reads the GLOBAL framework catalog; the lone install test idempotent-early-returns on the pre-installed seed' },
+    { file: 'page-load-budget.spec.ts', reason: 'read-only navigation-timing budget' },
+    { file: 'rbac-access.spec.ts', reason: 'read-only RBAC role-gate navigations' },
+    { file: 'tenant-switcher.spec.ts', reason: 'read-only tenant-switcher chrome' },
+    { file: 'tooltip-and-copy.spec.ts', reason: 'read-only tooltip + clipboard chrome' },
+    // ── Self-isolating: build their own tenant via createIsolatedTenant ──
+    { file: 'e2e-utils-isolation.spec.ts', reason: 'exercises the isolation utils themselves; provisions its own tenants' },
+    { file: 'onboarding.spec.ts', reason: 'beforeAll createIsolatedTenant + serial wizard flow on its OWN tenant' },
+    { file: 'responsive.spec.ts', reason: 'self-isolating via createIsolatedTenant (per fixtures.ts docstring)' },
+    { file: 'theme-toggle.spec.ts', reason: 'self-isolating via createIsolatedTenant (per fixtures.ts docstring)' },
+    // ── Known additive shared-seed mutators, pinned mode:serial ──
+    // Tracked follow-up: fully isolating these needs new factory infra —
+    // risk-seed + framework-install for ai-risk-assessment, org-topology
+    // (org + ORG_ADMIN/AUDITOR + child-tenant create) for ciso-portfolio.
+    { file: 'ai-risk-assessment.spec.ts', reason: 'applies AI suggestions → writes risks to shared tenant; pinned mode:serial so its own tests never race. Isolate later (risk-seed + framework-install factory)' },
+    { file: 'ciso-portfolio.spec.ts', reason: 'creates a child tenant in the seeded org; pinned mode:serial. Isolate later (org-topology factory)' },
+];
+
+describe('E2E test isolation — shared-seed specs are allowlisted (fullyParallel safety)', () => {
+    /** Does the spec import the `test` RUNNER from `@playwright/test`? */
+    function importsSharedSeedRunner(src: string): boolean {
+        return /import\s*\{[^}]*\btest\b[^}]*\}\s*from\s*['"]@playwright\/test['"]/.test(
+            src,
+        );
+    }
+
+    const sharedSeedSpecs = specFiles().filter((f) =>
+        importsSharedSeedRunner(fs.readFileSync(path.join(E2E_DIR, f), 'utf8')),
+    );
+    const allowed = new Set(SHARED_SEED_ALLOWLIST.map((e) => e.file));
+
+    it('every spec importing the @playwright/test runner is allowlisted (else use ./fixtures)', () => {
+        const unlisted = sharedSeedSpecs.filter((f) => !allowed.has(f));
+        if (unlisted.length > 0) {
+            throw new Error(
+                `These specs import the \`test\` runner from @playwright/test (shared ` +
+                    `seeded tenant) but are not in SHARED_SEED_ALLOWLIST:\n` +
+                    unlisted.map((f) => `  ${f}`).join('\n') +
+                    `\n\nThe suite runs fullyParallel. A new spec that MUTATES must import ` +
+                    `from './fixtures' (per-test isolated tenant). If the spec is genuinely ` +
+                    `read-only / self-isolating / a serial additive mutator, add it to ` +
+                    `SHARED_SEED_ALLOWLIST with a reason. See tests/e2e/fixtures.ts.`,
+            );
+        }
+        expect(unlisted).toEqual([]);
+    });
+
+    it('SHARED_SEED_ALLOWLIST has no stale entries (every listed file still imports @playwright/test)', () => {
+        const stale = SHARED_SEED_ALLOWLIST.filter(
+            (e) => !sharedSeedSpecs.includes(e.file),
+        );
+        if (stale.length > 0) {
+            throw new Error(
+                `SHARED_SEED_ALLOWLIST lists files that no longer import the ` +
+                    `@playwright/test runner (migrated to ./fixtures?) — delete them: ` +
+                    stale.map((s) => s.file).join(', '),
+            );
+        }
+        expect(stale).toEqual([]);
+    });
+
+    it('the two known shared-seed mutators are pinned mode:serial (no self-race under fullyParallel)', () => {
+        for (const f of ['ai-risk-assessment.spec.ts', 'ciso-portfolio.spec.ts']) {
+            const src = fs.readFileSync(path.join(E2E_DIR, f), 'utf8');
+            expect(src).toMatch(/test\.describe\.configure\(\{\s*mode:\s*'serial'\s*\}\)/);
+        }
+    });
+});

@@ -6,35 +6,42 @@
  * D) Reports page — SOA & Risk Register tables     (read-only)
  * E-G) Audit cycle → pack → freeze → share link    (mutating scenario)
  *
- * Tenant strategy: this spec stays on the SHARED seeded `acme-corp`
- * tenant. The read-only tests (A/B/D) need the seed's installed
- * frameworks (ISO27001/SOC2/…). The mutating scenario (E-G) creates
- * an audit cycle *for ISO27001* — an isolated tenant from
- * `createIsolatedTenant` is empty and has NO frameworks installed,
- * so it cannot run this flow. Migrating E-G is gated on the factory
- * gaining a framework-install option (same carve-out as
- * `frameworks.spec.ts` / `ai-risk-assessment.spec.ts`).
+ * Tenant strategy: per-test ISOLATED tenant (`authedPage` +
+ * `isolatedTenant` fixtures). A `beforeEach` installs the ISO27001
+ * pack into the fresh tenant via `installFramework`, so the
+ * coverage tab (B) and the audit-cycle scenario (E-G) have a real
+ * installed framework to assert against. `Framework` /
+ * `FrameworkPack` are global catalog tables, so the frameworks-page
+ * cards (A) render regardless; installing ISO27001 just gives the
+ * coverage/cycle flows tenant-scoped controls to report on.
  *
- * Cascade fix: the previous shape had E/F/G as three serial
- * `test()`s sharing module-level `let cycleId / packId /
- * shareToken` — F read `cycleId` written by E, G read `shareToken`
- * written by F. A failure in E cascaded into F and G. E-G is one
- * sequential scenario, so it is now a single `test()` with
- * `test.step(...)` sub-steps and no cross-test state. A/B/D are
- * each independent read-only tests.
- *
- * Uses AUTH_TEST_MODE=1 credentials provider (admin@acme.com).
+ * Cascade fix: E-G is one sequential scenario expressed as a single
+ * `test()` with `test.step(...)` sub-steps and no cross-test state.
+ * A/B/D are each independent.
  */
-import { test, expect, type BrowserContext } from '@playwright/test';
-import { loginAndGetTenant, gotoAndVerify } from './e2e-utils';
+import { test, expect } from './fixtures';
+import type { BrowserContext } from '@playwright/test';
+import { gotoAndVerify, installFramework } from './e2e-utils';
 
 const UNIQUE = Date.now().toString(36);
 
 test.describe('Reporting & Audit Narrative', () => {
+    test.beforeEach(async ({ authedPage, isolatedTenant }) => {
+        await installFramework(
+            authedPage,
+            isolatedTenant.tenantSlug,
+            'ISO27001',
+            'ISO27001_2022_BASE',
+        );
+    });
+
     // ─── A) Frameworks Page (read-only) ──────────────────────────────
 
-    test('A — frameworks page loads with framework cards', async ({ page }) => {
-        const tenantSlug = await loginAndGetTenant(page);
+    test('A — frameworks page loads with framework cards', async ({
+        authedPage: page,
+        isolatedTenant,
+    }) => {
+        const tenantSlug = isolatedTenant.tenantSlug;
         await gotoAndVerify(page, `/t/${tenantSlug}/frameworks`, '#frameworks-heading');
         await expect(page.locator('#frameworks-heading')).toContainText(
             'Compliance Frameworks',
@@ -46,8 +53,11 @@ test.describe('Reporting & Audit Narrative', () => {
 
     // ─── B) Coverage Report (read-only) ──────────────────────────────
 
-    test('B — ISO27001 coverage tab shows metrics', async ({ page }) => {
-        const tenantSlug = await loginAndGetTenant(page);
+    test('B — ISO27001 coverage tab shows metrics', async ({
+        authedPage: page,
+        isolatedTenant,
+    }) => {
+        const tenantSlug = isolatedTenant.tenantSlug;
         await gotoAndVerify(
             page,
             `/t/${tenantSlug}/frameworks/ISO27001`,
@@ -61,8 +71,11 @@ test.describe('Reporting & Audit Narrative', () => {
 
     // ─── D) Reports Page (read-only) ─────────────────────────────────
 
-    test('D — reports page shows SOA and Risk Register', async ({ page }) => {
-        const tenantSlug = await loginAndGetTenant(page);
+    test('D — reports page shows SOA and Risk Register', async ({
+        authedPage: page,
+        isolatedTenant,
+    }) => {
+        const tenantSlug = isolatedTenant.tenantSlug;
         await gotoAndVerify(page, `/t/${tenantSlug}/reports`, '#reports-heading', 4);
 
         await expect(page.locator('#soa-tab-btn')).toBeVisible();
@@ -82,10 +95,11 @@ test.describe('Reporting & Audit Narrative', () => {
     // ─── E-G) Audit cycle → pack → freeze → share (one scenario) ─────
 
     test('E-G — create audit cycle, pack, freeze, and share', async ({
-        page,
+        authedPage: page,
+        isolatedTenant,
         browser,
     }) => {
-        const tenantSlug = await loginAndGetTenant(page);
+        const tenantSlug = isolatedTenant.tenantSlug;
         let cycleId = '';
         let packId = '';
         let shareToken = '';
