@@ -61,6 +61,12 @@ import * as assetDTOs from '@/lib/dto/asset.dto';
 import * as taskDTOs from '@/lib/dto/task.dto';
 import * as vendorDTOs from '@/lib/dto/vendor.dto';
 import * as frameworkDTOs from '@/lib/dto/framework.dto';
+import * as apiExtraDTOs from '@/lib/dto/api-extra.dto';
+
+// Side-effect import: registers the route-level path operations
+// (the critical endpoint set) on the shared registry. Must run before
+// `generateDocument()` so `paths` are emitted.
+import '@/lib/openapi/paths';
 
 export const REPO_ROOT = process.cwd();
 export const OUTPUT_PATH = resolve(REPO_ROOT, 'public/openapi.json');
@@ -151,6 +157,7 @@ export function buildOpenApiDoc(opts: BuildOptions = {}): {
         { ns: taskDTOs, label: '@/lib/dto/task.dto' },
         { ns: vendorDTOs, label: '@/lib/dto/vendor.dto' },
         { ns: frameworkDTOs, label: '@/lib/dto/framework.dto' },
+        { ns: apiExtraDTOs, label: '@/lib/dto/api-extra.dto' },
     ];
 
     let totalRegistered = 0;
@@ -211,13 +218,32 @@ export function buildOpenApiDoc(opts: BuildOptions = {}): {
  * the runtime — which is what the contract test relies on.
  */
 export function serializeDoc(doc: ReturnType<typeof buildOpenApiDoc>): string {
-    const stable = doc as { components?: { schemas?: Record<string, unknown> } };
+    const stable = doc as {
+        components?: { schemas?: Record<string, unknown> };
+        paths?: Record<string, Record<string, unknown>>;
+    };
     if (stable.components?.schemas) {
         const sorted: Record<string, unknown> = {};
         for (const key of Object.keys(stable.components.schemas).sort()) {
             sorted[key] = stable.components.schemas[key];
         }
         stable.components.schemas = sorted;
+    }
+    // Same determinism contract as components.schemas: `paths` are
+    // emitted in registerPath() order, which tracks module import
+    // order and could differ across runtimes. Sort path keys AND the
+    // per-path method keys so the byte output is runtime-independent.
+    if (stable.paths) {
+        const sortedPaths: Record<string, Record<string, unknown>> = {};
+        for (const pathKey of Object.keys(stable.paths).sort()) {
+            const ops = stable.paths[pathKey];
+            const sortedOps: Record<string, unknown> = {};
+            for (const method of Object.keys(ops).sort()) {
+                sortedOps[method] = ops[method];
+            }
+            sortedPaths[pathKey] = sortedOps;
+        }
+        stable.paths = sortedPaths;
     }
     return JSON.stringify(doc, null, 2) + '\n';
 }
