@@ -4,6 +4,14 @@ import { loginAndGetTenant, safeGoto } from './e2e-utils';
 const ADMIN_USER = { email: 'admin@acme.com', password: 'password123' };
 
 test.describe('AI-Assisted Risk Assessment', () => {
+    // Serial: these tests run against the SHARED seeded tenant and the
+    // "apply suggestions" flow WRITES risks to it. Under the suite's
+    // fullyParallel mode, two of these tests running at once would generate
+    // the same framework-derived suggestions and apply colliding risks. Pin
+    // serial so the file's tests never race each other. (Full isolation would
+    // require the factory to seed risks + install a framework into a fresh
+    // tenant — tracked follow-up; see docs/implementation-notes/2026-06-23-e2e-parallelization.md.)
+    test.describe.configure({ mode: 'serial' });
     let tenantSlug: string;
 
     test.beforeEach(async ({ page }) => {

@@ -13,22 +13,33 @@
  * is the only direct check that prompt 1's persistence + prompt 4's
  * page wiring + prompt 5's editor agree at runtime.
  *
- * Cleanup: the test resets the axis title back to "Likelihood" at
- * the end so subsequent serial-mode tests start from the canonical
- * default. The DB row stays — that's fine because the row's other
- * fields match the canonical default after reset.
+ * Isolation: the main propagation test runs against its own fresh,
+ * empty tenant via the `isolatedTenant` fixture (see `./fixtures`).
+ * The isolated tenant's OWNER strictly supersedes ADMIN, so it can
+ * reach `/admin/risk-matrix`. The matrix-config row starts at the
+ * canonical default; the heatmap view renders the axis title with
+ * zero risks (cells absent render empty), so no risk creation is
+ * needed. There is no cross-test state, so no end-of-test reset is
+ * required either — the tenant is torn down by global teardown.
+ *
+ * The READER role-gate test stays on the SHARED seeded tenant: the
+ * isolation factory only ever provisions an OWNER, so it cannot
+ * exercise a READER. That test only navigates + asserts (read-only),
+ * so it cannot pollute the shared tenant.
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { loginAndGetTenant, safeGoto } from './e2e-utils';
 
-const ADMIN_USER = { email: 'admin@acme.com', password: 'password123' };
 const READER_USER = { email: 'viewer@acme.com', password: 'password123' };
 const CUSTOM_LABEL = 'Probability of occurrence';
 
 test.describe('Risk matrix admin → live rendering loop', () => {
-    test('admin can edit the axis title and see it propagate to /risks', async ({ page }) => {
-        const tenantSlug = await loginAndGetTenant(page, ADMIN_USER);
+    test('admin can edit the axis title and see it propagate to /risks', async ({
+        authedPage: page,
+        isolatedTenant,
+    }) => {
+        const { tenantSlug } = isolatedTenant;
 
         // The `/admin/*` segment has a `loading.tsx`, so Next.js streams
         // the page through a Suspense boundary. Under slow/loaded CI the

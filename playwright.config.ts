@@ -15,27 +15,29 @@ export default defineConfig({
     // run; the tracker file is preserved so the next run retries.
     globalTeardown: './tests/e2e/global-teardown.ts',
     timeout: 180_000,
-    fullyParallel: false,
+    // Fully parallel: every mutating spec now provisions its own fresh,
+    // empty tenant via the `isolatedTenant` fixture (tests/e2e/fixtures.ts),
+    // so concurrent tests can never corrupt each other's data. The few
+    // genuinely read-only specs that still read the shared seed are
+    // concurrent-read-safe. See docs/implementation-notes/2026-06-23-e2e-parallelization.md.
+    fullyParallel: true,
     forbidOnly: isCI,
     // BOTH CI and local runs use `next start` (production mode) — a
-    // pre-compiled server that handles the full serial suite cleanly.
-    // We previously used `next dev` locally, which JIT-compiles routes
-    // and leaks memory over long sessions. The 30-ish spec serial suite
-    // ran ~38 min and the dev server consistently degraded near the
-    // end (ECONNREFUSED, 30-60s selector timeouts on pages that render
-    // fine in isolation), producing 2-3 spurious failures per run that
-    // 1 retry couldn't recover from because the server stayed slow.
+    // pre-compiled server that handles the parallel suite cleanly. We
+    // previously used `next dev` locally, which JIT-compiles routes and
+    // leaks memory over long sessions.
     //
     // `scripts/e2e-local.mjs` already runs `next build` before kicking
     // off Playwright, so the build artifact is always fresh. Direct
     // `npx playwright test` invocations need a prior `npx next build`
     // (without it, `next start` errors out with a clear message).
     //
-    // 2 retries on both — local can still hit transient localhost
-    // races, but production-mode server eliminates the systematic
-    // degradation flakes that were the dominant failure mode.
+    // 2 retries on both — local can still hit transient localhost races.
     retries: 2,
-    workers: 1,
+    // Parallel workers in CI; local stays auto (Playwright picks ~half the
+    // cores). Each worker gets its own browser; per-test isolated tenants
+    // keep DB state from colliding across workers.
+    workers: isCI ? 4 : undefined,
     reporter: isCI ? [['list'], ['html', { open: 'never' }]] : 'list',
     use: {
         baseURL: process.env.URL || 'http://localhost:3006',

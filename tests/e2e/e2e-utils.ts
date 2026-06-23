@@ -486,6 +486,58 @@ export async function createIsolatedTenant(
 }
 
 /**
+ * Install a framework pack into a tenant via the production install
+ * route.
+ *
+ * `Framework` / `FrameworkPack` are GLOBAL catalog tables (seeded
+ * once in the test DB, no `tenantId`). `installPack` reads that
+ * global pack and CREATES tenant-scoped controls + tasks + mappings
+ * for the calling tenant — so this works on a FRESH, empty isolated
+ * tenant, which is precisely what lets the audit-readiness /
+ * reporting specs run on isolated tenants.
+ *
+ * Authentication: this POSTs through `page.request`, which inherits
+ * the signed-in page's session cookies. The page MUST already be
+ * signed in (e.g. via `signInAs` / the `authedPage` fixture) as a
+ * member of `tenantSlug` with framework-install permission — the
+ * isolated tenant's OWNER qualifies.
+ *
+ * @param frameworkKey  the `Framework.key` URL segment, e.g.
+ *                      `ISO27001` / `NIS2` / `SOC2`.
+ * @param packKey       the `FrameworkPack.key` request body, e.g.
+ *                      `ISO27001_2022_BASE` / `NIS2_BASELINE`.
+ *
+ * Throws a descriptive error (status + body slice) if the install
+ * does not return ok.
+ */
+export async function installFramework(
+    page: Page,
+    tenantSlug: string,
+    frameworkKey: string,
+    packKey: string,
+): Promise<void> {
+    const res = await page.request.post(
+        `/api/t/${tenantSlug}/frameworks/${frameworkKey}`,
+        {
+            data: { packKey },
+            failOnStatusCode: false,
+            // installPack on ISO27001 creates ~93 controls + their
+            // tasks/mappings in one transaction — allow generous head-
+            // room over the default 30s so a cold-compiled route +
+            // large pack don't trip a spurious timeout.
+            timeout: 120_000,
+        },
+    );
+    if (!res.ok()) {
+        const body = await res.text().catch(() => '<unreadable body>');
+        throw new Error(
+            `installFramework: POST /api/t/${tenantSlug}/frameworks/${frameworkKey} ` +
+                `(packKey '${packKey}') failed (status ${res.status()}): ${body.slice(0, 400)}`,
+        );
+    }
+}
+
+/**
  * Sign in via the credentials form using the provided owner
  * credentials and verify the URL settled on `/t/<slug>/dashboard`.
  *
