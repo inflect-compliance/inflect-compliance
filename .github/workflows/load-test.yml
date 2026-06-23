@@ -97,6 +97,21 @@ jobs:
       - name: Setup k6
         uses: grafana/setup-k6-action@v1
 
+      # ── Create roles required by RLS migrations ──
+      # The RLS migrations `GRANT ... TO app_user`; without the role,
+      # `prisma migrate deploy` aborts with `role "app_user" does not
+      # exist`. Mirrors the identical step in ci.yml's DB jobs.
+      - name: Create PostgreSQL roles for RLS
+        run: |
+          PGPASSWORD=ci_password psql -h localhost -U ci -d ci_testdb <<'SQL'
+          DO $$ BEGIN
+            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'app_user') THEN CREATE ROLE app_user NOLOGIN; END IF;
+            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'postgres') THEN CREATE ROLE postgres NOLOGIN; END IF;
+          END $$;
+          GRANT app_user TO ci;
+          GRANT app_user TO postgres;
+          SQL
+
       - name: Apply migrations + seed
         run: |
           npx prisma migrate deploy
