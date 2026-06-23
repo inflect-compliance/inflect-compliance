@@ -13,7 +13,7 @@
  *   - canAdmin → Complete plan.
  */
 import { useMemo, useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import useSWR, { useSWRConfig } from 'swr';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
 import { ProgressBar } from '@/components/ui/progress-bar';
@@ -105,17 +105,17 @@ export function RiskTreatmentPlanCard({
     canWrite,
     canAdmin,
 }: Props) {
-    const queryClient = useQueryClient();
+    const { mutate: swrMutate } = useSWRConfig();
     const apiBase = `/api/t/${tenantSlug}/risks/${riskId}/treatment-plans`;
 
-    const plansQuery = useQuery<{ rows: PlanSummary[] }>({
-        queryKey: ['treatment-plans', tenantSlug, riskId],
-        queryFn: async () => {
-            const res = await fetch(apiBase);
+    const plansQuery = useSWR<{ rows: PlanSummary[] }>(
+        apiBase,
+        async (url: string) => {
+            const res = await fetch(url);
             if (!res.ok) throw new Error('Failed to fetch treatment plans');
             return res.json();
         },
-    });
+    );
 
     const summaries = plansQuery.data?.rows ?? [];
     /// Active plan = first non-COMPLETED. There can be multiple plans
@@ -129,12 +129,8 @@ export function RiskTreatmentPlanCard({
     const [completeOpen, setCompleteOpen] = useState(false);
 
     const invalidate = () => {
-        queryClient.invalidateQueries({
-            queryKey: ['treatment-plans', tenantSlug, riskId],
-        });
-        queryClient.invalidateQueries({
-            queryKey: ['treatment-plan', tenantSlug, activeSummary?.id],
-        });
+        swrMutate(apiBase);
+        if (activeSummary?.id) swrMutate(`${apiBase}/${activeSummary.id}`);
     };
 
     return (
@@ -238,14 +234,14 @@ function ActivePlanBlock({
     onComplete: () => void;
     onMutated: () => void;
 }) {
-    const planQuery = useQuery<PlanDetail>({
-        queryKey: ['treatment-plan', tenantSlug, planId],
-        queryFn: async () => {
-            const res = await fetch(`${apiBase}/${planId}`);
+    const planQuery = useSWR<PlanDetail>(
+        `${apiBase}/${planId}`,
+        async (url: string) => {
+            const res = await fetch(url);
             if (!res.ok) throw new Error('Failed to fetch plan detail');
             return res.json();
         },
-    });
+    );
 
     const plan = planQuery.data;
     if (!plan) {
@@ -379,8 +375,10 @@ function MilestoneRowItem({
     onMutated: () => void;
 }) {
     const completed = milestone.completedAt !== null;
-    const complete = useMutation({
-        mutationFn: async () => {
+    const [completing, setCompleting] = useState(false);
+    const handleComplete = async () => {
+        setCompleting(true);
+        try {
             const res = await fetch(
                 `${apiBase}/${planId}/milestones/${milestone.id}/complete`,
                 {
@@ -393,10 +391,14 @@ function MilestoneRowItem({
                 const text = await res.text();
                 throw new Error(text || 'Failed to complete milestone');
             }
-            return res.json();
-        },
-        onSuccess: onMutated,
-    });
+            onMutated();
+        } catch {
+            // No error surface on this inline control — mirror the prior
+            // fire-and-forget milestone-complete mutation (no onError).
+        } finally {
+            setCompleting(false);
+        }
+    };
     return (
         <li
             className="flex items-center gap-compact py-1"
@@ -405,9 +407,9 @@ function MilestoneRowItem({
             <input
                 type="checkbox"
                 checked={completed}
-                disabled={!canWrite || completed || complete.isPending}
+                disabled={!canWrite || completed || completing}
                 onChange={() => {
-                    if (!completed && canWrite) complete.mutate();
+                    if (!completed && canWrite) void handleComplete();
                 }}
                 aria-label={`Complete milestone ${milestone.title}`}
                 data-testid={`treatment-plan-milestone-checkbox-${milestone.id}`}
@@ -460,8 +462,10 @@ function CreatePlanDialog({
         [ownerChoices],
     );
 
-    const submit = useMutation({
-        mutationFn: async () => {
+    const [submitting, setSubmitting] = useState(false);
+    const handleSubmit = async () => {
+        setSubmitting(true);
+        try {
             setError(null);
             if (!targetDate) {
                 throw new Error('Target date is required.');
@@ -480,12 +484,13 @@ function CreatePlanDialog({
                 const text = await res.text();
                 throw new Error(text || 'Failed to create plan');
             }
-            return res.json();
-        },
-        onSuccess,
-        onError: (err) =>
-            setError(err instanceof Error ? err.message : 'Unknown error'),
-    });
+            onSuccess();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Unknown error');
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     const valid = strategy && ownerUserId && targetDate;
 
@@ -542,11 +547,11 @@ function CreatePlanDialog({
                     Cancel
                 </Button>
                 <Button
-                    onClick={() => submit.mutate()}
-                    disabled={!valid || submit.isPending}
+                    onClick={() => void handleSubmit()}
+                    disabled={!valid || submitting}
                     data-testid="treatment-plan-form-submit"
                 >
-                    {submit.isPending ? 'Creating…' : 'Create plan'}
+                    {submitting ? 'Creating…' : 'Create plan'}
                 </Button>
             </Modal.Footer>
         </Modal>
@@ -569,8 +574,10 @@ function AddMilestoneDialog({
     const [dueDate, setDueDate] = useState<Date | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    const submit = useMutation({
-        mutationFn: async () => {
+    const [submitting, setSubmitting] = useState(false);
+    const handleSubmit = async () => {
+        setSubmitting(true);
+        try {
             setError(null);
             if (!dueDate) throw new Error('Due date is required.');
             const res = await fetch(`${apiBase}/${planId}/milestones`, {
@@ -586,12 +593,13 @@ function AddMilestoneDialog({
                 const text = await res.text();
                 throw new Error(text || 'Failed to add milestone');
             }
-            return res.json();
-        },
-        onSuccess,
-        onError: (err) =>
-            setError(err instanceof Error ? err.message : 'Unknown error'),
-    });
+            onSuccess();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Unknown error');
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     const valid = title.trim().length > 0 && dueDate;
 
@@ -635,11 +643,11 @@ function AddMilestoneDialog({
                     Cancel
                 </Button>
                 <Button
-                    onClick={() => submit.mutate()}
-                    disabled={!valid || submit.isPending}
+                    onClick={() => void handleSubmit()}
+                    disabled={!valid || submitting}
                     data-testid="milestone-form-submit"
                 >
-                    {submit.isPending ? 'Adding…' : 'Add milestone'}
+                    {submitting ? 'Adding…' : 'Add milestone'}
                 </Button>
             </Modal.Footer>
         </Modal>
@@ -659,8 +667,10 @@ function CompletePlanDialog({
 }) {
     const [closingRemark, setClosingRemark] = useState('');
     const [error, setError] = useState<string | null>(null);
-    const submit = useMutation({
-        mutationFn: async () => {
+    const [submitting, setSubmitting] = useState(false);
+    const handleSubmit = async () => {
+        setSubmitting(true);
+        try {
             setError(null);
             const res = await fetch(`${apiBase}/${planId}/complete`, {
                 method: 'POST',
@@ -671,12 +681,13 @@ function CompletePlanDialog({
                 const text = await res.text();
                 throw new Error(text || 'Failed to complete plan');
             }
-            return res.json();
-        },
-        onSuccess,
-        onError: (err) =>
-            setError(err instanceof Error ? err.message : 'Unknown error'),
-    });
+            onSuccess();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Unknown error');
+        } finally {
+            setSubmitting(false);
+        }
+    };
     return (
         <Modal showModal setShowModal={(v) => !v && onClose()}>
             <Modal.Header title="Complete treatment plan" />
@@ -713,11 +724,11 @@ function CompletePlanDialog({
                     Cancel
                 </Button>
                 <Button
-                    onClick={() => submit.mutate()}
-                    disabled={!closingRemark.trim() || submit.isPending}
+                    onClick={() => void handleSubmit()}
+                    disabled={!closingRemark.trim() || submitting}
                     data-testid="complete-plan-submit"
                 >
-                    {submit.isPending ? 'Completing…' : 'Complete plan'}
+                    {submitting ? 'Completing…' : 'Complete plan'}
                 </Button>
             </Modal.Footer>
         </Modal>

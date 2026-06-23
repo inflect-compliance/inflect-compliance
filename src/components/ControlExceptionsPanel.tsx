@@ -16,7 +16,7 @@
  * approve from another tab refreshes the badges in this one.
  */
 import { useMemo, useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import useSWR, { useSWRConfig } from 'swr';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
@@ -80,17 +80,17 @@ export function ControlExceptionsPanel({
     canWrite,
     canAdmin,
 }: Props) {
-    const queryClient = useQueryClient();
+    const { mutate: swrMutate } = useSWRConfig();
     const apiBase = `/api/t/${tenantSlug}/controls/${controlId}/exceptions`;
 
-    const exceptionsQuery = useQuery<{ rows: ExceptionSummary[] }>({
-        queryKey: ['control-exceptions', tenantSlug, controlId],
-        queryFn: async () => {
-            const res = await fetch(apiBase);
+    const exceptionsQuery = useSWR<{ rows: ExceptionSummary[] }>(
+        apiBase,
+        async (url: string) => {
+            const res = await fetch(url);
             if (!res.ok) throw new Error('Failed to fetch exceptions');
             return res.json();
         },
-    });
+    );
 
     const rows = exceptionsQuery.data?.rows ?? [];
     const activeException = rows.find((r) => r.status === 'APPROVED' || r.status === 'REQUESTED');
@@ -101,9 +101,7 @@ export function ControlExceptionsPanel({
     const [renewTargetId, setRenewTargetId] = useState<string | null>(null);
 
     const invalidate = () => {
-        queryClient.invalidateQueries({
-            queryKey: ['control-exceptions', tenantSlug, controlId],
-        });
+        swrMutate(apiBase);
     };
 
     return (
@@ -266,15 +264,15 @@ export function ControlExceptionHeaderBadge({
     controlId: string;
 }) {
     const apiBase = `/api/t/${tenantSlug}/controls/${controlId}/exceptions`;
-    const exceptionsQuery = useQuery<{ rows: ExceptionSummary[] }>({
-        queryKey: ['control-exceptions', tenantSlug, controlId],
-        queryFn: async () => {
-            const res = await fetch(apiBase);
+    const exceptionsQuery = useSWR<{ rows: ExceptionSummary[] }>(
+        apiBase,
+        async (url: string) => {
+            const res = await fetch(url);
             if (!res.ok) throw new Error('Failed to fetch exceptions');
             return res.json();
         },
-        staleTime: 30_000,
-    });
+        { dedupingInterval: 30_000 },
+    );
     const active = (exceptionsQuery.data?.rows ?? []).find(
         (r) => r.status === 'APPROVED' || r.status === 'REQUESTED',
     );
@@ -327,8 +325,10 @@ function RequestExceptionDialog({
         [compensatingControlChoices, controlId],
     );
 
-    const submit = useMutation({
-        mutationFn: async () => {
+    const [submitting, setSubmitting] = useState(false);
+    const handleSubmit = async () => {
+        setSubmitting(true);
+        try {
             setError(null);
             const body = {
                 controlId,
@@ -346,12 +346,13 @@ function RequestExceptionDialog({
                 const text = await res.text();
                 throw new Error(text || 'Failed to request exception');
             }
-            return res.json();
-        },
-        onSuccess,
-        onError: (err) =>
-            setError(err instanceof Error ? err.message : 'Unknown error'),
-    });
+            onSuccess();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Unknown error');
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     const valid = justification.trim().length > 0 && riskAcceptedByUserId.trim().length > 0;
 
@@ -419,11 +420,11 @@ function RequestExceptionDialog({
                     Cancel
                 </Button>
                 <Button
-                    onClick={() => submit.mutate()}
-                    disabled={!valid || submit.isPending}
+                    onClick={() => void handleSubmit()}
+                    disabled={!valid || submitting}
                     data-testid="exception-form-submit"
                 >
-                    {submit.isPending ? 'Submitting…' : 'Request exception'}
+                    {submitting ? 'Submitting…' : 'Request exception'}
                 </Button>
             </Modal.Footer>
         </Modal>
@@ -445,8 +446,10 @@ function ApproveDialog({
     const [note, setNote] = useState('');
     const [error, setError] = useState<string | null>(null);
 
-    const submit = useMutation({
-        mutationFn: async () => {
+    const [submitting, setSubmitting] = useState(false);
+    const handleSubmit = async () => {
+        setSubmitting(true);
+        try {
             setError(null);
             if (!expiresAt) {
                 throw new Error('Expiry date is required for approval.');
@@ -463,12 +466,13 @@ function ApproveDialog({
                 const text = await res.text();
                 throw new Error(text || 'Failed to approve exception');
             }
-            return res.json();
-        },
-        onSuccess,
-        onError: (err) =>
-            setError(err instanceof Error ? err.message : 'Unknown error'),
-    });
+            onSuccess();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Unknown error');
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     return (
         <Modal showModal setShowModal={(v) => !v && onClose()}>
@@ -502,11 +506,11 @@ function ApproveDialog({
                     Cancel
                 </Button>
                 <Button
-                    onClick={() => submit.mutate()}
-                    disabled={!expiresAt || submit.isPending}
+                    onClick={() => void handleSubmit()}
+                    disabled={!expiresAt || submitting}
                     data-testid="exception-approve-submit"
                 >
-                    {submit.isPending ? 'Approving…' : 'Approve'}
+                    {submitting ? 'Approving…' : 'Approve'}
                 </Button>
             </Modal.Footer>
         </Modal>
@@ -527,8 +531,10 @@ function RejectDialog({
     const [reason, setReason] = useState('');
     const [error, setError] = useState<string | null>(null);
 
-    const submit = useMutation({
-        mutationFn: async () => {
+    const [submitting, setSubmitting] = useState(false);
+    const handleSubmit = async () => {
+        setSubmitting(true);
+        try {
             setError(null);
             const res = await fetch(`${apiBase}/${exceptionId}/reject`, {
                 method: 'POST',
@@ -539,12 +545,13 @@ function RejectDialog({
                 const text = await res.text();
                 throw new Error(text || 'Failed to reject exception');
             }
-            return res.json();
-        },
-        onSuccess,
-        onError: (err) =>
-            setError(err instanceof Error ? err.message : 'Unknown error'),
-    });
+            onSuccess();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Unknown error');
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     return (
         <Modal showModal setShowModal={(v) => !v && onClose()}>
@@ -574,11 +581,11 @@ function RejectDialog({
                     Cancel
                 </Button>
                 <Button
-                    onClick={() => submit.mutate()}
-                    disabled={!reason.trim() || submit.isPending}
+                    onClick={() => void handleSubmit()}
+                    disabled={!reason.trim() || submitting}
                     data-testid="exception-reject-submit"
                 >
-                    {submit.isPending ? 'Rejecting…' : 'Reject'}
+                    {submitting ? 'Rejecting…' : 'Reject'}
                 </Button>
             </Modal.Footer>
         </Modal>
@@ -598,8 +605,10 @@ function RenewDialog({
 }) {
     const [error, setError] = useState<string | null>(null);
 
-    const submit = useMutation({
-        mutationFn: async () => {
+    const [submitting, setSubmitting] = useState(false);
+    const handleSubmit = async () => {
+        setSubmitting(true);
+        try {
             setError(null);
             const res = await fetch(`${apiBase}/${exceptionId}/renew`, {
                 method: 'POST',
@@ -610,12 +619,13 @@ function RenewDialog({
                 const text = await res.text();
                 throw new Error(text || 'Failed to renew exception');
             }
-            return res.json();
-        },
-        onSuccess,
-        onError: (err) =>
-            setError(err instanceof Error ? err.message : 'Unknown error'),
-    });
+            onSuccess();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Unknown error');
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     return (
         <Modal showModal setShowModal={(v) => !v && onClose()}>
@@ -642,11 +652,11 @@ function RenewDialog({
                     Cancel
                 </Button>
                 <Button
-                    onClick={() => submit.mutate()}
-                    disabled={submit.isPending}
+                    onClick={() => void handleSubmit()}
+                    disabled={submitting}
                     data-testid="exception-renew-submit"
                 >
-                    {submit.isPending ? 'Renewing…' : 'Renew'}
+                    {submitting ? 'Renewing…' : 'Renew'}
                 </Button>
             </Modal.Footer>
         </Modal>
