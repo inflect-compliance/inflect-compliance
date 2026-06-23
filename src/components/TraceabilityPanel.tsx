@@ -1,8 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { AppIcon } from '@/components/icons/AppIcon';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '@/lib/queryKeys';
+import useSWR, { useSWRConfig } from 'swr';
 import { Combobox } from '@/components/ui/combobox';
 import { Button } from '@/components/ui/button';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -24,10 +23,6 @@ interface TraceabilityPanelProps {
 const RISK_STATUS_BADGE: Record<string, StatusBadgeVariant> = {
     OPEN: 'error', MITIGATING: 'warning', CLOSED: 'success', ACCEPTED: 'info',
 };
-
-// Cache key for traceability data
-const traceabilityKey = (tenantSlug: string, entityType: string, entityId: string) =>
-    ['traceability', tenantSlug, entityType, entityId] as const;
 
 // Shape returned by `/{controls,risks,assets}/{id}/traceability` and held
 // in the react-query cache. The three sections share one entry shape; the
@@ -76,7 +71,7 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
     const apiBase = apiBaseRaw.replace(/\/+$/, '');
     // Extract tenantSlug from apiBase if not provided (e.g. /api/t/acme-corp → acme-corp)
     const tenantSlug = tenantSlugProp || apiBase.split('/t/')[1]?.split('/')[0] || '';
-    const queryClient = useQueryClient();
+    const { mutate: swrMutate } = useSWRConfig();
     const triggerUndoToast = useToastWithUndo();
 
     // Add forms
@@ -94,22 +89,36 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
 
     const [availableAssets, setAvailableAssets] = useState<AssetOption[]>([]);
 
-    const traceUrl = entityType === 'control'
-        ? `${apiBase}/controls/${entityId}/traceability`
-        : entityType === 'risk'
-            ? `${apiBase}/risks/${entityId}/traceability`
-            : `${apiBase}/assets/${entityId}/traceability`;
+    const traceUrlFor = (type: 'control' | 'risk' | 'asset', id: string) =>
+        type === 'control'
+            ? `${apiBase}/controls/${id}/traceability`
+            : type === 'risk'
+                ? `${apiBase}/risks/${id}/traceability`
+                : `${apiBase}/assets/${id}/traceability`;
+    const traceUrl = traceUrlFor(entityType, entityId);
+
+    // Revalidate the parent list's SWR cache (every ?qs variant) after a
+    // link/unlink so RAG counts on the index pages stay correct. Only
+    // controls + risks have list pages that read traceability-derived counts.
+    const revalidateList = (type: 'risk' | 'control' | 'asset') => {
+        if (type !== 'control' && type !== 'risk') return;
+        const prefix = `${apiBase}/${type === 'control' ? 'controls' : 'risks'}`;
+        swrMutate(
+            (k) => typeof k === 'string' && (k === prefix || k.startsWith(`${prefix}?`)),
+            undefined,
+            { revalidate: true },
+        );
+    };
 
     // ─── Query: traceability data ───
-    const traceQuery = useQuery<TraceabilityData | null>({
-        queryKey: traceabilityKey(tenantSlug, entityType, entityId),
-        queryFn: async () => {
-            const res = await fetch(traceUrl);
+    const traceQuery = useSWR<TraceabilityData | null>(
+        entityId && tenantSlug ? traceUrl : null,
+        async (url: string) => {
+            const res = await fetch(url);
             if (!res.ok) return null;
             return res.json();
         },
-        enabled: !!entityId && !!tenantSlug,
-    });
+    );
 
     const data = traceQuery.data;
     const loading = traceQuery.isLoading;
@@ -143,85 +152,75 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
         if (showAddAsset) fetch(`${apiBase}/assets`).then(r => r.ok ? r.json() : []).then(d => setAvailableAssets(unwrap(d, 'assets')));
     }, [showAddAsset, apiBase]);
 
-    // ─── Mutation: link ───
-    const linkMutation = useMutation({
-        mutationFn: async ({ type, linkedId, rationale }: { type: 'risk' | 'control' | 'asset'; linkedId: string; rationale?: string }) => {
-            let url = '';
+    // ─── Link (optimistic) ───
+    const [linking, setLinking] = useState(false);
 
-            let body: Record<string, string | undefined> = {};
-            if (entityType === 'control' && type === 'risk') {
-                url = `${apiBase}/controls/${entityId}/risks`;
-                body = { riskId: linkedId, rationale: rationale || undefined };
-            } else if (entityType === 'control' && type === 'asset') {
-                url = `${apiBase}/assets/${linkedId}/controls`;
-                body = { controlId: entityId, rationale: rationale || undefined };
-            } else if (entityType === 'risk' && type === 'control') {
-                url = `${apiBase}/controls/${linkedId}/risks`;
-                body = { riskId: entityId, rationale: rationale || undefined };
-            } else if (entityType === 'risk' && type === 'asset') {
-                url = `${apiBase}/assets/${linkedId}/risks`;
-                body = { riskId: entityId, rationale: rationale || undefined };
-            } else if (entityType === 'asset' && type === 'control') {
-                url = `${apiBase}/assets/${entityId}/controls`;
-                body = { controlId: linkedId, rationale: rationale || undefined };
-            } else if (entityType === 'asset' && type === 'risk') {
-                url = `${apiBase}/assets/${entityId}/risks`;
-                body = { riskId: linkedId, rationale: rationale || undefined };
-            }
-            const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-            if (!res.ok) throw new Error('Link failed');
-            return { type, linkedId };
-        },
-        onMutate: async ({ type, linkedId, rationale }) => {
-            await queryClient.cancelQueries({ queryKey: traceabilityKey(tenantSlug, entityType, entityId) });
+    // POST url + body for a given (entityType, linkType) pair.
+    const buildLinkRequest = (
+        type: 'risk' | 'control' | 'asset',
+        linkedId: string,
+        rationale?: string,
+    ): { url: string; body: Record<string, string | undefined> } => {
+        if (entityType === 'control' && type === 'risk')
+            return { url: `${apiBase}/controls/${entityId}/risks`, body: { riskId: linkedId, rationale: rationale || undefined } };
+        if (entityType === 'control' && type === 'asset')
+            return { url: `${apiBase}/assets/${linkedId}/controls`, body: { controlId: entityId, rationale: rationale || undefined } };
+        if (entityType === 'risk' && type === 'control')
+            return { url: `${apiBase}/controls/${linkedId}/risks`, body: { riskId: entityId, rationale: rationale || undefined } };
+        if (entityType === 'risk' && type === 'asset')
+            return { url: `${apiBase}/assets/${linkedId}/risks`, body: { riskId: entityId, rationale: rationale || undefined } };
+        if (entityType === 'asset' && type === 'control')
+            return { url: `${apiBase}/assets/${entityId}/controls`, body: { controlId: linkedId, rationale: rationale || undefined } };
+        return { url: `${apiBase}/assets/${entityId}/risks`, body: { riskId: linkedId, rationale: rationale || undefined } };
+    };
 
-            const previous = queryClient.getQueryData<TraceabilityData>(traceabilityKey(tenantSlug, entityType, entityId));
-
-            if (previous) {
-
-                const updated = { ...previous };
-                const section: TraceSection = type === 'risk' ? 'risks' : type === 'control' ? 'controls' : 'assets';
-                const tempEntry: TraceLinkEntry = {
-                    id: `temp:${crypto.randomUUID()}`,
-                    rationale: rationale || null,
-                    [type]: { id: linkedId, title: 'Loading...', name: 'Loading...', status: '—', code: '' },
-                };
-                updated[section] = [...(updated[section] || []), tempEntry];
-                queryClient.setQueryData(traceabilityKey(tenantSlug, entityType, entityId), updated);
-            }
-
-            return { previous };
-        },
-        onError: (_err, _vars, context) => {
-            if (context?.previous) {
-                queryClient.setQueryData(traceabilityKey(tenantSlug, entityType, entityId), context.previous);
-            }
-        },
-        onSuccess: (_data, vars) => {
-            // Only close the form that was just linked — leaving the
-            // other open Link forms intact so a user staging multiple
-            // links (e.g. control + risk on an asset) doesn't lose
-            // the second form when the first commits.
+    const handleLink = async (type: 'risk' | 'control' | 'asset') => {
+        if (!addId) return;
+        const linkedId = addId;
+        const rationale = addRationale || undefined;
+        const section: TraceSection = type === 'risk' ? 'risks' : type === 'control' ? 'controls' : 'assets';
+        setLinking(true);
+        try {
+            await swrMutate(
+                traceUrl,
+                async () => {
+                    const { url, body } = buildLinkRequest(type, linkedId, rationale);
+                    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                    if (!res.ok) throw new Error('Link failed');
+                    // Return undefined so SWR revalidates to the authoritative row.
+                    return undefined;
+                },
+                {
+                    optimisticData: (current: TraceabilityData | null | undefined) => {
+                        if (!current) return current ?? null;
+                        const tempEntry: TraceLinkEntry = {
+                            id: `temp:${crypto.randomUUID()}`,
+                            rationale: rationale || null,
+                            [type]: { id: linkedId, title: 'Loading...', name: 'Loading...', status: '—', code: '' },
+                        };
+                        return { ...current, [section]: [...(current[section] || []), tempEntry] };
+                    },
+                    rollbackOnError: true,
+                    populateCache: false,
+                    revalidate: true,
+                },
+            );
+            // Success: close only the form that was just linked (mirror the
+            // old onSuccess — staged sibling forms stay open).
             setAddId('');
             setAddRationale('');
-            if (vars.type === 'risk') setShowAddRisk(false);
-            else if (vars.type === 'control') setShowAddControl(false);
-            else if (vars.type === 'asset') setShowAddAsset(false);
-        },
-        onSettled: (_data, _err, vars) => {
-            // Invalidate this entity's traceability
-            queryClient.invalidateQueries({ queryKey: traceabilityKey(tenantSlug, entityType, entityId) });
-            // Cross-invalidate the linked entity's traceability + list
-            if (vars) {
-                queryClient.invalidateQueries({ queryKey: traceabilityKey(tenantSlug, vars.type, vars.linkedId) });
-                if (vars.type === 'control') {
-                    queryClient.invalidateQueries({ queryKey: queryKeys.controls.all(tenantSlug) });
-                } else if (vars.type === 'risk') {
-                    queryClient.invalidateQueries({ queryKey: queryKeys.risks.all(tenantSlug) });
-                }
-            }
-        },
-    });
+            if (type === 'risk') setShowAddRisk(false);
+            else if (type === 'control') setShowAddControl(false);
+            else if (type === 'asset') setShowAddAsset(false);
+            // Cross-revalidate the linked entity's mirror view + parent list.
+            swrMutate(traceUrlFor(type, linkedId));
+            revalidateList(type);
+        } catch {
+            // rollbackOnError restored the cache; leave the form open.
+        } finally {
+            setLinking(false);
+        }
+    };
 
     // ─── Unlink — Epic 67 delayed-commit via useToastWithUndo ───
     //
@@ -247,28 +246,20 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
         asset: 'Asset unlinked',
     };
 
-    const handleLink = (type: 'risk' | 'control' | 'asset') => {
-        if (!addId) return;
-        linkMutation.mutate({ type, linkedId: addId, rationale: addRationale || undefined });
-    };
-
     const handleUnlink = (type: 'risk' | 'control' | 'asset', linkedId: string) => {
-        const cacheKey = traceabilityKey(tenantSlug, entityType, entityId);
-        // Snapshot BEFORE the optimistic write so undo restores exactly
-        // what the user saw — not a stale snapshot from before some
-        // other concurrent mutation.
-
-        const previous = queryClient.getQueryData<TraceabilityData>(cacheKey);
+        // Snapshot the currently-rendered data so undo restores exactly what
+        // the user saw — not a stale snapshot from a concurrent mutation.
+        const previous = traceQuery.data;
+        const section: TraceSection = type === 'risk' ? 'risks' : type === 'control' ? 'controls' : 'assets';
 
         if (previous) {
-            const updated = { ...previous };
-            const section: TraceSection = type === 'risk' ? 'risks' : type === 'control' ? 'controls' : 'assets';
-
-            updated[section] = (updated[section] || []).filter((l) => {
-                const linked = l[type];
-                return linked?.id !== linkedId;
-            });
-            queryClient.setQueryData(cacheKey, updated);
+            const updated = {
+                ...previous,
+                [section]: (previous[section] || []).filter((l) => l[type]?.id !== linkedId),
+            };
+            // Optimistic removal — no revalidate yet (the DELETE is deferred
+            // 5s by the undo hook).
+            swrMutate(traceUrl, updated, { revalidate: false });
         }
 
         triggerUndoToast({
@@ -278,22 +269,18 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
                 const url = unlinkUrl(type, linkedId);
                 const res = await fetch(url, { method: 'DELETE' });
                 if (!res.ok) throw new Error('Unlink failed');
-                // Invalidate this entity + the linked entity's mirror
-                // view + the entity's parent list so RAG counts on the
-                // index pages stay correct after a commit.
-                queryClient.invalidateQueries({ queryKey: cacheKey });
-                queryClient.invalidateQueries({ queryKey: traceabilityKey(tenantSlug, type, linkedId) });
-                if (type === 'control') {
-                    queryClient.invalidateQueries({ queryKey: queryKeys.controls.all(tenantSlug) });
-                } else if (type === 'risk') {
-                    queryClient.invalidateQueries({ queryKey: queryKeys.risks.all(tenantSlug) });
-                }
+                // Revalidate this entity + the linked entity's mirror view +
+                // the parent list so RAG counts on the index pages stay
+                // correct after a commit.
+                swrMutate(traceUrl);
+                swrMutate(traceUrlFor(type, linkedId));
+                revalidateList(type);
             },
             undoAction: () => {
-                if (previous) queryClient.setQueryData(cacheKey, previous);
+                if (previous) swrMutate(traceUrl, previous, { revalidate: false });
             },
             onError: () => {
-                if (previous) queryClient.setQueryData(cacheKey, previous);
+                if (previous) swrMutate(traceUrl, previous, { revalidate: false });
             },
         });
     };
@@ -333,8 +320,8 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
                                 matchTriggerWidth
                             />
                             <input type="text" className="input w-full text-sm" placeholder="Rationale (optional)" value={addRationale} onChange={e => setAddRationale(e.target.value)} />
-                            <Button variant="primary" size="xs" disabled={!addId || linkMutation.isPending} onClick={() => handleLink('risk')} id="confirm-risk-link">
-                                {linkMutation.isPending ? 'Linking...' : 'Link'}
+                            <Button variant="primary" size="xs" disabled={!addId || linking} onClick={() => handleLink('risk')} id="confirm-risk-link">
+                                {linking ? 'Linking...' : 'Link'}
                             </Button>
                         </div>
                     )}
@@ -392,8 +379,8 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
                                 matchTriggerWidth
                             />
                             <input type="text" className="input w-full text-sm" placeholder="Rationale (optional)" value={addRationale} onChange={e => setAddRationale(e.target.value)} />
-                            <Button variant="primary" size="xs" disabled={!addId || linkMutation.isPending} onClick={() => handleLink('control')} id="confirm-control-link">
-                                {linkMutation.isPending ? 'Linking...' : 'Link'}
+                            <Button variant="primary" size="xs" disabled={!addId || linking} onClick={() => handleLink('control')} id="confirm-control-link">
+                                {linking ? 'Linking...' : 'Link'}
                             </Button>
                         </div>
                     )}
@@ -451,8 +438,8 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
                                 matchTriggerWidth
                             />
                             <input type="text" className="input w-full text-sm" placeholder="Rationale (optional)" value={addRationale} onChange={e => setAddRationale(e.target.value)} />
-                            <Button variant="primary" size="xs" disabled={!addId || linkMutation.isPending} onClick={() => handleLink('asset')} id="confirm-asset-link">
-                                {linkMutation.isPending ? 'Linking...' : 'Link'}
+                            <Button variant="primary" size="xs" disabled={!addId || linking} onClick={() => handleLink('asset')} id="confirm-asset-link">
+                                {linking ? 'Linking...' : 'Link'}
                             </Button>
                         </div>
                     )}

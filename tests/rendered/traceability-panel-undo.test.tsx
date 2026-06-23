@@ -18,7 +18,7 @@
 
 import * as React from "react";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { SWRConfig } from "swr";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 // ─── sonner shim ────────────────────────────────────────────────────
@@ -105,11 +105,12 @@ function setupRoute(): void {
 
 function mountPanel() {
     setupRoute();
-    const client = new QueryClient({
-        defaultOptions: { queries: { retry: false } },
-    });
+    // Fresh per-test SWR cache (the panel reads traceability via useSWR);
+    // a shared global cache would leak optimistic mutations between tests
+    // and dedupe would serve stale data on the next mount. dedupingInterval
+    // 0 keeps the rapid optimistic-write → revalidate cycle deterministic.
     return render(
-        <QueryClientProvider client={client}>
+        <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
             <TooltipProvider delayDuration={0}>
                 <TraceabilityPanel
                     apiBase="/api/t/acme/"
@@ -120,7 +121,7 @@ function mountPanel() {
                     tenantSlug="acme"
                 />
             </TooltipProvider>
-        </QueryClientProvider>,
+        </SWRConfig>,
     );
 }
 
