@@ -34,8 +34,11 @@ colliding across workers. Expected CI wall-clock: ~15 min → ~5–6 min.
 ## Migration cohort
 
 **Migrated to `isolatedTenant` (this PR):** epic54-crud-smoke,
-controls-filter-epic53, entity-detail-layout, control-toggle-pills,
-risk-matrix-admin (test 1), search-affordances, audit-readiness, reporting.
+entity-detail-layout, control-toggle-pills, risk-matrix-admin (test 1),
+search-affordances, audit-readiness, reporting. (`controls-filter-epic53`
+was initially migrated but reverted to the shared seed — see below: it's
+read-only filter chrome whose FilterSelect palette only renders with
+seeded rows, so the first parallel CI run failed it on the empty tenant.)
 Already-isolated mixed specs (controls, control-edit-modal, issues) were left
 as-is — their lone `loginAndGetTenant` call is the legitimate READER
 role-gate test (the factory only mints OWNERs, so a READER can't be isolated;
