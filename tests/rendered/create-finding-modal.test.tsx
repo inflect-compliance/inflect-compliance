@@ -9,7 +9,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import * as React from 'react';
 import { SWRConfig } from 'swr';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 jest.mock('next/navigation', () => ({
     useRouter: () => ({ push: jest.fn(), replace: jest.fn(), refresh: jest.fn(), prefetch: jest.fn() }),
@@ -38,17 +37,12 @@ beforeEach(() => {
 
 function renderModal() {
     const apiUrl = (p: string) => `/api/t/acme${p}`;
-    // SWRConfig backs the modal's own migrated dropdowns; QueryClientProvider
-    // is still required by the nested <UserCombobox> (useTenantMembers), a
-    // shared component that migrates to SWR in Wave 5. Remove the RQ wrapper
-    // once that lands.
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    // Fresh per-test SWR cache. (React Query fully removed — the modal's
+    // dropdowns + nested <UserCombobox> read via useSWR now.)
     return render(
-        <QueryClientProvider client={client}>
-            <SWRConfig value={{ provider: () => new Map(), shouldRetryOnError: false }}>
-                <CreateFindingModal open setOpen={() => {}} tenantSlug="acme" apiUrl={apiUrl} />
-            </SWRConfig>
-        </QueryClientProvider>,
+        <SWRConfig value={{ provider: () => new Map(), shouldRetryOnError: false }}>
+            <CreateFindingModal open setOpen={() => {}} tenantSlug="acme" apiUrl={apiUrl} />
+        </SWRConfig>,
     );
 }
 

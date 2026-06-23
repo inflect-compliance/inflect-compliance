@@ -11,7 +11,6 @@
 import * as React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SWRConfig } from 'swr';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 jest.mock('next/navigation', () => ({
     useRouter: () => ({
@@ -42,18 +41,12 @@ jest.mock('@/lib/tenant-context-provider', () => ({
 import { AccessReviewsClient } from '@/app/t/[tenantSlug]/(app)/access-reviews/AccessReviewsClient';
 
 function withClient(ui: React.ReactNode) {
-    // SWRConfig backs the migrated list; QueryClientProvider is still
-    // required by the nested <UserCombobox> (reviewer picker), which
-    // migrates to SWR in Wave 5 — remove the RQ wrapper once it lands.
-    const qc = new QueryClient({
-        defaultOptions: { queries: { retry: false } },
-    });
+    // Fresh per-test SWR cache. (React Query fully removed — the nested
+    // <UserCombobox> reads via useSWR now.)
     return (
-        <QueryClientProvider client={qc}>
-            <SWRConfig value={{ provider: () => new Map(), shouldRetryOnError: false }}>
-                {ui}
-            </SWRConfig>
-        </QueryClientProvider>
+        <SWRConfig value={{ provider: () => new Map(), shouldRetryOnError: false }}>
+            {ui}
+        </SWRConfig>
     );
 }
 

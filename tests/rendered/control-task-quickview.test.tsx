@@ -9,17 +9,18 @@
  */
 import { render, screen, fireEvent } from "@testing-library/react";
 import * as React from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { SWRConfig } from 'swr';
 
 jest.mock("@/lib/tenant-context-provider", () => ({
     useTenantHref: () => (p: string) => `/t/acme${p}`,
 }));
 
-// UserCombobox (member lookup) uses react-query — wrap renders that include it.
+// UserCombobox (member lookup) reads via useSWR — wrap renders in a fresh
+// per-test SWR cache.
 const withQuery = (ui: React.ReactElement) => (
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+    <SWRConfig value={{ provider: () => new Map() }}>
         {ui}
-    </QueryClientProvider>
+    </SWRConfig>
 );
 
 import { ControlTaskRows } from "@/app/t/[tenantSlug]/(app)/controls/ControlTaskRows";

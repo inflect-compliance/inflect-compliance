@@ -58,7 +58,7 @@ const MIGRATED_FILES: string[] = [
 // uninstalled and the QueryClient/provider are removed). Until then the three
 // "KEEP for now" infra files (ClientProviders, query-client, mutations) and the
 // not-yet-migrated cohort files may still import it.
-const EXPECT_ZERO_TANSTACK_REPO_WIDE = false;
+const EXPECT_ZERO_TANSTACK_REPO_WIDE = true;
 
 function walk(dir: string): string[] {
     const out: string[] = [];

@@ -13,7 +13,7 @@ import { render, screen } from '@testing-library/react';
 import * as React from 'react';
 import * as fs from 'fs';
 import * as path from 'path';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SWRConfig } from 'swr';
 
 jest.mock('next/navigation', () => ({
     useRouter: () => ({ push: jest.fn(), replace: jest.fn(), refresh: jest.fn(), prefetch: jest.fn() }),
@@ -34,11 +34,10 @@ beforeEach(() => {
 });
 
 function withClient(node: React.ReactNode) {
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     return render(
-        <QueryClientProvider client={client}>
+        <SWRConfig value={{ provider: () => new Map() }}>
             <TooltipProvider>{node}</TooltipProvider>
-        </QueryClientProvider>,
+        </SWRConfig>,
     );
 }
 

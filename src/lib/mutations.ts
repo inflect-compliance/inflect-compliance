@@ -1,8 +1,14 @@
-import { QueryClient } from '@tanstack/react-query';
-
 /**
- * Extract a displayable error string from an API error response.
- * Handles nested objects, Zod validation errors, and plain strings.
+ * Mutation error helper.
+ *
+ * Once the React Query → SWR migration completed, the only surviving
+ * export here is `extractMutationError` — a framework-agnostic funnel that
+ * normalises an arbitrary thrown value (Error / string / `{ error }` /
+ * `{ message }`) into a displayable string. Mutation call sites (plain
+ * async handlers + `useTenantMutation`) reuse it so error copy stays
+ * consistent. The former `optimisticListUpdate` (which took a React Query
+ * `QueryClient`) was removed with the migration — optimistic list updates
+ * now go through `useTenantMutation`'s `optimisticUpdate` option.
  */
 export function extractMutationError(err: unknown, fallback = 'An error occurred'): string {
     if (err instanceof Error) return err.message;
@@ -13,22 +19,4 @@ export function extractMutationError(err: unknown, fallback = 'An error occurred
         return typeof e === 'string' ? e : JSON.stringify(e);
     }
     return fallback;
-}
-
-/**
- * Generic optimistic list updater: find item by id and patch it.
- */
-export function optimisticListUpdate<T extends { id: string }>(
-    queryClient: QueryClient,
-    queryKey: readonly unknown[],
-    itemId: string,
-    patch: Partial<T>,
-): T[] | undefined {
-    const previous = queryClient.getQueryData<T[]>(queryKey);
-    if (previous) {
-        queryClient.setQueryData<T[]>(queryKey, old =>
-            old?.map(item => item.id === itemId ? { ...item, ...patch } : item)
-        );
-    }
-    return previous;
 }
