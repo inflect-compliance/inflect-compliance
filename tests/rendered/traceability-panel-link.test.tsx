@@ -19,7 +19,7 @@
 import * as React from "react";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { SWRConfig } from "swr";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import TraceabilityPanel from "@/components/TraceabilityPanel";
@@ -105,11 +105,10 @@ function setupRoutes(): void {
 
 function mountPanel() {
     setupRoutes();
-    const client = new QueryClient({
-        defaultOptions: { queries: { retry: false } },
-    });
+    // Fresh per-test SWR cache (the panel reads traceability via useSWR);
+    // dedupingInterval 0 keeps the link → revalidate cycle deterministic.
     return render(
-        <QueryClientProvider client={client}>
+        <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
             <TooltipProvider delayDuration={0}>
                 <TraceabilityPanel
                     apiBase="/api/t/acme/"
@@ -120,7 +119,7 @@ function mountPanel() {
                     tenantSlug="acme"
                 />
             </TooltipProvider>
-        </QueryClientProvider>,
+        </SWRConfig>,
     );
 }
 
