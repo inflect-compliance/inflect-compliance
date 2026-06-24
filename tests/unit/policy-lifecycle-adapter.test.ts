@@ -38,7 +38,11 @@ import {
     phaseToDefaultPolicyStatus,
     validatePolicyPayload,
     POLICY_AUDIT_CONFIG,
+    PolicyEditableAdapter,
 } from '@/app-layer/services/policy-lifecycle-adapter';
+import { PolicyContentType, PolicyStatus } from '@prisma/client';
+import type { EditableState } from '@/app-layer/domain/editable-lifecycle.types';
+import type { PublishedSnapshot } from '@/app-layer/domain/editable-lifecycle.types';
 
 // ═════════════════════════════════════════════════════════════════════
 // Phase Mapping
@@ -498,5 +502,391 @@ describe('Policy Lifecycle (generic service integration)', () => {
             expect(state.published).not.toBeNull();
             expect(state.history).toHaveLength(2);
         });
+    });
+});
+
+// ═════════════════════════════════════════════════════════════════════
+// PolicyEditableAdapter — loadState / saveState branch coverage
+//
+// Pure unit test: loadState / saveState take a `db` (PrismaTx) directly,
+// so we pass a hand-rolled fake db with jest.fn() finders/writers. No DB.
+// Each test names the branch class it protects.
+// ═════════════════════════════════════════════════════════════════════
+
+const TENANT = 'tenant-1';
+const USER = 'user-1';
+
+function adapter() {
+    return new PolicyEditableAdapter(TENANT, USER);
+}
+
+function makeVersion(over: Partial<any> = {}) {
+    return {
+        id: 'v1',
+        versionNumber: 1,
+        contentType: PolicyContentType.MARKDOWN,
+        contentText: 'body',
+        externalUrl: null,
+        changeSummary: 'summary',
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        createdById: 'author-1',
+        ...over,
+    };
+}
+
+function makeDb() {
+    return {
+        policy: {
+            findFirst: jest.fn(),
+            updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        },
+        policyVersion: {
+            findFirst: jest.fn(),
+            create: jest.fn(),
+        },
+    };
+}
+
+describe('PolicyEditableAdapter.loadState', () => {
+    it('returns null when the policy is not found', async () => {
+        // Branch: !policy → return null.
+        const db = makeDb();
+        db.policy.findFirst.mockResolvedValue(null);
+        expect(await adapter().loadState(db as any, 'p1')).toBeNull();
+    });
+
+    it('PUBLISHED with currentVersion → published payload + attribution + history reconstruction', async () => {
+        // Branches: currentVersion truthy → published set; phase==='PUBLISHED' && currentVersion
+        // → publishedBy / publishedChangeSummary set; lifecycleVersion used for counter;
+        // history fall-back reconstruction (lifecycleHistoryJson null).
+        const db = makeDb();
+        const cur = makeVersion({ id: 'vc', versionNumber: 3 });
+        const old = makeVersion({ id: 'vold', versionNumber: 2, createdById: 'prev', changeSummary: null });
+        db.policy.findFirst.mockResolvedValue({
+            id: 'p1',
+            status: 'PUBLISHED',
+            lifecycleVersion: 3,
+            lifecycleHistoryJson: null,
+            currentVersion: cur,
+            versions: [old, cur],
+        });
+
+        const state = await adapter().loadState(db as any, 'p1');
+        expect(state).not.toBeNull();
+        expect(state!.phase).toBe('PUBLISHED');
+        expect(state!.currentVersion).toBe(3);
+        expect(state!.published).toEqual({
+            contentType: cur.contentType,
+            contentText: cur.contentText,
+            externalUrl: cur.externalUrl,
+            changeSummary: cur.changeSummary,
+        });
+        expect(state!.draft).toBeNull(); // phase !== DRAFT
+        expect(state!.publishedBy).toBe('author-1');
+        expect(state!.publishedChangeSummary).toBe('summary');
+        // Reconstruction excludes currentVersion (vc); vold remains.
+        expect(state!.history).toHaveLength(1);
+        expect(state!.history[0].version).toBe(2);
+        expect(state!.history[0].publishedBy).toBe('prev');
+        // changeSummary null → undefined via `?? undefined`.
+        expect(state!.history[0].changeSummary).toBeUndefined();
+    });
+
+    it('PUBLISHED currentVersion with null changeSummary → publishedChangeSummary null (?? null) + version fallback', async () => {
+        // Branches: currentVersion.changeSummary ?? null → null; lifecycleVersion null
+        // → currentVersion?.versionNumber fallback.
+        const db = makeDb();
+        const cur = makeVersion({ id: 'vc', versionNumber: 1, changeSummary: null });
+        db.policy.findFirst.mockResolvedValue({
+            id: 'p1',
+            status: 'PUBLISHED',
+            lifecycleVersion: null,
+            lifecycleHistoryJson: null,
+            currentVersion: cur,
+            versions: [cur],
+        });
+        const state = await adapter().loadState(db as any, 'p1');
+        expect(state!.currentVersion).toBe(1);
+        expect(state!.publishedChangeSummary).toBeNull();
+    });
+
+    it('no currentVersion + no lifecycleVersion → counter defaults to 1, published null, no attribution', async () => {
+        // Branches: currentVersion falsy → published null, publishedBy/Summary null;
+        // lifecycleVersion ?? currentVersion?.versionNumber ?? 1 → final `?? 1` default.
+        const db = makeDb();
+        db.policy.findFirst.mockResolvedValue({
+            id: 'p1',
+            status: 'DRAFT',
+            lifecycleVersion: null,
+            lifecycleHistoryJson: null,
+            currentVersion: null,
+            versions: [],
+        });
+        const state = await adapter().loadState(db as any, 'p1');
+        expect(state!.currentVersion).toBe(1);
+        expect(state!.published).toBeNull();
+        expect(state!.publishedBy).toBeNull();
+        expect(state!.publishedChangeSummary).toBeNull();
+        expect(state!.draft).toBeNull(); // versions empty → length>0 guard false
+        expect(state!.history).toEqual([]); // reconstruction with no current → filter(false)
+    });
+
+    it('DRAFT with latest version differing from currentVersion → draft from latest', async () => {
+        // Branch: phase==='DRAFT' && versions.length>0; latest.id !== current.id → draft set.
+        const db = makeDb();
+        const cur = makeVersion({ id: 'vc', versionNumber: 1, contentText: 'published-body' });
+        const latest = makeVersion({ id: 'vlatest', versionNumber: 2, contentText: 'draft-body' });
+        db.policy.findFirst.mockResolvedValue({
+            id: 'p1',
+            status: 'DRAFT',
+            lifecycleVersion: 1,
+            lifecycleHistoryJson: null,
+            currentVersion: cur,
+            versions: [cur, latest],
+        });
+        const state = await adapter().loadState(db as any, 'p1');
+        expect(state!.phase).toBe('DRAFT');
+        expect(state!.draft).toEqual({
+            contentType: latest.contentType,
+            contentText: 'draft-body',
+            externalUrl: null,
+            changeSummary: latest.changeSummary,
+        });
+        // Reconstruction excludes current (vc) AND the draft's latest versionNumber → empty.
+        expect(state!.history).toEqual([]);
+    });
+
+    it('DRAFT where latest version IS currentVersion → draft = published (else-if branch)', async () => {
+        // Branch: latest.id === current.id → else-if `phase==='DRAFT' && currentVersion` → draft=published.
+        const db = makeDb();
+        const cur = makeVersion({ id: 'vc', versionNumber: 1 });
+        db.policy.findFirst.mockResolvedValue({
+            id: 'p1',
+            status: 'DRAFT',
+            lifecycleVersion: 1,
+            lifecycleHistoryJson: null,
+            currentVersion: cur,
+            versions: [cur],
+        });
+        const state = await adapter().loadState(db as any, 'p1');
+        expect(state!.draft).toEqual(state!.published);
+        expect(state!.draft).not.toBeNull();
+    });
+
+    it('DRAFT with versions but no currentVersion → draft from latest (!currentVersion branch)', async () => {
+        // Branch: phase==='DRAFT', versions.length>0, !currentVersion → draft from latest.
+        const db = makeDb();
+        const latest = makeVersion({ id: 'vlatest', versionNumber: 1, contentText: 'only-draft' });
+        db.policy.findFirst.mockResolvedValue({
+            id: 'p1',
+            status: 'DRAFT',
+            lifecycleVersion: null,
+            lifecycleHistoryJson: null,
+            currentVersion: null,
+            versions: [latest],
+        });
+        const state = await adapter().loadState(db as any, 'p1');
+        expect(state!.draft?.contentText).toBe('only-draft');
+    });
+
+    it('uses persisted lifecycleHistoryJson when present (skips reconstruction)', async () => {
+        // Branch: Array.isArray(persistedHistory) && length>0 → use persisted.
+        const persisted: PublishedSnapshot<PolicyPayload>[] = [
+            {
+                version: 1,
+                payload: { contentType: PolicyContentType.MARKDOWN, contentText: 'old', externalUrl: null, changeSummary: 'first' },
+                publishedAt: '2026-01-01T00:00:00.000Z',
+                publishedBy: 'u-old',
+                changeSummary: 'first',
+            },
+        ];
+        const db = makeDb();
+        const cur = makeVersion({ id: 'vc', versionNumber: 2 });
+        db.policy.findFirst.mockResolvedValue({
+            id: 'p1',
+            status: 'PUBLISHED',
+            lifecycleVersion: 2,
+            lifecycleHistoryJson: persisted,
+            currentVersion: cur,
+            versions: [cur],
+        });
+        const state = await adapter().loadState(db as any, 'p1');
+        expect(state!.history).toEqual(persisted);
+    });
+
+    it('falls back to reconstruction when lifecycleHistoryJson is an empty array', async () => {
+        // Branch: Array.isArray true but length===0 → else (reconstruction) branch.
+        const db = makeDb();
+        const cur = makeVersion({ id: 'vc', versionNumber: 2 });
+        const old = makeVersion({ id: 'vold', versionNumber: 1, createdById: 'prev' });
+        db.policy.findFirst.mockResolvedValue({
+            id: 'p1',
+            status: 'PUBLISHED',
+            lifecycleVersion: 2,
+            lifecycleHistoryJson: [],
+            currentVersion: cur,
+            versions: [old, cur],
+        });
+        const state = await adapter().loadState(db as any, 'p1');
+        expect(state!.history.map((h) => h.version)).toEqual([1]);
+    });
+
+    it('handles versions undefined (versions || [] default) on an ARCHIVED policy', async () => {
+        // Branch: `policy.versions || []` falsy fallback.
+        const db = makeDb();
+        db.policy.findFirst.mockResolvedValue({
+            id: 'p1',
+            status: 'ARCHIVED',
+            lifecycleVersion: 5,
+            lifecycleHistoryJson: null,
+            currentVersion: null,
+            versions: undefined,
+        });
+        const state = await adapter().loadState(db as any, 'p1');
+        expect(state!.phase).toBe('ARCHIVED');
+        expect(state!.currentVersion).toBe(5);
+        expect(state!.history).toEqual([]);
+    });
+});
+
+describe('PolicyEditableAdapter.saveState', () => {
+    function publishedState(over: Partial<EditableState<PolicyPayload>> = {}): EditableState<PolicyPayload> {
+        return {
+            phase: 'PUBLISHED',
+            currentVersion: 2,
+            draft: null,
+            published: {
+                contentType: PolicyContentType.MARKDOWN,
+                contentText: 'live',
+                externalUrl: null,
+                changeSummary: 'publish summary',
+            },
+            publishedBy: USER,
+            publishedChangeSummary: 'publish summary',
+            history: [],
+            ...over,
+        };
+    }
+
+    it('PUBLISHED + published set + version row absent → creates version then updateMany with new id', async () => {
+        // Branch: phase==='PUBLISHED' && published!==null; !existing → create + updateMany.
+        const db = makeDb();
+        db.policyVersion.findFirst.mockResolvedValue(null);
+        db.policyVersion.create.mockResolvedValue({ id: 'new-v' });
+        await adapter().saveState(db as any, 'p1', publishedState());
+        expect(db.policyVersion.create).toHaveBeenCalledTimes(1);
+        const createArg = db.policyVersion.create.mock.calls[0][0].data;
+        expect(createArg).toMatchObject({
+            tenantId: TENANT,
+            policyId: 'p1',
+            versionNumber: 2,
+            createdById: USER,
+        });
+        expect(db.policy.updateMany).toHaveBeenCalledTimes(1);
+        const updArg = db.policy.updateMany.mock.calls[0][0].data;
+        expect(updArg.currentVersionId).toBe('new-v');
+        expect(updArg.status).toBe(PolicyStatus.PUBLISHED);
+        expect(updArg.lifecycleVersion).toBe(2);
+        // history empty → historyJson undefined → no lifecycleHistoryJson key.
+        expect('lifecycleHistoryJson' in updArg).toBe(false);
+    });
+
+    it('PUBLISHED + version row already exists → no create, updateMany with existing id', async () => {
+        // Branch: existing truthy → else branch (idempotent), no create.
+        const db = makeDb();
+        db.policyVersion.findFirst.mockResolvedValue({ id: 'existing-v' });
+        await adapter().saveState(db as any, 'p1', publishedState());
+        expect(db.policyVersion.create).not.toHaveBeenCalled();
+        expect(db.policy.updateMany).toHaveBeenCalledTimes(1);
+        expect(db.policy.updateMany.mock.calls[0][0].data.currentVersionId).toBe('existing-v');
+    });
+
+    it('PUBLISHED with non-empty history → writes lifecycleHistoryJson (create path)', async () => {
+        // Branch: historyJson truthy → spread lifecycleHistoryJson into update data.
+        const db = makeDb();
+        db.policyVersion.findFirst.mockResolvedValue(null);
+        db.policyVersion.create.mockResolvedValue({ id: 'new-v' });
+        const history: PublishedSnapshot<PolicyPayload>[] = [
+            {
+                version: 1,
+                payload: { contentType: PolicyContentType.MARKDOWN, contentText: 'old', externalUrl: null, changeSummary: null },
+                publishedAt: '2026-01-01T00:00:00.000Z',
+                publishedBy: 'u',
+            },
+        ];
+        await adapter().saveState(db as any, 'p1', publishedState({ history }));
+        expect(db.policy.updateMany.mock.calls[0][0].data.lifecycleHistoryJson).toBe(history);
+    });
+
+    it('PUBLISHED + existing version + non-empty history → writes lifecycleHistoryJson (existing path)', async () => {
+        // Branch: existing truthy AND historyJson truthy.
+        const db = makeDb();
+        db.policyVersion.findFirst.mockResolvedValue({ id: 'existing-v' });
+        const history: PublishedSnapshot<PolicyPayload>[] = [
+            {
+                version: 1,
+                payload: { contentType: PolicyContentType.HTML, contentText: 'h', externalUrl: null, changeSummary: 's' },
+                publishedAt: '2026-02-01T00:00:00.000Z',
+                publishedBy: 'u2',
+                changeSummary: 's',
+            },
+        ];
+        await adapter().saveState(db as any, 'p1', publishedState({ history }));
+        expect(db.policy.updateMany.mock.calls[0][0].data.lifecycleHistoryJson).toBe(history);
+    });
+
+    it('PUBLISHED but published === null → falls to non-publish branch (updateMany only)', async () => {
+        // Branch: phase==='PUBLISHED' but published===null → else (non-publish) branch.
+        const db = makeDb();
+        await adapter().saveState(db as any, 'p1', publishedState({ published: null }));
+        expect(db.policyVersion.create).not.toHaveBeenCalled();
+        expect(db.policyVersion.findFirst).not.toHaveBeenCalled();
+        expect(db.policy.updateMany).toHaveBeenCalledTimes(1);
+        const updArg = db.policy.updateMany.mock.calls[0][0].data;
+        expect(updArg.status).toBe(PolicyStatus.PUBLISHED);
+        expect(updArg.lifecycleVersion).toBe(2);
+    });
+
+    it('DRAFT phase → non-publish branch, no history key when history empty', async () => {
+        // Branch: phase !== 'PUBLISHED' → else branch; historyJson undefined.
+        const db = makeDb();
+        await adapter().saveState(db as any, 'p1', {
+            phase: 'DRAFT',
+            currentVersion: 1,
+            draft: { contentType: PolicyContentType.MARKDOWN, contentText: 'd', externalUrl: null, changeSummary: null },
+            published: null,
+            publishedBy: null,
+            publishedChangeSummary: null,
+            history: [],
+        });
+        expect(db.policyVersion.create).not.toHaveBeenCalled();
+        const updArg = db.policy.updateMany.mock.calls[0][0].data;
+        expect(updArg.status).toBe(PolicyStatus.DRAFT);
+        expect('lifecycleHistoryJson' in updArg).toBe(false);
+    });
+
+    it('ARCHIVED phase with history → non-publish branch writes lifecycleHistoryJson', async () => {
+        // Branch: else branch + historyJson truthy.
+        const db = makeDb();
+        const history: PublishedSnapshot<PolicyPayload>[] = [
+            {
+                version: 2,
+                payload: { contentType: PolicyContentType.MARKDOWN, contentText: 'x', externalUrl: null, changeSummary: null },
+                publishedAt: '2026-03-01T00:00:00.000Z',
+                publishedBy: 'u',
+            },
+        ];
+        await adapter().saveState(db as any, 'p1', {
+            phase: 'ARCHIVED',
+            currentVersion: 3,
+            draft: null,
+            published: { contentType: PolicyContentType.MARKDOWN, contentText: 'x', externalUrl: null, changeSummary: null },
+            publishedBy: 'u',
+            publishedChangeSummary: null,
+            history,
+        });
+        const updArg = db.policy.updateMany.mock.calls[0][0].data;
+        expect(updArg.status).toBe(PolicyStatus.ARCHIVED);
+        expect(updArg.lifecycleHistoryJson).toBe(history);
     });
 });

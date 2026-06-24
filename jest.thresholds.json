@@ -1,15 +1,15 @@
 {
   "global": {
-    "branches": 62,
-    "functions": 61,
-    "lines": 76,
-    "statements": 75
+    "branches": 63,
+    "functions": 62,
+    "lines": 77,
+    "statements": 76
   },
   "./src/app-layer/usecases/": {
-    "branches": 72,
-    "functions": 76,
-    "lines": 85,
-    "statements": 83
+    "branches": 79,
+    "functions": 81,
+    "lines": 88,
+    "statements": 87
   },
   "./src/app-layer/policies/": {
     "branches": 86,
