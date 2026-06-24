@@ -1,28 +1,27 @@
-import { NextRequest } from 'next/server';
-import { getTenantCtx } from '@/app-layer/context';
 import { getTask, updateTask, deleteTask } from '@/app-layer/usecases/task';
-import { withValidatedBody } from '@/lib/validation/route';
 import { UpdateTaskSchema } from '@/lib/schemas';
 import { withApiErrorHandling } from '@/lib/errors/api';
+import { requirePermission } from '@/lib/security/permission-middleware';
+import { parseJsonBody } from '@/lib/validation/route';
 import { jsonResponse } from '@/lib/api-response';
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; taskId: string }> }) => {
-    const params = await paramsPromise;
-    const ctx = await getTenantCtx(params, req);
-    const task = await getTask(ctx, params.taskId);
-    return jsonResponse(task);
-});
+type TaskDetailParams = { tenantSlug: string; taskId: string };
 
-export const PATCH = withApiErrorHandling(withValidatedBody(UpdateTaskSchema, async (req, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; taskId: string }> }, body) => {
-    const params = await paramsPromise;
-    const ctx = await getTenantCtx(params, req);
-    const task = await updateTask(ctx, params.taskId, body);
+export const GET = withApiErrorHandling(requirePermission<TaskDetailParams>('tasks.view', async (_req, { params }, ctx) => {
+    const { taskId } = await params;
+    const task = await getTask(ctx, taskId);
     return jsonResponse(task);
 }));
 
-export const DELETE = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; taskId: string }> }) => {
-    const params = await paramsPromise;
-    const ctx = await getTenantCtx(params, req);
-    await deleteTask(ctx, params.taskId);
+export const PATCH = withApiErrorHandling(requirePermission<TaskDetailParams>('tasks.edit', async (req, { params }, ctx) => {
+    const { taskId } = await params;
+    const body = await parseJsonBody(req, UpdateTaskSchema);
+    const task = await updateTask(ctx, taskId, body);
+    return jsonResponse(task);
+}));
+
+export const DELETE = withApiErrorHandling(requirePermission<TaskDetailParams>('tasks.edit', async (_req, { params }, ctx) => {
+    const { taskId } = await params;
+    await deleteTask(ctx, taskId);
     return jsonResponse({ ok: true });
-});
+}));

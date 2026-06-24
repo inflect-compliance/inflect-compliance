@@ -3,6 +3,25 @@ import { ZodSchema } from 'zod';
 import { badRequest } from '@/lib/errors/types';
 
 /**
+ * Parse + validate a JSON request body, returning the typed/stripped
+ * value. Identical semantics to `withValidatedBody` (malformed JSON →
+ * `badRequest('Invalid JSON payload')`; valid JSON failing the schema →
+ * ZodError, which `withApiErrorHandling` maps to a 400 VALIDATION_ERROR)
+ * — but usable INLINE inside a `requirePermission(...)` handler, which
+ * already threads `ctx` as the third argument and so can't also accept
+ * the body via `withValidatedBody`'s wrapper signature.
+ */
+export async function parseJsonBody<T>(req: NextRequest, schema: ZodSchema<T>): Promise<T> {
+    let raw: unknown;
+    try {
+        raw = await req.json();
+    } catch {
+        throw badRequest('Invalid JSON payload');
+    }
+    return schema.parse(raw);
+}
+
+/**
  * Higher-order function to wrap route handlers with JSON body validation.
  * Enforces Zod schema validation and strips unknown fields (schema should use .strip()).
  */

@@ -1,9 +1,8 @@
-import { NextRequest } from 'next/server';
-import { getTenantCtx } from '@/app-layer/context';
 import { listControls, listControlsPaginated, createControl, listControlsWithDeleted } from '@/app-layer/usecases/control';
-import { withValidatedBody } from '@/lib/validation/route';
 import { CreateControlSchema } from '@/lib/schemas';
 import { withApiErrorHandling } from '@/lib/errors/api';
+import { requirePermission } from '@/lib/security/permission-middleware';
+import { parseJsonBody } from '@/lib/validation/route';
 import { z } from 'zod';
 import { normalizeQ } from '@/lib/filters/query-helpers';
 import { jsonResponse } from '@/lib/api-response';
@@ -21,9 +20,7 @@ const ControlsQuerySchema = z.object({
     includeDeleted: z.enum(['true', 'false']).optional(),
 }).strip();
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
-    const params = await paramsPromise;
-    const ctx = await getTenantCtx(params, req);
+export const GET = withApiErrorHandling(requirePermission<{ tenantSlug: string }>('controls.view', async (req, _routeArgs, ctx) => {
     const sp = Object.fromEntries(req.nextUrl.searchParams.entries());
     const query = ControlsQuerySchema.parse(sp);
 
@@ -62,11 +59,10 @@ export const GET = withApiErrorHandling(async (req: NextRequest, { params: param
         tenantId: ctx.tenantId,
     });
     return jsonResponse(result);
-});
+}));
 
-export const POST = withApiErrorHandling(withValidatedBody(CreateControlSchema, async (req, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }, body) => {
-    const params = await paramsPromise;
-    const ctx = await getTenantCtx(params, req);
+export const POST = withApiErrorHandling(requirePermission<{ tenantSlug: string }>('controls.create', async (req, _routeArgs, ctx) => {
+    const body = await parseJsonBody(req, CreateControlSchema);
     const control = await createControl(ctx, body);
     return jsonResponse(control, { status: 201 });
 }));

@@ -1,28 +1,27 @@
-import { NextRequest } from 'next/server';
-import { getTenantCtx } from '@/app-layer/context';
 import { getRisk, updateRisk, deleteRisk } from '@/app-layer/usecases/risk';
-import { withValidatedBody } from '@/lib/validation/route';
 import { UpdateRiskSchema } from '@/lib/schemas';
 import { withApiErrorHandling } from '@/lib/errors/api';
+import { requirePermission } from '@/lib/security/permission-middleware';
+import { parseJsonBody } from '@/lib/validation/route';
 import { jsonResponse } from '@/lib/api-response';
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; id: string }> }) => {
-    const params = await paramsPromise;
-    const ctx = await getTenantCtx(params, req);
-    const risk = await getRisk(ctx, params.id);
-    return jsonResponse(risk);
-});
+type RiskDetailParams = { tenantSlug: string; id: string };
 
-export const PUT = withApiErrorHandling(withValidatedBody(UpdateRiskSchema, async (req, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; id: string }> }, body) => {
-    const params = await paramsPromise;
-    const ctx = await getTenantCtx(params, req);
-    const risk = await updateRisk(ctx, params.id, body);
+export const GET = withApiErrorHandling(requirePermission<RiskDetailParams>('risks.view', async (_req, { params }, ctx) => {
+    const { id } = await params;
+    const risk = await getRisk(ctx, id);
+    return jsonResponse(risk);
+}));
+
+export const PUT = withApiErrorHandling(requirePermission<RiskDetailParams>('risks.edit', async (req, { params }, ctx) => {
+    const { id } = await params;
+    const body = await parseJsonBody(req, UpdateRiskSchema);
+    const risk = await updateRisk(ctx, id, body);
     return jsonResponse({ success: true, risk });
 }));
 
-export const DELETE = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; id: string }> }) => {
-    const params = await paramsPromise;
-    const ctx = await getTenantCtx(params, req);
-    await deleteRisk(ctx, params.id);
+export const DELETE = withApiErrorHandling(requirePermission<RiskDetailParams>('risks.edit', async (_req, { params }, ctx) => {
+    const { id } = await params;
+    await deleteRisk(ctx, id);
     return jsonResponse({ success: true });
-});
+}));

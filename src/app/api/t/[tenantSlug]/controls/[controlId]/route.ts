@@ -1,21 +1,21 @@
-import { NextRequest } from 'next/server';
-import { getTenantCtx } from '@/app-layer/context';
 import { getControl, updateControl } from '@/app-layer/usecases/control';
-import { withValidatedBody } from '@/lib/validation/route';
 import { UpdateControlSchema } from '@/lib/schemas';
 import { withApiErrorHandling } from '@/lib/errors/api';
+import { requirePermission } from '@/lib/security/permission-middleware';
+import { parseJsonBody } from '@/lib/validation/route';
 import { jsonResponse } from '@/lib/api-response';
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; controlId: string }> }) => {
-    const params = await paramsPromise;
-    const ctx = await getTenantCtx(params, req);
-    const control = await getControl(ctx, params.controlId);
-    return jsonResponse(control);
-});
+type ControlDetailParams = { tenantSlug: string; controlId: string };
 
-export const PATCH = withApiErrorHandling(withValidatedBody(UpdateControlSchema, async (req, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; controlId: string }> }, body) => {
-    const params = await paramsPromise;
-    const ctx = await getTenantCtx(params, req);
-    const control = await updateControl(ctx, params.controlId, body);
+export const GET = withApiErrorHandling(requirePermission<ControlDetailParams>('controls.view', async (_req, { params }, ctx) => {
+    const { controlId } = await params;
+    const control = await getControl(ctx, controlId);
+    return jsonResponse(control);
+}));
+
+export const PATCH = withApiErrorHandling(requirePermission<ControlDetailParams>('controls.edit', async (req, { params }, ctx) => {
+    const { controlId } = await params;
+    const body = await parseJsonBody(req, UpdateControlSchema);
+    const control = await updateControl(ctx, controlId, body);
     return jsonResponse(control);
 }));

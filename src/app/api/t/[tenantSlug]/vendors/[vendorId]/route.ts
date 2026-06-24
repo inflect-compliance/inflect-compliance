@@ -1,21 +1,21 @@
-import { NextRequest } from 'next/server';
-import { getTenantCtx } from '@/app-layer/context';
 import { getVendor, updateVendor } from '@/app-layer/usecases/vendor';
-import { withValidatedBody } from '@/lib/validation/route';
 import { UpdateVendorSchema } from '@/lib/schemas';
 import { withApiErrorHandling } from '@/lib/errors/api';
+import { requirePermission } from '@/lib/security/permission-middleware';
+import { parseJsonBody } from '@/lib/validation/route';
 import { jsonResponse } from '@/lib/api-response';
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; vendorId: string }> }) => {
-    const params = await paramsPromise;
-    const ctx = await getTenantCtx(params, req);
-    const vendor = await getVendor(ctx, params.vendorId);
-    return jsonResponse(vendor);
-});
+type VendorDetailParams = { tenantSlug: string; vendorId: string };
 
-export const PATCH = withApiErrorHandling(withValidatedBody(UpdateVendorSchema, async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; vendorId: string }> }, body) => {
-    const params = await paramsPromise;
-    const ctx = await getTenantCtx(params, req);
-    const vendor = await updateVendor(ctx, params.vendorId, body);
+export const GET = withApiErrorHandling(requirePermission<VendorDetailParams>('vendors.view', async (_req, { params }, ctx) => {
+    const { vendorId } = await params;
+    const vendor = await getVendor(ctx, vendorId);
+    return jsonResponse(vendor);
+}));
+
+export const PATCH = withApiErrorHandling(requirePermission<VendorDetailParams>('vendors.edit', async (req, { params }, ctx) => {
+    const { vendorId } = await params;
+    const body = await parseJsonBody(req, UpdateVendorSchema);
+    const vendor = await updateVendor(ctx, vendorId, body);
     return jsonResponse(vendor);
 }));
