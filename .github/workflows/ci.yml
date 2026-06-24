@@ -923,10 +923,15 @@ jobs:
           cache-to: type=gha,mode=max
           # Export the built image as a docker-format tarball so the
           # `trivy` job can `docker load` it instead of rebuilding from
-          # scratch (~7.5 min saved). `load:` is removed — each job runs
-          # on a fresh runner with no shared daemon, so a local load here
-          # would die with this job; the artifact below is the handoff.
-          outputs: type=docker,dest=/tmp/image-${{ github.sha }}.tar
+          # scratch. `load:` is removed — each job runs on a fresh runner
+          # with no shared daemon, so a local load here would die with
+          # this job; the artifact below is the handoff.
+          #
+          # zstd-compress the tar (the docker exporter stores layer blobs
+          # uncompressed by default → a ~700-900 MB tar) so the artifact
+          # upload here AND the download in `trivy` move far less data.
+          # `docker load` auto-detects zstd on the runner's Docker 24+.
+          outputs: type=docker,dest=/tmp/image-${{ github.sha }}.tar,compression=zstd,compression-level=3
 
       - name: Upload image tarball
         uses: actions/upload-artifact@v7
@@ -938,6 +943,9 @@ jobs:
           # Fail the build LOUDLY if the export produced nothing, rather
           # than letting trivy run against a missing image.
           if-no-files-found: error
+          # The tar is already zstd-compressed — don't burn CPU zipping
+          # an incompressible blob a second time.
+          compression-level: 0
 
   # ═══════════════════════════════════════════════════════════════
   #  Job 10: Trivy — container image vulnerability scanning
@@ -986,6 +994,7 @@ jobs:
 
       - name: Load image into runner daemon
         run: |
+          ls -lh /tmp/image-${{ github.sha }}.tar
           docker load --input /tmp/image-${{ github.sha }}.tar
           docker image ls inflect-compliance
 
