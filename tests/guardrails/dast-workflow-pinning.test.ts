@@ -41,21 +41,23 @@ describe('DAST workflow pinning', () => {
         expect(sunset).toBe(true);
     });
 
-    it('rules.tsv exists and every allowlist entry has a reason comment', () => {
+    it('rules.tsv exists and every entry is the ZAP-required 3 columns with a reason', () => {
         expect(fs.existsSync(RULES_TSV)).toBe(true);
         const lines = fs.readFileSync(RULES_TSV, 'utf-8').split('\n');
-        const comments = lines.filter((l) => /^\s*#/.test(l));
-        const ruleIds = lines
-            .map((l) => l.match(/^(\d+)\t/)?.[1])
-            .filter((x): x is string => Boolean(x));
+        const dataLines = lines.filter((l) => /^\d+\t/.test(l));
 
         // At least the three seeded Next.js false-positives.
-        expect(ruleIds.length).toBeGreaterThanOrEqual(3);
+        expect(dataLines.length).toBeGreaterThanOrEqual(3);
 
-        // Every rule id must be named in some comment line (its reason).
-        for (const id of ruleIds) {
-            const explained = comments.some((c) => new RegExp(`\\b${id}\\b`).test(c));
-            expect(explained).toBe(true);
+        // ZAP rejects the rules file unless every entry has >= 3
+        // tab-separated tokens (id, action, reason). The 3rd column IS
+        // the mandatory written reason. (A 2-column file silently breaks
+        // every nightly scan — caught in pre-merge validation.)
+        for (const line of dataLines) {
+            const cols = line.split('\t');
+            expect(cols.length).toBeGreaterThanOrEqual(3);
+            expect(['WARN', 'IGNORE', 'FAIL']).toContain(cols[1]);
+            expect(cols[2].trim().length).toBeGreaterThan(0);
         }
     });
 });
