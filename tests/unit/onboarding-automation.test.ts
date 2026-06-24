@@ -1,25 +1,61 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Onboarding Automation Tests
  *
- * Tests the deterministic risk catalog, asset type inference,
- * idempotency contracts, and starter task generation.
+ * Two complementary layers, both binding to the REAL source module:
  *
- * These bind to the REAL source symbols (`inferAssetType`,
- * `STARTER_RISKS`, `selectApplicableRisks`) — never a local shadow
- * copy. A shadow copy is exactly what let the `DATASTORE` (vs the real
- * `DATA_STORE` Prisma enum) asset-type mismatch ship undetected: the
- * test validated its own copy of the bug.
+ *  1. Pure helpers (`inferAssetType`, `STARTER_RISKS`,
+ *     `selectApplicableRisks`) — imported directly, never a local shadow
+ *     copy. A shadow copy is exactly what let the `DATASTORE` (vs the
+ *     real `DATA_STORE` Prisma enum) asset-type mismatch ship
+ *     undetected: the test validated its own copy of the bug.
+ *
+ *  2. Orchestration (`runStepAction`, `storeActionResult`, Wave C) —
+ *     branch-exercised against a mocked tenant-scoped `db`, the mocked
+ *     `installPack`, the audit emitter, and the onboarding repo. This is
+ *     what lifted the file from 0% branch coverage. Each test names the
+ *     branch class it protects.
  */
+
+const mockDbHolder: { db: any } = { db: null };
+
+jest.mock('@/lib/db-context', () => ({
+    runInTenantContext: jest.fn(
+        async (_ctx: any, fn: (db: any) => any) => fn(mockDbHolder.db),
+    ),
+}));
+
+jest.mock('@/app-layer/usecases/framework', () => ({
+    installPack: jest.fn(),
+}));
+
+jest.mock('@/app-layer/events/audit', () => ({
+    logEvent: jest.fn(),
+}));
+
+jest.mock('@/app-layer/repositories/OnboardingRepository', () => ({
+    OnboardingRepository: {
+        getByTenantId: jest.fn(),
+        saveStepData: jest.fn(),
+    },
+}));
+
 import { AssetType } from '@prisma/client';
+import { installPack } from '@/app-layer/usecases/framework';
+import { logEvent } from '@/app-layer/events/audit';
+import { OnboardingRepository } from '@/app-layer/repositories/OnboardingRepository';
 import {
     inferAssetType,
     selectApplicableRisks,
     STARTER_RISKS,
+    runStepAction,
+    storeActionResult,
 } from '@/app-layer/usecases/onboarding-automation';
+import { makeRequestContext } from '../helpers/make-context';
 
 const VALID_ASSET_TYPES = new Set<string>(Object.values(AssetType));
 
-// ─── Tests ───
+// ─── 1. Pure helpers (real-symbol binding) ───
 
 describe('Onboarding Automation', () => {
     describe('Asset Type Inference', () => {
@@ -148,48 +184,275 @@ describe('Onboarding Automation', () => {
             }
         });
     });
+});
 
-    describe('Framework Pack Key Mapping', () => {
-        const FRAMEWORK_PACK_KEYS: Record<string, string> = {
-            iso27001: 'iso27001-2022-baseline',
-            nis2: 'nis2-baseline',
-        };
+// ─── 2. Orchestration (Wave C — runStepAction / storeActionResult) ───
 
-        it('maps iso27001 to correct pack key', () => {
-            expect(FRAMEWORK_PACK_KEYS['iso27001']).toBe('iso27001-2022-baseline');
-        });
+const ctx = makeRequestContext('ADMIN');
 
-        it('maps nis2 to correct pack key', () => {
-            expect(FRAMEWORK_PACK_KEYS['nis2']).toBe('nis2-baseline');
-        });
+/** A fresh in-memory db whose finders default to "nothing exists yet". */
+function freshDb() {
+    return {
+        asset: {
+            findFirst: jest.fn().mockResolvedValue(null),
+            create: jest.fn().mockResolvedValue({}),
+        },
+        risk: {
+            findFirst: jest.fn().mockResolvedValue(null),
+            create: jest.fn().mockResolvedValue({}),
+        },
+        task: {
+            findFirst: jest.fn().mockResolvedValue(null),
+            create: jest.fn().mockResolvedValue({}),
+        },
+        tenant: {
+            findUnique: jest.fn().mockResolvedValue({ maxRiskScale: 5 }),
+        },
+    };
+}
 
-        it('returns undefined for unknown frameworks', () => {
-            expect(FRAMEWORK_PACK_KEYS['soc2']).toBeUndefined();
-        });
+beforeEach(() => {
+    jest.clearAllMocks();
+    mockDbHolder.db = freshDb();
+    (installPack as jest.Mock).mockResolvedValue({ controlsCreated: 3, tasksCreated: 2 });
+});
+
+describe('runStepAction routing', () => {
+    it('returns null for steps with no automation (COMPANY_PROFILE, REVIEW_AND_FINISH, unknown)', async () => {
+        // Branch: switch default arm.
+        expect(await runStepAction(ctx, 'COMPANY_PROFILE', {}, {})).toBeNull();
+        expect(await runStepAction(ctx, 'REVIEW_AND_FINISH', {}, {})).toBeNull();
+        expect(await runStepAction(ctx, 'SOMETHING_ELSE', {}, {})).toBeNull();
     });
 
-    describe('Starter Tasks', () => {
-        const starterTasks = [
-            { title: 'Review and assign control owners', type: 'TASK' },
-            { title: 'Schedule evidence collection cadence', type: 'TASK' },
-            { title: 'Complete risk assessment review', type: 'TASK' },
-            { title: 'Define incident response procedure', type: 'TASK' },
-            { title: 'Set up vendor due diligence process', type: 'TASK' },
-        ];
-
-        it('has exactly 5 starter tasks', () => {
-            expect(starterTasks.length).toBe(5);
+    it('routes FRAMEWORK_SELECTION → framework install', async () => {
+        const r = await runStepAction(ctx, 'FRAMEWORK_SELECTION', {}, {
+            FRAMEWORK_SELECTION: { selectedFrameworks: ['iso27001'] },
         });
+        expect(r?.action).toBe('FRAMEWORK_INSTALL');
+        expect(installPack).toHaveBeenCalledWith(ctx, 'iso27001-2022-baseline');
+    });
+});
 
-        it('all starter tasks are type TASK', () => {
-            for (const task of starterTasks) {
-                expect(task.type).toBe('TASK');
-            }
+describe('executeFrameworkInstall', () => {
+    it('installs each mapped framework and aggregates controls created', async () => {
+        const r = await runStepAction(ctx, 'FRAMEWORK_SELECTION', {}, {
+            FRAMEWORK_SELECTION: { selectedFrameworks: ['iso27001', 'nis2'] },
         });
+        // Branch: known packKey → installPack succeeds, created accumulates.
+        expect(r?.created).toBe(6); // 3 + 3
+        expect(r?.skipped).toBe(0);
+        expect(installPack).toHaveBeenCalledTimes(2);
+    });
 
-        it('all starter tasks have unique titles', () => {
-            const titles = starterTasks.map(t => t.title);
-            expect(new Set(titles).size).toBe(titles.length);
+    it('skips frameworks with no pack mapping', async () => {
+        const r = await runStepAction(ctx, 'FRAMEWORK_SELECTION', {}, {
+            FRAMEWORK_SELECTION: { selectedFrameworks: ['unknown-fw'] },
         });
+        // Branch: packKey falsy → details push + skipped++.
+        expect(r?.created).toBe(0);
+        expect(r?.skipped).toBe(1);
+        expect(r?.details).toContain('No pack found');
+        expect(installPack).not.toHaveBeenCalled();
+    });
+
+    it('counts a framework as skipped when installPack throws (pack missing in catalog)', async () => {
+        (installPack as jest.Mock).mockRejectedValueOnce(new Error('not in catalog'));
+        const r = await runStepAction(ctx, 'FRAMEWORK_SELECTION', {}, {
+            FRAMEWORK_SELECTION: { selectedFrameworks: ['iso27001'] },
+        });
+        // Branch: try/catch around installPack.
+        expect(r?.created).toBe(0);
+        expect(r?.skipped).toBe(1);
+        expect(r?.details).toContain('not found in catalog');
+    });
+
+    it('handles a missing FRAMEWORK_SELECTION payload (defaults to empty list)', async () => {
+        const r = await runStepAction(ctx, 'FRAMEWORK_SELECTION', {}, {});
+        // Branch: `allData['FRAMEWORK_SELECTION']?.selectedFrameworks || []`.
+        expect(r?.created).toBe(0);
+        expect(r?.skipped).toBe(0);
+    });
+});
+
+describe('executeAssetCreation + inferAssetType (orchestrated)', () => {
+    it('creates new assets, infers types per keyword, and emits an audit event', async () => {
+        const db = mockDbHolder.db;
+        const r = await runStepAction(ctx, 'ASSET_SETUP', {}, {
+            ASSET_SETUP: {
+                assets: [
+                    'Customer Portal',   // APPLICATION (portal)
+                    'Postgres Database',  // DATA_STORE (database)
+                    'AWS Cluster',        // INFRASTRUCTURE (aws/cluster)
+                    'Payroll Vendor',     // VENDOR (vendor)
+                    'HR Workflow',        // PROCESS (workflow/hr)
+                    'Zphqx Thing',        // default → APPLICATION (no keyword)
+                ],
+            },
+        });
+        expect(r?.created).toBe(6);
+        expect(r?.skipped).toBe(0);
+        // Branch: inferAssetType keyword arms + default (real Prisma enum values).
+        const types = db.asset.create.mock.calls.map((c: any) => c[0].data.type);
+        expect(types).toEqual([
+            'APPLICATION', 'DATA_STORE', 'INFRASTRUCTURE', 'VENDOR', 'PROCESS', 'APPLICATION',
+        ]);
+        // Branch: created > 0 → logEvent emitted.
+        expect(logEvent).toHaveBeenCalledTimes(1);
+        expect((logEvent as jest.Mock).mock.calls[0][2].action).toBe('ONBOARDING_ASSETS_CREATED');
+    });
+
+    it('skips assets that already exist and does NOT emit an audit event when nothing created', async () => {
+        const db = mockDbHolder.db;
+        db.asset.findFirst.mockResolvedValue({ id: 'existing' });
+        const r = await runStepAction(ctx, 'ASSET_SETUP', {}, {
+            ASSET_SETUP: { assets: ['Customer Portal'] },
+        });
+        // Branch: existing → skipped++, create not called.
+        expect(r?.created).toBe(0);
+        expect(r?.skipped).toBe(1);
+        expect(db.asset.create).not.toHaveBeenCalled();
+        // Branch: created === 0 → no logEvent.
+        expect(logEvent).not.toHaveBeenCalled();
+    });
+
+    it('defaults to an empty asset list when ASSET_SETUP payload is absent', async () => {
+        const r = await runStepAction(ctx, 'ASSET_SETUP', {}, {});
+        // Branch: `allData['ASSET_SETUP']?.assets || []`.
+        expect(r?.created).toBe(0);
+        expect(r?.skipped).toBe(0);
+    });
+});
+
+describe('executeControlInstall', () => {
+    it('no-ops when the user did not confirm', async () => {
+        const r = await runStepAction(ctx, 'CONTROL_BASELINE_INSTALL', {}, {
+            CONTROL_BASELINE_INSTALL: { confirmed: false },
+        });
+        // Branch: !confirmed early return.
+        expect(r?.action).toBe('CONTROL_INSTALL');
+        expect(r?.details).toContain('did not confirm');
+        expect(installPack).not.toHaveBeenCalled();
+    });
+
+    it('re-runs framework install when confirmed', async () => {
+        const r = await runStepAction(ctx, 'CONTROL_BASELINE_INSTALL', {}, {
+            CONTROL_BASELINE_INSTALL: { confirmed: true },
+            FRAMEWORK_SELECTION: { selectedFrameworks: ['iso27001'] },
+        });
+        // Branch: confirmed → delegates to executeFrameworkInstall.
+        expect(r?.action).toBe('FRAMEWORK_INSTALL');
+        expect(installPack).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('executeRiskGeneration', () => {
+    it('opts out when generate === false', async () => {
+        const r = await runStepAction(ctx, 'INITIAL_RISK_REGISTER', {}, {
+            INITIAL_RISK_REGISTER: { generate: false },
+        });
+        // Branch: generate === false early return.
+        expect(r?.created).toBe(0);
+        expect(r?.details).toContain('opted out');
+        expect(mockDbHolder.db.risk.create).not.toHaveBeenCalled();
+    });
+
+    it('generates framework+assetType-applicable risks and audits them', async () => {
+        const db = mockDbHolder.db;
+        const r = await runStepAction(ctx, 'INITIAL_RISK_REGISTER', {}, {
+            FRAMEWORK_SELECTION: { selectedFrameworks: ['iso27001'] },
+            ASSET_SETUP: { assets: ['Customer Portal'] }, // APPLICATION
+        });
+        // Branch: fwMatch && typeMatch filter selects a subset.
+        expect(r?.created).toBeGreaterThan(0);
+        expect(db.risk.create).toHaveBeenCalled();
+        const titles = db.risk.create.mock.calls.map((c: any) => c[0].data.title);
+        // A general (assetTypes:[]) iso27001 risk must be present.
+        expect(titles).toContain('Regulatory Non-Compliance');
+        // An APPLICATION risk must be present; a DATA_STORE-only risk must not.
+        expect(titles).toContain('Unauthorized Access to Application');
+        expect(titles).not.toContain('Data Backup Failure');
+        // Score is computed from likelihood/impact/maxScale (Math.round path).
+        const appRisk = db.risk.create.mock.calls.find((c: any) => c[0].data.title === 'Unauthorized Access to Application');
+        expect(appRisk[0].data.score).toBe(appRisk[0].data.inherentScore);
+        // Branch: created > 0 → logEvent.
+        expect((logEvent as jest.Mock).mock.calls.some((c: any) => c[2].action === 'ONBOARDING_RISKS_GENERATED')).toBe(true);
+    });
+
+    it('falls back to APPLICATION risks when no assets are provided', async () => {
+        const db = mockDbHolder.db;
+        await runStepAction(ctx, 'INITIAL_RISK_REGISTER', {}, {
+            FRAMEWORK_SELECTION: { selectedFrameworks: ['iso27001'] },
+        });
+        // Branch: assetTypes.size === 0 → add('APPLICATION').
+        const titles = db.risk.create.mock.calls.map((c: any) => c[0].data.title);
+        expect(titles).toContain('Unauthorized Access to Application');
+    });
+
+    it('uses default maxRiskScale (5) when tenant row is missing and skips existing risks', async () => {
+        const db = mockDbHolder.db;
+        db.tenant.findUnique.mockResolvedValue(null); // Branch: tenant?.maxRiskScale || 5
+        db.risk.findFirst.mockResolvedValue({ id: 'existing' }); // Branch: existing → skip
+        const r = await runStepAction(ctx, 'INITIAL_RISK_REGISTER', {}, {
+            FRAMEWORK_SELECTION: { selectedFrameworks: ['iso27001'] },
+        });
+        expect(r?.created).toBe(0);
+        expect(r?.skipped).toBeGreaterThan(0);
+        expect(db.risk.create).not.toHaveBeenCalled();
+        // Branch: created === 0 → no risk-generation audit.
+        expect((logEvent as jest.Mock).mock.calls.some((c: any) => c[2]?.action === 'ONBOARDING_RISKS_GENERATED')).toBe(false);
+    });
+});
+
+describe('executeTeamSetup', () => {
+    it('creates the five starter tasks and audits', async () => {
+        const db = mockDbHolder.db;
+        const r = await runStepAction(ctx, 'TEAM_SETUP', {}, {});
+        expect(r?.created).toBe(5);
+        expect(db.task.create).toHaveBeenCalledTimes(5);
+        expect((logEvent as jest.Mock).mock.calls[0][2].action).toBe('ONBOARDING_TASKS_CREATED');
+    });
+
+    it('skips starter tasks that already exist and emits no audit when none created', async () => {
+        const db = mockDbHolder.db;
+        db.task.findFirst.mockResolvedValue({ id: 'existing' });
+        const r = await runStepAction(ctx, 'TEAM_SETUP', {}, {});
+        // Branch: existing → skip; created === 0 → no logEvent.
+        expect(r?.created).toBe(0);
+        expect(r?.skipped).toBe(5);
+        expect(db.task.create).not.toHaveBeenCalled();
+        expect(logEvent).not.toHaveBeenCalled();
+    });
+});
+
+describe('storeActionResult', () => {
+    it('returns early when there is no onboarding row', async () => {
+        (OnboardingRepository.getByTenantId as jest.Mock).mockResolvedValue(null);
+        await storeActionResult(ctx, 'ASSET_SETUP', { action: 'X', created: 1, skipped: 0, details: '' });
+        // Branch: !existing → return before save.
+        expect(OnboardingRepository.saveStepData).not.toHaveBeenCalled();
+    });
+
+    it('merges the result under _actionResults and persists', async () => {
+        (OnboardingRepository.getByTenantId as jest.Mock).mockResolvedValue({
+            stepData: { _actionResults: { PRIOR: { action: 'PRIOR' } } },
+        });
+        const result = { action: 'ASSET_CREATION', created: 2, skipped: 0, details: 'd' };
+        await storeActionResult(ctx, 'ASSET_SETUP', result);
+        expect(OnboardingRepository.saveStepData).toHaveBeenCalledTimes(1);
+        const [, , key, payload] = (OnboardingRepository.saveStepData as jest.Mock).mock.calls[0];
+        expect(key).toBe('_actionResults');
+        // Branch: prior results preserved + new step merged.
+        expect(payload.PRIOR).toEqual({ action: 'PRIOR' });
+        expect(payload.ASSET_SETUP).toEqual(result);
+    });
+
+    it('tolerates a row with no prior stepData (defaults applied)', async () => {
+        (OnboardingRepository.getByTenantId as jest.Mock).mockResolvedValue({ stepData: null });
+        await storeActionResult(ctx, 'TEAM_SETUP', { action: 'T', created: 0, skipped: 5, details: '' });
+        // Branch: `(existing.stepData as any) || {}` and `currentData._actionResults || {}`.
+        const [, , key, payload] = (OnboardingRepository.saveStepData as jest.Mock).mock.calls[0];
+        expect(key).toBe('_actionResults');
+        expect(payload.TEAM_SETUP.action).toBe('T');
     });
 });
