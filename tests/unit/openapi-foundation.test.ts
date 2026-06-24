@@ -38,6 +38,7 @@ import * as assetDTOs from '@/lib/dto/asset.dto';
 import * as taskDTOs from '@/lib/dto/task.dto';
 import * as vendorDTOs from '@/lib/dto/vendor.dto';
 import * as frameworkDTOs from '@/lib/dto/framework.dto';
+import * as apiExtraDTOs from '@/lib/dto/api-extra.dto';
 
 interface AnnotatedSchema {
     schema: unknown;
@@ -205,6 +206,7 @@ describe('GAP-10 foundation — component IDs are globally unique', () => {
             { ns: taskDTOs, name: 'task.dto' },
             { ns: vendorDTOs, name: 'vendor.dto' },
             { ns: frameworkDTOs, name: 'framework.dto' },
+            { ns: apiExtraDTOs, name: 'api-extra.dto' },
             { ns: requestSchemas, name: 'schemas' },
         ];
 

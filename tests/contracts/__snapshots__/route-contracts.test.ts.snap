@@ -1,0 +1,4241 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Route contract — per-operation snapshots operation: DELETE /api/t/{tenantSlug}/assets/{id} 1`] = `
+"{
+  "summary": "Delete a asset",
+  "tags": [
+    "assets"
+  ],
+  "x-required-permission": "assets.edit",
+  "x-rate-limit": "API_MUTATION_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "id",
+      "in": "path"
+    }
+  ],
+  "responses": {
+    "200": {
+      "description": "The asset was soft-deleted.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/SuccessResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "404": {
+      "description": "Not found — no such resource in this tenant.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: DELETE /api/t/{tenantSlug}/risks/{id} 1`] = `
+"{
+  "summary": "Delete a risk",
+  "tags": [
+    "risks"
+  ],
+  "x-required-permission": "risks.edit",
+  "x-rate-limit": "API_MUTATION_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "id",
+      "in": "path"
+    }
+  ],
+  "responses": {
+    "200": {
+      "description": "The risk was soft-deleted.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/SuccessResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "404": {
+      "description": "Not found — no such resource in this tenant.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: DELETE /api/t/{tenantSlug}/tasks/{taskId} 1`] = `
+"{
+  "summary": "Delete a task",
+  "tags": [
+    "tasks"
+  ],
+  "x-required-permission": "tasks.edit",
+  "x-rate-limit": "API_MUTATION_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "taskId",
+      "in": "path"
+    }
+  ],
+  "responses": {
+    "200": {
+      "description": "The task was soft-deleted.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/SuccessResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "404": {
+      "description": "Not found — no such resource in this tenant.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: GET /api/audit/shared/{token} 1`] = `
+"{
+  "summary": "Read a shared audit pack (public)",
+  "tags": [
+    "audits"
+  ],
+  "x-auth": "share-token",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "token",
+      "in": "path"
+    }
+  ],
+  "responses": {
+    "200": {
+      "description": "The frozen, share-token-scoped pack view.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/SharedAuditPackResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "404": {
+      "description": "Not found — no such resource in this tenant.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: GET /api/auth/me 1`] = `
+"{
+  "summary": "Current principal + primary tenant",
+  "tags": [
+    "auth"
+  ],
+  "x-auth": "session",
+  "responses": {
+    "200": {
+      "description": "The authenticated user and their primary tenant membership.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/AuthMeResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: GET /api/t/{tenantSlug}/admin/key-rotation 1`] = `
+"{
+  "summary": "Poll master-KEK rotation job status",
+  "tags": [
+    "admin"
+  ],
+  "x-required-permission": "admin.manage",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "jobId",
+      "in": "query"
+    }
+  ],
+  "responses": {
+    "200": {
+      "description": "The BullMQ job state.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/JobStatusResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "404": {
+      "description": "Not found — no such resource in this tenant.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: GET /api/t/{tenantSlug}/admin/tenant-dek-rotation 1`] = `
+"{
+  "summary": "Poll per-tenant DEK rotation job status",
+  "tags": [
+    "admin"
+  ],
+  "x-required-permission": "admin.tenant_lifecycle",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "jobId",
+      "in": "query"
+    }
+  ],
+  "responses": {
+    "200": {
+      "description": "The BullMQ job state.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/JobStatusResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "404": {
+      "description": "Not found — no such resource in this tenant.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: GET /api/t/{tenantSlug}/assets 1`] = `
+"{
+  "summary": "List assets",
+  "tags": [
+    "assets"
+  ],
+  "x-required-permission": "assets.view",
+  "x-rate-limit": "API_READ_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+      },
+      "required": false,
+      "name": "limit",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": false,
+      "name": "cursor",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": false,
+      "name": "status",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": false,
+      "name": "q",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string",
+        "enum": [
+          "true",
+          "false"
+        ]
+      },
+      "required": false,
+      "name": "includeDeleted",
+      "in": "query"
+    }
+  ],
+  "responses": {
+    "200": {
+      "description": "Backfill-capped list of assets.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/AssetListResponse"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: GET /api/t/{tenantSlug}/assets/{id} 1`] = `
+"{
+  "summary": "Get a asset",
+  "tags": [
+    "assets"
+  ],
+  "x-required-permission": "assets.view",
+  "x-rate-limit": "API_READ_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "id",
+      "in": "path"
+    }
+  ],
+  "responses": {
+    "200": {
+      "description": "The asset.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/AssetDetail"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "404": {
+      "description": "Not found — no such resource in this tenant.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: GET /api/t/{tenantSlug}/audits 1`] = `
+"{
+  "summary": "List audit cycles",
+  "tags": [
+    "audits"
+  ],
+  "x-required-permission": "audits.view",
+  "x-rate-limit": "API_READ_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+      },
+      "required": false,
+      "name": "limit",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": false,
+      "name": "cursor",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": false,
+      "name": "status",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": false,
+      "name": "q",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string",
+        "enum": [
+          "true",
+          "false"
+        ]
+      },
+      "required": false,
+      "name": "includeDeleted",
+      "in": "query"
+    }
+  ],
+  "responses": {
+    "200": {
+      "description": "Backfill-capped list of audit cycles.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/AuditListResponse"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: GET /api/t/{tenantSlug}/audits/{id} 1`] = `
+"{
+  "summary": "Get an audit cycle",
+  "tags": [
+    "audits"
+  ],
+  "x-required-permission": "audits.view",
+  "x-rate-limit": "API_READ_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "id",
+      "in": "path"
+    }
+  ],
+  "responses": {
+    "200": {
+      "description": "The audit cycle.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/Audit"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "404": {
+      "description": "Not found — no such resource in this tenant.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: GET /api/t/{tenantSlug}/audits/packs 1`] = `
+"{
+  "summary": "List audit packs",
+  "tags": [
+    "audits"
+  ],
+  "x-required-permission": "audits.view",
+  "x-rate-limit": "API_READ_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": false,
+      "name": "cycleId",
+      "in": "query"
+    }
+  ],
+  "responses": {
+    "200": {
+      "description": "Audit packs (with _count + cycle summary).",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/AuditPackListResponse"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: GET /api/t/{tenantSlug}/audits/packs/{packId} 1`] = `
+"{
+  "summary": "Get an audit pack",
+  "tags": [
+    "audits"
+  ],
+  "x-required-permission": "audits.view",
+  "x-rate-limit": "API_READ_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "packId",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "string",
+        "enum": [
+          "export"
+        ]
+      },
+      "required": false,
+      "name": "action",
+      "in": "query"
+    }
+  ],
+  "responses": {
+    "200": {
+      "description": "The audit pack detail (items[], cycle, frozenBy). ?action=export streams the rendered pack instead.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/AuditPackResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "404": {
+      "description": "Not found — no such resource in this tenant.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: GET /api/t/{tenantSlug}/controls 1`] = `
+"{
+  "summary": "List controls",
+  "tags": [
+    "controls"
+  ],
+  "x-required-permission": "controls.view",
+  "x-rate-limit": "API_READ_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+      },
+      "required": false,
+      "name": "limit",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": false,
+      "name": "cursor",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": false,
+      "name": "status",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": false,
+      "name": "q",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string",
+        "enum": [
+          "true",
+          "false"
+        ]
+      },
+      "required": false,
+      "name": "includeDeleted",
+      "in": "query"
+    }
+  ],
+  "responses": {
+    "200": {
+      "description": "Backfill-capped list of controls.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ControlListResponse"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: GET /api/t/{tenantSlug}/controls/{controlId} 1`] = `
+"{
+  "summary": "Get a control",
+  "tags": [
+    "controls"
+  ],
+  "x-required-permission": "controls.view",
+  "x-rate-limit": "API_READ_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "controlId",
+      "in": "path"
+    }
+  ],
+  "responses": {
+    "200": {
+      "description": "The control.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ControlDetail"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "404": {
+      "description": "Not found — no such resource in this tenant.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: GET /api/t/{tenantSlug}/policies 1`] = `
+"{
+  "summary": "List policies",
+  "tags": [
+    "policies"
+  ],
+  "x-required-permission": "policies.view",
+  "x-rate-limit": "API_READ_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+      },
+      "required": false,
+      "name": "limit",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": false,
+      "name": "cursor",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": false,
+      "name": "status",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": false,
+      "name": "q",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string",
+        "enum": [
+          "true",
+          "false"
+        ]
+      },
+      "required": false,
+      "name": "includeDeleted",
+      "in": "query"
+    }
+  ],
+  "responses": {
+    "200": {
+      "description": "Backfill-capped list of policys.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/PolicyListResponse"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: GET /api/t/{tenantSlug}/policies/{id} 1`] = `
+"{
+  "summary": "Get a policy",
+  "tags": [
+    "policies"
+  ],
+  "x-required-permission": "policies.view",
+  "x-rate-limit": "API_READ_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "id",
+      "in": "path"
+    }
+  ],
+  "responses": {
+    "200": {
+      "description": "The policy.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/PolicyDetail"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "404": {
+      "description": "Not found — no such resource in this tenant.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: GET /api/t/{tenantSlug}/risks 1`] = `
+"{
+  "summary": "List risks",
+  "tags": [
+    "risks"
+  ],
+  "x-required-permission": "risks.view",
+  "x-rate-limit": "API_READ_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+      },
+      "required": false,
+      "name": "limit",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": false,
+      "name": "cursor",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": false,
+      "name": "status",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": false,
+      "name": "q",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string",
+        "enum": [
+          "true",
+          "false"
+        ]
+      },
+      "required": false,
+      "name": "includeDeleted",
+      "in": "query"
+    }
+  ],
+  "responses": {
+    "200": {
+      "description": "Backfill-capped list of risks.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/RiskListResponse"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: GET /api/t/{tenantSlug}/risks/{id} 1`] = `
+"{
+  "summary": "Get a risk",
+  "tags": [
+    "risks"
+  ],
+  "x-required-permission": "risks.view",
+  "x-rate-limit": "API_READ_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "id",
+      "in": "path"
+    }
+  ],
+  "responses": {
+    "200": {
+      "description": "The risk.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/RiskDetail"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "404": {
+      "description": "Not found — no such resource in this tenant.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: GET /api/t/{tenantSlug}/tasks 1`] = `
+"{
+  "summary": "List tasks",
+  "tags": [
+    "tasks"
+  ],
+  "x-required-permission": "tasks.view",
+  "x-rate-limit": "API_READ_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+      },
+      "required": false,
+      "name": "limit",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": false,
+      "name": "cursor",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": false,
+      "name": "status",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": false,
+      "name": "q",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string",
+        "enum": [
+          "true",
+          "false"
+        ]
+      },
+      "required": false,
+      "name": "includeDeleted",
+      "in": "query"
+    }
+  ],
+  "responses": {
+    "200": {
+      "description": "Backfill-capped list of tasks.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/TaskListResponse"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: GET /api/t/{tenantSlug}/tasks/{taskId} 1`] = `
+"{
+  "summary": "Get a task",
+  "tags": [
+    "tasks"
+  ],
+  "x-required-permission": "tasks.view",
+  "x-rate-limit": "API_READ_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "taskId",
+      "in": "path"
+    }
+  ],
+  "responses": {
+    "200": {
+      "description": "The task.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/Task"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "404": {
+      "description": "Not found — no such resource in this tenant.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: GET /api/t/{tenantSlug}/vendors 1`] = `
+"{
+  "summary": "List vendors",
+  "tags": [
+    "vendors"
+  ],
+  "x-required-permission": "vendors.view",
+  "x-rate-limit": "API_READ_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+      },
+      "required": false,
+      "name": "limit",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": false,
+      "name": "cursor",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": false,
+      "name": "status",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": false,
+      "name": "q",
+      "in": "query"
+    },
+    {
+      "schema": {
+        "type": "string",
+        "enum": [
+          "true",
+          "false"
+        ]
+      },
+      "required": false,
+      "name": "includeDeleted",
+      "in": "query"
+    }
+  ],
+  "responses": {
+    "200": {
+      "description": "Backfill-capped list of vendors.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/VendorListResponse"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: GET /api/t/{tenantSlug}/vendors/{vendorId} 1`] = `
+"{
+  "summary": "Get a vendor",
+  "tags": [
+    "vendors"
+  ],
+  "x-required-permission": "vendors.view",
+  "x-rate-limit": "API_READ_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "vendorId",
+      "in": "path"
+    }
+  ],
+  "responses": {
+    "200": {
+      "description": "The vendor.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/VendorDetail"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "404": {
+      "description": "Not found — no such resource in this tenant.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: PATCH /api/t/{tenantSlug}/audits/packs/{packId} 1`] = `
+"{
+  "summary": "Update audit-pack metadata",
+  "tags": [
+    "audits"
+  ],
+  "x-required-permission": "audits.manage",
+  "x-rate-limit": "API_MUTATION_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "packId",
+      "in": "path"
+    }
+  ],
+  "requestBody": {
+    "description": "Metadata update. Item membership / freeze / share / clone are action-multiplexed POST ?action=… on this path.",
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/AuditPackUpdateRequest"
+        }
+      }
+    }
+  },
+  "responses": {
+    "200": {
+      "description": "The updated audit pack.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/AuditPackResponse"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "404": {
+      "description": "Not found — no such resource in this tenant.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "409": {
+      "description": "Conflict — the request collides with current state (e.g. a guard or uniqueness constraint).",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: PATCH /api/t/{tenantSlug}/controls/{controlId} 1`] = `
+"{
+  "summary": "Update a control",
+  "tags": [
+    "controls"
+  ],
+  "x-required-permission": "controls.edit",
+  "x-rate-limit": "API_MUTATION_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "controlId",
+      "in": "path"
+    }
+  ],
+  "requestBody": {
+    "description": "Partial update for a control.",
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/ControlUpdateRequest"
+        }
+      }
+    }
+  },
+  "responses": {
+    "200": {
+      "description": "The updated control.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ControlDetail"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "404": {
+      "description": "Not found — no such resource in this tenant.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "409": {
+      "description": "Conflict — the request collides with current state (e.g. a guard or uniqueness constraint).",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: PATCH /api/t/{tenantSlug}/policies/{id} 1`] = `
+"{
+  "summary": "Update a policy",
+  "tags": [
+    "policies"
+  ],
+  "x-required-permission": "policies.edit",
+  "x-rate-limit": "API_MUTATION_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "id",
+      "in": "path"
+    }
+  ],
+  "requestBody": {
+    "description": "Partial update for a policy.",
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/PolicyMetadataUpdateRequest"
+        }
+      }
+    }
+  },
+  "responses": {
+    "200": {
+      "description": "The updated policy.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/PolicyDetail"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "404": {
+      "description": "Not found — no such resource in this tenant.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "409": {
+      "description": "Conflict — the request collides with current state (e.g. a guard or uniqueness constraint).",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: PATCH /api/t/{tenantSlug}/tasks/{taskId} 1`] = `
+"{
+  "summary": "Update a task",
+  "tags": [
+    "tasks"
+  ],
+  "x-required-permission": "tasks.edit",
+  "x-rate-limit": "API_MUTATION_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "taskId",
+      "in": "path"
+    }
+  ],
+  "requestBody": {
+    "description": "Partial update for a task.",
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/TaskUpdateRequest"
+        }
+      }
+    }
+  },
+  "responses": {
+    "200": {
+      "description": "The updated task.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/Task"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "404": {
+      "description": "Not found — no such resource in this tenant.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "409": {
+      "description": "Conflict — the request collides with current state (e.g. a guard or uniqueness constraint).",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: PATCH /api/t/{tenantSlug}/vendors/{vendorId} 1`] = `
+"{
+  "summary": "Update a vendor",
+  "tags": [
+    "vendors"
+  ],
+  "x-required-permission": "vendors.edit",
+  "x-rate-limit": "API_MUTATION_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "vendorId",
+      "in": "path"
+    }
+  ],
+  "requestBody": {
+    "description": "Partial update for a vendor.",
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/VendorUpdateRequest"
+        }
+      }
+    }
+  },
+  "responses": {
+    "200": {
+      "description": "The updated vendor.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/VendorDetail"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "404": {
+      "description": "Not found — no such resource in this tenant.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "409": {
+      "description": "Conflict — the request collides with current state (e.g. a guard or uniqueness constraint).",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: POST /api/admin/tenants 1`] = `
+"{
+  "summary": "Create a tenant (platform admin)",
+  "tags": [
+    "admin"
+  ],
+  "x-auth": "platform-admin-api-key",
+  "x-rate-limit": "TENANT_CREATE_LIMIT",
+  "requestBody": {
+    "description": "Tenant bootstrap payload.",
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/TenantCreateRequest"
+        }
+      }
+    }
+  },
+  "responses": {
+    "201": {
+      "description": "The created tenant and its OWNER user id.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/TenantCreateResponse"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "409": {
+      "description": "Conflict — the request collides with current state (e.g. a guard or uniqueness constraint).",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: POST /api/admin/tenants/{slug}/transfer-ownership 1`] = `
+"{
+  "summary": "Transfer tenant ownership (platform admin)",
+  "tags": [
+    "admin"
+  ],
+  "x-auth": "platform-admin-api-key",
+  "x-rate-limit": "API_MUTATION_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "slug",
+      "in": "path"
+    }
+  ],
+  "requestBody": {
+    "description": "Current owner id + new owner email.",
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/TenantTransferOwnershipRequest"
+        }
+      }
+    }
+  },
+  "responses": {
+    "200": {
+      "description": "Ownership transferred.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/TenantTransferOwnershipResponse"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "404": {
+      "description": "Not found — no such resource in this tenant.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "409": {
+      "description": "Conflict — the request collides with current state (e.g. a guard or uniqueness constraint).",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: POST /api/auth/change-password 1`] = `
+"{
+  "summary": "Change password (authenticated)",
+  "tags": [
+    "auth"
+  ],
+  "x-auth": "session",
+  "x-rate-limit": "API_MUTATION_LIMIT",
+  "requestBody": {
+    "description": "Current + new password. New password is HIBP-screened and must differ from current.",
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/AuthChangePasswordRequest"
+        }
+      }
+    }
+  },
+  "responses": {
+    "200": {
+      "description": "Password changed; all sessions revoked. reauthRequired=true.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/AuthOkResponse"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: POST /api/auth/forgot-password 1`] = `
+"{
+  "summary": "Request a password-reset link",
+  "tags": [
+    "auth"
+  ],
+  "x-auth": "public",
+  "x-rate-limit": "EMAIL_DISPATCH_LIMIT",
+  "requestBody": {
+    "description": "The email to send a reset link to. Enumeration-safe.",
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/AuthForgotPasswordRequest"
+        }
+      }
+    }
+  },
+  "responses": {
+    "200": {
+      "description": "Always {ok:true} — never reveals whether the email is registered.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/AuthOkResponse"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: POST /api/auth/register 1`] = `
+"{
+  "summary": "Self-service signup",
+  "tags": [
+    "auth"
+  ],
+  "x-auth": "public",
+  "x-rate-limit": "API_MUTATION_LIMIT",
+  "requestBody": {
+    "description": "Signup payload (gated by AUTH_TEST_MODE in non-prod). Password is HIBP-screened before persistence.",
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/AuthRegisterRequest"
+        }
+      }
+    }
+  },
+  "responses": {
+    "200": {
+      "description": "Account created; email verification initiated server-side.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/AuthOkResponse"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "409": {
+      "description": "Conflict — the request collides with current state (e.g. a guard or uniqueness constraint).",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: POST /api/auth/reset-password 1`] = `
+"{
+  "summary": "Consume a reset token",
+  "tags": [
+    "auth"
+  ],
+  "x-auth": "public",
+  "x-rate-limit": "LOGIN_LIMIT",
+  "requestBody": {
+    "description": "Single-use token + new password (HIBP-screened).",
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/AuthResetPasswordRequest"
+        }
+      }
+    }
+  },
+  "responses": {
+    "200": {
+      "description": "Password reset; all sessions revoked.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/AuthOkResponse"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: POST /api/t/{tenantSlug}/admin/key-rotation 1`] = `
+"{
+  "summary": "Enqueue master-KEK re-encryption sweep",
+  "tags": [
+    "admin"
+  ],
+  "x-required-permission": "admin.manage",
+  "x-rate-limit": "API_KEY_CREATE_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    }
+  ],
+  "requestBody": {
+    "description": "Empty body — semantics live in the URL.",
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/EmptyBody"
+        }
+      }
+    }
+  },
+  "responses": {
+    "202": {
+      "description": "Rotation sweep enqueued; returns the job handle.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/JobStatusResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: POST /api/t/{tenantSlug}/admin/tenant-dek-rotation 1`] = `
+"{
+  "summary": "Enqueue per-tenant DEK rotation sweep",
+  "tags": [
+    "admin"
+  ],
+  "x-required-permission": "admin.tenant_lifecycle",
+  "x-rate-limit": "API_KEY_CREATE_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    }
+  ],
+  "requestBody": {
+    "description": "Empty body — semantics live in the URL.",
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/EmptyBody"
+        }
+      }
+    }
+  },
+  "responses": {
+    "202": {
+      "description": "DEK rotation sweep enqueued; returns the job handle.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/JobStatusResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: POST /api/t/{tenantSlug}/assets 1`] = `
+"{
+  "summary": "Create a asset",
+  "tags": [
+    "assets"
+  ],
+  "x-required-permission": "assets.create",
+  "x-rate-limit": "API_MUTATION_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    }
+  ],
+  "requestBody": {
+    "description": "Payload to create a asset.",
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/AssetCreateRequest"
+        }
+      }
+    }
+  },
+  "responses": {
+    "201": {
+      "description": "The created asset.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/AssetDetail"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "409": {
+      "description": "Conflict — the request collides with current state (e.g. a guard or uniqueness constraint).",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: POST /api/t/{tenantSlug}/audits 1`] = `
+"{
+  "summary": "Create an audit cycle",
+  "tags": [
+    "audits"
+  ],
+  "x-required-permission": "audits.manage",
+  "x-rate-limit": "API_MUTATION_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    }
+  ],
+  "requestBody": {
+    "description": "Audit cycle payload.",
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/AuditCreateRequest"
+        }
+      }
+    }
+  },
+  "responses": {
+    "201": {
+      "description": "The created audit cycle.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/Audit"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "409": {
+      "description": "Conflict — the request collides with current state (e.g. a guard or uniqueness constraint).",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: POST /api/t/{tenantSlug}/audits/packs 1`] = `
+"{
+  "summary": "Create an audit pack",
+  "tags": [
+    "audits"
+  ],
+  "x-required-permission": "audits.manage",
+  "x-rate-limit": "API_MUTATION_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    }
+  ],
+  "requestBody": {
+    "description": "Pack create payload (bound to an audit cycle).",
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/AuditPackCreateRequest"
+        }
+      }
+    }
+  },
+  "responses": {
+    "201": {
+      "description": "The created audit pack.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/AuditPackResponse"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "409": {
+      "description": "Conflict — the request collides with current state (e.g. a guard or uniqueness constraint).",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: POST /api/t/{tenantSlug}/controls 1`] = `
+"{
+  "summary": "Create a control",
+  "tags": [
+    "controls"
+  ],
+  "x-required-permission": "controls.create",
+  "x-rate-limit": "API_MUTATION_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    }
+  ],
+  "requestBody": {
+    "description": "Payload to create a control.",
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/ControlCreateRequest"
+        }
+      }
+    }
+  },
+  "responses": {
+    "201": {
+      "description": "The created control.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ControlDetail"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "409": {
+      "description": "Conflict — the request collides with current state (e.g. a guard or uniqueness constraint).",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: POST /api/t/{tenantSlug}/policies 1`] = `
+"{
+  "summary": "Create a policy",
+  "tags": [
+    "policies"
+  ],
+  "x-required-permission": "policies.create",
+  "x-rate-limit": "API_MUTATION_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    }
+  ],
+  "requestBody": {
+    "description": "Payload to create a policy.",
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/PolicyCreateRequest"
+        }
+      }
+    }
+  },
+  "responses": {
+    "201": {
+      "description": "The created policy.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/PolicyDetail"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "409": {
+      "description": "Conflict — the request collides with current state (e.g. a guard or uniqueness constraint).",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: POST /api/t/{tenantSlug}/risks 1`] = `
+"{
+  "summary": "Create a risk",
+  "tags": [
+    "risks"
+  ],
+  "x-required-permission": "risks.create",
+  "x-rate-limit": "API_MUTATION_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    }
+  ],
+  "requestBody": {
+    "description": "Payload to create a risk.",
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/RiskCreateRequest"
+        }
+      }
+    }
+  },
+  "responses": {
+    "201": {
+      "description": "The created risk.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/RiskDetail"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "409": {
+      "description": "Conflict — the request collides with current state (e.g. a guard or uniqueness constraint).",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: POST /api/t/{tenantSlug}/tasks 1`] = `
+"{
+  "summary": "Create a task",
+  "tags": [
+    "tasks"
+  ],
+  "x-required-permission": "tasks.create",
+  "x-rate-limit": "API_MUTATION_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    }
+  ],
+  "requestBody": {
+    "description": "Payload to create a task.",
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/TaskCreateRequest"
+        }
+      }
+    }
+  },
+  "responses": {
+    "201": {
+      "description": "The created task.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/Task"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "409": {
+      "description": "Conflict — the request collides with current state (e.g. a guard or uniqueness constraint).",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: POST /api/t/{tenantSlug}/vendors 1`] = `
+"{
+  "summary": "Create a vendor",
+  "tags": [
+    "vendors"
+  ],
+  "x-required-permission": "vendors.create",
+  "x-rate-limit": "API_MUTATION_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    }
+  ],
+  "requestBody": {
+    "description": "Payload to create a vendor.",
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/VendorCreateRequest"
+        }
+      }
+    }
+  },
+  "responses": {
+    "201": {
+      "description": "The created vendor.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/VendorDetail"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "409": {
+      "description": "Conflict — the request collides with current state (e.g. a guard or uniqueness constraint).",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: PUT /api/t/{tenantSlug}/assets/{id} 1`] = `
+"{
+  "summary": "Update a asset",
+  "tags": [
+    "assets"
+  ],
+  "x-required-permission": "assets.edit",
+  "x-rate-limit": "API_MUTATION_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "id",
+      "in": "path"
+    }
+  ],
+  "requestBody": {
+    "description": "Partial update for a asset.",
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/AssetUpdateRequest"
+        }
+      }
+    }
+  },
+  "responses": {
+    "200": {
+      "description": "The updated asset.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/AssetDetail"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "404": {
+      "description": "Not found — no such resource in this tenant.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "409": {
+      "description": "Conflict — the request collides with current state (e.g. a guard or uniqueness constraint).",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: PUT /api/t/{tenantSlug}/audits/{id} 1`] = `
+"{
+  "summary": "Update an audit cycle",
+  "tags": [
+    "audits"
+  ],
+  "x-required-permission": "audits.manage",
+  "x-rate-limit": "API_MUTATION_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "id",
+      "in": "path"
+    }
+  ],
+  "requestBody": {
+    "description": "Audit cycle update (incl. status transitions + checklist rows).",
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/AuditUpdateRequest"
+        }
+      }
+    }
+  },
+  "responses": {
+    "200": {
+      "description": "The updated audit cycle.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/Audit"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "404": {
+      "description": "Not found — no such resource in this tenant.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "409": {
+      "description": "Conflict — the request collides with current state (e.g. a guard or uniqueness constraint).",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;
+
+exports[`Route contract — per-operation snapshots operation: PUT /api/t/{tenantSlug}/risks/{id} 1`] = `
+"{
+  "summary": "Update a risk",
+  "tags": [
+    "risks"
+  ],
+  "x-required-permission": "risks.edit",
+  "x-rate-limit": "API_MUTATION_LIMIT",
+  "parameters": [
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "tenantSlug",
+      "in": "path"
+    },
+    {
+      "schema": {
+        "type": "string"
+      },
+      "required": true,
+      "name": "id",
+      "in": "path"
+    }
+  ],
+  "requestBody": {
+    "description": "Partial update for a risk.",
+    "required": true,
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/RiskUpdateRequest"
+        }
+      }
+    }
+  },
+  "responses": {
+    "200": {
+      "description": "The updated risk.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/RiskDetail"
+          }
+        }
+      }
+    },
+    "400": {
+      "description": "Validation error — the request body or query failed schema validation.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "401": {
+      "description": "Unauthenticated — no valid session or API credential.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "403": {
+      "description": "Forbidden — authenticated but lacking the required permission.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "404": {
+      "description": "Not found — no such resource in this tenant.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "409": {
+      "description": "Conflict — the request collides with current state (e.g. a guard or uniqueness constraint).",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    },
+    "429": {
+      "description": "Rate limited — too many requests; see the Retry-After header.",
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      }
+    }
+  }
+}"
+`;

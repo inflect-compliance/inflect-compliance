@@ -343,6 +343,28 @@ exports[`API contract — per-schema snapshots schema: AssetListItem 1`] = `
 }"
 `;
 
+exports[`API contract — per-schema snapshots schema: AssetListResponse 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "rows": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/AssetListItem"
+      }
+    },
+    "truncated": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "rows",
+    "truncated"
+  ],
+  "description": "Backfill-capped list of Asset. \`truncated\` is true when the result hit LIST_BACKFILL_CAP and the client should refine filters."
+}"
+`;
+
 exports[`API contract — per-schema snapshots schema: AssetUpdateRequest 1`] = `
 "{
   "type": "object",
@@ -550,6 +572,28 @@ exports[`API contract — per-schema snapshots schema: AuditCreateRequest 1`] = 
 }"
 `;
 
+exports[`API contract — per-schema snapshots schema: AuditListResponse 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "rows": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Audit"
+      }
+    },
+    "truncated": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "rows",
+    "truncated"
+  ],
+  "description": "Backfill-capped list of Audit. \`truncated\` is true when the result hit LIST_BACKFILL_CAP and the client should refine filters."
+}"
+`;
+
 exports[`API contract — per-schema snapshots schema: AuditLogEntry 1`] = `
 "{
   "type": "object",
@@ -600,6 +644,82 @@ exports[`API contract — per-schema snapshots schema: AuditLogEntry 1`] = `
   ],
   "additionalProperties": {},
   "description": "A single audit-log row. Hash-chained at the DB layer; this DTO is the read view exposed via the audit/activity endpoints."
+}"
+`;
+
+exports[`API contract — per-schema snapshots schema: AuditPackCreateRequest 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "auditCycleId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    }
+  },
+  "required": [
+    "auditCycleId",
+    "name"
+  ],
+  "description": "Create an audit-readiness pack bound to an audit cycle. The pack collects controls/policies/evidence into a shareable, freezable bundle for external auditors."
+}"
+`;
+
+exports[`API contract — per-schema snapshots schema: AuditPackListResponse 1`] = `
+"{
+  "type": "array",
+  "items": {
+    "$ref": "#/components/schemas/AuditPackResponse"
+  },
+  "description": "Audit packs for the tenant, optionally filtered by cycleId."
+}"
+`;
+
+exports[`API contract — per-schema snapshots schema: AuditPackResponse 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "auditCycleId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "name"
+  ],
+  "additionalProperties": {},
+  "description": "An audit-readiness pack. Guarantees id + name; list/detail variants add _count, cycle, items[], and frozenBy. passthrough so the documented surface never over-constrains."
+}"
+`;
+
+exports[`API contract — per-schema snapshots schema: AuditPackUpdateRequest 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 5000
+    }
+  },
+  "description": "Update audit-pack metadata. Item membership, freeze, share, and clone are action-multiplexed POST operations on the same path (see the operation description)."
 }"
 `;
 
@@ -673,6 +793,122 @@ exports[`API contract — per-schema snapshots schema: AuditUpdateRequest 1`] = 
 }"
 `;
 
+exports[`API contract — per-schema snapshots schema: AuthChangePasswordRequest 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "currentPassword": {
+      "type": "string",
+      "minLength": 1
+    },
+    "newPassword": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "currentPassword",
+    "newPassword"
+  ],
+  "description": "Authenticated password change. The new password is screened against HIBP and must differ from the current one; success revokes every session for the account."
+}"
+`;
+
+exports[`API contract — per-schema snapshots schema: AuthForgotPasswordRequest 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string",
+      "format": "email"
+    }
+  },
+  "required": [
+    "email"
+  ],
+  "description": "Request a password-reset link. The response is always {ok:true} — the endpoint is enumeration-safe and never reveals whether the email is registered."
+}"
+`;
+
+exports[`API contract — per-schema snapshots schema: AuthMeResponse 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "user": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "role": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "role"
+      ]
+    },
+    "tenant": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "slug": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "slug"
+      ]
+    }
+  },
+  "required": [
+    "user",
+    "tenant"
+  ],
+  "description": "The authenticated principal and their primary (oldest ACTIVE) tenant membership. role defaults to READER and tenant is null when the user has no active membership."
+}"
+`;
+
+exports[`API contract — per-schema snapshots schema: AuthOkResponse 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "ok": {
+      "type": "boolean",
+      "enum": [
+        true
+      ]
+    },
+    "reauthRequired": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "ok"
+  ],
+  "description": "Auth mutation acknowledgement. reauthRequired=true (change/reset password) signals the caller's own session was revoked and they must sign in again."
+}"
+`;
+
 exports[`API contract — per-schema snapshots schema: AuthRegisterRequest 1`] = `
 "{
   "type": "object",
@@ -701,6 +937,27 @@ exports[`API contract — per-schema snapshots schema: AuthRegisterRequest 1`] =
     "orgName"
   ],
   "description": "Self-service signup payload (gated by AUTH_TEST_MODE in non-prod). The password is checked against HIBP via k-anonymity before persistence; emailVerification is initiated server-side."
+}"
+`;
+
+exports[`API contract — per-schema snapshots schema: AuthResetPasswordRequest 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "token": {
+      "type": "string",
+      "minLength": 1
+    },
+    "newPassword": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "token",
+    "newPassword"
+  ],
+  "description": "Consume a single-use reset token and set a new password (HIBP-screened). Consuming the token revokes every session for the account."
 }"
 `;
 
@@ -1469,6 +1726,28 @@ exports[`API contract — per-schema snapshots schema: ControlListItem 1`] = `
   ],
   "additionalProperties": {},
   "description": "Control as it appears in list views — summary fields plus aggregate counts. The detail endpoint returns ControlDetail with the full include shape."
+}"
+`;
+
+exports[`API contract — per-schema snapshots schema: ControlListResponse 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "rows": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/ControlListItem"
+      }
+    },
+    "truncated": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "rows",
+    "truncated"
+  ],
+  "description": "Backfill-capped list of Control. \`truncated\` is true when the result hit LIST_BACKFILL_CAP and the client should refine filters."
 }"
 `;
 
@@ -2497,6 +2776,25 @@ exports[`API contract — per-schema snapshots schema: Framework 1`] = `
 }"
 `;
 
+exports[`API contract — per-schema snapshots schema: JobStatusResponse 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "jobId": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "jobId"
+  ],
+  "additionalProperties": {},
+  "description": "A background-job handle. POST enqueues the rotation sweep and returns its jobId; GET?jobId=… reports the BullMQ state (waiting/active/completed/failed)."
+}"
+`;
+
 exports[`API contract — per-schema snapshots schema: PolicyApprovalDecideRequest 1`] = `
 "{
   "type": "object",
@@ -3060,6 +3358,28 @@ exports[`API contract — per-schema snapshots schema: PolicyListItem 1`] = `
 }"
 `;
 
+exports[`API contract — per-schema snapshots schema: PolicyListResponse 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "rows": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/PolicyListItem"
+      }
+    },
+    "truncated": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "rows",
+    "truncated"
+  ],
+  "description": "Backfill-capped list of Policy. \`truncated\` is true when the result hit LIST_BACKFILL_CAP and the client should refine filters."
+}"
+`;
+
 exports[`API contract — per-schema snapshots schema: PolicyMetadataUpdateRequest 1`] = `
 "{
   "type": "object",
@@ -3551,6 +3871,28 @@ exports[`API contract — per-schema snapshots schema: RiskListItem 1`] = `
 }"
 `;
 
+exports[`API contract — per-schema snapshots schema: RiskListResponse 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "rows": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/RiskListItem"
+      }
+    },
+    "truncated": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "rows",
+    "truncated"
+  ],
+  "description": "Backfill-capped list of Risk. \`truncated\` is true when the result hit LIST_BACKFILL_CAP and the client should refine filters."
+}"
+`;
+
 exports[`API contract — per-schema snapshots schema: RiskSetStatusRequest 1`] = `
 "{
   "type": "object",
@@ -3645,6 +3987,26 @@ exports[`API contract — per-schema snapshots schema: RiskUpdateRequest 1`] = `
     }
   },
   "description": "Partial update for a risk. All fields optional. residualLikelihood/residualImpact must be supplied together; residualScore is derived server-side and every score change lands a provenance event (RQ2-1)."
+}"
+`;
+
+exports[`API contract — per-schema snapshots schema: SharedAuditPackResponse 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "name"
+  ],
+  "additionalProperties": {},
+  "description": "Public, share-token-scoped read view of a frozen audit pack. No authentication — the opaque token in the path is the capability."
 }"
 `;
 
@@ -3999,6 +4361,28 @@ exports[`API contract — per-schema snapshots schema: TaskLinkAddRequest 1`] = 
 }"
 `;
 
+exports[`API contract — per-schema snapshots schema: TaskListResponse 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "rows": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/Task"
+      }
+    },
+    "truncated": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "rows",
+    "truncated"
+  ],
+  "description": "Backfill-capped list of Task. \`truncated\` is true when the result hit LIST_BACKFILL_CAP and the client should refine filters."
+}"
+`;
+
 exports[`API contract — per-schema snapshots schema: TaskSetStatusRequest 1`] = `
 "{
   "type": "object",
@@ -4096,6 +4480,107 @@ exports[`API contract — per-schema snapshots schema: TaskUpdateRequest 1`] = `
     "metadataJson": {}
   },
   "description": "Partial update for a task. Status changes and assignment go through their own focused endpoints."
+}"
+`;
+
+exports[`API contract — per-schema snapshots schema: TenantCreateRequest 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "slug": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 80,
+      "pattern": "^[a-z0-9-]+$"
+    },
+    "ownerEmail": {
+      "type": "string",
+      "format": "email"
+    }
+  },
+  "required": [
+    "name",
+    "slug",
+    "ownerEmail"
+  ],
+  "description": "Platform-admin tenant bootstrap (X-Platform-Admin-Key gated). Atomically creates the tenant + encrypted DEK, an OWNER membership for ownerEmail, and the onboarding row."
+}"
+`;
+
+exports[`API contract — per-schema snapshots schema: TenantCreateResponse 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "tenant": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "slug": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "slug",
+        "name"
+      ]
+    },
+    "ownerUserId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant",
+    "ownerUserId"
+  ],
+  "description": "Result of tenant bootstrap — the created tenant and the user id of its OWNER."
+}"
+`;
+
+exports[`API contract — per-schema snapshots schema: TenantTransferOwnershipRequest 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "currentOwnerUserId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "newOwnerEmail": {
+      "type": "string",
+      "format": "email"
+    }
+  },
+  "required": [
+    "currentOwnerUserId",
+    "newOwnerEmail"
+  ],
+  "description": "Platform-admin ownership transfer (X-Platform-Admin-Key gated). Promotes the new OWNER before demoting the old to satisfy the last-OWNER DB trigger."
+}"
+`;
+
+exports[`API contract — per-schema snapshots schema: TenantTransferOwnershipResponse 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "tenantId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenantId"
+  ],
+  "additionalProperties": {},
+  "description": "Acknowledgement of an ownership transfer. Guarantees tenantId; the usecase may echo additional membership detail."
 }"
 `;
 
@@ -4503,6 +4988,28 @@ exports[`API contract — per-schema snapshots schema: VendorListItem 1`] = `
   ],
   "additionalProperties": {},
   "description": "Vendor as shown in list views. residualRisk is the risk score after control coverage; null = not yet assessed."
+}"
+`;
+
+exports[`API contract — per-schema snapshots schema: VendorListResponse 1`] = `
+"{
+  "type": "object",
+  "properties": {
+    "rows": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/VendorListItem"
+      }
+    },
+    "truncated": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "rows",
+    "truncated"
+  ],
+  "description": "Backfill-capped list of Vendor. \`truncated\` is true when the result hit LIST_BACKFILL_CAP and the client should refine filters."
 }"
 `;
 
