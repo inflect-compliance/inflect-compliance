@@ -285,6 +285,17 @@ the full test coverage map.
 Five complementary controls. Treat them as one system — each
 sub-epic has the others as backstops.
 
+**Runtime DAST layer (OWASP ZAP).** Alongside the *static* gates
+(CodeQL SAST, Trivy container CVEs, npm audit) there is now a *dynamic*
+one: the nightly `.github/workflows/dast.yml` boots the full app +
+Postgres + Redis and runs an OWASP **ZAP Baseline** (passive) scan,
+publishing SARIF to the Security tab (`category: zap-baseline`) + an
+HTML artifact + an auto-issue. PR-1 is **unauthenticated + non-blocking**
+(`fail_action: false`, sunset 2026-07-24 → blocking on HIGH+). The
+false-positive allowlist is `.zap/rules.tsv`; authenticated-OWNER,
+multi-role, and the weekly Full/active scan are tracked follow-ups. See
+**`docs/dast.md`**. Guarded by `tests/guardrails/dast-workflow-pinning.test.ts`.
+
 **C.1 — API permission middleware.** Wrap every privileged API
 handler with `requirePermission(<key>, …)` from
 `@/lib/security/permission-middleware`. The key is a typed dotted
