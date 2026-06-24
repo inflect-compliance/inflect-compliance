@@ -47,16 +47,16 @@ jest.mock('@/app-layer/usecases/fair-calculator', () => ({
         r.fairAle != null ? r.fairAle : r.sleAmount != null && r.aroAmount != null ? r.sleAmount * r.aroAmount : null,
 }));
 
-const renderCsv = jest.fn(() => Buffer.from('csv'));
-const renderPdf = jest.fn(async () => Buffer.from('pdf-bytes'));
-const renderPptx = jest.fn(async () => Buffer.from('pptx-bytes'));
+const renderCsv = jest.fn((..._a: any[]) => Buffer.from('csv'));
+const renderPdf = jest.fn(async (..._a: any[]) => Buffer.from('pdf-bytes'));
+const renderPptx = jest.fn(async (..._a: any[]) => Buffer.from('pptx-bytes'));
 jest.mock('@/app-layer/reports/risk-report-render', () => ({
     renderCsv: (...a: any[]) => renderCsv(...a),
     renderPdf: (...a: any[]) => renderPdf(...a),
     renderPptx: (...a: any[]) => renderPptx(...a),
 }));
 
-const storageWrite = jest.fn(async () => undefined);
+const storageWrite = jest.fn(async (..._a: any[]) => undefined);
 jest.mock('@/lib/storage', () => ({
     getStorageProvider: () => ({
         write: (...a: any[]) => storageWrite(...a),
@@ -65,7 +65,7 @@ jest.mock('@/lib/storage', () => ({
     generatePathKey: (t: string, n: string) => `${t}/${n}`,
 }));
 
-const sendEmail = jest.fn(async () => undefined);
+const sendEmail = jest.fn(async (..._a: any[]) => undefined);
 jest.mock('@/lib/mailer', () => ({ sendEmail: (...a: any[]) => sendEmail(...a) }));
 
 jest.mock('@/app-layer/integrations/providers/sharepoint', () => ({
