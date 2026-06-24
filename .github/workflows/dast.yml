@@ -21,14 +21,6 @@ on:
     # 04:00 UTC daily — off-peak; deliberately after the 03:30 UTC load
     # test so the two full-app boots don't compete for a runner.
     - cron: '0 4 * * *'
-  # TEMPORARY (remove before merge): a brand-new workflow can't be
-  # workflow_dispatch'd via the API until it's on the default branch, so
-  # this paths-filtered PR trigger gives one real pre-merge validation
-  # run of the DAST workflow itself. Scope stays nightly+dispatch.
-  pull_request:
-    paths:
-      - '.github/workflows/dast.yml'
-      - '.zap/**'
 
 # The scan only reads the running app + writes a SARIF to the Security
 # tab and (optionally) opens an issue — it needs security-events write
