@@ -38,7 +38,11 @@ type Metrics = { branches: number; functions: number; lines: number; statements:
  * `jest.thresholds.json` may drop below this. Edit UPWARD only.
  */
 const RATCHET_FLOOR: Record<string, Metrics> = {
-    global: { branches: 56, functions: 54, lines: 70, statements: 69 },
+    // Coverage Wave D batch 1 (2026-06-24) locked the global to its
+    // pre-batch enforced level (gate actual after batch 1: branches
+    // 63.88 / fn 63.06 / lines 78.19 / stmts 76.62). The ≥65 global
+    // branch target is still pending (batch 2 — repositories).
+    global: { branches: 62, functions: 61, lines: 76, statements: 75 },
     // `usecases/` — quality roadmap + stage-3a/3b/3c/3d waves.
     // Post-Roadmap-3 floor was 42 (branches); measured branch
     // coverage had climbed to ~58 without the floor following.
@@ -132,7 +136,12 @@ const RATCHET_FLOOR: Record<string, Metrics> = {
     // enforcement gotcha: read these from the gate "does not meet"
     // lines, NEVER from `coverage-summary.json`'s total (which
     // overstated usecases by ~loaded-only bias).
-    './src/app-layer/usecases/': { branches: 69, functions: 73, lines: 81, statements: 80 },
+    // Wave D batch 1 added branch tests for soa / automation-runner /
+    // risk-report / audit-readiness-scoring / policy-lifecycle-adapter /
+    // scim-users / risk-appetite / risk-scenario; gate actual for
+    // usecases/ rose to branches 79.97 / fn 82.49 / lines 89.65 /
+    // stmts 88.47. Hard floor bumped to the pre-batch enforced level.
+    './src/app-layer/usecases/': { branches: 72, functions: 76, lines: 85, statements: 83 },
     // `policies/` — quality roadmap P3. Authorization decisions —
     // a wrong branch is a security hole. Measured ≈82 branches /
     // 91 funcs / 91 lines; seeded a few points below.
