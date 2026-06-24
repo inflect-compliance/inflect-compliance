@@ -209,25 +209,43 @@ describe('buildFrameworkTree', () => {
             return out;
         }
 
-        it('builds 500 requirements in well under 200 ms', () => {
-            const reqs = genFlat(500);
-            const t0 = Date.now();
-            const tree = buildFrameworkTree(FW, reqs);
-            const elapsed = Date.now() - t0;
-            expect(tree.totals.requirements).toBe(500);
-            expect(tree.nodes.length).toBeGreaterThan(0);
-            // 200ms is a generous CI ceiling; on a developer laptop
-            // this typically runs in < 20ms.
-            expect(elapsed).toBeLessThan(200);
+        it('builds large trees correctly at scale', () => {
+            // Correctness at scale — deterministic, no timing.
+            const small = buildFrameworkTree(FW, genFlat(500));
+            const large = buildFrameworkTree(FW, genFlat(2000));
+            expect(small.totals.requirements).toBe(500);
+            expect(small.nodes.length).toBeGreaterThan(0);
+            expect(large.totals.requirements).toBe(2000);
+            expect(large.nodes.length).toBeGreaterThan(0);
         });
 
-        it('builds 2000 requirements in well under 500 ms', () => {
-            const reqs = genFlat(2000);
+        it('builds in roughly linear time (no O(n^2) blow-up)', () => {
+            // Scaling guard, NOT an absolute wall-clock budget. The old
+            // `elapsed < 500ms` form flaked on loaded CI runners (a 25x
+            // scheduler slowdown blew the fixed ceiling even though the
+            // algorithm was unchanged). Measuring a RATIO across two
+            // input sizes is immune to absolute machine speed: load
+            // slows both builds proportionally, so the assertion stays
+            // stable, while an accidental O(n^2) regression — which
+            // costs ~16x for a 4x input rather than the ~linear ~4x —
+            // still trips it. Warm up first so JIT/allocation overhead
+            // doesn't skew the smaller (baseline) measurement.
+            const small = genFlat(500);
+            const large = genFlat(2000); // 4x the input
+            buildFrameworkTree(FW, small); // warm-up
+
             const t0 = Date.now();
-            const tree = buildFrameworkTree(FW, reqs);
-            const elapsed = Date.now() - t0;
-            expect(tree.totals.requirements).toBe(2000);
-            expect(elapsed).toBeLessThan(500);
+            buildFrameworkTree(FW, small);
+            const smallMs = Date.now() - t0;
+
+            const t1 = Date.now();
+            buildFrameworkTree(FW, large);
+            const largeMs = Date.now() - t1;
+
+            // 4x the input should cost well under 10x the time. The
+            // additive term absorbs sub-millisecond timer resolution at
+            // tiny durations so the ratio never divides by ~0.
+            expect(largeMs).toBeLessThanOrEqual(smallMs * 10 + 50);
         });
     });
 });
