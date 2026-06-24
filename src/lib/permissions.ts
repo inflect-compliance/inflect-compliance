@@ -6,6 +6,7 @@ export type PermissionSet = {
     policies: { view: boolean; create: boolean; edit: boolean; approve: boolean };
     tasks: { view: boolean; create: boolean; edit: boolean; assign: boolean };
     risks: { view: boolean; create: boolean; edit: boolean };
+    assets: { view: boolean; create: boolean; edit: boolean };
     vendors: { view: boolean; create: boolean; edit: boolean };
     tests: { view: boolean; create: boolean; execute: boolean };
     frameworks: { view: boolean; install: boolean };
@@ -40,6 +41,7 @@ const PERMISSION_SCHEMA: Record<keyof PermissionSet, string[]> = {
     policies: ['view', 'create', 'edit', 'approve'],
     tasks: ['view', 'create', 'edit', 'assign'],
     risks: ['view', 'create', 'edit'],
+    assets: ['view', 'create', 'edit'],
     vendors: ['view', 'create', 'edit'],
     tests: ['view', 'create', 'execute'],
     frameworks: ['view', 'install'],
@@ -68,6 +70,7 @@ export function getPermissionsForRole(role: Role): PermissionSet {
                 policies: { view: true, create: true, edit: true, approve: true },
                 tasks: { view: true, create: true, edit: true, assign: true },
                 risks: { view: true, create: true, edit: true },
+                assets: { view: true, create: true, edit: true },
                 vendors: { view: true, create: true, edit: true },
                 tests: { view: true, create: true, execute: true },
                 frameworks: { view: true, install: true },
@@ -85,6 +88,7 @@ export function getPermissionsForRole(role: Role): PermissionSet {
                 policies: { view: true, create: true, edit: true, approve: true },
                 tasks: { view: true, create: true, edit: true, assign: true },
                 risks: { view: true, create: true, edit: true },
+                assets: { view: true, create: true, edit: true },
                 vendors: { view: true, create: true, edit: true },
                 tests: { view: true, create: true, execute: true },
                 frameworks: { view: true, install: true },
@@ -106,6 +110,7 @@ export function getPermissionsForRole(role: Role): PermissionSet {
                 policies: { view: true, create: true, edit: true, approve: false },
                 tasks: { view: true, create: true, edit: true, assign: true },
                 risks: { view: true, create: true, edit: true },
+                assets: { view: true, create: true, edit: true },
                 vendors: { view: true, create: true, edit: true },
                 tests: { view: true, create: true, execute: true },
                 frameworks: { view: true, install: false },
@@ -122,6 +127,7 @@ export function getPermissionsForRole(role: Role): PermissionSet {
                 // Auditors might be able to assign or comment on tasks, but typically read-only. We'll set read-only here.
                 tasks: { view: true, create: false, edit: false, assign: false },
                 risks: { view: true, create: false, edit: false },
+                assets: { view: true, create: false, edit: false },
                 vendors: { view: true, create: false, edit: false },
                 tests: { view: true, create: false, execute: false },
                 frameworks: { view: true, install: false },
@@ -138,6 +144,7 @@ export function getPermissionsForRole(role: Role): PermissionSet {
                 policies: { view: true, create: false, edit: false, approve: false },
                 tasks: { view: true, create: false, edit: false, assign: false },
                 risks: { view: true, create: false, edit: false },
+                assets: { view: true, create: false, edit: false },
                 vendors: { view: true, create: false, edit: false },
                 tests: { view: true, create: false, execute: false },
                 frameworks: { view: true, install: false },
