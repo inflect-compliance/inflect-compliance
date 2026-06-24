@@ -40,11 +40,8 @@ const SPECS: RouteSpec[] = [
     { file: 'controls/[controlId]/route.ts', gates: { GET: 'controls.view', PATCH: 'controls.edit' } },
     { file: 'tasks/route.ts', gates: { GET: 'tasks.view', POST: 'tasks.create' } },
     { file: 'tasks/[taskId]/route.ts', gates: { GET: 'tasks.view', PATCH: 'tasks.edit', DELETE: 'tasks.edit' } },
-    // NOTE: `assets` is intentionally absent — `PermissionSet` has no
-    // `assets` domain (the granular keys assets.view/create/edit don't
-    // exist), so the asset routes keep their usecase-layer authz
-    // (assertCanRead/Write), same posture as audits. Adding an `assets`
-    // permission domain is a tracked follow-up; see the PR description.
+    { file: 'assets/route.ts', gates: { GET: 'assets.view', POST: 'assets.create' } },
+    { file: 'assets/[id]/route.ts', gates: { GET: 'assets.view', PUT: 'assets.edit', DELETE: 'assets.edit' } },
     { file: 'policies/route.ts', gates: { GET: 'policies.view', POST: 'policies.create' } },
     { file: 'policies/[id]/route.ts', gates: { GET: 'policies.view', PATCH: 'policies.edit' } },
     { file: 'vendors/route.ts', gates: { GET: 'vendors.view', POST: 'vendors.create' } },

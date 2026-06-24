@@ -49,9 +49,9 @@ describe('getPermissionsForRole', () => {
         const roles = ['ADMIN', 'EDITOR', 'AUDITOR', 'READER'] as const;
         for (const role of roles) {
             const perms = getPermissionsForRole(role);
-            // Every PermissionSet must have all 11 domains
+            // Every PermissionSet must have all 12 domains
             expect(Object.keys(perms).sort()).toEqual([
-                'admin', 'audits', 'controls', 'evidence', 'frameworks',
+                'admin', 'assets', 'audits', 'controls', 'evidence', 'frameworks',
                 'policies', 'reports', 'risks', 'tasks', 'tests', 'vendors',
             ]);
         }

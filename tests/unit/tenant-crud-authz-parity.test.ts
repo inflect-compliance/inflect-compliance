@@ -1,8 +1,8 @@
 /**
  * Parity proof for the tenant-CRUD authz enforcement.
  *
- * The five tenant entities (risks, controls, tasks, policies, vendors)
- * moved from coarse usecase-layer gating (`assertCanRead/Write`, which
+ * The six tenant entities (risks, controls, tasks, assets, policies,
+ * vendors) moved from coarse usecase-layer gating (`assertCanRead/Write`, which
  * read `computePermissions(role).canRead/canWrite`) to route-boundary
  * `requirePermission('<entity>.<action>')` (which reads the granular
  * `getPermissionsForRole(role).<entity>.{view,create,edit}`).
@@ -22,7 +22,7 @@ import { getPermissionsForRole } from '@/lib/permissions';
 import { computePermissions } from '@/lib/tenant-context';
 
 const ROLES: Role[] = ['OWNER', 'ADMIN', 'EDITOR', 'AUDITOR', 'READER'];
-const ENTITIES = ['risks', 'controls', 'tasks', 'policies', 'vendors'] as const;
+const ENTITIES = ['risks', 'controls', 'tasks', 'assets', 'policies', 'vendors'] as const;
 
 describe('tenant-CRUD authz parity (granular keys ≡ coarse canRead/canWrite)', () => {
     for (const role of ROLES) {

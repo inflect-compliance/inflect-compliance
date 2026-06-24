@@ -1,30 +1,29 @@
-import { NextRequest } from 'next/server';
-import { getTenantCtx } from '@/app-layer/context';
 import { getAsset, updateAsset, deleteAsset } from '@/app-layer/usecases/asset';
-import { withValidatedBody } from '@/lib/validation/route';
+import { parseJsonBody } from '@/lib/validation/route';
 import { UpdateAssetSchema } from '@/lib/schemas';
 import { withApiErrorHandling } from '@/lib/errors/api';
+import { requirePermission } from '@/lib/security/permission-middleware';
 import { jsonResponse } from '@/lib/api-response';
 
-export const GET = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; id: string }> }) => {
-    const params = await paramsPromise;
-    const ctx = await getTenantCtx(params, req);
-    const asset = await getAsset(ctx, params.id);
-    return jsonResponse(asset);
-});
+type AssetDetailParams = { tenantSlug: string; id: string };
 
-export const PUT = withApiErrorHandling(withValidatedBody(UpdateAssetSchema, async (req, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; id: string }> }, body) => {
-    const params = await paramsPromise;
-    const ctx = await getTenantCtx(params, req);
-    const asset = await updateAsset(ctx, params.id, body);
+export const GET = withApiErrorHandling(requirePermission<AssetDetailParams>('assets.view', async (_req, { params }, ctx) => {
+    const { id } = await params;
+    const asset = await getAsset(ctx, id);
+    return jsonResponse(asset);
+}));
+
+export const PUT = withApiErrorHandling(requirePermission<AssetDetailParams>('assets.edit', async (req, { params }, ctx) => {
+    const { id } = await params;
+    const body = await parseJsonBody(req, UpdateAssetSchema);
+    const asset = await updateAsset(ctx, id, body);
     return jsonResponse({ success: true, asset });
 }));
 
 export const PATCH = PUT;
 
-export const DELETE = withApiErrorHandling(async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string; id: string }> }) => {
-    const params = await paramsPromise;
-    const ctx = await getTenantCtx(params, req);
-    await deleteAsset(ctx, params.id);
+export const DELETE = withApiErrorHandling(requirePermission<AssetDetailParams>('assets.edit', async (_req, { params }, ctx) => {
+    const { id } = await params;
+    await deleteAsset(ctx, id);
     return jsonResponse({ success: true });
-});
+}));
