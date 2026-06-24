@@ -927,11 +927,13 @@ jobs:
           # with no shared daemon, so a local load here would die with
           # this job; the artifact below is the handoff.
           #
-          # zstd-compress the tar (the docker exporter stores layer blobs
-          # uncompressed by default → a ~700-900 MB tar) so the artifact
-          # upload here AND the download in `trivy` move far less data.
-          # `docker load` auto-detects zstd on the runner's Docker 24+.
-          outputs: type=docker,dest=/tmp/image-${{ github.sha }}.tar,compression=zstd,compression-level=3
+          # Left UNCOMPRESSED deliberately: `actions/upload-artifact`
+          # already zip-compresses the blob for transfer, and an
+          # experiment with buildx `compression=zstd` measured no Trivy
+          # speed-up (the ~1.1 GB tar barely shrank and the docker-load
+          # decompression offset the smaller download) while adding a
+          # docker-load zstd-support dependency. Not worth it.
+          outputs: type=docker,dest=/tmp/image-${{ github.sha }}.tar
 
       - name: Upload image tarball
         uses: actions/upload-artifact@v7
@@ -943,9 +945,6 @@ jobs:
           # Fail the build LOUDLY if the export produced nothing, rather
           # than letting trivy run against a missing image.
           if-no-files-found: error
-          # The tar is already zstd-compressed — don't burn CPU zipping
-          # an incompressible blob a second time.
-          compression-level: 0
 
   # ═══════════════════════════════════════════════════════════════
   #  Job 10: Trivy — container image vulnerability scanning
