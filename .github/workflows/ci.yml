@@ -921,8 +921,30 @@ jobs:
           tags: inflect-compliance:ci-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          # Export to local Docker daemon for Trivy scanning
-          load: true
+          # Export the built image as a docker-format tarball so the
+          # `trivy` job can `docker load` it instead of rebuilding from
+          # scratch. `load:` is removed — each job runs on a fresh runner
+          # with no shared daemon, so a local load here would die with
+          # this job; the artifact below is the handoff.
+          #
+          # Left UNCOMPRESSED deliberately: `actions/upload-artifact`
+          # already zip-compresses the blob for transfer, and an
+          # experiment with buildx `compression=zstd` measured no Trivy
+          # speed-up (the ~1.1 GB tar barely shrank and the docker-load
+          # decompression offset the smaller download) while adding a
+          # docker-load zstd-support dependency. Not worth it.
+          outputs: type=docker,dest=/tmp/image-${{ github.sha }}.tar
+
+      - name: Upload image tarball
+        uses: actions/upload-artifact@v7
+        with:
+          name: docker-image-${{ github.sha }}
+          path: /tmp/image-${{ github.sha }}.tar
+          # Ephemeral — only exists for the trivy handoff in this run.
+          retention-days: 1
+          # Fail the build LOUDLY if the export produced nothing, rather
+          # than letting trivy run against a missing image.
+          if-no-files-found: error
 
   # ═══════════════════════════════════════════════════════════════
   #  Job 10: Trivy — container image vulnerability scanning
@@ -934,15 +956,13 @@ jobs:
     name: "Trivy Image Scan"
     needs: [docker]
     runs-on: ${{ vars.LARGE_RUNNER || 'ubuntu-latest' }}
-    # The in-job Docker rebuild ("Build Docker image for scanning")
-    # consistently takes ~7.5 min — the `cache-from: type=gha` layer
-    # cache from the `docker` job barely helps here. That + the
-    # critical+high gate scan (~1.5 min) left under a minute for the
-    # SARIF-report step, so the job was hitting the 10-min ceiling and
-    # dying as `cancelled` mid-SARIF — even though the security gate
-    # itself had already passed. 20 min gives real headroom; the
-    # gating scan was never the slow part.
-    timeout-minutes: 20
+    # The image is now built ONCE in the `docker` job and handed over as
+    # a tarball artifact — this job `docker load`s it instead of doing a
+    # second ~7.5-min rebuild. What remains is download + load (~1 min) +
+    # the critical+high gate scan (~1.5 min) + SARIF report. 12 min is
+    # ample headroom and flags any regression that reintroduces the
+    # in-job rebuild (locked by tests/guardrails/trivy-no-rebuild.test.ts).
+    timeout-minutes: 12
 
     steps:
       - uses: actions/checkout@v6
@@ -961,18 +981,21 @@ jobs:
           sudo docker image prune --all --force 2>/dev/null || true
           df -h /
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
-      # Rebuild image locally — docker job uses GHA cache so this is fast
-      - name: Build Docker image for scanning
-        uses: docker/build-push-action@v7
+      # Reuse the image the `docker` job already built — no rebuild.
+      # The tarball was exported there as an artifact; download it and
+      # load it into this runner's daemon under the SAME tag Trivy
+      # scans (`inflect-compliance:ci-<sha>`).
+      - name: Download image tarball
+        uses: actions/download-artifact@v7
         with:
-          context: .
-          push: false
-          tags: inflect-compliance:ci-${{ github.sha }}
-          cache-from: type=gha
-          load: true
+          name: docker-image-${{ github.sha }}
+          path: /tmp
+
+      - name: Load image into runner daemon
+        run: |
+          ls -lh /tmp/image-${{ github.sha }}.tar
+          docker load --input /tmp/image-${{ github.sha }}.tar
+          docker image ls inflect-compliance
 
       # ── Trivy scan: BLOCKING on CRITICAL,HIGH ──
       # Container-image scan against OS packages + bundled libraries.
