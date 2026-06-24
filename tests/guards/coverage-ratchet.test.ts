@@ -38,11 +38,13 @@ type Metrics = { branches: number; functions: number; lines: number; statements:
  * `jest.thresholds.json` may drop below this. Edit UPWARD only.
  */
 const RATCHET_FLOOR: Record<string, Metrics> = {
-    // Coverage Wave D batch 1 (2026-06-24) locked the global to its
-    // pre-batch enforced level (gate actual after batch 1: branches
-    // 63.88 / fn 63.06 / lines 78.19 / stmts 76.62). The ≥65 global
-    // branch target is still pending (batch 2 — repositories).
-    global: { branches: 62, functions: 61, lines: 76, statements: 75 },
+    // Coverage Wave D batch 2 (2026-06-24) MET the ≥65 global branch
+    // target: gate actual rose to branches 65.94 / fn 64.53 / lines
+    // 79.12 / stmts 77.70 (batch 2 added mock-db unit tests for 9
+    // repositories). jest.thresholds.json global is 65/64/78/77; the
+    // hard floor below is bumped to the batch-1 enforced level so the
+    // ≥65 milestone can't silently slip.
+    global: { branches: 63, functions: 62, lines: 77, statements: 76 },
     // `usecases/` — quality roadmap + stage-3a/3b/3c/3d waves.
     // Post-Roadmap-3 floor was 42 (branches); measured branch
     // coverage had climbed to ~58 without the floor following.
