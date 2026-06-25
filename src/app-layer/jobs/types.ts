@@ -509,6 +509,16 @@ export interface ReportDeliveryPayload {
     requestId?: string;
 }
 
+/** Business-KPI — 5-min cross-tenant DAU/MAU aggregation → gauge snapshot. */
+export interface DauMauAggregatorPayload {
+    requestId?: string;
+}
+
+/** Business-KPI — daily cross-tenant onboarding-abandonment sweep. */
+export interface OnboardingAbandonmentPayload {
+    requestId?: string;
+}
+
 export interface JobPayloadMap {
     'health-check': HealthCheckPayload;
     'automation-runner': AutomationRunnerPayload;
@@ -544,6 +554,8 @@ export interface JobPayloadMap {
     'risk-appetite-monitor': RiskAppetiteMonitorPayload;
     'risk-snapshot': RiskSnapshotPayload;
     'report-delivery': ReportDeliveryPayload;
+    'dau-mau-aggregator': DauMauAggregatorPayload;
+    'onboarding-abandonment-sweep': OnboardingAbandonmentPayload;
 }
 
 /** Union of all valid job names */
@@ -676,6 +688,21 @@ export const JOB_DEFAULTS: Record<JobName, {
         backoff: { type: 'fixed', delay: 0 },
         removeOnComplete: 50,
         removeOnFail: 200,
+    },
+    'dau-mau-aggregator': {
+        // Idempotent snapshot refresh — a failed run is harmless; the
+        // next 5-min run recomputes from scratch. No retry needed.
+        attempts: 1,
+        backoff: { type: 'fixed', delay: 0 },
+        removeOnComplete: 20,
+        removeOnFail: 50,
+    },
+    'onboarding-abandonment-sweep': {
+        // Fire-once window means a retry could double-count; keep at 1.
+        attempts: 1,
+        backoff: { type: 'fixed', delay: 0 },
+        removeOnComplete: 20,
+        removeOnFail: 50,
     },
     'exception-expiry-monitor': {
         attempts: 2,

@@ -5,6 +5,8 @@ import { logEvent } from '../../events/audit';
 import { runInTenantContext } from '@/lib/db-context';
 import { notFound, badRequest } from '@/lib/errors/types';
 import { prisma } from '@/lib/prisma';
+import { getEffectivePlan } from '@/lib/billing/entitlements';
+import { recordFrameworkInstalled } from '@/lib/observability/business-metrics';
 
 // в”Ђв”Ђв”Ђ Pack Install (tenant-scoped, idempotent) в”Ђв”Ђв”Ђ
 
@@ -75,7 +77,7 @@ export async function installPack(ctx: RequestContext, packKey: string) {
     // requirement-link upserts), which is too much work for the default
     // 5 s Prisma interactive-transaction timeout. Bump it to 60 s so the
     // entire pack install runs atomically.
-    return runInTenantContext(ctx, async (tdb) => {
+    const result = await runInTenantContext(ctx, async (tdb) => {
         let controlsCreated = 0;
         let tasksCreated = 0;
         let mappingsCreated = 0;
@@ -158,6 +160,10 @@ export async function installPack(ctx: RequestContext, packKey: string) {
             mappingsCreated,
         };
     }, { timeout: 60_000, maxWait: 10_000 });
+
+    const plan = await getEffectivePlan(ctx);
+    recordFrameworkInstalled({ frameworkKey: result.framework, plan });
+    return result;
 }
 
 // в”Ђв”Ђв”Ђ Coverage Computation в”Ђв”Ђв”Ђ

@@ -902,3 +902,26 @@ executorRegistry.register('risk-snapshot', async (payload) => {
     });
 });
 
+// Business-KPI — 5-min cross-tenant DAU/MAU aggregation → gauge snapshot.
+executorRegistry.register('dau-mau-aggregator', async () => {
+    const startedAt = new Date().toISOString();
+    const startMs = performance.now();
+    const { runDauMauAggregation } = await import('./dau-mau-aggregator');
+    const r = await runDauMauAggregation();
+    return makeResult('dau-mau-aggregator', startedAt, startMs, r.dailyTotal, r.monthlyTotal, 0, {
+        daily: r.daily,
+        monthly: r.monthly,
+    });
+});
+
+// Business-KPI — daily cross-tenant onboarding-abandonment sweep.
+executorRegistry.register('onboarding-abandonment-sweep', async () => {
+    const startedAt = new Date().toISOString();
+    const startMs = performance.now();
+    const { runOnboardingAbandonmentSweep } = await import('./onboarding-abandonment-sweep');
+    const r = await runOnboardingAbandonmentSweep();
+    return makeResult('onboarding-abandonment-sweep', startedAt, startMs, r.scanned, r.abandoned, 0, {
+        byStep: r.byStep,
+    });
+});
+

@@ -21,6 +21,11 @@ jest.mock('@/lib/prisma', () => ({
             findFirst: (...a: unknown[]) => findFirst(...a),
             update: (...a: unknown[]) => update(...a),
         },
+        // recordTenantDeleted resolves plan via a BillingAccount lookup
+        // (SAAS mode only). Mock it so the call is safe under any mode.
+        billingAccount: {
+            findUnique: jest.fn().mockResolvedValue(null),
+        },
     },
 }));
 // org-tenants.ts pulls these in at module load.

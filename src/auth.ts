@@ -496,6 +496,15 @@ export const authOptions: NextAuthOptions = {
                     inviteTokens.orgToken,
                 );
             }
+            // TODO(business-metrics): recordUserSignup({ signupSource }) on the
+            // genuinely-NEW OAuth user path. Deferred — the PrismaAdapter creates
+            // the User row before this callback runs, so new-vs-returning is not
+            // distinguishable here, and the clean `events.createUser` signal does
+            // not carry `account.provider` (needed for the oauth_google/
+            // oauth_microsoft/saml signupSource label). Emitting unconditionally
+            // would wrongly count every sign-in. Needs a dedicated first-login
+            // detector (e.g. a User.firstSignedInAt sentinel set in createUser +
+            // read here) — a schema/behaviour change out of scope for this PR.
             return true;
         },
 

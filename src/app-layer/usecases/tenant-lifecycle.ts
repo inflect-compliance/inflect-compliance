@@ -24,6 +24,8 @@ import { hashForLookup } from '@/lib/security/encryption';
 import { appendAuditEntry } from '@/lib/audit/audit-writer';
 import { logger } from '@/lib/observability/logger';
 import { ValidationError, NotFoundError, ConflictError } from '@/lib/errors/types';
+import { getBillingMode } from '@/lib/billing/entitlements';
+import { recordTenantCreated } from '@/lib/observability/business-metrics';
 import type { PrismaClient } from '@prisma/client';
 
 // ─── createTenantWithOwner ──────────────────────────────────────────
@@ -155,6 +157,12 @@ export async function createTenantWithOwner(
         tenantId: tenantId!,
         slug: tenantSlug!,
         ownerUserId: user.id,
+    });
+
+    // New tenant defaults to FREE in SaaS, ENTERPRISE self-hosted.
+    recordTenantCreated({
+        plan: getBillingMode() === 'SAAS' ? 'FREE' : 'ENTERPRISE',
+        signupSource: 'platform_admin',
     });
 
     return {

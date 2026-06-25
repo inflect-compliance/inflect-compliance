@@ -12,6 +12,10 @@ import {
 } from '../events/onboarding.events';
 import { runStepAction, storeActionResult } from './onboarding-automation';
 import { logger } from '@/lib/observability/logger';
+import {
+    recordOnboardingStepCompleted,
+    recordOnboardingCompleted,
+} from '@/lib/observability/business-metrics';
 
 // ─── Step keys & ordering ───
 
@@ -120,6 +124,9 @@ export async function completeOnboardingStep(ctx: RequestContext, step: Onboardi
         const nextStep = getNextStep(step);
         const stepRecord = await OnboardingRepository.completeStep(db, ctx, step, nextStep);
         await emitOnboardingStepCompleted(db, ctx, step);
+        // Genuine-completion path only (the idempotent early-return above
+        // never reaches here, so a repeat call does not double-count).
+        recordOnboardingStepCompleted({ step });
 
         // If step was previously skipped, remove from skipped list
 
@@ -196,7 +203,7 @@ export async function skipOnboardingStep(ctx: RequestContext, step: OnboardingSt
  */
 export async function finishOnboarding(ctx: RequestContext) {
     assertCanManageOnboarding(ctx);
-    return runInTenantContext(ctx, async (db) => {
+    const { record, startedAt } = await runInTenantContext(ctx, async (db) => {
         const existing = await OnboardingRepository.getByTenantId(db, ctx);
         if (!existing || existing.status !== 'IN_PROGRESS') {
             throw badRequest('Onboarding must be in progress to finish.');
@@ -205,8 +212,12 @@ export async function finishOnboarding(ctx: RequestContext) {
         const record = await OnboardingRepository.finish(db, ctx);
         await emitOnboardingFinished(db, ctx);
         logger.info('onboarding finished', { component: 'onboarding' });
-        return record;
+        return { record, startedAt: existing.startedAt };
     });
+    recordOnboardingCompleted({
+        timeToCompleteMs: startedAt ? Date.now() - new Date(startedAt).getTime() : 0,
+    });
+    return record;
 }
 
 // ─── Restart Onboarding ───

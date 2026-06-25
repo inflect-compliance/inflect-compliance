@@ -9,6 +9,7 @@ import { logEvent } from '../../events/audit';
 import { runInTenantContext, runInGlobalContext } from '@/lib/db-context';
 import { notFound, badRequest, forbidden } from '@/lib/errors/types';
 import { hashForLookup } from '@/lib/security/encryption';
+import { recordAuditPackShared } from '@/lib/observability/business-metrics';
 import crypto from 'crypto';
 
 // РІвЂќР‚РІвЂќР‚РІвЂќР‚ Token Hashing РІвЂќР‚РІвЂќР‚РІвЂќР‚
@@ -46,6 +47,7 @@ export async function generateShareLink(ctx: RequestContext, packId: string, exp
         await logEvent(tdb, ctx, { action: 'AUDIT_PACK_SHARED', entityType: 'AuditPack', entityId: packId, details: JSON.stringify({ expiresAt }), detailsJson: { category: 'access', operation: 'permission_changed', detail: `Pack shared${expiresAt ? ` until ${expiresAt}` : ' (no expiry)'}` } });
     });
 
+    recordAuditPackShared();
     return { token, expiresAt: expiresAt || null };
 }
 

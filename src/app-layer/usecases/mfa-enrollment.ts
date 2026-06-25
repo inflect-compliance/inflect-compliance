@@ -20,6 +20,7 @@ import {
 } from '@/lib/security/totp-crypto';
 import { badRequest, forbidden, internal } from '@/lib/errors/types';
 import { env } from '@/env';
+import { recordMfaEnrolled } from '@/lib/observability/business-metrics';
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -139,6 +140,7 @@ export async function verifyMfaEnrollment(
         },
     });
 
+    recordMfaEnrolled({ method: 'totp' });
     return { success: true, enrollmentId: enrollment.id };
 }
 

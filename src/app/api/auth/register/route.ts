@@ -22,6 +22,7 @@ import { env } from '@/env';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { logger } from '@/lib/observability/logger';
 import { jsonResponse } from '@/lib/api-response';
+import { recordTenantCreated, recordUserSignup } from '@/lib/observability/business-metrics';
 
 export const POST = withApiErrorHandling(withValidatedBody(AuthActionSchema, async (_req, _ctx, body) => {
     try {
@@ -114,6 +115,11 @@ async function handleRegister(body: { email: string; password: string; name: str
             role: 'ADMIN',
         },
     });
+
+    // Business KPIs — credentials self-service signup creates BOTH a
+    // tenant (always FREE on this path) and its first user.
+    recordTenantCreated({ plan: 'FREE', signupSource: 'credentials' });
+    recordUserSignup({ signupSource: 'credentials' });
 
     // Fire the verification email. Non-blocking in intent — the issue
     // path writes the token row in a transaction and then attempts to

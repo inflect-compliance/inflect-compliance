@@ -74,8 +74,8 @@ describe('Infrastructure Regression Guards', () => {
             }
         });
 
-        test('exactly 20 scheduled jobs exist', () => {
-            expect(SCHEDULED_JOBS).toHaveLength(20);
+        test('exactly 22 scheduled jobs exist', () => {
+            expect(SCHEDULED_JOBS).toHaveLength(22);
         });
 
         test('scheduled job names match expected set', () => {
@@ -96,10 +96,16 @@ describe('Infrastructure Regression Guards', () => {
                 'control-test-scheduler',
                 'daily-evidence-expiry',
                 'data-lifecycle',
+                // Business-KPI — every-5-min cross-tenant DAU/MAU
+                // aggregation refreshing the active-user gauge snapshot.
+                'dau-mau-aggregator',
                 // Epic G-5 — daily 30/14/7-day expiry reminder for
                 // control exceptions.
                 'exception-expiry-monitor',
                 'notification-dispatch',
+                // Business-KPI — daily sweep emitting business.onboarding.abandoned
+                // for tenants idle ≥7 days on an onboarding step.
+                'onboarding-abandonment-sweep',
                 'policy-review-reminder',
                 // RQ-10 — daily cross-tenant scheduled-report delivery.
                 'report-delivery',
