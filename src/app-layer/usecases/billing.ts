@@ -13,7 +13,7 @@
  *
  * @module app-layer/usecases/billing
  */
-import { prisma } from '@/lib/prisma';
+import { runInTenantContext } from '@/lib/db/rls-middleware';
 import type { RequestContext } from '@/app-layer/types';
 import { logEvent } from '@/app-layer/events/audit';
 import { getBillingMode, type Plan } from '@/lib/billing/entitlements';
@@ -58,14 +58,18 @@ export async function changeTenantPlan(
             throw new ValidationError(`Unknown billing plan: ${newPlan}`);
         }
 
-        const fromPlan = await prisma.$transaction(async (tx) => {
-            const existing = await tx.billingAccount.findUnique({
+        // BillingAccount is global (not RLS-scoped) but we go through
+        // runInTenantContext for uniformity with the rest of the data
+        // layer (mirrors getEffectivePlan). Read-modify-write is
+        // sequential — acceptable for a rare operator action.
+        const { fromPlan, direction } = await runInTenantContext(ctx, async (db) => {
+            const existing = await db.billingAccount.findUnique({
                 where: { tenantId: ctx.tenantId },
                 select: { plan: true },
             });
             const current = (existing?.plan ?? 'FREE') as Plan;
 
-            await tx.billingAccount.upsert({
+            await db.billingAccount.upsert({
                 where: { tenantId: ctx.tenantId },
                 update: { plan: newPlan },
                 create: {
@@ -79,30 +83,30 @@ export async function changeTenantPlan(
                 },
             });
 
-            return current;
-        });
+            const dir: ChangeTenantPlanResult['direction'] =
+                PLAN_RANK[newPlan] > PLAN_RANK[current]
+                    ? 'upgraded'
+                    : PLAN_RANK[newPlan] < PLAN_RANK[current]
+                      ? 'downgraded'
+                      : 'unchanged';
 
-        const direction: ChangeTenantPlanResult['direction'] =
-            PLAN_RANK[newPlan] > PLAN_RANK[fromPlan]
-                ? 'upgraded'
-                : PLAN_RANK[newPlan] < PLAN_RANK[fromPlan]
-                  ? 'downgraded'
-                  : 'unchanged';
+            await logEvent(db, ctx, {
+                action: 'TENANT_PLAN_CHANGED',
+                entityType: 'BillingAccount',
+                entityId: ctx.tenantId,
+                details: `Plan ${dir}: ${current} → ${newPlan}`,
+                detailsJson: {
+                    category: 'status_change',
+                    entityName: 'BillingAccount',
+                    operation: 'plan_changed',
+                    before: { plan: current },
+                    after: { plan: newPlan },
+                    direction: dir,
+                    summary: `Plan ${dir}: ${current} → ${newPlan}`,
+                },
+            });
 
-        await logEvent(prisma, ctx, {
-            action: 'TENANT_PLAN_CHANGED',
-            entityType: 'BillingAccount',
-            entityId: ctx.tenantId,
-            details: `Plan ${direction}: ${fromPlan} → ${newPlan}`,
-            detailsJson: {
-                category: 'status_change',
-                entityName: 'BillingAccount',
-                operation: 'plan_changed',
-                before: { plan: fromPlan },
-                after: { plan: newPlan },
-                direction,
-                summary: `Plan ${direction}: ${fromPlan} → ${newPlan}`,
-            },
+            return { fromPlan: current, direction: dir };
         });
 
         // Business KPI — only the directional changes (an idempotent

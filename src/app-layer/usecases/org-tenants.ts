@@ -188,11 +188,16 @@ export async function deleteTenantUnderOrg(
         data: { deletedAt: new Date() },
     });
 
-    const acct = await prisma.billingAccount.findUnique({
-        where: { tenantId: tenant.id },
-        select: { plan: true },
-    });
-    const plan: Plan = getBillingMode() === 'SELFHOSTED' ? 'ENTERPRISE' : ((acct?.plan ?? 'FREE') as Plan);
+    // Resolve plan for the KPI label. Self-hosted is always ENTERPRISE —
+    // skip the BillingAccount lookup entirely in that mode.
+    let plan: Plan = 'ENTERPRISE';
+    if (getBillingMode() === 'SAAS') {
+        const acct = await prisma.billingAccount.findUnique({
+            where: { tenantId: tenant.id },
+            select: { plan: true },
+        });
+        plan = (acct?.plan ?? 'FREE') as Plan;
+    }
     recordTenantDeleted({ plan, reason: 'org_admin_delete' });
 
     logger.info('org-tenants.deleted', {
