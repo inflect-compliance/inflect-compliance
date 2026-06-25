@@ -9,6 +9,13 @@
 
 ---
 
+> **Regional failover:** recovery today is in-region (restore from
+> backup — SLO 6/7). The cross-region warm-standby design + the
+> promote-and-cut-over sequence live in
+> [`multi-region.md`](multi-region.md); the step-by-step **failover
+> runbook** is filled into this playbook tree during that effort's
+> Phase 3.
+
 ## Quick reference
 
 | You see... | Page severity | First-look dashboard | Playbook |

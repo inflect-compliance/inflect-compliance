@@ -338,7 +338,7 @@ Tighter (e.g. 5 minutes) requires synchronous cross-region replication — meani
 
 ### Risk
 
-The 1-hour RPO assumes the RDS instance + the regional log archive are both reachable. A regional AWS outage that takes both down is recoverable only from the daily snapshot (RPO degrades to <24h). Cross-region read replica deployment is the mitigation; not in scope for OI-3.
+The 1-hour RPO assumes the RDS instance + the regional log archive are both reachable. A regional AWS outage that takes both down is recoverable only from the daily snapshot (RPO degrades to <24h). Cross-region replication is the mitigation; not in scope for OI-3 — the target architecture (Aurora Global warm-standby, RPO ≤5min / RTO ≤30min for the Enterprise tier) is designed in [`docs/multi-region.md`](multi-region.md).
 
 ---
 
