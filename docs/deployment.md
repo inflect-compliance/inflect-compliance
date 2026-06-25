@@ -961,3 +961,12 @@ kubectl get pdb -n inflect-production
 see it enforced, `kubectl drain <node>` a node hosting an app pod — the
 drain evicts at most one app pod at a time and waits for a replacement
 to become Ready before evicting the next, instead of taking them all.
+
+## Sizing a production cluster
+
+For tenant-count → RPS → CPU/memory/replica guidance (four tiers: small
+/ medium / large / enterprise), see the **[Production Sizing Playbook](sizing.md)**.
+The chart's shipped defaults (`autoscaling: 2→10`, `worker.replicaCount: 2`)
+are the *medium* tier; the playbook gives copy-paste `values-production.yaml`
+deltas for the others, plus the telemetry signals that say you've
+outgrown a tier.
