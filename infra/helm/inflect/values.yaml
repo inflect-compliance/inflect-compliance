@@ -206,6 +206,22 @@ autoscaling:
   #         value: 100
   #         periodSeconds: 30
 
+# ── PodDisruptionBudget ─────────────────────────────────────────────
+# Protect against VOLUNTARY disruptions (node drain, cluster autoscaler
+# scale-in, k8s upgrades) — the HPA reacts to load, not to disruption
+# velocity, so without a PDB a node drain can evict every pod at once.
+# Set maxUnavailable: 1 unless you have a specific reason to widen it.
+# Enable in production; leave disabled in staging where single-pod
+# restarts are fine (a PDB with maxUnavailable: 1 on a single-replica
+# Deployment would BLOCK every drain).
+pdb:
+  app:
+    enabled: false
+    maxUnavailable: 1
+  worker:
+    enabled: false
+    maxUnavailable: 1
+
 # ── PgBouncer sidecar (app pod only) ────────────────────────────────
 # Per OI-2 spec — sidecar pooling so the app doesn't directly hold
 # Postgres connections. Listens on 127.0.0.1:5432 (overrides the
