@@ -14,6 +14,11 @@ environments, secrets, costs, and the day-1 + day-2 runbooks.
 
 ## Architecture overview
 
+> **Single-region today** (`var.aws_region = us-east-1`). The
+> cross-region warm-standby target architecture (Aurora Global, Redis
+> Global Datastore, S3 CRR, KMS Multi-Region Key) + the 12-month
+> migration path is designed in [`multi-region.md`](multi-region.md).
+
 ```
                  ┌──────────────────────────────────────────────────┐
                  │                  AWS Account                     │
