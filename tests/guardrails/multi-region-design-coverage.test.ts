@@ -19,7 +19,6 @@ describe('multi-region design doc coverage', () => {
     });
 
     const doc = fs.existsSync(DOC) ? fs.readFileSync(DOC, 'utf-8') : '';
-    const lower = doc.toLowerCase();
 
     it('covers all four migration phases', () => {
         for (const p of ['Phase 1', 'Phase 2', 'Phase 3', 'Phase 4']) {
