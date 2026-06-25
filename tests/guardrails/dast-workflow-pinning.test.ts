@@ -50,6 +50,14 @@ describe('DAST workflow pinning', () => {
         expect(yml).toMatch(/ZAP_AUTH_HEADER_VALUE=next-auth\.session-token=/);
     });
 
+    it('scans the full role matrix (owner/editor/reader/auditor)', () => {
+        // Multi-role passive coverage: each seeded role's reachable surface
+        // is scanned. A silent drop back to a single role loses tiers.
+        for (const role of ['owner', 'editor', 'reader', 'auditor']) {
+            expect(yml).toMatch(new RegExp(`role:\\s*${role}\\b`));
+        }
+    });
+
     it('rules.tsv exists and every entry is the ZAP-required 3 columns with a reason', () => {
         expect(fs.existsSync(RULES_TSV)).toBe(true);
         const lines = fs.readFileSync(RULES_TSV, 'utf-8').split('\n');
