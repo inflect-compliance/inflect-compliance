@@ -30,6 +30,8 @@ import { provisionAllOrgAdminsToTenant } from './org-provisioning';
 import { ConflictError, notFound } from '@/lib/errors/types';
 import type { OrgContext } from '@/app-layer/types';
 import { logger } from '@/lib/observability/logger';
+import { getBillingMode, type Plan } from '@/lib/billing/entitlements';
+import { recordTenantDeleted } from '@/lib/observability/business-metrics';
 
 export interface CreateTenantUnderOrgInput {
     name: string;
@@ -185,6 +187,13 @@ export async function deleteTenantUnderOrg(
         where: { id: tenant.id },
         data: { deletedAt: new Date() },
     });
+
+    const acct = await prisma.billingAccount.findUnique({
+        where: { tenantId: tenant.id },
+        select: { plan: true },
+    });
+    const plan: Plan = getBillingMode() === 'SELFHOSTED' ? 'ENTERPRISE' : ((acct?.plan ?? 'FREE') as Plan);
+    recordTenantDeleted({ plan, reason: 'org_admin_delete' });
 
     logger.info('org-tenants.deleted', {
         component: 'org-tenants',

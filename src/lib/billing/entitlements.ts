@@ -53,6 +53,7 @@
 import type { RequestContext } from '@/app-layer/types';
 import { runInTenantContext } from '@/lib/db-context';
 import { forbidden } from '@/lib/errors/types';
+import { recordPlanLimitHit } from '@/lib/observability/business-metrics';
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -195,6 +196,8 @@ export async function assertWithinLimit(
 
     const current = await getCurrentCount(ctx, resource);
     if (current >= limit) {
+        // Business KPI — fires only when the cap is actually hit.
+        recordPlanLimitHit({ resource: resource as 'control' });
         // Surface as `forbidden` so `withApiErrorHandling` returns
         // 403. The message embeds plan + resource + limit so the
         // billing UI can parse it into an "Upgrade" CTA without

@@ -10,6 +10,7 @@ import { runInTenantContext, type PrismaTx } from '@/lib/db-context';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { cachedListRead, bumpEntityCacheVersion } from '@/lib/cache/list-cache';
 import { createAssignmentNotification } from '../notifications/assignment';
+import { recordRiskCreated } from '@/lib/observability/business-metrics';
 import { logger } from '@/lib/observability';
 import type { TreatmentDecision, RiskStatus, TaskLinkEntityType, FairConfidence } from '@prisma/client';
 // Value import — `Prisma.DbNull` is a runtime sentinel (RQ3-2 clears
@@ -220,6 +221,7 @@ export async function createRisk(ctx: RequestContext, data: {
         return risk;
     });
     await bumpEntityCacheVersion(ctx, 'risk');
+    recordRiskCreated({ source: 'manual' });
     return created;
 }
 

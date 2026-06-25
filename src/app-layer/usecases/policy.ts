@@ -10,6 +10,7 @@ import { notFound, badRequest, forbidden, conflict } from '@/lib/errors/types';
 import { runInTenantContext } from '@/lib/db-context';
 import { sanitizePolicyContent } from '@/lib/security/sanitize';
 import { logger } from '@/lib/observability/logger';
+import { recordPolicyPublished } from '@/lib/observability/business-metrics';
 
 // ─── Slug helper ───
 
@@ -584,6 +585,7 @@ export async function publishPolicy(
         });
     }
 
+    recordPolicyPublished();
     return published;
 }
 

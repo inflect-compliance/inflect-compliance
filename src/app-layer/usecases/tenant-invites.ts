@@ -28,6 +28,7 @@ import { runInTenantContext } from '@/lib/db-context';
 import { notFound, badRequest, forbidden, gone, internal } from '@/lib/errors/types';
 import { prisma } from '@/lib/prisma';
 import { hashForLookup } from '@/lib/security/encryption';
+import { recordInviteSent, recordInviteRedeemed } from '@/lib/observability/business-metrics';
 
 // ─── Constants ──────────────────────────────────────────────────────
 
@@ -143,6 +144,7 @@ export async function createInviteToken(
         return inv;
     });
 
+    recordInviteSent();
     return { invite, url: `/invite/${invite.token}` };
 }
 
@@ -343,6 +345,7 @@ export async function redeemInvite(input: {
             email: true,
             role: true,
             invitedById: true,
+            createdAt: true,
         },
     });
     if (!invite) throw internal('Invariant: invite disappeared mid-redemption');
@@ -427,6 +430,10 @@ export async function redeemInvite(input: {
             after: { status: 'ACTIVE', role: txResult.role },
             summary: `Accepted invite as ${txResult.role}`,
         },
+    });
+
+    recordInviteRedeemed({
+        timeToAcceptMs: Date.now() - new Date(invite.createdAt).getTime(),
     });
 
     return {

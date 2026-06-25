@@ -26,6 +26,7 @@ import { logEvent } from '../events/audit';
 import { notFound, badRequest } from '@/lib/errors/types';
 import { runInTenantContext } from '@/lib/db-context';
 import { sanitizePlainText } from '@/lib/security/sanitize';
+import { recordAutomationRuleCreated } from '@/lib/observability/business-metrics';
 
 /**
  * Pure cycle check (Epic 7): walking the chain from `nextRuleId` via
@@ -82,7 +83,7 @@ export async function createAutomationRule(
     input: CreateAutomationRuleInput,
 ) {
     assertCanManageAutomation(ctx);
-    return runInTenantContext(ctx, async (db) => {
+    const created = await runInTenantContext(ctx, async (db) => {
         const rule = await AutomationRuleRepository.create(db, ctx, {
             ...input,
             name: sanitizePlainText(input.name),
@@ -101,6 +102,8 @@ export async function createAutomationRule(
         });
         return rule;
     });
+    recordAutomationRuleCreated();
+    return created;
 }
 
 export async function updateAutomationRule(

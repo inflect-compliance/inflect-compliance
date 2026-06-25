@@ -9,6 +9,7 @@ import {
 import { logEvent } from '../../events/audit';
 import { runInTenantContext } from '@/lib/db-context';
 import { notFound, badRequest } from '@/lib/errors/types';
+import { recordAuditCycleStarted } from '@/lib/observability/business-metrics';
 
 // РІвЂќР‚РІвЂќР‚РІвЂќР‚ Audit Cycles РІвЂќР‚РІвЂќР‚РІвЂќР‚
 
@@ -21,8 +22,8 @@ export async function createAuditCycle(
         throw badRequest('frameworkKey must be ISO27001 or NIS2');
     }
 
-    return runInTenantContext(ctx, async (tdb) => {
-        const cycle = await tdb.auditCycle.create({
+    const cycle = await runInTenantContext(ctx, async (tdb) => {
+        const created = await tdb.auditCycle.create({
             data: {
                 tenantId: ctx.tenantId,
                 frameworkKey: data.frameworkKey,
@@ -33,9 +34,11 @@ export async function createAuditCycle(
                 createdByUserId: ctx.userId,
             },
         });
-        await logEvent(tdb, ctx, { action: 'AUDIT_CYCLE_CREATED', entityType: 'AuditCycle', entityId: cycle.id, details: JSON.stringify({ frameworkKey: data.frameworkKey, name: data.name }), detailsJson: { category: 'entity_lifecycle', entityName: 'AuditCycle', operation: 'created', after: { frameworkKey: data.frameworkKey, name: data.name }, summary: `Audit cycle created: ${data.name}` } });
-        return cycle;
+        await logEvent(tdb, ctx, { action: 'AUDIT_CYCLE_CREATED', entityType: 'AuditCycle', entityId: created.id, details: JSON.stringify({ frameworkKey: data.frameworkKey, name: data.name }), detailsJson: { category: 'entity_lifecycle', entityName: 'AuditCycle', operation: 'created', after: { frameworkKey: data.frameworkKey, name: data.name }, summary: `Audit cycle created: ${data.name}` } });
+        return created;
     });
+    recordAuditCycleStarted();
+    return cycle;
 }
 
 export async function listAuditCycles(ctx: RequestContext) {

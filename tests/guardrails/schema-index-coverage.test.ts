@@ -350,6 +350,19 @@ const LIST_QUERY_INDEXES: readonly CompositeIndex[] = [
 // curated composite index is needed."
 
 const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
+    // Business-KPI — dau-mau-aggregator builds a tenantId→plan map with a
+    // full BillingAccount scan (cross-tenant, no filter). One row per
+    // paying tenant (tenantId @unique) → table bounded by tenant count;
+    // a 5-min full scan of a small table is cheap, not a per-tenant list.
+    BillingAccount:
+        'Business-KPI dau-mau-aggregator scans all BillingAccount rows to build the tenantId→plan map; tenantId @unique means one row per paying tenant (bounded by tenant count) — cheap full scan, no per-tenant list query.',
+    // Business-KPI — onboarding-abandonment-sweep findMany filters by
+    // updatedAt window + completedAt/startedAt (cross-tenant, no tenantId
+    // filter). TenantOnboarding has tenantId @unique → exactly one row per
+    // tenant, so the table is bounded by tenant count; a daily full scan
+    // over a narrow window is cheap and is not a per-tenant list query.
+    TenantOnboarding:
+        'Business-KPI onboarding-abandonment-sweep scans by updatedAt window across all tenants; tenantId @unique means one row per tenant (table bounded by tenant count) — full scan is cheap, no per-tenant list query.',
     // EI-3 — SCIM Groups listed/looked-up by tenantId (+ unique externalId);
     // covered by @@index([tenantId]) + @@unique([tenantId, externalId]); bounded take:200.
     ScimGroup:

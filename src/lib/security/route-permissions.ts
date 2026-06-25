@@ -162,6 +162,16 @@ export const ROUTE_PERMISSIONS: readonly RoutePermissionRule[] = [
             'Operator-driven fleet operation; ADMIN tier suffices.',
     },
 
+    // ── Admin plan change (business-KPI plan-change boundary) ───────
+    {
+        path: new RegExp(`^${T}\\/admin\\/billing\\/plan(\\/.*)?$`),
+        permission: 'admin.tenant_lifecycle',
+        note:
+            'Mutates BillingAccount.plan — direct billing + entitlement ' +
+            'consequences. No Stripe webhook in this deployment, so this ' +
+            'is the only first-party plan-change path; OWNER-only.',
+    },
+
     // ── Per-tenant DEK rotation (Epic F.2 follow-up) ────────────────
     {
         path: new RegExp(`^${T}\\/admin\\/tenant-dek-rotation(\\/.*)?$`),

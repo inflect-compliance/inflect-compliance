@@ -15,6 +15,7 @@ import { emitAutomationEvent } from '../../automation';
 import { assertWithinLimit } from '@/lib/billing/entitlements';
 import { createAssignmentNotification } from '../../notifications/assignment';
 import { logger } from '@/lib/observability/logger';
+import { recordControlCreated } from '@/lib/observability/business-metrics';
 
 // ─── Create / Update ───
 
@@ -89,6 +90,7 @@ export async function createControl(ctx: RequestContext, data: {
         return control;
     });
     await bumpEntityCacheVersion(ctx, 'control');
+    recordControlCreated({ source: 'manual' });
     return created;
 }
 

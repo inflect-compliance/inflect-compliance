@@ -43,6 +43,7 @@ full justification.
 | 3 | `03-prometheus-grafana.md` | How are Prometheus and Grafana deployed — scrape strategy, recording rules, alerts, retention, dashboards, and rollout? |
 | 4 | `04-production-hardening.md` | How is the stack secured, isolated per environment, backed up, upgraded, and monitored — and what do operators do when a component fails? |
 | 5 | `05-job-tracing.md` | How does a distributed trace follow an async BullMQ job — so a slow HTTP request and the worker execution it triggers show as one trace? |
+| 6 | `06-business-kpis.md` | What product / business KPIs (tenant growth, onboarding funnel, feature adoption, plan mix) are emitted, how is cardinality bounded, and how is DAU/MAU defined? |
 
 ## How they relate
 

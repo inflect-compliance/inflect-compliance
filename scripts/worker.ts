@@ -184,6 +184,12 @@ let worker: Worker | undefined;
 async function bootstrap(): Promise<void> {
     await initTelemetry();
 
+    // Register the DAU/MAU observable gauges (business KPIs). The
+    // callbacks read the cached snapshot the `dau-mau-aggregator` job
+    // refreshes every 5 min — cheap at scrape time. Idempotent.
+    const { startActiveUserGauges } = await import('../src/lib/observability/business-metrics');
+    startActiveUserGauges();
+
     connection = createWorkerConnection();
 
     worker = new Worker(

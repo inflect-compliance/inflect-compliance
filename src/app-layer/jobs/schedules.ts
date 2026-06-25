@@ -92,6 +92,18 @@ export const SCHEDULED_JOBS: ScheduleDefinition[] = [
         defaultPayload: {},
     },
     {
+        name: 'dau-mau-aggregator',
+        pattern: '*/5 * * * *',   // every 5 minutes
+        description: 'Refresh the DAU/MAU active-user snapshot the business.tenant.active gauges report',
+        defaultPayload: {},
+    },
+    {
+        name: 'onboarding-abandonment-sweep',
+        pattern: '0 5 * * *',     // daily at 05:00 UTC
+        description: 'Emit business.onboarding.abandoned for tenants idle ≥7 days on an onboarding step',
+        defaultPayload: {},
+    },
+    {
         name: 'report-delivery',
         pattern: '0 6 * * *',     // daily at 06:00 UTC
         description: 'Generate + deliver due scheduled risk reports (RQ-10)',
