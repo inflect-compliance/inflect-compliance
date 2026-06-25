@@ -23,6 +23,14 @@ if (!reportPath) throw new Error('usage: zap-json-to-sarif.mjs <report_json.json
 const report = JSON.parse(readFileSync(reportPath, 'utf-8'));
 const sites = Array.isArray(report.site) ? report.site : [];
 
+// GitHub code scanning maps every result location to a file in the checked-out
+// repo and REJECTS absolute `http(s):` URIs ("SARIF URI scheme http did not
+// match the checkout URI scheme file") — it then drops all results and flags
+// the tool as "reporting errors". DAST findings are URL-scoped, not source-
+// scoped, so we anchor every result at a real repo-relative sentinel file and
+// carry the actual request URL in the message text + result properties.
+const SARIF_SENTINEL = '.zap/dast-findings.md';
+
 const riskToLevel = (code) => {
     switch (String(code)) {
         case '3': return 'error';   // High
@@ -67,15 +75,24 @@ for (const site of sites) {
             results.push({
                 ruleId,
                 level: riskToLevel(alert.riskcode),
-                message: { text: msgParts.filter(Boolean).join(' — ') || ruleId },
+                // Prefix the request URL so it's visible in the alert title.
+                message: { text: `${uri} — ${msgParts.filter(Boolean).join(' — ') || ruleId}` },
                 locations: [{
                     physicalLocation: {
-                        // SARIF needs a URI; ZAP findings are URL-scoped, so
-                        // the request URL is the "artifact location".
-                        artifactLocation: { uri },
+                        // Anchor at a real repo file (see SARIF_SENTINEL note
+                        // above) — code scanning rejects the http: request URL.
+                        artifactLocation: { uri: SARIF_SENTINEL },
                         region: { startLine: 1 },
                     },
                 }],
+                // The real DAST location lives here (and in the message).
+                properties: {
+                    requestUrl: uri,
+                    ...(inst.method ? { method: inst.method } : {}),
+                    ...(inst.param ? { param: inst.param } : {}),
+                },
+                // Group/track alerts by rule+URL rather than by sentinel line.
+                partialFingerprints: { dastLocation: `${ruleId}:${uri}` },
             });
         }
     }
