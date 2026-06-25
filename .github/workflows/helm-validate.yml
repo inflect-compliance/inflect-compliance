@@ -86,8 +86,10 @@ jobs:
         with:
           version: v3.16.4
 
-      - name: helm dependency build (vendor pinned subcharts)
-        run: helm dependency build "$CHART"
+      - name: helm dependency update (vendor pinned subcharts)
+        # `update` resolves the URL-based repos in Chart.yaml directly;
+        # `build` would require `helm repo add` for each first.
+        run: helm dependency update "$CHART"
 
       - name: helm lint (production + staging)
         run: |
