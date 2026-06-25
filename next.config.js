@@ -105,6 +105,29 @@ const defaultOptions = {
                     },
                 ],
             },
+            {
+                // /robots.txt and /sitemap.xml are excluded from the
+                // middleware matcher (where the per-request nonce CSP is
+                // set), so without this they ship no CSP — ZAP baseline
+                // alert 10038. They serve no scripts/styles, so a static
+                // lock-everything-down policy is correct and safe.
+                source: '/robots.txt',
+                headers: [
+                    {
+                        key: 'Content-Security-Policy',
+                        value: "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
+                    },
+                ],
+            },
+            {
+                source: '/sitemap.xml',
+                headers: [
+                    {
+                        key: 'Content-Security-Policy',
+                        value: "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
+                    },
+                ],
+            },
         ];
     },
 };

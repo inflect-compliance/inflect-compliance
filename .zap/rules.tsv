@@ -8,3 +8,7 @@
 10202	IGNORE	Absence of Anti-CSRF Tokens: NextAuth/Next 16 use a double-submit cookie CSRF token ZAP cannot observe as a form field; CSRF is covered (src/auth.ts).
 10049	IGNORE	Storable and Cacheable Content: /api/health (+ livez/readyz) are intentionally cacheable, non-sensitive liveness probes that must stay reachable during an attack.
 10027	IGNORE	Information Disclosure - Suspicious Comments: matches framework-generated Next.js build-manifest/chunk comments, which carry no secrets.
+10055	IGNORE	CSP notices (wildcard directive / style-src unsafe-inline): style-src 'unsafe-inline' is a deliberate, documented decision (SSR-emitted inline styles; see src/lib/security/csp.ts; <style> tags banned by tests/guards/csp-style-guardrails.test.ts), and img-src/connect-src 'https:' scheme sources are intentional for external avatars/logos + APIs; script-src stays strict (nonce + strict-dynamic).
+90004	IGNORE	Cross-Origin-Embedder-Policy intentionally omitted: COEP require-corp would break permitted cross-origin subresources (Google Fonts, external https images allowed by img-src https:); COOP + CORP are already set in src/lib/security/headers.ts.
+10019	IGNORE	Content-Type Missing: only absent on 3xx redirect responses (no body) emitted by the auth/tenant middleware; harmless and not sniffable (X-Content-Type-Options: nosniff is set).
+10109	IGNORE	Modern Web Application: informational technology fingerprint (the app is a Next.js SPA), not a vulnerability.
