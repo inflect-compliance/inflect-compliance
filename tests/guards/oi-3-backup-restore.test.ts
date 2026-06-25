@@ -103,10 +103,15 @@ describe('OI-3 — restore-test.sh shape', () => {
         expect(src).toMatch(/RESTORE_INSTANCE_ID=.*\$\{?TIMESTAMP\}?/);
     });
 
-    it('finds the LATEST automated snapshot via sort_by + last index', () => {
+    it('finds the LATEST snapshot via sort_by + last index, snapshot-type defaulting to automated', () => {
         const src = read(SCRIPT);
         expect(src).toMatch(/describe-db-snapshots/);
-        expect(src).toMatch(/--snapshot-type\s+automated/);
+        // The snapshot type is parameterized (--snapshot-type flag) so the
+        // quarterly cross-region DR job can target `manual` (DR copies are
+        // manual snapshots); it still DEFAULTS to `automated` for the
+        // same-region monthly run.
+        expect(src).toMatch(/SNAPSHOT_TYPE="automated"/);
+        expect(src).toMatch(/--snapshot-type\s+"\$SNAPSHOT_TYPE"/);
         // Sort by snapshot create time + take the last → newest
         expect(src).toMatch(/sort_by\(DBSnapshots,\s*&SnapshotCreateTime\)\s*\|\s*\[-1\]/);
     });
