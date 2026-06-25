@@ -41,6 +41,13 @@ module "vpc" {
 module "database" {
   source = "./modules/database"
 
+  # The DR snapshot-copy retention sweeper + its schedule are created in
+  # the DR region via this aliased provider (count-gated on db_dr_region).
+  providers = {
+    aws    = aws
+    aws.dr = aws.dr
+  }
+
   name_prefix = local.name_prefix
   environment = var.environment
 
@@ -56,6 +63,11 @@ module "database" {
   deletion_protection      = var.db_deletion_protection
   skip_final_snapshot      = var.db_skip_final_snapshot
   backup_retention_days    = var.db_backup_retention_days
+
+  # Cross-region DR snapshot copy (no-op until db_dr_region is set).
+  dr_region                  = var.db_dr_region
+  dr_snapshot_retention_days = var.db_dr_snapshot_retention_days
+  dr_kms_key_arn             = var.db_dr_kms_key_arn
 
   tags = local.common_tags
 }

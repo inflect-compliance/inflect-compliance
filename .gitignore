@@ -156,3 +156,6 @@ tests/load/results/
 
 # Helm vendored subchart tarballs — pinned by Chart.lock, re-fetched by `helm dependency build` in CI.
 infra/helm/*/charts/
+
+# Terraform archive_file Lambda build output
+infra/terraform/modules/*/lambdas/.dist/

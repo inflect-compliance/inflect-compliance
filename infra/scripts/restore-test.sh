@@ -39,6 +39,27 @@
 
 set -euo pipefail
 
+# ─── Flags ───
+# --region <r>          override AWS_REGION (used by the quarterly
+#                       cross-region DR restore test to restore in the
+#                       DR region instead of the source region).
+# --snapshot-type <t>   automated (default, same-region) | manual.
+#                       Cross-region DR copies land as MANUAL snapshots,
+#                       so the DR restore test passes `--snapshot-type
+#                       manual`. The copies retain the source instance's
+#                       DBInstanceIdentifier, so discovery still filters
+#                       by SOURCE_DB_INSTANCE_ID.
+SNAPSHOT_TYPE="automated"
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --region)        AWS_REGION="$2"; shift 2 ;;
+        --region=*)      AWS_REGION="${1#*=}"; shift ;;
+        --snapshot-type) SNAPSHOT_TYPE="$2"; shift 2 ;;
+        --snapshot-type=*) SNAPSHOT_TYPE="${1#*=}"; shift ;;
+        *) echo "FATAL: unknown argument: $1" >&2; exit 2 ;;
+    esac
+done
+
 # ─── Required env (operator-set or workflow-set) ───
 # AWS_REGION                 — e.g. us-east-1
 # SOURCE_DB_INSTANCE_ID      — e.g. inflect-compliance-production-db
@@ -131,7 +152,7 @@ echo "── 1. Finding latest automated snapshot ──"
 LATEST_SNAPSHOT_ARN="$(aws rds describe-db-snapshots \
     --region "$AWS_REGION" \
     --db-instance-identifier "$SOURCE_DB_INSTANCE_ID" \
-    --snapshot-type automated \
+    --snapshot-type "$SNAPSHOT_TYPE" \
     --query 'sort_by(DBSnapshots, &SnapshotCreateTime) | [-1].DBSnapshotArn' \
     --output text)"
 
@@ -144,7 +165,7 @@ fi
 LATEST_SNAPSHOT_TIME="$(aws rds describe-db-snapshots \
     --region "$AWS_REGION" \
     --db-instance-identifier "$SOURCE_DB_INSTANCE_ID" \
-    --snapshot-type automated \
+    --snapshot-type "$SNAPSHOT_TYPE" \
     --query 'sort_by(DBSnapshots, &SnapshotCreateTime) | [-1].SnapshotCreateTime' \
     --output text)"
 

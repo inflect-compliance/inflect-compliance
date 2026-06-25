@@ -37,17 +37,28 @@ name: Restore Test
 
 on:
   schedule:
-    # 04:00 UTC on the 1st of every month — well outside the
-    # production maintenance window (Sun 04:30-05:30 UTC per the
-    # Terraform DB module default), and outside business hours
-    # for most timezones we operate in.
+    # 04:00 UTC on the 1st of every month — same-region restore. Well
+    # outside the production maintenance window (Sun 04:30-05:30 UTC per
+    # the Terraform DB module default).
     - cron: "0 4 1 * *"
+    # 05:00 UTC on the 1st of Jan/Apr/Jul/Oct — QUARTERLY cross-region
+    # DR restore. Separate cadence because a cross-region restore is
+    # expensive (cross-region data + a full restore in the DR region);
+    # monthly would burn budget. A snapshot copy that is never restored
+    # is theatre — this is the real validation of the DR copies.
+    - cron: "0 5 1 1,4,7,10 *"
   workflow_dispatch:
     inputs:
       reason:
         description: "Why are you running this manually? (audit trail)"
         required: false
         default: "manual restore validation"
+      target:
+        description: "Manual restore target: source (same-region) or dr (cross-region)."
+        required: false
+        default: "source"
+        type: choice
+        options: ["source", "dr"]
 
 permissions:
   contents: read
@@ -60,8 +71,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Same-region restore — monthly cron + manual dispatch (target=source).
   restore-test:
     name: "Restore Test (production)"
+    if: >-
+      (github.event_name == 'schedule' && github.event.schedule == '0 4 1 * *') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'source')
     runs-on: ubuntu-latest   # ⚠ replace with [self-hosted, vpc-prod] in production
     timeout-minutes: 90      # restore alone can take 60+ minutes
     environment: production  # gates AWS_ROLE_TO_ASSUME + the in-VPC SG secrets
@@ -117,5 +132,69 @@ jobs:
               echo ""
               echo "  aws rds describe-db-instances \\"
               echo "    --query 'DBInstances[?contains(DBInstanceIdentifier, \`restore-test\`)]'"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # Cross-region DR restore — QUARTERLY cron + manual dispatch (target=dr).
+  # Restores the DR-copied (manual) snapshot in the DR region, proving the
+  # cross-region copies are actually restorable. Needs DR-region SG +
+  # subnet-group secrets (the DR VPC must be applied via terraform first).
+  restore-test-dr:
+    name: "Restore Test (DR cross-region)"
+    if: >-
+      (github.event_name == 'schedule' && github.event.schedule == '0 5 1 1,4,7,10 *') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'dr')
+    runs-on: ubuntu-latest   # ⚠ replace with [self-hosted, vpc-dr] in production
+    timeout-minutes: 90
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Configure AWS credentials (OIDC, DR region)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.DR_AWS_REGION }}
+          role-session-name: gh-restore-test-dr-${{ github.run_id }}
+
+      - name: Install psql + jq
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client jq
+
+      - name: Run restore-test.sh (cross-region)
+        env:
+          AWS_REGION: ${{ vars.DR_AWS_REGION }}
+          SOURCE_DB_INSTANCE_ID: ${{ secrets.SOURCE_DB_INSTANCE_ID }}
+          RESTORE_DB_INSTANCE_CLASS: db.t4g.small
+          # DR-region SG + subnet group (the DR VPC, applied via terraform).
+          RESTORE_VPC_SECURITY_GROUP_IDS: ${{ secrets.RESTORE_VPC_SECURITY_GROUP_IDS_DR }}
+          RESTORE_DB_SUBNET_GROUP: ${{ secrets.RESTORE_DB_SUBNET_GROUP_DR }}
+          DB_NAME: inflect_compliance
+          DB_USER: postgres
+          DB_PASSWORD_SECRET_ID: ${{ secrets.DB_PASSWORD_SECRET_ID }}
+        run: |
+          # DR copies are MANUAL snapshots in the DR region.
+          ./infra/scripts/restore-test.sh --region "$AWS_REGION" --snapshot-type manual
+
+      - name: Workflow summary
+        if: always()
+        run: |
+          {
+            echo "## Restore Test — DR cross-region"
+            echo ""
+            echo "- **Triggered by:** ${{ github.event_name }}"
+            echo "- **DR region:** ${{ vars.DR_AWS_REGION }}"
+            echo "- **Source DB:** ${{ secrets.SOURCE_DB_INSTANCE_ID }}"
+            echo "- **Result:** ${{ job.status }}"
+            echo "- **Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo ""
+            if [ "${{ job.status }}" != "success" ]; then
+              echo "### ⚠ Action required"
+              echo ""
+              echo "Cross-region DR restore failed — the DR snapshot copies may not be"
+              echo "restorable. This is the canonical validation of the DR posture; treat"
+              echo "a failure as a DR-readiness incident. See docs/disaster-recovery.md."
             fi
           } >> "$GITHUB_STEP_SUMMARY"

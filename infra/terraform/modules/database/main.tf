@@ -195,3 +195,275 @@ resource "aws_db_instance" "this" {
     ignore_changes = [final_snapshot_identifier]
   }
 }
+
+# ═══════════════════════════════════════════════════════════════════
+#  Cross-region DR snapshot copy  (infra(dr) — minimum-viable DR)
+# ═══════════════════════════════════════════════════════════════════
+# Daily copy of each automated snapshot into a second region, restorable
+# manually (RPO 24h / RTO ~4h — see docs/disaster-recovery.md). Every
+# resource is count-gated on var.dr_region, so this is a no-op until a
+# DR region is configured. The default `aws` provider acts in the source
+# region (EventBridge rule + copy Lambda); `aws.dr` (passed by the
+# caller) acts in the DR region (the retention sweeper + its schedule
+# live there, next to the snapshots they prune).
+#
+# Prerequisite: var.dr_kms_key_arn must be a MULTI-REGION CMK replica in
+# the DR region — encrypted cross-region snapshot copy needs a key in
+# the destination. The current posture uses a single-region key, so a
+# second multi-region CMK is created out-of-band (path b) and passed in;
+# see docs/implementation-notes for the rationale.
+
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = ">= 5.0, < 6.0"
+      # Caller MUST pass providers = { aws = aws, aws.dr = aws.dr }.
+      configuration_aliases = [aws.dr]
+    }
+    archive = {
+      source  = "hashicorp/archive"
+      version = ">= 2.4, < 3.0"
+    }
+  }
+}
+
+locals {
+  dr_enabled = var.dr_region != "" ? 1 : 0
+  # Source CMK ARN as a (possibly empty) list element for IAM grants.
+  source_kms_arns = var.kms_key_arn == null ? [] : [var.kms_key_arn]
+}
+
+# Source region — stamped into the copy Lambda so it knows where to copy FROM.
+data "aws_region" "current" {}
+
+# ── EventBridge rule (source region): each automated snapshot creation ──
+resource "aws_cloudwatch_event_rule" "rds_snapshot_completed" {
+  count       = local.dr_enabled
+  name        = "${var.name_prefix}-rds-snapshot-completed"
+  description = "Fire the cross-region DR copy Lambda when an automated RDS snapshot is created."
+
+  event_pattern = jsonencode({
+    source        = ["aws.rds"]
+    "detail-type" = ["RDS DB Snapshot Event"]
+    detail = {
+      EventCategories = ["creation"]
+      SourceArn       = [aws_db_instance.this.arn]
+      Message         = ["Automated snapshot created"]
+    }
+  })
+
+  tags = var.tags
+}
+
+# ── Copy Lambda (source region) ──
+data "archive_file" "dr_snapshot_copy" {
+  count       = local.dr_enabled
+  type        = "zip"
+  source_file = "${path.module}/lambdas/dr_snapshot_copy.py"
+  output_path = "${path.module}/lambdas/.dist/dr_snapshot_copy.zip"
+}
+
+resource "aws_iam_role" "dr_snapshot_copy" {
+  count = local.dr_enabled
+  name  = "${var.name_prefix}-dr-snapshot-copy"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "lambda.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+
+  tags = var.tags
+}
+
+data "aws_iam_policy_document" "dr_snapshot_copy" {
+  count = local.dr_enabled
+
+  statement {
+    sid       = "CopySnapshot"
+    effect    = "Allow"
+    actions   = ["rds:CopyDBSnapshot", "rds:DescribeDBSnapshots", "rds:AddTagsToResource", "rds:ModifyDBSnapshotAttribute"]
+    resources = ["*"]
+  }
+
+  statement {
+    sid       = "KmsGrants"
+    effect    = "Allow"
+    actions   = ["kms:CreateGrant", "kms:DescribeKey", "kms:Decrypt", "kms:GenerateDataKeyWithoutPlaintext"]
+    resources = concat(local.source_kms_arns, [var.dr_kms_key_arn])
+  }
+
+  statement {
+    sid       = "Logs"
+    effect    = "Allow"
+    actions   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
+    resources = ["arn:aws:logs:*:*:*"]
+  }
+}
+
+resource "aws_iam_role_policy" "dr_snapshot_copy" {
+  count  = local.dr_enabled
+  name   = "${var.name_prefix}-dr-snapshot-copy"
+  role   = aws_iam_role.dr_snapshot_copy[0].id
+  policy = data.aws_iam_policy_document.dr_snapshot_copy[0].json
+}
+
+resource "aws_cloudwatch_log_group" "dr_snapshot_copy" {
+  count             = local.dr_enabled
+  name              = "/aws/lambda/${var.name_prefix}-dr-snapshot-copy"
+  retention_in_days = 30
+  tags              = var.tags
+}
+
+resource "aws_lambda_function" "dr_snapshot_copy" {
+  count            = local.dr_enabled
+  function_name    = "${var.name_prefix}-dr-snapshot-copy"
+  description      = "Copies each automated RDS snapshot to ${var.dr_region}, re-encrypted with the DR CMK."
+  role             = aws_iam_role.dr_snapshot_copy[0].arn
+  runtime          = "python3.12"
+  handler          = "dr_snapshot_copy.handler"
+  filename         = data.archive_file.dr_snapshot_copy[0].output_path
+  source_code_hash = data.archive_file.dr_snapshot_copy[0].output_base64sha256
+  timeout          = 60
+
+  environment {
+    variables = {
+      DR_REGION      = var.dr_region
+      SOURCE_REGION  = data.aws_region.current.name
+      DR_KMS_KEY_ARN = var.dr_kms_key_arn
+      RETENTION_DAYS = tostring(var.dr_snapshot_retention_days)
+    }
+  }
+
+  depends_on = [aws_cloudwatch_log_group.dr_snapshot_copy]
+  tags       = var.tags
+}
+
+resource "aws_cloudwatch_event_target" "dr_snapshot_copy" {
+  count     = local.dr_enabled
+  rule      = aws_cloudwatch_event_rule.rds_snapshot_completed[0].name
+  target_id = "dr-snapshot-copy"
+  arn       = aws_lambda_function.dr_snapshot_copy[0].arn
+}
+
+resource "aws_lambda_permission" "dr_snapshot_copy_events" {
+  count         = local.dr_enabled
+  statement_id  = "AllowEventBridgeInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.dr_snapshot_copy[0].function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.rds_snapshot_completed[0].arn
+}
+
+# ── Retention sweeper Lambda (DR region, via aws.dr) ──
+# Single responsibility: deletes DR copies older than the retention
+# window. Lives in the DR region next to the snapshots it prunes.
+data "archive_file" "dr_snapshot_retention" {
+  count       = local.dr_enabled
+  type        = "zip"
+  source_file = "${path.module}/lambdas/dr_snapshot_retention.py"
+  output_path = "${path.module}/lambdas/.dist/dr_snapshot_retention.zip"
+}
+
+resource "aws_iam_role" "dr_snapshot_retention" {
+  count = local.dr_enabled
+  name  = "${var.name_prefix}-dr-snapshot-retention"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "lambda.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+
+  tags = var.tags
+}
+
+data "aws_iam_policy_document" "dr_snapshot_retention" {
+  count = local.dr_enabled
+
+  statement {
+    sid       = "PruneDrSnapshots"
+    effect    = "Allow"
+    actions   = ["rds:DescribeDBSnapshots", "rds:ListTagsForResource", "rds:DeleteDBSnapshot"]
+    resources = ["*"]
+  }
+
+  statement {
+    sid       = "Logs"
+    effect    = "Allow"
+    actions   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
+    resources = ["arn:aws:logs:*:*:*"]
+  }
+}
+
+resource "aws_iam_role_policy" "dr_snapshot_retention" {
+  count  = local.dr_enabled
+  name   = "${var.name_prefix}-dr-snapshot-retention"
+  role   = aws_iam_role.dr_snapshot_retention[0].id
+  policy = data.aws_iam_policy_document.dr_snapshot_retention[0].json
+}
+
+resource "aws_cloudwatch_log_group" "dr_snapshot_retention" {
+  count             = local.dr_enabled
+  provider          = aws.dr
+  name              = "/aws/lambda/${var.name_prefix}-dr-snapshot-retention"
+  retention_in_days = 30
+  tags              = var.tags
+}
+
+resource "aws_lambda_function" "dr_snapshot_retention" {
+  count            = local.dr_enabled
+  provider         = aws.dr
+  function_name    = "${var.name_prefix}-dr-snapshot-retention"
+  description      = "Daily sweep: deletes DR-copied snapshots older than ${var.dr_snapshot_retention_days} days."
+  role             = aws_iam_role.dr_snapshot_retention[0].arn
+  runtime          = "python3.12"
+  handler          = "dr_snapshot_retention.handler"
+  filename         = data.archive_file.dr_snapshot_retention[0].output_path
+  source_code_hash = data.archive_file.dr_snapshot_retention[0].output_base64sha256
+  timeout          = 120
+
+  environment {
+    variables = {
+      DR_REGION      = var.dr_region
+      RETENTION_DAYS = tostring(var.dr_snapshot_retention_days)
+    }
+  }
+
+  depends_on = [aws_cloudwatch_log_group.dr_snapshot_retention]
+  tags       = var.tags
+}
+
+resource "aws_cloudwatch_event_rule" "dr_snapshot_retention" {
+  count               = local.dr_enabled
+  provider            = aws.dr
+  name                = "${var.name_prefix}-dr-snapshot-retention"
+  description         = "Daily trigger for the DR snapshot retention sweep."
+  schedule_expression = "rate(1 day)"
+  tags                = var.tags
+}
+
+resource "aws_cloudwatch_event_target" "dr_snapshot_retention" {
+  count     = local.dr_enabled
+  provider  = aws.dr
+  rule      = aws_cloudwatch_event_rule.dr_snapshot_retention[0].name
+  target_id = "dr-snapshot-retention"
+  arn       = aws_lambda_function.dr_snapshot_retention[0].arn
+}
+
+resource "aws_lambda_permission" "dr_snapshot_retention_events" {
+  count         = local.dr_enabled
+  provider      = aws.dr
+  statement_id  = "AllowEventBridgeInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.dr_snapshot_retention[0].function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.dr_snapshot_retention[0].arn
+}
