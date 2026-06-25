@@ -112,6 +112,11 @@ const defaultOptions = {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     ...defaultOptions,
+    // Drop the default `X-Powered-By: Next.js` response header — version/
+    // tech fingerprinting aids attackers and adds no value. Closes the
+    // nightly ZAP baseline finding 10037 (Server Leaks Information via
+    // "X-Powered-By"). See docs/dast.md.
+    poweredByHeader: false,
     // Use a separate build directory for E2E tests to avoid .next cache
     // contention when multiple dev servers run concurrently.
     ...(process.env.NEXT_TEST_MODE ? { distDir: '.next-test' } : {}),
