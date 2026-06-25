@@ -22,9 +22,12 @@ or inject payloads. It catches:
 It does **not** catch active-exploitation classes — **reflected/stored
 XSS, SQL injection, command injection, auth-bypass via mutated
 requests**. Those need the **Full (active) scan**, ZAP's destructive
-sibling, which fuzzes inputs. The Full scan is a **separate weekly
-workflow** (tracked follow-up) — it's slower and needs the allowlist
-curated first, so it does not ship in the first DAST PR.
+sibling, which fuzzes inputs + submits forms. That now runs as a
+**separate WEEKLY workflow** (`.github/workflows/dast-full.yml`,
+`zaproxy/action-full-scan`, Sundays 05:00 UTC + dispatch) — authenticated
+as OWNER, non-blocking during roll-in, SARIF category `zap-full`. It is
+SAFE because it only ever targets the **ephemeral CI app** (fresh seeded
+Postgres, no real data, no SMTP, rate-limiting off) — never a real env.
 
 ### Coverage
 
@@ -93,13 +96,12 @@ Next.js false-positives (10202 anti-CSRF, 10049 cacheable `/api/health`,
   true`), mirroring the Trivy `CRITICAL,HIGH` gate. Update the
   `dast-workflow-pinning` guardrail in the same change. (Tracked task.)
 
-## Roadmap (tracked follow-up tasks)
+## Roadmap
 
-1. **Authenticated-OWNER baseline** — thread the NextAuth CSRF session
-   (admin@acme.com) through a `.zap/zap-context.xml` so gated routes are
-   covered.
-2. **Multi-role scan** — OWNER/ADMIN/EDITOR/READER/AUDITOR sessions for
-   broken-access-control coverage across the granular permission tiers.
-3. **Weekly Full (active) scan** — separate workflow, once the allowlist
-   is stable.
-4. **Flip baseline to blocking** on the sunset date above.
+1. ✅ **Authenticated-OWNER baseline** — NextAuth CSRF login → session
+   cookie via `ZAP_AUTH_HEADER*` (header injection; no context file).
+2. ✅ **Multi-role scan** — OWNER/EDITOR/READER/AUDITOR matrix (per-role
+   surface coverage; BAC itself is enforced + tested at the app layer).
+3. ✅ **Weekly Full (active) scan** — `.github/workflows/dast-full.yml`.
+4. ⏳ **Flip baseline to blocking** on the 2026-07-24 sunset (pending).
+   The Full scan would flip similarly once its findings are triaged.

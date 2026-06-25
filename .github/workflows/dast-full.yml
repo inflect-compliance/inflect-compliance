@@ -1,0 +1,202 @@
+name: DAST (ZAP Full Scan)
+
+# WEEKLY active/full DAST — the destructive sibling of the nightly ZAP
+# Baseline (.github/workflows/dast.yml). Where the baseline is PASSIVE
+# (spider + observe), the full scan ACTIVELY ATTACKS: it injects payloads
+# (reflected/stored XSS, SQLi, path traversal, command injection, …) and
+# SUBMITS FORMS. That's why it's weekly, not nightly, and authenticated
+# as OWNER for maximum surface.
+#
+# Safety: this only ever runs against the EPHEMERAL CI app — a fresh
+# Postgres seeded from scratch each run, with no real data, no real
+# outbound email (no SMTP configured in CI), and rate limiting disabled.
+# So the "attacks" + form submissions land on throwaway state and are
+# discarded when the job ends. NEVER point `target` at a shared/real env.
+#
+# Scope (see docs/dast.md):
+#   - OWNER session only (single job). A 4-role matrix of a ~30-60 min
+#     active scan would be excessive; OWNER reaches the most surface.
+#     Multi-role active scanning is a future follow-up if warranted.
+#   - NON-BLOCKING (fail_action: false + continue-on-error) during
+#     roll-in, same posture as the baseline. Findings → Security tab
+#     (category zap-full) + HTML artifact + a weekly auto-issue.
+on:
+  workflow_dispatch:
+  schedule:
+    # Sundays 05:00 UTC — weekly, off-peak, after the nightly baseline
+    # (04:00) and load test (03:30) so the heavy full-app boots don't
+    # compete for a runner.
+    - cron: '0 5 * * 0'
+
+permissions:
+  contents: read
+  security-events: write
+  issues: write
+
+jobs:
+  zap-full:
+    name: "ZAP Full Scan (owner)"
+    runs-on: ubuntu-latest
+    # Active scanning is slow (spider + attack every input). 60 min gives
+    # real headroom vs the ~10 min baseline.
+    timeout-minutes: 60
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci_password
+          POSTGRES_DB: ci_testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://ci:ci_password@localhost:5432/ci_testdb?schema=public&pgbouncer=true
+      DIRECT_DATABASE_URL: postgresql://ci:ci_password@localhost:5432/ci_testdb?schema=public
+      REDIS_URL: redis://localhost:6379
+      AUTH_TEST_MODE: '1'
+      RATE_LIMIT_ENABLED: '0'
+      AUTH_SECRET: ci-dast-secret-do-not-use-in-prod
+      NEXTAUTH_URL: http://localhost:3006
+      NEXTAUTH_SECRET: ci-dast-secret-do-not-use-in-prod
+      DATA_ENCRYPTION_KEY: ci-dast-data-encryption-key-32bytes
+      PORT: '3006'
+      SKIP_ENV_VALIDATION: '1'
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node + Prisma client
+        uses: ./.github/actions/setup-node-prisma
+        with:
+          node-version: '24'
+
+      - name: Create PostgreSQL roles for RLS
+        run: |
+          PGPASSWORD=ci_password psql -h localhost -U ci -d ci_testdb <<'SQL'
+          DO $$ BEGIN
+            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'app_user') THEN CREATE ROLE app_user NOLOGIN; END IF;
+            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'postgres') THEN CREATE ROLE postgres NOLOGIN; END IF;
+          END $$;
+          GRANT app_user TO ci;
+          GRANT app_user TO postgres;
+          SQL
+
+      - name: Apply migrations + seed
+        run: |
+          npx prisma migrate deploy
+          npm run db:seed
+
+      - name: Build app
+        env:
+          NODE_ENV: production
+        run: npm run build
+
+      - name: Start app (background)
+        env:
+          NODE_ENV: production
+        run: |
+          npm start > /tmp/app.log 2>&1 &
+          echo $! > /tmp/app.pid
+
+      - name: Wait for /api/health
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:3006/api/health > /dev/null 2>&1; then
+              echo "App is up after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "App failed to start within 60s. Last 100 lines of log:"
+          tail -n 100 /tmp/app.log || true
+          exit 1
+
+      # Authenticate as OWNER (same NextAuth-cookie mechanism as the
+      # baseline workflow — action-full-scan only supports header-injection
+      # auth via ZAP_AUTH_HEADER*).
+      - name: Log in as OWNER (capture NextAuth session cookie)
+        run: |
+          set -euo pipefail
+          JAR="$(mktemp)"
+          CSRF="$(curl -fsS -c "$JAR" http://localhost:3006/api/auth/csrf \
+            | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>process.stdout.write(JSON.parse(d).csrfToken))')"
+          curl -fsS -c "$JAR" -b "$JAR" -X POST http://localhost:3006/api/auth/callback/credentials \
+            -H 'Content-Type: application/x-www-form-urlencoded' \
+            --data-urlencode "csrfToken=$CSRF" \
+            --data-urlencode "email=admin@acme.com" \
+            --data-urlencode "password=password123" \
+            --data-urlencode "callbackUrl=http://localhost:3006/" \
+            --data-urlencode "json=true" -o /dev/null
+          SESSION="$(awk '$6=="next-auth.session-token"{print $7}' "$JAR")"
+          if [ -z "$SESSION" ]; then
+            echo "::error::No next-auth.session-token captured — OWNER login failed (cookie jar below)"; cat "$JAR"; exit 1
+          fi
+          echo "::add-mask::$SESSION"
+          code="$(curl -s -o /dev/null -w '%{http_code}' -H "Cookie: next-auth.session-token=$SESSION" http://localhost:3006/api/auth/me)"
+          echo "/api/auth/me with the captured session → HTTP $code"
+          if [ "$code" != "200" ]; then echo "::error::Session cookie did not authenticate /api/auth/me (HTTP $code)"; exit 1; fi
+          {
+            echo "ZAP_AUTH_HEADER=Cookie"
+            echo "ZAP_AUTH_HEADER_SITE=localhost:3006"
+            echo "ZAP_AUTH_HEADER_VALUE=next-auth.session-token=$SESSION"
+          } >> "$GITHUB_ENV"
+
+      # ── ZAP Full (active) scan ──
+      - name: ZAP Full Scan
+        # Non-blocking during roll-in (same rationale as the baseline):
+        # action-full-scan exits non-zero on findings and fail_action
+        # alone isn't reliable, so continue-on-error guarantees the run
+        # stays green while findings flow to the Security tab + issue.
+        continue-on-error: true
+        uses: zaproxy/action-full-scan@v0.13.0
+        with:
+          target: 'http://localhost:3006'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-z "-config api.disablekey=true"'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue_title: 'ZAP Full Scan Findings (weekly)'
+          allow_issue_writing: true
+          artifact_name: 'zap_full_scan'
+          fail_action: false
+
+      - name: Convert ZAP report to SARIF
+        if: always()
+        run: |
+          node .zap/zap-json-to-sarif.mjs report_json.json > zap-results.sarif || \
+            printf '{"version":"2.1.0","$schema":"https://json.schemastore.org/sarif-2.1.0.json","runs":[{"tool":{"driver":{"name":"OWASP ZAP Full Scan","rules":[]}},"results":[]}]}\n' > zap-results.sarif
+
+      - name: Upload ZAP SARIF to GitHub Security
+        if: always()
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: zap-results.sarif
+          category: zap-full
+
+      - name: Upload ZAP Full HTML report (triage artifact)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: zap-full-report
+          path: |
+            report_html.html
+            report_md.md
+            report_json.json
+          if-no-files-found: warn
+          retention-days: 14
