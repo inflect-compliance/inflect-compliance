@@ -6,15 +6,18 @@ name: DAST (ZAP Baseline)
 # ZAP **Baseline** (passive) scan against it: missing security headers,
 # cacheable-sensitive-content, info disclosure, cookie flags, etc.
 #
-# PR #1 scope (deliberate — see docs/dast.md):
+# Scope (see docs/dast.md):
 #   - Baseline (passive) only. The Full/active scan (destructive request
 #     mutation — XSS/SQLi probes) is a separate WEEKLY workflow follow-up.
-#   - UNAUTHENTICATED. Covers all public + reachable surface (login,
-#     register, forgot-password, health, static). Authenticated-OWNER and
-#     multi-role scanning are tracked follow-ups (the NextAuth CSRF
-#     credentials flow needs live-CI iteration to thread the session).
-#   - NON-BLOCKING for the first 30 days (fail_action: false) while the
-#     .zap/rules.tsv false-positive allowlist is curated.
+#   - AUTHENTICATED, MULTI-ROLE. A per-role matrix logs in as each seeded
+#     role (OWNER/EDITOR/READER/AUDITOR) via the real NextAuth credentials
+#     flow and scans that role's reachable surface. NOTE: this is per-role
+#     PASSIVE surface coverage, NOT automated broken-access-control
+#     detection (BAC is enforced + tested at the app layer:
+#     tenant-crud-authz-parity + requirePermission; true BAC scanning
+#     would need ZAP's Access Control add-on / Automation Framework).
+#   - NON-BLOCKING for the first 30 days (fail_action: false +
+#     continue-on-error) while the .zap/rules.tsv allowlist is curated.
 on:
   workflow_dispatch:
   schedule:
@@ -32,8 +35,24 @@ permissions:
 
 jobs:
   zap-baseline:
+    name: "ZAP Baseline (${{ matrix.user.role }})"
     runs-on: ubuntu-latest
     timeout-minutes: 20
+
+    # One scan per seeded role. fail-fast: false so one role's scan
+    # failing never cancels the others. The four jobs run in parallel
+    # (isolated runners + services), so wall-clock ≈ a single scan;
+    # runner-minutes are ~4×. (No distinct ADMIN-role seed user exists —
+    # OWNER covers the admin tier; add an admin@ seed if ADMIN-specific
+    # surface coverage is later needed.)
+    strategy:
+      fail-fast: false
+      matrix:
+        user:
+          - { role: owner, email: 'admin@acme.com' }
+          - { role: editor, email: 'editor@acme.com' }
+          - { role: reader, email: 'viewer@acme.com' }
+          - { role: auditor, email: 'auditor@acme.com' }
 
     services:
       postgres:
@@ -127,15 +146,17 @@ jobs:
           tail -n 100 /tmp/app.log || true
           exit 1
 
-      # ── Authenticate as the OWNER seed user ──
+      # ── Authenticate as the matrix role's seed user ──
       # action-baseline has no context/auth inputs — its only auth
       # mechanism is header injection (ZAP_AUTH_HEADER*). So we perform
       # the real NextAuth v4 credentials login here (CSRF token → callback)
-      # and hand ZAP the resulting session cookie, so the scan also covers
-      # gated /api/t/<slug>/** + /t/<slug>/** routes as a logged-in OWNER.
+      # and hand ZAP the resulting session cookie, so the scan covers gated
+      # /api/t/<slug>/** + /t/<slug>/** routes as the logged-in role.
       # (Over http://localhost the session cookie is `next-auth.session-token`
-      # — no `__Secure-` prefix without HTTPS. Seed user from prisma/seed.ts.)
-      - name: Log in as OWNER (capture NextAuth session cookie)
+      # — no `__Secure-` prefix without HTTPS. Seed users from prisma/seed.ts.)
+      - name: Log in as ${{ matrix.user.role }} (capture NextAuth session cookie)
+        env:
+          LOGIN_EMAIL: ${{ matrix.user.email }}
         run: |
           set -euo pipefail
           JAR="$(mktemp)"
@@ -144,18 +165,18 @@ jobs:
           curl -fsS -c "$JAR" -b "$JAR" -X POST http://localhost:3006/api/auth/callback/credentials \
             -H 'Content-Type: application/x-www-form-urlencoded' \
             --data-urlencode "csrfToken=$CSRF" \
-            --data-urlencode "email=admin@acme.com" \
+            --data-urlencode "email=$LOGIN_EMAIL" \
             --data-urlencode "password=password123" \
             --data-urlencode "callbackUrl=http://localhost:3006/" \
             --data-urlencode "json=true" -o /dev/null
           SESSION="$(awk '$6=="next-auth.session-token"{print $7}' "$JAR")"
           if [ -z "$SESSION" ]; then
-            echo "::error::No next-auth.session-token captured — OWNER login failed (cookie jar below)"; cat "$JAR"; exit 1
+            echo "::error::No next-auth.session-token captured — login failed for $LOGIN_EMAIL (cookie jar below)"; cat "$JAR"; exit 1
           fi
           echo "::add-mask::$SESSION"
           # Sanity: the cookie must actually authenticate an API call.
           code="$(curl -s -o /dev/null -w '%{http_code}' -H "Cookie: next-auth.session-token=$SESSION" http://localhost:3006/api/auth/me)"
-          echo "/api/auth/me with the captured session → HTTP $code"
+          echo "/api/auth/me as $LOGIN_EMAIL → HTTP $code"
           if [ "$code" != "200" ]; then echo "::error::Session cookie did not authenticate /api/auth/me (HTTP $code)"; exit 1; fi
           # Hand the cookie to ZAP via its header-injection env vars.
           {
@@ -169,7 +190,7 @@ jobs:
       # passive rules, applies the .zap/rules.tsv allowlist, writes
       # report_html.html / report_md.md / report_json.json to the
       # workspace, and (on findings) opens/updates a GitHub issue.
-      - name: ZAP Baseline scan
+      - name: ZAP Baseline scan (${{ matrix.user.role }})
         # Non-blocking for the 30-day tuning window: action-baseline exits
         # non-zero on WARN findings and `fail_action: false` alone does NOT
         # reliably keep the run green in v0.13.0, so continue-on-error is
@@ -183,8 +204,10 @@ jobs:
           rules_file_name: '.zap/rules.tsv'
           cmd_options: '-z "-config api.disablekey=true"'
           token: ${{ secrets.GITHUB_TOKEN }}
-          issue_title: 'ZAP Baseline Scan Findings (nightly)'
+          issue_title: 'ZAP Baseline Findings — ${{ matrix.user.role }} (nightly)'
           allow_issue_writing: true
+          # Per-role artifact name so the four matrix jobs don't collide.
+          artifact_name: 'zap_scan_${{ matrix.user.role }}'
           # Non-blocking until 2026-07-24 — flip to fail_action: true once
           # the .zap/rules.tsv allowlist is stable (mirrors the Trivy
           # HIGH+ gate posture). Tracked + guarded by
@@ -207,13 +230,14 @@ jobs:
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: zap-results.sarif
-          category: zap-baseline
+          # Per-role category → a distinct Security-tab analysis per role.
+          category: zap-baseline-${{ matrix.user.role }}
 
       - name: Upload ZAP HTML report (triage artifact)
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: zap-baseline-report
+          name: zap-baseline-report-${{ matrix.user.role }}
           path: |
             report_html.html
             report_md.md

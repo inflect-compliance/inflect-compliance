@@ -40,8 +40,21 @@ curated first, so it does not ship in the first DAST PR.
   login step fails loudly if the session cookie can't authenticate
   `/api/auth/me`, so a broken login never silently degrades to an
   unauthenticated scan.
-- **Single OWNER session → multi-role** (OWNER/ADMIN/EDITOR/READER/
-  AUDITOR broken-access-control probing) is a further tracked follow-up.
+- **Multi-role matrix.** The scan runs once per seeded role
+  (OWNER `admin@acme.com`, EDITOR `editor@acme.com`, READER
+  `viewer@acme.com`, AUDITOR `auditor@acme.com`) — each logs in
+  separately and scans that role's reachable surface, with a per-role
+  SARIF category (`zap-baseline-<role>`), issue title, and artifact.
+  The four jobs run in parallel (≈ single-scan wall-clock, ~4× runner
+  minutes). No distinct ADMIN-role seed user exists, so OWNER covers
+  the admin tier. **This is per-role PASSIVE surface coverage, NOT
+  automated broken-access-control detection** — a READER session here
+  scans what a READER can reach, but ZAP baseline does not assert "a
+  READER must be *denied* a create route." That BAC invariant is
+  enforced + tested at the app layer (`tenant-crud-authz-parity` unit
+  test + `requirePermission` gates + e2e); true DAST BAC detection
+  would need ZAP's Access Control add-on (Automation Framework) — a
+  separate future investment.
 
 ## Reporting
 
