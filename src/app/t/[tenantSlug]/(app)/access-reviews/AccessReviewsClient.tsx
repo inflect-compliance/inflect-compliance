@@ -65,8 +65,6 @@ interface Props {
 }
 
 export function AccessReviewsClient({ tenantSlug, initialReviews }: Props) {
-    const apiUrl = (path: string) =>
-        `/api/t/${tenantSlug}/access-reviews${path}`;
     const router = useRouter();
 
     const reviewsQuery = useTenantSWR<CappedList<AccessReviewSummary>>(

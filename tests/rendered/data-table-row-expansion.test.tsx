@@ -6,7 +6,7 @@
  * without `renderExpandedRow` no chevron renders and behaviour is unchanged
  * (so every existing table is unaffected).
  */
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import * as React from "react";
 
 import { DataTable, createColumns } from "@/components/ui/table";

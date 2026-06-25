@@ -27,7 +27,7 @@ import { formatDate } from '@/lib/format-date';
 import { Pen2 } from '@/components/ui/icons/nucleo';
 import Link from 'next/link';
 import { textLinkVariants } from '@/components/ui/typography';
-import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
+import { useTenantHref } from '@/lib/tenant-context-provider';
 
 const EVIDENCE_STATUS_VARIANT: Record<string, StatusBadgeVariant> = {
     DRAFT: 'neutral',
@@ -95,7 +95,6 @@ export function EvidenceDetailSheet({
     onEdit,
     onReview,
 }: EvidenceDetailSheetProps) {
-    const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
 
     const detailQuery = useTenantSWR<EvidenceDetailPayload>(

@@ -12,7 +12,7 @@
  * visible). Replaces the separate quick-edit Sheet, so there's no more table
  * blur and no separate edit button.
  */
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Heading } from "@/components/ui/typography";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
