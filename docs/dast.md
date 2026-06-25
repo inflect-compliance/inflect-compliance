@@ -26,16 +26,22 @@ sibling, which fuzzes inputs. The Full scan is a **separate weekly
 workflow** (tracked follow-up) — it's slower and needs the allowlist
 curated first, so it does not ship in the first DAST PR.
 
-### Coverage caveats (PR #1)
+### Coverage
 
-- **Unauthenticated.** PR #1 scans public + reachable surface (login,
-  register, forgot-password, health, static assets) without a session.
-  Gated `/api/t/<slug>/**` routes need an authenticated ZAP context —
-  the real NextAuth CSRF credentials flow (`GET /api/auth/csrf` →
-  `POST /api/auth/callback/credentials`), which is a tracked follow-up
-  (the prompt's `/api/auth/credentials` simple-POST does not exist).
-- **Single canonical session → multi-role** (OWNER/ADMIN/EDITOR/READER/
-  AUDITOR broken-access-control probing) is a further follow-up.
+- **Authenticated as OWNER.** A pre-scan step performs the real NextAuth
+  v4 credentials login (`GET /api/auth/csrf` → `POST /api/auth/callback/credentials`
+  with the `admin@acme.com` seed user) and hands ZAP the resulting
+  `next-auth.session-token` cookie via its header-injection env vars
+  (`ZAP_AUTH_HEADER`/`_VALUE`/`_SITE`) — `action-baseline` has no
+  context/auth inputs, so header injection is the only mechanism, and a
+  `.zap/zap-context.xml` is **not** used. The scan therefore covers both
+  the public surface (login/register/forgot-password/health) AND gated
+  `/api/t/<slug>/**` + `/t/<slug>/**` routes as a logged-in OWNER. The
+  login step fails loudly if the session cookie can't authenticate
+  `/api/auth/me`, so a broken login never silently degrades to an
+  unauthenticated scan.
+- **Single OWNER session → multi-role** (OWNER/ADMIN/EDITOR/READER/
+  AUDITOR broken-access-control probing) is a further tracked follow-up.
 
 ## Reporting
 
