@@ -17,6 +17,7 @@ import * as path from 'path';
 
 const ROOT = path.resolve(__dirname, '../..');
 const DAST_YML = path.join(ROOT, '.github/workflows/dast.yml');
+const DAST_FULL_YML = path.join(ROOT, '.github/workflows/dast-full.yml');
 const RULES_TSV = path.join(ROOT, '.zap/rules.tsv');
 
 describe('DAST workflow pinning', () => {
@@ -76,5 +77,36 @@ describe('DAST workflow pinning', () => {
             expect(['WARN', 'IGNORE', 'FAIL']).toContain(cols[1]);
             expect(cols[2].trim().length).toBeGreaterThan(0);
         }
+    });
+});
+
+describe('DAST Full-scan workflow pinning', () => {
+    it('the weekly Full-scan workflow exists', () => {
+        expect(fs.existsSync(DAST_FULL_YML)).toBe(true);
+    });
+
+    const yml = fs.existsSync(DAST_FULL_YML) ? fs.readFileSync(DAST_FULL_YML, 'utf-8') : '';
+
+    it('runs on a WEEKLY schedule (cron day-of-week)', () => {
+        expect(yml).toMatch(/schedule:/);
+        // Weekly = a day-of-week field that is not '*'.
+        expect(yml).toMatch(/-\s*cron:\s*'0 5 \* \* 0'/);
+    });
+
+    it('uses the ACTIVE full-scan action (not baseline)', () => {
+        expect(yml).toMatch(/zaproxy\/action-full-scan@/);
+        expect(yml).not.toMatch(/zaproxy\/action-baseline@/);
+    });
+
+    it('authenticates as OWNER and is non-blocking during roll-in', () => {
+        expect(yml).toMatch(/\/api\/auth\/callback\/credentials/);
+        expect(yml).toMatch(/ZAP_AUTH_HEADER_VALUE=next-auth\.session-token=/);
+        expect(yml).toMatch(/continue-on-error:\s*true/);
+        expect(yml).toMatch(/fail_action:\s*false/);
+    });
+
+    it('publishes to its own SARIF category + reuses the shared allowlist', () => {
+        expect(yml).toMatch(/category:\s*zap-full/);
+        expect(yml).toMatch(/rules_file_name:\s*'\.zap\/rules\.tsv'/);
     });
 });
