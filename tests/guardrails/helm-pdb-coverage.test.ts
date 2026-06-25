@@ -55,3 +55,26 @@ describe('Helm PodDisruptionBudget coverage', () => {
         expect(prod.autoscaling?.minReplicas ?? 0).toBeGreaterThanOrEqual(2);
     });
 });
+
+/**
+ * The chart is actually RENDERED in CI (helm lint + helm template), not
+ * just text-scanned — so a templating error surfaces on a chart PR
+ * rather than at `helm install`. This locks that gate + the env-specific
+ * PDB-render contract (prod 2, staging 0).
+ */
+describe('Helm chart is helm-rendered in CI', () => {
+    const WF = path.resolve(__dirname, '../../.github/workflows/helm-validate.yml');
+    it('helm-validate workflow exists', () => {
+        expect(fs.existsSync(WF)).toBe(true);
+    });
+    const wf = fs.existsSync(WF) ? fs.readFileSync(WF, 'utf-8') : '';
+    it('runs helm lint AND helm template (real render, not just text scan)', () => {
+        expect(wf).toMatch(/helm lint/);
+        expect(wf).toMatch(/helm template/);
+    });
+    it('asserts the env-specific PDB render contract (prod 2, staging 0)', () => {
+        expect(wf).toMatch(/values-production\.yaml/);
+        expect(wf).toMatch(/values-staging\.yaml/);
+        expect(wf).toMatch(/PodDisruptionBudget/);
+    });
+});
