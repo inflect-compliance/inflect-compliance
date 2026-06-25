@@ -1,5 +1,7 @@
 # Incident Response Runbook
 
+> **New to the codebase?** Start at [CONTRIBUTING.md](../CONTRIBUTING.md) — the developer onboarding guide.
+
 > For the scope of data potentially involved in a breach — which entities hold
 > PII, how long each is retained, and the cleanup mechanisms — see
 > [`docs/data-retention.md`](data-retention.md).

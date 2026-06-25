@@ -1,5 +1,7 @@
 # Billing & entitlements
 
+> **New to the codebase?** Start at [CONTRIBUTING.md](../CONTRIBUTING.md) — the developer onboarding guide.
+
 > **Audience.** Operators choosing how to deploy the platform, and
 > developers adding new gated features. The reference implementation
 > lives at [`src/lib/billing/entitlements.ts`](../src/lib/billing/entitlements.ts).

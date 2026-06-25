@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **Human contributors: start at [CONTRIBUTING.md](CONTRIBUTING.md).** This file is
+> the LLM-assistant architecture spec — exhaustive domain context, not an
+> onboarding path. `CONTRIBUTING.md` is the day-one guide; come back here for the
+> deep dive.
+
 ## Commands
 
 ```bash

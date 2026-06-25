@@ -1,5 +1,7 @@
 # Authentication
 
+> **New to the codebase?** Start at [CONTRIBUTING.md](../CONTRIBUTING.md) — the developer onboarding guide.
+
 Inflect's auth stack is **NextAuth v4.24.14 (stable)** with the
 `@next-auth/prisma-adapter@1.0.7` Prisma adapter and a JWT session
 strategy. Provider paths share one session shape:
