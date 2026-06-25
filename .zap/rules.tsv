@@ -8,3 +8,8 @@
 10202	IGNORE	Absence of Anti-CSRF Tokens: NextAuth/Next 16 use a double-submit cookie CSRF token ZAP cannot observe as a form field; CSRF is covered (src/auth.ts).
 10049	IGNORE	Storable and Cacheable Content: /api/health (+ livez/readyz) are intentionally cacheable, non-sensitive liveness probes that must stay reachable during an attack.
 10027	IGNORE	Information Disclosure - Suspicious Comments: matches framework-generated Next.js build-manifest/chunk comments, which carry no secrets.
+10055	IGNORE	CSP wildcard scheme-source (img-src/connect-src use `https:`): deliberate — narrowing to explicit hosts would break OAuth avatars, Sentry, Upstash, Stripe, OTel, HIBP, etc. The high-value directive script-src stays strict (nonce + strict-dynamic, no unsafe-inline). See src/lib/security/csp.ts.
+90004	IGNORE	Cross-Origin-Embedder-Policy not set: REQUIRED omission — COEP require-corp would block cross-origin subresources without CORP/CORS, including the OAuth-provider avatar images. App deliberately sets COOP + CORP but not COEP (next.config.js).
+10038	IGNORE	CSP header not set on a few responses: only the static files excluded from the middleware matcher (robots.txt/sitemap.xml/favicon.ico) — CSP is meaningless on non-HTML static assets; all HTML + API responses get the per-request nonce CSP (src/middleware.ts).
+10109	IGNORE	Modern Web Application: informational only (ZAP noting the app is JS-heavy/SPA-like) — not a vulnerability.
+10019	WARN	Content-Type header missing on a few edge/no-body responses (e.g. 204/redirect). Low risk; kept VISIBLE (WARN, not suppressed) to re-triage if it appears on a content-bearing response.

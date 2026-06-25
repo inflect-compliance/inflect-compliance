@@ -84,6 +84,34 @@ curated first, so it does not ship in the first DAST PR.
 Next.js false-positives (10202 anti-CSRF, 10049 cacheable `/api/health`,
 10027 build-manifest comments).
 
+### Initial findings triage (first nightly pass)
+
+The first authenticated runs surfaced six header findings (FAIL-NEW: 0
+— all WARN/INFO). Triage:
+
+- **10037 Server Leaks Information via X-Powered-By → FIXED.**
+  `poweredByHeader: false` in `next.config.js` drops the header.
+- **10055 CSP wildcard, 90004 COEP missing, 10038 CSP-not-set,
+  10109 Modern Web App → ACCEPTED (IGNORE, with reasons in rules.tsv).**
+  These are deliberate/required design choices, not gaps:
+  - `img-src`/`connect-src` use the `https:` scheme-source on purpose —
+    narrowing to explicit hosts would break OAuth avatars, Sentry,
+    Upstash, Stripe, OTel, HIBP, … . The load-bearing `script-src` is
+    strict (nonce + strict-dynamic, no `unsafe-inline`).
+  - COEP `require-corp` would **block the cross-origin OAuth-provider
+    avatar images** — so COEP is intentionally omitted (COOP + CORP are
+    set). Enabling it would regress the avatar feature.
+  - CSP-not-set only on the static files excluded from the middleware
+    matcher (robots/sitemap/favicon) — CSP is meaningless there.
+- **10019 Content-Type missing → kept VISIBLE (WARN).** Low-risk
+  (edge/no-body responses); not suppressed, so it re-surfaces if it ever
+  appears on a content-bearing response.
+
+The takeaway: the app's CSP is already strong; the remaining findings
+are accepted trade-offs documented in `.zap/rules.tsv`, not changes to
+make. (Tightening them would break functionality — the opposite of
+hardening.)
+
 ## Gating posture & sunset
 
 - **First 30 days: NON-blocking** (`fail_action: false`). Baseline scans
