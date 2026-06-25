@@ -1,0 +1,65 @@
+name: Helm Validate
+
+# Actually RENDER the Helm chart in CI — `helm lint` + `helm template`
+# against the production AND staging value sets. Until this existed, the
+# chart was only text-scanned by `tests/guards/helm-chart-foundation.test.ts`
+# (file presence + regex) — a templating error (bad `{{ }}`, broken
+# `nindent`, a malformed conditional) would not surface until a real
+# `helm install`. This job catches it on every chart change.
+#
+# It also asserts the env-specific PodDisruptionBudget contract:
+# production renders TWO PDBs, staging renders ZERO (a single-replica
+# staging PDB would block every drain — see docs/deployment.md).
+on:
+  pull_request:
+    paths:
+      - 'infra/helm/inflect/**'
+      - '.github/workflows/helm-validate.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'infra/helm/inflect/**'
+      - '.github/workflows/helm-validate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  helm-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CHART: infra/helm/inflect
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.16.4
+
+      - name: helm lint (production + staging)
+        run: |
+          helm lint "$CHART" --values "$CHART/values-production.yaml"
+          helm lint "$CHART" --values "$CHART/values-staging.yaml"
+
+      - name: helm template — production renders + 2 PDBs
+        run: |
+          out="$(helm template inflect "$CHART" --values "$CHART/values-production.yaml")"
+          n="$(printf '%s\n' "$out" | grep -c 'kind: PodDisruptionBudget' || true)"
+          echo "production PodDisruptionBudget count: $n"
+          if [ "$n" != "2" ]; then
+            echo "::error::production render must contain 2 PodDisruptionBudgets (app + worker), got $n"
+            exit 1
+          fi
+
+      - name: helm template — staging renders + 0 PDBs
+        run: |
+          out="$(helm template inflect "$CHART" --values "$CHART/values-staging.yaml")"
+          n="$(printf '%s\n' "$out" | grep -c 'kind: PodDisruptionBudget' || true)"
+          echo "staging PodDisruptionBudget count: $n"
+          if [ "$n" != "0" ]; then
+            echo "::error::staging render must contain 0 PodDisruptionBudgets (single-replica — a PDB would block every drain), got $n"
+            exit 1
+          fi
