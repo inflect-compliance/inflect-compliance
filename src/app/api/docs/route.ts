@@ -22,14 +22,16 @@
  *
  * Swagger UI assets are SELF-HOSTED (no CDN):
  *   - `public/swagger-ui/` carries the three pinned `swagger-ui-dist`
- *     assets, vendored at install time by `scripts/copy-swagger-ui.cjs`
- *     (a `postinstall` step; also `npm run swagger-ui:vendor`).
+ *     assets, COMMITTED to the repo (re-vendor with
+ *     `npm run swagger-ui:vendor` → `scripts/copy-swagger-ui.js` after
+ *     bumping the dep). Committed rather than install-generated because
+ *     `postinstall` is pinned to exactly `patch-package`.
  *   - This kills the CSP problem (`'self'` is enough — no jsdelivr
  *     allowance), the supply-chain surface (assets are pinned to the
  *     locked dependency, not whatever the CDN serves), and the
  *     air-gapped-staging problem (no egress required).
- *   - Cost: ~1.8 MB in `public/` (git-ignored; produced by install),
- *     served through Next.js's static-asset pipeline.
+ *   - Cost: ~1.8 MB in `public/`, served through Next.js's static-asset
+ *     pipeline.
  */
 import { NextResponse } from 'next/server';
 import { withApiErrorHandling } from '@/lib/errors/api';

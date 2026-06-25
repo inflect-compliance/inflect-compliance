@@ -81,3 +81,22 @@ export function enumerateOperations(doc: { paths?: Record<string, Record<string,
     }
     return ops.sort();
 }
+
+/**
+ * Enumerate only the NON-STUB operations — the richly-documented
+ * surface. The route-walker (`scripts/openapi-route-walker.ts`) emits
+ * `x-stub: true` operations for every route outside the curated
+ * CRITICAL_SET so the published spec is complete; those are excluded
+ * here so the coverage guard can assert the *curated* surface equals
+ * CRITICAL_SET without counting stubs.
+ */
+export function enumerateNonStubOperations(doc: { paths?: Record<string, Record<string, unknown>> }): string[] {
+    const ops: string[] = [];
+    for (const [path, methods] of Object.entries(doc.paths ?? {})) {
+        for (const [method, op] of Object.entries(methods)) {
+            if (op && typeof op === 'object' && (op as { 'x-stub'?: unknown })['x-stub']) continue;
+            ops.push(`${method.toUpperCase()} ${path}`);
+        }
+    }
+    return ops.sort();
+}

@@ -7,7 +7,7 @@
     "npm": ">=10.0.0"
   },
   "scripts": {
-    "postinstall": "patch-package && node scripts/copy-swagger-ui.cjs",
+    "postinstall": "patch-package",
     "prepare": "husky",
     "secret-scan": "bash scripts/detect-secrets.sh",
     "dev": "cross-env NEXT_IGNORE_INCORRECT_LOCKFILE=1 next dev",
@@ -59,7 +59,7 @@
     "load:smoke": "k6 run -e VUS=5 -e DURATION=30s tests/load/auth.js && k6 run -e VUS=5 -e DURATION=30s tests/load/lists.js",
     "prod:up": "docker compose -f docker-compose.prod.yml up -d --build",
     "prod:down": "docker compose -f docker-compose.prod.yml down",
-    "swagger-ui:vendor": "node scripts/copy-swagger-ui.cjs"
+    "swagger-ui:vendor": "node scripts/copy-swagger-ui.js"
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^8.5.0",

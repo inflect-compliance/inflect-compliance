@@ -11,16 +11,19 @@
  *     `swagger-ui-dist` version, not whatever the CDN serves.
  *   - Air-gapped: dev/staging behind a firewall work with no egress.
  *
- * Why plain Node (.cjs), not tsx:
- *   - Runs from `postinstall`, where the only guaranteed runtime is
- *     `node`. In a production install (`npm ci --omit=dev`) neither
- *     `tsx` nor `swagger-ui-dist` is present — this script then SKIPS
- *     cleanly (exit 0). That's correct: `/api/docs` is 404 in
- *     production anyway (see src/app/api/docs/route.ts), so the assets
- *     aren't needed there.
+ * The three assets are COMMITTED under `public/swagger-ui/` (they ship
+ * in the image via the Dockerfile's `COPY . .` → `COPY public`). This
+ * script is the re-vendor tool: run `npm run swagger-ui:vendor` after
+ * bumping the `swagger-ui-dist` devDependency, then commit the diff.
+ * It is intentionally NOT wired into `postinstall` — that hook is
+ * pinned to exactly `patch-package` (locked by
+ * tests/guards/csp-nonce-component-scripts-patch.test.ts).
  *
- * Idempotent: overwrites the three files on every run. Safe to call
- * from postinstall AND manually via `npm run swagger-ui:vendor`.
+ * Plain Node (`.js`, CommonJS — package.json has no `"type"`), not tsx,
+ * so it runs with the always-present `node`. If `swagger-ui-dist` isn't
+ * installed (e.g. a production `--omit=dev` tree) it SKIPS cleanly.
+ *
+ * Idempotent: overwrites the three files on every run.
  */
 const fs = require('node:fs');
 const path = require('node:path');

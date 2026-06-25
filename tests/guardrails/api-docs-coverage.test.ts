@@ -82,14 +82,13 @@ describe('API docs coverage', () => {
         });
 
         it('route.ts does NOT load assets from cdn.jsdelivr.net', () => {
-            // Allow the word in a comment explaining we moved off it, but
-            // not as an asset URL. Assert no jsdelivr URL with a scheme.
-            expect(route).not.toMatch(/https?:\/\/cdn\.jsdelivr\.net/);
+            // Plain substring check (not a regex) — the host appearing at
+            // all means a CDN reference regressed.
+            expect(route.includes('cdn.jsdelivr.net')).toBe(false);
         });
 
         it('public/swagger-ui/ exists with the three vendored assets', () => {
-            // Produced at install time by scripts/copy-swagger-ui.cjs
-            // (postinstall). Present after `npm ci` in CI and locally.
+            // Committed to the repo (re-vendored via scripts/copy-swagger-ui.js).
             for (const asset of [
                 'swagger-ui.css',
                 'swagger-ui-bundle.js',
@@ -99,13 +98,15 @@ describe('API docs coverage', () => {
             }
         });
 
-        it('the vendor script + postinstall wiring exist', () => {
-            expect(exists('scripts/copy-swagger-ui.cjs')).toBe(true);
+        it('the re-vendor script + pinned dependency exist', () => {
+            expect(exists('scripts/copy-swagger-ui.js')).toBe(true);
             const pkg = JSON.parse(read('package.json')) as {
                 scripts: Record<string, string>;
                 devDependencies: Record<string, string>;
             };
-            expect(pkg.scripts.postinstall).toMatch(/copy-swagger-ui\.cjs/);
+            // Maintainer re-vendor entrypoint (NOT postinstall — that's
+            // pinned to patch-package by the csp-nonce guard).
+            expect(pkg.scripts['swagger-ui:vendor']).toMatch(/copy-swagger-ui\.js/);
             expect(pkg.devDependencies['swagger-ui-dist']).toBeDefined();
         });
     });

@@ -30,6 +30,11 @@ const config = [
             'node_modules/**',
             'coverage/**',
             'playwright-report/**',
+            // Static assets served verbatim — never source. Includes the
+            // vendored, minified Swagger-UI bundle under public/swagger-ui/
+            // (committed; see scripts/copy-swagger-ui.js). Linting minified
+            // third-party JS is pointless and slow.
+            'public/**',
         ],
     },
     {
