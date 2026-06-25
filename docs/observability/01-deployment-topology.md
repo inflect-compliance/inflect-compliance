@@ -1,5 +1,7 @@
 # 01 — Deployment Topology
 
+> **New to the codebase?** Start at [CONTRIBUTING.md](../../CONTRIBUTING.md) — the developer onboarding guide.
+
 > Where the observability stack runs, how telemetry flows through it,
 > and how the deployment differs across local, staging, and production.
 > The companion artifact is `infra/observability/docker-compose.observability.yml`.

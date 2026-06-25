@@ -2,11 +2,15 @@
 
 End-to-end Governance, Risk & Compliance (GRC) platform — manage controls, risks, assets, evidence, policies, and audits across multiple frameworks (ISO/IEC 27001:2022, SOC 2, NIS2, and more) with cross-framework mapping.
 
+> **New contributor?** This Quick Start boots the app. For the full onboarding
+> walk-through — local dev loop, your first PR, CI signals, the contracts you
+> can't break — see **[CONTRIBUTING.md](CONTRIBUTING.md)**.
+
 ## Quick Start
 
 ### Prerequisites
-- Node.js 18+
-- Docker (for PostgreSQL)
+- Node.js 24 (pinned in `.nvmrc`; `engines` requires `>=24 <25`)
+- Docker (for PostgreSQL + Redis)
 
 ### Setup
 

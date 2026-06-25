@@ -1,5 +1,7 @@
 # Test coverage policy
 
+> **New to the codebase?** Start at [CONTRIBUTING.md](../CONTRIBUTING.md) — the developer onboarding guide.
+
 This document is the coverage **policy** for a compliance SaaS — why
 the bar is what it is, per layer, and how it ratchets up over time.
 The enforced numbers live in `jest.thresholds.json`; this doc is the

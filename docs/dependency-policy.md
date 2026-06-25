@@ -1,5 +1,7 @@
 # Dependency installation policy
 
+> **New to the codebase?** Start at [CONTRIBUTING.md](../CONTRIBUTING.md) — the developer onboarding guide.
+
 > Part of the dependency-governance model — see
 > `docs/dependency-governance.md` for the four-pillar overview, the
 > contributor lifecycle (adding / upgrading / removing a
