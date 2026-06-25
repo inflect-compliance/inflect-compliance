@@ -159,3 +159,6 @@ infra/helm/*/charts/
 
 # Terraform archive_file Lambda build output
 infra/terraform/modules/*/lambdas/.dist/
+
+# Vendored Swagger-UI assets (copied from swagger-ui-dist by postinstall)
+/public/swagger-ui/

@@ -49,10 +49,10 @@ describe('CSP Style Guardrails', () => {
         // React component.
         const STYLE_TAG_EXEMPTIONS = new Set([
             // GAP-10 — Swagger UI route returns a fully self-contained
-            // HTML document (loads the Swagger UI CDN bundle). The page
-            // is HARD 404'd in production by isDocsEnabled(), so the
-            // <style> never reaches a prod browser; a CSP exemption for
-            // dev/staging is acceptable.
+            // HTML document (loads SELF-HOSTED assets from /swagger-ui/,
+            // no CDN). The page is HARD 404'd in production by
+            // isDocsEnabled(), so the <style> never reaches a prod
+            // browser; a CSP exemption for dev/staging is acceptable.
             'app/api/docs/route.ts',
         ]);
 
