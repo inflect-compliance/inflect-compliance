@@ -41,6 +41,15 @@ describe('DAST workflow pinning', () => {
         expect(sunset).toBe(true);
     });
 
+    it('authenticates as the OWNER seed user (NextAuth credentials login → ZAP cookie)', () => {
+        // action-baseline only supports header-injection auth; the scan
+        // must log in via the real NextAuth callback flow and hand ZAP the
+        // session cookie, else gated routes are never covered.
+        expect(yml).toMatch(/\/api\/auth\/callback\/credentials/);
+        expect(yml).toMatch(/ZAP_AUTH_HEADER=Cookie/);
+        expect(yml).toMatch(/ZAP_AUTH_HEADER_VALUE=next-auth\.session-token=/);
+    });
+
     it('rules.tsv exists and every entry is the ZAP-required 3 columns with a reason', () => {
         expect(fs.existsSync(RULES_TSV)).toBe(true);
         const lines = fs.readFileSync(RULES_TSV, 'utf-8').split('\n');

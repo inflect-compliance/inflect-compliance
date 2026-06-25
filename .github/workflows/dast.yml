@@ -127,6 +127,43 @@ jobs:
           tail -n 100 /tmp/app.log || true
           exit 1
 
+      # ── Authenticate as the OWNER seed user ──
+      # action-baseline has no context/auth inputs — its only auth
+      # mechanism is header injection (ZAP_AUTH_HEADER*). So we perform
+      # the real NextAuth v4 credentials login here (CSRF token → callback)
+      # and hand ZAP the resulting session cookie, so the scan also covers
+      # gated /api/t/<slug>/** + /t/<slug>/** routes as a logged-in OWNER.
+      # (Over http://localhost the session cookie is `next-auth.session-token`
+      # — no `__Secure-` prefix without HTTPS. Seed user from prisma/seed.ts.)
+      - name: Log in as OWNER (capture NextAuth session cookie)
+        run: |
+          set -euo pipefail
+          JAR="$(mktemp)"
+          CSRF="$(curl -fsS -c "$JAR" http://localhost:3006/api/auth/csrf \
+            | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>process.stdout.write(JSON.parse(d).csrfToken))')"
+          curl -fsS -c "$JAR" -b "$JAR" -X POST http://localhost:3006/api/auth/callback/credentials \
+            -H 'Content-Type: application/x-www-form-urlencoded' \
+            --data-urlencode "csrfToken=$CSRF" \
+            --data-urlencode "email=admin@acme.com" \
+            --data-urlencode "password=password123" \
+            --data-urlencode "callbackUrl=http://localhost:3006/" \
+            --data-urlencode "json=true" -o /dev/null
+          SESSION="$(awk '$6=="next-auth.session-token"{print $7}' "$JAR")"
+          if [ -z "$SESSION" ]; then
+            echo "::error::No next-auth.session-token captured — OWNER login failed (cookie jar below)"; cat "$JAR"; exit 1
+          fi
+          echo "::add-mask::$SESSION"
+          # Sanity: the cookie must actually authenticate an API call.
+          code="$(curl -s -o /dev/null -w '%{http_code}' -H "Cookie: next-auth.session-token=$SESSION" http://localhost:3006/api/auth/me)"
+          echo "/api/auth/me with the captured session → HTTP $code"
+          if [ "$code" != "200" ]; then echo "::error::Session cookie did not authenticate /api/auth/me (HTTP $code)"; exit 1; fi
+          # Hand the cookie to ZAP via its header-injection env vars.
+          {
+            echo "ZAP_AUTH_HEADER=Cookie"
+            echo "ZAP_AUTH_HEADER_SITE=localhost:3006"
+            echo "ZAP_AUTH_HEADER_VALUE=next-auth.session-token=$SESSION"
+          } >> "$GITHUB_ENV"
+
       # ── ZAP Baseline (passive) scan ──
       # The action runs ZAP in a container, spiders the target, runs the
       # passive rules, applies the .zap/rules.tsv allowlist, writes
