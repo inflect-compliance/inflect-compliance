@@ -193,6 +193,7 @@
       "id": 7,
       "type": "timeseries",
       "title": "Job p95 duration over time",
+      "description": "Pivot a slow job to its trace in Tempo: hover a data point for the exemplar **View trace in Tempo** link (provisioned via `exemplarTraceIdDestinations`), or open Explore → Tempo and search `{ resource.service.name=\"inflect-compliance\" && name=~\"execute .*\" }`. Each execute-job span links back to the originating HTTP request — see docs/observability/05-job-tracing.md.",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {

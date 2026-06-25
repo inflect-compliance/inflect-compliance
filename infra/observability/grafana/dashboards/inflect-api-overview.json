@@ -147,6 +147,7 @@
       "id": 5,
       "type": "timeseries",
       "title": "Latency percentiles (p95 / p99 / mean)",
+      "description": "A slow request's trace now includes its downstream BullMQ worker spans: any job the handler enqueues (e.g. policy publish → audit-pack rebuild) is a child of the request span. Hover a data point for the exemplar **View trace in Tempo** link, or open Explore → Tempo and search by request — see docs/observability/05-job-tracing.md.",
       "gridPos": { "h": 9, "w": 12, "x": 12, "y": 6 },
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
       "fieldConfig": {
