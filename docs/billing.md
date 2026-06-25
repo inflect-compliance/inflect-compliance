@@ -3,6 +3,11 @@
 > **Audience.** Operators choosing how to deploy the platform, and
 > developers adding new gated features. The reference implementation
 > lives at [`src/lib/billing/entitlements.ts`](../src/lib/billing/entitlements.ts).
+>
+> **Retention note.** Tenant cancellation and `BillingEvent`/`BillingAccount`
+> retention have data-lifecycle implications (financial records have a regulatory
+> floor; cancelled-tenant evidence retention is an open question). See
+> [`docs/data-retention.md`](data-retention.md).
 
 This document describes the **operating model** the codebase ships
 with today. It is not a roadmap for future billing features.
