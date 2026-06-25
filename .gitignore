@@ -159,3 +159,4 @@ infra/helm/*/charts/
 
 # Terraform archive_file Lambda build output
 infra/terraform/modules/*/lambdas/.dist/
+

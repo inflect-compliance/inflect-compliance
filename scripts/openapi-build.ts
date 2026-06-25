@@ -68,8 +68,15 @@ import * as apiExtraDTOs from '@/lib/dto/api-extra.dto';
 // `generateDocument()` so `paths` are emitted.
 import '@/lib/openapi/paths';
 
+// Filesystem route-walker: emits STUB path entries for every route.ts
+// the critical set above doesn't already cover, so the published spec
+// is COMPLETE (every endpoint visible) even where the body/response
+// contract isn't formally published yet.
+import { registerRouteStubs } from './openapi-route-walker';
+
 export const REPO_ROOT = process.cwd();
 export const OUTPUT_PATH = resolve(REPO_ROOT, 'public/openapi.json');
+export const API_ROOT = resolve(REPO_ROOT, 'src/app/api');
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
@@ -116,6 +123,24 @@ function registerAnnotated(
         count++;
     }
     return count;
+}
+
+/**
+ * Register a `components.securitySchemes` entry, skipping if a scheme
+ * with the same id is already present (the registry singleton survives
+ * across in-process rebuilds).
+ */
+function registerSecuritySchemeOnce(
+    target: OpenAPIRegistry,
+    name: string,
+    scheme: Parameters<OpenAPIRegistry['registerComponent']>[2],
+): void {
+    const already = target.definitions.some((d) => {
+        const def = d as { type?: string; componentType?: string; name?: string };
+        return def.type === 'component' && def.componentType === 'securitySchemes' && def.name === name;
+    });
+    if (already) return;
+    target.registerComponent('securitySchemes', name, scheme);
 }
 
 // ─── Public API ─────────────────────────────────────────────────────
@@ -170,6 +195,47 @@ export function buildOpenApiDoc(opts: BuildOptions = {}): {
         totalRegistered += n;
     }
 
+    // ─── Security schemes ───────────────────────────────────────────
+    //
+    // Declared to match the ACTUAL auth transports (not invented):
+    //   - BearerAuth: tenant API keys flow as `Authorization: Bearer
+    //     iflk_…` (src/lib/auth/api-key-auth.ts::extractBearerToken +
+    //     isApiKeyToken). THIS is the canonical partner-integration
+    //     flow — declared first so it's the Swagger-UI default.
+    //   - SessionCookie: browser sessions are a NextAuth JWT cookie
+    //     (`next-auth.session-token`). Used for the dev/staging
+    //     "Try it out" flow; same-origin requests send it automatically.
+    //
+    // Registering twice in one process is harmless — the registry
+    // singleton de-dupes component IDs, and the CLI/test each build once.
+    registerSecuritySchemeOnce(registry, 'BearerAuth', {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'API key (iflk_…) or JWT',
+        description:
+            'Tenant API key passed as `Authorization: Bearer iflk_…`. This is the canonical ' +
+            'partner-integration flow — mint a key under Admin → API Keys. See docs/api-consumer-guide.md.',
+    });
+    registerSecuritySchemeOnce(registry, 'SessionCookie', {
+        type: 'apiKey',
+        in: 'cookie',
+        name: 'next-auth.session-token',
+        description:
+            'Browser session cookie (NextAuth JWT). Sent automatically for same-origin requests; ' +
+            'used by the dev/staging "Try it out" flow. Not the partner flow — prefer a Bearer API key.',
+    });
+
+    // ─── Route stubs ────────────────────────────────────────────────
+    //
+    // Walk src/app/api/**/route.ts and register a stub for every
+    // (method, path) the critical set didn't already cover. Runs AFTER
+    // the critical paths import (top of file) so dedup sees them.
+    const { stubs, total } = registerRouteStubs(registry, API_ROOT);
+    if (opts.verbose) {
+
+        console.log(`[openapi-build] route walker: ${total} operations found, ${stubs} stubs registered`);
+    }
+
     const pkg = JSON.parse(
         readFileSync(resolve(REPO_ROOT, 'package.json'), 'utf-8'),
     ) as { version: string; name: string };
@@ -183,7 +249,16 @@ export function buildOpenApiDoc(opts: BuildOptions = {}): {
             description:
                 'Multi-tenant compliance-management API. The schema layer in `src/lib/schemas/index.ts` ' +
                 '(request bodies) and `src/lib/dto/*.dto.ts` (response shapes) is the single source of ' +
-                'truth — this document is generated from those Zod schemas via `npm run openapi:generate`.',
+                'truth — this document is generated from those Zod schemas via `npm run openapi:generate`.\n\n' +
+                '**Authenticating.** To try an endpoint, click **Authorize**:\n' +
+                '- *BearerAuth* (recommended for integrations) — paste a tenant **API key** (`iflk_…`), ' +
+                'minted under Admin → API Keys. Sent as `Authorization: Bearer iflk_…`.\n' +
+                '- *SessionCookie* — for the dev/staging "Try it out" flow, sign in first; the browser ' +
+                'sends the `next-auth.session-token` cookie automatically (same-origin only).\n\n' +
+                '**Coverage.** Operations marked `x-stub: true` exist and are callable, but their request/' +
+                'response bodies are not yet published in this contract — only the critical-endpoint set ' +
+                'carries full schemas. See `docs/api-consumer-guide.md` for the auth, rate-limit, ' +
+                'versioning, and error-contract details.',
             license: { name: 'Proprietary' },
         },
         servers: [
@@ -191,6 +266,7 @@ export function buildOpenApiDoc(opts: BuildOptions = {}): {
             { url: 'https://staging.example.com', description: 'Staging' },
             { url: 'http://localhost:3000', description: 'Local development' },
         ],
+        security: [{ BearerAuth: [] }, { SessionCookie: [] }],
     });
 
     if (opts.verbose) {
