@@ -242,3 +242,13 @@ curl http://localhost:8888/metrics | grep otelcol_receiver
 # All observability guardrails and infrastructure tests:
 npx jest tests/unit/observability --verbose
 ```
+
+## Observability provisioning (compose · Helm · Grafana Cloud)
+
+The OTel/Prometheus/Tempo/Grafana stack ships in three deploy shapes
+(same OTLP telemetry, different backend). See the trade-off matrix in
+[`docs/observability/01-deployment-topology.md`](../docs/observability/01-deployment-topology.md#scale-out-provisioning-beyond-the-single-vm).
+
+- **Single VM + compose** (today's prod): [`observability/docker-compose.observability.yml`](observability/docker-compose.observability.yml)
+- **K8s, self-hosted** (air-gapped/on-prem): [`helm/observability/`](helm/observability/README.md) — `helm install obs infra/helm/observability`
+- **K8s, managed Grafana Cloud** (lowest ops burden): [`terraform/modules/observability/`](terraform/modules/observability) — `terraform apply`, then point the app's `OTEL_EXPORTER_OTLP_ENDPOINT` at the module's `grafana_otlp_endpoint`.

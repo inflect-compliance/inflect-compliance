@@ -106,3 +106,13 @@ helm install inflect-staging infra/helm/inflect \
   --create-namespace \
   --values values-staging.yaml      # comes in a follow-up PR
 ```
+
+## Sibling chart: observability
+
+The OTel/Prometheus/Tempo/Grafana backend is a separate umbrella chart,
+[`infra/helm/observability`](../observability/README.md) (self-hosted
+path). For managed Grafana Cloud instead, provision
+[`infra/terraform/modules/observability`](../../terraform/modules/observability)
+and set this chart's `OTEL_EXPORTER_OTLP_ENDPOINT` to the module's
+`grafana_otlp_endpoint`. Decision matrix:
+[`docs/observability/01-deployment-topology.md`](../../../docs/observability/01-deployment-topology.md#scale-out-provisioning-beyond-the-single-vm).

@@ -203,3 +203,13 @@ pgbouncer:
 > The `maxUnavailable: 1` PodDisruptionBudget (see `docs/deployment.md`)
 > holds across all tiers — every tier has `minReplicas ≥ 2`, so the PDB
 > never blocks a drain.
+
+## Observability stack sizing
+
+The observability backend's resource caps are pinned identically across
+deploy paths: collector 512m/1cpu, Prometheus 1g/1cpu, Tempo 1g/1cpu,
+Grafana 512m/0.75cpu (compose `mem_limit`/`cpus` ==
+`infra/helm/observability/values-production.yaml` limits). Managed
+Grafana Cloud (`infra/terraform/modules/observability`) offloads this
+sizing to the vendor. See
+[`docs/observability/01-deployment-topology.md`](observability/01-deployment-topology.md#scale-out-provisioning-beyond-the-single-vm).
