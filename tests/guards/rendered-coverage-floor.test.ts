@@ -53,7 +53,11 @@ const ROOT = path.resolve(__dirname, '../..');
 // and asset-KPI-trendline rendered tests.
 // Raised 173 → 182 (2026-06-17): donut hover-stable-hit + data-table
 // prefetch + accumulated rendered-test gains.
-const RENDERED_TEST_FLOOR = 182;
+// Raised 182 → 194 (2026-06-25): coverage Wave D batch 4 added five
+// renderHook tests for lib hooks/processes — useUrlFilters,
+// use-canvas-history, use-canvas-autosave, use-canvas-drill-stack,
+// canvas-change-events — plus accumulated rendered-test gains.
+const RENDERED_TEST_FLOOR = 194;
 // Raised 36 → 37 (2026-06-20): page-load-budget.spec.ts — the per-route
 // server-TTFB probe for the "instant pages" performance loop.
 const E2E_SPEC_FLOOR = 37;
