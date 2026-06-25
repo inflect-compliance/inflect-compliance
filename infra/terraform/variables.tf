@@ -128,6 +128,25 @@ variable "db_backup_retention_days" {
   default     = 7
 }
 
+# ── Cross-region DR snapshot copy (infra(dr)) ────────────────────────
+variable "db_dr_region" {
+  description = "AWS region for cross-region RDS snapshot copies. Empty string disables DR copies. See docs/disaster-recovery.md for the region-choice trade-offs."
+  type        = string
+  default     = ""
+}
+
+variable "db_dr_snapshot_retention_days" {
+  description = "Days to retain copied snapshots in the DR region."
+  type        = number
+  default     = 35
+}
+
+variable "db_dr_kms_key_arn" {
+  description = "Multi-region KMS key ARN (DR-region replica) for snapshot re-encryption on copy. REQUIRED when db_dr_region is set (path-b CMK — see docs/disaster-recovery.md)."
+  type        = string
+  default     = ""
+}
+
 # ── Redis inputs ─────────────────────────────────────────────────────
 variable "redis_engine_version" {
   description = "Redis engine version. Must be 7.x (parameter-group family is hardcoded redis7)."

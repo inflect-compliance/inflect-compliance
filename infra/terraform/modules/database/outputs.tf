@@ -57,3 +57,14 @@ output "kms_key_id" {
   description = "KMS key ID used for storage encryption."
   value       = aws_db_instance.this.kms_key_id
 }
+
+# ── Cross-region DR snapshot copy ────────────────────────────────────
+output "dr_region" {
+  description = "DR region snapshots are copied to. Empty string when DR copy is disabled."
+  value       = var.dr_region
+}
+
+output "dr_snapshot_arn_pattern" {
+  description = "ARN pattern for finding DR-copied snapshots in the DR region — used by the restore runbook + the quarterly cross-region restore test."
+  value       = var.dr_region == "" ? "" : "arn:aws:rds:${var.dr_region}:*:snapshot:dr-rds-${aws_db_instance.this.identifier}-*"
+}

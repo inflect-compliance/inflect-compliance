@@ -174,3 +174,32 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+# ── Cross-region DR snapshot copy (infra(dr)) ────────────────────────
+variable "dr_region" {
+  description = "AWS region for cross-region snapshot copies. Empty string disables DR copies (all DR resources are count-gated on this)."
+  type        = string
+  default     = ""
+}
+
+variable "dr_snapshot_retention_days" {
+  description = "How many days to retain copied snapshots in the DR region (the retention Lambda deletes older DR copies)."
+  type        = number
+  default     = 35
+
+  validation {
+    condition     = var.dr_snapshot_retention_days >= 1
+    error_message = "dr_snapshot_retention_days must be >= 1."
+  }
+}
+
+variable "dr_kms_key_arn" {
+  description = "Multi-region KMS key ARN (DR-region replica) used to re-encrypt snapshots on copy. REQUIRED when dr_region is set — cross-region copy of an encrypted snapshot needs a key in the destination region (see docs/disaster-recovery.md, path-b CMK)."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.dr_region == "" || var.dr_kms_key_arn != ""
+    error_message = "dr_kms_key_arn is required when dr_region is set (encrypted cross-region copy needs a DR-region CMK)."
+  }
+}
