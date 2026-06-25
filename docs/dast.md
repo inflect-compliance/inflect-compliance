@@ -106,9 +106,12 @@ The first authenticated runs surfaced six header findings (FAIL-NEW: 0
     set). Enabling it would regress the avatar feature.
   - CSP-not-set only on the static files excluded from the middleware
     matcher (robots/sitemap/favicon) — CSP is meaningless there.
-- **10019 Content-Type missing → kept VISIBLE (WARN).** Low-risk
-  (edge/no-body responses); not suppressed, so it re-surfaces if it ever
-  appears on a content-bearing response.
+- **10019 Content-Type missing → ACCEPTED (IGNORE).** Triaged from its
+  initial WARN after confirming the only offending responses are the
+  **bodyless redirects** `GET /` and `GET /dashboard` (30x, no body → no
+  Content-Type is correct). Risk 0 (informational); `X-Content-Type-Options:
+  nosniff` is set globally regardless. With this, the nightly baseline is
+  **WARN-NEW: 0 / FAIL-NEW: 0** — a clean, stable allowlist.
 
 The takeaway: the app's CSP is already strong; the remaining findings
 are accepted trade-offs documented in `.zap/rules.tsv`, not changes to
