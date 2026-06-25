@@ -1,0 +1,10 @@
+# OWASP ZAP Baseline — false-positive allowlist.
+#
+# Format (TAB-separated, 3 columns REQUIRED by ZAP):
+#   <pluginId>\t<WARN|IGNORE|FAIL>\t<one-line reason>
+# Lines starting with `#` are comments. The 3rd column (the reason) is
+# mandatory for every entry and is enforced by
+# tests/guardrails/dast-workflow-pinning.test.ts.
+10202	IGNORE	Absence of Anti-CSRF Tokens: NextAuth/Next 16 use a double-submit cookie CSRF token ZAP cannot observe as a form field; CSRF is covered (src/auth.ts).
+10049	IGNORE	Storable and Cacheable Content: /api/health (+ livez/readyz) are intentionally cacheable, non-sensitive liveness probes that must stay reachable during an attack.
+10027	IGNORE	Information Disclosure - Suspicious Comments: matches framework-generated Next.js build-manifest/chunk comments, which carry no secrets.

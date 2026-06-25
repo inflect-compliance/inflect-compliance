@@ -1,0 +1,185 @@
+name: DAST (ZAP Baseline)
+
+# Dynamic application security testing — the runtime complement to the
+# repo's STATIC gates (CodeQL SAST, Trivy container CVEs, npm audit).
+# Boots the full Next.js app + Postgres + Redis stack and runs an OWASP
+# ZAP **Baseline** (passive) scan against it: missing security headers,
+# cacheable-sensitive-content, info disclosure, cookie flags, etc.
+#
+# PR #1 scope (deliberate — see docs/dast.md):
+#   - Baseline (passive) only. The Full/active scan (destructive request
+#     mutation — XSS/SQLi probes) is a separate WEEKLY workflow follow-up.
+#   - UNAUTHENTICATED. Covers all public + reachable surface (login,
+#     register, forgot-password, health, static). Authenticated-OWNER and
+#     multi-role scanning are tracked follow-ups (the NextAuth CSRF
+#     credentials flow needs live-CI iteration to thread the session).
+#   - NON-BLOCKING for the first 30 days (fail_action: false) while the
+#     .zap/rules.tsv false-positive allowlist is curated.
+on:
+  workflow_dispatch:
+  schedule:
+    # 04:00 UTC daily — off-peak; deliberately after the 03:30 UTC load
+    # test so the two full-app boots don't compete for a runner.
+    - cron: '0 4 * * *'
+
+# The scan only reads the running app + writes a SARIF to the Security
+# tab and (optionally) opens an issue — it needs security-events write
+# and issues write, nothing else.
+permissions:
+  contents: read
+  security-events: write
+  issues: write
+
+jobs:
+  zap-baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci_password
+          POSTGRES_DB: ci_testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    # Mirrors load-test.yml verbatim so the scanned app is a
+    # representative production-build boot against a seeded tenant tree.
+    env:
+      DATABASE_URL: postgresql://ci:ci_password@localhost:5432/ci_testdb?schema=public&pgbouncer=true
+      DIRECT_DATABASE_URL: postgresql://ci:ci_password@localhost:5432/ci_testdb?schema=public
+      REDIS_URL: redis://localhost:6379
+      AUTH_TEST_MODE: '1'
+      RATE_LIMIT_ENABLED: '0'
+      AUTH_SECRET: ci-dast-secret-do-not-use-in-prod
+      NEXTAUTH_URL: http://localhost:3006
+      NEXTAUTH_SECRET: ci-dast-secret-do-not-use-in-prod
+      DATA_ENCRYPTION_KEY: ci-dast-data-encryption-key-32bytes
+      # See load-test.yml: NODE_ENV is set inline on build/start, not at
+      # job level, so `npm ci` keeps devDeps (patch-package postinstall).
+      PORT: '3006'
+      SKIP_ENV_VALIDATION: '1'
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node + Prisma client
+        uses: ./.github/actions/setup-node-prisma
+        with:
+          node-version: '24'
+
+      # RLS migrations GRANT ... TO app_user; create the roles first
+      # (identical to load-test.yml / ci.yml DB jobs).
+      - name: Create PostgreSQL roles for RLS
+        run: |
+          PGPASSWORD=ci_password psql -h localhost -U ci -d ci_testdb <<'SQL'
+          DO $$ BEGIN
+            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'app_user') THEN CREATE ROLE app_user NOLOGIN; END IF;
+            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'postgres') THEN CREATE ROLE postgres NOLOGIN; END IF;
+          END $$;
+          GRANT app_user TO ci;
+          GRANT app_user TO postgres;
+          SQL
+
+      - name: Apply migrations + seed
+        run: |
+          npx prisma migrate deploy
+          npm run db:seed
+
+      - name: Build app
+        env:
+          NODE_ENV: production
+        run: npm run build
+
+      - name: Start app (background)
+        env:
+          NODE_ENV: production
+        run: |
+          npm start > /tmp/app.log 2>&1 &
+          echo $! > /tmp/app.pid
+
+      - name: Wait for /api/health
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:3006/api/health > /dev/null 2>&1; then
+              echo "App is up after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "App failed to start within 60s. Last 100 lines of log:"
+          tail -n 100 /tmp/app.log || true
+          exit 1
+
+      # ── ZAP Baseline (passive) scan ──
+      # The action runs ZAP in a container, spiders the target, runs the
+      # passive rules, applies the .zap/rules.tsv allowlist, writes
+      # report_html.html / report_md.md / report_json.json to the
+      # workspace, and (on findings) opens/updates a GitHub issue.
+      - name: ZAP Baseline scan
+        # Non-blocking for the 30-day tuning window: action-baseline exits
+        # non-zero on WARN findings and `fail_action: false` alone does NOT
+        # reliably keep the run green in v0.13.0, so continue-on-error is
+        # the definitive non-blocking switch. Findings still flow to the
+        # Security tab + the auto-issue for triage. On 2026-07-24, REMOVE
+        # this line AND set fail_action: true to make HIGH+ blocking.
+        continue-on-error: true
+        uses: zaproxy/action-baseline@v0.13.0
+        with:
+          target: 'http://localhost:3006'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-z "-config api.disablekey=true"'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue_title: 'ZAP Baseline Scan Findings (nightly)'
+          allow_issue_writing: true
+          # Non-blocking until 2026-07-24 — flip to fail_action: true once
+          # the .zap/rules.tsv allowlist is stable (mirrors the Trivy
+          # HIGH+ gate posture). Tracked + guarded by
+          # tests/guardrails/dast-workflow-pinning.test.ts.
+          fail_action: false
+
+      # ── Reporting (informational; mirrors the Trivy SARIF pattern) ──
+      # action-baseline does not emit SARIF, so convert its JSON report
+      # with a small dependency-free script. Best-effort: a missing/empty
+      # report must not fail this (non-blocking) workflow.
+      - name: Convert ZAP report to SARIF
+        if: always()
+        run: |
+          node .zap/zap-json-to-sarif.mjs report_json.json > zap-results.sarif || \
+            printf '{"version":"2.1.0","$schema":"https://json.schemastore.org/sarif-2.1.0.json","runs":[{"tool":{"driver":{"name":"OWASP ZAP Baseline","rules":[]}},"results":[]}]}\n' > zap-results.sarif
+
+      - name: Upload ZAP SARIF to GitHub Security
+        if: always()
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: zap-results.sarif
+          category: zap-baseline
+
+      - name: Upload ZAP HTML report (triage artifact)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: zap-baseline-report
+          path: |
+            report_html.html
+            report_md.md
+            report_json.json
+          if-no-files-found: warn
+          retention-days: 14
