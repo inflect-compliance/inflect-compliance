@@ -918,3 +918,46 @@ helm upgrade ... --set worker.replicaCount=4 --reuse-values
 kubectl -n inflect-production rollout restart \
   deployment/inflect-production deployment/inflect-production-worker
 ```
+
+## PodDisruptionBudget (voluntary-disruption protection)
+
+The Helm chart ships a `PodDisruptionBudget` for both the **app** and
+the **worker** Deployment (`templates/pdb.yaml`), each independently
+gated by `pdb.app.enabled` / `pdb.worker.enabled`.
+
+**Why.** The HPA reacts to *load*, not to *disruption velocity*. A
+single voluntary disruption — a node drain during a k8s upgrade, a
+cluster-autoscaler scale-in, or kube-system node compaction — can evict
+every app pod at once and cause a hard outage the HPA can't prevent. A
+PDB caps how many pods the eviction API will take down at once.
+
+**Policy: `maxUnavailable: 1`.** With HPA-driven replicas this is the
+canonical safe default — it keeps ≥1 pod available even when the HPA has
+shrunk to its `minReplicas: 2` floor, and (unlike a percentage
+`minAvailable`) it never blocks a legitimate scale-down. The PDB's
+selector reuses `inflect.selectorLabels` so it always matches its
+Deployment's pods exactly.
+
+**Per-environment:**
+
+- **Production** (`values-production.yaml`) — **enabled** for both
+  components (HPA floor 2, worker `replicaCount: 2`).
+- **Staging / single-node dev** — **leave disabled** (the default). A
+  single-replica Deployment under a `maxUnavailable: 1` PDB would let
+  the eviction API take down its only pod's budget such that **every
+  node drain blocks indefinitely** (`0` disruptions allowed). Staging
+  runs single-replica today, so it correctly inherits `enabled: false`.
+
+**Verify it's active:**
+
+```bash
+kubectl get pdb -n inflect-production
+# NAME                      MIN AVAILABLE  MAX UNAVAILABLE  ALLOWED DISRUPTIONS
+# inflect-production-app    N/A            1                1
+# inflect-production-worker N/A            1                1
+```
+
+`ALLOWED DISRUPTIONS: 1` (not 0) confirms the budget has headroom. To
+see it enforced, `kubectl drain <node>` a node hosting an app pod — the
+drain evicts at most one app pod at a time and waits for a replacement
+to become Ready before evicting the next, instead of taking them all.

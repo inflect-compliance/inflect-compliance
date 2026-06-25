@@ -34,6 +34,18 @@ autoscaling:
           value: 50
           periodSeconds: 60
 
+# PodDisruptionBudget — ENABLED in production. maxUnavailable: 1 keeps at
+# least 1 pod available under the HPA's minReplicas: 2 floor, so a node
+# drain (k8s upgrade / autoscaler scale-in) can't evict both app pods
+# simultaneously. The worker (replicaCount: 2) gets the same protection.
+pdb:
+  app:
+    enabled: true
+    maxUnavailable: 1
+  worker:
+    enabled: true
+    maxUnavailable: 1
+
 # Larger app resources for production traffic.
 resources:
   requests:

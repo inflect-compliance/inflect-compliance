@@ -3,6 +3,9 @@
 Chart version: {{ .Chart.Version }}
 App version:   {{ .Chart.AppVersion }}
 
+PodDisruptionBudget app:    {{ if .Values.pdb.app.enabled }}enabled (maxUnavailable: {{ .Values.pdb.app.maxUnavailable }}){{ else }}disabled{{ end }}
+PodDisruptionBudget worker: {{ if .Values.pdb.worker.enabled }}enabled (maxUnavailable: {{ .Values.pdb.worker.maxUnavailable }}){{ else }}disabled{{ end }}
+
 The Deployment expects two external resources in the {{ .Release.Namespace }} namespace:
 
   ConfigMap: {{ include "inflect.envFromConfigMapName" . }}
