@@ -970,3 +970,13 @@ The chart's shipped defaults (`autoscaling: 2→10`, `worker.replicaCount: 2`)
 are the *medium* tier; the playbook gives copy-paste `values-production.yaml`
 deltas for the others, plus the telemetry signals that say you've
 outgrown a tier.
+
+## Observability provisioning
+
+The telemetry backend (OTel Collector + Prometheus + Tempo + Grafana)
+deploys in three shapes — single-VM compose (today), self-hosted Helm
+(`infra/helm/observability`), or managed Grafana Cloud
+(`infra/terraform/modules/observability`). The app emits OTLP/HTTP in
+all three; only `OTEL_EXPORTER_OTLP_ENDPOINT` (+ auth header) changes.
+See [`docs/observability/01-deployment-topology.md`](observability/01-deployment-topology.md#scale-out-provisioning-beyond-the-single-vm)
+for the decision matrix.

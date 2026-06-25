@@ -153,3 +153,6 @@ cred-list.txt
 # ./tests/load/results/ directory is purely a developer artefact
 # and must never land in git.
 tests/load/results/
+
+# Helm vendored subchart tarballs — pinned by Chart.lock, re-fetched by `helm dependency build` in CI.
+infra/helm/*/charts/

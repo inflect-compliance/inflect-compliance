@@ -443,3 +443,53 @@ use).**
 - [ ] Component image tags are pinned (`:0.123.0`, `:v3.3.0`,
       `:2.7.2`, `:11.6.0`) — no `:latest`; Watchtower does not
       touch them.
+
+# Scale-Out Provisioning (beyond the single VM)
+
+The topology above is the **single-VM + docker-compose** deployment
+(today's production): the stack is co-located on the app VM via
+`infra/observability/docker-compose.observability.yml`. That stack is
+invisible to `infra/terraform/modules/*` and has no Helm chart, so a
+Kubernetes deployment of the app would have nowhere to point its OTLP
+exporter. Two complementary provisioning paths close that gap so the
+**same telemetry shape (OTLP/HTTP)** works in every deploy target.
+
+## The three paths
+
+| Path | How | When |
+|------|-----|------|
+| **1. Single VM + compose** *(today)* | `docker compose -f infra/observability/docker-compose.observability.yml up -d` (co-located on the app VM) | Single-VM production; unchanged. |
+| **2. K8s + self-hosted stack** | `helm install obs infra/helm/observability` (OTel+Prom+Tempo+Grafana, same component versions as compose) | Air-gapped / on-prem / regulated — telemetry must not leave the cluster. |
+| **3. K8s + Grafana Cloud (managed)** | `terraform apply infra/terraform/modules/observability` → set the app's `OTEL_EXPORTER_OTLP_ENDPOINT` to the module's `grafana_otlp_endpoint` (+ `OTEL_EXPORTER_OTLP_HEADERS` from `grafana_otlp_basic_auth_token`); deploy the app via `infra/helm/inflect`. | Most production — lowest operational burden. |
+
+The app emits OTLP/HTTP regardless; only the **endpoint + auth** differ
+across paths. Moving off the single VM does not strand the observability
+surface — pick path 2 or 3 and re-point one env var.
+
+## Trade-off matrix (the decision is the operator's)
+
+| Dimension | Path 1 — VM+compose | Path 2 — K8s self-hosted | Path 3 — Grafana Cloud |
+|-----------|--------------------|--------------------------|------------------------|
+| **Operational burden** | Medium (one VM, manual upgrades) | High (run + scale + back up 4 stateful services) | **Lowest** (vendor-run) |
+| **Cost shape** | VM compute only | Cluster compute + storage (PVs) | Per-ingest/retention billing |
+| **Data residency** | Full control (on the VM) | **Full control (in-cluster)** | Egresses to Grafana Cloud region (pick `stack_region` for residency) |
+| **Retention/scale ceiling** | Single-node disk | Cluster storage | Effectively unbounded |
+| **Air-gap capable** | Yes | **Yes** | No (SaaS egress) |
+
+Recommendation: **Path 3 (Grafana Cloud)** for production unless a
+procurement or data-residency constraint forbids SaaS egress, in which
+case **Path 2 (self-hosted Helm)**. (Provider note: if Grafana Cloud is
+off the table, the Terraform module's resources can be swapped for AWS
+Managed Prometheus + AWS Managed Grafana for the same telemetry shape at
+the cost of vendor lock-in — see the implementation note.)
+
+See `docs/implementation-notes/2026-06-25-observability-provisioning.md`
+for the Grafana-Cloud-vs-AWS-managed rationale and the dashboard
+single-source-of-truth migration.
+
+## Out of scope (follow-ups)
+
+- Migrating prod off compose to k8s — this ships the *option*, not the switch.
+- Wiring `docs/slos.md` SLOs as Grafana SLO objects.
+- On-call routing (PagerDuty/Opsgenie) for the alerting rules in
+  `infra/observability/prometheus/rules/alerting-rules.yml` (per-customer).
