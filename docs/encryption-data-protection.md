@@ -2,6 +2,10 @@
 
 > Epic 8 reference documentation. Covers all encryption layers, at-rest posture,
 > key management, backup encryption, and verification procedures.
+>
+> **Sibling document:** [`docs/data-retention.md`](data-retention.md) is the
+> *lifecycle* half of the data-protection story — how long each entity is kept
+> and how it is cleaned up. This doc covers confidentiality *at rest*.
 
 ## Encryption Layers
 

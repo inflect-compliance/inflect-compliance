@@ -651,6 +651,21 @@ NextAuth v4.24.14 (stable) is configured in `src/auth.ts`. Providers: Google OAu
 
 Job definitions are in `src/app-layer/jobs/`. The executor registry is `src/app-layer/jobs/executor-registry.ts`. Jobs run inside `traceUsecase` spans and inherit request context.
 
+### Data Retention
+
+**See `docs/data-retention.md`** — the policy document that categorizes all 139
+Prisma models into 7 retention categories (Business record / Regulatory artefact /
+Operational / Security ephemeral / PII subject / Financial / Configuration),
+declares the *current* retention behaviour per entity, and surfaces the open
+legal/compliance/finance questions that block a formal retention commitment. It
+is the lifecycle companion to `docs/encryption-data-protection.md` (at-rest
+confidentiality). Today only **Evidence** has an end-to-end retention flow
+(`retentionUntil` → reminders → archive → 365-day hard purge); soft-deletes on 12
+`SOFT_DELETE_MODELS` are purged after 90 days by the `data-lifecycle` job;
+`AuditLog`/`OrgAuditLog` are immutable + hash-chained and never deleted by default.
+Adding a new model ⇒ classify it in the doc's inventory table (the
+`tests/guardrails/retention-policy-coverage.test.ts` ratchet fails CI until you do).
+
 ### Billing & entitlements (GAP-18)
 
 The codebase has two billing modes, decided by a single env var:

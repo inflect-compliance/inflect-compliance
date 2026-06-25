@@ -1,0 +1,381 @@
+# Data Retention Policy
+
+**Status:** DRAFT — engineering inventory complete; retention *numbers*
+await legal / compliance / finance sign-off (see [Open questions](#open-questions)).
+**Owners:** Engineering (mechanism + inventory) · Compliance/Legal (regulatory
+periods + GDPR) · Finance (financial-record periods) · Product (tenant tiers).
+
+This document categorizes **every one of the 139 Prisma models**, declares the
+retention behaviour that exists *today*, names who owns each undecided number,
+and enumerates the cleanup machinery. It is the companion to
+[`docs/encryption-data-protection.md`](encryption-data-protection.md) — that doc
+covers confidentiality *at rest*; this one covers *lifecycle*.
+
+## What this document is NOT
+
+- **Not a regulatory commitment.** Retention periods driven by SOC 2 / ISO 27001 /
+  customer contracts ride on this doc *once legal signs off*. Engineering does not
+  pick those numbers in a vacuum — where a number is a legal decision, this doc
+  says so and leaves it open.
+- **Not a privacy notice.** The customer-facing privacy notice is a separate,
+  marketing-site document. This is an internal engineering + compliance artefact.
+- **Not a complete erasure plan.** GDPR Article 17 right-to-erasure is a real
+  engineering effort (cascading FK deletes across tenant data while preserving
+  `AuditLog` immutability is non-trivial). This doc states whether erasure is
+  supported today (**it is not**, beyond `User.deletedAt` soft-delete) and what
+  landing it would require — it does not implement it.
+
+## Category breakdown (139 models)
+
+| Category | Count | One-line posture |
+|----------|-------|------------------|
+| Business record | 63 | Compliance domain (Risk/Control/Policy/Audit/Vendor/…). Retained indefinitely while the tenant is active; soft-delete + 90-day purge on the 12 `SOFT_DELETE_MODELS`; `retentionUntil` sweep on 8. |
+| Configuration | 36 | Tenant/org structure, templates, framework reference data, integration + security settings. Lives with the tenant; purged on tenant deletion. |
+| Operational | 20 | Notifications, executions, snapshots, key-sequences, onboarding. No TTL today — prime candidates for time-boxed pruning. |
+| Security ephemeral | 13 | Tokens / sessions / credentials. `expiresAt`-driven; security lifetime, **not** a data-retention conversation. |
+| Regulatory artefact | 3 | `AuditLog`, `OrgAuditLog`, `ReadinessSnapshot` — immutable + hash-chained. Retention is a **legal** decision; we do not delete by default. |
+| PII subject | 2 | `User`, `AuditorAccount` — the GDPR right-to-erasure surface. **Undefined** beyond soft-delete. |
+| Financial | 2 | `BillingAccount`, `BillingEvent` — typically a 7-year regulatory floor; **needs finance input**. |
+
+## Entity inventory
+
+`PII?` legend: `Yes` = stores personal data directly · `maybe` = may contain
+user-entered free text / references · `No` = none · `ind.` = indirect (references
+a `userId` but stores no contact PII).
+
+| Entity | Category | PII? | Current retention mechanism | Policy gap |
+|--------|----------|------|------------------------------|------------|
+| `AccessReview` | Business record | No | Soft-delete (`deletedAt`) — **NOT** auto-purged | Soft-deleted rows **not auto-purged** — gap |
+| `AccessReviewDecision` | Business record | maybe | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `Account` | Security ephemeral | No | None today — cascade on parent/tenant delete only | DEFINED — expiry-driven |
+| `Asset` | Business record | No | retentionUntil sweep (data-lifecycle `runRetentionSweep`) + soft-delete | DEFINED (retentionUntil) where set; else indefinite |
+| `AssetKeySequence` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
+| `AssetRiskLink` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `Audit` | Business record | No | Soft-delete (`deletedAt`); 90-day purge via `data-lifecycle` | Active: indefinite. Soft-deleted: 90-day purge |
+| `AuditChecklistItem` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `AuditCycle` | Business record | No | Soft-delete (`deletedAt`); 90-day purge via `data-lifecycle` | Active: indefinite. Soft-deleted: 90-day purge |
+| `AuditLog` | Regulatory artefact | ind. | Immutable + hash-chained (never deleted) | Regulatory min/max — **needs legal/auditor input** |
+| `AuditPack` | Business record | No | Soft-delete (`deletedAt`); 90-day purge via `data-lifecycle` | Active: indefinite. Soft-deleted: 90-day purge |
+| `AuditPackItem` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `AuditPackShare` | Security ephemeral | No | `expiresAt` expiry (security) | DEFINED — expiry-driven |
+| `AuditorAccount` | PII subject | Yes | None today — cascade on parent/tenant delete only | UNDEFINED — GDPR erasure question |
+| `AuditorPackAccess` | Security ephemeral | No | None today — cascade on parent/tenant delete only | DEFINED — expiry-driven |
+| `AuthSession` | Security ephemeral | No | `expiresAt` expiry (security) | DEFINED — expiry-driven |
+| `AutomationExecution` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
+| `AutomationRule` | Configuration | No | Soft-delete (`deletedAt`) — **NOT** auto-purged | Lives with tenant; purged on tenant deletion |
+| `BillingAccount` | Financial | No | None today — cascade on parent/tenant delete only | Regulatory min (typ. 7y) — **needs finance input** |
+| `BillingEvent` | Financial | No | None today — cascade on parent/tenant delete only | Regulatory min (typ. 7y) — **needs finance input** |
+| `Clause` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `ClauseProgress` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `ComplianceSnapshot` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
+| `Control` | Business record | No | retentionUntil sweep (data-lifecycle `runRetentionSweep`) + soft-delete | DEFINED (retentionUntil) where set; else indefinite |
+| `ControlAsset` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `ControlContributor` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `ControlEvidenceLink` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `ControlException` | Business record | No | Soft-delete (`deletedAt`) — **NOT** auto-purged | Soft-deleted rows **not auto-purged** — gap |
+| `ControlKeySequence` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
+| `ControlRequirementLink` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `ControlTask` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `ControlTemplate` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `ControlTemplateRequirementLink` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `ControlTemplateTask` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `ControlTestEvidenceLink` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `ControlTestPlan` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `ControlTestRun` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `ControlTestStep` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `Evidence` | Business record | No | retentionUntil sweep (data-lifecycle `runRetentionSweep`) + soft-delete | DEFINED — template for the rest |
+| `EvidenceReview` | Business record | maybe | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `FileRecord` | Business record | No | retentionUntil sweep (data-lifecycle `runRetentionSweep`) + soft-delete | DEFINED (retentionUntil) where set; else indefinite |
+| `Finding` | Business record | No | Soft-delete (`deletedAt`); 90-day purge via `data-lifecycle` | Active: indefinite. Soft-deleted: 90-day purge |
+| `FindingEvidence` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `FindingRisk` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `Framework` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `FrameworkMapping` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `FrameworkPack` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `FrameworkRequirement` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `FrameworkRequirementOrder` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `IntegrationConnection` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `IntegrationExecution` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
+| `IntegrationSyncMapping` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
+| `IntegrationWebhookEvent` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
+| `KeyRiskIndicator` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `KriReading` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `LossEvent` | Business record | No | Soft-delete (`deletedAt`) — **NOT** auto-purged | Soft-deleted rows **not auto-purged** — gap |
+| `Notification` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
+| `NotificationOutbox` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
+| `OrgAuditLog` | Regulatory artefact | ind. | Immutable + hash-chained (never deleted) | Regulatory min/max — **needs legal/auditor input** |
+| `OrgDashboardWidget` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `OrgInvite` | Security ephemeral | maybe | `expiresAt` expiry (security) | DEFINED — expiry-driven |
+| `OrgMembership` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `Organization` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `PackTemplateLink` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `PasswordResetToken` | Security ephemeral | No | `expiresAt` expiry (security) | DEFINED — expiry-driven |
+| `Policy` | Business record | No | retentionUntil sweep (data-lifecycle `runRetentionSweep`) + soft-delete | DEFINED (retentionUntil) where set; else indefinite |
+| `PolicyAcknowledgement` | Business record | maybe | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `PolicyApproval` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `PolicyControlLink` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `PolicyTemplate` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `PolicyVersion` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `PortfolioSnapshot` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
+| `ProcessEdge` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `ProcessEdgeControl` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `ProcessMap` | Business record | No | Soft-delete (`deletedAt`) — **NOT** auto-purged | Soft-deleted rows **not auto-purged** — gap |
+| `ProcessMapSnapshot` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
+| `ProcessNode` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `QuestionnaireQuestion` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `QuestionnaireTemplate` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `ReadinessSnapshot` | Regulatory artefact | ind. | Immutable + hash-chained (never deleted) | Regulatory min/max — **needs legal/auditor input** |
+| `ReminderHistory` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
+| `ReportRun` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
+| `ReportSchedule` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `ReportTemplate` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `RequirementMapping` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `RequirementMappingSet` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `Risk` | Business record | No | retentionUntil sweep (data-lifecycle `runRetentionSweep`) + soft-delete | DEFINED (retentionUntil) where set; else indefinite |
+| `RiskAppetiteBreach` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `RiskAppetiteConfig` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `RiskControl` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `RiskCorrelation` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `RiskHierarchyLink` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `RiskHierarchyNode` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `RiskKeySequence` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
+| `RiskMatrixConfig` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `RiskScenario` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `RiskScoreEvent` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `RiskSimulationRun` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
+| `RiskSnapshot` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
+| `RiskSuggestionItem` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
+| `RiskSuggestionSession` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
+| `RiskTemplate` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `RiskTreatmentPlan` | Business record | No | Soft-delete (`deletedAt`) — **NOT** auto-purged | Soft-deleted rows **not auto-purged** — gap |
+| `ScimGroup` | Configuration | maybe | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `Task` | Business record | No | retentionUntil sweep (data-lifecycle `runRetentionSweep`) + soft-delete | DEFINED (retentionUntil) where set; else indefinite |
+| `TaskComment` | Business record | maybe | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `TaskKeySequence` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
+| `TaskLink` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `TaskWatcher` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `Tenant` | Configuration | No | Soft-delete (`deletedAt`) — **NOT** auto-purged | Lives with tenant; purged on tenant deletion |
+| `TenantApiKey` | Security ephemeral | No | `expiresAt` expiry (security) | DEFINED — expiry-driven |
+| `TenantCustomRole` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `TenantEntraGroupMapping` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `TenantIdentityProvider` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `TenantInvite` | Security ephemeral | maybe | `expiresAt` expiry (security) | DEFINED — expiry-driven |
+| `TenantMembership` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `TenantNotificationSettings` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `TenantOnboarding` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
+| `TenantScimToken` | Security ephemeral | No | None today — cascade on parent/tenant delete only | DEFINED — expiry-driven |
+| `TenantSecuritySettings` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `TreatmentMilestone` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `User` | PII subject | Yes | None today — cascade on parent/tenant delete only | UNDEFINED — GDPR erasure question |
+| `UserIdentityLink` | Security ephemeral | No | None today — cascade on parent/tenant delete only | DEFINED — expiry-driven |
+| `UserMfaEnrollment` | Security ephemeral | No | None today — cascade on parent/tenant delete only | DEFINED — expiry-driven |
+| `UserNotificationPreference` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `UserSession` | Security ephemeral | maybe | `expiresAt` expiry (security) | DEFINED — expiry-driven |
+| `Vendor` | Business record | No | retentionUntil sweep (data-lifecycle `runRetentionSweep`) + soft-delete | DEFINED (retentionUntil) where set; else indefinite |
+| `VendorAssessment` | Business record | maybe | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `VendorAssessmentAnswer` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `VendorAssessmentTemplate` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `VendorAssessmentTemplateQuestion` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `VendorAssessmentTemplateSection` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `VendorContact` | Business record | Yes | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `VendorDocument` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `VendorEvidenceBundle` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `VendorEvidenceBundleItem` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `VendorLink` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `VendorRelationship` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `VerificationToken` | Security ephemeral | No | `expiresAt` expiry (security) | DEFINED — expiry-driven |
+
+## Per-category policy
+
+Each subsection: **Default** (what we recommend) · **Floor/ceiling** (what
+regulation may force) · **Mechanism** · **Owner** · **Cleanup wiring** ·
+**Customer override**.
+
+### Business record (63)
+
+> Risk · Control · Policy · Asset · Vendor · Audit · Task · Evidence · Finding · Process · …
+
+- **Default:** retain indefinitely while the tenant is active. There is **no
+  per-record TTL** on most of these — a `Risk` created in 2026 is still present
+  in 2036 unless a user deletes it or the tenant is deleted. **This is the
+  intended posture today** (compliance records are evidence of work and are
+  expected to persist for the audit trail), but it should be confirmed with
+  compliance rather than assumed.
+- **Floor/ceiling:** none engineering-imposed. SOC 2 / ISO 27001 evidence is
+  typically expected to be retained for the duration of the certification cycle
+  plus a margin — a compliance decision.
+- **Mechanism:** soft-delete (`deletedAt`) on 12 models in `SOFT_DELETE_MODELS`
+  (`Asset, Risk, Control, Evidence, Policy, Vendor, FileRecord, Task, Finding,
+  Audit, AuditCycle, AuditPack`). Soft-deleted rows on **those** models are
+  hard-purged after a 90-day grace by `data-lifecycle`. 8 models carry
+  `retentionUntil` (`Asset, Risk, Control, Evidence, Policy, Vendor, FileRecord,
+  Task`) and are swept by `runRetentionSweep`. **Evidence is the only one with an
+  end-to-end, exercised retention flow** (set date → reminder → archive → hard
+  purge) and is the template for extending the rest.
+- **Gap — soft-deleted rows that are never purged:** 7 models carry `deletedAt`
+  but are **not** in `SOFT_DELETE_MODELS`, so their soft-deletes live forever:
+  `AccessReview, AutomationRule, ControlException, LossEvent, ProcessMap,
+  RiskTreatmentPlan, Tenant`. Either add them to the purge set or document why
+  they are excluded.
+- **Owner:** Compliance (retention period) + Engineering (mechanism).
+- **Customer override:** none today. A per-tenant / per-category retention knob is
+  an open question (see below).
+
+### Regulatory artefact (3)
+
+> `AuditLog` · `OrgAuditLog` · `ReadinessSnapshot`
+
+- **Engineering position (firm):** `AuditLog` and `OrgAuditLog` are **immutable
+  and hash-chained** (Epic C — `src/lib/audit/audit-writer.ts` + the
+  `IMMUTABLE_AUDIT_LOG` DB trigger). **We do not delete audit-log entries by
+  default.** Deleting them would require a coordinated schema-change PR *plus* a
+  data-protection-impact-assessment, and would break the hash chain unless done
+  with a documented re-chaining procedure.
+- **Default / Floor / ceiling:** **deferred to legal.** The retention period under
+  our SOC 2 commitments is a regulatory decision, not an engineering one.
+- **Mechanism:** append-only; never soft-deleted.
+- **Owner:** Legal / Compliance (period) — Engineering only executes a signed-off
+  procedure.
+- **Customer override:** none, and likely should remain none (tamper-evidence is
+  the point).
+
+### Operational (20)
+
+> Notification · NotificationOutbox · ReminderHistory · `*Execution` · snapshots ·
+> `*KeySequence` · TenantOnboarding · RiskSuggestion*/Simulation
+
+- **Default:** time-boxed. These are transient/regenerable. Recommended starting
+  point: **90-day hard-delete** for notifications/executions/webhook events;
+  snapshots retained as long as their trend window needs (e.g. 13 months).
+- **Mechanism:** **none today** — this is the largest gap. No job prunes
+  `Notification`, `IntegrationExecution`, `AutomationExecution`,
+  `NotificationOutbox`, etc.
+- **Owner:** Engineering (these are not regulated).
+- **Cleanup wiring:** to be added — see the candidate jobs in the cleanup
+  inventory.
+- **Customer override:** not needed (operational data is not customer-meaningful).
+
+### Security ephemeral (13)
+
+> PasswordResetToken · VerificationToken · TenantInvite · OrgInvite · UserSession ·
+> AuthSession · Account · TenantApiKey · TenantScimToken · AuditPackShare ·
+> AuditorPackAccess · UserMfaEnrollment · UserIdentityLink
+
+- **Default:** governed by **security**, not data-retention. Lifetimes are short
+  and intentional (e.g. `PasswordResetToken` 1h single-use; `UserSession` capped
+  by `TenantSecuritySettings.sessionMaxAgeMinutes` + revocation, Epic C.3).
+- **Mechanism:** `expiresAt` / revocation. Expired rows are inert; a periodic
+  hard-delete of expired tokens is a hygiene nicety, not a compliance need.
+- **Owner:** Engineering / Security.
+- **Note:** a retention policy for an invite token is **not** the same
+  conversation as a retention policy for a `Risk` — kept deliberately separate.
+
+### PII subject (2)
+
+> `User` · `AuditorAccount`
+
+- **This is the GDPR Article 17 right-to-erasure surface.**
+- **Supported today?** **No** — beyond `User.deletedAt` soft-delete, there is no
+  erasure flow. Soft-deleting a `User` does not scrub their PII from the row, nor
+  cascade-scrub their authored content, nor reconcile with the immutable
+  `AuditLog` (which references `userId`).
+- **What landing real erasure requires:** (a) a documented cascade across all
+  tenant data referencing the user; (b) a decision on how to treat `AuditLog`
+  references (pseudonymise the `userId`? retain under legal-basis exemption?);
+  (c) an admin/self-service request flow + audit of the erasure itself; (d) a
+  DPIA. Non-trivial — a dedicated roadmap item.
+- **Owner:** Legal (obligation + lawful-basis carve-outs) + Engineering (flow).
+
+### Financial (2)
+
+> `BillingAccount` · `BillingEvent`
+
+- **Default:** retain for the regulatory financial-records period — **typically 7
+  years** in most jurisdictions. **Verify with finance.**
+- **Mechanism:** **none today.**
+- **Owner:** Finance (period) + Engineering (mechanism).
+- **Customer override:** none (regulatory floor overrides customer preference).
+
+### Configuration (36)
+
+> Tenant/Org structure · memberships · templates · framework reference data ·
+> integration + security + notification settings
+
+- **Default:** lives with the tenant; **purged on tenant deletion** (cascade from
+  `Tenant`). No independent TTL.
+- **Mechanism:** FK cascade on tenant deletion. Note `Tenant` itself soft-deletes
+  (`deletedAt`) and is **not** in the purge set — a deleted tenant's data is
+  retained for compliance/restore until a deliberate hard purge.
+- **Owner:** Engineering + Product (tenant-deletion grace period).
+- **Customer override:** n/a (this *is* the customer's configuration).
+
+## Cleanup-job inventory
+
+| Job (schedule) | Function | What it does | Coverage |
+|----------------|----------|--------------|----------|
+| `retention-sweep` (daily 04:00 UTC) | `runEvidenceRetentionSweep` (`jobs/retention.ts`) | Archives `Evidence` where `retentionUntil < now`, not already archived, not soft-deleted. Idempotent. | Evidence only |
+| `daily-evidence-expiry` (daily 06:00 UTC) | `runDailyEvidenceExpiryNotifications` (`jobs/dailyEvidenceExpiry.ts`); reminder generation also in `runEvidenceRetentionNotifications` (`jobs/retention-notifications.ts`) | N-day-before (30/7/1) reminder tasks for expiring evidence, gated by `Tenant.reminderDaysBefore` (default 14). | Evidence only |
+| `data-lifecycle` (daily 03:00 UTC) | `purgeSoftDeletedOlderThan` (90-day grace, 12 `SOFT_DELETE_MODELS`) · `purgeExpiredEvidenceOlderThan` (hard-delete archived evidence > 365 days) · `runRetentionSweep` (cross-model `retentionUntil` sweep over 8 `RETENTION_MODELS`) — all in `jobs/data-lifecycle.ts` | The actual purge engine: hard-deletes aged soft-deletes + aged archived evidence; sweeps `retentionUntil` across the retention models. | 12 soft-delete + 8 retention models |
+
+`src/lib/retention-purge.ts::purgeSoftDeletedOlderThan(days)` is a manual/CLI raw-SQL
+variant of the same purge (writes a hash-chained audit row), for operator-run cleanups.
+
+### Candidate cleanup jobs the policy implies (NOT built here — follow-up PRs)
+
+- **`operational-prune`** — hard-delete `Notification`, `NotificationOutbox`,
+  `ReminderHistory`, `AutomationExecution`, `IntegrationExecution`,
+  `IntegrationWebhookEvent` older than 90 days (per-table TTL).
+- **`soft-delete-purge-completeness`** — extend `SOFT_DELETE_MODELS` (or a parallel
+  set) to cover the 7 `deletedAt` models currently never purged.
+- **`pii-erasure`** — the GDPR Article 17 flow (PII subject section).
+- **`financial-retention`** — enforce the 7-year (TBD) floor on `BillingEvent` and a
+  matching ceiling/expiry once finance confirms.
+- **`tenant-hard-purge`** — after a tenant-deletion grace period, hard-purge a
+  soft-deleted `Tenant` and its cascade.
+
+## Open questions
+
+Each blocks a customer/compliance sign-off. Format: **decision owner** ·
+*engineering implication of each plausible answer* · **default until decided**.
+
+1. **`AuditLog` retention under SOC 2.** Owner: **Legal/Compliance.** *Implication:*
+   "retain forever" = status quo (no work); "retain N years then archive/delete" =
+   a coordinated schema-change + re-chaining procedure + DPIA. **Default: retain
+   indefinitely, never delete.**
+2. **GDPR Article 17 right-to-erasure — supported today?** Owner: **Legal +
+   Engineering.** *Implication:* it is **not** supported beyond soft-delete; landing
+   it is a multi-PR effort (cascade scrub + `AuditLog` reconciliation + request
+   flow + DPIA). **Default: documented roadmap item; soft-delete only.**
+3. **Evidence retention after tenant cancellation.** Owner: **Product +
+   Compliance.** *Implication:* today a cancelled tenant's evidence is retained
+   exactly like an active tenant's; arguably should be "retain N days, then
+   hard-delete." **Default: same as active (no special cancel handling).**
+4. **`BillingEvent` / `BillingAccount` retention.** Owner: **Finance.**
+   *Implication:* most jurisdictions require ~7 years for financial records; pick
+   the floor, then add `financial-retention`. **Default: indefinite (no job).**
+5. **No-TTL business records (Risk/Control/Policy/…).** Owner: **Compliance.**
+   *Implication:* "retain indefinitely while active, purge on tenant deletion" =
+   status quo; "per-record TTL" = a new sweep + a per-category knob. **Default:
+   indefinite while tenant active.**
+6. **Operational-data TTL (Notification/execution/webhook tables).** Owner:
+   **Engineering.** *Implication:* unbounded growth until addressed; a 90-day
+   `operational-prune` is low-risk. **Default: no TTL (grows unbounded).**
+7. **Per-category retention knobs.** Owner: **Product + Engineering.** *Implication:*
+   `Tenant.reminderDaysBefore` is the *only* per-tenant retention knob today.
+   Per-category knobs (`evidence_retention_days`, `audit_log_retention_years`,
+   `notification_retention_days`) would be a tier-gated feature. **Default: single
+   global behaviour, no per-tenant retention configuration.**
+8. **The 7 `deletedAt`-but-never-purged models.** Owner: **Engineering.**
+   *Implication:* `AccessReview, AutomationRule, ControlException, LossEvent,
+   ProcessMap, RiskTreatmentPlan, Tenant` accumulate soft-deleted rows forever;
+   either add to the purge set or document the exclusion. **Default: never purged.**
+
+## Cross-references
+
+- [`docs/encryption-data-protection.md`](encryption-data-protection.md) — the
+  confidentiality-at-rest half of the data-protection story.
+- [`docs/incident-response.md`](incident-response.md) — data-breach response
+  references retained data scope.
+- [`docs/billing.md`](billing.md) — the tenant-cancellation flow has retention
+  implications (open question 3).
+- `CLAUDE.md` → Architecture → **Data Retention**.
