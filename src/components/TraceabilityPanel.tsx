@@ -192,7 +192,7 @@ export default function TraceabilityPanel({ apiBase: apiBaseRaw, entityType, ent
                 },
                 {
                     optimisticData: (current: TraceabilityData | null | undefined) => {
-                        if (!current) return current ?? null;
+                        if (!current) return null;
                         const tempEntry: TraceLinkEntry = {
                             id: `temp:${crypto.randomUUID()}`,
                             rationale: rationale || null,
