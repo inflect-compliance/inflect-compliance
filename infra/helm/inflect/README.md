@@ -5,6 +5,11 @@ application. Currently packages **the main app Deployment** —
 Service, Ingress, HPA, ConfigMap/Secret templates, and the BullMQ
 worker Deployment land in subsequent OI-2 PRs.
 
+**Right-sizing for production:** the shipped defaults (`autoscaling:
+2→10`, `worker.replicaCount: 2`) target the *medium* tier. For
+tenant-count → RPS → resource guidance across small / medium / large /
+enterprise tiers, see the [Production Sizing Playbook](../../../docs/sizing.md).
+
 ## Layout
 
 ```
