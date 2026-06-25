@@ -19,6 +19,17 @@
  * @module scripts/worker
  */
 import 'dotenv/config';
+// OTel init + the job-trace seam are imported up front. `initTelemetry`
+// is invoked in `bootstrap()` BEFORE the `new Worker(...)` below — the
+// web tier inits OTel via `src/instrumentation.ts`, but the worker is a
+// separate process that never loads that hook, so without this its job
+// execution would be invisible to Tempo.
+import { initTelemetry, shutdownTelemetry } from '../src/lib/observability/instrumentation';
+import {
+    runJobInTraceContext,
+    readTraceCarrier,
+    stripTraceCarrier,
+} from '../src/lib/observability/job-trace';
 import { Worker, Job, Queue } from 'bullmq';
 import Redis from 'ioredis';
 import pino from 'pino';
@@ -127,7 +138,11 @@ log.info({ queueName: QUEUE_NAME, redisUrl: REDIS_URL.replace(/\/\/.*@/, '//***@
     log.info('automation bus dispatcher + RLS tripwire + mailer installed');
 })();
 
-const connection = createWorkerConnection();
+// The Worker and its Redis connection are created inside bootstrap()
+// (below) so OTel is initialised before the first job runs. Declared at
+// module scope so the graceful-shutdown handler can close them.
+let connection: Redis | undefined;
+let worker: Worker | undefined;
 
 // ─── Boot-time schedule self-registration (item 28) ───
 //
@@ -158,91 +173,132 @@ const connection = createWorkerConnection();
     }
 })();
 
-const worker = new Worker(
-    QUEUE_NAME,
-    async (job: Job) => {
-        const jobName = job.name as JobName;
+// ═══════════════════════════════════════════════════════════════════
+// Worker bootstrap.
+//
+// OTel MUST be initialised before the Worker starts processing jobs so
+// the job-execution spans (and the usecase/repository spans nested
+// under them) export to Tempo. `initTelemetry()` is a fast no-op when
+// `OTEL_ENABLED` is unset, so dev/test pay nothing.
+// ═══════════════════════════════════════════════════════════════════
+async function bootstrap(): Promise<void> {
+    await initTelemetry();
 
-        // Lazy-import the executor registry on first job
-        const { executorRegistry } = await import('../src/app-layer/jobs/executor-registry');
+    connection = createWorkerConnection();
 
-        if (!executorRegistry.has(jobName)) {
-            log.warn({ jobName, jobId: job.id }, 'no executor registered for job — skipping');
-            return { skipped: true, reason: `no executor for "${jobName}"` };
-        }
+    worker = new Worker(
+        QUEUE_NAME,
+        async (job: Job) => {
+            const jobName = job.name as JobName;
 
-        const startTime = performance.now();
+            // Lazy-import the executor registry on first job
+            const { executorRegistry } = await import('../src/app-layer/jobs/executor-registry');
 
-        log.info({ jobName, jobId: job.id, payload: job.data }, 'processing job');
+            if (!executorRegistry.has(jobName)) {
+                log.warn({ jobName, jobId: job.id }, 'no executor registered for job — skipping');
+                return { skipped: true, reason: `no executor for "${jobName}"` };
+            }
 
-        // GAP-22: forward the BullMQ Job's progress channel so
-        // executors that report mid-run progress (currently
-        // tenant-dek-rotation) surface it via `GET .../?jobId=…`
-        // without depending on bullmq from the executor side.
-        const result = await executorRegistry.execute(jobName, job.data, {
-            updateProgress: (p) => job.updateProgress(p as object | number),
-        });
-        const durationMs = Math.round(performance.now() - startTime);
+            // Extract the W3C trace carrier the web tier stashed at enqueue
+            // time and run the job inside a span that is a child of the
+            // originating HTTP-handler span. The carrier is stripped before
+            // the payload reaches the executor (and before it is logged).
+            return runJobInTraceContext(
+                readTraceCarrier(job.data),
+                `execute ${jobName}`,
+                {
+                    'job.name': jobName,
+                    'job.id': job.id ?? 'unknown',
+                    'job.attempts': job.attemptsMade,
+                    'messaging.system': 'bullmq',
+                    'messaging.destination.name': QUEUE_NAME,
+                    'messaging.operation': 'process',
+                    'messaging.message.id': job.id ?? 'unknown',
+                },
+                async () => {
+                    const startTime = performance.now();
+                    const payload = stripTraceCarrier(job.data as Record<string, unknown>);
 
-        if (!result.success) {
-            log.error({
-                jobName,
-                jobId: job.id,
-                attemptsMade: job.attemptsMade,
-                durationMs,
-                errorMessage: result.errorMessage,
-            }, 'job processing failed');
+                    log.info({ jobName, jobId: job.id, payload }, 'processing job');
 
-            throw new Error(result.errorMessage || `Job "${jobName}" failed`);
-        }
+                    // GAP-22: forward the BullMQ Job's progress channel so
+                    // executors that report mid-run progress (currently
+                    // tenant-dek-rotation) surface it via `GET .../?jobId=…`
+                    // without depending on bullmq from the executor side.
+                    const result = await executorRegistry.execute(jobName, payload, {
+                        updateProgress: (p) => job.updateProgress(p as object | number),
+                    });
+                    const durationMs = Math.round(performance.now() - startTime);
 
-        log.info({
-            jobName,
-            jobId: job.id,
-            attemptsMade: job.attemptsMade,
-            durationMs,
-            itemsScanned: result.itemsScanned,
-            itemsActioned: result.itemsActioned,
-        }, 'job processed successfully');
+                    if (!result.success) {
+                        log.error({
+                            jobName,
+                            jobId: job.id,
+                            attemptsMade: job.attemptsMade,
+                            durationMs,
+                            errorMessage: result.errorMessage,
+                        }, 'job processing failed');
 
-        return result;
-    },
-    {
-        connection,
-        concurrency: 5,
-        limiter: {
-            max: 50,
-            duration: 60000,
+                        // Thrown inside the trace span so it is marked ERROR
+                        // and recorded, then re-thrown for BullMQ's retry.
+                        throw new Error(result.errorMessage || `Job "${jobName}" failed`);
+                    }
+
+                    log.info({
+                        jobName,
+                        jobId: job.id,
+                        attemptsMade: job.attemptsMade,
+                        durationMs,
+                        itemsScanned: result.itemsScanned,
+                        itemsActioned: result.itemsActioned,
+                    }, 'job processed successfully');
+
+                    return result;
+                },
+            );
         },
-    },
-);
+        {
+            connection,
+            concurrency: 5,
+            limiter: {
+                max: 50,
+                duration: 60000,
+            },
+        },
+    );
 
-// ─── Worker Events ───
+    // ─── Worker Events ───
 
-worker.on('ready', () => {
-    log.info({
-        queueName: QUEUE_NAME,
-        note: 'Dispatch via executor-registry (lazy-loaded on first job)',
-    }, 'worker ready — listening for jobs');
-});
+    worker.on('ready', () => {
+        log.info({
+            queueName: QUEUE_NAME,
+            note: 'Dispatch via executor-registry (lazy-loaded on first job)',
+        }, 'worker ready — listening for jobs');
+    });
 
-worker.on('failed', (job, error) => {
-    log.error({
-        jobName: job?.name,
-        jobId: job?.id,
-        attemptsMade: job?.attemptsMade,
-        err: error instanceof Error ? { name: error.name, message: error.message } : String(error),
-    }, 'job failed (BullMQ event)');
-});
+    worker.on('failed', (job, error) => {
+        log.error({
+            jobName: job?.name,
+            jobId: job?.id,
+            attemptsMade: job?.attemptsMade,
+            err: error instanceof Error ? { name: error.name, message: error.message } : String(error),
+        }, 'job failed (BullMQ event)');
+    });
 
-worker.on('stalled', (jobId) => {
-    log.warn({ jobId }, 'job stalled — will be retried');
-});
+    worker.on('stalled', (jobId) => {
+        log.warn({ jobId }, 'job stalled — will be retried');
+    });
 
-worker.on('error', (error) => {
-    log.error({
-        err: error instanceof Error ? { name: error.name, message: error.message } : String(error),
-    }, 'worker error');
+    worker.on('error', (error) => {
+        log.error({
+            err: error instanceof Error ? { name: error.name, message: error.message } : String(error),
+        }, 'worker error');
+    });
+}
+
+void bootstrap().catch((err) => {
+    log.fatal({ err: err instanceof Error ? err.message : String(err) }, 'worker bootstrap failed');
+    process.exit(1);
 });
 
 // ─── Graceful Shutdown ───
@@ -251,8 +307,11 @@ async function shutdown(signal: string) {
     log.info({ signal }, 'shutdown signal received — closing worker');
 
     try {
-        await worker.close();
-        await connection.quit();
+        await worker?.close();
+        await connection?.quit();
+        // Drain in-flight OTel span batches before exit so the final
+        // jobs' execution spans reach Tempo (bounded + never throws).
+        await shutdownTelemetry().catch(() => { /* best-effort */ });
         log.info('worker shut down gracefully');
         process.exit(0);
     } catch (error) {

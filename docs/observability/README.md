@@ -34,7 +34,7 @@ driver captures it; Prometheus cannot store logs and Grafana Loki is
 a separate, bounded initiative. See `02-otel-collector.md` for the
 full justification.
 
-## The four documents
+## The documents
 
 | # | File | Question it answers |
 |---|------|---------------------|
@@ -42,6 +42,7 @@ full justification.
 | 2 | `02-otel-collector.md` | How is the OpenTelemetry Collector deployed and configured — receivers, processors, exporters, pipelines, and operational safeguards? |
 | 3 | `03-prometheus-grafana.md` | How are Prometheus and Grafana deployed — scrape strategy, recording rules, alerts, retention, dashboards, and rollout? |
 | 4 | `04-production-hardening.md` | How is the stack secured, isolated per environment, backed up, upgraded, and monitored — and what do operators do when a component fails? |
+| 5 | `05-job-tracing.md` | How does a distributed trace follow an async BullMQ job — so a slow HTTP request and the worker execution it triggers show as one trace? |
 
 ## How they relate
 

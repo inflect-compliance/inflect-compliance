@@ -19,8 +19,10 @@
  * @module app-layer/jobs/queue
  */
 import { Queue, type JobsOptions, type ConnectionOptions } from 'bullmq';
+import { propagation, trace, context as otelContext, SpanStatusCode } from '@opentelemetry/api';
 import { createRedisClient } from '@/lib/redis';
 import { QUEUE_NAME, JOB_DEFAULTS, type JobName, type JobPayload } from './types';
+import { OTEL_CARRIER_KEY } from '@/lib/observability/job-trace';
 import { logger } from '@/lib/observability/logger';
 
 // ─── Singleton queue (survives HMR) ───
@@ -83,22 +85,72 @@ export async function enqueue<T extends JobName>(
 ) {
     const queue = getQueue();
     const defaults = JOB_DEFAULTS[name];
+    const tracer = trace.getTracer('inflect.jobs');
 
-    const job = await queue.add(name, payload, {
-        attempts: defaults.attempts,
-        backoff: defaults.backoff,
-        removeOnComplete: defaults.removeOnComplete,
-        removeOnFail: defaults.removeOnFail,
-        ...options,
-    });
+    // Wrap the enqueue in an active span and inject the W3C trace
+    // context INSIDE it, so the carrier points at this `enqueue` span.
+    // The worker then links the job-execution span as a child of it —
+    // giving Tempo the full chain: HTTP handler ▸ enqueue ▸ execute.
+    return tracer.startActiveSpan(
+        `enqueue ${name}`,
+        {
+            attributes: {
+                'job.name': name,
+                // Canonical messaging.* semantic-convention attributes so
+                // Tempo's trace search can filter by queue/operation. Set
+                // manually rather than via an auto-instrumentation package
+                // (see docs/observability/05-job-tracing.md for why).
+                'messaging.system': 'bullmq',
+                'messaging.destination.name': QUEUE_NAME,
+                'messaging.operation': 'publish',
+                ...(payload && typeof payload === 'object' && 'tenantId' in payload
+                    ? { 'app.tenantId': String((payload as Record<string, unknown>).tenantId) }
+                    : {}),
+            },
+        },
+        async (span) => {
+            try {
+                const carrier: Record<string, string> = {};
+                propagation.inject(otelContext.active(), carrier);
 
-    logger.info('job enqueued', {
-        component: 'queue',
-        jobName: name,
-        jobId: job.id,
-    });
+                // The carrier rides as an untyped sibling of the typed
+                // payload under a namespaced sentinel key; executors never
+                // see it (the worker strips it on pickup).
+                const augmentedPayload = { ...payload, [OTEL_CARRIER_KEY]: carrier };
 
-    return job;
+                const job = await queue.add(name, augmentedPayload, {
+                    attempts: defaults.attempts,
+                    backoff: defaults.backoff,
+                    removeOnComplete: defaults.removeOnComplete,
+                    removeOnFail: defaults.removeOnFail,
+                    ...options,
+                });
+
+                span.setAttribute('job.id', job.id ?? 'unknown');
+                span.setAttribute('messaging.message.id', job.id ?? 'unknown');
+                span.setStatus({ code: SpanStatusCode.OK });
+
+                logger.info('job enqueued', {
+                    component: 'queue',
+                    jobName: name,
+                    jobId: job.id,
+                });
+
+                return job;
+            } catch (err) {
+                if (err instanceof Error) {
+                    span.recordException(err);
+                }
+                span.setStatus({
+                    code: SpanStatusCode.ERROR,
+                    message: err instanceof Error ? err.message : String(err),
+                });
+                throw err;
+            } finally {
+                span.end();
+            }
+        },
+    );
 }
 
 /**
