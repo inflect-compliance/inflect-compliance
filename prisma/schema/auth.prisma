@@ -224,6 +224,9 @@ model Tenant {
   processEdgeControls               ProcessEdgeControl[]
   // Epic P5-PR-A — process map snapshots.
   processMapSnapshots               ProcessMapSnapshot[]
+  // NIS2 gap-assessment (imported open-data question set).
+  nis2SelfAssessments               Nis2SelfAssessment[]
+  nis2SelfAssessmentAnswers         Nis2SelfAssessmentAnswer[]
   // Hub-and-spoke (Epic O-1).
   organization                      Organization?                      @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 

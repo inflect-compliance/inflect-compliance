@@ -208,6 +208,11 @@ export const ENCRYPTED_FIELDS: Readonly<Record<string, readonly string[]>> = {
     //      infrastructure.
     RiskTreatmentPlan: ['closingRemark'],
     TreatmentMilestone: ['description'],
+    // NIS2 gap-assessment answer rationale — free text the respondent
+    // writes to justify a NO/PARTIALLY answer; may name internal systems,
+    // gaps, or vendor exposure. Encrypted at rest like every other
+    // business-content free-text field.
+    Nis2SelfAssessmentAnswer: ['note'],
 } as const;
 
 /** Set of model names with at least one encrypted field. Fast-path check. */

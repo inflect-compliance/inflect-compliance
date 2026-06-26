@@ -631,6 +631,67 @@ Reviewed at least annually.` },
     }
     console.log(`✅ NIS2 framework + ${nis2Data.length} requirements seeded`);
 
+    // NIS2 gap-assessment question set — imported open-data (CC BY 4.0).
+    // SEPARATE artifact from the NIS2 framework requirements above: the
+    // gap-assessment questions are a self-assessment checklist, not
+    // normative framework requirements, so they live in their own
+    // Nis2GapDomain / Nis2GapQuestion reference tables side by side.
+    // See prisma/fixtures/nis2-gap-assessment.LICENSE.md for attribution.
+    const nis2Gap = require('./fixtures/nis2-gap-assessment.json') as {
+        version: string;
+        domains: Array<{
+            id: number;
+            code: string;
+            name: unknown;
+            description: unknown;
+            day: number;
+        }>;
+        questions: Array<{
+            id: string;
+            domain: number;
+            text: unknown;
+            plainText: unknown;
+            legalBasis: string;
+            criticality: string;
+            respondent: string;
+            consequence: string;
+            fineExposure: boolean;
+            timeToFix: string;
+            day: number;
+            dependsOn: string[];
+        }>;
+    };
+    for (const d of nis2Gap.domains) {
+        await prisma.nis2GapDomain.upsert({
+            where: { id: d.id },
+            update: { code: d.code, name: d.name as object, description: d.description as object, day: d.day },
+            create: { id: d.id, code: d.code, name: d.name as object, description: d.description as object, day: d.day },
+        });
+    }
+    for (const q of nis2Gap.questions) {
+        const data = {
+            domainId: q.domain,
+            text: q.text as object,
+            plainText: q.plainText as object,
+            legalBasis: q.legalBasis,
+            criticality: q.criticality,
+            respondent: q.respondent,
+            consequence: q.consequence,
+            fineExposure: q.fineExposure,
+            timeToFix: q.timeToFix,
+            day: q.day,
+            dependsOn: q.dependsOn,
+        };
+        await prisma.nis2GapQuestion.upsert({
+            where: { id: q.id },
+            update: data,
+            create: { id: q.id, ...data },
+        });
+    }
+    console.log(
+        `✅ NIS2 gap-assessment ${nis2Gap.version} — ${nis2Gap.domains.length} domains + ${nis2Gap.questions.length} questions seeded`,
+    );
+
     // ISO 9001
     const iso9001Data = require('./fixtures/iso9001_clauses.json') as Array<{ key: string; section: string; sortOrder: number; title: string }>;
     const iso9001 = await prisma.framework.upsert({
