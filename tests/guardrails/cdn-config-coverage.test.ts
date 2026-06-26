@@ -67,3 +67,35 @@ describe('release/deploy invalidation', () => {
         expect(deployYml).toContain('/_next/*');
     });
 });
+
+describe('edge performance (HTTP/3 + brotli + keep-alive)', () => {
+    it('the distribution negotiates HTTP/3 (http2and3)', () => {
+        expect(cdnTf).toMatch(/http_version\s*=\s*"http2and3"/);
+    });
+
+    it('the origin keeps a warm connection pool (keepalive >= 30s)', () => {
+        const m = cdnTf.match(/origin_keepalive_timeout\s*=\s*(\d+)/);
+        expect(m).not.toBeNull();
+        expect(parseInt(m![1], 10)).toBeGreaterThanOrEqual(30);
+    });
+
+    it('the origin speaks TLS 1.3 to the edge', () => {
+        expect(cdnTf).toMatch(/origin_ssl_protocols\s*=\s*\[\s*"TLSv1\.2"\s*,\s*"TLSv1\.3"\s*\]/);
+    });
+
+    it('the default (HTML) behavior documents the no-store / no-shared-cache policy', () => {
+        // The rationale comment must explain why tenant HTML is never edge-cached.
+        expect(cdnTf).toMatch(/never be served from a shared edge/i);
+    });
+
+    it('brotli is enabled on every cache behavior (compress = true)', () => {
+        // CloudFront serves content-encoding: br when compress=true and the
+        // client advertises it. All behaviors must opt in.
+        const compressCount = (cdnTf.match(/compress\s*=\s*true/g) ?? []).length;
+        expect(compressCount).toBeGreaterThanOrEqual(4);
+    });
+
+    it('Caddy advertises the h3 protocol at the origin', () => {
+        expect(caddy).toMatch(/protocols\s+h1\s+h2\s+h3/);
+    });
+});

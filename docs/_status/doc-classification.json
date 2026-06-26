@@ -4,7 +4,7 @@
   "counts": {
     "authoritative": 104,
     "living": 5,
-    "historical": 276,
+    "historical": 277,
     "deprecated": 1
   },
   "docs": {
@@ -966,6 +966,9 @@
       "class": "historical"
     },
     "docs/implementation-notes/2026-06-26-cdn-cloudfront.md": {
+      "class": "historical"
+    },
+    "docs/implementation-notes/2026-06-26-cdn-edge-http3.md": {
       "class": "historical"
     },
     "docs/implementation-notes/2026-06-26-dsar-foundation.md": {

@@ -65,15 +65,31 @@ resource "aws_cloudfront_distribution" "this" {
   price_class     = var.price_class
   aliases         = [var.domain_name]
 
+  # HTTP/3 (QUIC) + HTTP/2 at the viewer edge. HTTP/3's 0-RTT connection
+  # resumption is implicit — supported clients (mobile, far-from-origin)
+  # skip a full round-trip on reconnect, saving ~30-80ms on high-latency
+  # links. Falls back to h2/h1 for older clients automatically.
+  http_version = "http2and3"
+
   origin {
     domain_name = var.origin_domain_name
     origin_id   = local.origin_id
 
+    # Edge → origin connection tuning. The edge keeps a warm pool of
+    # TLS connections to the origin (keepalive 60s), so a far-away user's
+    # TLS handshake terminates at the EDGE and the edge reuses an already-
+    # established origin connection — the per-navigation origin-TLS cost is
+    # amortized across many requests instead of paid every time.
+    connection_attempts = 3
+    connection_timeout  = 10
+
     custom_origin_config {
-      http_port              = 80
-      https_port             = 443
-      origin_protocol_policy = "https-only"
-      origin_ssl_protocols   = ["TLSv1.2"]
+      http_port                = 80
+      https_port               = 443
+      origin_protocol_policy   = "https-only"
+      origin_ssl_protocols     = ["TLSv1.2", "TLSv1.3"]
+      origin_keepalive_timeout = 60
+      origin_read_timeout      = 30
     }
 
     # Custom-origin equivalent of OAC: a shared secret header the origin
@@ -149,7 +165,28 @@ resource "aws_cloudfront_distribution" "this" {
     }
   }
 
-  # Default — the dynamic HTML shell. Never cached.
+  # Default — the dynamic HTML shell.
+  #
+  # This behavior caches NOTHING (TTL 0). The tenant-scoped HTML (/t/*)
+  # carries auth context and MUST NEVER be served from a shared edge
+  # cache — doing so would leak one tenant's rendered page to another.
+  #
+  # Routing /t/* through CloudFront is still worthwhile WITHOUT caching:
+  #   - TLS termination at the edge — a user far from the origin completes
+  #     their TLS handshake at the nearest PoP (~30-80ms saved vs. a
+  #     cross-continent handshake to the VM).
+  #   - HTTP/3 + 0-RTT on supported clients (see `http_version` above).
+  #   - Origin keep-alive connection reuse — the edge holds a warm pool to
+  #     the origin (keepalive 60s), so the user's request rides an
+  #     already-established origin connection instead of paying a fresh
+  #     origin TLS handshake per navigation.
+  #   - Brotli compression of the HTML (`compress = true` → CloudFront
+  #     serves `content-encoding: br` when the client advertises it,
+  #     better ratio than the origin's gzip/zstd at the same CPU).
+  #
+  # If a future requirement adds tenant-isolated edge caching, see the
+  # "Per-tenant edge cache" section in docs/cdn.md (out of scope here —
+  # it needs per-tenant cache keys + cache-poisoning protection).
   default_cache_behavior {
     viewer_protocol_policy = "redirect-to-https"
     allowed_methods        = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
