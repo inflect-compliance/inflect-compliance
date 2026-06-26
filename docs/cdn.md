@@ -59,6 +59,50 @@ aws cloudfront create-invalidation --distribution-id <id> --paths '/_next/*' '/'
   environments with no CDN tier (e.g. the current GCP-VM production). Enabling it
   requires AWS credentials (an OIDC role) available in the deploy job.
 
+## Edge performance (HTTP/3, brotli, keep-alive)
+
+Beyond static-asset caching, the edge cuts network latency for the
+dynamic, **uncached** tenant HTML too:
+
+- **HTTP/3 + 0-RTT.** `http_version = "http2and3"` — supported clients
+  (mobile, far-from-origin) negotiate QUIC and skip a round-trip on
+  reconnect (~30-80ms on high-latency links). Older clients fall back to
+  h2/h1. The origin (Caddy) also advertises h3 (`protocols h1 h2 h3`) for
+  direct, no-CDN deployments.
+- **TLS termination at the edge.** A user far from the origin completes
+  their TLS handshake at the nearest PoP instead of the single VM —
+  ~30-80ms saved per first connection.
+- **Origin keep-alive connection reuse.** `origin_keepalive_timeout = 60`
+  keeps a warm pool of edge→origin TLS connections, so a viewer request
+  rides an already-established origin connection rather than paying a
+  fresh origin handshake per navigation.
+- **Brotli HTML compression.** `compress = true` on every behavior →
+  CloudFront serves `content-encoding: br` when the client advertises it
+  (better ratio than the origin's gzip/zstd at the same CPU).
+
+These help `/t/*` HTML **without caching it** — the page is still fetched
+from the origin every time (see below).
+
+### Measuring the win (deferred)
+
+This change ships the edge settings; the **before/after numbers are
+captured separately** once a baseline exists. The RUM instrumentation
+(`web.vitals.*`, see `docs/perf/`) needs ~1 week of production traffic for
+a baseline, and the win needs ~1 week of post-deploy traffic. Until then,
+the figures above are **literature estimates, not measurements** —
+`docs/perf/baseline-<date>.md` will hold the real `LCP p95` deltas per
+route. If the measured win is < 50ms p95 across routes, the honest
+conclusion is "the network tax wasn't this population's bottleneck."
+
+## Per-tenant edge cache (out of scope)
+
+The default behavior caches **nothing** — tenant-scoped HTML (`/t/*`)
+carries auth context and must never be served from a shared edge cache
+(it would leak one tenant's rendered page to another). Edge-caching
+tenant HTML would require per-tenant cache keys (keyed on a verified
+tenant claim) **plus** cache-poisoning protection, and is a separate,
+larger piece of work — not in this tier.
+
 ## Cost
 
 A single distribution with ~1 TB egress/month is ≈ **$85–90/mo** (PriceClass_100:
@@ -83,8 +127,9 @@ edge location at higher egress cost; default is PriceClass_100.
 
 - **No CloudFront Functions / Lambda@Edge.** The cache surface is static +
   immutable; no edge code is needed.
-- **No change to origin TLS.** CloudFront → origin uses the same Caddy / ingress
-  HTTPS endpoint (`origin_protocol_policy = https-only`, TLSv1.2). A custom-origin
+- **Same origin TLS endpoint.** CloudFront → origin uses the same Caddy / ingress
+  HTTPS endpoint (`origin_protocol_policy = https-only`, TLSv1.2/1.3, keep-alive
+  60s — see "Edge performance" above). A custom-origin
   shared-secret header (`X-CDN-Origin-Secret`, optional) lets the origin reject
   direct, CDN-bypassing traffic — the custom-origin equivalent of S3 OAC (OAC
   itself is S3/Lambda-only and does not apply to a custom HTTP origin).

@@ -9,6 +9,14 @@
     # Use the production LE endpoint by default (default behaviour).
     # Set ACME_EMAIL in the env if you want certificate expiry mail.
     email {$ACME_EMAIL:admin@inflect.app}
+
+    # Advertise HTTP/3 (QUIC) at the origin as well as h1/h2. Caddy emits
+    # the Alt-Svc header automatically so direct-to-origin clients (no CDN
+    # in front) negotiate h3; behind CloudFront the edge speaks h3 to the
+    # viewer (see http_version in infra/terraform/modules/cdn/main.tf).
+    servers {
+        protocols h1 h2 h3
+    }
 }
 
 inflect.34-140-180-255.sslip.io {
