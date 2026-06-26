@@ -2,9 +2,9 @@
   "$schema": "internal: docs classification source of truth",
   "description": "Classification of every docs/**/*.md. authoritative = true today; living = partially-shipped design direction; historical = moment-in-time record (incl. all of docs/implementation-notes/); deprecated = superseded redirect. Enforced by tests/guardrails/docs-accuracy.test.ts. See CLAUDE.md \"Doc classifications\".",
   "counts": {
-    "authoritative": 102,
+    "authoritative": 103,
     "living": 5,
-    "historical": 274,
+    "historical": 275,
     "deprecated": 1
   },
   "docs": {
@@ -105,6 +105,9 @@
       "class": "authoritative"
     },
     "docs/domain-import-export.md": {
+      "class": "authoritative"
+    },
+    "docs/dsar.md": {
       "class": "authoritative"
     },
     "docs/e2e-spec-migration-tracker.md": {
@@ -963,6 +966,9 @@
       "class": "historical"
     },
     "docs/implementation-notes/2026-06-26-cdn-cloudfront.md": {
+      "class": "historical"
+    },
+    "docs/implementation-notes/2026-06-26-dsar-foundation.md": {
       "class": "historical"
     },
     "docs/implementation-notes/2026-06-26-read-replica-routing.md": {
