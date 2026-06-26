@@ -32,6 +32,20 @@ export class FindingRepository {
         });
     }
 
+    /**
+     * Findings tagged with a given provenance source (e.g. all
+     * NIS2_SELF_ASSESSMENT findings). Indexed by
+     * [tenantId, sourceKind, sourceRef]. Used by materializers to dedupe +
+     * reconcile. Bounded.
+     */
+    static async listBySource(db: PrismaTx, ctx: RequestContext, sourceKind: string) {
+        return db.finding.findMany({
+            where: { tenantId: ctx.tenantId, sourceKind, deletedAt: null },
+            select: { id: true, sourceRef: true, status: true, title: true },
+            take: 1000,
+        });
+    }
+
     static async getById(db: PrismaTx, ctx: RequestContext, id: string) {
         return db.finding.findFirst({
             where: { id, tenantId: ctx.tenantId },

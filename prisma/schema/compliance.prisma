@@ -1507,6 +1507,13 @@ model Finding {
   verificationNotes     String?
   verifiedBy            String?
   verifiedAt            DateTime?
+  // Generic provenance tag — identifies findings auto-materialized from
+  // a derived source (e.g. sourceKind='NIS2_SELF_ASSESSMENT',
+  // sourceRef=<questionId>) so re-running the materializer is idempotent
+  // and can reconcile (close on now-passing answers). NULL for
+  // hand-raised findings.
+  sourceKind            String?
+  sourceRef             String?
   createdAt             DateTime          @default(now())
   updatedAt             DateTime          @updatedAt
   deletedAt             DateTime?
@@ -1527,6 +1534,8 @@ model Finding {
   @@index([tenantId, assigneeUserId])
   @@index([tenantId, controlId])
   @@index([tenantId, compensatingControlId])
+  // Idempotent materializer lookup: findings for one derived source.
+  @@index([tenantId, sourceKind, sourceRef])
 }
 
 // Many-to-many: a finding can implicate several risks. Composite parent

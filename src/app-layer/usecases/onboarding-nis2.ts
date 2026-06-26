@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * NIS2 self-assessment — onboarding usecase surface.
  *
@@ -14,7 +13,7 @@
  * so mutations also get the mutation-tier rate limit.
  */
 import { RequestContext } from '../types';
-import { runInTenantContext } from '@/lib/db-context';
+import { runInTenantContext, PrismaTx } from '@/lib/db-context';
 import { badRequest } from '@/lib/errors/types';
 import { assertCanManageOnboarding } from '../policies/onboarding.policies';
 import { Nis2GapAssessmentRepository } from '../repositories/Nis2GapAssessmentRepository';
@@ -22,10 +21,11 @@ import { NIS2_ANSWER } from '@/lib/schemas/nis2-gap-assessment';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { logEvent } from '../events/audit';
 import { getOnboardingState, completeOnboardingStep } from './onboarding';
+import { snapshotNis2Readiness } from './nis2-readiness';
 import { logger } from '@/lib/observability/logger';
 
 /** Resolve the tenant's single self-assessment, creating it on first touch. */
-async function resolveAssessment(db: any, ctx: RequestContext) {
+async function resolveAssessment(db: PrismaTx, ctx: RequestContext) {
     const existing = await Nis2GapAssessmentRepository.listAssessments(db, ctx, { take: 1 });
     if (existing[0]) return existing[0];
     return Nis2GapAssessmentRepository.createAssessment(db, ctx, {
@@ -126,6 +126,17 @@ export async function completeNis2Assessment(ctx: RequestContext) {
         }
     } catch (e) {
         logger.warn('nis2 assessment: onboarding step advance skipped', {
+            component: 'onboarding',
+            error: e instanceof Error ? { name: e.name, message: e.message } : { name: 'UnknownError', message: String(e) },
+        });
+    }
+
+    // Snapshot the readiness score for the trend line (best-effort — a
+    // snapshot failure must not fail completion).
+    try {
+        await snapshotNis2Readiness(ctx);
+    } catch (e) {
+        logger.warn('nis2 assessment: readiness snapshot skipped', {
             component: 'onboarding',
             error: e instanceof Error ? { name: e.name, message: e.message } : { name: 'UnknownError', message: String(e) },
         });
