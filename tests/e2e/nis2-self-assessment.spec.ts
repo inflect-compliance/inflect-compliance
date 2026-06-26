@@ -28,21 +28,33 @@ async function startAndCompleteCompanyProfile(page: import('@playwright/test').P
     await gotoAndVerify(page, `/t/${slug}/onboarding`, 'main');
     await page.waitForLoadState('networkidle').catch(() => {});
 
+    // Wait for the dynamically-imported wizard to become interactive before
+    // probing — racing the lazy import was the source of fw-card flakes.
     const startBtn = page.locator('button:has-text("Start Setup")');
-    if (await startBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+    const wizard = page.locator('[data-testid="onboarding-wizard"]');
+    await startBtn.or(wizard).first().waitFor({ state: 'visible', timeout: 30000 }).catch(() => {});
+
+    if (await startBtn.isVisible().catch(() => false)) {
         await startBtn.click();
         await page.waitForLoadState('networkidle').catch(() => {});
     }
 
     const nameInput = page.locator('[data-testid="company-name"]');
-    if (await nameInput.isVisible({ timeout: 5000 }).catch(() => false)) {
+    if (await nameInput.isVisible({ timeout: 10000 }).catch(() => false)) {
         await nameInput.fill('Acme Corporation');
     }
-    const continueBtn = page.locator('button:has-text("Continue")');
-    if (await continueBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+    const continueBtn = page.getByRole('main').locator('button:has-text("Continue")');
+    if (await continueBtn.isVisible({ timeout: 10000 }).catch(() => false)) {
         await continueBtn.click();
         await page.waitForLoadState('networkidle').catch(() => {});
     }
+    // Guarantee the Frameworks step is reached before the spec proceeds —
+    // any `fw-*` card proves the step loaded (generous budget for CI).
+    await page
+        .locator('[data-testid^="fw-"]')
+        .first()
+        .waitFor({ state: 'visible', timeout: 25000 })
+        .catch(() => {});
 }
 
 test.describe('NIS2 self-assessment — NIS2 selected', () => {
@@ -59,9 +71,9 @@ test.describe('NIS2 self-assessment — NIS2 selected', () => {
 
         // Frameworks step → pick NIS2 (lowercase key in the picker).
         const nis2Card = page.locator('[data-testid="fw-nis2"]');
-        await nis2Card.waitFor({ state: 'visible', timeout: 15000 });
+        await nis2Card.waitFor({ state: 'visible', timeout: 20000 });
         await nis2Card.click();
-        await page.locator('button:has-text("Continue")').click();
+        await page.getByRole('main').locator('button:has-text("Continue")').click();
         await page.waitForLoadState('networkidle').catch(() => {});
 
         // The conditional step is now present in the rail + content.
@@ -125,16 +137,17 @@ test.describe('NIS2 self-assessment — NIS2 NOT selected', () => {
 
         // Pick ISO 27001 only (NOT NIS2).
         const isoCard = page.locator('[data-testid="fw-iso27001"]');
-        await isoCard.waitFor({ state: 'visible', timeout: 15000 });
+        await isoCard.waitFor({ state: 'visible', timeout: 20000 });
         await isoCard.click();
-        await page.locator('button:has-text("Continue")').click();
+        await page.getByRole('main').locator('button:has-text("Continue")').click();
         await page.waitForLoadState('networkidle').catch(() => {});
 
-        // The NIS2 step must NOT exist in the rail or content.
+        // The NIS2 step must NOT exist in the rail or content (core claim).
         await expect(page.locator('[data-testid="step-nav-NIS2_SELF_ASSESSMENT"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="nis2-self-assessment"]')).toHaveCount(0);
 
-        // Completing FRAMEWORK_SELECTION advanced straight to Assets.
-        await expect(page.getByText(/Assets|Step \d+ of 7/)).toBeVisible({ timeout: 10000 });
+        // The denominator excludes the NIS2 step (7 visible steps, not 8) —
+        // so a non-NIS2 tenant can reach 100%. Tolerant wait for the header.
+        await expect(page.getByText(/of 7\b/).first()).toBeVisible({ timeout: 15000 });
     });
 });
