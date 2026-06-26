@@ -45,8 +45,11 @@ describe('Policy detail — Epic 45.2 RichTextEditor adoption', () => {
         expect(source).toMatch(
             /v\.contentType\s*===\s*['"]HTML['"][\s\S]{0,400}sanitizeRichTextHtml\(/,
         );
+        // The sanitised HTML is then enriched (heading anchors + auto
+        // Table of Contents) before it's rendered.
+        expect(source).toMatch(/const\s+enriched\s*=\s*enrichPolicyHtml\(safe\)/);
         expect(source).toMatch(
-            /dangerouslySetInnerHTML=\{\{\s*__html:\s*safe\s*\}\}/,
+            /dangerouslySetInnerHTML=\{\{\s*__html:\s*enriched\s*\}\}/,
         );
     });
 
