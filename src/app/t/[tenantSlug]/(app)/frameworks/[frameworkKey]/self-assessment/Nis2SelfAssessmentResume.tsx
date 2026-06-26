@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft } from '@/components/ui/icons/nucleo';
 
 import { Nis2SelfAssessmentStep } from '@/components/onboarding/Nis2SelfAssessmentStep';
 import { Button } from '@/components/ui/button';

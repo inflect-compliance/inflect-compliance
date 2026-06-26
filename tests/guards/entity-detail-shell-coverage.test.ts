@@ -151,6 +151,9 @@ describe("EntityDetailLayout adoption — PR-4", () => {
       "src/app/t/[tenantSlug]/(app)/issues/[issueId]/page.tsx", // legacy redirect → /tasks/[id]
       "src/app/t/[tenantSlug]/(app)/admin/vendor-templates/[templateId]/page.tsx",
       "src/app/t/[tenantSlug]/(app)/admin/vendor-assessment-reviews/[assessmentId]/page.tsx",
+      // NIS2 self-assessment is a gap-assessment FORM scoped to a
+      // framework, not an entity detail surface — no EntityDetailLayout.
+      "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/self-assessment/page.tsx",
     ]);
 
     function walk(dir: string, out: string[] = []): string[] {

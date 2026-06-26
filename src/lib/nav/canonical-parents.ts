@@ -100,6 +100,10 @@ const PARENT_MAP: Record<string, CanonicalParent> = {
         href: '/frameworks/[frameworkKey]',
         label: 'Framework',
     },
+    '/frameworks/[frameworkKey]/self-assessment': {
+        href: '/frameworks/[frameworkKey]',
+        label: 'Framework',
+    },
 
     // Issues
     '/issues/[issueId]': { href: '/issues', label: 'Issues' },

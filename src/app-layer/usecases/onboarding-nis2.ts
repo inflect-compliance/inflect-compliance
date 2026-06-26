@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * NIS2 self-assessment — onboarding usecase surface.
  *
@@ -14,7 +13,7 @@
  * so mutations also get the mutation-tier rate limit.
  */
 import { RequestContext } from '../types';
-import { runInTenantContext } from '@/lib/db-context';
+import { runInTenantContext, type PrismaTx } from '@/lib/db-context';
 import { badRequest } from '@/lib/errors/types';
 import { assertCanManageOnboarding } from '../policies/onboarding.policies';
 import { Nis2GapAssessmentRepository } from '../repositories/Nis2GapAssessmentRepository';
@@ -25,7 +24,7 @@ import { getOnboardingState, completeOnboardingStep } from './onboarding';
 import { logger } from '@/lib/observability/logger';
 
 /** Resolve the tenant's single self-assessment, creating it on first touch. */
-async function resolveAssessment(db: any, ctx: RequestContext) {
+async function resolveAssessment(db: PrismaTx, ctx: RequestContext) {
     const existing = await Nis2GapAssessmentRepository.listAssessments(db, ctx, { take: 1 });
     if (existing[0]) return existing[0];
     return Nis2GapAssessmentRepository.createAssessment(db, ctx, {

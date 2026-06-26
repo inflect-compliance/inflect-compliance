@@ -92,6 +92,10 @@ const EXEMPT_FILES = new Set<string>([
     "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/templates/page.tsx",
     "src/app/t/[tenantSlug]/(app)/admin/vendor-assessment-reviews/[assessmentId]/VendorAssessmentReviewClient.tsx",
     "src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/assessment/[assessmentId]/page.tsx",
+    // NIS2 self-assessment resume — a self-contained gap-assessment
+    // sub-flow under a framework with its own "← Back to NIS2" step
+    // navigation; breadcrumbs would compete with that affordance.
+    "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/self-assessment/Nis2SelfAssessmentResume.tsx",
 
     // ── Per-resource dashboards ─────────────────────────────────
     // These render the resource's own dashboard view (e.g.

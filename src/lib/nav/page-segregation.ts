@@ -66,6 +66,7 @@ export const BACK_AFFORDANCE_EXEMPT_SUBPAGES: readonly string[] = [
     '/onboarding',            // forced flow — back would skip a required step
     '/policies/new',          // redirect shim → /policies?create=1
     '/reports/soa/print',     // print view, chrome-less by design
+    '/frameworks/[frameworkKey]/self-assessment', // own "← Back to NIS2" affordance
     '/risks/new',             // redirect shim → /risks?create=1
     '/tasks/new',             // redirect shim → /tasks?create=1
     '/vendors/new',           // redirect shim → /vendors?create=1
@@ -186,6 +187,7 @@ export const SUBPAGES: readonly string[] = [
     '/frameworks/[frameworkKey]/diff',
     '/frameworks/[frameworkKey]/install',
     '/frameworks/[frameworkKey]/templates',
+    '/frameworks/[frameworkKey]/self-assessment',
 
     // Issues
     '/issues/[issueId]',

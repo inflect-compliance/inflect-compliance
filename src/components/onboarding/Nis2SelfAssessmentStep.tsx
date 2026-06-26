@@ -26,7 +26,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { InfoTooltip } from '@/components/ui/tooltip';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/icons/loading-spinner';
 
 // Required CC BY 4.0 attribution — MUST render wherever the questions show.
 export const NIS2_ATTRIBUTION_TEXT =
@@ -172,7 +172,7 @@ export function Nis2SelfAssessmentStep({
     if (loading) {
         return (
             <div className="flex items-center gap-tight text-content-muted text-sm">
-                <Loader2 className="w-4 h-4 animate-spin" /> Loading the NIS2 self-assessment…
+                <LoadingSpinner className="h-4 w-4" /> Loading the NIS2 self-assessment…
             </div>
         );
     }
@@ -334,7 +334,7 @@ export function Nis2SelfAssessmentStep({
                     </Button>
                 )}
                 <Button variant="primary" onClick={handleComplete} disabled={completing}>
-                    {completing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                    {completing ? <LoadingSpinner className="h-3.5 w-3.5" /> : null}
                     Complete assessment
                 </Button>
             </div>

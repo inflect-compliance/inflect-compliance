@@ -60,7 +60,9 @@ const ROOT = path.resolve(__dirname, '../..');
 const RENDERED_TEST_FLOOR = 194;
 // Raised 36 → 37 (2026-06-20): page-load-budget.spec.ts — the per-route
 // server-TTFB probe for the "instant pages" performance loop.
-const E2E_SPEC_FLOOR = 37;
+// Raised 37 → 42 (2026-06-27): NIS2 self-assessment feature added E2E
+// specs (onboarding step + self-assessment resume flow); lock the gains.
+const E2E_SPEC_FLOOR = 42;
 const REGISTRY_FLOOR = 5;
 
 /** Max a live count may exceed its floor before the floor must rise. */
