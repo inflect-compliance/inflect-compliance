@@ -36,16 +36,24 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  # Cancel superseded runs ONLY for push events (a new commit truly
-  # supersedes the old). For pull_request runs, do NOT auto-cancel: a
-  # `synchronize` fires whenever the PR's merge-ref is recomputed —
-  # including when `main` advances (e.g. semantic-release's per-merge
-  # release commit) WITHOUT any new PR commit. With cancel-in-progress on,
-  # that recompute cancelled the still-in-flight job (Build/Docker) while
-  # already-finished siblings stayed green — a recurring spurious "Build
-  # cancelled". Letting PR runs finish (at the cost of an occasional
-  # duplicate) trades a little runner time for reliable, non-flaky checks.
-  cancel-in-progress: ${{ github.event_name != 'pull_request' }}
+  # NEVER cancel in-progress runs — for pushes OR pull_requests.
+  #
+  # PR runs: a `synchronize` fires whenever the PR's merge-ref is recomputed
+  # (e.g. when `main` advances via semantic-release's per-merge release
+  # commit) WITHOUT any new PR commit; cancelling mid-flight produced
+  # spurious "Build cancelled".
+  #
+  # PUSH runs (main): this run UPLOADS code-scanning SARIF — CodeQL
+  # (`/language:*`) AND Trivy (`trivy-container-scan`) in the SAME run.
+  # When a rapid follow-on push to main (again, the semantic-release bump
+  # after each merge) cancelled the in-flight run mid-upload, GitHub left
+  # BOTH tools showing "reporting errors / check the status page" on the
+  # Security tab even though the scans themselves passed. A half-uploaded
+  # SARIF is worse than a duplicate run, so we let push runs finish too.
+  #
+  # Cost: an occasional duplicate full run on stacked commits — the same
+  # trade already accepted for PRs, now extended to push for upload safety.
+  cancel-in-progress: false
 
 permissions:
   contents: read

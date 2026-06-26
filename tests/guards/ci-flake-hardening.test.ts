@@ -8,8 +8,12 @@
  *      `synchronize` fires when its merge-ref is recomputed (e.g. `main`
  *      advancing via semantic-release's per-merge release commit) WITHOUT a
  *      new PR commit; bare cancel-in-progress then killed the still-in-flight
- *      Build/Docker job while finished siblings stayed green. It must be the
- *      PR-aware expression that only cancels for push events.
+ *      Build/Docker job while finished siblings stayed green. Allowed values
+ *      are `false` (never cancel — current setting; also protects the CodeQL
+ *      + Trivy SARIF uploads on push-to-main from being cancelled mid-flight,
+ *      which left both tools "reporting errors" on the Security tab) OR the
+ *      PR-aware expression that only cancels for push events. Bare `true` is
+ *      banned either way.
  *   2. The Build + Docker Build jobs must keep headroom over their observed
  *      durations so a slow-but-fine cold build isn't cancelled as a timeout.
  */
@@ -51,12 +55,15 @@ function jobTimeout(jobName: string): number {
 }
 
 describe('CI flake hardening', () => {
-    it('cancel-in-progress is PR-aware (not a bare true) so base-recompute synchronizes do not cancel PR runs', () => {
+    it('cancel-in-progress never cancels in-flight runs (false, or the PR-aware expression — never a bare true)', () => {
         expect(CI).toMatch(/cancel-in-progress:/);
         expect(CI).not.toMatch(/cancel-in-progress:\s*true\s*$/m);
-        expect(CI).toMatch(
-            /cancel-in-progress:\s*\$\{\{\s*github\.event_name\s*!=\s*'pull_request'\s*\}\}/,
-        );
+        // `false` (never cancel — strongest; protects SARIF uploads on push)
+        // OR the PR-aware expression both satisfy "don't cancel PR runs on a
+        // base-recompute synchronize".
+        const isFalse = /cancel-in-progress:\s*false\s*$/m.test(CI);
+        const isPrAware = /cancel-in-progress:\s*\$\{\{\s*github\.event_name\s*!=\s*'pull_request'\s*\}\}/.test(CI);
+        expect(isFalse || isPrAware).toBe(true);
     });
 
     it('the Build job has cold-runner headroom (>= 15 min)', () => {
