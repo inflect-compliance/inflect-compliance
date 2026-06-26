@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { FileDropzone } from '@/components/ui/FileDropzone';
 import { Button } from '@/components/ui/button';
+import { Download, ArrowUpRight } from '@/components/ui/icons/nucleo';
 import { uploadWithProgress } from '@/lib/upload/upload-with-progress';
 
 // Mirrors the evidence upload modal's accept list + hint copy so every
@@ -32,6 +33,8 @@ interface AttachedItem {
     name?: string | null;
     url?: string | null;
     kind?: string | null;
+    /** FileRecord id for FILE evidence — drives the signed-URL download. */
+    fileRecordId?: string | null;
 }
 
 export interface EvidenceUploadSectionProps {
@@ -61,6 +64,11 @@ export interface EvidenceUploadSectionProps {
      * control evidence route wants `{ kind: 'LINK', url, note }`.
      */
     urlLinkBody?: (url: string, note: string) => Record<string, unknown>;
+    /**
+     * Compact dropzone — a much shorter drop area for dense side-rail
+     * panels (e.g. the Controls right-rail). Forwarded to FileDropzone.
+     */
+    compactDropzone?: boolean;
 }
 
 export function EvidenceUploadSection({
@@ -73,6 +81,7 @@ export function EvidenceUploadSection({
     label = 'Files',
     urlLinkEndpoint,
     urlLinkBody,
+    compactDropzone = false,
 }: EvidenceUploadSectionProps) {
     const [items, setItems] = useState<AttachedItem[] | null>(null);
     const [url, setUrl] = useState('');
@@ -157,6 +166,7 @@ export function EvidenceUploadSection({
                         accept={EVIDENCE_ACCEPT}
                         maxFileSizeMB={MAX_FILE_MB}
                         multiple
+                        compact={compactDropzone}
                         hint={EVIDENCE_HINT}
                         onUpload={handleUpload}
                         onAllSettled={onAllSettled}
@@ -206,14 +216,39 @@ export function EvidenceUploadSection({
                     {items.map((it) => {
                         const name =
                             it.title || it.fileName || it.name || it.url || 'Evidence';
+                        // FILE evidence → signed-URL download (GET redirects/
+                        // streams). LINK evidence → open the external URL.
+                        const href = it.fileRecordId
+                            ? `/api/t/${tenantSlug}/evidence/files/${it.fileRecordId}/download`
+                            : it.url || null;
+                        const isFile = Boolean(it.fileRecordId);
                         return (
                             <li
                                 key={it.id}
                                 className="flex items-center gap-tight rounded-md border border-border-subtle bg-bg-default px-2.5 py-1.5 text-xs text-content-default"
                             >
-                                <span className="truncate" title={name}>
-                                    {name}
-                                </span>
+                                {href ? (
+                                    <a
+                                        href={href}
+                                        {...(isFile
+                                            ? { download: it.fileName || it.title || undefined }
+                                            : { target: '_blank', rel: 'noopener noreferrer' })}
+                                        className="flex flex-1 items-center gap-tight truncate text-content-link hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-default)] rounded-sm"
+                                        title={isFile ? `Download ${name}` : `Open ${name}`}
+                                        data-testid="evidence-attached-link"
+                                    >
+                                        {isFile ? (
+                                            <Download aria-hidden className="size-3.5 shrink-0" />
+                                        ) : (
+                                            <ArrowUpRight aria-hidden className="size-3.5 shrink-0" />
+                                        )}
+                                        <span className="truncate">{name}</span>
+                                    </a>
+                                ) : (
+                                    <span className="truncate" title={name}>
+                                        {name}
+                                    </span>
+                                )}
                             </li>
                         );
                     })}

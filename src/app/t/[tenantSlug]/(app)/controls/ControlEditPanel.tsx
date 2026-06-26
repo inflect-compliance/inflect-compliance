@@ -12,9 +12,8 @@
  * visible). Replaces the separate quick-edit Sheet, so there's no more table
  * blur and no separate edit button.
  */
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Heading } from "@/components/ui/typography";
-import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { UserCombobox } from "@/components/ui/user-combobox";
@@ -59,63 +58,119 @@ export function ControlEditPanel({
     tenantSlug,
     control,
     canWrite,
-    onClose,
     onSaved,
 }: {
     tenantSlug: string;
     control: PanelControl;
     canWrite: boolean;
-    onClose: () => void;
+    /** Retained for API compatibility (AsidePanel owns the close affordance). */
+    onClose?: () => void;
     /** Called after a successful save so the list reflects new name/owner. */
     onSaved: () => void;
 }) {
     const [tab, setTab] = useState<Tab>("details");
     const base = `/api/t/${tenantSlug}/controls/${control.id}`;
 
-    // ── Edit form (seeded from the row) ──
+    // ── Edit form (seeded from the row) — AUTO-SAVED, no Save button ──
+    // Field edits persist automatically: text fields debounce (~800ms) +
+    // flush on blur; dropdowns + the owner picker commit on change. A
+    // single "Saving…/Saved" status replaces the old Cancel/Save buttons.
     const [name, setName] = useState(control.name ?? "");
     const [description, setDescription] = useState(control.description ?? "");
     const [category, setCategory] = useState(control.category ?? "");
     const [frequency, setFrequency] = useState(control.frequency ?? "");
     const [ownerId, setOwnerId] = useState(control.owner?.id ?? control.ownerUserId ?? "");
-    const [saving, setSaving] = useState(false);
+    const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
     const [error, setError] = useState("");
 
-    const originalOwner = control.owner?.id ?? control.ownerUserId ?? "";
-    const canSave = canWrite && name.trim().length >= 3 && !saving;
+    // Latest field values, so a debounced/blurred commit PATCHes the
+    // current form, never a stale closure. `update()` is the sole writer.
+    const fieldsRef = useRef({
+        name: control.name ?? "",
+        description: control.description ?? "",
+        category: control.category ?? "",
+        frequency: control.frequency ?? "",
+    });
+    const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const save = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!canSave) return;
-        setSaving(true);
+    const nameInvalid = name.trim().length < 3;
+
+    const commitFields = useCallback(async () => {
+        if (!canWrite) return;
+        const f = fieldsRef.current;
+        if (f.name.trim().length < 3) {
+            setError("Name must be at least 3 characters — not saved.");
+            setSaveState("error");
+            return;
+        }
+        setSaveState("saving");
         setError("");
         try {
             const res = await fetch(base, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    name: name.trim(),
-                    description: description.trim() || null,
-                    category: category.trim() || null,
-                    frequency: frequency || null,
+                    name: f.name.trim(),
+                    description: f.description.trim() || null,
+                    category: f.category.trim() || null,
+                    frequency: f.frequency || null,
                 }),
             });
-            if (!res.ok) throw new Error("Update failed");
-            if (ownerId.trim() !== originalOwner) {
-                const ownerRes = await fetch(`${base}/owner`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ ownerUserId: ownerId.trim() || null }),
-                });
-                if (!ownerRes.ok) throw new Error("Owner update failed");
-            }
+            if (!res.ok) throw new Error("Save failed");
+            setSaveState("saved");
             onSaved();
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Update failed");
-        } finally {
-            setSaving(false);
+            setError(err instanceof Error ? err.message : "Save failed");
+            setSaveState("error");
         }
-    };
+    }, [canWrite, base, onSaved]);
+
+    const scheduleCommit = useCallback(() => {
+        if (saveTimer.current) clearTimeout(saveTimer.current);
+        saveTimer.current = setTimeout(() => void commitFields(), 800);
+    }, [commitFields]);
+
+    const commitNow = useCallback(() => {
+        if (saveTimer.current) clearTimeout(saveTimer.current);
+        void commitFields();
+    }, [commitFields]);
+
+    /** Update a field's ref + state in lockstep, then save (debounced or now). */
+    const update = useCallback(
+        (partial: Partial<typeof fieldsRef.current>, immediate: boolean) => {
+            fieldsRef.current = { ...fieldsRef.current, ...partial };
+            if (partial.name !== undefined) setName(partial.name);
+            if (partial.description !== undefined) setDescription(partial.description);
+            if (partial.category !== undefined) setCategory(partial.category);
+            if (partial.frequency !== undefined) setFrequency(partial.frequency);
+            if (immediate) commitNow();
+            else scheduleCommit();
+        },
+        [commitNow, scheduleCommit],
+    );
+
+    /** Owner persists via its own POST endpoint, on change. */
+    const commitOwner = useCallback(
+        async (userId: string) => {
+            if (!canWrite) return;
+            setSaveState("saving");
+            setError("");
+            try {
+                const res = await fetch(`${base}/owner`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ ownerUserId: userId || null }),
+                });
+                if (!res.ok) throw new Error("Owner update failed");
+                setSaveState("saved");
+                onSaved();
+            } catch (err) {
+                setError(err instanceof Error ? err.message : "Owner update failed");
+                setSaveState("error");
+            }
+        },
+        [canWrite, base, onSaved],
+    );
 
     return (
         <div className="space-y-default" role="region" aria-label="Control editor" data-testid="control-edit-panel">
@@ -145,8 +200,9 @@ export function ControlEditPanel({
                             {error}
                         </div>
                     )}
-                    <form onSubmit={save} className="space-y-default" data-testid="control-edit-form">
-                        <fieldset className="space-y-default" disabled={!canWrite || saving}>
+                    {/* Auto-saved edit form (PATCH on change/blur) — no Save button. */}
+                    <div className="space-y-default" data-testid="control-edit-form">
+                        <fieldset className="space-y-default" disabled={!canWrite}>
                             <div>
                                 <label className="mb-1 block text-sm text-content-default" htmlFor="panel-name-input">
                                     Name <RequiredMarker />
@@ -156,9 +212,11 @@ export function ControlEditPanel({
                                     type="text"
                                     className="input w-full"
                                     value={name}
-                                    onChange={(e) => setName(e.target.value)}
+                                    onChange={(e) => update({ name: e.target.value }, false)}
+                                    onBlur={commitNow}
                                     required
                                     minLength={3}
+                                    aria-invalid={nameInvalid || undefined}
                                 />
                             </div>
                             <div>
@@ -170,7 +228,8 @@ export function ControlEditPanel({
                                     className="input w-full"
                                     rows={3}
                                     value={description}
-                                    onChange={(e) => setDescription(e.target.value)}
+                                    onChange={(e) => update({ description: e.target.value }, false)}
+                                    onBlur={commitNow}
                                 />
                             </div>
                             <div>
@@ -182,7 +241,7 @@ export function ControlEditPanel({
                                     name="category"
                                     options={CATEGORY_OPTIONS}
                                     selected={CATEGORY_OPTIONS.find((o) => o.value === category) ?? null}
-                                    setSelected={(o) => setCategory(o?.value ?? "")}
+                                    setSelected={(o) => update({ category: o?.value ?? "" }, true)}
                                     placeholder="—"
                                     searchPlaceholder="Search categories…"
                                     disabled={!canWrite}
@@ -201,7 +260,7 @@ export function ControlEditPanel({
                                     name="frequency"
                                     options={FREQUENCY_OPTIONS}
                                     selected={FREQUENCY_OPTIONS.find((o) => o.value === frequency) ?? null}
-                                    setSelected={(o) => setFrequency(o?.value ?? "")}
+                                    setSelected={(o) => update({ frequency: o?.value ?? "" }, true)}
                                     placeholder="—"
                                     disabled={!canWrite}
                                     hideSearch
@@ -217,40 +276,40 @@ export function ControlEditPanel({
                                     name="ownerUserId"
                                     tenantSlug={tenantSlug}
                                     disabled={!canWrite}
+                                    size="sm"
                                     selectedId={ownerId || null}
-                                    onChange={(userId) => setOwnerId(userId ?? "")}
+                                    onChange={(userId) => {
+                                        setOwnerId(userId ?? "");
+                                        void commitOwner(userId ?? "");
+                                    }}
                                     placeholder={control.owner?.name || control.owner?.email || "Unassigned"}
                                 />
                             </FormField>
                         </fieldset>
                         {canWrite && (
-                            <div className="flex items-center gap-tight">
-                                <Button
-                                    type="button"
-                                    variant="secondary"
-                                    size="sm"
-                                    onClick={onClose}
-                                    data-testid="control-edit-cancel"
-                                    text="Cancel"
-                                />
-                                <Button
-                                    type="submit"
-                                    variant="primary"
-                                    size="sm"
-                                    disabled={!canSave}
-                                    data-testid="control-edit-save"
-                                    text={saving ? "Saving…" : "Save changes"}
-                                />
-                            </div>
+                            <p
+                                className="text-xs text-content-muted"
+                                data-testid="control-edit-autosave-status"
+                                aria-live="polite"
+                            >
+                                {saveState === "saving"
+                                    ? "Saving…"
+                                    : saveState === "saved"
+                                      ? "Saved"
+                                      : saveState === "error"
+                                        ? "Not saved — see above"
+                                        : "Changes save automatically."}
+                            </p>
                         )}
-                    </form>
+                    </div>
 
-                    {/* Drag-and-drop evidence upload (canonical FileDropzone). */}
+                    {/* Drag-and-drop evidence upload (canonical FileDropzone, compact in the rail). */}
                     <EvidenceUploadSection
                         tenantSlug={tenantSlug}
                         linkField="controlId"
                         linkId={control.id}
                         canWrite={canWrite}
+                        compactDropzone
                         listEndpoint={`/controls/${control.id}/evidence`}
                         urlLinkEndpoint={`/controls/${control.id}/evidence`}
                         urlLinkBody={(url, note) => ({ kind: "LINK", url, note: note || undefined })}
