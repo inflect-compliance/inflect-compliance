@@ -9,6 +9,7 @@ import {
     type TrendPayload,
 } from '@/app-layer/usecases/compliance-trends';
 
+import { cachedSsrPayload } from '@/lib/cache/ssr-cache';
 import DashboardClient from './DashboardClient';
 import RecentActivityCard from './RecentActivityCard';
 import { Card } from '@/components/ui/card';
@@ -63,11 +64,24 @@ export default async function DashboardPage({
     // (the client renders the empty state when `trends.daysAvailable < 2`), so
     // its rejection resolves to `null` inside the batch rather than failing the
     // whole page.
-    const [exec, matrixConfig, trends] = await Promise.all([
-        getExecutiveDashboard(ctx),
-        getRiskMatrixConfig(ctx),
-        getComplianceTrends(ctx, 30).catch((): TrendPayload | null => null),
-    ]);
+    // SSR payload cache (origin-tier, per-tenant, tenant-version-keyed).
+    // getExecutiveDashboard is ~11 parallel COUNT queries and is NOT
+    // list-cached, so this is the real win. Tenant-pure (no per-user data),
+    // so a tenant-scoped key is safe. Any entity write bumps the tenant
+    // version → next load recomputes. See docs/response-caching.md.
+    const { exec, matrixConfig, trends } = await cachedSsrPayload({
+        tenantId: ctx.tenantId,
+        route: 'dashboard',
+        ttlSeconds: 60,
+        compute: async () => {
+            const [exec, matrixConfig, trends] = await Promise.all([
+                getExecutiveDashboard(ctx),
+                getRiskMatrixConfig(ctx),
+                getComplianceTrends(ctx, 30).catch((): TrendPayload | null => null),
+            ]);
+            return { exec, matrixConfig, trends };
+        },
+    });
 
     return (
         <DashboardClient

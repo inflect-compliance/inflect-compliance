@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import { getTenantCtx } from '@/app-layer/context';
 import { listPolicies } from '@/app-layer/usecases/policy';
+import { cachedSsrPayload } from '@/lib/cache/ssr-cache';
 import { PoliciesClient } from './PoliciesClient';
 
 export const dynamic = 'force-dynamic';
@@ -40,11 +41,13 @@ export default async function PoliciesPage({
         if (typeof val === 'string' && val) filters[key] = val;
     }
 
-    const policies = await listPolicies(
-        ctx,
-        Object.keys(filters).length > 0 ? filters : undefined,
-        { take: SSR_PAGE_LIMIT },
-    );
+    // SSR payload cache — unfiltered load only; filtered bypasses (list-cache covers it).
+    const fetchPolicies = () =>
+        listPolicies(ctx, Object.keys(filters).length > 0 ? filters : undefined, { take: SSR_PAGE_LIMIT });
+    const policies =
+        Object.keys(filters).length > 0
+            ? await fetchPolicies()
+            : await cachedSsrPayload({ tenantId: ctx.tenantId, route: 'policies', ttlSeconds: 30, compute: fetchPolicies });
 
     return (
         <PoliciesClient

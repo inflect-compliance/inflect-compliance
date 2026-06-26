@@ -1,5 +1,6 @@
 import { getTenantCtx } from '@/app-layer/context';
 import { listTasks } from '@/app-layer/usecases/task';
+import { cachedSsrPayload } from '@/lib/cache/ssr-cache';
 import { TasksClient } from './TasksClient';
 
 export const dynamic = 'force-dynamic';
@@ -38,11 +39,13 @@ export default async function TasksPage({
         if (typeof val === 'string' && val) filters[key] = val;
     }
 
-    const tasks = await listTasks(
-        ctx,
-        Object.keys(filters).length > 0 ? filters : undefined,
-        { take: SSR_PAGE_LIMIT },
-    );
+    // SSR payload cache — unfiltered load only; filtered bypasses (list-cache covers it).
+    const fetchTasks = () =>
+        listTasks(ctx, Object.keys(filters).length > 0 ? filters : undefined, { take: SSR_PAGE_LIMIT });
+    const tasks =
+        Object.keys(filters).length > 0
+            ? await fetchTasks()
+            : await cachedSsrPayload({ tenantId: ctx.tenantId, route: 'tasks', ttlSeconds: 30, compute: fetchTasks });
 
     return (
         <TasksClient
