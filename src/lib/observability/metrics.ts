@@ -812,57 +812,6 @@ export function _resetQueueDepthForTesting(): void {
 }
 
 // ════════════════════════════════════════════════════════════════════════
-// REAL-USER MONITORING (Web Vitals) — measurement foundation
-//
-// Emitted by src/app/api/rum/route.ts from `web-vitals` beacons. Labels
-// are { route (normalized), ua (Desktop/Mobile/Tablet), rating } — all
-// bounded cardinality. NO per-user labels: these are aggregate
-// distributions, not user trails.
-// ════════════════════════════════════════════════════════════════════════
-
-type WebVitalName = 'LCP' | 'FCP' | 'INP' | 'TTFB' | 'CLS';
-
-const _webVitals: Partial<Record<WebVitalName, ReturnType<ReturnType<typeof getMeter>['createHistogram']>>> = {};
-
-const WEB_VITAL_INSTRUMENTS: Record<WebVitalName, { name: string; unit: string; description: string }> = {
-    LCP: { name: 'web_vitals.lcp_ms', unit: 'ms', description: 'Largest Contentful Paint' },
-    FCP: { name: 'web_vitals.fcp_ms', unit: 'ms', description: 'First Contentful Paint' },
-    INP: { name: 'web_vitals.inp_ms', unit: 'ms', description: 'Interaction to Next Paint' },
-    TTFB: { name: 'web_vitals.ttfb_ms', unit: 'ms', description: 'Time To First Byte' },
-    CLS: { name: 'web_vitals.cls', unit: '1', description: 'Cumulative Layout Shift (unitless)' },
-};
-
-function getWebVital(metric: WebVitalName) {
-    if (!_webVitals[metric]) {
-        const spec = WEB_VITAL_INSTRUMENTS[metric];
-        _webVitals[metric] = getMeter().createHistogram(spec.name, {
-            description: spec.description,
-            unit: spec.unit,
-        });
-    }
-    return _webVitals[metric]!;
-}
-
-/**
- * Record one settled Web Vital. `metric` is the web-vitals name
- * (LCP/FCP/INP/TTFB/CLS); unknown names are ignored. Labels are kept
- * to (route, ua, rating) for bounded cardinality.
- */
-export function recordWebVital(
-    metric: string,
-    value: number,
-    labels: { route: string; ua: string; rating: string },
-): void {
-    const name = metric.toUpperCase() as WebVitalName;
-    if (!(name in WEB_VITAL_INSTRUMENTS)) return;
-    getWebVital(name).record(value, {
-        'http.route': labels.route,
-        ua: labels.ua,
-        rating: labels.rating,
-    });
-}
-
-// ════════════════════════════════════════════════════════════════════════
 // SLOW-QUERY COUNTER
 //
 // Emitted by src/lib/prisma.ts's query-event listener when a query

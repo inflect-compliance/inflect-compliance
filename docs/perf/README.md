@@ -8,14 +8,17 @@ Xms").
 
 ## How a baseline is captured
 
-The measurement foundation (this phase) ships three surfaces:
+The measurement foundation relies on three surfaces:
 
-1. **RUM** — `web-vitals` beacons (`src/lib/observability/rum.ts` →
-   `POST /api/rum`) feed the `web_vitals.*` histograms in Prometheus.
-2. **Slow-query log** — `src/lib/prisma.ts` logs + counts queries over
-   50ms (`db.slow_query.count`, labelled by model).
-3. **Bundle analyzer** — `npm run analyze` writes `.next/analyze/*.html`;
-   the `Bundle Analyze` workflow publishes it as an artefact.
+1. **RUM** (already on main) — `<WebVitalsReporter>` (via
+   `next/web-vitals`) beacons Core Web Vitals to
+   `POST /api/telemetry/vitals` (`src/lib/observability/web-vitals.ts`),
+   feeding the `web.vitals.*` histograms in Prometheus.
+2. **Slow-query log** (this PR) — `src/lib/prisma.ts` logs + counts
+   queries over 50ms (`db.slow_query.count`, labelled by model).
+3. **Bundle analyzer** (this PR) — `npm run analyze` writes
+   `.next/analyze/*.html`; the `Bundle Analyze` workflow publishes it as
+   an artefact.
 
 A baseline is captured **after these have run in production for at least
 one week**, so the histograms hold enough real traffic per route:
