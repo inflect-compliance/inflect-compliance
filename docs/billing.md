@@ -272,3 +272,10 @@ target plan and the resource count to the limit value.
 * [`src/lib/billing/entitlements.ts`](../src/lib/billing/entitlements.ts) — the implementation.
 * [`src/lib/stripe.ts`](../src/lib/stripe.ts) — Stripe wrapper used in SaaS mode for checkout / portal flows.
 * [`tests/unit/billing/entitlements.test.ts`](../tests/unit/billing/entitlements.test.ts) — exhaustive test for the SaaS / self-hosted decision and the `assertWithinLimit` enforcement path.
+
+## Billing as a sub-processor
+
+Stripe is a sub-processor in **SaaS mode only** (`STRIPE_SECRET_KEY` set);
+self-hosted mode never calls it. See the Stripe entry in
+[`docs/sub-processors.md`](./sub-processors.md) for the data shared and
+the legal basis.

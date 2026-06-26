@@ -984,3 +984,11 @@ deploys in three shapes — single-VM compose (today), self-hosted Helm
 all three; only `OTEL_EXPORTER_OTLP_ENDPOINT` (+ auth header) changes.
 See [`docs/observability/01-deployment-topology.md`](observability/01-deployment-topology.md#scale-out-provisioning-beyond-the-single-vm)
 for the decision matrix.
+
+## Registering a sub-processor
+
+When the operator configures an external service (most commonly the SMTP
+provider — SES / SendGrid / Postmark), that provider becomes a
+sub-processor and MUST be registered in
+[`docs/sub-processors.md`](./sub-processors.md) per the
+[change policy](./sub-processor-change-policy.md).

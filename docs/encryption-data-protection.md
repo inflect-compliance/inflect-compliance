@@ -412,3 +412,10 @@ All 12 critical entity models are intercepted by `SOFT_DELETE_MODELS` in the sof
 | Multi-key envelope encryption | Low | Support key rotation without full re-encryption via envelope encryption (per-record DEK wrapped by KEK) |
 | Evidence content encryption | Medium | Extend column encryption to evidence `content` field if requirements expand beyond volume-level protection |
 
+
+## Who touches the data (sub-processors)
+
+This document is the *technical* side of data protection (how data is
+encrypted). The *who-touches-it* side — the external services that
+process data and the data each receives — is inventoried in
+[`docs/sub-processors.md`](./sub-processors.md).
