@@ -115,11 +115,14 @@ describe("ControlEditPanel (editable control side panel)", () => {
             ),
         );
 
-    it("is an edit form with an evidence-upload box and NO Intent field", () => {
+    it("is an auto-saved edit form with an evidence-upload box and NO Intent field", () => {
         renderPanel();
         expect(screen.getByTestId("control-edit-panel")).toBeInTheDocument();
         expect(screen.getByTestId("control-edit-form")).toBeInTheDocument();
-        expect(screen.getByTestId("control-edit-save")).toBeInTheDocument();
+        // Auto-save: a live status line replaces the manual Save/Cancel buttons.
+        expect(screen.getByTestId("control-edit-autosave-status")).toBeInTheDocument();
+        expect(screen.queryByTestId("control-edit-save")).not.toBeInTheDocument();
+        expect(screen.queryByTestId("control-edit-cancel")).not.toBeInTheDocument();
         // Drag-and-drop evidence upload (shared FileDropzone section).
         expect(screen.getByTestId("evidence-upload-section")).toBeInTheDocument();
         expect(screen.getByTestId("evidence-upload-dropzone")).toBeInTheDocument();
@@ -129,6 +132,40 @@ describe("ControlEditPanel (editable control side panel)", () => {
         expect((screen.getByLabelText(/Name/) as HTMLInputElement).value).toBe(
             "Access control policy",
         );
+    });
+
+    it("auto-saves the name on blur with a PATCH (no Save click)", async () => {
+        renderPanel();
+        const fetchMock = global.fetch as jest.Mock;
+        fetchMock.mockClear();
+        const nameInput = screen.getByLabelText(/Name/) as HTMLInputElement;
+        fireEvent.change(nameInput, { target: { value: "Access control policy v2" } });
+        fireEvent.blur(nameInput);
+        await screen.findByText("Saved");
+        const patch = fetchMock.mock.calls.find(
+            ([url, opts]) =>
+                typeof url === "string" &&
+                url.endsWith("/controls/c1") &&
+                (opts as RequestInit | undefined)?.method === "PATCH",
+        );
+        expect(patch).toBeDefined();
+        expect(JSON.parse((patch![1] as RequestInit).body as string)).toMatchObject({
+            name: "Access control policy v2",
+        });
+    });
+
+    it("does NOT save a name shorter than 3 chars", async () => {
+        renderPanel();
+        const fetchMock = global.fetch as jest.Mock;
+        fetchMock.mockClear();
+        const nameInput = screen.getByLabelText(/Name/) as HTMLInputElement;
+        fireEvent.change(nameInput, { target: { value: "ab" } });
+        fireEvent.blur(nameInput);
+        await screen.findByText(/at least 3 characters/i);
+        const patched = (fetchMock.mock.calls as Array<[unknown, RequestInit | undefined]>).some(
+            ([, opts]) => opts?.method === "PATCH",
+        );
+        expect(patched).toBe(false);
     });
 
     it("has an Activity tab that shows the feed", async () => {

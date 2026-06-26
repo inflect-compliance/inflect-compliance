@@ -21,6 +21,7 @@ const read = (p: string) => fs.readFileSync(path.join(ROOT, p), "utf8");
 const controls = read("src/app/t/[tenantSlug]/(app)/controls/ControlsClient.tsx");
 const editPanel = read("src/app/t/[tenantSlug]/(app)/controls/ControlEditPanel.tsx");
 const taskPanel = read("src/app/t/[tenantSlug]/(app)/controls/TaskEditPanel.tsx");
+const userCombobox = read("src/components/ui/user-combobox.tsx");
 const aside = read("src/components/ui/aside-panel.tsx");
 const sheet = read("src/components/ui/sheet.tsx");
 const evidenceSection = read("src/components/evidence/EvidenceUploadSection.tsx");
@@ -82,16 +83,39 @@ describe("Controls editable side-panel interaction", () => {
         expect(taskPanel).toMatch(/buttonProps=\{\{[^}]*size:\s*["']sm["']/);
     });
 
-    describe("control panel = editable + drag-drop evidence + Activity tab", () => {
-        it("is an edit form with a Save action", () => {
+    it("EVERY rail dropdown is sm — category, frequency, AND owner (uniform size ratchet)", () => {
+        // The owner picker is a <UserCombobox> (wraps Combobox); it must
+        // carry size="sm" so it lines up with the Category/Frequency triggers
+        // rather than rendering one size taller. Locks the fix + guards any
+        // future dropdown added to the rail from defaulting back to md.
+        expect(editPanel).toMatch(/<UserCombobox[\s\S]{0,400}size="sm"/);
+        // No rail Combobox may opt back into md/lg.
+        expect(editPanel).not.toMatch(/buttonProps=\{\{[^}]*size:\s*["'](?:md|lg)["']/);
+        // The UserCombobox forwards its size to the inner Combobox trigger.
+        expect(userCombobox).toMatch(/size\?:\s*["']sm["']\s*\|\s*["']md["']\s*\|\s*["']lg["']/);
+        expect(userCombobox).toMatch(/\.\.\.\(size\s*\?\s*\{\s*size\s*\}\s*:\s*\{\}\)/);
+    });
+
+    describe("control panel = AUTO-SAVED + drag-drop evidence + Activity tab", () => {
+        it("auto-saves on change/blur — no Save/Cancel buttons", () => {
             expect(editPanel).toMatch(/data-testid="control-edit-form"/);
-            expect(editPanel).toMatch(/data-testid="control-edit-save"/);
             expect(editPanel).toMatch(/method:\s*["']PATCH["']/);
             expect(editPanel).toMatch(/role="region"/);
+            // The manual Save/Cancel buttons are gone — edits persist
+            // automatically (text debounces + flushes on blur; dropdowns +
+            // owner commit on change). A live status line replaces them.
+            expect(editPanel).not.toMatch(/data-testid="control-edit-save"/);
+            expect(editPanel).not.toMatch(/data-testid="control-edit-cancel"/);
+            expect(editPanel).toMatch(/data-testid="control-edit-autosave-status"/);
+            // The debounce + flush-on-blur engine is present.
+            expect(editPanel).toMatch(/onBlur=\{commitNow\}/);
+            expect(editPanel).toMatch(/setTimeout\(\(\)\s*=>\s*void commitFields\(\),\s*\d+\)/);
         });
-        it("mounts the shared drag-drop EvidenceUploadSection (controlId), no Intent field", () => {
+        it("mounts the shared drag-drop EvidenceUploadSection (controlId), compact dropzone, no Intent field", () => {
             expect(editPanel).toMatch(/<EvidenceUploadSection/);
             expect(editPanel).toMatch(/linkField="controlId"/);
+            // The rail uses the short (compact) dropzone — ~1/3 the height.
+            expect(editPanel).toMatch(/compactDropzone/);
             expect(editPanel).not.toMatch(/sheet-intent-input/);
             expect(editPanel).not.toMatch(/panel-intent/);
             expect(editPanel).not.toMatch(/\bintent:\s*draft|form\.intent|update\('intent'/);

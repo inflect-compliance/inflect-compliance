@@ -70,6 +70,13 @@ interface BaseUserComboboxProps {
     /** Match the button width to its trigger (form-field feel). */
     matchTriggerWidth?: boolean;
     /**
+     * Trigger size, forwarded to the inner Combobox button. Defaults to the
+     * Combobox default (md). Pass "sm" to line up with sibling sm dropdowns
+     * (e.g. the Controls rail's Category/Frequency). Locked by
+     * tests/guards/controls-quickview-interaction.test.ts for that rail.
+     */
+    size?: "sm" | "md" | "lg";
+    /**
      * Pre-fetched member list. When supplied we skip the internal
      * useQuery — useful for server-rendered pages that already hold the
      * membership roster.
@@ -214,10 +221,17 @@ export function UserCombobox(props: UserComboboxProps) {
         "aria-describedby": ariaDescribedBy,
         forceDropdown = true,
         matchTriggerWidth = true,
+        size,
         preloadedMembers,
         filter,
         className,
     } = props;
+
+    // Shared trigger props so the single + multi branches stay identical.
+    const triggerProps = {
+        className: className ?? "w-full",
+        ...(size ? { size } : {}),
+    };
 
     const query = useTenantMembers(tenantSlug, {
         enabled: !preloadedMembers,
@@ -258,7 +272,7 @@ export function UserCombobox(props: UserComboboxProps) {
                 emptyState="No members match"
                 forceDropdown={forceDropdown}
                 matchTriggerWidth={matchTriggerWidth}
-                buttonProps={{ className: className ?? "w-full" }}
+                buttonProps={triggerProps}
                 caret
             />
         );
@@ -289,7 +303,7 @@ export function UserCombobox(props: UserComboboxProps) {
             emptyState="No members match"
             forceDropdown={forceDropdown}
             matchTriggerWidth={matchTriggerWidth}
-            buttonProps={{ className: className ?? "w-full" }}
+            buttonProps={triggerProps}
             caret
         />
     );

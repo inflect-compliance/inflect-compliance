@@ -113,6 +113,13 @@ export interface FileDropzoneProps {
     title?: ReactNode;
     /** Subhead beneath the title. */
     hint?: ReactNode;
+    /**
+     * Compact layout — a much shorter drop area (~1/3 height) for dense
+     * side-rail / panel contexts (e.g. the Controls right-rail evidence
+     * box). Keeps full width; trims the vertical padding + icon. Default
+     * false (the roomy full-height surface).
+     */
+    compact?: boolean;
     /** Outer wrapper class. */
     className?: string;
     /** Outer DOM id (for label/htmlFor wiring + E2E selectors). */
@@ -196,6 +203,7 @@ function FileDropzoneInner(
         clearAfterMs = null,
         title,
         hint,
+        compact = false,
         className = '',
         id,
         inputId,
@@ -489,7 +497,9 @@ function FileDropzoneInner(
                 onDragLeave={onDragLeave}
                 onDrop={onDrop}
                 className={[
-                    'group relative flex min-h-[10rem] w-full flex-col items-center justify-center rounded-lg border-2 border-dashed transition-all',
+                    'group relative flex w-full flex-col items-center justify-center rounded-lg border-2 border-dashed transition-all',
+                    // Compact (~1/3 height) for dense side-rail panels; roomy default otherwise.
+                    compact ? 'min-h-[3.5rem] py-2' : 'min-h-[10rem]',
                     'focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-default)] focus-visible:ring-offset-2',
                     disabled
                         ? 'cursor-not-allowed border-border-default bg-bg-muted opacity-60'
@@ -499,13 +509,13 @@ function FileDropzoneInner(
                 ].join(' ')}
             >
                 <UploadCloud
-                    size={28}
+                    size={compact ? 18 : 28}
                     className={`transition-transform ${
                         dragActive ? 'scale-110 text-[var(--brand-default)]' : 'text-content-muted'
                     }`}
                     aria-hidden
                 />
-                <div className="mt-2 text-center text-sm">
+                <div className={`${compact ? 'mt-1' : 'mt-2'} text-center ${compact ? 'text-xs' : 'text-sm'}`}>
                     <p className="text-content-emphasis">
                         {title ?? (
                             <>
