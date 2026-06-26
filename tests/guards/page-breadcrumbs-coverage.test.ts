@@ -77,6 +77,13 @@ const EXEMPT_FILES = new Set<string>([
     "src/app/t/[tenantSlug]/(app)/vendors/new/page.tsx",
     "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/install/page.tsx",
 
+    // ── NIS2 self-assessment sub-pages ──────────────────────────
+    // Reached via an in-page "Back to NIS2" affordance from the NIS2
+    // framework detail view, not top-level nav destinations. They carry
+    // their own back-link; a breadcrumbs strip would be redundant.
+    "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/readiness/Nis2ReadinessClient.tsx",
+    "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/self-assessment/Nis2SelfAssessmentResume.tsx",
+
     // ── Auth / personal settings ────────────────────────────────
     // User-scoped, sit outside the main app navigation hierarchy.
     "src/app/t/[tenantSlug]/(app)/auth/mfa/page.tsx",

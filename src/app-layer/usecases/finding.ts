@@ -132,6 +132,8 @@ export async function createFinding(ctx: RequestContext, data: z.infer<typeof Cr
             compensatingControlId: data.compensatingControlId || null,
             dueDate: data.dueDate ? new Date(data.dueDate) : null,
             status: 'OPEN',
+            sourceKind: data.sourceKind ?? null,
+            sourceRef: data.sourceRef ?? null,
         });
 
         if (riskIds.length > 0) {

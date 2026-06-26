@@ -147,6 +147,11 @@ describe("EntityDetailLayout adoption — PR-4", () => {
       "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/diff/page.tsx",
       "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/install/page.tsx",
       "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/templates/page.tsx",
+      // NIS2 self-assessment sub-views (not entity-detail pages — they
+      // render the gap-assessment / readiness surfaces, with their own
+      // back-link to the NIS2 framework detail).
+      "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/readiness/page.tsx",
+      "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/self-assessment/page.tsx",
       "src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/assessment/[assessmentId]/page.tsx",
       "src/app/t/[tenantSlug]/(app)/issues/[issueId]/page.tsx", // legacy redirect → /tasks/[id]
       "src/app/t/[tenantSlug]/(app)/admin/vendor-templates/[templateId]/page.tsx",

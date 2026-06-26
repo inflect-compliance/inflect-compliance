@@ -4,7 +4,7 @@
   "counts": {
     "authoritative": 104,
     "living": 5,
-    "historical": 282,
+    "historical": 283,
     "deprecated": 1
   },
   "docs": {
@@ -1185,6 +1185,9 @@
       "class": "historical"
     },
     "docs/implementation-notes/2026-06-27-nis2-onboarding-step.md": {
+      "class": "historical"
+    },
+    "docs/implementation-notes/2026-06-27-nis2-readiness.md": {
       "class": "historical"
     }
   }

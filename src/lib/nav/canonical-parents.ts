@@ -29,6 +29,8 @@ export interface CanonicalParent {
 }
 
 const PARENT_MAP: Record<string, CanonicalParent> = {
+    '/frameworks/[frameworkKey]/readiness': { href: '/frameworks/[frameworkKey]', label: 'NIS2' },
+    '/frameworks/[frameworkKey]/self-assessment': { href: '/frameworks/[frameworkKey]', label: 'NIS2' },
     // Access reviews
     '/access-reviews/[reviewId]': { href: '/access-reviews', label: 'Access reviews' },
 

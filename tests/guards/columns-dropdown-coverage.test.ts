@@ -39,6 +39,8 @@ const SCAN_DIR = 'src/app/t/[tenantSlug]/(app)';
  * absence of a gear; PRs that mount a gear should REMOVE the entry.
  */
 const EXEMPTIONS: Record<string, string> = {
+    'frameworks/[frameworkKey]/readiness/Nis2ReadinessClient.tsx':
+        '(b) results view — fixed derived columns (domain breakdown + prioritized gaps); per-column hide/show not meaningful.',
     // ─── (a) Sub-components — parent owns the toolbar ──────────────
     // R13-PR10 — `admin/AdminClient.tsx` was deleted; audit log
     // moved to `admin/audit-log/AuditLogClient.tsx`. The new sub-
