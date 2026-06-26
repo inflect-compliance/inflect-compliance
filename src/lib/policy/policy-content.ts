@@ -1,6 +1,5 @@
 /**
- * Policy content enrichment — isomorphic, dependency-free string helpers
- * shared by the on-screen policy view and (later) the PDF export.
+ * Policy content enrichment — heading anchors + an auto Table of Contents.
  *
  * Two structural features layer on top of the stored HTML policy body
  * WITHOUT changing what's persisted:
@@ -16,9 +15,13 @@
  * editor's "Page break" button); they're styled as a labelled divider
  * on screen and become real page breaks in print / PDF.
  *
- * The enrichment runs on ALREADY-SANITISED HTML and only emits markup
- * derived from the document's own (escaped) heading text + slug ids, so
- * it introduces no new injection surface.
+ * Implementation note: this parses the body with the DOM (`DOMParser`)
+ * rather than regex — correct HTML handling AND no "regex HTML filter"
+ * pitfalls. It runs on ALREADY-SANITISED HTML and on the CLIENT only
+ * (the policy view fetches content client-side, so the heavy lifting
+ * happens after hydration); in any environment without a DOM it returns
+ * the input unchanged. All generated text is set via `textContent`, so
+ * the browser serialiser escapes it — no injection surface is added.
  */
 
 export interface PolicyHeading {
@@ -27,34 +30,13 @@ export interface PolicyHeading {
     id: string;
 }
 
-/** Strip tags/entities and collapse whitespace to plain text. */
-function toPlainText(html: string): string {
-    return html
-        .replace(/<[^>]+>/g, '')
-        .replace(/&nbsp;/gi, ' ')
-        .replace(/&amp;/gi, '&')
-        .replace(/&lt;/gi, '<')
-        .replace(/&gt;/gi, '>')
-        .replace(/&quot;/gi, '"')
-        .replace(/&#39;/gi, "'")
-        .replace(/\s+/g, ' ')
-        .trim();
-}
+const HAS_DOM = typeof DOMParser !== 'undefined';
 
-/** Minimal HTML-escape for text we re-emit inside generated markup. */
-function escapeHtml(s: string): string {
-    return s
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-}
-
-/** URL-safe slug from heading text. Falls back to `section`. */
+/** URL-safe slug from already-plain heading text. Falls back to `section`. */
 export function slugifyHeading(text: string): string {
-    const base = toPlainText(text)
+    const base = text
         .toLowerCase()
+        .trim()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '')
         .slice(0, 80)
@@ -62,94 +44,109 @@ export function slugifyHeading(text: string): string {
     return base || 'section';
 }
 
-/**
- * Assign a stable, unique `id` to every h1–h3 (preserving any author-set
- * id) and return the heading list in document order.
- */
-export function assignHeadingIds(html: string): { html: string; headings: PolicyHeading[] } {
-    const seen = new Set<string>();
-    const headings: PolicyHeading[] = [];
-
-    const out = html.replace(
-        /<h([1-3])([^>]*)>([\s\S]*?)<\/h\1>/gi,
-        (match, lvlRaw: string, attrs: string, inner: string) => {
-            const text = toPlainText(inner);
-            if (!text) return match; // empty heading — leave untouched, no anchor
-            const level = Number(lvlRaw);
-
-            const existing = /\bid=["']([^"']+)["']/i.exec(attrs)?.[1];
-            let id = existing && !seen.has(existing) ? existing : '';
-            if (!id) {
-                const slug = slugifyHeading(text);
-                let candidate = slug;
-                let n = 2;
-                while (seen.has(candidate)) candidate = `${slug}-${n++}`;
-                id = candidate;
-            }
-            seen.add(id);
-            headings.push({ level, text, id });
-
-            const attrsWithId = /\bid=/i.test(attrs)
-                ? attrs.replace(/\bid=["'][^"']*["']/i, `id="${id}"`)
-                : `${attrs} id="${id}"`;
-            return `<h${lvlRaw}${attrsWithId}>${inner}</h${lvlRaw}>`;
-        },
-    );
-
-    return { html: out, headings };
+/** Collapse whitespace in an element's text content. */
+function headingText(el: Element): string {
+    return (el.textContent ?? '').replace(/\s+/g, ' ').trim();
 }
 
-/** Build the Contents nav markup from a heading list. */
-function buildTocHtml(headings: PolicyHeading[]): string {
-    const items = headings
-        .map(
-            (h) =>
-                `<li class="policy-toc-l${h.level}"><a href="#${h.id}">${escapeHtml(h.text)}</a></li>`,
-        )
-        .join('');
-    return (
-        `<nav class="policy-toc" aria-label="Table of contents" data-testid="policy-toc">` +
-        `<p class="policy-toc-title">Contents</p>` +
-        `<ul>${items}</ul>` +
-        `</nav>`
-    );
+/**
+ * Assign a stable, unique `id` to every h1–h3 in `body` (preserving a
+ * usable author-set id) and return the heading list in document order.
+ * Mutates the elements in place.
+ */
+function annotateHeadings(body: HTMLElement): PolicyHeading[] {
+    const seen = new Set<string>();
+    const headings: PolicyHeading[] = [];
+    for (const el of Array.from(body.querySelectorAll('h1, h2, h3'))) {
+        const text = headingText(el);
+        if (!text) continue; // empty heading — no anchor
+        const level = Number(el.tagName[1]);
+
+        const existing = el.getAttribute('id') ?? '';
+        let id = existing && !seen.has(existing) ? existing : '';
+        if (!id) {
+            const slug = slugifyHeading(text);
+            let candidate = slug;
+            let n = 2;
+            while (seen.has(candidate)) candidate = `${slug}-${n++}`;
+            id = candidate;
+        }
+        seen.add(id);
+        el.setAttribute('id', id);
+        headings.push({ level, text, id });
+    }
+    return headings;
+}
+
+/** Assign heading ids; returns the rewritten HTML + the heading list. */
+export function assignHeadingIds(html: string): { html: string; headings: PolicyHeading[] } {
+    if (!HAS_DOM) return { html, headings: [] };
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const headings = annotateHeadings(doc.body);
+    return { html: doc.body.innerHTML, headings };
+}
+
+/** Build the Contents <nav> from a heading list, using the given document. */
+function buildTocNav(doc: Document, headings: PolicyHeading[]): HTMLElement {
+    const nav = doc.createElement('nav');
+    nav.className = 'policy-toc';
+    nav.setAttribute('aria-label', 'Table of contents');
+    nav.setAttribute('data-testid', 'policy-toc');
+
+    const title = doc.createElement('p');
+    title.className = 'policy-toc-title';
+    title.textContent = 'Contents';
+    nav.appendChild(title);
+
+    const ul = doc.createElement('ul');
+    for (const h of headings) {
+        const li = doc.createElement('li');
+        li.className = `policy-toc-l${h.level}`;
+        const a = doc.createElement('a');
+        a.setAttribute('href', `#${h.id}`);
+        a.textContent = h.text; // serialiser escapes — no injection
+        li.appendChild(a);
+        ul.appendChild(li);
+    }
+    nav.appendChild(ul);
+    return nav;
 }
 
 /**
  * Enrich a sanitised HTML policy body with heading anchors + an
  * auto-generated Table of Contents. Returns the HTML unchanged when
- * there aren't at least two linkable sections (a TOC would be noise).
+ * there aren't at least two linkable sections (a TOC would be noise),
+ * or when no DOM is available (server — enrichment happens on the
+ * client after the content loads).
  *
  * Placement, matching the reference layout (Title → page break →
  * Contents): the TOC is inserted immediately after the first `<hr>`
- * page break when present, otherwise right after the first heading,
- * otherwise prepended.
+ * page break when present, otherwise right after the first heading.
  */
 export function enrichPolicyHtml(html: string | null | undefined): string {
-    if (!html) return html ?? '';
-    const { html: withIds, headings } = assignHeadingIds(html);
+    if (!html) return '';
+    if (!HAS_DOM) return html;
+
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const body = doc.body;
+    const headings = annotateHeadings(body);
 
     // Exclude a leading <h1> — that's the document title, not a section.
     const eligible = headings[0]?.level === 1 ? headings.slice(1) : headings;
-    if (eligible.length < 2) return withIds;
+    if (eligible.length < 2) return body.innerHTML;
 
-    const toc = buildTocHtml(eligible);
+    const nav = buildTocNav(doc, eligible);
 
-    const hr = /<hr\b[^>]*>/i.exec(withIds);
-    if (hr) {
-        const at = hr.index + hr[0].length;
-        return withIds.slice(0, at) + toc + withIds.slice(at);
+    const firstHr = body.querySelector('hr');
+    if (firstHr?.parentNode) {
+        firstHr.parentNode.insertBefore(nav, firstHr.nextSibling);
+    } else {
+        const firstHeading = body.querySelector('h1, h2, h3');
+        if (firstHeading?.parentNode) {
+            firstHeading.parentNode.insertBefore(nav, firstHeading.nextSibling);
+        } else {
+            body.insertBefore(nav, body.firstChild);
+        }
     }
-    const firstHeading = /<h[1-3][^>]*>[\s\S]*?<\/h[1-3]>/i.exec(withIds);
-    if (firstHeading) {
-        const at = firstHeading.index + firstHeading[0].length;
-        return withIds.slice(0, at) + toc + withIds.slice(at);
-    }
-    return toc + withIds;
-}
-
-/** Heading list (post-id-assignment) — used by exporters. */
-export function extractPolicyHeadings(html: string | null | undefined): PolicyHeading[] {
-    if (!html) return [];
-    return assignHeadingIds(html).headings;
+    return body.innerHTML;
 }

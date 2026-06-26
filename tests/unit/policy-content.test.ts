@@ -1,20 +1,19 @@
 /**
+ * @jest-environment jsdom
+ *
  * Policy content enrichment — heading anchors + auto Table of Contents.
+ * Runs in jsdom because the helpers parse via the DOM (`DOMParser`).
  */
 import {
     slugifyHeading,
     assignHeadingIds,
     enrichPolicyHtml,
-    extractPolicyHeadings,
 } from '@/lib/policy/policy-content';
 
 describe('slugifyHeading', () => {
     it('lowercases, strips punctuation, and hyphenates', () => {
         expect(slugifyHeading('Purpose and Scope')).toBe('purpose-and-scope');
         expect(slugifyHeading('Use of email & other comms!')).toBe('use-of-email-other-comms');
-    });
-    it('strips tags/entities from the text', () => {
-        expect(slugifyHeading('<strong>Clear&nbsp;desk</strong>')).toBe('clear-desk');
     });
     it('falls back to "section" for empty/symbol-only headings', () => {
         expect(slugifyHeading('   ')).toBe('section');
@@ -97,15 +96,5 @@ describe('enrichPolicyHtml', () => {
         expect(enrichPolicyHtml(null)).toBe('');
         expect(enrichPolicyHtml(undefined)).toBe('');
         expect(enrichPolicyHtml('')).toBe('');
-    });
-});
-
-describe('extractPolicyHeadings', () => {
-    it('returns the heading list with ids', () => {
-        expect(extractPolicyHeadings('<h1>T</h1><h2>S</h2>')).toEqual([
-            { level: 1, text: 'T', id: 't' },
-            { level: 2, text: 'S', id: 's' },
-        ]);
-        expect(extractPolicyHeadings(null)).toEqual([]);
     });
 });
