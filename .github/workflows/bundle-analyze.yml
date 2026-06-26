@@ -1,0 +1,58 @@
+# ───────────────────────────────────────────────────────────────
+#  Bundle Analyze — client/server JS payload report
+#
+#  Generates @next/bundle-analyzer HTML reports as a build artefact so
+#  the JS payload of the heavy client pages (Controls/Evidence/Risks/…)
+#  is measurable. Part of the perf measurement foundation — this job
+#  does NOT gate on size deltas (that's a later phase); it only produces
+#  the report.
+#
+#  Runs on: push to main, and PRs labelled `perf-watch` (opt-in, so we
+#  don't pay a full analyze build on every PR).
+# ───────────────────────────────────────────────────────────────
+name: Bundle Analyze
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bundle-analyze-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: "Analyze client/server bundles"
+    # Push to main always; PRs only when labelled perf-watch.
+    if: >-
+      github.event_name == 'push' ||
+      contains(github.event.pull_request.labels.*.name, 'perf-watch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node + Prisma
+        uses: ./.github/actions/setup-node-prisma
+
+      - name: Build with bundle analyzer
+        env:
+          # Analysis build — real env vars are provided at runtime, not
+          # needed to measure bundle size.
+          SKIP_ENV_VALIDATION: '1'
+          NEXT_TELEMETRY_DISABLED: '1'
+        run: npm run analyze
+
+      - name: Upload bundle report
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: bundle-analysis
+          path: .next/analyze/*.html
+          if-no-files-found: warn
+          retention-days: 30

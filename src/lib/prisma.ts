@@ -8,6 +8,18 @@ import { withPiiEncryptionExtension } from './security/pii-middleware';
 import { withEncryptionExtension } from './db/encryption-middleware';
 import { withRlsTripwireExtension } from './db/rls-middleware';
 import { logger as auditMiddlewareLogger } from '@/lib/observability/logger';
+import { recordSlowQuery } from '@/lib/observability/metrics';
+
+// Slow-query threshold. Typical Prisma p99 sits at 5-20ms; 50ms is the
+// "this query is suspicious / worth a look" line, not a per-request SLO.
+// Tune in one place. See docs/implementation-notes/2026-06-26-perf-baseline.md.
+const SLOW_QUERY_THRESHOLD_MS = 50;
+
+/** Best-effort model-name parse from a SQL string, for the metric label. */
+function parseModelFromSql(sql: string): string {
+    const m = sql.match(/(?:FROM|INTO|UPDATE|JOIN)\s+"?([A-Za-z_][A-Za-z0-9_]*)"?/i);
+    return m?.[1] ?? 'unknown';
+}
 
 // ─── Write actions to intercept ───
 const WRITE_ACTIONS = new Set([
@@ -291,7 +303,31 @@ function buildClient(url: string = env.DATABASE_URL ?? ''): PrismaClient {
     const adapter = new PrismaPg({
         connectionString: url,
     });
-    return new PrismaClient({ adapter });
+    const client = new PrismaClient({
+        adapter,
+        // Emit query events so the slow-query listener below can observe
+        // duration. `emit: 'event'` keeps queries OFF stdout (no log spam)
+        // — only the >50ms ones are logged, by us.
+        log: [{ level: 'query', emit: 'event' }],
+    });
+
+    // Slow-query observability. INTERNAL ONLY: `e.query` is raw SQL and
+    // `e.params` may contain PII bound values, so this is truncated hard
+    // and NEVER shipped to per-tenant SIEMs via the audit-stream — it's a
+    // local operational log + a model-labelled counter for Grafana.
+    client.$on('query', (e) => {
+        if (e.duration > SLOW_QUERY_THRESHOLD_MS) {
+            auditMiddlewareLogger.warn('slow query', {
+                component: 'prisma',
+                query: e.query.slice(0, 500),
+                params: e.params.slice(0, 200),
+                durationMs: e.duration,
+            });
+            recordSlowQuery(parseModelFromSql(e.query));
+        }
+    });
+
+    return client;
 }
 
 function buildExtended(url: string = env.DATABASE_URL ?? '') {

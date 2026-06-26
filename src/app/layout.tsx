@@ -3,6 +3,7 @@ import { headers, cookies } from 'next/headers';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import { Providers } from './providers';
+import { RumInit } from '@/components/observability/RumInit';
 import { CSP_NONCE_HEADER } from '@/lib/security/csp';
 // Import the theme constants from the SERVER-SAFE module — NOT from
 // ThemeProvider ('use client'), whose exports resolve to client-reference
@@ -138,6 +139,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 )}
             </head>
             <body suppressHydrationWarning nonce={nonce}>
+                <RumInit />
                 <Providers>
                     <NextIntlClientProvider messages={messages} locale={locale}>
                         {children}

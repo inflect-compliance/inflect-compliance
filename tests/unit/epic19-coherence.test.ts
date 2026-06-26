@@ -79,6 +79,16 @@ describe('Epic 19 Coherence: metric names', () => {
             'cache.aggregation.hit',
             'cache.aggregation.miss',
             'cache.aggregation.compute_duration_ms',
+            // Perf measurement foundation — RUM Web Vitals + slow-query
+            // counter. Dashboards/panels are built on these AFTER the
+            // one-week baseline window (docs/perf/); not on the SLO board
+            // in this measurement-only phase.
+            'web_vitals.lcp_ms',
+            'web_vitals.fcp_ms',
+            'web_vitals.inp_ms',
+            'web_vitals.ttfb_ms',
+            'web_vitals.cls',
+            'db.slow_query.count',
         ]);
 
         // Dot → underscore: api.request.count → api_request_count
