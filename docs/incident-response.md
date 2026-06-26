@@ -2,6 +2,10 @@
 
 > **New to the codebase?** Start at [CONTRIBUTING.md](../CONTRIBUTING.md) — the developer onboarding guide.
 
+> This runbook owns the on-call rotation that
+> [`docs/change-management-policy.md`](change-management-policy.md) references for
+> out-of-hours production approval + the EMERGENCY change procedure.
+
 > For the scope of data potentially involved in a breach — which entities hold
 > PII, how long each is retained, and the cleanup mechanisms — see
 > [`docs/data-retention.md`](data-retention.md).
