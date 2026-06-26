@@ -1,5 +1,12 @@
 import { NextResponse } from 'next/server';
 
+// Edge runtime: a pure, stateless forwarder — no Prisma, no Node modules,
+// just fetch + URL + Request. Browsers send CSP reports here from anywhere,
+// so terminating at the nearest edge PoP saves the cold-start + cross-region
+// hop on a fire-and-forget request. Locked by
+// tests/guardrails/edge-runtime-coverage.test.ts.
+export const runtime = 'edge';
+
 /**
  * Legacy CSP report endpoint — redirects to the new hardened endpoint.
  *
