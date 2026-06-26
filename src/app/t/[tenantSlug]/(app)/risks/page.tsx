@@ -2,6 +2,7 @@ import { getTranslations } from 'next-intl/server';
 import { getTenantCtx } from '@/app-layer/context';
 import { listRisks } from '@/app-layer/usecases/risk';
 import { getRiskMatrixConfig } from '@/app-layer/usecases/risk-matrix-config';
+import { cachedSsrPayload } from '@/lib/cache/ssr-cache';
 import { RisksClient } from './RisksClient';
 
 export const dynamic = 'force-dynamic';
@@ -59,16 +60,24 @@ export default async function RisksPage({
         if (max && !Number.isNaN(Number(max))) apiFilters.scoreMax = Number(max);
     }
 
-    const [risks, matrixConfig] = await Promise.all([
-        listRisks(
-            ctx,
-            Object.keys(apiFilters).length > 0
-                ? (apiFilters as unknown as Parameters<typeof listRisks>[1])
-                : undefined,
-            { take: SSR_PAGE_LIMIT },
-        ),
-        getRiskMatrixConfig(ctx),
-    ]);
+    // SSR payload cache — unfiltered load only; filtered bypasses (list-cache covers it).
+    const fetchRiskPayload = async () => {
+        const [risks, matrixConfig] = await Promise.all([
+            listRisks(
+                ctx,
+                Object.keys(apiFilters).length > 0
+                    ? (apiFilters as unknown as Parameters<typeof listRisks>[1])
+                    : undefined,
+                { take: SSR_PAGE_LIMIT },
+            ),
+            getRiskMatrixConfig(ctx),
+        ]);
+        return { risks, matrixConfig };
+    };
+    const { risks, matrixConfig } =
+        Object.keys(apiFilters).length > 0
+            ? await fetchRiskPayload()
+            : await cachedSsrPayload({ tenantId: ctx.tenantId, route: 'risks', ttlSeconds: 30, compute: fetchRiskPayload });
 
     return (
         <RisksClient

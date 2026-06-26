@@ -1,5 +1,6 @@
 import { getTenantCtx } from '@/app-layer/context';
 import { listControls } from '@/app-layer/usecases/control';
+import { cachedSsrPayload } from '@/lib/cache/ssr-cache';
 import { ControlsClient } from './ControlsClient';
 
 export const dynamic = 'force-dynamic';
@@ -39,11 +40,16 @@ export default async function ControlsPage({
         if (typeof val === 'string' && val) filters[key] = val;
     }
 
-    const controls = await listControls(
-        ctx,
-        Object.keys(filters).length > 0 ? filters : undefined,
-        { take: SSR_PAGE_LIMIT },
-    );
+    // SSR payload cache — only the unfiltered list (the common load) is
+    // cached per-tenant; filtered loads bypass (their data is already
+    // covered by the list-cache layer). Tenant-version-keyed, so any write
+    // invalidates it. See docs/response-caching.md.
+    const fetchControls = () =>
+        listControls(ctx, Object.keys(filters).length > 0 ? filters : undefined, { take: SSR_PAGE_LIMIT });
+    const controls =
+        Object.keys(filters).length > 0
+            ? await fetchControls()
+            : await cachedSsrPayload({ tenantId: ctx.tenantId, route: 'controls', ttlSeconds: 30, compute: fetchControls });
 
     return (
         <ControlsClient

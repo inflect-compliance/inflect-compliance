@@ -83,6 +83,12 @@ describe('Epic 19 Coherence: metric names', () => {
             // performance diagnostic watched ad-hoc in Grafana (a model-
             // labelled "suspicious query" signal), not an SLO-board metric.
             'db.slow_query.count',
+            // SSR payload cache — per-route hit ratio / fetch timing. A
+            // performance diagnostic (watch hit ratio in Grafana), not an
+            // SLO-board metric.
+            'cache.ssr.hit',
+            'cache.ssr.miss',
+            'cache.ssr.duration',
         ]);
 
         // Dot → underscore: api.request.count → api_request_count

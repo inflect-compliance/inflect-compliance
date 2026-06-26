@@ -835,3 +835,42 @@ function getSlowQueryCount() {
 export function recordSlowQuery(model: string): void {
     getSlowQueryCount().add(1, { model });
 }
+
+// ════════════════════════════════════════════════════════════════════════
+// SSR PAYLOAD CACHE METRICS
+//
+// Emitted by src/lib/cache/ssr-cache.ts::cachedSsrPayload. Label is
+// `route` (the canonical route name — bounded: dashboard, risks, …) plus
+// `outcome` on the duration histogram. Watch the per-route hit ratio in
+// Grafana; a low ratio means the tenant-wide invalidation is too eager or
+// the TTL is too short.
+// ════════════════════════════════════════════════════════════════════════
+
+let _ssrHit: ReturnType<ReturnType<typeof getMeter>['createCounter']> | null = null;
+let _ssrMiss: ReturnType<ReturnType<typeof getMeter>['createCounter']> | null = null;
+let _ssrDuration: ReturnType<ReturnType<typeof getMeter>['createHistogram']> | null = null;
+
+function getSsrHit() {
+    if (!_ssrHit) _ssrHit = getMeter().createCounter('cache.ssr.hit', { description: 'SSR payload cache hits', unit: '1' });
+    return _ssrHit;
+}
+function getSsrMiss() {
+    if (!_ssrMiss) _ssrMiss = getMeter().createCounter('cache.ssr.miss', { description: 'SSR payload cache misses', unit: '1' });
+    return _ssrMiss;
+}
+function getSsrDuration() {
+    if (!_ssrDuration) _ssrDuration = getMeter().createHistogram('cache.ssr.duration', { description: 'SSR payload fetch duration (hit = cache read, miss = compute)', unit: 'ms' });
+    return _ssrDuration;
+}
+
+/** Record an SSR payload cache hit. */
+export function recordSsrCacheHit(route: string, durationMs: number): void {
+    getSsrHit().add(1, { route });
+    getSsrDuration().record(durationMs, { route, outcome: 'hit' });
+}
+
+/** Record an SSR payload cache miss + the time the underlying compute took. */
+export function recordSsrCacheMiss(route: string, durationMs: number): void {
+    getSsrMiss().add(1, { route });
+    getSsrDuration().record(durationMs, { route, outcome: 'miss' });
+}

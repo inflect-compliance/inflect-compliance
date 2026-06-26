@@ -80,6 +80,18 @@ export function entityVersionKey(scopeKey: string, entity: AggregationEntity): s
     return `${CACHE_PREFIX}:ver:${entity}:${scopeKey}`;
 }
 
+/**
+ * Canonical tenant-WIDE version-counter key. Bumped by EVERY entity write
+ * in the tenant (via `bumpEntityCacheVersion`) and read by the SSR cache
+ * (`ssr-cache.ts`). Coarser than the per-entity counter on purpose: an
+ * SSR page (the dashboard, a list page) aggregates across many entities,
+ * so any write in the tenant should invalidate the tenant's cached SSR
+ * payloads.
+ */
+export function tenantVersionKey(tenantId: string): string {
+    return `${CACHE_PREFIX}:tv:${tenantId}`;
+}
+
 export interface CachedReadOptions<T> {
     ctx: RequestContext;
     /** Domain entity. Used for invalidation. */
@@ -310,7 +322,36 @@ export async function bumpEntityCacheVersion(
     ctx: RequestContext,
     entity: AggregationEntity,
 ): Promise<void> {
-    await bumpEntityCacheVersionForScope(ctx.tenantId, entity);
+    // Bump BOTH the per-entity counter (invalidates list + aggregation
+    // caches for this entity) AND the tenant-wide counter (invalidates
+    // every SSR payload cached for this tenant). Both fire before the
+    // mutation's response returns, so the staleness window is < 1s.
+    await Promise.all([
+        bumpEntityCacheVersionForScope(ctx.tenantId, entity),
+        bumpTenantCacheVersion(ctx.tenantId),
+    ]);
+}
+
+/**
+ * Invalidate ALL of a tenant's cached SSR payloads by INCR'ing the
+ * tenant-wide version counter. Called by `bumpEntityCacheVersion` on
+ * every entity write. Fail-open, never throws.
+ */
+export async function bumpTenantCacheVersion(tenantId: string): Promise<void> {
+    const redis = getRedis();
+    if (!redis) return;
+
+    const key = tenantVersionKey(tenantId);
+    try {
+        await redis.incr(key);
+        await redis.expire(key, VERSION_KEY_TTL_SECONDS);
+    } catch (err) {
+        logger.warn('tenant-cache version-bump failed', {
+            component: 'ssr-cache',
+            tenantId,
+            error: err instanceof Error ? err.message : String(err),
+        });
+    }
 }
 
 /**

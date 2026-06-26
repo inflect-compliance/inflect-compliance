@@ -4,7 +4,7 @@
   "counts": {
     "authoritative": 104,
     "living": 5,
-    "historical": 276,
+    "historical": 277,
     "deprecated": 1
   },
   "docs": {
@@ -975,6 +975,9 @@
       "class": "historical"
     },
     "docs/implementation-notes/2026-06-26-read-replica-routing.md": {
+      "class": "historical"
+    },
+    "docs/implementation-notes/2026-06-26-ssr-payload-cache.md": {
       "class": "historical"
     },
     "docs/implementation-notes/2026-06-26-worker-autoscaling.md": {

@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import { getTenantCtx } from '@/app-layer/context';
 import { listAssets } from '@/app-layer/usecases/asset';
+import { cachedSsrPayload } from '@/lib/cache/ssr-cache';
 import { AssetsClient } from './AssetsClient';
 
 export const dynamic = 'force-dynamic';
@@ -34,7 +35,12 @@ export default async function AssetsPage({
         if (typeof val === 'string' && val) filters[key] = val;
     }
 
-    const assets = await listAssets(ctx, Object.keys(filters).length > 0 ? filters : undefined);
+    // SSR payload cache — unfiltered load only; filtered bypasses (list-cache covers it).
+    const fetchAssets = () => listAssets(ctx, Object.keys(filters).length > 0 ? filters : undefined);
+    const assets =
+        Object.keys(filters).length > 0
+            ? await fetchAssets()
+            : await cachedSsrPayload({ tenantId: ctx.tenantId, route: 'assets', ttlSeconds: 30, compute: fetchAssets });
 
     // Render the client directly (no wrapping <div>): the wrapper was a
     // plain block that severed ListPageShell's `md:flex-1 md:min-h-0`

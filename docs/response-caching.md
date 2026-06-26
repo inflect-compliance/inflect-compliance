@@ -1,6 +1,6 @@
 # Response caching
 
-Two Redis-backed caches sit in front of the hottest read paths. Both are
+Three Redis-backed caches sit in front of the hottest read paths. All are
 **tenant/scope-scoped, version-invalidated, fail-open**, and bypass
 cleanly when `REDIS_URL` is unset (dev/test behave as if uncached).
 
@@ -8,9 +8,10 @@ cleanly when `REDIS_URL` is unset (dev/test behave as if uncached).
 |-------|--------|--------|-----------|
 | **List cache** | `src/lib/cache/list-cache.ts` (`cachedListRead`) | single-entity list reads (controls, risks, evidence, tasks) | tenant + entity-version + filter hash |
 | **Aggregation cache** | `src/lib/cache/aggregation-cache.ts` (`cachedAggregationRead`) | cross-entity dashboard / metric aggregations | scope (tenant **or** org) + composed entity-versions + param hash |
+| **SSR payload cache** | `src/lib/cache/ssr-cache.ts` (`cachedSsrPayload`) | server-component page data fetches (dashboard + entity list pages) | tenant + route + **tenant-wide** version |
 
-This document is the source of truth for the **aggregation cache**. The
-list cache is documented inline in its module.
+This document is the source of truth for the **aggregation** and **SSR**
+caches. The list cache is documented inline in its module.
 
 ## The aggregation registry
 
@@ -90,6 +91,55 @@ far more often than the dashboard is viewed) or the TTL is too short.
    Add the call after the write commits if it's missing.
 4. **Add the route to the ratchet** (`ROUTE_FILES` in
    `aggregation-cache-coverage.test.ts`) and run it.
+
+## SSR payload cache (origin-tier)
+
+`cachedSsrPayload({ tenantId, route, ttlSeconds, compute })`
+(`src/lib/cache/ssr-cache.ts`) caches the **data** a server component
+fetches before handing it to its client component — NOT the rendered
+HTML. A hit skips the usecase + DB work; the React render still runs
+fresh (cheap), so auth context / breadcrumbs stay correct. It cuts
+server-side **TTFB**, not network round-trip (that's the CDN tier —
+[`docs/cdn.md`](./cdn.md)).
+
+| Property | Value |
+|---|---|
+| Key | `(tenantId, route, tenant-wide version)` — **not** user-scoped |
+| Storage | Redis (the `getRedis()` singleton) |
+| TTL | 60s (dashboard), 30s (entity lists); hard cap `MAX_SSR_TTL_SECONDS = 300` |
+| Invalidation | **coarse** — `bumpEntityCacheVersion` bumps the tenant-wide counter (`tenantVersionKey`) on EVERY entity write, so any write invalidates ALL of the tenant's cached SSR payloads |
+
+### Why coarse invalidation is right here
+
+An SSR page aggregates across many entities (the dashboard shows control
+counts AND risk figures; the risks page shows risk-coverage derived from
+controls). A Control write should refresh the dashboard AND the risks
+page — so a tenant-wide bump is the correct granularity, not a
+per-entity one. The bump fires before the mutation's response returns, so
+the staleness window is < 1s.
+
+### Wired routes + the filter caveat
+
+- **Dashboard** (`/t/<slug>/dashboard`) — always cached (`getExecutiveDashboard`
+  is ~11 uncached COUNT queries; the real win). Tenant-pure (no per-user
+  data), so a tenant key is safe.
+- **Entity list pages** (risks, controls, assets, policies, tasks) —
+  cached **only for the unfiltered load** (the common case). A filtered
+  request (`?status=…`) bypasses `cachedSsrPayload` and computes directly,
+  because (a) the cache key doesn't carry the filter, and (b) the
+  filtered list data is already covered by the list cache. So the SSR
+  cache's marginal win on list pages is the page-payload assembly, not
+  the DB read.
+
+### Opt-in
+
+The cache is opt-in per route. Routes that must NOT cache — detail/edit
+pages (`/risks/[id]/edit`), billing, anything reflecting the actor's own
+in-flight edit at sub-second freshness — simply don't call
+`cachedSsrPayload`. Observability: `cache.ssr.hit` / `.miss` /
+`.duration` (by `route`); watch the per-route hit ratio in Grafana
+(target > 70% for the dashboard in business hours — lower means the
+tenant-wide bump is too eager or the TTL too short).
 
 ## When NOT to cache here
 
