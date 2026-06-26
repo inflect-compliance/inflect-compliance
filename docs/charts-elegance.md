@@ -1,6 +1,6 @@
 # Lickable Charts — R16 Decision Tree
 
-Roadmap-16 (Lickable Charts) shipped 12 PRs across two phases:
+R16 (Lickable Charts) shipped 12 PRs across two phases:
 **foundations** (tokens · gradients · frame · motion hooks) and
 **chart primitives** (donut · line · radar · gantt) — each chart got
 a visual rebuild PR plus a hover PR. This doc is the decision tree
@@ -118,22 +118,24 @@ type union. Adding a 7th requires:
 It's not impossible — it's a conscious vocabulary change. Bring
 the proposal explicitly.
 
-## What R17 (if it ships) would cover
+## What landed after R16
 
 The deferred-until-R16-PR6-decision items (we picked "decide
-later"). Once R16 lands, candidates for R17:
+later") have since shipped across two later waves:
 
-- Sankey rebuild on R16 primitives
-- Heatmap polish (RiskHeatmap, CalendarHeatmap) — different
-  visual idiom; needs its own colour-scale strategy
-- Funnel polish
-- Chart-pattern library (crosshatch for disabled, dots for
-  projected, etc.) — for fills that need to convey state
-  beyond hue
-- Multi-axis stacked variants of the R16 chart primitives
-- ChartTooltip primitive — currently each chart rolls its own
-  hover affordance; a shared tooltip primitive could centralise
-- GraphExplorer node refresh
+- R17 took the chart family in a different direction first —
+  ambient glow, breath animation, hero sparklines, clickable KPIs,
+  and filter-aware donut/charts (see the `r17-*` ratchets).
+- R21 (below) closed out the originally-deferred chart rebuilds:
+  Sankey rebuild on R16 primitives, heatmap rebuild (RiskHeatmap +
+  CalendarHeatmap on `useHeatScale` + `<ChartLegend>`), and funnel
+  polish.
+- A shared tooltip primitive (`ChartTooltipContainer`) is in
+  `src/components/ui/charts/interaction.tsx`, consumed by the funnel
+  and time-series charts.
+
+The remaining deferred items are tracked under "Future direction"
+at the end of this doc.
 
 ## Quick API examples
 
@@ -191,6 +193,7 @@ const state = chartReady<GanttRow[]>([
 <GanttChart state={state} todayLine ariaLabel="Audit cycles timeline" />
 ```
 
+<!-- docs-accuracy-allow: "Roadmap-21" is the shipped wave codename, required verbatim by tests/guards/r21-prf-bar3d-capstone.test.ts -->
 ## Roadmap-21 — Sculpted Charts (3D)
 
 R21 extends the chart family in three directions:
@@ -255,3 +258,12 @@ discrete dimensions (time × category) as a grid of bars with
 value-encoded heights. Bars carry the chart-series gradient (base
 = `start`, tip = `end`); the 2D fallback is naturally a heatmap
 since the data shape is identical.
+
+## Future direction
+
+Deferred chart-family items not yet built:
+
+- **Chart-pattern library** — crosshatch for disabled, dots for
+  projected, etc., for fills that need to convey state beyond hue.
+- **Multi-axis stacked variants** of the R16 chart primitives.
+- **GraphExplorer node refresh** onto the shared chart vocabulary.

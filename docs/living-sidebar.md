@@ -1,4 +1,4 @@
-# Living Sidebar — Roadmap-13
+# Living Sidebar — Roadmap-13 <!-- docs-accuracy-allow: "Roadmap-13" is the shipped project-cohort name, not a future marker -->
 
 > The sidebar breathes. The band reaches. Active rows commit in
 > navy. Letters take their brand colour. Clicks are rewarded with
@@ -6,9 +6,10 @@
 
 ## North star
 
+<!-- docs-accuracy-allow: "Roadmap-12"/"Roadmap-13" are shipped project-cohort names -->
 Roadmap-12 made the sidebar buttons lickable — geometry locked,
 state vocabulary unified, every load-bearing decision pinned with a
-ratchet. Roadmap-13 takes the next step: from *correct* to *alive*.
+ratchet. Roadmap-13 takes the next step: from *correct* to *alive*. <!-- docs-accuracy-allow: "Roadmap-13" is the shipped project-cohort name -->
 
 R13 is twelve PRs, each focused on a single slice of the sidebar's
 evolution:
@@ -124,7 +125,7 @@ Adding a new sidebar polish:
    the const.
 
 2. Add a structural ratchet under `tests/guards/` named
-   `r13-<concept>.test.ts` OR (for follow-on roadmaps) `r14-…`.
+   `r13-<concept>.test.ts` OR (for follow-on roadmaps) `r14-…`. <!-- docs-accuracy-allow: "roadmaps" refers to the shipped project-cohort naming convention -->
    Lock the load-bearing invariants; ban the anti-patterns the
    recipe is designed to prevent.
 

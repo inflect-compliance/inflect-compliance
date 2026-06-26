@@ -83,7 +83,7 @@ contributor who deletes or guts any one of them meets a red
 `package.json` carries an `overrides` block. Every entry is one of
 two kinds, and both are documented in `dependency-policy.md`:
 
-- **Bridge override** — a peer range that has not yet caught up to a
+- **Bridge override** — a peer range that has not yet caught up to a <!-- docs-accuracy-allow: present-tense description of an override category, not a future-work marker -->
   version we run (e.g. `@visx/*` peering `react ^18` while we run
   `react@19`). A bridge is temporary: drop it when upstream ships a
   release whose peer range genuinely includes our version.

@@ -1,10 +1,11 @@
 # Automation events & rule dispatch (Epic 60)
 
 This is the contributor guide for the backend that makes "when X
-happens, do Y" rules possible. Epic 60 ships the plumbing — tables,
-bus, dispatcher, execution history. Later epics add the rule-builder
-UI and the action handlers. **Always build on these primitives;
-never hand-roll a replacement.**
+happens, do Y" rules possible. Epic 60 shipped the plumbing — tables,
+bus, dispatcher, execution history; later epics added the rule-builder
+UI (`RuleBuilderModal` / `RulesTab` / `RuleDetailSheet`) and the live
+action handlers (`action-executor.ts`). **Always build on these
+primitives; never hand-roll a replacement.**
 
 ## What Epic 60 provides
 
@@ -16,6 +17,7 @@ src/app-layer/automation/
 ├── policies.ts                       RBAC (read/manage/execute/history)
 ├── filters.ts                        matchesFilter() for triggerFilterJson
 ├── automation-bus.ts                 emit / subscribe / dispatcher seam
+├── action-executor.ts                executeAction — live action handlers
 ├── bus-bootstrap.ts                  wires bus → BullMQ at startup
 ├── AutomationRuleRepository.ts       tenant-scoped CRUD
 ├── AutomationExecutionRepository.ts  append-only history
@@ -49,11 +51,13 @@ rules matching `(tenantId, triggerEvent)` in priority order, runs
 `SUCCEEDED`/`FAILED`. Idempotency via unique
 `(tenantId, idempotencyKey)` — P2002 is silent-skip.
 
-**Action execution is stubbed.** Epic 60 records the rule's
-`actionType` in `outcomeJson` and marks the execution `SUCCEEDED`
-without firing a side effect. Plugging in real action handlers
-(`NOTIFY_USER`, `CREATE_TASK`, `UPDATE_STATUS`, `WEBHOOK`) is the
-next epic's job — see "Adding an action handler" below.
+**Action execution is live.** The dispatcher invokes
+`executeAction` (`src/app-layer/automation/action-executor.ts`) per
+matched rule, which fires the real side effect for the rule's
+`actionType` (`NOTIFY_USER`, `CREATE_TASK`, `UPDATE_STATUS`,
+`WEBHOOK`, `INVOKE_SUBFLOW`), records the outcome in `outcomeJson`,
+and marks the execution `SUCCEEDED`/`FAILED` accordingly — see
+"Extending the dispatcher" below.
 
 ---
 
@@ -165,24 +169,28 @@ await emitAutomationEvent(ctx, {
 
 ---
 
-## Extending the dispatcher (next epic)
+## Extending the dispatcher
 
-The stubbed action step in
-`src/app-layer/jobs/automation-event-dispatch.ts` is marked with
-a `=== Action handlers would plug in here ===` comment. The
-intended shape:
+The action step in
+`src/app-layer/jobs/automation-event-dispatch.ts` calls
+`executeAction` (`src/app-layer/automation/action-executor.ts`),
+which switches on `rule.actionType` and invokes the matching handler
+with the event + action config:
 
 ```ts
-// Instead of the current "no-op SUCCEEDED" write, look up an
-// action handler by rule.actionType and invoke it with the event
-// + action config.
-const handler = actionHandlerRegistry.get(rule.actionType);
-const outcome = await handler.execute({
+// Look up the handler by rule.actionType, invoke it with the event
+// + action config, and record the outcome on the execution row.
+const outcome = await executeAction(prisma, rule, {
     event, actionConfig: rule.actionConfigJson, executionId,
 });
 ```
 
-**Non-negotiable invariants when you plug handlers in:**
+To add a new action type, add a `case` to the `switch` in
+`executeAction` and a handler function alongside the existing
+`notifyUser` / `createTask` / `updateStatus` / `fireWebhook` /
+`invokeSubflow`.
+
+**Non-negotiable invariants when you add a handler:**
 - Keep insert-to-claim + P2002 silent-skip. Actions must not run
   before the row is claimed.
 - Keep the `status = PENDING` gate on the `RUNNING` transition.
@@ -195,14 +203,17 @@ const outcome = await handler.execute({
 
 ---
 
-## Filter evolution (future DSL)
+## Filter evolution (DSL v2)
 
-`matchesFilter` is deliberately primitive: top-level equality over
-`event.data`. The moment we need ranges / boolean logic / nested
-paths, land a **versioned** filter DSL at a new entry point — do
-not overload this function. Rule rows can carry a
-`triggerFilterVersion` column (add via migration) so the dispatcher
-can route old rules to the v1 evaluator and new rules to v2.
+`matchesFilter` evaluates the **DSL v2** filter shape (Epic 4):
+`triggerFilterJson` is either a recursive `FilterGroup`
+(`{ logic, conditions[] }` with AND/OR grouping and the
+`eq/neq/in/not_in/gt/lt/contains` operators) or a legacy flat
+equality map. The two shapes coexist — pre-Epic-4 rows keep firing
+without a migration. A `null`/`undefined` filter matches every event
+of its type; conditions read only `event.data`; unknown fields fail
+closed. To extend the operator set, edit `evalCondition` in
+`filters.ts` — keep both shapes supported so legacy rows do not break.
 
 ---
 

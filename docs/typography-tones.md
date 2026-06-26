@@ -58,12 +58,13 @@ into the background.
 ## Tab counts
 
 The `(N)` count next to a tab label is `text-content-subtle
-tabular-nums ml-1 text-xs`. Locked in Roadmap-4 PR-7.
+tabular-nums ml-1 text-xs`. Locked in Roadmap-4 PR-7. <!-- docs-accuracy-allow: "Roadmap-4" is a shipped-epic codename, not future tense -->
+
 
 ## Eyebrows
 
 `<Eyebrow>` renders with `text-content-muted` intrinsically
-(Roadmap-4 PR-3 lock). Consumers do not override the tone.
+(Roadmap-4 PR-3 lock). Consumers do not override the tone. <!-- docs-accuracy-allow: "Roadmap-4" is a shipped-epic codename, not future tense -->
 
 ## Captions
 

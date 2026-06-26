@@ -283,7 +283,7 @@ regulation may force) · **Mechanism** · **Owner** · **Cleanup wiring** ·
   tenant data referencing the user; (b) a decision on how to treat `AuditLog`
   references (pseudonymise the `userId`? retain under legal-basis exemption?);
   (c) an admin/self-service request flow + audit of the erasure itself; (d) a
-  DPIA. Non-trivial — a dedicated roadmap item.
+  DPIA. Non-trivial — a dedicated follow-up effort (see Open questions).
 - **Owner:** Legal (obligation + lawful-basis carve-outs) + Engineering (flow).
 
 ### Financial (2)
@@ -345,7 +345,7 @@ Each blocks a customer/compliance sign-off. Format: **decision owner** ·
 2. **GDPR Article 17 right-to-erasure — supported today?** Owner: **Legal +
    Engineering.** *Implication:* it is **not** supported beyond soft-delete; landing
    it is a multi-PR effort (cascade scrub + `AuditLog` reconciliation + request
-   flow + DPIA). **Default: documented roadmap item; soft-delete only.**
+   flow + DPIA). **Default: documented follow-up effort; soft-delete only.**
 3. **Evidence retention after tenant cancellation.** Owner: **Product +
    Compliance.** *Implication:* today a cancelled tenant's evidence is retained
    exactly like an active tenant's; arguably should be "retain N days, then

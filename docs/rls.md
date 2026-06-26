@@ -1,5 +1,7 @@
 # Row-Level Security
 
+> **Deprecated.** The system described here has been superseded by `docs/rls-tenant-isolation.md`. See that document.
+
 This file has moved. The authoritative guide is:
 
 - **[`docs/rls-tenant-isolation.md`](./rls-tenant-isolation.md)** — contributor guide: role model, `runInTenantContext`, `runWithoutRls`, policy shapes for nullable/ownership-chained tables, how to add a new tenant-scoped model.

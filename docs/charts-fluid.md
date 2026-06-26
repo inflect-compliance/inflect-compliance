@@ -1,7 +1,7 @@
-# Roadmap-18 — Charts II: Fluid & Glossy
+# R18 — Charts II: Fluid & Glossy
 
-Roadmap-16 made the charts *lickable* — gradient fills, hover-pop,
-the flowing-river hover effect. Roadmap-18 makes them **fluid,
+The R16 (lickable) wave gave the charts gradient fills, hover-pop,
+and the flowing-river hover effect. This R18 wave makes them **fluid,
 glossy, and bubbly**: glass catch-lights, springy buoyant motion,
 and smooth tweening between data states.
 

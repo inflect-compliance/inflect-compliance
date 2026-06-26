@@ -1,6 +1,6 @@
 # Codebase hygiene
 
-Three codebase-hygiene invariants, each remediated by Roadmap-6 and
+Three codebase-hygiene invariants, each remediated by Roadmap-6 and <!-- docs-accuracy-allow: Roadmap-6 is the proper name of a completed initiative -->
 each held in place by a structural guardrail so the gain cannot
 quietly erode. This document is the single entry point: what the
 invariant is, which guardrail enforces it, and how to fix a failure.
@@ -12,7 +12,7 @@ any one of them and a "guard the guards" test goes red.
 ## Pillar 1 — `as any` stays on a downward ratchet
 
 `as any` is a hole in the type system: it disables checking in every
-direction and silently survives refactors. Roadmap-6 P1 drove the
+direction and silently survives refactors. Roadmap-6 P1 drove the <!-- docs-accuracy-allow: Roadmap-6 is the proper name of a completed initiative -->
 `src/` count from **174 to 4**; the four that remain are documented
 staged debt (each carries an inline `eslint-disable` + reason).
 
@@ -48,7 +48,7 @@ Then lower the baseline / caps to the new count in the same PR.
 ## Pillar 2 — logging discipline, adapted code included
 
 Server-side code logs through the structured logger
-(`@/lib/observability`), never `console.*`. Roadmap-6 P2 closed a
+(`@/lib/observability`), never `console.*`. Roadmap-6 P2 closed a <!-- docs-accuracy-allow: Roadmap-6 is the proper name of a completed initiative -->
 blind spot: the dub-ported utility tree `src/lib/dub-utils/` had a
 blanket exemption from the console guardrail. Adapted / vendored
 code is **not** a lower hygiene bar — it runs in the same process
@@ -68,7 +68,8 @@ Do not reach for the allowlist.
 ## Pillar 3 — route handlers type `params` as a Promise
 
 Next 15+ delivers a route handler's dynamic `params` as a `Promise`.
-Roadmap-6 P3 migrated all 322 handlers under `src/app/api` to
+Roadmap-6 P3 migrated all 322 handlers under `src/app/api` to <!-- docs-accuracy-allow: Roadmap-6 is the proper name of a completed initiative -->
+
 `params: Promise<{ … }>` + an explicit `await`, and removed the
 transparent-await shim `withApiErrorHandling` once carried.
 

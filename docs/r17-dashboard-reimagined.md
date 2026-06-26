@@ -1,8 +1,8 @@
-# Roadmap-17 — Dashboard Reimagined
+# Roadmap-17 — Dashboard Reimagined <!-- docs-accuracy-allow: phase name, not future tense -->
 
 The executive dashboard is the first surface every user sees on
 sign-in. R17 turned it from a static report into a coordinated,
-gently-animated, interactive surface. The roadmap shipped 12 PRs
+gently-animated, interactive surface. The R17 effort shipped 12 PRs
 across the masthead, the KPI grid, the chart sections, the
 next-best-action card, and the first-paint choreography.
 

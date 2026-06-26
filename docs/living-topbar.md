@@ -1,4 +1,4 @@
-# Living Top-Bar — Roadmap-14
+# Living Top-Bar — Roadmap-14 <!-- docs-accuracy-allow: "Roadmap-14" is the shipped project-cohort name, not a future marker -->
 
 > The top-bar is the equal-and-opposite of the living sidebar.
 > Where the sidebar tells you *where* you are, the top-bar tells you

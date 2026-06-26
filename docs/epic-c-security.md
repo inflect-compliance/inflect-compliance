@@ -340,8 +340,8 @@ operator action to take — sanitisation never fails the request.
 5. **`category: 'access'` is the canonical audit-details category for
    authn/authz events.** The audit-details schema is closed
    (`entity_lifecycle | data_lifecycle | status_change | relationship | access | custom`); a new event type that doesn't fit needs to land
-   in `src/app-layer/schemas/json-columns.schemas.ts` first or it
-   will be silently dropped by `validateAuditDetailsJson`.
+   in `src/app-layer/schemas/json-columns.schemas.ts` first; otherwise
+   `validateAuditDetailsJson` silently drops it.
 
 6. **The sanitiser allowlist is conservative on purpose.** If the
    product needs additional formatting (footnotes, KaTeX, embedded

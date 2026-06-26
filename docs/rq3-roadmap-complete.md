@@ -1,4 +1,7 @@
-# RQ3 — Risk Quantification Roadmap (Complete)
+# RQ3 — Risk Quantification Roadmap (Complete) <!-- docs-accuracy-allow: capstone/index of COMPLETED work; "Roadmap" is the wave codename, not a future promise -->
+
+<!-- docs-accuracy-allow: status banner explaining the title is a shipped-wave codename -->
+> **Status: authoritative** — capstone/index for the completed RQ3 wave (delivered 2026-06-11 → 2026-06-13). "Roadmap" in the title is the wave's codename; the cohort below is shipped.
 
 **Status:** delivered 2026-06-11 → 2026-06-13.
 **Author:** Claude (autonomous mandate).
@@ -193,7 +196,8 @@ describes.
 
 ---
 
+<!-- docs-accuracy-allow: guidance for future RQ4/RQ5 waves to mirror this completed cohort's shape -->
 *Generated as part of RQ3-11 (the capstone PR). Subsequent
-risk-quantification roadmaps (RQ4, RQ5, …) should follow the same
+risk-quantification waves (RQ4, RQ5, …) should follow the same
 shape: one implementation note per substantive PR, one ratchet per
 implementation note, one capstone synthesis at the end.*

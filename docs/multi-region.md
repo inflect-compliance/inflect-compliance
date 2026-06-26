@@ -1,5 +1,7 @@
 # Cross-Region Warm-Standby — Design
 
+> **Status: living design** — describes a direction that is partially shipped. See the "Current state" and "Roadmap" sections for what is and isn't true today.
+
 **Status:** design for engineering + customer-security review. **No
 infrastructure code ships with this doc** — the Terraform/Helm follow up
 after this design is approved. This is the artefact the decision lands on.
@@ -11,7 +13,9 @@ objectives (`docs/slos.md` SLO 6/7: **RPO ≤ 1h, RTO ≤ 4h**) already note
 that "cross-region read replica deployment is the mitigation; not in
 scope for OI-3." This doc specifies that mitigation.
 
-## Today's posture (the baseline we're moving from)
+## Current state (true today)
+
+### Today's posture (the baseline we're moving from)
 
 | Layer | Today (from `infra/terraform/`) |
 |-------|----------------------------------|
@@ -32,7 +36,7 @@ just redeploys):
   BullMQ), S3 evidence files, the KMS CMK + the app-layer master KEK.
 - **Stateless** (redeploy from the Helm chart): app, worker, PgBouncer.
 
-## RPO / RTO targets
+### RPO / RTO targets
 
 These extend `docs/slos.md` SLO 6/7. The committed platform SLO (RPO ≤1h
 / RTO ≤4h) is the **full-recovery** objective (covers a regional outage
@@ -55,7 +59,9 @@ roughly **triples cost** AND adds a write-conflict-resolution surface
 engineering effort — the benefit (≤2min RTO, zero RPO) does not justify
 the cost or risk for any committed customer requirement today.
 
-## Target architecture: cross-region warm-standby
+## Roadmap (future direction)
+
+### Target architecture: cross-region warm-standby
 
 The recommended posture for the next 12 months.
 
@@ -127,7 +133,7 @@ DNS cuts over (until then writes still land on the primary region). No
 design change needed beyond ensuring `AUTH_SECRET` is identical in both
 regions' secret stores (same constraint as the master KEK).
 
-## Migration path (12-month roadmap)
+### Migration path (12-month roadmap)
 
 **Phase 1 (Q3) — plumbing.** Provision the standby region in Terraform;
 deploy the Helm chart in DR mode (0 replicas — namespace + config only).
@@ -151,7 +157,7 @@ has FREE/TRIAL/PRO/ENTERPRISE gates). Smaller tenants stay single-region;
 their commitment remains *same-region HA* (already met by Multi-AZ +
 SLO 6/7).
 
-## What this doc is NOT
+### What this doc is NOT
 
 - **Active-active design.** The CRDT / write-conflict surface is an
   ~18-month effort nobody has asked for. Mentioned above; not specified.
@@ -161,7 +167,7 @@ SLO 6/7).
 - **A SOC2 / FedRAMP / ISO 27001 compliance spec.** This informs those
   commitments; it does not replace the auditor conversation.
 
-## Open questions (engineering-review decision gates)
+### Open questions (engineering-review decision gates)
 
 These must be answered **before Phase 1**. My recommendation is given for
 each (the PR review is where they're decided):

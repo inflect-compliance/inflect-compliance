@@ -131,6 +131,7 @@ All `detailsJson` payloads are **discriminated unions** on the `category` field.
 |----------|----------|------------|
 | `entity_lifecycle` | CRUD operations | `entityName`, `operation`, `changedFields`, `before`, `after` |
 | `status_change` | Workflow transitions | `entityName`, `fromStatus`, `toStatus`, `reason` |
+| `relationship` | Link / unlink between entities | `operation` (`linked`/`unlinked`), `sourceEntity`, `sourceId`, `targetEntity`, `targetId`, `relation` |
 | `access` | Auth & permissions | `operation`, `targetUserId`, `detail` |
 | `data_lifecycle` | Retention, purge, archive | `operation`, `model`, `reason`, `recordCount` |
 | `custom` | Domain-specific events | `category: 'custom'` + arbitrary keys |
@@ -221,7 +222,7 @@ const report = await verifyAllTenants();
 | **Structured Events** | `tests/guards/audit-structured-events.test.ts` | All `logEvent` calls have `detailsJson` |
 | **Raw INSERT** | `tests/guards/audit-structured-events.test.ts` | No raw INSERT outside `audit-writer.ts` |
 | **Script Exists** | `tests/guards/audit-structured-events.test.ts` | `verify-audit-chain.ts` exists with required flags |
-| **Schema Validation** | `tests/guards/audit-structured-events.test.ts` | All 5 event categories validate via Zod |
+| **Schema Validation** | `tests/guards/audit-structured-events.test.ts` | 5 of the 6 event categories validate via Zod (the `relationship` schema exists but is absent from this guard's fixture set) |
 | **Hash Stability** | `tests/unit/audit-canonical-hash.test.ts` | Canonical serialization is deterministic |
 | **Chain Integrity** | `tests/unit/audit-chain-verify.test.ts` | Tampering and discontinuity detection |
 | **Integration** | `tests/integration/audit-hash-chain.test.ts` | Full chain lifecycle against PostgreSQL |

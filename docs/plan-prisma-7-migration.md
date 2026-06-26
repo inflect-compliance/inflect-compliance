@@ -1,5 +1,7 @@
 # Prisma 5 → 7 migration — plan
 
+> **Status: historical record (2026-05-04)** — this is the pre-migration plan for the Prisma 5 → 7 upgrade, which has since shipped (Prisma 7 is live: `prisma.config.ts` holds the connection URLs, the runtime client uses the `@prisma/adapter-pg` adapter, and every `$use` middleware was migrated to `client.$extends({ query })`). Kept for the record, not maintained. For current schema/runtime behaviour see `prisma/schema/README.md` and the "Framework baseline" / Prisma sections of `CLAUDE.md`.
+
 **Status:** open. Targets dependabot PRs #127 (`prisma`) + #124
 (`@prisma/client`). Both must ship together — Prisma's CLI and
 client are paired releases.

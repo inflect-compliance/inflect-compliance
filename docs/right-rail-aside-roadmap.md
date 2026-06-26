@@ -1,6 +1,8 @@
 # Right-rail / aside-panel chrome — architecture brief
 
-> **Status: Phases 0–4 implemented (2026-05-22).** This document
+> **Status: living design** — describes a direction that is partially shipped. See the "Current state" and "Roadmap" sections for what is and isn't true today.
+
+> **Phases 0–4 implemented (2026-05-22).** This document
 > began as a future-facing brief; the roadmap below was then built in
 > full. It is kept as the design record — the rationale, the posture
 > definition, and the acceptance criteria still govern any future
@@ -21,6 +23,15 @@
 >
 > Structural lock: `tests/guards/right-rail-discipline.test.ts`
 > carries one describe block per phase.
+
+## Current state (true today)
+
+The `<AsidePanel>` primitive and the `aside` slots on
+`EntityDetailLayout` / `ListPageShell` / `EntityListPage` are
+shipped (Phases 0–4 above). The prose that follows this section was
+written *before* the build and is kept as the design record; read it
+as the rationale and acceptance criteria that still govern any new
+rail surface, not as a description of unbuilt work.
 
 ---
 
@@ -224,7 +235,9 @@ near-term work:
 
 ---
 
-# Future implementation phases
+## Roadmap (future direction)
+
+### Future implementation phases (as originally planned; now built)
 
 **Phase 0 — trigger (no code).** Wait for a concrete, repeated
 workflow that demonstrably needs the fourth posture. The activity

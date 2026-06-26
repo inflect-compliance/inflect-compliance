@@ -259,9 +259,10 @@ ISO 27001 ──→ NIST CSF ──→ SOC 2                (2-hop)
 - ✅ Mapping data population (4 of 4 high-priority pairs shipped)
 - ✅ Product-facing gap-analysis usecase layer (fully operational)
 - ✅ Lifecycle wiring into library-sync (fully operational)
-- ⏳ Admin UI for mapping browsing (not yet implemented)
-- ⏳ Wiring into readiness report PDF generator (not yet implemented)
-- ⏳ HTTP API routes for gap-analysis endpoints (not yet exposed)
+
+The three remaining surfaces (admin browsing UI, readiness-PDF
+wiring, HTTP gap-analysis routes) are not built — see **Future
+work** at the bottom of this document.
 
 ## Product-Facing Gap Analysis Usecase
 
@@ -364,4 +365,19 @@ When creating mapping YAML files, use these guidelines for strength values:
 - Be specific about *why* the mapping exists
 - Reference the semantic overlap, not just shared keywords
 - Keep rationale under 200 characters for UI display
+
+## Future work
+
+The domain model, ingestion pipeline, resolution engine, and the
+product-facing `gap-analysis.ts` usecase are all operational, but
+the gap-analysis usecase is not yet consumed outside the app layer.
+Three surfaces remain unbuilt:
+
+- Admin UI for mapping browsing (not yet implemented).
+- Wiring into the readiness report PDF generator (not yet implemented).
+- HTTP API routes for the gap-analysis endpoints (not yet exposed).
+
+Two further mapping sets remain planned (low priority — reverse
+directions of the shipped primary mappings): SOC 2 → ISO 27001:2022
+and NIST CSF 2.0 → ISO 27001:2022.
 - Example: "Both address information classification and asset labeling requirements"

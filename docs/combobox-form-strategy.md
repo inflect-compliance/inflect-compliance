@@ -171,7 +171,7 @@ These remain on native `<select>` by design. The ratchet in `tests/guards/epic55
 
 ## Out of scope
 
-- **Filter bars** — `FilterBar` / `CompactFilterBar` are superseded by Epic 53's `FilterToolbar` + `FilterSelect`. Use those for list-page filtering. The legacy components persist only in loading-state skeletons and will be removed when the skeletons get token-migrated.
+- **Filter bars** — `FilterBar` / `CompactFilterBar` are superseded by Epic 53's `FilterToolbar` + `FilterSelect`. Use those for list-page filtering. `CompactFilterBar` has been removed; the loading-state skeletons are token-migrated (`SkeletonFilterBar` in `src/components/ui/skeleton.tsx`) and no longer reference the legacy components. The orphaned `src/components/filters/FilterBar.tsx` file has no remaining importers — see Future work.
 - **Onboarding wizard** — `OnboardingWizard` industry/size selects. Legacy one-time flow; not a CRUD surface.
 
 ---
@@ -192,3 +192,9 @@ These remain on native `<select>` by design. The ratchet in `tests/guards/epic55
 - **`tests/guards/epic55-native-select-ratchet.test.ts`** — fails CI if the `<select>` count grows; also asserts the 11 migrated surfaces stay migrated.
 - **`tests/unit/epic55-form-primitives.test.ts`**, **`epic55-combobox.test.ts`**, **`epic55-field-wrapper.test.ts`** — lock the primitive API shape.
 - **`tests/unit/epic55-framework-picker-migration.test.ts`**, **`epic55-user-combobox.test.ts`**, **`epic55-enum-picker-migration.test.ts`** — lock each migration's contract.
+
+## Future work
+
+- **Delete the orphaned `src/components/filters/FilterBar.tsx`.** It is
+  superseded by Epic 53's `FilterToolbar` and has no remaining importers;
+  the file can be removed in a cleanup PR.

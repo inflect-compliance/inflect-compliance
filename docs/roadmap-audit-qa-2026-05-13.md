@@ -1,5 +1,7 @@
 # Roadmap QA Walkthrough — 2026-05-13
 
+> **Status: historical record (2026-05-13)** — describes the state of the system at the time of writing; kept for the record, not maintained. For current behaviour see the relevant subsystem doc in docs/.
+
 QA checklist for the deployed app. **What I already verified
 structurally lives in the next section** — the table below covers only
 the things that need a real browser to confirm.

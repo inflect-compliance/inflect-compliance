@@ -55,7 +55,7 @@ of two kinds:
   (`x-rate-limit`).
 - **Stubs** (`x-stub: true`) — the route exists and is callable, and
   its path, method, and path parameters are accurate, but its request/
-  response body is not yet published in the contract. Treat a stub as
+  response body is not published in the contract. Treat a stub as
   "this endpoint is real; confirm its payload empirically or ask us".
 
 ---

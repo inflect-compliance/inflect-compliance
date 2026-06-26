@@ -1,7 +1,9 @@
 # Real-Time Collaboration — Process Canvas
 
-**Status:** Design + foundation only (Epic P6-PR-C). Full multi-
-user node-mutation merging deferred to a future workstream.
+> **Status: living design** — describes a direction that is partially shipped. See the "Current state" and "Roadmap" sections for what is and isn't true today.
+
+**Foundation only (Epic P6-PR-C).** Full multi-user
+node-mutation merging is deferred to a future workstream.
 
 ## Brief
 
@@ -33,7 +35,14 @@ Each of those is a substantial undertaking. Shipping them as one
 PR creates a high blast-radius landing surface. Staging them lets
 each piece ship on its own merits.
 
-## Stage 1 — Presence-only (THIS PR — feature-flagged)
+## Current state (true today)
+
+Only Stage 1 below has shipped — a feature-flagged, no-op presence
+hook (`src/lib/processes/use-canvas-presence.ts`) with
+`IS_PRESENCE_ENABLED = false` in production. Stages 2–4 are the
+roadmap and are not built.
+
+## Stage 1 — Presence-only (feature-flagged foundation)
 
 The smallest possible foundation that lets us observe + iterate
 on the real surface: a `useCanvasPresence` hook that **today**
@@ -59,7 +68,9 @@ xyflow viewport machinery as the proximity preview edge: a
 `renderPresence` slot inside `<ReactFlow>` would project the
 roster into screen-space cursors.
 
-## Stage 2 — Yjs document + WebSocket transport
+## Roadmap (future direction)
+
+### Stage 2 — Yjs document + WebSocket transport
 
 Add `yjs` + `y-websocket` as dependencies. Stand up a small
 WebSocket service (or extend the existing Next route handler

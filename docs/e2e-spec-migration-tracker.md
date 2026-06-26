@@ -1,5 +1,7 @@
 # Playwright spec → isolated-tenant migration tracker
 
+> **Status: living design** — describes a direction that is partially shipped. See the "Current state" and "Roadmap" sections for what is and isn't true today.
+
 > **Purpose.** Track which `tests/e2e/*.spec.ts` files use the GAP-23
 > `createIsolatedTenant()` factory vs. the seeded `acme-corp` fixture
 > tenant. Adopt incrementally as specs are reworked.
@@ -12,7 +14,9 @@
 | 🟡 partial | Some tests in the file use the factory; others retain a shared-seed dependency with a written reason. |
 | 🔒 deferred | Not yet migrated — listed below with the specific blocker. |
 
-## Status
+## Current state (true today)
+
+### Status
 
 | Spec | State | Notes |
 |---|---|---|
@@ -52,7 +56,9 @@
 | `invite-flow.spec.ts` | 🔒 | Tests the invite redemption flow itself; multi-user. |
 | `rbac-access.spec.ts` | 🔒 | Multi-role RBAC matrix. |
 
-## What unblocks each cluster
+## Roadmap (future direction)
+
+### What unblocks each cluster
 
 ### "Empty tenant" blockers (most 🔒 above)
 
@@ -105,7 +111,7 @@ These are SUPPOSED to run against the canonical seeded user — they
 test the credentials provider's behaviour itself. Migration would
 defeat the purpose. They stay on the seed by design.
 
-## Adoption order recommended for follow-up PRs
+### Adoption order recommended for follow-up PRs
 
 1. **Add `installFrameworks` to the factory.** Unblocks 9–11 specs at
    once (frameworks, controls family, audit-readiness, reporting).
@@ -114,7 +120,7 @@ defeat the purpose. They stay on the seed by design.
 3. **Sweep the remaining specs** as their preconditions become
    available.
 
-## Why the auth flow is still single-tenant
+### Why the auth flow is still single-tenant
 
 Both `auth.spec.ts` and `credentials-hardening.spec.ts` assert on
 specific behaviours of the credentials login path: account-locking

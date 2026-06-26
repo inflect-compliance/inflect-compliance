@@ -1,5 +1,7 @@
 # Roadmap Audit — 2026-05-13
 
+> **Status: historical record (2026-05-13)** — describes the state of the system at the time of writing; kept for the record, not maintained. For current behaviour see the relevant subsystem doc in docs/.
+
 One row per merged PR across every roadmap that shipped UI-visible work
 between 2026-05-05 and 2026-05-13. **Why this exists**: structural
 ratchets verify that source files contain certain class strings; they

@@ -259,7 +259,7 @@ The monthly `infra/scripts/restore-test.sh` exercises this path (without the swa
 
 **Trigger**: `RedisMemoryHighWarning` (>80%), `RedisMemoryHighCritical` (>95%).
 
-**What it means**: ElastiCache memory is filling up. The chart enforces `maxmemory-policy=noeviction` (BullMQ requirement — jobs cannot be evicted). Reaching 100% memory means **writes will be REJECTED** — workers fail to enqueue new jobs.
+**What it means**: ElastiCache memory is filling up. The chart enforces `maxmemory-policy=noeviction` (BullMQ requirement — jobs cannot be evicted). Reaching 100% memory means **writes are REJECTED** — workers fail to enqueue new jobs.
 
 ### Triage
 
@@ -595,7 +595,8 @@ We are writing to inform you of a service incident that began at
 - Data integrity: <Confirmed unaffected | Under investigation>
 - Remediation taken: <one-line summary>
 
-A detailed post-mortem will be available at <link> within 7 days.
+A detailed post-mortem follows at <link> within 7 days. <!-- docs-accuracy-allow: customer-comms template, future-tense is intentional -->
+
 
 We apologise for the disruption. Please reach out to
 support@inflect-compliance.example.com if you have questions.

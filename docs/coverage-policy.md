@@ -39,10 +39,10 @@ Two consequences shape this policy:
 | **C — Standard** | Global (everything else) | API route handlers are thin HTTP glue; React components are UI. Real, but a 500 not a compliance breach. | **65 / 65 / 78** |
 
 `policies/` and `events/` got their dedicated threshold keys in
-**quality-roadmap P3** — seeded a few points below measured coverage
-so the existing assurance is locked while leaving margin for
-single-test flake. Roadmap-3 P4 originally reserved this slot; it was
-filled by quality-roadmap P3.
+**the quality-coverage wave (P3)** — seeded a few points below measured
+coverage so the existing assurance is locked while leaving margin for
+single-test flake. The R3 plan (P4) originally reserved this slot; it was
+filled by the quality-coverage wave (P3).
 
 ## Current floors vs. targets
 
@@ -60,21 +60,20 @@ lowered, raised whenever a PR earns it.
 
 `usecases/` (Tier A) has now MET and passed its end-state target on
 all three metrics — the floor (72/76/85) sits above the 70/70/80
-target, held by the ratchet. The remaining staged climb is the
-GLOBAL number, which is still below its 65/65/78 target (see below):
-the global branch floor is **62** against an enforcement actual of
-**62.54%**.
+target, held by the ratchet. The GLOBAL branch target (≥65) is also
+met (see below): the global branch floor is **65** against an
+enforcement actual of **65.94%**. The remaining global climb is on
+functions (64 against the 65 target).
 
 †`policies/` and `events/` already SURPASS their tier targets on
 branches — the tier target stays as written for parity with the
 other dimensions; the ratchet enforces the higher measured floor.
 
-After stage 3h, `usecases/` measured branch coverage is **67.78%**
-with the floor at 66 holding it. From the original "sub-50% branches"
-framing (Roadmap-3 P2 baseline) we have climbed ~18 percentage points
-across stages 3a-3h. The remaining work is the climb from 66 to the
-end-state 70 — accumulated drift across small file additions plus
-one more focused wave should close it.
+`usecases/` branch coverage has since passed its end-state target —
+Wave C measured **72.93%** and the floor sits at 72, held by the
+ratchet. From the original "sub-50% branches" framing (the R3 P2
+baseline) that is a climb of more than 20 percentage points across
+stages 3a-3h and Waves C-D.
 
 ## The staged ratchet plan
 
@@ -88,8 +87,8 @@ the same diff so the gain is locked.
 | Stage | Branch floor | Status | How |
 |-------|-------------|--------|-----|
 | 0 | 37 | ✅ done | starting point |
-| 1 | ≈50 | ✅ done — Roadmap-3 P2 (#623 floor 37→42) + accumulated drift | |
-| 2 | **55** | ✅ done — quality-roadmap P1/P2 (lock the gain; measured ≈58) | |
+| 1 | ≈50 | ✅ done — R3 P2 (#623 floor 37→42) + accumulated drift | |
+| 2 | **55** | ✅ done — quality-coverage wave P1/P2 (lock the gain; measured ≈58) | |
 | 3a | **56** | ✅ done — auth-followups quality wave: 3 previously-untested usecase files (`evidence-maintenance`, `control/templates`, `audit-readiness/sharing`) got 51 branch-focused tests across ~50 decision paths. Floor bumped +1 across all 4 metrics in the same diff. | |
 | 3b | **58** | ✅ done — stage-3b wave: 41 branch-focused tests on `audit-readiness/packs.ts` (443 lines, previously untested) covering ~30 decision branches across 8 exported functions + 4 snapshot helpers + 2 default-pack pickers. File-level coverage **92/85/89/95**. Floor bumped +2 across all 4 metrics in the same diff. | |
 | 3c | **60** | ✅ done — stage-3c wave: `framework/install.ts` already had a 15-test wave-4 unit test, but it covered only **35.48%** of branches (5 of 7 functions, with gaps). Extended to 39 tests covering `computeCoverage` + `listTemplates` (previously untested) + the missing branches across the prior 5 functions. File-level jumped **45/35/47/44 → 97/95/93/97** — a 60-point branches lift on 544 lines. Floor bumped +2 across all 4 metrics. | |
@@ -148,7 +147,7 @@ Two rules keep the ratchet honest, both already CI-enforced via
 - **A PR that raises observed coverage raises the floor**, in the
   same diff, so the gain cannot silently erode later.
 
-Roadmap-3 P4 makes the "never lower a floor" rule a structural
+The R3 P4 work makes the "never lower a floor" rule a structural
 guardrail (a ratchet test), rather than relying on contributor
 discipline.
 
@@ -187,7 +186,7 @@ CI if any value in `jest.thresholds.json` drops below it.
 - **Lowering** one below the floor fails CI loudly. To genuinely
   retire a floor you must edit `RATCHET_FLOOR` downward too — a
   visible, reviewed act, never a drive-by "make CI green" change.
-- `RATCHET_FLOOR` is seeded at the post-Roadmap-3 state and is only
+- `RATCHET_FLOOR` is seeded at the post-R3 state and is only
   ever edited upward as the staged plan advances.
 
 This is the structural backstop for the policy: the
@@ -197,12 +196,11 @@ guard enforces that those numbers can only travel one direction.
 ### Next ratchet steps
 
 - ~~Add dedicated threshold keys for `policies/` and `events/`.~~
-  ✅ done in quality-roadmap P3 — keys seeded at the measured values
+  ✅ done in the quality-coverage wave (P3) — keys seeded at the measured values
   (`policies/` 78/88/88/85, `events/` 72/60/78/75) and added to
   `RATCHET_FLOOR`.
-- Advance the `usecases/` branch floor through the remaining stages:
-  **stage 3 (≈65)** next — branch tests for the lowest-covered
-  files (`audit-readiness/packs`, `framework/*`, `control/*`,
-  `evidence-maintenance`, …), each currently at 0% branch
-  coverage despite carrying substantial business logic — then
-  **stage 4 (70)** as the end state held by the ratchet.
+- The `usecases/` branch floor has reached its **stage 4 (70)** end
+  state — Wave C measured 72.93% and the floor sits at 72, held by
+  the ratchet. The **global** branch target (≥65) is also met (Wave D
+  batch 2 measured 65.94%, floor at 65). Further gains are additive
+  cushion, not a staged climb.
