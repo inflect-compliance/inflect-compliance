@@ -4,7 +4,7 @@
   "counts": {
     "authoritative": 104,
     "living": 5,
-    "historical": 279,
+    "historical": 280,
     "deprecated": 1
   },
   "docs": {
@@ -975,6 +975,9 @@
       "class": "historical"
     },
     "docs/implementation-notes/2026-06-26-dsar-foundation.md": {
+      "class": "historical"
+    },
+    "docs/implementation-notes/2026-06-26-edge-runtime.md": {
       "class": "historical"
     },
     "docs/implementation-notes/2026-06-26-perf-baseline.md": {
