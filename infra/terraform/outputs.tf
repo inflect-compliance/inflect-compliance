@@ -154,3 +154,13 @@ output "all_runtime_secret_arns" {
   description = "Full list of secret ARNs covered by the runtime-secrets-read policy. Useful for auditing the workload role's blast radius."
   value       = module.secrets.all_runtime_secret_arns
 }
+
+output "cdn_distribution_id" {
+  description = "CloudFront distribution ID (empty when cdn_enabled = false)."
+  value       = var.cdn_enabled ? module.cdn[0].cloudfront_distribution_id : ""
+}
+
+output "cdn_domain_name" {
+  description = "CloudFront distribution domain (empty when cdn_enabled = false)."
+  value       = var.cdn_enabled ? module.cdn[0].cloudfront_domain_name : ""
+}

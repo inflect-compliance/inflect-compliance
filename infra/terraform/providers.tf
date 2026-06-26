@@ -19,3 +19,14 @@ provider "aws" {
     tags = local.common_tags
   }
 }
+
+# CloudFront ACM certificates must be issued in us-east-1 regardless of
+# the stack's primary region. Consumed by the CDN module (modules/cdn).
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
+
+  default_tags {
+    tags = local.common_tags
+  }
+}
