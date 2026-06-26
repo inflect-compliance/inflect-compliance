@@ -383,8 +383,33 @@ pgbouncerRead:
 worker:
   enabled: true
 
-  # Defaults to .Values.replicaCount-style override. Manual scaling.
+  # Only used when autoscaling.enabled = false. When autoscaling is on,
+  # worker.yaml OMITS spec.replicas (KEDA/HPA owns the field — see below).
   replicaCount: 1
+
+  # ── KEDA queue-depth autoscaling ──────────────────────────────────
+  # Scales workers by BullMQ queue depth via KEDA's redis scaler. KEDA
+  # must already be installed cluster-wide (PATH A — the app chart does
+  # NOT manage the KEDA controller). See docs/worker-autoscaling.md +
+  # the prerequisite in NOTES.txt.
+  autoscaling:
+    enabled: false           # opt in per env (production sets true)
+    minReplicas: 2
+    maxReplicas: 20
+    targetQueueDepth: 50     # avg waiting jobs per worker before scale-up
+    pollingInterval: 30      # seconds — KEDA queue poll cadence
+    cooldownPeriod: 300      # seconds — wait before scaling back down
+    # BullMQ list key is `bull:<queueName>:wait`. Must match QUEUE_NAME
+    # in src/app-layer/jobs/types.ts.
+    queueName: inflect-jobs
+    # Redis connection for the KEDA scaler. The app connects via a single
+    # REDIS_URL, but KEDA's redis scaler needs host:port + password
+    # SEPARATELY (it can't parse a URL). The operator MUST ensure the
+    # worker's config/secret exposes these keys (or override here) before
+    # enabling — see docs/worker-autoscaling.md § prerequisites.
+    redis:
+      addressFromEnv: REDIS_HOST   # must resolve to host:port
+      passwordSecretKey: REDIS_PASSWORD
 
   # Image inherits from .Values.image — same repository + tag as the
   # main app. Override only when running a worker fork from a different

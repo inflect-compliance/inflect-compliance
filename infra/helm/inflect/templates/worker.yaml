@@ -14,7 +14,13 @@ metadata:
   labels:
     {{- include "inflect.labels" (dict "ctx" . "component" "worker") | nindent 4 }}
 spec:
+  {{- /* When KEDA autoscaling is on, OMIT replicas — KEDA's HPA owns the
+         field. If both Helm and the HPA set it, every `helm upgrade`
+         resets the replica count and fights the autoscaler (same pattern
+         as the app deployment.yaml + hpa.yaml). */}}
+  {{- if not .Values.worker.autoscaling.enabled }}
   replicas: {{ .Values.worker.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "inflect.selectorLabels" (dict "ctx" . "component" "worker") | nindent 6 }}
