@@ -46,11 +46,55 @@ const ACTION_PHRASE: Record<string, string> = {
     DELETED: "deleted this",
     TASK_CREATED: "added a task",
     TASK_COMPLETED: "completed a task",
+    TEST_COMPLETED: "logged a test result",
+    TEST_LOGGED: "logged a test result",
+    TEST_PASSED: "logged a passing test",
+    TEST_FAILED: "logged a failing test",
 };
 
-const phraseFor = (action: string): string =>
-    ACTION_PHRASE[action?.toUpperCase?.() ?? ""] ??
-    (action ?? "").replace(/_/g, " ").toLowerCase();
+// Audit actions are entity-prefixed (CONTROL_OWNER_CHANGED, TASK_UPDATED, …).
+// Strip the leading entity so the shared verb phrases match.
+const ENTITY_PREFIX = /^(CONTROL|TASK|RISK|ASSET|POLICY|VENDOR|AUDIT|EVIDENCE)_/;
+
+const phraseFor = (action: string): string => {
+    const up = action?.toUpperCase?.() ?? "";
+    return (
+        ACTION_PHRASE[up] ??
+        ACTION_PHRASE[up.replace(ENTITY_PREFIX, "")] ??
+        (action ?? "").replace(/_/g, " ").toLowerCase()
+    );
+};
+
+/**
+ * Reduce a raw audit `details` string to NARRATIVE ONLY — never code.
+ *
+ * Audit details are authored as "<human phrase> Context: {json}", and some
+ * carry a raw change-dump (`{"name":…,"category":…}`) or a bare id
+ * ("Owner set to: cmq12y…"). The Activity tab must read as prose, so we:
+ *   1. cut the machine "Context: {…}" suffix,
+ *   2. drop any embedded JSON object/array blob,
+ *   3. strip raw uuid / cuid identifier tokens,
+ *   4. trim leftover assignment labels / dangling punctuation, and
+ *   5. drop the whole detail unless real words (or a date/number) survive —
+ *      a lone leftover label like "Owner" is noise the verb phrase already says.
+ */
+export function humanizeDetail(raw?: string | null): string | null {
+    if (!raw) return null;
+    let s = raw.split(/\s*Context:\s*/i)[0];
+    s = s.replace(/\{[\s\S]*\}/g, " ").replace(/\[[\s\S]*\]/g, " ");
+    s = s.replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, " ");
+    s = s.replace(/\bc[a-z0-9]{20,}\b/gi, " ");
+    s = s.replace(/\s+/g, " ").trim();
+    // Drop a trailing "… set to:" / "… changed to:" assignment label left
+    // behind once its id was stripped.
+    s = s.replace(/\b[\w ]*\b(set|changed|assigned|updated)\s+to\s*:?\s*$/i, "").trim();
+    // Trim dangling separators/punctuation at either end.
+    s = s.replace(/^[—\-:,.\s]+|[—\-:,\s]+$/g, "").trim();
+    if (!s) return null;
+    // A lone short label (no second word, no number) carries no narrative.
+    if (s.split(/\s+/).filter(Boolean).length < 2 && !/\d/.test(s)) return null;
+    return s;
+}
 
 export function PanelActivityFeed({
     tenantSlug,
@@ -98,6 +142,7 @@ export function PanelActivityFeed({
         <ol className="space-y-default" data-testid="panel-activity-feed">
             {entries.map((e) => {
                 const actor = e.user?.name || e.user?.email || "The system";
+                const detail = humanizeDetail(e.details);
                 return (
                     <li key={e.id} className="border-l-2 border-border-subtle pl-3">
                         <p className="break-words text-sm text-content-default">
@@ -105,8 +150,8 @@ export function PanelActivityFeed({
                                 {actor}
                             </span>{" "}
                             {phraseFor(e.action)}
-                            {e.details ? (
-                                <span className="text-content-muted"> — {e.details}</span>
+                            {detail ? (
+                                <span className="text-content-muted"> — {detail}</span>
                             ) : (
                                 "."
                             )}
