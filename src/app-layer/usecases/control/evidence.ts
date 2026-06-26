@@ -35,7 +35,9 @@ export async function getControlEvidenceTab(ctx: RequestContext, controlId: stri
         const [links, evidence] = await Promise.all([
             ControlRepository.listEvidenceLinks(db, ctx, controlId),
             db.evidence.findMany({
-                where: { controlId, tenantId: ctx.tenantId },
+                // Explicit `deletedAt: null` mirrors the task evidence tab —
+                // soft-deleted rows never surface in the control evidence list.
+                where: { controlId, tenantId: ctx.tenantId, deletedAt: null },
                 orderBy: { createdAt: 'desc' },
             }),
         ]);
