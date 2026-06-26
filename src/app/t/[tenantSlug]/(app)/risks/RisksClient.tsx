@@ -57,7 +57,8 @@ import {
     RISK_FILTER_KEYS,
 } from './filter-defs';
 import { useHydratedNow } from '@/lib/hooks/use-hydrated-now';
-import { RiskMatrix } from '@/components/ui/RiskMatrix';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
 import { resolveBandForScore } from '@/lib/risk-matrix/scoring';
 import type { RiskMatrixConfigShape } from '@/lib/risk-matrix/types';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
@@ -181,6 +182,17 @@ interface RisksClientProps {
  *   - The UI carries a single `score=min|max` token; `RISK_API_TRANSFORMS`
  *     splits it into `scoreMin` + `scoreMax` at the API boundary.
  */
+// Heatmap-view engine (654 lines, visx-heavy) is lazy-loaded. The default
+// view is 'register' (the table), so the matrix only ships its chunk when a
+// user toggles to the heatmap view — ssr:false because it's
+// interaction-gated, not first-paint. (The NewRiskModal above stays static
+// BY DESIGN — see the import note; this is a view-toggle panel, not a
+// Playwright-first modal, so it doesn't hit the dev JIT race.)
+const RiskMatrix = dynamic(
+    () => import('@/components/ui/RiskMatrix').then((m) => m.RiskMatrix),
+    { ssr: false, loading: () => <Skeleton className="h-64 w-full" /> },
+);
+
 export function RisksClient(props: RisksClientProps) {
     const filterCtx = useFilterContext([], RISK_FILTER_KEYS, {
         serverFilters: props.initialFilters,

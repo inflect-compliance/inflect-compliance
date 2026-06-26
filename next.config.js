@@ -55,6 +55,13 @@ const defaultOptions = {
         // initial chunks (faster time-to-interactive on chart/list pages).
         optimizePackageImports: [
             'lucide-react',
+            // In-repo Nucleo icon barrel — `index.ts` re-exports ~hundreds
+            // of single-icon modules via `export *`. Listing it here lets
+            // Next rewrite `import { X } from '@/components/ui/icons/nucleo'`
+            // to the specific icon module, so an unused icon never lands in
+            // a page chunk. The icon-import-discipline guard keeps every
+            // consumer on the named-import form this optimization needs.
+            '@/components/ui/icons/nucleo',
             '@tanstack/react-query',
             // Charting — visx submodules + motion load eagerly via the
             // chart components on dashboard / risks / assets / etc.

@@ -4,7 +4,7 @@
   "counts": {
     "authoritative": 104,
     "living": 5,
-    "historical": 277,
+    "historical": 279,
     "deprecated": 1
   },
   "docs": {
@@ -963,6 +963,9 @@
       "class": "historical"
     },
     "docs/implementation-notes/2026-06-26-aggregation-cache.md": {
+      "class": "historical"
+    },
+    "docs/implementation-notes/2026-06-26-bundle-perf.md": {
       "class": "historical"
     },
     "docs/implementation-notes/2026-06-26-cdn-cloudfront.md": {
