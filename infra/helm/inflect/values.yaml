@@ -334,6 +334,46 @@ pgbouncer:
     runAsNonRoot: true
     runAsUser: 1001
 
+# ── PgBouncer (read replica) ────────────────────────────────────────
+# A SECOND PgBouncer pool pointed at the read replica (DATABASE_READ_URL),
+# mirroring the primary `pgbouncer` block above. PgBouncer can't
+# read/write-split natively, so the replica gets its own pool; the app's
+# `prismaRead` client connects through it. Gated — enable alongside the
+# terraform `db_enable_read_replica`. When disabled, `prismaRead` falls
+# back to the primary (single-DB mode). See docs/database-routing.md.
+#
+# Like the primary pool, this runs as a sidecar on the app Deployment;
+# wiring the second sidecar container + the DATABASE_READ_URL env into
+# deployment.yaml is the operator step when enabling (the config knobs
+# live here so the values contract is stable first).
+pgbouncerRead:
+  enabled: false
+
+  image:
+    repository: bitnami/pgbouncer
+    tag: "1.22.1"
+    pullPolicy: IfNotPresent
+
+  # Distinct localhost port so it can co-exist with the primary pool
+  # sidecar (5432). prismaRead's DATABASE_READ_URL targets localhost:5433.
+  port: 5433
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 128Mi
+
+  config:
+    PGBOUNCER_PORT: "5433"
+    PGBOUNCER_BIND_ADDRESS: "127.0.0.1"
+    # Transaction mode matches the primary pool + the app's tx-scoped RLS.
+    PGBOUNCER_POOL_MODE: transaction
+    PGBOUNCER_MAX_CLIENT_CONN: "1000"
+    PGBOUNCER_DEFAULT_POOL_SIZE: "25"
+
 # ── BullMQ worker ───────────────────────────────────────────────────
 # Separate Deployment running the same image, different command. No
 # HPA — manual scaling per the OI-2 spec. Workers don't expose HTTP,

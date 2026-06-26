@@ -3,7 +3,7 @@ import { ControlRepository } from '../../repositories/ControlRepository';
 import { WorkItemRepository } from '../../repositories/WorkItemRepository';
 import { assertCanReadControls } from '../../policies/control.policies';
 import { notFound } from '@/lib/errors/types';
-import { runInTenantContext } from '@/lib/db-context';
+import { runInTenantContext, runInTenantReadContext } from '@/lib/db-context';
 import { assertCanAdmin } from '../../policies/common';
 import { withDeleted } from '@/lib/soft-delete';
 import { cachedListRead } from '@/lib/cache/list-cache';
@@ -144,7 +144,7 @@ export async function getControlActivity(ctx: RequestContext, controlId: string)
 export async function getControlDashboard(ctx: RequestContext) {
     assertCanReadControls(ctx);
 
-    return runInTenantContext(ctx, async (db) => {
+    return runInTenantReadContext(ctx, async (db) => {
         const now = new Date();
         const soonThreshold = new Date(now);
         soonThreshold.setDate(soonThreshold.getDate() + 30);

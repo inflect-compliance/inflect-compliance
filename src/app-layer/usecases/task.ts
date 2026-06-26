@@ -6,7 +6,7 @@ import { emitAutomationEvent } from '../automation';
 import { enqueueEmail } from '../notifications/enqueue';
 import { createTaskDueNotification } from '../notifications/task-due';
 import { createAssignmentNotification } from '../notifications/assignment';
-import { runInTenantContext } from '@/lib/db-context';
+import { runInTenantContext, runInTenantReadContext } from '@/lib/db-context';
 import { env } from '@/env';
 import { notFound, badRequest } from '@/lib/errors/types';
 import { sanitizePlainText } from '@/lib/security/sanitize';
@@ -741,7 +741,7 @@ export async function removeTaskWatcher(ctx: RequestContext, taskId: string, use
 
 export async function getTaskMetrics(ctx: RequestContext) {
     assertCanReadTasks(ctx);
-    return runInTenantContext(ctx, (db) => WorkItemRepository.metrics(db, ctx));
+    return runInTenantReadContext(ctx, (db) => WorkItemRepository.metrics(db, ctx));
 }
 
 // ─── Activity Feed ───

@@ -19,6 +19,13 @@ export const env = createEnv({
         // Used by Prisma for migrations, schema push, and introspection.
         // Falls back to DATABASE_URL if not set (non-pooled environments).
         DIRECT_DATABASE_URL: z.string().url().optional(),
+        // Read-replica connection string (via the replica's PgBouncer).
+        // When set, reads explicitly marked as replica-tolerant
+        // (dashboards, aggregations, reporting) route to the replica via
+        // `prismaRead` + `runInTenantReadContext`; writes + read-after-write
+        // + auth/billing stay on DATABASE_URL. Unset = single-DB mode
+        // (all traffic on DATABASE_URL). See docs/database-routing.md.
+        DATABASE_READ_URL: z.string().url().optional(),
 
         // Redis (rate limits, BullMQ jobs, session/cache coordination)
         //
@@ -274,6 +281,7 @@ export const env = createEnv({
         NODE_ENV: process.env.NODE_ENV,
         DATABASE_URL: process.env.DATABASE_URL,
         DIRECT_DATABASE_URL: process.env.DIRECT_DATABASE_URL,
+        DATABASE_READ_URL: process.env.DATABASE_READ_URL,
         REDIS_URL: process.env.REDIS_URL,
         NEXTAUTH_URL: process.env.NEXTAUTH_URL,
         AUTH_URL: process.env.AUTH_URL,

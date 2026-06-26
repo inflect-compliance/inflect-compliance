@@ -277,7 +277,7 @@ function buildAuditExtension() {
 
 type ExtendedClient = ReturnType<typeof buildClient>;
 
-function buildClient(): PrismaClient {
+function buildClient(url: string = env.DATABASE_URL ?? ''): PrismaClient {
     // `??  ''` is load-bearing for build-time analysis. Next 16's
     // "Collecting page data" phase imports every route module to
     // discover route metadata, which transitively loads this module.
@@ -289,13 +289,13 @@ function buildClient(): PrismaClient {
     // first real query will surface the missing-URL error at request
     // time, not module-import time.
     const adapter = new PrismaPg({
-        connectionString: env.DATABASE_URL ?? '',
+        connectionString: url,
     });
     return new PrismaClient({ adapter });
 }
 
-function buildExtended() {
-    const base = buildClient();
+function buildExtended(url: string = env.DATABASE_URL ?? '') {
+    const base = buildClient(url);
     if (typeof EdgeRuntime !== 'undefined') {
         // Edge Runtime — extensions either don't bundle or import
         // server-only deps (audit-writer pulls in node:crypto). Ship
@@ -341,11 +341,43 @@ function buildExtended() {
 
 const globalForPrisma = globalThis as unknown as {
     prisma?: ExtendedClient;
+    prismaRead?: ExtendedClient;
 };
 
 export const prisma = (globalForPrisma.prisma ?? buildExtended()) as ExtendedClient;
 
 if (env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+
+// ─── Read-replica client (Epic: read-replica routing) ───
+//
+// A SECOND extended client pointed at DATABASE_READ_URL (the replica,
+// via its own PgBouncer). It carries the SAME extension chain as the
+// primary — crucially the field-encryption + PII extensions, so reads
+// of encrypted columns DECRYPT correctly, and soft-delete, so
+// `deletedAt` filtering still applies. The audit extension only acts on
+// writes, so it's inert here.
+//
+// Reads are NOT auto-routed: callers OPT IN via `runInTenantReadContext`
+// (which opens its RLS transaction on this client). Routing is a
+// deliberate, reviewable choice at the usecase boundary — NEVER for
+// read-after-write or auth/billing paths. See docs/database-routing.md.
+//
+// When DATABASE_READ_URL is unset, `prismaRead === prisma` — single-DB
+// mode, and `runInTenantReadContext` transparently uses the primary.
+// This makes unsetting DATABASE_READ_URL the safe rollback for a
+// replica incident.
+//
+// Edge runtime never sees a replica URL (DB access is Node-only), so the
+// guard naturally falls back to `prisma`.
+export const prismaRead = (
+    env.DATABASE_READ_URL && typeof EdgeRuntime === 'undefined'
+        ? (globalForPrisma.prismaRead ?? buildExtended(env.DATABASE_READ_URL))
+        : prisma
+) as ExtendedClient;
+
+if (env.NODE_ENV !== 'production' && env.DATABASE_READ_URL) {
+    globalForPrisma.prismaRead = prismaRead;
+}
 
 // Diagnostic — log once per process that the extended client is
 // constructed. Pairs with the per-invocation logging inside

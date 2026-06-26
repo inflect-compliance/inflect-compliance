@@ -5,7 +5,7 @@ import { VendorRepository, VendorDocumentRepository, VendorLinkRepository, Vendo
 import { QuestionnaireRepository, VendorAssessmentRepository, VendorAnswerRepository } from '../repositories/AssessmentRepository';
 import { assertCanReadVendors, assertCanManageVendors, assertCanManageVendorDocs, assertCanRunAssessment, assertCanApproveAssessment } from '../policies/vendor.policies';
 import { logEvent } from '../events/audit';
-import { runInTenantContext } from '@/lib/db-context';
+import { runInTenantContext, runInTenantReadContext } from '@/lib/db-context';
 import { notFound, badRequest } from '@/lib/errors/types';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { CreateVendorSchema } from '@/lib/schemas';
@@ -435,7 +435,7 @@ export async function enrichVendor(ctx: RequestContext, vendorId: string) {
 
 export async function getVendorMetrics(ctx: RequestContext) {
     assertCanReadVendors(ctx);
-    return runInTenantContext(ctx, async (db) => {
+    return runInTenantReadContext(ctx, async (db) => {
         const now = new Date();
         const in30 = new Date(now.getTime() + 30 * 86400000);
 

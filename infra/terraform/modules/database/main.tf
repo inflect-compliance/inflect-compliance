@@ -467,3 +467,38 @@ resource "aws_lambda_permission" "dr_snapshot_retention_events" {
   principal     = "events.amazonaws.com"
   source_arn    = aws_cloudwatch_event_rule.dr_snapshot_retention[0].arn
 }
+
+# ── Read replica (analytical / dashboard reads) ───────────────────────
+# A same-region read replica for dashboard + reporting aggregation reads.
+# Unlike the Multi-AZ standby (failover-only, invisible to clients), a
+# read replica is independently queryable. Gated by enable_read_replica;
+# off by default. The app routes eligible reads here via prismaRead +
+# runInTenantReadContext — see docs/database-routing.md.
+resource "aws_db_instance" "read_replica" {
+  count = var.enable_read_replica ? 1 : 0
+
+  identifier          = "${var.name_prefix}-db-ro"
+  replicate_source_db = aws_db_instance.this.identifier
+  instance_class      = var.read_replica_instance_class != "" ? var.read_replica_instance_class : var.instance_class
+
+  # Same-region replica inherits the source's storage encryption, KMS
+  # key, db_name, credentials, subnet group, and parameter group — none
+  # are set here (RDS rejects them on a replica).
+  publicly_accessible    = false # HARDCODED — never tunable
+  vpc_security_group_ids = [aws_security_group.db.id]
+
+  # Vanilla RDS read replicas inherit backups from the source; set to 0
+  # on the replica to avoid double-billing snapshots.
+  backup_retention_period = 0
+  skip_final_snapshot     = true
+
+  auto_minor_version_upgrade            = var.auto_minor_version_upgrade
+  performance_insights_enabled          = var.performance_insights_enabled
+  performance_insights_retention_period = var.performance_insights_enabled ? var.performance_insights_retention_days : null
+  enabled_cloudwatch_logs_exports       = ["postgresql"]
+
+  tags = merge(var.tags, {
+    Name = "${var.name_prefix}-db-ro"
+    Role = "read-replica"
+  })
+}

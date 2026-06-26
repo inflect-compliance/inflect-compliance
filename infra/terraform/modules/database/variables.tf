@@ -203,3 +203,15 @@ variable "dr_kms_key_arn" {
     error_message = "dr_kms_key_arn is required when dr_region is set (encrypted cross-region copy needs a DR-region CMK)."
   }
 }
+
+variable "enable_read_replica" {
+  description = "Provision a same-region read replica for analytical / dashboard reads. Off by default."
+  type        = bool
+  default     = false
+}
+
+variable "read_replica_instance_class" {
+  description = "Instance class for the read replica. Empty = same as the primary (var.instance_class)."
+  type        = string
+  default     = ""
+}

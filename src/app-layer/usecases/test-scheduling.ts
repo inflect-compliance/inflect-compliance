@@ -36,7 +36,7 @@ import {
     assertCanReadTests,
     assertCanManageTestPlans,
 } from '../policies/test.policies';
-import { runInTenantContext } from '@/lib/db-context';
+import { runInTenantContext, runInTenantReadContext } from '@/lib/db-context';
 import { notFound, badRequest } from '@/lib/errors/types';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { logEvent } from '../events/audit';
@@ -310,7 +310,7 @@ export async function getTestDashboard(
     const now = new Date();
     const periodStart = new Date(now.getTime() - validPeriod * 86_400_000);
 
-    return runInTenantContext(ctx, async (db) => {
+    return runInTenantReadContext(ctx, async (db) => {
         // ─── Automation plan counts (4 grouped reads) ──────────────
         const [
             plansManual,

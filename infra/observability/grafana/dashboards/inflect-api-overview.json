@@ -1,8 +1,12 @@
 {
   "schemaVersion": 39,
-  "title": "Inflect — API Overview (RED)",
+  "title": "Inflect \u2014 API Overview (RED)",
   "uid": "inflect-api-overview",
-  "tags": ["inflect", "api", "red"],
+  "tags": [
+    "inflect",
+    "api",
+    "red"
+  ],
   "timezone": "browser",
   "editable": true,
   "graphTooltip": 1,
@@ -30,21 +34,41 @@
       "id": 1,
       "type": "stat",
       "title": "API request rate (req/s)",
-      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "fieldConfig": {
-        "defaults": { "unit": "reqps", "decimals": 1 },
+        "defaults": {
+          "unit": "reqps",
+          "decimals": 1
+        },
         "overrides": []
       },
       "options": {
         "colorMode": "value",
         "graphMode": "area",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
       },
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "sum(job:api_request:rate5m)",
           "legendFormat": "requests/s"
         }
@@ -54,8 +78,16 @@
       "id": 2,
       "type": "stat",
       "title": "API error % (5xx ratio)",
-      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "percentunit",
@@ -63,9 +95,18 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 0.02 },
-              { "color": "red", "value": 0.05 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.02
+              },
+              {
+                "color": "red",
+                "value": 0.05
+              }
             ]
           }
         },
@@ -74,12 +115,21 @@
       "options": {
         "colorMode": "value",
         "graphMode": "area",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
       },
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "sum(job:api_request_errors:rate5m) / clamp_min(sum(job:api_request:rate5m), 1)",
           "legendFormat": "error ratio"
         }
@@ -89,8 +139,16 @@
       "id": 3,
       "type": "stat",
       "title": "API p95 latency (ms)",
-      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "ms",
@@ -98,9 +156,18 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 500 },
-              { "color": "red", "value": 750 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 500
+              },
+              {
+                "color": "red",
+                "value": 750
+              }
             ]
           }
         },
@@ -109,12 +176,21 @@
       "options": {
         "colorMode": "value",
         "graphMode": "area",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
       },
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "max(job:api_request_duration_ms:p95)",
           "legendFormat": "p95"
         }
@@ -124,20 +200,46 @@
       "id": 4,
       "type": "timeseries",
       "title": "Request rate by service",
-      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 6 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "fieldConfig": {
-        "defaults": { "unit": "reqps", "custom": { "drawStyle": "line", "fillOpacity": 10 } },
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          }
+        },
         "overrides": []
       },
       "options": {
-        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] },
-        "tooltip": { "mode": "multi" }
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
       },
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "job:api_request:rate5m",
           "legendFormat": "{{service_name}}"
         }
@@ -147,33 +249,65 @@
       "id": 5,
       "type": "timeseries",
       "title": "Latency percentiles (p95 / p99 / mean)",
-      "description": "A slow request's trace now includes its downstream BullMQ worker spans: any job the handler enqueues (e.g. policy publish → audit-pack rebuild) is a child of the request span. Hover a data point for the exemplar **View trace in Tempo** link, or open Explore → Tempo and search by request — see docs/observability/05-job-tracing.md.",
-      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 6 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "A slow request's trace now includes its downstream BullMQ worker spans: any job the handler enqueues (e.g. policy publish \u2192 audit-pack rebuild) is a child of the request span. Hover a data point for the exemplar **View trace in Tempo** link, or open Explore \u2192 Tempo and search by request \u2014 see docs/observability/05-job-tracing.md.",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "fieldConfig": {
-        "defaults": { "unit": "ms", "custom": { "drawStyle": "line", "fillOpacity": 5 } },
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 5
+          }
+        },
         "overrides": []
       },
       "options": {
-        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] },
-        "tooltip": { "mode": "multi" }
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
       },
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "max(job:api_request_duration_ms:p99)",
           "legendFormat": "p99"
         },
         {
           "refId": "B",
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "max(job:api_request_duration_ms:p95)",
           "legendFormat": "p95"
         },
         {
           "refId": "C",
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "avg(job:api_request_duration_ms:mean5m)",
           "legendFormat": "mean"
         }
@@ -183,22 +317,111 @@
       "id": 6,
       "type": "timeseries",
       "title": "Error ratio by service",
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 15 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 15
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "fieldConfig": {
-        "defaults": { "unit": "percentunit", "custom": { "drawStyle": "line", "fillOpacity": 15 } },
+        "defaults": {
+          "unit": "percentunit",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 15
+          }
+        },
         "overrides": []
       },
       "options": {
-        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] },
-        "tooltip": { "mode": "multi" }
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
       },
       "targets": [
         {
           "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "job:api_request:error_ratio5m",
           "legendFormat": "{{service_name}}"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "RDS read-replica lag (s)",
+      "description": "Replication lag of the read replica behind dashboard/reporting reads (docs/database-routing.md). Soft target <5s; **alert at >30s** \u2014 at that point read routing should back off (unset DATABASE_READ_URL to send all traffic to the primary). Requires the RDS CloudWatch `ReplicaLag` metric scraped into Prometheus (cloudwatch-exporter / YACE: `aws_rds_replica_lag_*`). No data = no replica provisioned or exporter not wired.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 23
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 5
+              },
+              {
+                "color": "red",
+                "value": 30
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "max(aws_rds_replica_lag_average)",
+          "legendFormat": "replica lag (s)"
         }
       ]
     }
