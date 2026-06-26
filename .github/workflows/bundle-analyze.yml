@@ -48,6 +48,11 @@ jobs:
           NEXT_TELEMETRY_DISABLED: '1'
         run: npm run analyze
 
+      - name: Enforce per-route First Load JS budgets
+        # The build above produced .next/app-build-manifest.json, so the
+        # budget gate is live here (it skips in the no-build jest job).
+        run: npx jest tests/guardrails/bundle-size-budget.test.ts --no-coverage
+
       - name: Upload bundle report
         uses: actions/upload-artifact@v7
         if: always()
