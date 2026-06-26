@@ -245,6 +245,9 @@ on-demand — read it when you touch that surface.
 - **Unsure whether to add a dependency** →
   [`docs/dependency-risk-review.md`](docs/dependency-risk-review.md).
 - **Production runtime issue** → [`docs/incident-response.md`](docs/incident-response.md).
+- **Shipping a migration / infra / secret-rotation change** → it's a SIGNIFICANT
+  change: include a rollback plan + a second engineer's `Sign-off:`. See
+  [`docs/change-management-policy.md`](docs/change-management-policy.md).
 - **A structural ratchet you don't understand** → read its docstring (top of the
   test file) — they're written to explain themselves — then ask in the PR.
 

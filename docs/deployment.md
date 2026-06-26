@@ -1,5 +1,9 @@
 # Deployment Guide
 
+> **Policy twin:** this guide is the *operational how*; the *who-approves-what*
+> contract — change classes, approval matrix, emergency bypass, rollback policy —
+> lives in [`docs/change-management-policy.md`](change-management-policy.md).
+
 ## Quick Start (Local Production)
 
 ```bash
