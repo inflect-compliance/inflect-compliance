@@ -68,3 +68,8 @@ output "dr_snapshot_arn_pattern" {
   description = "ARN pattern for finding DR-copied snapshots in the DR region — used by the restore runbook + the quarterly cross-region restore test."
   value       = var.dr_region == "" ? "" : "arn:aws:rds:${var.dr_region}:*:snapshot:dr-rds-${aws_db_instance.this.identifier}-*"
 }
+
+output "read_replica_endpoint" {
+  description = "Read-replica connection endpoint (null when enable_read_replica = false). Feeds the app's DATABASE_READ_URL (via PgBouncer-read)."
+  value       = try(aws_db_instance.read_replica[0].endpoint, null)
+}

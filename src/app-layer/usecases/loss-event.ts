@@ -22,7 +22,7 @@
  */
 
 import type { RequestContext } from '../types';
-import { runInTenantContext } from '@/lib/db-context';
+import { runInTenantContext, runInTenantReadContext } from '@/lib/db-context';
 import { assertCanRead, assertCanWrite, assertCanAdmin } from '../policies/common';
 import { logEvent } from '../events/audit';
 import { notFound, badRequest } from '@/lib/errors/types';
@@ -126,7 +126,7 @@ export async function getLossEventAggregate(
     opts: { riskId?: string } = {},
 ): Promise<LossEventAggregate> {
     assertCanRead(ctx);
-    return runInTenantContext(ctx, async (db) => {
+    return runInTenantReadContext(ctx, async (db) => {
         const rows = await db.lossEvent.findMany({
             where: {
                 tenantId: ctx.tenantId,

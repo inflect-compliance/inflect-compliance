@@ -164,3 +164,8 @@ output "cdn_domain_name" {
   description = "CloudFront distribution domain (empty when cdn_enabled = false)."
   value       = var.cdn_enabled ? module.cdn[0].cloudfront_domain_name : ""
 }
+
+output "db_read_replica_endpoint" {
+  description = "RDS read-replica endpoint (null when db_enable_read_replica = false)."
+  value       = module.database.read_replica_endpoint
+}

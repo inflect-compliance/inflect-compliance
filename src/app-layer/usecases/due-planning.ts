@@ -10,7 +10,7 @@ import { Prisma, TestPlanStatus } from '@prisma/client';
 import { RequestContext } from '../types';
 import { assertCanReadTests, assertCanManageTestPlans } from '../policies/test.policies';
 import { logEvent } from '../events/audit';
-import { runInTenantContext, type PrismaTx } from '@/lib/db-context';
+import { runInTenantContext, runInTenantReadContext, type PrismaTx } from '@/lib/db-context';
 
 // ─── Due Queue ───
 
@@ -130,7 +130,7 @@ interface RunRecord {
 export async function getTestDashboardMetrics(ctx: RequestContext, periodDays: number = 30) {
     assertCanReadTests(ctx);
 
-    return runInTenantContext(ctx, async (db: PrismaTx) => {
+    return runInTenantReadContext(ctx, async (db: PrismaTx) => {
         const now = new Date();
         const periodStart = new Date(now);
         periodStart.setDate(periodStart.getDate() - periodDays);

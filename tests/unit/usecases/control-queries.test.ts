@@ -66,6 +66,8 @@ jest.mock('@/lib/db-context', () => {
     return {
         ...actual,
         runInTenantContext: jest.fn(async (_ctx: any, cb: any) => cb(tenantDb)),
+        // getControlDashboard now routes via the read replica; mirror it.
+        runInTenantReadContext: jest.fn(async (_ctx: any, cb: any) => cb(tenantDb)),
     };
 });
 

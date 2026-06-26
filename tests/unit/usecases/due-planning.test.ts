@@ -24,9 +24,13 @@
  * separation (read vs manage).
  */
 
-jest.mock('@/lib/db-context', () => ({
-    runInTenantContext: jest.fn(),
-}));
+jest.mock('@/lib/db-context', () => {
+    // getTestDashboardMetrics now routes via runInTenantReadContext;
+    // share ONE mock fn so the per-test mockImplementationOnce(...) on
+    // runInTenantContext applies to the read path too.
+    const fn = jest.fn();
+    return { runInTenantContext: fn, runInTenantReadContext: fn };
+});
 
 jest.mock('@/app-layer/events/audit', () => ({
     logEvent: jest.fn().mockResolvedValue(undefined),

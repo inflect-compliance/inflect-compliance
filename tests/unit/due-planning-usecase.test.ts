@@ -27,6 +27,7 @@ const mockDb = {
 
 jest.mock('@/lib/db-context', () => ({
     runInTenantContext: jest.fn(async (_ctx: any, fn: (db: any) => any) => fn(mockDb)),
+    runInTenantReadContext: jest.fn(async (_ctx: any, fn: (db: any) => any) => fn(mockDb)),
 }));
 
 jest.mock('@/app-layer/events/audit', () => ({

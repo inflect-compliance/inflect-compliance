@@ -64,6 +64,10 @@ module "database" {
   skip_final_snapshot      = var.db_skip_final_snapshot
   backup_retention_days    = var.db_backup_retention_days
 
+  # Read replica for dashboard / reporting reads (off by default).
+  enable_read_replica         = var.db_enable_read_replica
+  read_replica_instance_class = var.db_read_replica_instance_class
+
   # Cross-region DR snapshot copy (no-op until db_dr_region is set).
   dr_region                  = var.db_dr_region
   dr_snapshot_retention_days = var.db_dr_snapshot_retention_days

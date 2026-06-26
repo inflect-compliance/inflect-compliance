@@ -228,3 +228,17 @@ variable "cdn_price_class" {
   type        = string
   default     = "PriceClass_100"
 }
+
+# ── Read replica ──────────────────────────────────────────────────────
+
+variable "db_enable_read_replica" {
+  description = "Provision a same-region RDS read replica for dashboard / reporting reads. Off by default. Wire its endpoint into the app as DATABASE_READ_URL — see docs/database-routing.md."
+  type        = bool
+  default     = false
+}
+
+variable "db_read_replica_instance_class" {
+  description = "Instance class for the read replica. Empty = same as the primary."
+  type        = string
+  default     = ""
+}

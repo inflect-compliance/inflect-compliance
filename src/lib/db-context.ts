@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { prisma } from './prisma';
+import { prisma, prismaRead } from './prisma';
 import type { RequestContext } from '@/app-layer/types';
 import { runWithAuditContext } from './audit-context';
 
@@ -90,8 +90,61 @@ export async function runInTenantContext<T>(
 
 
 /**
+ * Read-replica variant of {@link runInTenantContext}, for reads where
+ * replication lag is acceptable: dashboards, aggregations, reporting.
+ *
+ * Identical RLS posture (sets `app_user` role + `app.tenant_id` /
+ * `app.request_id`) but:
+ *   1. Opens the transaction on `prismaRead` — the replica client when
+ *      `DATABASE_READ_URL` is set; otherwise `prismaRead === prisma` and
+ *      this is transparently identical to `runInTenantContext` (single-DB
+ *      mode / the safe rollback when the replica is unset).
+ *   2. Marks the transaction `READ ONLY`, so a write accidentally routed
+ *      into a read context fails fast — enforcing the "no writes on the
+ *      replica path" rule at runtime, not just in review.
+ *
+ * NEVER use for read-after-write, auth, session, or billing reads — those
+ * MUST stay on the primary via `runInTenantContext`. See
+ * docs/database-routing.md.
+ *
+ * ```ts
+ * export async function getControlDashboard(ctx: RequestContext) {
+ *     return runInTenantReadContext(ctx, (db) => ControlRepository.dashboard(db, ctx));
+ * }
+ * ```
+ */
+export async function runInTenantReadContext<T>(
+    ctx: RequestContext,
+    callback: (db: PrismaTx) => Promise<T>,
+    options?: { timeout?: number; maxWait?: number }
+): Promise<T> {
+    const txOptions: { timeout?: number; maxWait?: number } = {};
+    if (options?.timeout) txOptions.timeout = options.timeout;
+    if (options?.maxWait) txOptions.maxWait = options.maxWait;
+
+    return runWithAuditContext(
+        {
+            tenantId: ctx.tenantId,
+            actorUserId: ctx.userId,
+            requestId: ctx.requestId,
+            source: 'api',
+        },
+        () =>
+            prismaRead.$transaction(async (tx) => {
+                await tx.$executeRaw`SET LOCAL ROLE app_user`;
+                // READ ONLY before the first data statement — SET ROLE
+                // above doesn't count as one. set_config() is allowed in a
+                // read-only tx (it mutates session state, not tables).
+                await tx.$executeRaw`SET TRANSACTION READ ONLY`;
+                await tx.$executeRaw`SELECT set_config('app.tenant_id', ${ctx.tenantId}, true), set_config('app.request_id', ${ctx.requestId}, true)`;
+                return callback(tx);
+            }, txOptions)
+    ) as Promise<T>;
+}
+
+/**
  * Executes a callback with the global Prisma Client, bypassing RLS.
- * Use this SAFELY and specifically for unauthenticated public routes 
+ * Use this SAFELY and specifically for unauthenticated public routes
  * where tenant context cannot be established (e.g. share links).
  */
 export async function runInGlobalContext<T>(

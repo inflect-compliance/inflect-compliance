@@ -76,6 +76,7 @@ function getPrismaClient(): PrismaClient {
 
 export {
     runInTenantContext,
+    runInTenantReadContext,
     withTenantDb,
     runInGlobalContext,
 } from '@/lib/db-context';
