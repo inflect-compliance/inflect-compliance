@@ -10,7 +10,7 @@ contributor should not break without a good reason.
 
 Every node on the canvas reads at three levels:
 
-1. **Category** (Roadmap-26 PR-D) — `flow` / `context` / `note`. Controls the
+1. **Category** (Roadmap-26 PR-D) — `flow` / `context` / `note`. Controls the <!-- docs-accuracy-allow: phase name, not future tense -->
    surface tone:
    - `flow` nodes carry a solid surface tint. They ARE the process.
    - `context` nodes carry a muted, more transparent surface. They
@@ -40,7 +40,7 @@ Every node on the canvas reads at three levels:
 ## Why control is **edge-first**
 
 Controls in IC are governance objects that GATE a transition between two
-process steps. The Roadmap-25 brief committed to representing them ON the
+process steps. The Roadmap-25 brief committed to representing them ON the <!-- docs-accuracy-allow: phase name, not future tense -->
 connection (`<ControlOnEdge>` overlay) rather than as standalone nodes
 floating beside the flow. R26-PR-D enforces that commitment:
 

@@ -973,6 +973,42 @@ architecture. The bar is "would a future engineer need the context?"
 
 Existing examples: `docs/implementation-notes/2026-04-22-*.md`.
 
+## Doc classifications
+
+Every file in `docs/**/*.md` is classified in
+`docs/_status/doc-classification.json` (the source of truth) as exactly
+one of four kinds. The ratchet `tests/guardrails/docs-accuracy.test.ts`
+keeps the markers honest — pick the right class when you add a doc.
+
+- **`authoritative`** — describes shipped behaviour; **every claim must
+  be true today**. This is the DEFAULT for any new doc. The ratchet
+  fails CI if an authoritative doc contains a future-tense marker
+  (`coming soon`, `not yet`, `TODO`, `FIXME`, `WIP`, `will be`,
+  `roadmap`) outside an allowed context: a fenced code block, a tail
+  `## Future work` / `## Future scaling` / `## Roadmap` section, a
+  markdown-link target, or a line carrying
+  `<!-- docs-accuracy-allow: <reason> -->`. When something ships,
+  rewrite the doc in present tense — don't leave "will be".
+
+- **`living`** — a design direction that is PARTIALLY shipped; explicit
+  future-tense is intentional. Must carry the banner
+  `> **Status: living design** — …` and split the body into
+  `## Current state (true today)` + `## Roadmap (future direction)`.
+
+- **`historical`** — a moment-in-time record. The ENTIRE
+  `docs/implementation-notes/` subtree is historical by path (and
+  READ-ONLY — do not edit those except to fix typos); other historical
+  docs (dated audits, executed migration plans) carry
+  `> **Status: historical record (YYYY-MM-DD)** — …` and point at the
+  current authoritative doc.
+
+- **`deprecated`** — the system it described is gone/superseded. Replace
+  the body with `> **Deprecated.** … superseded by docs/<replacement>.md`.
+  Don't delete the file (inbound cross-links).
+
+When you add a doc, add its entry to `doc-classification.json` in the
+same PR — the ratchet's bidirectional cross-walk fails otherwise.
+
 ## UI Platform — Epics 51–60
 
 The following epics established shared primitives, guardrail tests, and

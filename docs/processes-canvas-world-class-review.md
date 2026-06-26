@@ -1,5 +1,7 @@
 # Processes Canvas — World-Class Architecture Review
 
+> **Status: living design** — describes a direction that is partially shipped. See the "Current state" and "Roadmap" sections for what is and isn't true today.
+
 *Roadmap-27 PR-C (prompt 7). A holistic product + architecture
 review of the Processes page: where it stands after R25 → R27, and
 what still separates it from a best-in-class process-architecture
@@ -7,7 +9,7 @@ design tool. Repo-grounded and implementation-shaped.*
 
 ---
 
-## Current maturity assessment
+## Current state (true today)
 
 The Processes page is, after Roadmaps 25–27, a **competent process
 canvas** — and, as of R27, a **visually resolved** one. It has:
@@ -38,7 +40,9 @@ capabilities are absent.
 
 ---
 
-## What is still missing for world-class quality
+## Roadmap (future direction)
+
+### What is still missing for world-class quality
 
 1. **Semantic truth.** Control / risk / asset nodes and
    edge-controls are free-text labels. `ProcessEdgeControl.controlId`

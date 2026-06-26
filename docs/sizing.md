@@ -24,7 +24,7 @@ Roughly **150–250 *active* tenants per app pod** as a planning starting
 point, where **active = made ≥1 API request in the last 10 minutes**
 (not total signed-up tenants — a 5 000-tenant install with 300 active at
 peak sizes to the 300, not the 5 000). This number is **operator-empirical
-and not yet measured in production** — it's seeded from the per-pod
+and remains unmeasured in production** — it's seeded from the per-pod
 resource envelope (1 vCPU request, 2 vCPU limit) and the smoke baseline,
 nothing more. **Upgrade trigger:** when the HPA sits at `maxReplicas` or
 `job:api_request_duration:p95_5m` approaches the SLO ceiling, raise

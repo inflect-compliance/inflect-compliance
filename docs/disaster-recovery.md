@@ -179,7 +179,7 @@ These block raising the customer SLA above "RTO 4h"; decide explicitly:
 1. **Cross-region snapshot copy** *(this)* — RPO 24h, RTO 4h, ~$20/mo. Cold.
 2. **Cross-region read-replica** — RPO seconds, RTO ~1h, ~3× cost. Hot (continuous WAL replication).
 3. **Warm-standby** (Aurora Global + Redis Global Datastore + traffic routing) — RPO seconds, RTO minutes. See `docs/multi-region.md`.
-4. **Active-active** — not on the roadmap.
+4. **Active-active** — not on the roadmap. <!-- docs-accuracy-allow: DR ladder tail listing higher rungs we have deliberately not built -->
 
 Climb a rung only when the RTO/RPO contract demands it; each rung is a
 real recurring cost.

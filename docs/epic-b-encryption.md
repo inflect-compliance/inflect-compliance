@@ -251,7 +251,7 @@ Grep the structured log stream for these keys when troubleshooting:
 
 1. **`AuditLog` is not encrypted.** It carries the hash-chained integrity contract; encrypting the fields would break `entryHash` and our immutability trigger. Investigation needs plaintext audit entries anyway.
 
-2. **Per-tenant DEK rotation is not yet implemented.** Master-KEK rotation is shipped; rotating a tenant's DEK (generating new DEK, re-encrypting every v2 ciphertext for that tenant) requires a schema column to hold old + new DEKs atomically. Deferred.
+2. **Per-tenant DEK rotation is implemented.** Both master-KEK rotation and per-tenant DEK rotation are shipped. `rotateTenantDek` in `src/lib/security/tenant-key-manager.ts` generates a fresh DEK, moves the old wrapped DEK into `Tenant.previousEncryptedDek`, and the `tenant-dek-rotation` BullMQ sweep re-encrypts every v2 ciphertext for that tenant. The admin surface is `POST /api/t/:slug/admin/tenant-dek-rotation` (OWNER-only). See the "Field Encryption" section of `CLAUDE.md` for the full flow.
 
 3. **Raw-SQL paths bypass the middleware.** Seeds, backfill scripts, and `$queryRawUnsafe` calls see on-disk ciphertext. This is intentional (the backfill scripts rely on it) but means debugging against a Prisma Studio session will show ciphertext for encrypted columns on production-like databases.
 

@@ -178,7 +178,7 @@ version.
 3. **Fail-open.** Temporarily revoke the `GroupMember.Read.All` consent and
    re-run the overage sign-in. Sign-in must still succeed with `aadGroups = []`
    (never blocked) and emit `source=graph_overage, outcome=empty`.
-4. **EI-2/EI-3 (once landed).** Add a group → role mapping at
+4. **EI-2/EI-3 (group → role mapping).** Add a group → role mapping at
    **Admin → Entra ID → Group → role mappings** for a group the test user is
    in, then re-sign-in and confirm the user's membership role syncs to the
    mapped role; toggle **enforce group gate** and confirm a user in no mapped

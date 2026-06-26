@@ -83,17 +83,15 @@ When enabling REQUIRED MFA policy, the system verifies at least one admin in the
 
 ## Audit Events
 
-| Event | When |
-|-------|------|
-| `MFA_ENROLLMENT_STARTED` | User initiates enrollment |
-| `MFA_ENROLLED` | User completes enrollment verification |
-| `MFA_ENROLLMENT_VERIFY_FAILED` | Invalid code during enrollment |
-| `MFA_CHALLENGE_PASSED` | Successful login-time MFA challenge |
-| `MFA_CHALLENGE_FAILED` | Failed login-time MFA challenge |
-| `MFA_POLICY_CHANGED` | Admin changes tenant MFA policy |
-| `CURRENT_SESSION_REVOKED` | User revokes own sessions |
-| `SESSIONS_REVOKED_FOR_USER` | Admin revokes a user's sessions |
-| `ALL_TENANT_SESSIONS_REVOKED` | Admin revokes all tenant sessions |
+These are the audit events actually emitted today (via `logEvent`):
+
+| Event | When | Emitted from |
+|-------|------|--------------|
+| `MFA_CHALLENGE_PASSED` | Successful login-time MFA challenge | `mfa-challenge.ts` |
+| `MFA_CHALLENGE_FAILED` | Failed login-time MFA challenge | `mfa-challenge.ts` |
+| `CURRENT_SESSION_REVOKED` | User revokes own sessions | session-revoke routes |
+| `SESSIONS_REVOKED_FOR_USER` | Admin revokes a user's sessions | session-revoke routes |
+| `ALL_TENANT_SESSIONS_REVOKED` | Admin revokes all tenant sessions | session-revoke routes |
 
 **Safety**: Audit details never contain TOTP codes, secrets, session tokens, or otpauth URIs.
 
@@ -137,3 +135,4 @@ When enabling REQUIRED MFA policy, the system verifies at least one admin in the
 - **Redis rate limiting**: Current in-memory limiter works for single-instance. For HA/multi-instance, replace with Redis-backed sliding window.
 - **QR code rendering**: Challenge page shows a setup key and QR icon placeholder. Add a real QR code library (e.g., `qrcode`) for better enrollment UX.
 - **Admin MFA enrollment reset**: Let admins reset a user's MFA enrollment (for lost device recovery). Currently users must contact admin to downgrade policy.
+- **Enrollment + policy audit events**: the action names `MFA_ENROLLMENT_STARTED`, `MFA_ENROLLED`, `MFA_ENROLLMENT_VERIFY_FAILED`, and `MFA_POLICY_CHANGED` are reserved but NOT yet emitted — `mfa-enrollment.ts` and `mfa.ts` currently make no `logEvent` calls. Wire `logEvent` into the enrollment start/verify/remove and policy-update paths so these surface in the audit trail alongside the challenge + session-revoke events above.

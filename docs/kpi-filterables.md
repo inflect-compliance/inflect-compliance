@@ -1,4 +1,4 @@
-# KPI Filterables — Roadmap 23
+# KPI Filterables — Roadmap 23 <!-- docs-accuracy-allow: "Roadmap 23" is the shipped project-cohort name, not a future marker -->
 
 Clickable KPI cards that drive table filtering, modeled on the Risks
 page. Seven list pages mount the same primitive (`<KpiFilterCard>`)

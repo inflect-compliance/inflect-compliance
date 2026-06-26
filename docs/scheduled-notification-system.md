@@ -135,8 +135,8 @@ To add a new digest category:
 
 ### Customization Points
 - To change reminder frequency: adjust the date granularity in `buildDigestDedupeKey()`
-- To suppress reminders entirely: check `ReminderHistory` before enqueue (not yet implemented)
-- To support per-user preferences: check `UserNotificationPreference.delivery` (schema exists, not yet wired)
+
+See [Future work](#future-work) for reminder suppression and per-user delivery preferences.
 
 ## File Map
 
@@ -186,3 +186,14 @@ The `notification-dispatch` job logs:
   "skipped": 1
 }
 ```
+
+## Future work
+
+These customization hooks are designed but not yet implemented in the dispatch
+path — the backing tables exist (with RLS), but nothing in
+`src/app-layer/notifications/` or `src/app-layer/jobs/` reads them yet:
+
+- **Reminder suppression** — check `ReminderHistory` before enqueue to suppress
+  repeat reminders entirely.
+- **Per-user delivery preferences** — check `UserNotificationPreference.delivery`
+  to honour per-user channel/opt-out choices.

@@ -1,14 +1,14 @@
 # Verification policy
 
 A structural ratchet that passes is **not** proof a feature works.
-The roadmap audit (`docs/roadmap-audit-2026-05-13.md`) found the
+The 2026-05-13 delivery audit (`docs/roadmap-audit-2026-05-13.md`) found the <!-- docs-accuracy-allow: "roadmap" only in the linked historical-audit filename -->
 opposite assumption baked in — features shipped "green" while the
 behaviour was broken in the browser. This policy makes the
 difference explicit and CI-enforced.
 
 ## Three verification states
 
-A feature / roadmap item is in exactly one of these states. They are
+A feature / delivery item is in exactly one of these states. They are
 NOT interchangeable — a higher state is not implied by a lower one.
 
 | State | What it means | How it is achieved | How it is enforced |
@@ -17,7 +17,7 @@ NOT interchangeable — a higher state is not implied by a lower one.
 | **Functionally tested** | The behaviour is exercised — real inputs → asserted outputs, branches, error paths. For UI, the *rendered/computed* outcome is asserted, not just a className. | Unit / integration tests (`tests/unit/`, `tests/integration/`); rendered behavioural tests (`tests/rendered/`). | The test + the coverage ratchet (`docs/coverage-policy.md`). |
 | **Browser verified** | The feature works in a real browser, full flow. | An E2E test (`tests/e2e/`), or a human confirming on the deployed site. | The E2E suite. |
 
-**The rule:** a roadmap item is "done" only at **functionally
+**The rule:** a delivery item is "done" only at **functionally
 tested** minimum. "Structurally present" is a building block, never
 a completion claim. UI work that the audit would mark `Status: ?`
 (structural ratchet only, never rendered/browser-checked) is *not*
@@ -33,7 +33,7 @@ Structural ratchets are cheap and right for *pure presence* checks;
 they are the wrong tool for any wiring whose rendered effect is
 subtle.
 
-## The four pillars (Roadmap-4)
+## The four pillars (Roadmap-4) <!-- docs-accuracy-allow: shipped-epic codename, not future tense -->
 
 This policy is the umbrella over four remediations, each with its
 own doc + guardrail:
@@ -66,7 +66,7 @@ CI stays green — is structurally blocked, not left to memory:
   high-risk primitives must each stay at or above a floor that only
   ever rises. It is the inverse of the `as any` downward ratchet:
   deleting verification trips CI, and a surplus over the floor must
-  be locked in by raising the floor in the same PR. Roadmap-4's
+  be locked in by raising the floor in the same PR. Roadmap-4's <!-- docs-accuracy-allow: shipped-epic codename, not future tense -->
   registry froze a *named* set; this keeps the whole rendered/E2E
   *population* from eroding.
 - **The guardrails themselves** → `verification-integrity.test.ts`

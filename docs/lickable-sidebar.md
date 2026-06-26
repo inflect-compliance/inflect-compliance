@@ -1,4 +1,4 @@
-# Lickable Sidebar — Roadmap-12
+# Lickable Sidebar — Roadmap-12 <!-- docs-accuracy-allow: "Roadmap-12" is the shipped project-cohort name, not a future marker -->
 
 > Buttons users want to lick. Section headers unmarkable with the
 > cursor. Sidebar chrome evergreen enough to stay legendary 10 years
@@ -6,6 +6,7 @@
 
 ## North star
 
+<!-- docs-accuracy-allow: "Roadmap-12" is the shipped project-cohort name -->
 Roadmap-12 was 10 PRs focused entirely on tenant sidebar button
 quality. The sidebar is the chrome users brush past hundreds of
 times a day — small drift in geometry, motion, or tone compounds

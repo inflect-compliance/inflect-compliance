@@ -96,7 +96,7 @@ import { cn } from '@dub/utils';
 | Server component with navigation | `buttonVariants()` (no hooks needed) |
 | Button with loading/disabled state | `<Button>` component |
 
-### Liquid-carbon surface (Roadmap-19)
+### Liquid-carbon surface (Roadmap-19) <!-- docs-accuracy-allow: shipped-epic codename, not future tense -->
 
 Buttons are not flat painted rectangles — every variant reads as a
 deep, voluminous pool of **liquid carbon**: wet-looking, dark,
@@ -152,7 +152,7 @@ when you touch the carbon system:
 | `tests/guards/r19-prc-carbon-hover-grain.test.ts` | the grain layer + `carbonOnHover` for the transparent variants |
 | `tests/guards/r19-prd-carbon-states.test.ts` | `carbonStates` interaction channel + the R19 capstone (whole-system coherence) |
 
-### CTA Order — modal/dialog footers (Roadmap-22 PR-E)
+### CTA Order — modal/dialog footers (Roadmap-22 PR-E) <!-- docs-accuracy-allow: shipped-epic codename, not future tense -->
 
 Every modal or dialog footer with a paired CANCEL + CONFIRM
 follows the Mac/iOS convention: **secondary first in DOM order,
@@ -184,7 +184,7 @@ The rule is locked by `tests/guards/r22-pre-variant-and-cta-order.test.ts`:
 the `Modal.Confirm` source must render the Cancel button BEFORE
 the Confirm button in JSX.
 
-### Variant inventory (Roadmap-22 PR-E)
+### Variant inventory (Roadmap-22 PR-E) <!-- docs-accuracy-allow: shipped-epic codename, not future tense -->
 
 Five variants today:
 
@@ -203,7 +203,7 @@ reviewed but kept it — the visual distinction between
 "delete-and-it's-gone" vs "remove-this-link". A future PR may
 fold them if the distinction stops earning its keep.
 
-### Liquid Elegance (Roadmap-20)
+### Liquid Elegance (Roadmap-20) <!-- docs-accuracy-allow: shipped-epic codename, not future tense -->
 
 R19 made buttons look like liquid carbon. R20 is the polish round
 on top — four characteristics that take the carbon language from
@@ -395,7 +395,7 @@ from any client component inside the providers tree.
   consumed the semantic tokens before Epic 51 remediation; the bridge just
   brings the *CSS class* layer into the same palette.
 
-### Carved Carbon (Roadmap-22)
+### Carved Carbon (Roadmap-22) <!-- docs-accuracy-allow: shipped-epic codename, not future tense -->
 
 R19 gave buttons the liquid-carbon LANGUAGE; R20 made them ELEGANT.
 R22 is the precision-refinement layer — five micro-detail moves
@@ -417,7 +417,7 @@ the PR-F capstone ratchet at `r22-prf-capstone.test.ts` asserts
 file-existence on all five so a future PR can't silently strip
 one. Each PR's own assertions remain the substantive guard.
 
-## Liquid Glass (Roadmap-24)
+## Liquid Glass (Roadmap-24) <!-- docs-accuracy-allow: shipped-epic codename, not future tense -->
 
 R24 swaps the button MATERIAL — from R19–R22's solid/machined
 carbon to liquid glass — while reusing the existing composition

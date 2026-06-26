@@ -1,11 +1,13 @@
 # Frontend Assurance Model
 
 **Status:** Active convention. Read this before adding a test that
+<!-- docs-accuracy-allow: "roadmap" used generically for a planned UI item -->
 "proves" a UI feature works, and before claiming a UI roadmap item is
 done.
 
 ## Why this exists
 
+<!-- docs-accuracy-allow: filename reference to a historical audit doc -->
 `docs/roadmap-audit-2026-05-13.md` documented a failure mode three
 separate times in one week: **the structural ratchet was green but the
 feature did not actually work.** The flagship case — a sidebar nav
@@ -154,7 +156,7 @@ State it plainly, because the audit shows it is easy to forget:
 > source. It does **not** prove the feature works. Only Tier 2
 > (rendered/computed) and Tier 4 (browser) verify *behaviour*.
 
-When you ship a UI roadmap item, "the ratchet is green" is a
+When you ship a UI roadmap item, "the ratchet is green" is a <!-- docs-accuracy-allow: "roadmap" used generically for a planned UI item -->
 completion criterion for the *structural* part only. If the item has
 an observable runtime effect, it is not done until it also has a
 Tier-2 rendered test **or** a Tier-4 browser test — see the decision
@@ -242,6 +244,7 @@ four belong:
 
 ## Related docs
 
+<!-- docs-accuracy-allow: filename reference to a historical audit doc -->
 - `docs/roadmap-audit-2026-05-13.md` — the audit that motivated this
   model; "Known broken / risky areas" is the prioritised gap list.
 - `docs/design-system.md` — the primitive-by-intent index.

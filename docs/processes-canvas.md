@@ -1,4 +1,4 @@
-# Processes Canvas (Roadmap-25)
+# Processes Canvas (Roadmap-25) <!-- docs-accuracy-allow: phase name, not future tense -->
 
 A visual-only canvas under **Manage → Processes** for mapping
 business and IT processes and placing governance controls on the
@@ -87,7 +87,7 @@ What's deliberately rejected:
 - `xyflow/system` low-level imports — `@xyflow/react` covers the API
 - The xyflow attribution badge — `proOptions={{ hideAttribution: true }}`
 
-## Visual contract (Roadmap-27 PR-A)
+## Visual contract (Roadmap-27 PR-A) <!-- docs-accuracy-allow: phase name, not future tense -->
 
 The Processes surface uses a dedicated **`--canvas-*`** token family
 (`src/styles/tokens.css`, exposed via the Tailwind `canvas` colour

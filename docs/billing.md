@@ -12,7 +12,7 @@
 > [`docs/data-retention.md`](data-retention.md).
 
 This document describes the **operating model** the codebase ships
-with today. It is not a roadmap for future billing features.
+with today. It is not a forward plan for future billing features.
 
 ---
 

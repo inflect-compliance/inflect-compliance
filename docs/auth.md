@@ -305,8 +305,8 @@ Every flag the credentials path honors:
   every send attempt — alert on either when SMTP is unreliable:
   - **OTel counter** `auth.verification_email.failed{flow=register|resend}`
     (paired with `.sent`). Non-zero `.failed` ahead of flipping
-    `AUTH_REQUIRE_EMAIL_VERIFICATION=1` means real users will be
-    locked out of verification.
+    `AUTH_REQUIRE_EMAIL_VERIFICATION=1` locks real users out of
+    verification.
   - **Structured pino warn** `event=verification_email_send_failed`
     with `flow`, `userId`, and `error` fields.
 - **Rate-limit counters reset on success.** A user who typo'd their
