@@ -1,0 +1,111 @@
+/**
+ * Policy content enrichment — heading anchors + auto Table of Contents.
+ */
+import {
+    slugifyHeading,
+    assignHeadingIds,
+    enrichPolicyHtml,
+    extractPolicyHeadings,
+} from '@/lib/policy/policy-content';
+
+describe('slugifyHeading', () => {
+    it('lowercases, strips punctuation, and hyphenates', () => {
+        expect(slugifyHeading('Purpose and Scope')).toBe('purpose-and-scope');
+        expect(slugifyHeading('Use of email & other comms!')).toBe('use-of-email-other-comms');
+    });
+    it('strips tags/entities from the text', () => {
+        expect(slugifyHeading('<strong>Clear&nbsp;desk</strong>')).toBe('clear-desk');
+    });
+    it('falls back to "section" for empty/symbol-only headings', () => {
+        expect(slugifyHeading('   ')).toBe('section');
+        expect(slugifyHeading('★★★')).toBe('section');
+    });
+});
+
+describe('assignHeadingIds', () => {
+    it('adds a slug id to each heading and returns them in order', () => {
+        const { html, headings } = assignHeadingIds(
+            '<h1>Acceptable Use Policy</h1><h2>Purpose and Scope</h2><h2>Introduction</h2>',
+        );
+        expect(html).toContain('<h1 id="acceptable-use-policy">');
+        expect(html).toContain('<h2 id="purpose-and-scope">');
+        expect(headings.map((h) => h.id)).toEqual([
+            'acceptable-use-policy',
+            'purpose-and-scope',
+            'introduction',
+        ]);
+        expect(headings[1]).toMatchObject({ level: 2, text: 'Purpose and Scope' });
+    });
+    it('dedupes repeated headings with a numeric suffix', () => {
+        const { headings } = assignHeadingIds('<h2>Use</h2><h2>Use</h2><h2>Use</h2>');
+        expect(headings.map((h) => h.id)).toEqual(['use', 'use-2', 'use-3']);
+    });
+    it('preserves an author-set id', () => {
+        const { html, headings } = assignHeadingIds('<h2 id="custom">Title</h2>');
+        expect(html).toContain('id="custom"');
+        expect(headings[0].id).toBe('custom');
+    });
+    it('leaves empty headings untouched (no anchor)', () => {
+        const { html, headings } = assignHeadingIds('<h2></h2><h2>Real</h2>');
+        expect(html).toBe('<h2></h2><h2 id="real">Real</h2>');
+        expect(headings).toHaveLength(1);
+    });
+});
+
+describe('enrichPolicyHtml', () => {
+    const body =
+        '<h1>Acceptable Use Policy</h1><hr><h2>Purpose and Scope</h2><p>x</p><h2>Introduction</h2><p>y</p>';
+
+    it('inserts the Contents nav immediately after the first page break', () => {
+        const out = enrichPolicyHtml(body);
+        const hrAt = out.indexOf('<hr');
+        const tocAt = out.indexOf('policy-toc');
+        const firstH2At = out.indexOf('<h2');
+        expect(tocAt).toBeGreaterThan(hrAt);
+        expect(tocAt).toBeLessThan(firstH2At);
+    });
+
+    it('excludes the leading <h1> title and links the section headings', () => {
+        const out = enrichPolicyHtml(body);
+        expect(out).toContain('<a href="#purpose-and-scope">Purpose and Scope</a>');
+        expect(out).toContain('<a href="#introduction">Introduction</a>');
+        // Title is not a TOC entry.
+        expect(out).not.toContain('<a href="#acceptable-use-policy">');
+    });
+
+    it('falls back to after the first heading when there is no page break', () => {
+        const out = enrichPolicyHtml('<h2>One</h2><p>a</p><h2>Two</h2><p>b</p>');
+        // The nav sits after the first heading, before the second.
+        expect(out.indexOf('policy-toc')).toBeGreaterThan(out.indexOf('>One<'));
+        expect(out.indexOf('policy-toc')).toBeLessThan(out.indexOf('>Two<'));
+    });
+
+    it('returns the body unchanged when there are fewer than two sections', () => {
+        expect(enrichPolicyHtml('<h1>Title</h1><h2>Only</h2><p>x</p>')).not.toContain('policy-toc');
+        expect(enrichPolicyHtml('<p>no headings at all</p>')).not.toContain('policy-toc');
+    });
+
+    it('escapes heading text in the generated TOC', () => {
+        const out = enrichPolicyHtml('<h2>A &amp; B</h2><h2>C &lt;tag&gt;</h2>');
+        expect(out).toContain('A &amp; B</a>');
+        expect(out).toContain('C &lt;tag&gt;</a>');
+        // No raw unescaped angle brackets leaked into the TOC link text.
+        expect(out).not.toContain('C <tag></a>');
+    });
+
+    it('is null-safe', () => {
+        expect(enrichPolicyHtml(null)).toBe('');
+        expect(enrichPolicyHtml(undefined)).toBe('');
+        expect(enrichPolicyHtml('')).toBe('');
+    });
+});
+
+describe('extractPolicyHeadings', () => {
+    it('returns the heading list with ids', () => {
+        expect(extractPolicyHeadings('<h1>T</h1><h2>S</h2>')).toEqual([
+            { level: 1, text: 'T', id: 't' },
+            { level: 2, text: 'S', id: 's' },
+        ]);
+        expect(extractPolicyHeadings(null)).toEqual([]);
+    });
+});

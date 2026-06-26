@@ -88,6 +88,16 @@ describe('sanitizeRichTextHtml — strips dangerous content', () => {
         expect(out).not.toMatch(/id=/);
     });
 
+    it('keeps id ONLY on headings (TOC anchor targets), still strips it elsewhere', () => {
+        const out = sanitizeRichTextHtml(
+            '<h2 id="purpose-and-scope" class="x">Purpose</h2><p id="nope">body</p>',
+        );
+        expect(out).toContain('<h2 id="purpose-and-scope">Purpose</h2>');
+        // class still stripped from the heading; id stripped from <p>.
+        expect(out).not.toMatch(/class=/);
+        expect(out).toContain('<p>body</p>');
+    });
+
     it('drops <style> tag and its body', () => {
         const out = sanitizeRichTextHtml(
             '<style>body{display:none}</style><p>hi</p>',
