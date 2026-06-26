@@ -28,6 +28,21 @@ inflect.34-140-180-255.sslip.io {
         -Server
     }
 
+    # Cache-Control for CDN origin pulls (CloudFront — see docs/cdn.md).
+    # Caddy emits these on the origin response so the edge caches with the
+    # right TTL. They are correct even with no CDN in front (browsers
+    # cache the immutable hashed bundles locally too).
+    @nextStatic path /_next/static/* /static/*
+    header @nextStatic Cache-Control "public, max-age=31536000, immutable"
+
+    @nextImage path /_next/image*
+    header @nextImage Cache-Control "public, max-age=2592000"
+
+    # Everything else (HTML shell + /api/*) carries auth context — never
+    # cache it at the edge or in shared caches.
+    @dynamic not path /_next/static/* /static/* /_next/image*
+    header @dynamic Cache-Control "no-store"
+
     reverse_proxy app:3000 {
         # Next.js sits behind the proxy — forward the original host so
         # NextAuth + server-side redirects resolve to the public URL.

@@ -349,6 +349,24 @@ jobs:
           echo "Smoke-testing production at $SMOKE_URL"
           node scripts/smoke-prod.mjs
 
+      - name: Invalidate CloudFront cache
+        if: success()
+        env:
+          CF_DIST_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+        run: |
+          if [ -z "$CF_DIST_ID" ]; then
+            echo "::notice::CLOUDFRONT_DISTRIBUTION_ID not set — no CDN edge tier in front of this environment; skipping invalidation."
+            exit 0
+          fi
+          # Targeted bust: only the build-output paths change between
+          # releases — /_next/* (hashed bundles + image-optimizer output)
+          # and the HTML shell at /. Static public/* assets are
+          # operator-managed and expire naturally. Requires AWS creds in
+          # this job (OIDC role) — see docs/cdn.md.
+          aws cloudfront create-invalidation \
+            --distribution-id "$CF_DIST_ID" \
+            --paths '/_next/*' '/'
+
       - name: Post smoke summary
         if: success()
         run: |
