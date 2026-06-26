@@ -924,3 +924,15 @@ enum LossEventSource {
   /// incident closed at.
   INCIDENT
 }
+
+/// Data-residency regions a Tenant can be assigned to. A value here is
+/// NOT automatically available — only regions also listed in
+/// OPERATIONALLY_PROVISIONED_REGIONS (src/lib/regions.ts) are accepted at
+/// provision time. An enum value without provisioned infrastructure is a
+/// declared-but-unavailable region (the data-residency-foundation ratchet
+/// enforces every value is either provisioned or has a documented plan).
+enum TenantRegion {
+  US_EAST_1
+  EU_WEST_1
+  AP_SOUTHEAST_1
+}

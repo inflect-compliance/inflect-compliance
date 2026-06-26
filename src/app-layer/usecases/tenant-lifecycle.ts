@@ -26,7 +26,8 @@ import { logger } from '@/lib/observability/logger';
 import { ValidationError, NotFoundError, ConflictError } from '@/lib/errors/types';
 import { getBillingMode } from '@/lib/billing/entitlements';
 import { recordTenantCreated } from '@/lib/observability/business-metrics';
-import type { PrismaClient } from '@prisma/client';
+import { assertProvisionedRegion } from '@/lib/regions';
+import type { PrismaClient, TenantRegion } from '@prisma/client';
 
 // ─── createTenantWithOwner ──────────────────────────────────────────
 
@@ -36,6 +37,13 @@ export interface CreateTenantWithOwnerInput {
     ownerEmail: string;
     /** Correlation id for audit entries; platform-admin has no user session. */
     requestId: string;
+    /**
+     * Data-residency region. Optional; defaults to US_EAST_1 (the only
+     * operationally-provisioned region today). A value outside
+     * OPERATIONALLY_PROVISIONED_REGIONS is refused with a ValidationError
+     * — never silently defaulted. See docs/data-residency.md.
+     */
+    region?: TenantRegion;
 }
 
 export interface CreateTenantWithOwnerResult {
@@ -59,6 +67,12 @@ export async function createTenantWithOwner(
     input: CreateTenantWithOwnerInput,
 ): Promise<CreateTenantWithOwnerResult> {
     const email = input.ownerEmail.trim().toLowerCase();
+
+    // Residency region — default to US_EAST_1 (the only provisioned region
+    // today) and REFUSE any region without live infrastructure. A clear
+    // error, never a silent default. See docs/data-residency.md.
+    const region: TenantRegion = input.region ?? 'US_EAST_1';
+    assertProvisionedRegion(region);
 
     // 1. Find-or-create the User row outside the main transaction so
     //    the upsert is idempotent and visible to the transaction below.
@@ -94,6 +108,7 @@ export async function createTenantWithOwner(
                 name: input.name,
                 slug: input.slug,
                 encryptedDek: wrapped,
+                region,
             },
             select: { id: true, slug: true, name: true },
         });
@@ -133,6 +148,23 @@ export async function createTenantWithOwner(
             name: tenantName!,
             ownerUserId: user.id,
             ownerEmail: email,
+        },
+    });
+
+    // Residency-commitment artifact — the durable record a compliance
+    // reviewer reads to confirm which region a tenant was assigned at
+    // creation. See docs/data-residency.md.
+    await appendAuditEntry({
+        tenantId: tenantId!,
+        userId: user.id,
+        actorType: 'PLATFORM_ADMIN',
+        entity: 'Tenant',
+        entityId: tenantId!,
+        action: 'TENANT_REGION_SET',
+        requestId: input.requestId,
+        detailsJson: {
+            category: 'access',
+            region,
         },
     });
 

@@ -68,6 +68,9 @@
     "docs/dast.md": {
       "class": "authoritative"
     },
+    "docs/data-residency.md": {
+      "class": "authoritative"
+    },
     "docs/data-retention.md": {
       "class": "authoritative"
     },
