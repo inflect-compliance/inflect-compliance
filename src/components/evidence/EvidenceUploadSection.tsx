@@ -26,15 +26,98 @@ const EVIDENCE_ACCEPT =
 const EVIDENCE_HINT = 'PDF, Office, CSV, image, JSON, or ZIP — up to 25 MB per file';
 const MAX_FILE_MB = 25;
 
-interface AttachedItem {
+/** Raw `Evidence` row as returned by the evidence-tab GET. */
+interface RawEvidence {
     id: string;
     title?: string | null;
     fileName?: string | null;
-    name?: string | null;
-    url?: string | null;
-    kind?: string | null;
     /** FileRecord id for FILE evidence — drives the signed-URL download. */
     fileRecordId?: string | null;
+    /** EvidenceType — 'FILE' | 'LINK' | 'TEXT' | 'SCREENSHOT'. */
+    type?: string | null;
+    /** For LINK evidence, `content` holds the URL. */
+    content?: string | null;
+}
+
+/** Raw `ControlEvidenceLink` row (control evidence tab only). */
+interface RawLink {
+    id: string;
+    /** 'FILE' | 'LINK' | 'INTEGRATION_RESULT'. */
+    kind?: string | null;
+    /** FileRecord id for kind='FILE'. */
+    fileId?: string | null;
+    /** External URL for kind='LINK'. */
+    url?: string | null;
+    note?: string | null;
+}
+
+/** A normalised, render-ready evidence row — name + exactly one target. */
+interface DisplayItem {
+    id: string;
+    name: string;
+    /** FileRecord id → signed-URL download. */
+    downloadId?: string;
+    /** External URL → open in a new tab. */
+    externalUrl?: string;
+}
+
+/** Last path segment of a URL (or the host) as a friendly label. */
+function labelFromUrl(url: string): string {
+    try {
+        const u = new URL(url);
+        return u.pathname.split('/').filter(Boolean).pop() || u.hostname;
+    } catch {
+        return url;
+    }
+}
+
+/**
+ * Merge the evidence-tab GET payload (`{ evidence, links }`) into one clean
+ * list. The control upload path writes BOTH an `Evidence` row (FILE, with a
+ * title + fileRecordId) AND a `ControlEvidenceLink` bridge row (kind='FILE',
+ * fileId) for the same file — so we dedupe link rows whose `fileId` already
+ * appears as an Evidence `fileRecordId` (or whose URL is already shown). That
+ * removes the blank, unclickable "Evidence" duplicate row. Every emitted item
+ * carries a usable name and a download OR external target (TEXT evidence with
+ * neither stays as a plain label).
+ */
+export function normalizeEvidence(data: { evidence?: RawEvidence[]; links?: RawLink[] }): DisplayItem[] {
+    const out: DisplayItem[] = [];
+    const seenFiles = new Set<string>();
+    const seenUrls = new Set<string>();
+
+    for (const e of data.evidence ?? []) {
+        const externalUrl = e.type === 'LINK' ? e.content || undefined : undefined;
+        const downloadId = e.fileRecordId || undefined;
+        out.push({
+            id: e.id,
+            name:
+                e.title ||
+                e.fileName ||
+                (externalUrl ? labelFromUrl(externalUrl) : 'Attached file'),
+            downloadId,
+            externalUrl,
+        });
+        if (downloadId) seenFiles.add(downloadId);
+        if (externalUrl) seenUrls.add(externalUrl);
+    }
+
+    for (const l of data.links ?? []) {
+        if (l.kind === 'FILE') {
+            const fid = l.fileId || undefined;
+            if (!fid || seenFiles.has(fid)) continue; // upload-bridge duplicate of an Evidence row
+            seenFiles.add(fid);
+            out.push({ id: l.id, name: l.note || 'Attached file', downloadId: fid });
+        } else if (l.kind === 'LINK') {
+            const url = l.url || undefined;
+            if (!url || seenUrls.has(url)) continue;
+            seenUrls.add(url);
+            out.push({ id: l.id, name: l.note || labelFromUrl(url), externalUrl: url });
+        }
+        // INTEGRATION_RESULT (and anything else) has no rail-displayable target.
+    }
+
+    return out;
 }
 
 export interface EvidenceUploadSectionProps {
@@ -83,7 +166,7 @@ export function EvidenceUploadSection({
     urlLinkBody,
     compactDropzone = false,
 }: EvidenceUploadSectionProps) {
-    const [items, setItems] = useState<AttachedItem[] | null>(null);
+    const [items, setItems] = useState<DisplayItem[] | null>(null);
     const [url, setUrl] = useState('');
     const [note, setNote] = useState('');
     const [linking, setLinking] = useState(false);
@@ -92,10 +175,17 @@ export function EvidenceUploadSection({
     const refetch = useCallback(async () => {
         if (!listEndpoint) return;
         try {
-            const res = await fetch(`/api/t/${tenantSlug}${listEndpoint}`);
+            // `no-store`: the list must reflect a just-uploaded/linked row
+            // immediately — a cached GET would hide it even after a re-open.
+            const res = await fetch(`/api/t/${tenantSlug}${listEndpoint}`, {
+                cache: 'no-store',
+            });
             if (!res.ok) return;
-            const data = await res.json();
-            setItems([...(data.evidence ?? []), ...(data.links ?? [])]);
+            const data = (await res.json()) as {
+                evidence?: RawEvidence[];
+                links?: RawLink[];
+            };
+            setItems(normalizeEvidence(data));
         } catch {
             /* non-fatal — the dropzone still works */
         }
@@ -214,14 +304,11 @@ export function EvidenceUploadSection({
             {listEndpoint && items && items.length > 0 && (
                 <ul className="space-y-tight" data-testid="evidence-attached-list">
                     {items.map((it) => {
-                        const name =
-                            it.title || it.fileName || it.name || it.url || 'Evidence';
-                        // FILE evidence → signed-URL download (GET redirects/
-                        // streams). LINK evidence → open the external URL.
-                        const href = it.fileRecordId
-                            ? `/api/t/${tenantSlug}/evidence/files/${it.fileRecordId}/download`
-                            : it.url || null;
-                        const isFile = Boolean(it.fileRecordId);
+                        // Download (FileRecord) takes precedence over external URL.
+                        const href = it.downloadId
+                            ? `/api/t/${tenantSlug}/evidence/files/${it.downloadId}/download`
+                            : it.externalUrl || null;
+                        const isFile = Boolean(it.downloadId);
                         return (
                             <li
                                 key={it.id}
@@ -231,10 +318,10 @@ export function EvidenceUploadSection({
                                     <a
                                         href={href}
                                         {...(isFile
-                                            ? { download: it.fileName || it.title || undefined }
+                                            ? { download: it.name || undefined }
                                             : { target: '_blank', rel: 'noopener noreferrer' })}
                                         className="flex flex-1 items-center gap-tight truncate text-content-link hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-default)] rounded-sm"
-                                        title={isFile ? `Download ${name}` : `Open ${name}`}
+                                        title={isFile ? `Download ${it.name}` : `Open ${it.name}`}
                                         data-testid="evidence-attached-link"
                                     >
                                         {isFile ? (
@@ -242,11 +329,11 @@ export function EvidenceUploadSection({
                                         ) : (
                                             <ArrowUpRight aria-hidden className="size-3.5 shrink-0" />
                                         )}
-                                        <span className="truncate">{name}</span>
+                                        <span className="truncate">{it.name}</span>
                                     </a>
                                 ) : (
-                                    <span className="truncate" title={name}>
-                                        {name}
+                                    <span className="truncate" title={it.name}>
+                                        {it.name}
                                     </span>
                                 )}
                             </li>
