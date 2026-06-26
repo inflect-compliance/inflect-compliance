@@ -15,7 +15,7 @@ bump is the primary mechanism.
 
 ```
 controls/dashboard GET
-  → cachedAggregationRead({ scopeId: tenantId, aggregation: 'controls-dashboard',
+  → cachedAggregationRead({ scopeKey: tenantId, aggregation: 'controls-dashboard',
                             dependsOn: ['control','evidence','test','task'], ttl: 60 })
       key = agg:controls-dashboard:<tenant>:v[control=N,evidence=M,test=K,task=J]:<paramhash>
   Control write → bumpEntityCacheVersion(ctx,'control') → N++ → key changes → miss → recompute
@@ -66,9 +66,9 @@ controls/dashboard GET
   key. (Named `variant`, not `params`, to avoid the async-params
   route-typing guard's `params: {` regex.)
 
-- **Generic `scopeId`, not just `tenantId`.** `org-dashboard-widgets` is
+- **Generic `scopeKey`, not just `tenantId`.** `org-dashboard-widgets` is
   org-scoped (`OrgContext.organizationId`, no `tenantId`). The helper
-  takes a `scopeId` string; tenant aggregations pass `ctx.tenantId`, the
+  takes a `scopeKey` string; tenant aggregations pass `ctx.tenantId`, the
   org one passes `ctx.organizationId`, with a matching
   `bumpEntityCacheVersionForScope` for the org bump.
 

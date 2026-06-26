@@ -40,7 +40,7 @@ export const GET = withApiErrorHandling(
         const validPeriod = [30, 90, 180, 365].includes(period) ? period : 30;
 
         const dashboard = await cachedAggregationRead({
-            scopeId: ctx.tenantId,
+            scopeKey: ctx.tenantId,
             aggregation: 'tests-dashboard',
             dependsOn: AGGREGATIONS['tests-dashboard'].dependsOn,
             ttlSeconds: AGGREGATIONS['tests-dashboard'].ttlSeconds,

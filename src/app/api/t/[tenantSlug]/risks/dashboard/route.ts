@@ -10,7 +10,7 @@ export const GET = withApiErrorHandling(async (req: NextRequest, { params: param
     const params = await paramsPromise;
     const ctx = await getTenantCtx(params, req);
     const dashboard = await cachedAggregationRead({
-        scopeId: ctx.tenantId,
+        scopeKey: ctx.tenantId,
         aggregation: 'risks-dashboard',
         dependsOn: AGGREGATIONS['risks-dashboard'].dependsOn,
         ttlSeconds: AGGREGATIONS['risks-dashboard'].ttlSeconds,

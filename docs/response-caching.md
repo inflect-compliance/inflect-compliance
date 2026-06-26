@@ -79,14 +79,14 @@ far more often than the dashboard is viewed) or the TTL is too short.
    `dependsOn` entities, a TTL ≤ `MAX_AGGREGATION_TTL_SECONDS` (600), and
    the scope. If you need a new entity, add it to the `AggregationEntity`
    union first.
-2. **Wrap the route's compute** in `cachedAggregationRead({ scopeId,
+2. **Wrap the route's compute** in `cachedAggregationRead({ scopeKey,
    aggregation, dependsOn, ttlSeconds, variant?, compute })`. Use
    `ctx.tenantId` for tenant scope, `ctx.organizationId` for org scope.
    Pass `variant` for any query arg that changes the result (period,
    filter id) — omitting it serves the wrong slice from cache.
 3. **Verify the bumps cover `dependsOn`**: every entity must be bumped by
    the usecase(s) that mutate it (`bumpEntityCacheVersion(ctx, entity)`,
-   or `bumpEntityCacheVersionForScope(scopeId, entity)` for org scope).
+   or `bumpEntityCacheVersionForScope(scopeKey, entity)` for org scope).
    Add the call after the write commits if it's missing.
 4. **Add the route to the ratchet** (`ROUTE_FILES` in
    `aggregation-cache-coverage.test.ts`) and run it.

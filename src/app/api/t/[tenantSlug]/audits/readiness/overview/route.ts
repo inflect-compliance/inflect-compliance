@@ -21,7 +21,7 @@ export const GET = withApiErrorHandling(
         const params = await paramsPromise;
         const ctx = await getTenantCtx(params, req);
         const overview = await cachedAggregationRead({
-            scopeId: ctx.tenantId,
+            scopeKey: ctx.tenantId,
             aggregation: 'audits-readiness-overview',
             dependsOn: AGGREGATIONS['audits-readiness-overview'].dependsOn,
             ttlSeconds: AGGREGATIONS['audits-readiness-overview'].ttlSeconds,

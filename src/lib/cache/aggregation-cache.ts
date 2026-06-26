@@ -47,7 +47,7 @@ const DEFAULT_TTL_SECONDS = 60;
 
 export interface CachedAggregationOptions<T> {
     /** Cache scope id: `ctx.tenantId` for tenant aggregations, `ctx.organizationId` for org ones. */
-    scopeId: string;
+    scopeKey: string;
     /** Stable identifier for the aggregation — the registry key (also the metric label). */
     aggregation: string;
     /** Entities whose version counters key this read. A bump on any invalidates it. */
@@ -78,7 +78,7 @@ export async function cachedAggregationRead<T>(opts: CachedAggregationOptions<T>
     // A bump to any of them changes the composed string → cache miss.
     let versions: (string | null)[];
     try {
-        const versionKeys = opts.dependsOn.map((e) => entityVersionKey(opts.scopeId, e));
+        const versionKeys = opts.dependsOn.map((e) => entityVersionKey(opts.scopeKey, e));
         versions = versionKeys.length ? await redis.mget(...versionKeys) : [];
     } catch (err) {
         logger.warn('aggregation-cache version-read failed', {
@@ -97,7 +97,7 @@ export async function cachedAggregationRead<T>(opts: CachedAggregationOptions<T>
         .digest('hex')
         .slice(0, 16);
 
-    const cacheKey = `${AGG_PREFIX}:${opts.aggregation}:${opts.scopeId}:v[${composedVersion}]:${paramHash}`;
+    const cacheKey = `${AGG_PREFIX}:${opts.aggregation}:${opts.scopeKey}:v[${composedVersion}]:${paramHash}`;
 
     // ── HIT path ──
     let raw: string | null = null;
@@ -117,7 +117,7 @@ export async function cachedAggregationRead<T>(opts: CachedAggregationOptions<T>
             logger.debug('aggregation-cache hit', {
                 component: 'aggregation-cache',
                 aggregation: opts.aggregation,
-                scopeId: opts.scopeId,
+                scopeKey: opts.scopeKey,
             });
             return parsed;
         } catch {
@@ -149,7 +149,7 @@ export async function cachedAggregationRead<T>(opts: CachedAggregationOptions<T>
         component: 'aggregation-cache',
         aggregation: opts.aggregation,
         computeMs,
-        scopeId: opts.scopeId,
+        scopeKey: opts.scopeKey,
     });
 
     return result;

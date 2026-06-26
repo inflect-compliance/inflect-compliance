@@ -21,7 +21,7 @@ export const GET = withApiErrorHandling(
         const url = new URL(req.url);
         const riskId = url.searchParams.get('riskId') ?? undefined;
         const aggregate = await cachedAggregationRead({
-            scopeId: ctx.tenantId,
+            scopeKey: ctx.tenantId,
             aggregation: 'loss-events-aggregate',
             dependsOn: AGGREGATIONS['loss-events-aggregate'].dependsOn,
             ttlSeconds: AGGREGATIONS['loss-events-aggregate'].ttlSeconds,

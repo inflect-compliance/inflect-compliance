@@ -73,11 +73,11 @@ export type CacheableEntity = 'control' | 'risk' | 'evidence' | 'task';
  * Canonical per-(scope, entity) version-counter key. Shared by the list
  * cache and the aggregation cache (`aggregation-cache.ts`) so a single
  * `bumpEntityCacheVersion` invalidates BOTH a list cache and every
- * aggregation that depends on the same entity. `scopeId` is the tenantId
+ * aggregation that depends on the same entity. `scopeKey` is the tenantId
  * for tenant-scoped entities and the organizationId for org-scoped ones.
  */
-export function entityVersionKey(scopeId: string, entity: AggregationEntity): string {
-    return `${CACHE_PREFIX}:ver:${entity}:${scopeId}`;
+export function entityVersionKey(scopeKey: string, entity: AggregationEntity): string {
+    return `${CACHE_PREFIX}:ver:${entity}:${scopeKey}`;
 }
 
 export interface CachedReadOptions<T> {
@@ -320,13 +320,13 @@ export async function bumpEntityCacheVersion(
  * rather than `tenantId`. Call AFTER the write commits; never throws.
  */
 export async function bumpEntityCacheVersionForScope(
-    scopeId: string,
+    scopeKey: string,
     entity: AggregationEntity,
 ): Promise<void> {
     const redis = getRedis();
     if (!redis) return;
 
-    const versionKey = entityVersionKey(scopeId, entity);
+    const versionKey = entityVersionKey(scopeKey, entity);
     try {
         await redis.incr(versionKey);
         // Refresh the version-key TTL so it doesn't drift to

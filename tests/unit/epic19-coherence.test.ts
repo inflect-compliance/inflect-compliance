@@ -72,6 +72,13 @@ describe('Epic 19 Coherence: metric names', () => {
             // signal (brute-force / stale-connector detection) alerted ad-hoc,
             // not an SLO-board metric, so it isn't on the SLO dashboard.
             'scim.auth.count',
+            // Aggregation cache hit/miss/compute timing — operators watch the
+            // per-aggregation hit ratio ad-hoc in Grafana (see
+            // docs/response-caching.md), but it's a performance diagnostic,
+            // not an SLO board signal.
+            'cache.aggregation.hit',
+            'cache.aggregation.miss',
+            'cache.aggregation.compute_duration_ms',
         ]);
 
         // Dot → underscore: api.request.count → api_request_count

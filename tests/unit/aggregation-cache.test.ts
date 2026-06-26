@@ -6,7 +6,7 @@
  *   • miss runs compute once, then subsequent reads hit;
  *   • a bump to ANY dependsOn entity invalidates → next read misses;
  *   • a bump to an UNRELATED entity does NOT invalidate;
- *   • different scopeId → isolated entries;
+ *   • different scopeKey → isolated entries;
  *   • different params → different entries;
  *   • no-Redis fallback computes every time, never caches.
  */
@@ -18,9 +18,9 @@ import { bumpEntityCacheVersionForScope } from '@/lib/cache/list-cache';
 import { getRedis, disconnectRedis } from '@/lib/redis';
 import type { RequestContext } from '@/app-layer/types';
 
-function ctxFor(scopeId: string): RequestContext {
+function ctxFor(scopeKey: string): RequestContext {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return { tenantId: scopeId, userId: 'u', role: 'EDITOR', permissions: {}, appPermissions: {} } as any;
+    return { tenantId: scopeKey, userId: 'u', role: 'EDITOR', permissions: {}, appPermissions: {} } as any;
 }
 
 beforeEach(async () => {
@@ -34,7 +34,7 @@ afterAll(async () => {
 });
 
 const baseOpts = {
-    scopeId: 't1',
+    scopeKey: 't1',
     aggregation: 'controls-dashboard',
     dependsOn: ['control', 'task'] as const,
     ttlSeconds: 60,
@@ -75,12 +75,12 @@ it('a bump to an UNRELATED entity does not invalidate', async () => {
     expect(calls).toBe(1);
 });
 
-it('different scopeId gets an isolated entry', async () => {
+it('different scopeKey gets an isolated entry', async () => {
     let calls = 0;
     const compute = async () => { calls++; return { n: calls }; };
 
-    await cachedAggregationRead({ ...baseOpts, scopeId: 't1', compute });
-    await cachedAggregationRead({ ...baseOpts, scopeId: 't2', compute });
+    await cachedAggregationRead({ ...baseOpts, scopeKey: 't1', compute });
+    await cachedAggregationRead({ ...baseOpts, scopeKey: 't2', compute });
 
     expect(calls).toBe(2); // each scope computed independently
 });

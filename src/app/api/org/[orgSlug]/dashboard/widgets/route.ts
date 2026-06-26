@@ -32,7 +32,7 @@ export const GET = withApiErrorHandling(
         const ctx = await getOrgCtx((await routeCtx.params), req);
         // Org-scoped aggregation: key on organizationId, not tenantId.
         const widgets = await cachedAggregationRead({
-            scopeId: ctx.organizationId,
+            scopeKey: ctx.organizationId,
             aggregation: 'org-dashboard-widgets',
             dependsOn: AGGREGATIONS['org-dashboard-widgets'].dependsOn,
             ttlSeconds: AGGREGATIONS['org-dashboard-widgets'].ttlSeconds,
