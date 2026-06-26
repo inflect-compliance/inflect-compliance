@@ -2,9 +2,9 @@
   "$schema": "internal: docs classification source of truth",
   "description": "Classification of every docs/**/*.md. authoritative = true today; living = partially-shipped design direction; historical = moment-in-time record (incl. all of docs/implementation-notes/); deprecated = superseded redirect. Enforced by tests/guardrails/docs-accuracy.test.ts. See CLAUDE.md \"Doc classifications\".",
   "counts": {
-    "authoritative": 103,
+    "authoritative": 104,
     "living": 5,
-    "historical": 275,
+    "historical": 276,
     "deprecated": 1
   },
   "docs": {
@@ -971,6 +971,9 @@
     "docs/implementation-notes/2026-06-26-dsar-foundation.md": {
       "class": "historical"
     },
+    "docs/implementation-notes/2026-06-26-perf-baseline.md": {
+      "class": "historical"
+    },
     "docs/implementation-notes/2026-06-26-read-replica-routing.md": {
       "class": "historical"
     },
@@ -1050,6 +1053,9 @@
       "class": "authoritative"
     },
     "docs/pagination.md": {
+      "class": "authoritative"
+    },
+    "docs/perf/README.md": {
       "class": "authoritative"
     },
     "docs/plan-prisma-7-migration.md": {

@@ -810,3 +810,28 @@ export function startQueueDepthReporting(
 export function _resetQueueDepthForTesting(): void {
     _queueDepthStarted = false;
 }
+
+// ════════════════════════════════════════════════════════════════════════
+// SLOW-QUERY COUNTER
+//
+// Emitted by src/lib/prisma.ts's query-event listener when a query
+// exceeds the slow threshold (50ms). Label is { model } only — the raw
+// SQL + bound params go to the internal log, NEVER to a metric label.
+// ════════════════════════════════════════════════════════════════════════
+
+let _slowQueryCount: ReturnType<ReturnType<typeof getMeter>['createCounter']> | null = null;
+
+function getSlowQueryCount() {
+    if (!_slowQueryCount) {
+        _slowQueryCount = getMeter().createCounter('db.slow_query.count', {
+            description: 'Queries exceeding the slow-query threshold',
+            unit: '1',
+        });
+    }
+    return _slowQueryCount;
+}
+
+/** Record a slow query, labelled by the parsed model name. */
+export function recordSlowQuery(model: string): void {
+    getSlowQueryCount().add(1, { model });
+}

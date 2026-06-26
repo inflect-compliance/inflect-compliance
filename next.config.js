@@ -1,5 +1,12 @@
 const createNextIntlPlugin = require('next-intl/plugin');
 
+// Bundle analyzer — only active when ANALYZE=true (npm run analyze).
+// Writes HTML reports to .next/analyze/ (git-ignored); a no-op for normal
+// builds. See docs/implementation-notes/2026-06-26-perf-baseline.md.
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+    enabled: process.env.ANALYZE === 'true',
+});
+
 // Bump EventEmitter cap before Next loads any HTTP/socket modules so the
 // undici keep-alive socket pool doesn't trigger spurious
 // MaxListenersExceededWarning lines for per-socket
@@ -134,4 +141,4 @@ const nextConfig = {
         ignoreBuildErrors: true,
     },
 };
-module.exports = withNextIntl(nextConfig);
+module.exports = withBundleAnalyzer(withNextIntl(nextConfig));

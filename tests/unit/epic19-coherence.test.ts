@@ -79,6 +79,10 @@ describe('Epic 19 Coherence: metric names', () => {
             'cache.aggregation.hit',
             'cache.aggregation.miss',
             'cache.aggregation.compute_duration_ms',
+            // Perf measurement foundation — slow-query counter. A
+            // performance diagnostic watched ad-hoc in Grafana (a model-
+            // labelled "suspicious query" signal), not an SLO-board metric.
+            'db.slow_query.count',
         ]);
 
         // Dot → underscore: api.request.count → api_request_count
