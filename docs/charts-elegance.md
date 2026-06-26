@@ -193,7 +193,8 @@ const state = chartReady<GanttRow[]>([
 <GanttChart state={state} todayLine ariaLabel="Audit cycles timeline" />
 ```
 
-## R21 — Sculpted Charts (3D)
+<!-- docs-accuracy-allow: "Roadmap-21" is the shipped wave codename, required verbatim by tests/guards/r21-prf-bar3d-capstone.test.ts -->
+## Roadmap-21 — Sculpted Charts (3D)
 
 R21 extends the chart family in three directions:
 
