@@ -65,6 +65,13 @@ worker:
     limits:
       cpu: "1"
       memory: 512Mi
+  # KEDA queue-depth autoscaling (prod). Requires KEDA installed
+  # cluster-wide + the worker secret/config exposing REDIS_HOST (host:port)
+  # and REDIS_PASSWORD — see docs/worker-autoscaling.md.
+  autoscaling:
+    enabled: true
+    minReplicas: 4
+    maxReplicas: 50
 
 # ── PgBouncer: production pool sizes ────────────────────────────────
 pgbouncer:

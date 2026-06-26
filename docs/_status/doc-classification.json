@@ -2,9 +2,9 @@
   "$schema": "internal: docs classification source of truth",
   "description": "Classification of every docs/**/*.md. authoritative = true today; living = partially-shipped design direction; historical = moment-in-time record (incl. all of docs/implementation-notes/); deprecated = superseded redirect. Enforced by tests/guardrails/docs-accuracy.test.ts. See CLAUDE.md \"Doc classifications\".",
   "counts": {
-    "authoritative": 95,
+    "authoritative": 96,
     "living": 5,
-    "historical": 272,
+    "historical": 273,
     "deprecated": 1
   },
   "docs": {
@@ -959,6 +959,9 @@
     "docs/implementation-notes/2026-06-26-read-replica-routing.md": {
       "class": "historical"
     },
+    "docs/implementation-notes/2026-06-26-worker-autoscaling.md": {
+      "class": "historical"
+    },
     "docs/incident-response.md": {
       "class": "authoritative"
     },
@@ -1131,6 +1134,9 @@
       "class": "authoritative"
     },
     "docs/verification-policy.md": {
+      "class": "authoritative"
+    },
+    "docs/worker-autoscaling.md": {
       "class": "authoritative"
     }
   }
