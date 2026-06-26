@@ -33,6 +33,10 @@ jest.mock('@/lib/db-context', () => ({
         async (_ctx: unknown, fn: (db: unknown) => Promise<unknown>) =>
             fn(mockTx),
     ),
+    runInTenantReadContext: jest.fn(
+        async (_ctx: unknown, fn: (db: unknown) => Promise<unknown>) =>
+            fn(mockTx),
+    ),
 }));
 
 jest.mock('@/app-layer/events/audit', () => ({
