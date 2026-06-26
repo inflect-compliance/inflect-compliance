@@ -126,3 +126,26 @@ module "secrets" {
 
   tags = local.common_tags
 }
+
+# ── CDN (CloudFront edge tier) ───────────────────────────────────────
+# Optional global edge cache in front of the app's HTTPS endpoint
+# (Caddy / Helm ingress). Caches /_next/static/* + /_next/image*; passes
+# HTML + /api/* through. Disabled by default — enable per-environment
+# with cdn_enabled = true. See docs/cdn.md.
+module "cdn" {
+  source = "./modules/cdn"
+  count  = var.cdn_enabled ? 1 : 0
+
+  providers = {
+    aws           = aws
+    aws.us_east_1 = aws.us_east_1
+  }
+
+  name_prefix = local.name_prefix
+  environment = var.environment
+
+  domain_name        = var.cdn_domain_name
+  origin_domain_name = var.cdn_origin_domain_name
+  hosted_zone_id     = var.cdn_hosted_zone_id
+  price_class        = var.cdn_price_class
+}

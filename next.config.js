@@ -112,6 +112,11 @@ const defaultOptions = {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     ...defaultOptions,
+    // When the deploy sits behind a CDN (CloudFront — see docs/cdn.md),
+    // ASSET_PREFIX is set to the CDN domain so the HTML emits CDN-hosted
+    // URLs for /_next/static/*. Unset in dev + on the bare-VM deploy,
+    // where assets are served from the origin directly.
+    assetPrefix: process.env.ASSET_PREFIX || undefined,
     // Drop the default `X-Powered-By: Next.js` response header — version/
     // tech fingerprinting aids attackers and adds no value. Closes the
     // nightly ZAP baseline finding 10037 (Server Leaks Information via

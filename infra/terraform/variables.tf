@@ -196,3 +196,35 @@ variable "storage_force_destroy" {
   type        = bool
   default     = false
 }
+
+# ── CDN (CloudFront) ──────────────────────────────────────────────────
+
+variable "cdn_enabled" {
+  description = "If true, provision the CloudFront edge tier (modules/cdn). Off by default."
+  type        = bool
+  default     = false
+}
+
+variable "cdn_domain_name" {
+  description = "Public CDN-facing domain for the distribution + ACM cert. Required when cdn_enabled."
+  type        = string
+  default     = ""
+}
+
+variable "cdn_origin_domain_name" {
+  description = "Origin hostname CloudFront pulls from (the Caddy / ingress endpoint). Required when cdn_enabled."
+  type        = string
+  default     = ""
+}
+
+variable "cdn_hosted_zone_id" {
+  description = "Route53 hosted zone ID for the CDN alias + ACM DNS validation. Required when cdn_enabled."
+  type        = string
+  default     = ""
+}
+
+variable "cdn_price_class" {
+  description = "CloudFront price class. PriceClass_100 = US/CA/EU edges (cheapest)."
+  type        = string
+  default     = "PriceClass_100"
+}

@@ -142,6 +142,15 @@ envFrom:
 #           merged into the container's `env`.
 # extraEnvFrom: list of {configMapRef|secretRef|...} merged into
 #               envFrom AFTER the chart-managed entries above.
+#
+# CDN: when fronting this deployment with CloudFront (see docs/cdn.md),
+# set ASSET_PREFIX to the CDN domain so the HTML emits CDN-hosted URLs
+# for /_next/static/*. Next.js already emits the immutable Cache-Control
+# header for hashed bundles, which the ingress passes through — so no
+# extra ingress cache annotation is needed. Example:
+#   extraEnv:
+#     - name: ASSET_PREFIX
+#       value: "https://cdn.inflect.app"
 extraEnv: []
 extraEnvFrom: []
 
