@@ -42,8 +42,10 @@ describe('icon import discipline', () => {
         // (a default import — the barrel has no default export, but a
         // mistaken one would also defeat tree-shaking). Named imports
         // `import { … }` and type-only imports are fine.
-        const wildcard = new RegExp(`import\\s+\\*\\s+as\\s+\\w+\\s+from\\s+['"]${NUCLEO.replace(/[/]/g, '\\/')}`);
-        const def = new RegExp(`import\\s+\\w+\\s+from\\s+['"]${NUCLEO.replace(/[/]/g, '\\/')}`);
+        // Slashes need no escaping inside a RegExp built from a string
+        // (only regex *literals* treat `/` specially), so embed NUCLEO as-is.
+        const wildcard = new RegExp(`import\\s+\\*\\s+as\\s+\\w+\\s+from\\s+['"]${NUCLEO}`);
+        const def = new RegExp(`import\\s+\\w+\\s+from\\s+['"]${NUCLEO}`);
         for (const abs of files) {
             const src = fs.readFileSync(abs, 'utf8');
             if (!src.includes(NUCLEO)) continue;

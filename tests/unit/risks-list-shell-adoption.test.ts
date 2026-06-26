@@ -84,9 +84,13 @@ describe('Risks list — Epic 44.4 column + matrix wiring', () => {
     });
 
     it('replaces the inline 5×5 heatmap with the <RiskMatrix> engine', () => {
-        expect(clientSrc).toMatch(
-            /import\s*\{\s*RiskMatrix\s*\}\s*from\s*['"]@\/components\/ui\/RiskMatrix['"]/,
-        );
+        // The RiskMatrix engine may be imported statically OR lazily via
+        // next/dynamic (it's the heatmap-view-only panel, code-split out of
+        // the initial chunk — see the perf(bundle) note). Either form counts
+        // as "uses the engine".
+        const staticImport = /import\s*\{\s*RiskMatrix\s*\}\s*from\s*['"]@\/components\/ui\/RiskMatrix['"]/;
+        const dynamicImport = /import\(\s*['"]@\/components\/ui\/RiskMatrix['"]\s*\)/;
+        expect(staticImport.test(clientSrc) || dynamicImport.test(clientSrc)).toBe(true);
         expect(clientSrc).toMatch(/<RiskMatrix\b/);
         // Ensures the bespoke gradient classes from the legacy heatmap
         // are gone — they paint colours independent of config and
