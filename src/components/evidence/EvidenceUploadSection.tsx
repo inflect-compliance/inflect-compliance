@@ -13,8 +13,8 @@
  * the panel reflects uploads immediately. Pass `onUploaded` to also refresh a
  * list the consumer owns (e.g. the risk detail `<EvidenceSubTable>`).
  */
-import { useCallback, useEffect, useState } from 'react';
-import { FileDropzone } from '@/components/ui/FileDropzone';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { FileDropzone, type FileUploadEntry } from '@/components/ui/FileDropzone';
 import { Button } from '@/components/ui/button';
 import { Download, ArrowUpRight } from '@/components/ui/icons/nucleo';
 import { uploadWithProgress } from '@/lib/upload/upload-with-progress';
@@ -172,6 +172,22 @@ export function EvidenceUploadSection({
     const [linking, setLinking] = useState(false);
     const [linkError, setLinkError] = useState('');
 
+    // Items inserted optimistically from an upload's 201 response, kept until a
+    // refetch confirms them. This makes a just-uploaded file appear instantly
+    // and survive a momentarily-stale list GET (read-after-write lag), which is
+    // why the control evidence list could lag behind the task one.
+    const optimisticRef = useRef<DisplayItem[]>([]);
+
+    const applyServerItems = useCallback((serverItems: DisplayItem[]) => {
+        // Drop optimistic rows the server now returns (deduped by real id);
+        // keep any not-yet-visible ones pinned to the top.
+        const pending = optimisticRef.current.filter(
+            (o) => !serverItems.some((s) => s.id === o.id),
+        );
+        optimisticRef.current = pending;
+        setItems([...pending, ...serverItems]);
+    }, []);
+
     const refetch = useCallback(async () => {
         if (!listEndpoint) return;
         try {
@@ -185,31 +201,53 @@ export function EvidenceUploadSection({
                 evidence?: RawEvidence[];
                 links?: RawLink[];
             };
-            setItems(normalizeEvidence(data));
+            applyServerItems(normalizeEvidence(data));
         } catch {
             /* non-fatal — the dropzone still works */
         }
-    }, [tenantSlug, listEndpoint]);
+    }, [tenantSlug, listEndpoint, applyServerItems]);
 
     useEffect(() => {
         void refetch();
     }, [refetch]);
 
     const handleUpload = useCallback(
-        async (
+        (
             file: File,
             ctx: { onProgress: (percent: number | null) => void; signal: AbortSignal },
         ) => {
             const fd = new FormData();
             fd.append('file', file);
             fd.append(linkField, linkId);
-            await uploadWithProgress(`/api/t/${tenantSlug}/evidence/uploads`, fd, {
-                onProgress: (p) => ctx.onProgress(p.percent),
-                signal: ctx.signal,
-            });
+            // Resolve to the created Evidence row (201 body) so we can show it
+            // immediately without waiting on a consistent list refetch.
+            return uploadWithProgress<RawEvidence>(
+                `/api/t/${tenantSlug}/evidence/uploads`,
+                fd,
+                {
+                    onProgress: (p) => ctx.onProgress(p.percent),
+                    signal: ctx.signal,
+                },
+            );
         },
         [tenantSlug, linkField, linkId],
     );
+
+    // Each successful file upload returns its created Evidence row — show it
+    // optimistically the instant the upload settles.
+    const onFileSettled = useCallback((entry: FileUploadEntry) => {
+        if (entry.status !== 'success' || !entry.response) return;
+        const [item] = normalizeEvidence({
+            evidence: [entry.response as RawEvidence],
+            links: [],
+        });
+        if (!item || optimisticRef.current.some((o) => o.id === item.id)) return;
+        optimisticRef.current = [item, ...optimisticRef.current];
+        setItems((prev) => {
+            const base = prev ?? [];
+            return base.some((i) => i.id === item.id) ? base : [item, ...base];
+        });
+    }, []);
 
     const onAllSettled = useCallback(() => {
         void refetch();
@@ -259,6 +297,7 @@ export function EvidenceUploadSection({
                         compact={compactDropzone}
                         hint={EVIDENCE_HINT}
                         onUpload={handleUpload}
+                        onFileSettled={onFileSettled}
                         onAllSettled={onAllSettled}
                         data-testid="evidence-upload-dropzone"
                     />
