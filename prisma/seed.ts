@@ -322,6 +322,234 @@ async function main() {
         { title: 'Human Resources Security Policy', category: 'HR', tags: 'hr,screening', contentText: '# HR Security Policy\n\n## Statements\n1. Background screening.\n2. Annual awareness training.\n3. NDA before access.' },
         { title: 'Third-Party Security Policy', category: 'Vendor', tags: 'vendor,supplier', contentText: '# Third-Party Security\n\n## Statements\n1. Security in supplier agreements.\n2. Minimum access.\n3. Monitor performance.' },
         { title: 'Logging and Monitoring Policy', category: 'Technical', tags: 'logging,monitoring', contentText: '# Logging and Monitoring\n\n## Statements\n1. Log security events.\n2. Protect logs.\n3. Automated alerting.' },
+
+        // ─── Expanded starter set ───────────────────────────────────────
+        // ORIGINAL content authored for Inflect. The topic coverage was
+        // informed by the public JupiterOne security-policy-templates
+        // domain list (CC-BY-SA-4.0) used ONLY as a subject checklist — no
+        // text was copied; these are independent originals, consistent with
+        // the "ORIGINAL content" stance in src/data/policy-templates.ts. See
+        // docs/implementation-notes/2026-06-26-policy-template-expansion.md.
+        { title: 'Asset Management Policy', category: 'Operations', tags: 'asset,inventory', contentText: `# Asset Management Policy
+
+## Purpose
+Ensure information assets are identified, owned, classified, and handled appropriately throughout their lifecycle.
+
+## Scope
+All hardware, software, data, and cloud resources used to process organizational information.
+
+## Policy Statements
+1. A current inventory of information assets is maintained, with an assigned owner for each.
+2. Assets are classified by sensitivity and handled per their classification.
+3. Acceptable handling, transfer, and return rules apply to all assets.
+4. Assets are securely sanitized or destroyed at end of life, with disposal recorded.
+
+## Review
+Reviewed at least annually and after significant change.` },
+
+        { title: 'Vulnerability Management Policy', category: 'Technical', tags: 'vulnerability,patching', contentText: `# Vulnerability Management Policy
+
+## Purpose
+Identify, evaluate, and remediate technical vulnerabilities before they can be exploited.
+
+## Scope
+All systems, applications, containers, and dependencies in the organization's environments.
+
+## Policy Statements
+1. Authenticated vulnerability scanning runs on a defined, recurring schedule.
+2. Findings are risk-ranked; remediation timelines are tied to severity (e.g. critical promptly, high within a defined window).
+3. Patch and configuration management keep systems on supported, current versions.
+4. Exceptions are time-bound, justified, and approved by a risk owner.
+
+## Review
+Reviewed at least annually.` },
+
+        { title: 'Secure Development (SDLC) Policy', category: 'Technical', tags: 'sdlc,development', contentText: `# Secure Development (SDLC) Policy
+
+## Purpose
+Build security into software across the development lifecycle.
+
+## Scope
+All in-house and contracted software development and the pipelines that build and deploy it.
+
+## Policy Statements
+1. Security requirements are defined alongside functional requirements.
+2. Code is peer-reviewed; automated SAST, dependency, and secret scanning gate the pipeline.
+3. Environments are separated; production data is not used in development or test without protection.
+4. Releases are versioned and traceable, with the ability to roll back.
+
+## Review
+Reviewed at least annually.` },
+
+        { title: 'Data Protection & Encryption Policy', category: 'Technical', tags: 'encryption,data-protection', contentText: `# Data Protection & Encryption Policy
+
+## Purpose
+Protect the confidentiality and integrity of data at rest and in transit.
+
+## Scope
+All systems that store or transmit confidential or restricted information.
+
+## Policy Statements
+1. Confidential and restricted data is encrypted at rest using current, strong algorithms.
+2. Data in transit over untrusted networks is encrypted (e.g. TLS).
+3. Cryptographic keys are generated, stored, rotated, and revoked under a defined key-management process; keys are never stored alongside the data they protect.
+4. Removable media and endpoints holding sensitive data use full-disk or volume encryption.
+
+## Review
+Reviewed at least annually.` },
+
+        { title: 'Mobile Device & BYOD Policy', category: 'Technical', tags: 'mobile,byod,mdm', contentText: `# Mobile Device & BYOD Policy
+
+## Purpose
+Reduce the risk of mobile and personally-owned devices accessing organizational data.
+
+## Scope
+All mobile devices — corporate-owned or personal (BYOD) — used to access organizational systems or data.
+
+## Policy Statements
+1. Devices accessing organizational data are enrolled in management and meet a minimum security baseline (screen lock, encryption, current OS).
+2. Organizational data is containerized where feasible and can be remotely wiped on loss, theft, or offboarding.
+3. Lost or stolen devices are reported promptly.
+4. Jailbroken/rooted devices are not permitted to access organizational data.
+
+## Review
+Reviewed at least annually.` },
+
+        { title: 'Privacy Policy', category: 'Core', tags: 'privacy,data-subject', contentText: `# Privacy Policy
+
+## Purpose
+Govern the lawful, fair, and transparent processing of personal data.
+
+## Scope
+All processing of personal data by the organization, on any system or service.
+
+## Policy Statements
+1. Personal data is collected for specified, legitimate purposes and limited to what is necessary.
+2. A lawful basis is established for each processing activity, and processing is recorded.
+3. Data-subject rights (access, rectification, erasure, portability, objection) are supported and honored within required timeframes.
+4. Personal data is retained only as long as necessary and then securely disposed of.
+
+## Review
+Reviewed at least annually and on regulatory change.` },
+
+        { title: 'Threat Intelligence & Management Policy', category: 'Operations', tags: 'threat,intelligence', contentText: `# Threat Intelligence & Management Policy
+
+## Purpose
+Anticipate, detect, and respond to threats relevant to the organization.
+
+## Scope
+All systems, data, and personnel that could be targeted by security threats.
+
+## Policy Statements
+1. Relevant threat sources are monitored and assessed for applicability.
+2. Actionable intelligence informs detection rules, controls, and risk decisions.
+3. Indicators of compromise are tracked and fed into monitoring and incident response.
+4. Threat findings are reviewed periodically with stakeholders.
+
+## Review
+Reviewed at least annually.` },
+
+        { title: 'Security Governance Policy', category: 'Core', tags: 'governance,program', contentText: `# Security Governance Policy
+
+## Purpose
+Establish accountability, structure, and oversight for the information security program.
+
+## Scope
+The organization's overall security program and the roles that govern it.
+
+## Policy Statements
+1. Leadership owns and supports the security program and allocates adequate resources.
+2. Security roles and responsibilities are defined and assigned.
+3. Objectives and metrics are set, measured, and reported to leadership.
+4. The program is reviewed at planned intervals and improved based on results, incidents, and change.
+
+## Review
+Reviewed at least annually.` },
+
+        { title: 'Data Retention & Disposal Policy', category: 'Core', tags: 'data,retention,disposal', contentText: `# Data Retention & Disposal Policy
+
+## Purpose
+Retain information only as long as required and dispose of it securely.
+
+## Scope
+All organizational records and data, in any format or location.
+
+## Policy Statements
+1. Retention periods are defined per data type based on legal, regulatory, and business need.
+2. Data is not kept beyond its retention period unless under a legal hold.
+3. Disposal uses methods appropriate to the media and sensitivity, and is recorded.
+4. Retention and disposal apply equally to backups and third-party-held data.
+
+## Review
+Reviewed at least annually.` },
+
+        { title: 'Data Breach Notification Policy', category: 'Operations', tags: 'breach,notification', contentText: `# Data Breach Notification Policy
+
+## Purpose
+Ensure breaches of personal or sensitive data are assessed and notified correctly and promptly.
+
+## Scope
+Any confirmed or suspected breach affecting personal or confidential data.
+
+## Policy Statements
+1. Suspected breaches are escalated immediately to the response team and assessed for impact.
+2. Notifications to regulators and affected individuals are made within applicable legal deadlines.
+3. Breach details, decisions, and timelines are documented.
+4. Post-breach reviews drive corrective and preventive actions.
+
+## Review
+Reviewed at least annually.` },
+
+        { title: 'Compliance & Audit Management Policy', category: 'Core', tags: 'compliance,audit', contentText: `# Compliance & Audit Management Policy
+
+## Purpose
+Maintain compliance with legal, regulatory, and contractual obligations and verify controls through audit.
+
+## Scope
+All applicable obligations and the controls implemented to meet them.
+
+## Policy Statements
+1. Applicable legal, regulatory, and contractual requirements are identified and tracked.
+2. Controls are mapped to requirements and assessed for effectiveness.
+3. Internal and external audits are planned, conducted, and their findings remediated.
+4. Evidence of compliance is collected and retained.
+
+## Review
+Reviewed at least annually.` },
+
+        { title: 'Policy Management Policy', category: 'Core', tags: 'policy,governance', contentText: `# Policy Management Policy
+
+## Purpose
+Govern how security policies are created, approved, communicated, and maintained.
+
+## Scope
+All information security policies, standards, and procedures.
+
+## Policy Statements
+1. Policies have an owner and follow a defined approval workflow before publication.
+2. Approved policies are communicated and made accessible to affected personnel.
+3. Personnel acknowledge applicable policies, and acknowledgements are recorded.
+4. Policies are reviewed on a defined cadence and on significant change, with versions retained.
+
+## Review
+Reviewed at least annually.` },
+
+        { title: 'Cloud Security Policy', category: 'Technical', tags: 'cloud,saas', contentText: `# Cloud Security Policy
+
+## Purpose
+Securely adopt and operate cloud and SaaS services.
+
+## Scope
+All cloud infrastructure, platform, and software services used by the organization.
+
+## Policy Statements
+1. Cloud services are risk-assessed and approved before use; shared-responsibility boundaries are understood.
+2. Configurations follow secure baselines and are monitored for drift.
+3. Access to cloud consoles uses least privilege and strong authentication.
+4. Cloud data is classified, protected, and recoverable consistent with other policies.
+
+## Review
+Reviewed at least annually.` },
     ];
     for (const tmpl of policyTemplates) {
         const existing = await prisma.policyTemplate.findFirst({ where: { title: tmpl.title } });
