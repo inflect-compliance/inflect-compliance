@@ -10,6 +10,7 @@ import { notFound, badRequest } from '@/lib/errors/types';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { CreateVendorSchema } from '@/lib/schemas';
 import { computeAnswerPoints, computeAssessmentScore, scoreToRiskRating } from '../services/vendor-scoring';
+import { bumpEntityCacheVersion } from '@/lib/cache/list-cache';
 
 // Epic D.2 — preserve the three-state contract on update paths.
 function sanitizeOptional(v: string | null | undefined): string | null | undefined {
@@ -69,7 +70,7 @@ export async function createVendor(ctx: RequestContext, input: z.infer<typeof Cr
         description: input.description ? sanitizePlainText(input.description) : input.description,
         tags: input.tags?.map((t) => sanitizePlainText(t)),
     };
-    return runInTenantContext(ctx, async (db) => {
+    const result = await runInTenantContext(ctx, async (db) => {
         const vendor = await VendorRepository.create(db, ctx, sanitisedInput);
         await logEvent(db, ctx, {
             action: 'VENDOR_CREATED',
@@ -81,6 +82,8 @@ export async function createVendor(ctx: RequestContext, input: z.infer<typeof Cr
         });
         return vendor;
     });
+    await bumpEntityCacheVersion(ctx, 'vendor');
+    return result;
 }
 
 export async function updateVendor(ctx: RequestContext, vendorId: string, patch: Record<string, unknown>) {
@@ -99,7 +102,7 @@ export async function updateVendor(ctx: RequestContext, vendorId: string, patch:
             typeof t === 'string' ? sanitizePlainText(t) : t,
         );
     }
-    return runInTenantContext(ctx, async (db) => {
+    const result = await runInTenantContext(ctx, async (db) => {
         const previousStatus = patch.status ? (await VendorRepository.getById(db, ctx, vendorId))?.status : null;
         const vendor = await VendorRepository.update(db, ctx, vendorId, sanitisedPatch);
         if (!vendor) throw notFound('Vendor not found');
@@ -115,6 +118,8 @@ export async function updateVendor(ctx: RequestContext, vendorId: string, patch:
         });
         return vendor;
     });
+    await bumpEntityCacheVersion(ctx, 'vendor');
+    return result;
 }
 
 // ─── Vendor Documents ───
@@ -146,7 +151,7 @@ export async function addVendorDocument(ctx: RequestContext, vendorId: string, d
         notes: sanitizeOptional(docInput.notes) as string | null | undefined,
         folder: sanitizeOptional(docInput.folder) as string | null | undefined,
     };
-    return runInTenantContext(ctx, async (db) => {
+    const result = await runInTenantContext(ctx, async (db) => {
         const doc = await VendorDocumentRepository.create(db, ctx, vendorId, sanitisedDoc);
         await logEvent(db, ctx, {
             action: 'VENDOR_DOCUMENT_ADDED',
@@ -158,11 +163,13 @@ export async function addVendorDocument(ctx: RequestContext, vendorId: string, d
         });
         return doc;
     });
+    await bumpEntityCacheVersion(ctx, 'vendor');
+    return result;
 }
 
 export async function removeVendorDocument(ctx: RequestContext, docId: string) {
     assertCanManageVendorDocs(ctx);
-    return runInTenantContext(ctx, async (db) => {
+    const result = await runInTenantContext(ctx, async (db) => {
         const doc = await VendorDocumentRepository.deleteById(db, ctx, docId);
         if (!doc) throw notFound('Document not found');
         await logEvent(db, ctx, {
@@ -175,13 +182,15 @@ export async function removeVendorDocument(ctx: RequestContext, docId: string) {
         });
         return doc;
     });
+    await bumpEntityCacheVersion(ctx, 'vendor');
+    return result;
 }
 
 // ─── Vendor Assessments ───
 
 export async function startVendorAssessment(ctx: RequestContext, vendorId: string, templateKey: string) {
     assertCanRunAssessment(ctx);
-    return runInTenantContext(ctx, async (db) => {
+    const result = await runInTenantContext(ctx, async (db) => {
         const template = await QuestionnaireRepository.getByKey(db, templateKey);
         if (!template) throw notFound(`Template "${templateKey}" not found`);
 
@@ -202,6 +211,8 @@ export async function startVendorAssessment(ctx: RequestContext, vendorId: strin
         });
         return assessment;
     });
+    await bumpEntityCacheVersion(ctx, 'vendor');
+    return result;
 }
 
 export async function getVendorAssessment(ctx: RequestContext, assessmentId: string) {
@@ -215,7 +226,7 @@ export async function getVendorAssessment(ctx: RequestContext, assessmentId: str
 
 export async function saveAssessmentAnswers(ctx: RequestContext, assessmentId: string, answers: { questionId: string; answerJson: unknown }[]) {
     assertCanRunAssessment(ctx);
-    return runInTenantContext(ctx, async (db) => {
+    const result = await runInTenantContext(ctx, async (db) => {
         const assessment = await VendorAssessmentRepository.getById(db, ctx, assessmentId);
         if (!assessment) throw notFound('Assessment not found');
         if (assessment.status !== 'DRAFT') throw badRequest('Cannot edit answers on a non-draft assessment');
@@ -266,11 +277,13 @@ export async function saveAssessmentAnswers(ctx: RequestContext, assessmentId: s
 
         return { saved: saved.length, score, riskRating };
     });
+    await bumpEntityCacheVersion(ctx, 'vendor');
+    return result;
 }
 
 export async function submitVendorAssessment(ctx: RequestContext, assessmentId: string) {
     assertCanRunAssessment(ctx);
-    return runInTenantContext(ctx, async (db) => {
+    const result = await runInTenantContext(ctx, async (db) => {
         const assessment = await VendorAssessmentRepository.submit(db, ctx, assessmentId);
         if (!assessment) throw notFound('Assessment not found or not in DRAFT status');
 
@@ -284,6 +297,8 @@ export async function submitVendorAssessment(ctx: RequestContext, assessmentId: 
         });
         return assessment;
     });
+    await bumpEntityCacheVersion(ctx, 'vendor');
+    return result;
 }
 
 export async function decideVendorAssessment(ctx: RequestContext, assessmentId: string, decision: string, notes?: string | null) {
@@ -292,7 +307,7 @@ export async function decideVendorAssessment(ctx: RequestContext, assessmentId: 
     // also surfaces verbatim in the audit-log details string, so
     // sanitise once at the top of the path.
     const safeNotes = sanitizeOptional(notes);
-    return runInTenantContext(ctx, async (db) => {
+    const result = await runInTenantContext(ctx, async (db) => {
         const assessment = await VendorAssessmentRepository.decide(db, ctx, assessmentId, decision, safeNotes ?? undefined);
         if (!assessment) throw notFound('Assessment not found or not in IN_REVIEW status');
 
@@ -307,6 +322,8 @@ export async function decideVendorAssessment(ctx: RequestContext, assessmentId: 
         });
         return assessment;
     });
+    await bumpEntityCacheVersion(ctx, 'vendor');
+    return result;
 }
 
 // ─── Questionnaire Templates ───
@@ -329,7 +346,7 @@ export async function getQuestionnaireTemplate(ctx: RequestContext, templateKey:
 
 export async function setVendorReviewDates(ctx: RequestContext, vendorId: string, dates: { nextReviewAt?: string | null; contractRenewalAt?: string | null }) {
     assertCanManageVendors(ctx);
-    return runInTenantContext(ctx, async (db) => {
+    const result = await runInTenantContext(ctx, async (db) => {
         const vendor = await VendorRepository.update(db, ctx, vendorId, dates);
         if (!vendor) throw notFound('Vendor not found');
         await logEvent(db, ctx, {
@@ -342,6 +359,8 @@ export async function setVendorReviewDates(ctx: RequestContext, vendorId: string
         });
         return vendor;
     });
+    await bumpEntityCacheVersion(ctx, 'vendor');
+    return result;
 }
 
 // ─── Vendor Links ───
@@ -357,7 +376,7 @@ export async function addVendorLink(ctx: RequestContext, vendorId: string, data:
     relation?: string;
 }) {
     assertCanManageVendors(ctx);
-    return runInTenantContext(ctx, async (db) => {
+    const result = await runInTenantContext(ctx, async (db) => {
         const link = await VendorLinkRepository.create(db, ctx, vendorId, data);
         await logEvent(db, ctx, {
             action: 'VENDOR_LINK_ADDED',
@@ -369,15 +388,19 @@ export async function addVendorLink(ctx: RequestContext, vendorId: string, data:
         });
         return link;
     });
+    await bumpEntityCacheVersion(ctx, 'vendor');
+    return result;
 }
 
 export async function removeVendorLink(ctx: RequestContext, linkId: string) {
     assertCanManageVendors(ctx);
-    return runInTenantContext(ctx, async (db) => {
+    const result = await runInTenantContext(ctx, async (db) => {
         const link = await VendorLinkRepository.deleteById(db, ctx, linkId);
         if (!link) throw notFound('Link not found');
         return link;
     });
+    await bumpEntityCacheVersion(ctx, 'vendor');
+    return result;
 }
 
 // ─── Vendor Enrichment ───
@@ -386,7 +409,7 @@ import { getEnrichmentProvider } from '../services/vendor-enrichment';
 
 export async function enrichVendor(ctx: RequestContext, vendorId: string) {
     assertCanManageVendors(ctx);
-    return runInTenantContext(ctx, async (db) => {
+    const result = await runInTenantContext(ctx, async (db) => {
         const vendor = await db.vendor.findFirst({ where: { id: vendorId, tenantId: ctx.tenantId } });
         if (!vendor) throw notFound('Vendor not found');
 
@@ -429,6 +452,8 @@ export async function enrichVendor(ctx: RequestContext, vendorId: string) {
             throw err;
         }
     });
+    await bumpEntityCacheVersion(ctx, 'vendor');
+    return result;
 }
 
 // ─── Vendor Metrics (Dashboard) ───
@@ -497,7 +522,7 @@ export async function getVendorMetrics(ctx: RequestContext) {
 
 export async function updateVendorStatusWithGate(ctx: RequestContext, vendorId: string, newStatus: string) {
     assertCanManageVendors(ctx);
-    return runInTenantContext(ctx, async (db) => {
+    const result = await runInTenantContext(ctx, async (db) => {
         const vendor = await db.vendor.findFirst({
             where: { id: vendorId, tenantId: ctx.tenantId },
             include: { assessments: { orderBy: { createdAt: 'desc' }, take: 1 } },
@@ -525,6 +550,8 @@ export async function updateVendorStatusWithGate(ctx: RequestContext, vendorId: 
 
         return updated;
     });
+    await bumpEntityCacheVersion(ctx, 'vendor');
+    return result;
 }
 
 // ─── Bulk actions (canonical BulkActionBar rollout) ───
@@ -555,6 +582,7 @@ export async function bulkSetVendorStatus(
         }
         return rows.length;
     });
+    await bumpEntityCacheVersion(ctx, 'vendor');
     return { updated };
 }
 
@@ -590,5 +618,6 @@ export async function bulkAssignVendor(
         }
         return rows.length;
     });
+    await bumpEntityCacheVersion(ctx, 'vendor');
     return { updated };
 }

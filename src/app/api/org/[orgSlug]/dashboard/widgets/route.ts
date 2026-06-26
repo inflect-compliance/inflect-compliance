@@ -20,6 +20,8 @@ import {
     listOrgDashboardWidgets,
     createOrgDashboardWidget,
 } from '@/app-layer/usecases/org-dashboard-widgets';
+import { cachedAggregationRead } from '@/lib/cache/aggregation-cache';
+import { AGGREGATIONS } from '@/lib/cache/aggregation-registry';
 
 interface RouteContext {
     params: Promise<{ orgSlug: string }>;
@@ -28,7 +30,14 @@ interface RouteContext {
 export const GET = withApiErrorHandling(
     async (req: NextRequest, routeCtx: RouteContext) => {
         const ctx = await getOrgCtx((await routeCtx.params), req);
-        const widgets = await listOrgDashboardWidgets(ctx);
+        // Org-scoped aggregation: key on organizationId, not tenantId.
+        const widgets = await cachedAggregationRead({
+            scopeId: ctx.organizationId,
+            aggregation: 'org-dashboard-widgets',
+            dependsOn: AGGREGATIONS['org-dashboard-widgets'].dependsOn,
+            ttlSeconds: AGGREGATIONS['org-dashboard-widgets'].ttlSeconds,
+            compute: () => listOrgDashboardWidgets(ctx),
+        });
         return NextResponse.json({ widgets });
     },
 );

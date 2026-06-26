@@ -11,6 +11,8 @@ import { getTenantCtx } from '@/app-layer/context';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
 import { getLossEventAggregate } from '@/app-layer/usecases/loss-event';
+import { cachedAggregationRead } from '@/lib/cache/aggregation-cache';
+import { AGGREGATIONS } from '@/lib/cache/aggregation-registry';
 
 export const GET = withApiErrorHandling(
     async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
@@ -18,6 +20,14 @@ export const GET = withApiErrorHandling(
         const ctx = await getTenantCtx(params, req);
         const url = new URL(req.url);
         const riskId = url.searchParams.get('riskId') ?? undefined;
-        return jsonResponse(await getLossEventAggregate(ctx, { riskId }));
+        const aggregate = await cachedAggregationRead({
+            scopeId: ctx.tenantId,
+            aggregation: 'loss-events-aggregate',
+            dependsOn: AGGREGATIONS['loss-events-aggregate'].dependsOn,
+            ttlSeconds: AGGREGATIONS['loss-events-aggregate'].ttlSeconds,
+            variant: { riskId: riskId ?? null },
+            compute: () => getLossEventAggregate(ctx, { riskId }),
+        });
+        return jsonResponse(aggregate);
     },
 );

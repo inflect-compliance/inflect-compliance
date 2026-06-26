@@ -241,6 +241,61 @@ export function recordRequestError(attrs: {
 }
 
 // ════════════════════════════════════════════════════════════════════════
+// AGGREGATION CACHE METRICS
+//
+// Emitted by src/lib/cache/aggregation-cache.ts::cachedAggregationRead.
+// The only label is `aggregation` (the registry key) — bounded
+// cardinality (one value per AGGREGATIONS entry). Watch the hit ratio
+// per aggregation in Grafana: a sustained low hit rate means the
+// invalidation graph is over-eager or the TTL is too short.
+// ════════════════════════════════════════════════════════════════════════
+
+let _aggCacheHit: ReturnType<ReturnType<typeof getMeter>['createCounter']> | null = null;
+let _aggCacheMiss: ReturnType<ReturnType<typeof getMeter>['createCounter']> | null = null;
+let _aggCacheComputeDuration: ReturnType<ReturnType<typeof getMeter>['createHistogram']> | null = null;
+
+function getAggCacheHit() {
+    if (!_aggCacheHit) {
+        _aggCacheHit = getMeter().createCounter('cache.aggregation.hit', {
+            description: 'Aggregation cache hits',
+            unit: '1',
+        });
+    }
+    return _aggCacheHit;
+}
+
+function getAggCacheMiss() {
+    if (!_aggCacheMiss) {
+        _aggCacheMiss = getMeter().createCounter('cache.aggregation.miss', {
+            description: 'Aggregation cache misses',
+            unit: '1',
+        });
+    }
+    return _aggCacheMiss;
+}
+
+function getAggCacheComputeDuration() {
+    if (!_aggCacheComputeDuration) {
+        _aggCacheComputeDuration = getMeter().createHistogram('cache.aggregation.compute_duration_ms', {
+            description: 'Time to compute an aggregation on a cache miss',
+            unit: 'ms',
+        });
+    }
+    return _aggCacheComputeDuration;
+}
+
+/** Record an aggregation cache hit. */
+export function recordAggregationCacheHit(aggregation: string): void {
+    getAggCacheHit().add(1, { aggregation });
+}
+
+/** Record an aggregation cache miss + the time the underlying compute took. */
+export function recordAggregationCacheMiss(aggregation: string, computeMs: number): void {
+    getAggCacheMiss().add(1, { aggregation });
+    getAggCacheComputeDuration().record(computeMs, { aggregation });
+}
+
+// ════════════════════════════════════════════════════════════════════════
 // REPOSITORY METRICS — Epic OI-3
 //
 // Emitted by src/lib/observability/repository-tracing.ts::traceRepository.

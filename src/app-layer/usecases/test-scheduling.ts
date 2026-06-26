@@ -41,6 +41,7 @@ import { notFound, badRequest } from '@/lib/errors/types';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { logEvent } from '../events/audit';
 import { computeNextRunFromCron } from '../jobs/control-test-scheduler';
+import { bumpEntityCacheVersion } from '@/lib/cache/list-cache';
 
 // ─── 1. scheduleTestPlan ───────────────────────────────────────────
 
@@ -116,7 +117,7 @@ export async function scheduleTestPlan(
         }
     }
 
-    return runInTenantContext(ctx, async (db) => {
+    const result = await runInTenantContext(ctx, async (db) => {
         const plan = await db.controlTestPlan.findFirst({
             where: { id: planId, tenantId: ctx.tenantId },
             select: {
@@ -184,6 +185,8 @@ export async function scheduleTestPlan(
 
         return updated;
     });
+    await bumpEntityCacheVersion(ctx, 'test');
+    return result;
 }
 
 // ─── 2. getUpcomingTests ───────────────────────────────────────────

@@ -11,20 +11,23 @@ import { logEvent } from '../../events/audit';
 import { runInTenantContext } from '@/lib/db-context';
 import { notFound, badRequest } from '@/lib/errors/types';
 import { TERMINAL_WORK_ITEM_STATUSES } from '../../domain/work-item-status';
+import { bumpEntityCacheVersion } from '@/lib/cache/list-cache';
 
 // РІвЂќР‚РІвЂќР‚РІвЂќР‚ Audit Packs РІвЂќР‚РІвЂќР‚РІвЂќР‚
 
 export async function createAuditPack(ctx: RequestContext, auditCycleId: string, name: string) {
     assertCanManageAuditPacks(ctx);
-    return runInTenantContext(ctx, async (tdb) => {
+    const pack = await runInTenantContext(ctx, async (tdb) => {
         const cycle = await tdb.auditCycle.findFirst({ where: { id: auditCycleId, tenantId: ctx.tenantId } });
         if (!cycle) throw notFound('Audit cycle not found');
-        const pack = await tdb.auditPack.create({
+        const created = await tdb.auditPack.create({
             data: { tenantId: ctx.tenantId, auditCycleId, name },
         });
-        await logEvent(tdb, ctx, { action: 'AUDIT_PACK_CREATED', entityType: 'AuditPack', entityId: pack.id, details: JSON.stringify({ auditCycleId, name }), detailsJson: { category: 'entity_lifecycle', entityName: 'AuditPack', operation: 'created', after: { auditCycleId, name }, summary: `Audit pack created: ${name}` } });
-        return pack;
+        await logEvent(tdb, ctx, { action: 'AUDIT_PACK_CREATED', entityType: 'AuditPack', entityId: created.id, details: JSON.stringify({ auditCycleId, name }), detailsJson: { category: 'entity_lifecycle', entityName: 'AuditPack', operation: 'created', after: { auditCycleId, name }, summary: `Audit pack created: ${name}` } });
+        return created;
     });
+    await bumpEntityCacheVersion(ctx, 'audit');
+    return pack;
 }
 
 export async function listAuditPacks(ctx: RequestContext, cycleId?: string) {
@@ -57,7 +60,7 @@ export async function getAuditPack(ctx: RequestContext, packId: string) {
 
 export async function updateAuditPack(ctx: RequestContext, packId: string, data: { name?: string; notes?: string }) {
     assertCanManageAuditPacks(ctx);
-    return runInTenantContext(ctx, async (tdb) => {
+    const pack = await runInTenantContext(ctx, async (tdb) => {
         const existing = await tdb.auditPack.findFirst({ where: { id: packId, tenantId: ctx.tenantId } });
         if (!existing) throw notFound('Audit pack not found');
         if (existing.status !== 'DRAFT') throw badRequest('Cannot update a frozen or exported pack');
@@ -66,6 +69,8 @@ export async function updateAuditPack(ctx: RequestContext, packId: string, data:
             data: { ...(data.name !== undefined && { name: data.name }), ...(data.notes !== undefined && { notes: data.notes }) },
         });
     });
+    await bumpEntityCacheVersion(ctx, 'audit');
+    return pack;
 }
 
 // РІвЂќР‚РІвЂќР‚РІвЂќР‚ Pack Items РІвЂќР‚РІвЂќР‚РІвЂќР‚
@@ -76,7 +81,7 @@ export async function addAuditPackItems(
     items: Array<{ entityType: string; entityId: string; snapshotJson?: string; sortOrder?: number }>
 ) {
     assertCanManageAuditPacks(ctx);
-    return runInTenantContext(ctx, async (tdb) => {
+    const outcome = await runInTenantContext(ctx, async (tdb) => {
         const pack = await tdb.auditPack.findFirst({ where: { id: packId, tenantId: ctx.tenantId } });
         if (!pack) throw notFound('Audit pack not found');
         if (pack.status !== 'DRAFT') throw badRequest('Cannot add items to a frozen or exported pack');
@@ -102,6 +107,8 @@ export async function addAuditPackItems(
         await logEvent(tdb, ctx, { action: 'AUDIT_PACK_UPDATED', entityType: 'AuditPack', entityId: packId, details: JSON.stringify({ created, skipped }), detailsJson: { category: 'entity_lifecycle', entityName: 'AuditPack', operation: 'updated', after: { itemsCreated: created, itemsSkipped: skipped }, summary: `Audit pack items added: ${created} created, ${skipped} skipped` } });
         return { created, skipped };
     });
+    await bumpEntityCacheVersion(ctx, 'audit');
+    return outcome;
 }
 
 // РІвЂќР‚РІвЂќР‚РІвЂќР‚ Snapshot Creation РІвЂќР‚РІвЂќР‚РІвЂќР‚
@@ -250,6 +257,7 @@ export async function freezeAuditPack(ctx: RequestContext, packId: string) {
         );
     } catch { /* SoA attachment is best-effort */ }
 
+    await bumpEntityCacheVersion(ctx, 'audit');
     return frozenPack.frozenPack;
 }
 

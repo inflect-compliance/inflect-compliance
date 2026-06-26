@@ -53,6 +53,7 @@ import { createHash } from 'node:crypto';
 import type { RequestContext } from '@/app-layer/types';
 import { getRedis } from '@/lib/redis';
 import { logger } from '@/lib/observability/logger';
+import type { AggregationEntity } from '@/lib/cache/aggregation-registry';
 
 const CACHE_PREFIX = 'inflect:cache:v1';
 const DEFAULT_TTL_SECONDS = 60;
@@ -67,6 +68,17 @@ const VERSION_KEY_TTL_SECONDS = 60 * 60 * 24 * 30;
  * here without wiring the writes is a correctness bug.
  */
 export type CacheableEntity = 'control' | 'risk' | 'evidence' | 'task';
+
+/**
+ * Canonical per-(scope, entity) version-counter key. Shared by the list
+ * cache and the aggregation cache (`aggregation-cache.ts`) so a single
+ * `bumpEntityCacheVersion` invalidates BOTH a list cache and every
+ * aggregation that depends on the same entity. `scopeId` is the tenantId
+ * for tenant-scoped entities and the organizationId for org-scoped ones.
+ */
+export function entityVersionKey(scopeId: string, entity: AggregationEntity): string {
+    return `${CACHE_PREFIX}:ver:${entity}:${scopeId}`;
+}
 
 export interface CachedReadOptions<T> {
     ctx: RequestContext;
@@ -104,7 +116,7 @@ export async function cachedListRead<T>(opts: CachedReadOptions<T>): Promise<T> 
     // Per-(entity, tenant) version counter. INCR'd by writes via
     // `bumpEntityCacheVersion`; embedded in the cache key so a
     // bump leaves all prior entries unreachable.
-    const versionKey = `${CACHE_PREFIX}:ver:${opts.entity}:${tenantId}`;
+    const versionKey = entityVersionKey(tenantId, opts.entity);
 
     let version = '0';
     try {
@@ -296,12 +308,25 @@ export async function cachedDashboardRead<T>(opts: {
  */
 export async function bumpEntityCacheVersion(
     ctx: RequestContext,
-    entity: CacheableEntity,
+    entity: AggregationEntity,
+): Promise<void> {
+    await bumpEntityCacheVersionForScope(ctx.tenantId, entity);
+}
+
+/**
+ * Scope-explicit version bump. Identical to `bumpEntityCacheVersion`
+ * but takes the scope id directly — for org-scoped entities (e.g.
+ * `orgWidget`) where the request context carries `organizationId`
+ * rather than `tenantId`. Call AFTER the write commits; never throws.
+ */
+export async function bumpEntityCacheVersionForScope(
+    scopeId: string,
+    entity: AggregationEntity,
 ): Promise<void> {
     const redis = getRedis();
     if (!redis) return;
 
-    const versionKey = `${CACHE_PREFIX}:ver:${entity}:${ctx.tenantId}`;
+    const versionKey = entityVersionKey(scopeId, entity);
     try {
         await redis.incr(versionKey);
         // Refresh the version-key TTL so it doesn't drift to
