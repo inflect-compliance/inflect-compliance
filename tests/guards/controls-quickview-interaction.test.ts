@@ -127,16 +127,24 @@ describe("Controls editable side-panel interaction", () => {
         });
     });
 
-    describe("task panel = editable + drag-drop evidence + Activity tab", () => {
-        it("is an edit form with a Save action", () => {
+    describe("task panel = AUTO-SAVED + drag-drop evidence + Activity tab", () => {
+        it("auto-saves on change/blur — no Save/Cancel buttons", () => {
             expect(taskPanel).toMatch(/data-testid="task-edit-form"/);
-            expect(taskPanel).toMatch(/data-testid="task-edit-save"/);
             expect(taskPanel).toMatch(/method:\s*["']PATCH["']/);
             expect(taskPanel).toMatch(/role="region"/);
+            expect(taskPanel).not.toMatch(/data-testid="task-edit-save"/);
+            expect(taskPanel).not.toMatch(/data-testid="task-edit-cancel"/);
+            expect(taskPanel).toMatch(/data-testid="task-edit-autosave-status"/);
+            expect(taskPanel).toMatch(/onBlur=\{commitNow\}/);
+            expect(taskPanel).toMatch(/setTimeout\(\(\)\s*=>\s*void commitFields\(\),\s*\d+\)/);
+            // Assignee picker lines up at sm with the other rail dropdowns.
+            expect(taskPanel).toMatch(/<UserCombobox[\s\S]{0,400}size="sm"/);
+            expect(taskPanel).not.toMatch(/buttonProps=\{\{[^}]*size:\s*["'](?:md|lg)["']/);
         });
-        it("mounts the shared drag-drop EvidenceUploadSection (taskId)", () => {
+        it("mounts the shared drag-drop EvidenceUploadSection (taskId), compact dropzone", () => {
             expect(taskPanel).toMatch(/<EvidenceUploadSection/);
             expect(taskPanel).toMatch(/linkField="taskId"/);
+            expect(taskPanel).toMatch(/compactDropzone/);
         });
         it("has an Activity tab backed by the activity feed", () => {
             expect(taskPanel).toMatch(/PanelActivityFeed/);

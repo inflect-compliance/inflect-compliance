@@ -11,9 +11,8 @@
  * Renders inside the docked <AsidePanel> (no overlay → the table stays
  * visible). Seeds the form from a fresh GET /tasks/{id} on mount.
  */
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Heading } from "@/components/ui/typography";
-import { Button } from "@/components/ui/button";
 import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { UserCombobox } from "@/components/ui/user-combobox";
@@ -71,19 +70,22 @@ export function TaskEditPanel({
     tenantSlug,
     task,
     canWrite,
-    onClose,
     onSaved,
 }: {
     tenantSlug: string;
     task: ControlTask;
     canWrite: boolean;
-    onClose: () => void;
+    /** Retained for API compatibility (AsidePanel owns the close affordance). */
+    onClose?: () => void;
     onSaved: () => void;
 }) {
     const [tab, setTab] = useState<Tab>("details");
     const base = `/api/t/${tenantSlug}/tasks/${task.id}`;
 
-    const [detail, setDetail] = useState<TaskDetail | null>(null);
+    // ── Edit form (seeded async from GET /tasks/{id}) — AUTO-SAVED ──
+    // Text fields debounce (~800ms) + flush on blur; the type/severity/
+    // priority dropdowns, the due-date picker, and the assignee picker commit
+    // on change. A live status line replaces the old Cancel/Save buttons.
     const [title, setTitle] = useState(task.title ?? "");
     const [description, setDescription] = useState("");
     const [type, setType] = useState("TASK");
@@ -91,9 +93,23 @@ export function TaskEditPanel({
     const [priority, setPriority] = useState("P2");
     const [dueAt, setDueAt] = useState("");
     const [assigneeId, setAssigneeId] = useState("");
-    const [saving, setSaving] = useState(false);
+    const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
     const [error, setError] = useState("");
     const loadedRef = useRef(false);
+
+    // Latest field values so a debounced/blurred commit PATCHes the current
+    // form, never a stale closure. `update()` is the sole writer.
+    const fieldsRef = useRef({
+        title: task.title ?? "",
+        description: "",
+        type: "TASK",
+        severity: task.severity ?? "MEDIUM",
+        priority: "P2",
+        dueAt: "",
+    });
+    const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const titleInvalid = title.trim().length < 1;
 
     useEffect(() => {
         let active = true;
@@ -102,7 +118,6 @@ export function TaskEditPanel({
             .then((r) => (r.ok ? r.json() : Promise.reject(new Error("load failed"))))
             .then((t: TaskDetail) => {
                 if (!active) return;
-                setDetail(t);
                 setTitle(t.title ?? "");
                 setDescription(t.description ?? "");
                 setType(t.type ?? "TASK");
@@ -110,6 +125,14 @@ export function TaskEditPanel({
                 setPriority(t.priority ?? "P2");
                 setDueAt(t.dueAt ? String(t.dueAt).slice(0, 10) : "");
                 setAssigneeId(t.assigneeUserId ?? "");
+                fieldsRef.current = {
+                    title: t.title ?? "",
+                    description: t.description ?? "",
+                    type: t.type ?? "TASK",
+                    severity: t.severity ?? "MEDIUM",
+                    priority: t.priority ?? "P2",
+                    dueAt: t.dueAt ? String(t.dueAt).slice(0, 10) : "",
+                };
                 loadedRef.current = true;
             })
             .catch(() => undefined);
@@ -118,41 +141,86 @@ export function TaskEditPanel({
         };
     }, [base]);
 
-    const canSave = canWrite && title.trim().length >= 1 && !saving && loadedRef.current;
-
-    const save = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!canSave) return;
-        setSaving(true);
+    const commitFields = useCallback(async () => {
+        if (!canWrite || !loadedRef.current) return;
+        const f = fieldsRef.current;
+        if (f.title.trim().length < 1) {
+            setError("Title is required — not saved.");
+            setSaveState("error");
+            return;
+        }
+        setSaveState("saving");
         setError("");
         try {
             const res = await fetch(base, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    title: title.trim(),
-                    description: description.trim() || null,
-                    type,
-                    severity,
-                    priority,
-                    dueAt: dueAt || null,
+                    title: f.title.trim(),
+                    description: f.description.trim() || null,
+                    type: f.type,
+                    severity: f.severity,
+                    priority: f.priority,
+                    dueAt: f.dueAt || null,
                 }),
             });
-            if (!res.ok) throw new Error("Failed to save task");
-            if (assigneeId !== (detail?.assigneeUserId ?? "")) {
-                await fetch(`${base}/assign`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ assigneeUserId: assigneeId || null }),
-                }).catch(() => undefined);
-            }
+            if (!res.ok) throw new Error("Save failed");
+            setSaveState("saved");
             onSaved();
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to save task");
-        } finally {
-            setSaving(false);
+            setError(err instanceof Error ? err.message : "Save failed");
+            setSaveState("error");
         }
-    };
+    }, [canWrite, base, onSaved]);
+
+    const scheduleCommit = useCallback(() => {
+        if (saveTimer.current) clearTimeout(saveTimer.current);
+        saveTimer.current = setTimeout(() => void commitFields(), 800);
+    }, [commitFields]);
+
+    const commitNow = useCallback(() => {
+        if (saveTimer.current) clearTimeout(saveTimer.current);
+        void commitFields();
+    }, [commitFields]);
+
+    /** Update a field's ref + state in lockstep, then save (debounced or now). */
+    const update = useCallback(
+        (partial: Partial<typeof fieldsRef.current>, immediate: boolean) => {
+            fieldsRef.current = { ...fieldsRef.current, ...partial };
+            if (partial.title !== undefined) setTitle(partial.title);
+            if (partial.description !== undefined) setDescription(partial.description);
+            if (partial.type !== undefined) setType(partial.type);
+            if (partial.severity !== undefined) setSeverity(partial.severity);
+            if (partial.priority !== undefined) setPriority(partial.priority);
+            if (partial.dueAt !== undefined) setDueAt(partial.dueAt);
+            if (immediate) commitNow();
+            else scheduleCommit();
+        },
+        [commitNow, scheduleCommit],
+    );
+
+    /** Assignee persists via its own POST endpoint, on change. */
+    const commitAssignee = useCallback(
+        async (userId: string) => {
+            if (!canWrite) return;
+            setSaveState("saving");
+            setError("");
+            try {
+                const res = await fetch(`${base}/assign`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ assigneeUserId: userId || null }),
+                });
+                if (!res.ok) throw new Error("Assignee update failed");
+                setSaveState("saved");
+                onSaved();
+            } catch (err) {
+                setError(err instanceof Error ? err.message : "Assignee update failed");
+                setSaveState("error");
+            }
+        },
+        [canWrite, base, onSaved],
+    );
 
     return (
         <div className="space-y-default" role="region" aria-label="Task editor" data-testid="task-edit-panel">
@@ -172,63 +240,50 @@ export function TaskEditPanel({
 
             {tab === "details" ? (
                 <div className="space-y-default">
-                <form onSubmit={save} className="space-y-default" data-testid="task-edit-form">
                     {error && (
                         <div className="rounded-lg border border-border-error bg-bg-error px-3 py-2 text-sm text-content-error" role="alert">
                             {error}
                         </div>
                     )}
-                    <fieldset className="space-y-default" disabled={!canWrite || saving}>
-                        <div>
-                            <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-title">
-                                Title <RequiredMarker />
-                            </label>
-                            <input
-                                id="task-panel-title"
-                                type="text"
-                                className="input w-full"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-description">
-                                Description
-                            </label>
-                            <textarea
-                                id="task-panel-description"
-                                className="input w-full"
-                                rows={3}
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                            />
-                        </div>
-                        <div>
-                            <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-type">Type</label>
-                            <Combobox
-                                id="task-panel-type"
-                                name="type"
-                                options={TYPE_OPTIONS}
-                                selected={TYPE_OPTIONS.find((o) => o.value === type) ?? null}
-                                setSelected={(o) => setType(o?.value ?? "TASK")}
-                                disabled={!canWrite}
-                                hideSearch
-                                matchTriggerWidth
-                                forceDropdown
-                                buttonProps={{ className: "w-full", size: "sm" }}
-                                caret
-                            />
-                        </div>
-                        <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
+                    {/* Auto-saved edit form (PATCH on change/blur) — no Save button. */}
+                    <div className="space-y-default" data-testid="task-edit-form">
+                        <fieldset className="space-y-default" disabled={!canWrite}>
                             <div>
-                                <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-severity">Severity</label>
+                                <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-title">
+                                    Title <RequiredMarker />
+                                </label>
+                                <input
+                                    id="task-panel-title"
+                                    type="text"
+                                    className="input w-full"
+                                    value={title}
+                                    onChange={(e) => update({ title: e.target.value }, false)}
+                                    onBlur={commitNow}
+                                    required
+                                    aria-invalid={titleInvalid || undefined}
+                                />
+                            </div>
+                            <div>
+                                <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-description">
+                                    Description
+                                </label>
+                                <textarea
+                                    id="task-panel-description"
+                                    className="input w-full"
+                                    rows={3}
+                                    value={description}
+                                    onChange={(e) => update({ description: e.target.value }, false)}
+                                    onBlur={commitNow}
+                                />
+                            </div>
+                            <div>
+                                <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-type">Type</label>
                                 <Combobox
-                                    id="task-panel-severity"
-                                    name="severity"
-                                    options={SEVERITY_OPTIONS}
-                                    selected={SEVERITY_OPTIONS.find((o) => o.value === severity) ?? null}
-                                    setSelected={(o) => setSeverity(o?.value ?? "MEDIUM")}
+                                    id="task-panel-type"
+                                    name="type"
+                                    options={TYPE_OPTIONS}
+                                    selected={TYPE_OPTIONS.find((o) => o.value === type) ?? null}
+                                    setSelected={(o) => update({ type: o?.value ?? "TASK" }, true)}
                                     disabled={!canWrite}
                                     hideSearch
                                     matchTriggerWidth
@@ -237,78 +292,95 @@ export function TaskEditPanel({
                                     caret
                                 />
                             </div>
-                            <div>
-                                <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-priority">Priority</label>
-                                <Combobox
-                                    id="task-panel-priority"
-                                    name="priority"
-                                    options={PRIORITY_OPTIONS}
-                                    selected={PRIORITY_OPTIONS.find((o) => o.value === priority) ?? null}
-                                    setSelected={(o) => setPriority(o?.value ?? "P2")}
-                                    disabled={!canWrite}
-                                    hideSearch
-                                    matchTriggerWidth
-                                    forceDropdown
-                                    buttonProps={{ className: "w-full", size: "sm" }}
-                                    caret
-                                />
+                            <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
+                                <div>
+                                    <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-severity">Severity</label>
+                                    <Combobox
+                                        id="task-panel-severity"
+                                        name="severity"
+                                        options={SEVERITY_OPTIONS}
+                                        selected={SEVERITY_OPTIONS.find((o) => o.value === severity) ?? null}
+                                        setSelected={(o) => update({ severity: o?.value ?? "MEDIUM" }, true)}
+                                        disabled={!canWrite}
+                                        hideSearch
+                                        matchTriggerWidth
+                                        forceDropdown
+                                        buttonProps={{ className: "w-full", size: "sm" }}
+                                        caret
+                                    />
+                                </div>
+                                <div>
+                                    <label className="mb-1 block text-sm text-content-default" htmlFor="task-panel-priority">Priority</label>
+                                    <Combobox
+                                        id="task-panel-priority"
+                                        name="priority"
+                                        options={PRIORITY_OPTIONS}
+                                        selected={PRIORITY_OPTIONS.find((o) => o.value === priority) ?? null}
+                                        setSelected={(o) => update({ priority: o?.value ?? "P2" }, true)}
+                                        disabled={!canWrite}
+                                        hideSearch
+                                        matchTriggerWidth
+                                        forceDropdown
+                                        buttonProps={{ className: "w-full", size: "sm" }}
+                                        caret
+                                    />
+                                </div>
                             </div>
-                        </div>
-                        <FormField label="Due Date">
-                            <DatePicker
-                                id="task-panel-due"
-                                className="w-full"
-                                placeholder="Select date"
-                                clearable
-                                align="start"
-                                value={parseYMD(dueAt)}
-                                onChange={(next) => setDueAt(toYMD(next) ?? "")}
-                                disabledDays={{ before: startOfUtcDay(new Date()) }}
-                                aria-label="Due date"
-                            />
-                        </FormField>
-                        <FormField label="Assignee" description="Search members to assign, or clear to unassign.">
-                            <UserCombobox
-                                id="task-panel-assignee"
-                                name="assigneeUserId"
-                                tenantSlug={tenantSlug}
-                                disabled={!canWrite}
-                                selectedId={assigneeId || null}
-                                onChange={(userId) => setAssigneeId(userId ?? "")}
-                                placeholder={task.assignee?.name || "Unassigned"}
-                            />
-                        </FormField>
-                    </fieldset>
-                    {canWrite && (
-                        <div className="flex items-center gap-tight">
-                            <Button
-                                type="button"
-                                variant="secondary"
-                                size="sm"
-                                onClick={onClose}
-                                data-testid="task-edit-cancel"
-                                text="Cancel"
-                            />
-                            <Button
-                                type="submit"
-                                variant="primary"
-                                size="sm"
-                                disabled={!canSave}
-                                data-testid="task-edit-save"
-                                text={saving ? "Saving…" : "Save changes"}
-                            />
-                        </div>
-                    )}
-                </form>
-                {/* Drag-and-drop evidence upload (canonical FileDropzone). */}
-                <EvidenceUploadSection
-                    tenantSlug={tenantSlug}
-                    linkField="taskId"
-                    linkId={task.id}
-                    canWrite={canWrite}
-                    listEndpoint={`/tasks/${task.id}/evidence`}
-                    urlLinkEndpoint={`/tasks/${task.id}/evidence`}
-                />
+                            <FormField label="Due Date">
+                                <DatePicker
+                                    id="task-panel-due"
+                                    className="w-full"
+                                    placeholder="Select date"
+                                    clearable
+                                    align="start"
+                                    value={parseYMD(dueAt)}
+                                    onChange={(next) => update({ dueAt: toYMD(next) ?? "" }, true)}
+                                    disabledDays={{ before: startOfUtcDay(new Date()) }}
+                                    aria-label="Due date"
+                                />
+                            </FormField>
+                            <FormField label="Assignee" description="Search members to assign, or clear to unassign.">
+                                <UserCombobox
+                                    id="task-panel-assignee"
+                                    name="assigneeUserId"
+                                    tenantSlug={tenantSlug}
+                                    disabled={!canWrite}
+                                    size="sm"
+                                    selectedId={assigneeId || null}
+                                    onChange={(userId) => {
+                                        setAssigneeId(userId ?? "");
+                                        void commitAssignee(userId ?? "");
+                                    }}
+                                    placeholder={task.assignee?.name || "Unassigned"}
+                                />
+                            </FormField>
+                        </fieldset>
+                        {canWrite && (
+                            <p
+                                className="text-xs text-content-muted"
+                                data-testid="task-edit-autosave-status"
+                                aria-live="polite"
+                            >
+                                {saveState === "saving"
+                                    ? "Saving…"
+                                    : saveState === "saved"
+                                      ? "Saved"
+                                      : saveState === "error"
+                                        ? "Not saved — see above"
+                                        : "Changes save automatically."}
+                            </p>
+                        )}
+                    </div>
+                    {/* Drag-and-drop evidence upload (canonical FileDropzone, compact in the rail). */}
+                    <EvidenceUploadSection
+                        tenantSlug={tenantSlug}
+                        linkField="taskId"
+                        linkId={task.id}
+                        canWrite={canWrite}
+                        compactDropzone
+                        listEndpoint={`/tasks/${task.id}/evidence`}
+                        urlLinkEndpoint={`/tasks/${task.id}/evidence`}
+                    />
                 </div>
             ) : (
                 <PanelActivityFeed tenantSlug={tenantSlug} endpoint={`/tasks/${task.id}/activity`} />
