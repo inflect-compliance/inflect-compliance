@@ -753,6 +753,8 @@ model User {
   processMapsDeleted            ProcessMap[]                 @relation("ProcessMapDeletedBy")
   // Epic P5-PR-A — process map snapshots.
   processMapSnapshotsCreated    ProcessMapSnapshot[]         @relation("ProcessMapSnapshotCreatedBy")
+  // DSAR (GDPR Art. 15/17) — data-subject export/erasure requests.
+  dataSubjectRequests           DataSubjectRequest[]
 }
 
 model Account {
@@ -1054,4 +1056,39 @@ model TenantScimToken {
   tenant     Tenant    @relation(fields: [tenantId], references: [id])
 
   @@index([tenantId])
+}
+
+/// DSAR — a GDPR Art. 15 (export) / Art. 17 (erasure) data-subject
+/// request and its workflow state.
+///
+/// USER-SCOPED, deliberately NOT tenant-scoped: a DSAR concerns a
+/// person's data across the whole platform, so it carries no `tenantId`
+/// (the relevant tenants are derived from the user's memberships at
+/// execution time). Retained indefinitely — the record documents the
+/// platform's compliance with the request (GDPR Art. 17(3)(b)).
+///
+/// FOUNDATION (Stage 1): the record + workflow transitions exist. Export
+/// + erasure EXECUTION is gated off (see src/app-layer/jobs/dsar-export.ts
+/// + dsar-erasure.ts and docs/dsar.md for the multi-PR sequence).
+model DataSubjectRequest {
+  id              String                   @id @default(cuid())
+  userId          String
+  user            User                     @relation(fields: [userId], references: [id])
+  type            DataSubjectRequestType
+  status          DataSubjectRequestStatus @default(RECEIVED)
+  requestedAt     DateTime                 @default(now())
+  verifiedAt      DateTime?
+  completedAt     DateTime?
+  /// One of the DSAR_REJECTION_REASONS constants (src/lib/dsar.ts) when
+  /// status = REJECTED.
+  rejectionReason String?
+  /// Signed-URL of the export bundle (EXPORT type). Expires in 7 days;
+  /// deleted after consumption or expiry, whichever is first.
+  exportUrl       String?
+  exportExpiresAt DateTime?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  @@index([userId])
+  @@index([status, requestedAt])
 }
