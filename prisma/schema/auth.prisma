@@ -50,6 +50,14 @@ model Tenant {
   exclusions                        String?
   reminderDaysBefore                Int                                @default(14)
   maxRiskScale                      Int                                @default(5)
+  /// Data-residency region for this tenant. Set at creation and treated
+  /// as immutable — a cross-region move requires an offline migration
+  /// plan (see docs/data-residency.md). DECLARATIVE today: production is
+  /// single-region, so this records the customer's residency commitment;
+  /// physical per-region storage is the documented follow-up. Only values
+  /// in OPERATIONALLY_PROVISIONED_REGIONS (src/lib/regions.ts) are accepted
+  /// at provision time.
+  region                            TenantRegion                       @default(US_EAST_1)
   /// Soft-delete (org admin panel "remove tenant"). When set, the
   /// tenant is filtered out of tenant resolution (getTenantContext →
   /// 404), the org portfolio list, the tenant picker, and the JWT
@@ -220,6 +228,8 @@ model Tenant {
   organization                      Organization?                      @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 
   @@index([organizationId])
+  /// Per-region operational scans (e.g. "list every EU tenant").
+  @@index([region])
 }
 
 // Hub-and-spoke organization layer (Epic O-1).

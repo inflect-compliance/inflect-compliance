@@ -671,6 +671,21 @@ confidentiality). Today only **Evidence** has an end-to-end retention flow
 Adding a new model ⇒ classify it in the doc's inventory table (the
 `tests/guardrails/retention-policy-coverage.test.ts` ratchet fails CI until you do).
 
+### Change Management
+
+**See `docs/change-management-policy.md`** — the written contract over the
+existing rapid-release pipeline (semantic-release auto-versions every push to
+main; staging auto-deploys; production is gated by a GitHub Environment approval).
+It defines the three change classes (STANDARD / SIGNIFICANT / EMERGENCY), the
+approval matrix (who is the required second approver for migrations, infra, secret
+rotations, SSO/SCIM changes), the emergency-bypass + retrospective procedure, the
+rollback policy (app = redeploy prior image; migrations = forward-fix, never
+revert), and the audit trail (PR + CI + Environment approval + CHANGELOG). It is
+the policy twin of `docs/deployment.md` (operational) and cross-links
+`docs/incident-response.md` (on-call rotation). A SIGNIFICANT change — a schema
+migration, a security-middleware change, a dependency major bump — must carry a
+rollback plan + a second engineer's `Sign-off:` in the PR.
+
 ### Billing & entitlements (GAP-18)
 
 The codebase has two billing modes, decided by a single env var:
