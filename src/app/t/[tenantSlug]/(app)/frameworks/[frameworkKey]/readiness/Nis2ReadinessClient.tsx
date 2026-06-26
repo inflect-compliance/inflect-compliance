@@ -2,19 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocale } from 'next-intl';
-import { useRouter } from 'next/navigation';
-import { ChevronLeft, Loader2 } from 'lucide-react';
-import type { ColumnDef } from '@tanstack/react-table';
+import { Loader2 } from 'lucide-react';
 
-import { DataTable } from '@/components/ui/table';
+import { DataTable, createColumns } from '@/components/ui/table';
 import { KPIStat } from '@/components/ui/metric';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
 import { Heading } from '@/components/ui/typography';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { InlineNotice } from '@/components/ui/inline-notice';
-import { useTenantHref } from '@/lib/tenant-context-provider';
 import { TimeSeriesChart, Bars, XAxis, YAxis } from '@/components/ui/charts';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { formatDate } from '@/lib/format-date';
 
 // CC BY 4.0 attribution — carries everywhere derived NIS2 content renders.
@@ -56,11 +54,9 @@ function critVariant(c: string): 'error' | 'warning' | 'info' | 'neutral' {
     return 'neutral';
 }
 
-export function Nis2ReadinessClient({ tenantSlug, frameworkKey }: { tenantSlug: string; frameworkKey: string }) {
+export function Nis2ReadinessClient({ tenantSlug }: { tenantSlug: string }) {
     const locale = useLocale();
     const lang = locale === 'de' ? 'de' : 'en';
-    const router = useRouter();
-    const tenantHref = useTenantHref();
     const base = `/api/t/${tenantSlug}/onboarding/nis2-assessment`;
 
     const [data, setData] = useState<Payload | null>(null);
@@ -83,9 +79,9 @@ export function Nis2ReadinessClient({ tenantSlug, frameworkKey }: { tenantSlug: 
         }
     }, [base]);
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => {
-        void load();
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        load();
     }, [load]);
 
     const eligibleCount = useMemo(
@@ -111,25 +107,25 @@ export function Nis2ReadinessClient({ tenantSlug, frameworkKey }: { tenantSlug: 
         }
     }, [base]);
 
-    const domainColumns = useMemo<ColumnDef<DomainScore>[]>(
-        () => [
+    const domainColumns = useMemo(
+        () => createColumns<DomainScore>([
             { accessorKey: 'code', header: 'Domain', cell: ({ row }) => <span className="font-medium">{row.original.code}</span> },
             { accessorKey: 'name', header: 'Name', cell: ({ row }) => <span>{row.original.name?.[lang]}</span> },
             { accessorKey: 'score', header: 'Score', cell: ({ row }) => <span className="tabular-nums">{row.original.score}</span> },
             { id: 'answered', header: 'Answered', cell: ({ row }) => <span className="tabular-nums text-content-muted">{row.original.answered}/{row.original.total}</span> },
-        ],
+        ]),
         [lang],
     );
 
-    const gapColumns = useMemo<ColumnDef<Gap>[]>(
-        () => [
+    const gapColumns = useMemo(
+        () => createColumns<Gap>([
             { accessorKey: 'plainText', header: 'Gap', cell: ({ row }) => <span>{row.original.plainText?.[lang]}</span> },
             { accessorKey: 'criticality', header: 'Criticality', cell: ({ row }) => <StatusBadge variant={critVariant(row.original.criticality)} size="sm">{row.original.criticality}</StatusBadge> },
             { accessorKey: 'answer', header: 'Answer', cell: ({ row }) => <span className="text-content-muted">{row.original.answer}</span> },
             { accessorKey: 'priority', header: 'Priority', cell: ({ row }) => <StatusBadge variant={row.original.priorityTier === 'URGENT' ? 'error' : row.original.priorityTier === 'HIGH' ? 'warning' : 'neutral'} size="sm">{row.original.priorityTier}</StatusBadge> },
             { accessorKey: 'timeToFix', header: 'Effort', cell: ({ row }) => <span className="text-content-muted">{row.original.timeToFix}</span> },
             { accessorKey: 'legalBasis', header: 'Legal basis', cell: ({ row }) => <span className="text-xs text-content-muted">{row.original.legalBasis}</span> },
-        ],
+        ]),
         [lang],
     );
 
@@ -149,9 +145,7 @@ export function Nis2ReadinessClient({ tenantSlug, frameworkKey }: { tenantSlug: 
     return (
         <div className="space-y-section p-4" data-testid="nis2-readiness">
             <div className="space-y-tight">
-                <Button variant="ghost" size="sm" onClick={() => router.push(tenantHref(`/frameworks/${frameworkKey}`))}>
-                    <ChevronLeft className="w-3.5 h-3.5" /> Back to NIS2
-                </Button>
+                <BackAffordance />
                 <Heading level={1}>NIS2 readiness</Heading>
             </div>
 

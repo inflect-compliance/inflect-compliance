@@ -47,6 +47,8 @@ const EXEMPT_FILE_PATTERNS: RegExp[] = [
  * length to stop hand-waved exemptions.
  */
 const EXEMPTIONS: Record<string, string> = {
+    "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/readiness/Nis2ReadinessClient.tsx":
+        "NIS2 readiness results view — derived score + prioritized gap tables (sorted by priority); not a faceted-filter list surface.",
     // ── Cross-tenant read-only aggregation views (org-level) ──
     // These render a portfolio of tenant-scoped data without the
     // per-tenant filtering surface that FilterToolbar provides.

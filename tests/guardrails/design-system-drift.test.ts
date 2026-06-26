@@ -53,6 +53,14 @@ const MIGRATED_PAGES = [
     // instead (`tests/guardrails/raw-color-ratchet.test.ts`) — they
     // get promoted here when the component migration also lands.
     'clauses/loading.tsx',
+    // NIS2 self-assessment surfaces — token-clean from the start
+    // (semantic tokens + KPIStat/StatusBadge/DataTable/Button/Accordion/
+    // RadioGroup only; no raw color utilities, no legacy btn/badge CSS).
+    // Promoted on landing rather than parked in the unmigrated tally.
+    'frameworks/[frameworkKey]/readiness/page.tsx',
+    'frameworks/[frameworkKey]/readiness/Nis2ReadinessClient.tsx',
+    'frameworks/[frameworkKey]/self-assessment/page.tsx',
+    'frameworks/[frameworkKey]/self-assessment/Nis2SelfAssessmentResume.tsx',
 ];
 
 const RAW_COLOR_RE = /\b(?:text|bg|border)-(?:slate|gray|neutral|zinc)-\d{2,3}\b/g;

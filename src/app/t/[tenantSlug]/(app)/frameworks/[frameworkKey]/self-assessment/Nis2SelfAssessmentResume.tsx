@@ -1,11 +1,11 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { ChevronLeft } from 'lucide-react';
 
 import { Nis2SelfAssessmentStep } from '@/components/onboarding/Nis2SelfAssessmentStep';
 import { Button } from '@/components/ui/button';
 import { Heading } from '@/components/ui/typography';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantHref } from '@/lib/tenant-context-provider';
 
 export function Nis2SelfAssessmentResume({
@@ -22,9 +22,7 @@ export function Nis2SelfAssessmentResume({
     return (
         <div className="space-y-section p-4">
             <div className="space-y-tight">
-                <Button variant="ghost" size="sm" onClick={back}>
-                    <ChevronLeft className="w-3.5 h-3.5" /> Back to NIS2
-                </Button>
+                <BackAffordance />
                 <Heading level={1}>NIS2 self-assessment</Heading>
                 <p className="text-content-muted text-sm">
                     Pick up where you left off. Answers save automatically.

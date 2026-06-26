@@ -25,5 +25,5 @@ export default async function FrameworkReadinessPage({
             </div>
         );
     }
-    return <Nis2ReadinessClient tenantSlug={tenantSlug} frameworkKey={frameworkKey} />;
+    return <Nis2ReadinessClient tenantSlug={tenantSlug} />;
 }

@@ -37,6 +37,11 @@ const SCAN_ROOT = path.join(ROOT, 'src');
 // description and (b) confirmation that no Nucleo equivalent
 // exists. Default answer: migrate to Nucleo.
 const LEGACY_LUCIDE_USERS = new Set<string>([
+    // NIS2 self-assessment surfaces — consistent with the sibling
+    // onboarding family (OnboardingWizard) which uses lucide; Nucleo
+    // migration tracked for the whole onboarding family.
+    'src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/readiness/Nis2ReadinessClient.tsx',
+    'src/components/onboarding/Nis2SelfAssessmentStep.tsx',
     'src/app/org/[orgSlug]/(app)/audit/AuditLogTable.tsx',
     'src/app/org/[orgSlug]/(app)/controls/ControlsTable.tsx',
     'src/app/org/[orgSlug]/(app)/dashboard-sections.tsx',

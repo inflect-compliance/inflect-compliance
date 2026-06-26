@@ -184,6 +184,8 @@ export const SUBPAGES: readonly string[] = [
     // Frameworks
     '/frameworks/[frameworkKey]',
     '/frameworks/[frameworkKey]/diff',
+    '/frameworks/[frameworkKey]/readiness',
+    '/frameworks/[frameworkKey]/self-assessment',
     '/frameworks/[frameworkKey]/install',
     '/frameworks/[frameworkKey]/templates',
 
