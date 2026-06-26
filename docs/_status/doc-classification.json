@@ -4,7 +4,7 @@
   "counts": {
     "authoritative": 104,
     "living": 5,
-    "historical": 280,
+    "historical": 281,
     "deprecated": 1
   },
   "docs": {
@@ -981,6 +981,9 @@
       "class": "historical"
     },
     "docs/implementation-notes/2026-06-26-perf-baseline.md": {
+      "class": "historical"
+    },
+    "docs/implementation-notes/2026-06-26-policy-template-expansion.md": {
       "class": "historical"
     },
     "docs/implementation-notes/2026-06-26-read-replica-routing.md": {
