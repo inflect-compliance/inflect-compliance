@@ -5,7 +5,7 @@ await legal / compliance / finance sign-off (see [Open questions](#open-question
 **Owners:** Engineering (mechanism + inventory) · Compliance/Legal (regulatory
 periods + GDPR) · Finance (financial-record periods) · Product (tenant tiers).
 
-This document categorizes **every one of the 139 Prisma models**, declares the
+This document categorizes **every one of the 143 Prisma models**, declares the
 retention behaviour that exists *today*, names who owns each undecided number,
 and enumerates the cleanup machinery. It is the companion to
 [`docs/encryption-data-protection.md`](encryption-data-protection.md) — that doc
@@ -25,12 +25,12 @@ covers confidentiality *at rest*; this one covers *lifecycle*.
   supported today (**it is not**, beyond `User.deletedAt` soft-delete) and what
   landing it would require — it does not implement it.
 
-## Category breakdown (139 models)
+## Category breakdown (143 models)
 
 | Category | Count | One-line posture |
 |----------|-------|------------------|
-| Business record | 63 | Compliance domain (Risk/Control/Policy/Audit/Vendor/…). Retained indefinitely while the tenant is active; soft-delete + 90-day purge on the 12 `SOFT_DELETE_MODELS`; `retentionUntil` sweep on 8. |
-| Configuration | 36 | Tenant/org structure, templates, framework reference data, integration + security settings. Lives with the tenant; purged on tenant deletion. |
+| Business record | 65 | Compliance domain (Risk/Control/Policy/Audit/Vendor/…). Retained indefinitely while the tenant is active; soft-delete + 90-day purge on the 12 `SOFT_DELETE_MODELS`; `retentionUntil` sweep on 8. |
+| Configuration | 38 | Tenant/org structure, templates, framework reference data, integration + security settings. Lives with the tenant; purged on tenant deletion. |
 | Operational | 20 | Notifications, executions, snapshots, key-sequences, onboarding. No TTL today — prime candidates for time-boxed pruning. |
 | Security ephemeral | 13 | Tokens / sessions / credentials. `expiresAt`-driven; security lifetime, **not** a data-retention conversation. |
 | Regulatory artefact | 3 | `AuditLog`, `OrgAuditLog`, `ReadinessSnapshot` — immutable + hash-chained. Retention is a **legal** decision; we do not delete by default. |
@@ -102,6 +102,10 @@ a `userId` but stores no contact PII).
 | `KeyRiskIndicator` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
 | `KriReading` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
 | `LossEvent` | Business record | No | Soft-delete (`deletedAt`) — **NOT** auto-purged | Soft-deleted rows **not auto-purged** — gap |
+| `Nis2GapDomain` | Configuration | No | Global seed reference (CC BY 4.0 import) — reseeded, never tenant-purged | Lives with the deployment; refreshed via `sync-nis2-gap-assessment` |
+| `Nis2GapQuestion` | Configuration | No | Global seed reference (CC BY 4.0 import) — reseeded, never tenant-purged | Lives with the deployment; refreshed via `sync-nis2-gap-assessment` |
+| `Nis2SelfAssessment` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `Nis2SelfAssessmentAnswer` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active; `note` encrypted at rest |
 | `Notification` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
 | `NotificationOutbox` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
 | `OrgAuditLog` | Regulatory artefact | ind. | Immutable + hash-chained (never deleted) | Regulatory min/max — **needs legal/auditor input** |
