@@ -105,6 +105,19 @@ export class Nis2GapAssessmentRepository {
         });
     }
 
+    /**
+     * Mark an assessment COMPLETED. Partial completion is valid — the
+     * caller may complete with unanswered questions. `updateMany` carries
+     * the explicit `tenantId` guard (defence in depth on top of RLS).
+     */
+    static async markAssessmentCompleted(db: PrismaTx, ctx: RequestContext, id: string) {
+        await db.nis2SelfAssessment.updateMany({
+            where: { id, tenantId: ctx.tenantId },
+            data: { status: 'COMPLETED', completedAt: new Date() },
+        });
+        return db.nis2SelfAssessment.findFirst({ where: { id, tenantId: ctx.tenantId } });
+    }
+
     static async listAnswers(db: PrismaTx, ctx: RequestContext, assessmentId: string) {
         return db.nis2SelfAssessmentAnswer.findMany({
             where: { tenantId: ctx.tenantId, assessmentId },

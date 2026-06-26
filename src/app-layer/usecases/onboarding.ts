@@ -22,6 +22,8 @@ import {
 const STEP_ORDER = [
     'COMPANY_PROFILE',
     'FRAMEWORK_SELECTION',
+    // Conditional — only when NIS2 is selected (see isStepApplicable).
+    'NIS2_SELF_ASSESSMENT',
     'ASSET_SETUP',
     'CONTROL_BASELINE_INSTALL',
     'INITIAL_RISK_REGISTER',
@@ -31,10 +33,42 @@ const STEP_ORDER = [
 
 type OnboardingStep = (typeof STEP_ORDER)[number];
 
-function getNextStep(currentStep: OnboardingStep): string {
+/**
+ * Is this step applicable given the tenant's choices so far? A
+ * non-applicable step is never shown and is excluded from the
+ * progress denominator. Today only NIS2_SELF_ASSESSMENT is
+ * conditional — it appears iff NIS2 is among the selected frameworks.
+ */
+export function isStepApplicable(
+    step: OnboardingStep,
+    stepData: Record<string, any>,
+): boolean {
+    if (step === 'NIS2_SELF_ASSESSMENT') {
+        const fws: string[] =
+            stepData?.FRAMEWORK_SELECTION?.selectedFrameworks ?? [];
+        // Case-insensitive: the wizard's framework picker stores LOWERCASE
+        // keys ('nis2'), while other call sites may use the canonical
+        // 'NIS2'. Match either so the step actually appears.
+        return Array.isArray(fws) && fws.some((f) => String(f).toUpperCase() === 'NIS2');
+    }
+    return true;
+}
+
+/**
+ * Next step AFTER `currentStep`, skipping any non-applicable steps so a
+ * non-NIS2 tenant never lands on NIS2_SELF_ASSESSMENT. Returns
+ * `currentStep` when there is no further applicable step.
+ */
+function getNextStep(
+    currentStep: OnboardingStep,
+    stepData: Record<string, any> = {},
+): string {
     const idx = STEP_ORDER.indexOf(currentStep);
-    if (idx < 0 || idx >= STEP_ORDER.length - 1) return currentStep;
-    return STEP_ORDER[idx + 1];
+    if (idx < 0) return currentStep;
+    for (let i = idx + 1; i < STEP_ORDER.length; i++) {
+        if (isStepApplicable(STEP_ORDER[i], stepData)) return STEP_ORDER[i];
+    }
+    return currentStep;
 }
 
 // ─── Get State ───
@@ -121,7 +155,7 @@ export async function completeOnboardingStep(ctx: RequestContext, step: Onboardi
             return existing;
         }
 
-        const nextStep = getNextStep(step);
+        const nextStep = getNextStep(step, (existing.stepData as Record<string, any>) || {});
         const stepRecord = await OnboardingRepository.completeStep(db, ctx, step, nextStep);
         await emitOnboardingStepCompleted(db, ctx, step);
         // Genuine-completion path only (the idempotent early-return above
@@ -190,7 +224,7 @@ export async function skipOnboardingStep(ctx: RequestContext, step: OnboardingSt
 
         await OnboardingRepository.saveStepData(db, ctx, '_skippedSteps', skippedSteps);
 
-        const nextStep = getNextStep(step);
+        const nextStep = getNextStep(step, stepData);
         return OnboardingRepository.completeStep(db, ctx, step, nextStep);
     });
 }
@@ -253,12 +287,22 @@ export async function getOnboardingMetrics(ctx: RequestContext) {
             };
         }
 
+        // Exclude non-applicable steps (e.g. NIS2_SELF_ASSESSMENT for a
+        // non-NIS2 tenant) from BOTH numerator and denominator — otherwise
+        // a tenant that can never reach a step is stuck below 100% forever.
+        const stepData = (existing.stepData as Record<string, any>) || {};
+        const applicableSteps = STEP_ORDER.filter((s) => isStepApplicable(s, stepData));
+        const applicableCompleted = existing.completedSteps.filter((s) =>
+            (applicableSteps as readonly string[]).includes(s),
+        );
         return {
             status: existing.status,
             currentStep: existing.currentStep,
-            completedSteps: existing.completedSteps.length,
-            totalSteps: STEP_ORDER.length,
-            progress: Math.round((existing.completedSteps.length / STEP_ORDER.length) * 100),
+            completedSteps: applicableCompleted.length,
+            totalSteps: applicableSteps.length,
+            progress: applicableSteps.length
+                ? Math.round((applicableCompleted.length / applicableSteps.length) * 100)
+                : 0,
             startedAt: existing.startedAt,
             completedAt: existing.completedAt,
         };

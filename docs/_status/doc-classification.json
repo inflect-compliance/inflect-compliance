@@ -4,7 +4,7 @@
   "counts": {
     "authoritative": 104,
     "living": 5,
-    "historical": 281,
+    "historical": 282,
     "deprecated": 1
   },
   "docs": {
@@ -1182,6 +1182,9 @@
       "class": "authoritative"
     },
     "docs/implementation-notes/2026-06-26-nis2-gap-assessment-data.md": {
+      "class": "historical"
+    },
+    "docs/implementation-notes/2026-06-27-nis2-onboarding-step.md": {
       "class": "historical"
     }
   }
