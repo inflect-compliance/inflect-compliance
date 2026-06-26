@@ -24,12 +24,14 @@ import {
     Loader2,
     Save,
     Sparkles,
+    ClipboardCheck,
 } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { Card, cardVariants } from '@/components/ui/card';
 import { InlineNotice } from '@/components/ui/inline-notice';
 import { cn } from '@/lib/cn';
+import { Nis2SelfAssessmentStep } from './Nis2SelfAssessmentStep';
 
 // ─── Step Definitions ───
 //
@@ -39,6 +41,9 @@ import { cn } from '@/lib/cn';
 const STEPS = [
     { key: 'COMPANY_PROFILE', label: 'Company Profile', icon: Building2 },
     { key: 'FRAMEWORK_SELECTION', label: 'Frameworks', icon: Map },
+    // Conditional — rendered only when NIS2 is among the selected
+    // frameworks (see stepApplicable / visibleSteps below).
+    { key: 'NIS2_SELF_ASSESSMENT', label: 'NIS2 Assessment', icon: ClipboardCheck },
     { key: 'ASSET_SETUP', label: 'Assets', icon: Server },
     { key: 'CONTROL_BASELINE_INSTALL', label: 'Controls', icon: ShieldCheck },
     { key: 'INITIAL_RISK_REGISTER', label: 'Risks', icon: AlertTriangle },
@@ -50,6 +55,24 @@ type StepKey = (typeof STEPS)[number]['key'];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type StepData = Record<string, any>;
+
+/**
+ * Is a step applicable given the choices so far? Mirrors the server-side
+ * `isStepApplicable` in usecases/onboarding.ts. A non-applicable step is
+ * filtered out of `visibleSteps` so it's never shown and never counted.
+ */
+function stepApplicable(key: string, data: StepData): boolean {
+    if (key === 'NIS2_SELF_ASSESSMENT') {
+        const fws: string[] = data?.FRAMEWORK_SELECTION?.selectedFrameworks ?? [];
+        // Case-insensitive — the picker stores lowercase 'nis2'.
+        return Array.isArray(fws) && fws.some((f) => String(f).toUpperCase() === 'NIS2');
+    }
+    return true;
+}
+
+function computeVisibleSteps(data: StepData) {
+    return STEPS.filter((s) => stepApplicable(s.key, data));
+}
 
 interface OnboardingState {
     status: string;
@@ -104,10 +127,12 @@ export default function OnboardingWizard() {
             setLoading(true);
             const s = await apiFetch<OnboardingState>(apiUrl(tenantSlug, 'state'));
             setState(s);
-            setLocalData((s.stepData as StepData) || {});
+            const sd = (s.stepData as StepData) || {};
+            setLocalData(sd);
 
-            // Set active step to current
-            const idx = STEPS.findIndex(st => st.key === s.currentStep);
+            // Set active step to current — index into the APPLICABLE list
+            // (a non-NIS2 tenant has no NIS2 step, so indices shift).
+            const idx = computeVisibleSteps(sd).findIndex(st => st.key === s.currentStep);
             if (idx >= 0) setActiveStepIdx(idx);
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Failed to load onboarding state');
@@ -159,11 +184,32 @@ export default function OnboardingWizard() {
             // Then complete
             const s = await apiFetch<OnboardingState>(apiUrl(tenantSlug, 'step'), 'POST', { step, action: 'complete' });
             setState(s);
-            // Advance to next step
+            // Advance to next applicable step (denominator excludes hidden steps).
+            const vis = computeVisibleSteps(localData);
             const nextIdx = activeStepIdx + 1;
-            if (nextIdx < STEPS.length) setActiveStepIdx(nextIdx);
+            if (nextIdx < vis.length) setActiveStepIdx(nextIdx);
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Failed to complete step');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    // ─── NIS2 step: completion + skip drive their own endpoints, then
+    // re-sync (the server advances currentStep to ASSET_SETUP). ───
+    const handleNis2Completed = async () => {
+        await loadState();
+    };
+    const handleNis2Skip = async () => {
+        try {
+            setSaving(true);
+            await apiFetch(apiUrl(tenantSlug, 'step'), 'POST', {
+                step: 'NIS2_SELF_ASSESSMENT',
+                action: 'skip',
+            });
+            await loadState();
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'Failed to skip step');
         } finally {
             setSaving(false);
         }
@@ -190,7 +236,11 @@ export default function OnboardingWizard() {
 
     // ─── Save & exit ───
     const handleSaveAndExit = async () => {
-        const currentStepKey = STEPS[activeStepIdx].key;
+        const currentStepKey = computeVisibleSteps(localData)[activeStepIdx]?.key;
+        if (!currentStepKey) {
+            router.push(tenantHref('/dashboard'));
+            return;
+        }
         const stepLocalData = localData[currentStepKey] || {};
         if (Object.keys(stepLocalData).length > 0) {
             await handleSaveStep(currentStepKey, stepLocalData);
@@ -284,9 +334,14 @@ export default function OnboardingWizard() {
         );
     }
 
-    const currentStep = STEPS[activeStepIdx];
+    // Only applicable steps are shown/counted; `activeStepIdx` indexes this.
+    const visibleSteps = computeVisibleSteps(localData);
+    const currentStep = visibleSteps[activeStepIdx] ?? visibleSteps[visibleSteps.length - 1];
     const isComplete = (key: string) => state.completedSteps.includes(key);
-    const isLast = activeStepIdx === STEPS.length - 1;
+    const isLast = activeStepIdx === visibleSteps.length - 1;
+    const visibleCompletedCount = state.completedSteps.filter((s) =>
+        visibleSteps.some((v) => v.key === s),
+    ).length;
 
     return (
         <div className="space-y-default animate-fadeIn" data-testid="onboarding-wizard">
@@ -317,13 +372,13 @@ export default function OnboardingWizard() {
                         <div className="flex items-center gap-tight mt-2">
                             <div className="flex-1 bg-bg-default rounded-full h-2 overflow-hidden">
                                 <div className="h-full bg-[var(--brand-default)] rounded-full transition-all duration-500"
-                                    style={{ width: `${(state.completedSteps.length / STEPS.length) * 100}%` }} />
+                                    style={{ width: `${visibleSteps.length ? (visibleCompletedCount / visibleSteps.length) * 100 : 0}%` }} />
                             </div>
-                            <span className="text-xs text-content-muted font-medium">{state.completedSteps.length}/{STEPS.length}</span>
+                            <span className="text-xs text-content-muted font-medium">{visibleCompletedCount}/{visibleSteps.length}</span>
                         </div>
                     </div>
                     <nav className="p-2">
-                        {STEPS.map((step, i) => {
+                        {visibleSteps.map((step, i) => {
                             const Icon = step.icon;
                             const completed = isComplete(step.key);
                             const active = i === activeStepIdx;
@@ -361,7 +416,7 @@ export default function OnboardingWizard() {
                             </div>
                             <div>
                                 <Heading level={2} className="text-content-emphasis">{currentStep.label}</Heading>
-                                <p className="text-xs text-content-muted">Step {activeStepIdx + 1} of {STEPS.length}</p>
+                                <p className="text-xs text-content-muted">Step {activeStepIdx + 1} of {visibleSteps.length}</p>
                             </div>
                             {isComplete(currentStep.key) && (
                                 <StatusBadge variant="success" className="ml-auto">Completed</StatusBadge>
@@ -374,6 +429,9 @@ export default function OnboardingWizard() {
                                 onUpdate={(data) => updateStepData(currentStep.key, data)}
                                 completedSteps={state.completedSteps}
                                 allData={localData}
+                                tenantSlug={tenantSlug}
+                                onNis2Completed={handleNis2Completed}
+                                onNis2Skip={handleNis2Skip}
                             />
                         </div>
                         {/* Navigation footer */}
@@ -387,7 +445,10 @@ export default function OnboardingWizard() {
                                 <ChevronLeft className="w-3.5 h-3.5" /> Back
                             </Button>
                             <div className="flex items-center gap-tight">
-                                {!isLast && (
+                                {/* NIS2 step drives its own Complete/Skip inside
+                                    the step component, so suppress the generic
+                                    Continue button there. */}
+                                {!isLast && currentStep.key !== 'NIS2_SELF_ASSESSMENT' && (
                                     <Button
                                         variant="primary"
                                         onClick={() => handleCompleteStep(currentStep.key)}
@@ -419,16 +480,20 @@ export default function OnboardingWizard() {
 
 // ─── Step Content Components ───
 
-function StepContent({ step, data, onUpdate, completedSteps, allData }: {
+function StepContent({ step, data, onUpdate, completedSteps, allData, tenantSlug, onNis2Completed, onNis2Skip }: {
     step: StepKey;
     data: StepData;
     onUpdate: (d: StepData) => void;
     completedSteps: string[];
     allData: StepData;
+    tenantSlug: string;
+    onNis2Completed: () => void;
+    onNis2Skip: () => void;
 }) {
     switch (step) {
         case 'COMPANY_PROFILE': return <CompanyProfileStep data={data} onUpdate={onUpdate} />;
         case 'FRAMEWORK_SELECTION': return <FrameworkSelectionStep data={data} onUpdate={onUpdate} />;
+        case 'NIS2_SELF_ASSESSMENT': return <Nis2SelfAssessmentStep tenantSlug={tenantSlug} onCompleted={onNis2Completed} onSkip={onNis2Skip} />;
         case 'ASSET_SETUP': return <AssetSetupStep data={data} onUpdate={onUpdate} />;
         case 'CONTROL_BASELINE_INSTALL': return <ControlInstallStep data={data} onUpdate={onUpdate} allData={allData} />;
         case 'INITIAL_RISK_REGISTER': return <RiskRegisterStep data={data} onUpdate={onUpdate} />;

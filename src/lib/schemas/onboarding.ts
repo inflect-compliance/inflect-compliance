@@ -6,6 +6,11 @@ import { z } from 'zod';
 export const ONBOARDING_STEPS = [
     'COMPANY_PROFILE',
     'FRAMEWORK_SELECTION',
+    // Conditional step: only applicable when NIS2 is among the selected
+    // frameworks (see `isStepApplicable` in usecases/onboarding.ts). Sits
+    // right after FRAMEWORK_SELECTION so its results can feed the
+    // CONTROL_BASELINE_INSTALL step that follows.
+    'NIS2_SELF_ASSESSMENT',
     'ASSET_SETUP',
     'CONTROL_BASELINE_INSTALL',
     'INITIAL_RISK_REGISTER',
@@ -27,6 +32,9 @@ export const REQUIRED_STEPS: OnboardingStep[] = ['COMPANY_PROFILE', 'REVIEW_AND_
  */
 export const SKIPPABLE_STEPS: OnboardingStep[] = [
     'FRAMEWORK_SELECTION',
+    // Skippable: skipped entirely when NIS2 isn't chosen, and skippable
+    // on demand ("complete later from the NIS2 dashboard") when it is.
+    'NIS2_SELF_ASSESSMENT',
     'ASSET_SETUP',
     'CONTROL_BASELINE_INSTALL',
     'INITIAL_RISK_REGISTER',

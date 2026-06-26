@@ -375,6 +375,7 @@ const SHARED_SEED_ALLOWLIST: ReadonlyArray<{ file: string; reason: string }> = [
     // ── Self-isolating: build their own tenant via createIsolatedTenant ──
     { file: 'e2e-utils-isolation.spec.ts', reason: 'exercises the isolation utils themselves; provisions its own tenants' },
     { file: 'onboarding.spec.ts', reason: 'beforeAll createIsolatedTenant + serial wizard flow on its OWN tenant' },
+    { file: 'nis2-self-assessment.spec.ts', reason: 'beforeAll createIsolatedTenant per describe + serial NIS2-gated step flow on its OWN tenant' },
     { file: 'responsive.spec.ts', reason: 'self-isolating via createIsolatedTenant (per fixtures.ts docstring)' },
     { file: 'theme-toggle.spec.ts', reason: 'self-isolating via createIsolatedTenant (per fixtures.ts docstring)' },
     // ── Known additive shared-seed mutators, pinned mode:serial ──
