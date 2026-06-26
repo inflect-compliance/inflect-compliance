@@ -45,7 +45,7 @@ Two context helpers in `src/lib/db-context.ts` (re-exported from
 | Read class | Route | Why |
 |------------|-------|-----|
 | Dashboards / aggregations / reporting | **replica** (`runInTenantReadContext`) | high-cost, lag-tolerant |
-| List reads | replica is acceptable | lag-tolerant; not yet routed (follow-up) |
+| List reads | replica-eligible; served from the primary today | lag-tolerant, but unrouted pending a measured win |
 | Detail reads, **especially read-after-write** | **primary** (`runInTenantContext`) | a GET right after a POST must see the write |
 | Auth / session / billing | **primary** | latency-sensitive + tightly coupled to writes |
 | All writes | **primary** | replicas are read-only |
