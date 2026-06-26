@@ -141,3 +141,11 @@ prominently in your report. Operator runbooks:
 - [`docs/epic-e-observability.md`](./docs/epic-e-observability.md) —
   Epic E observability + operational hardening (audit-stream retry,
   graceful shutdown, HIBP guardrail).
+
+## Sub-processors
+
+The third-party services that process customer data (and the codebase
+evidence each is actually used) are inventoried in
+[`docs/sub-processors.md`](docs/sub-processors.md) — the customer-facing
+"what processes my data" surface. The [DPA template](docs/data-processing-agreement-template.md)
+and [change policy](docs/sub-processor-change-policy.md) sit alongside it.
