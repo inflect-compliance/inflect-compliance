@@ -83,6 +83,7 @@ a `userId` but stores no contact PII).
 | `ControlTestPlan` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
 | `ControlTestRun` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
 | `ControlTestStep` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `DataSubjectRequest` | Regulatory artefact | ind. | None — retained indefinitely (DSAR compliance record) | DEFINED — retained as Art. 17 compliance evidence (see docs/dsar.md) |
 | `Evidence` | Business record | No | retentionUntil sweep (data-lifecycle `runRetentionSweep`) + soft-delete | DEFINED — template for the rest |
 | `EvidenceReview` | Business record | maybe | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
 | `FileRecord` | Business record | No | retentionUntil sweep (data-lifecycle `runRetentionSweep`) + soft-delete | DEFINED (retentionUntil) where set; else indefinite |
@@ -274,11 +275,14 @@ regulation may force) · **Mechanism** · **Owner** · **Cleanup wiring** ·
 
 > `User` · `AuditorAccount`
 
-- **This is the GDPR Article 17 right-to-erasure surface.**
+- **This is the GDPR Article 17 right-to-erasure surface.** The erasure +
+  export workflow is being built as the DSAR sequence — see
+  [`docs/dsar.md`](dsar.md) (Stage 1 foundation shipped; execution sequenced).
 - **Supported today?** **No** — beyond `User.deletedAt` soft-delete, there is no
-  erasure flow. Soft-deleting a `User` does not scrub their PII from the row, nor
-  cascade-scrub their authored content, nor reconcile with the immutable
-  `AuditLog` (which references `userId`).
+  erasure execution yet. Soft-deleting a `User` does not scrub their PII from the
+  row, nor cascade-scrub their authored content, nor reconcile with the immutable
+  `AuditLog` (which references `userId`). The DSAR foundation (`docs/dsar.md`)
+  lands the model + workflow; Stage 3 lands the irreversible cascade.
 - **What landing real erasure requires:** (a) a documented cascade across all
   tenant data referencing the user; (b) a decision on how to treat `AuditLog`
   references (pseudonymise the `userId`? retain under legal-basis exemption?);
