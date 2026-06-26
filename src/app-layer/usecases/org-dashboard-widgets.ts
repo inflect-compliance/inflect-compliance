@@ -34,6 +34,7 @@
 import type { OrgDashboardWidgetType, Prisma } from '@prisma/client';
 
 import prisma from '@/lib/prisma';
+import { bumpEntityCacheVersionForScope } from '@/lib/cache/list-cache';
 import { forbidden, notFound } from '@/lib/errors/types';
 import type { OrgContext } from '@/app-layer/types';
 import {
@@ -142,6 +143,7 @@ export async function createOrgDashboardWidget(
             enabled: input.enabled ?? true,
         },
     });
+    await bumpEntityCacheVersionForScope(ctx.organizationId, 'orgWidget');
     return rowToDto(row);
 }
 
@@ -201,6 +203,7 @@ export async function updateOrgDashboardWidget(
         where: { id: existing.id },
         data,
     });
+    await bumpEntityCacheVersionForScope(ctx.organizationId, 'orgWidget');
     return rowToDto(row);
 }
 
@@ -221,5 +224,6 @@ export async function deleteOrgDashboardWidget(
     if (result.count === 0) {
         throw notFound('Widget not found');
     }
+    await bumpEntityCacheVersionForScope(ctx.organizationId, 'orgWidget');
     return { deleted: true, id: widgetId };
 }

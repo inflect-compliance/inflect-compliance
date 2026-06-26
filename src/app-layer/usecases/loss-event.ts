@@ -27,6 +27,7 @@ import { assertCanRead, assertCanWrite, assertCanAdmin } from '../policies/commo
 import { logEvent } from '../events/audit';
 import { notFound, badRequest } from '@/lib/errors/types';
 import { sanitizePlainText } from '@/lib/security/sanitize';
+import { bumpEntityCacheVersion } from '@/lib/cache/list-cache';
 import type { LossEventSource } from '@prisma/client';
 
 /** A single loss event as returned to the client. */
@@ -178,7 +179,7 @@ export async function createLossEvent(
     const description = sanitizeOptional(input.description);
     const justification = sanitizeOptional(input.justification);
 
-    return runInTenantContext(ctx, async (db) => {
+    const created = await runInTenantContext(ctx, async (db) => {
         if (input.riskId) {
             const exists = await db.risk.findFirst({
                 where: { id: input.riskId, tenantId: ctx.tenantId },
@@ -224,6 +225,8 @@ export async function createLossEvent(
         });
         return created;
     });
+    await bumpEntityCacheVersion(ctx, 'lossEvent');
+    return created;
 }
 
 /** Soft delete. ADMIN-only — actuals are evidence; an EDITOR write
@@ -248,4 +251,5 @@ export async function deleteLossEvent(ctx: RequestContext, id: string): Promise<
             detailsJson: { category: 'custom', event: 'loss_event_removed', amount: existing.amount },
         });
     });
+    await bumpEntityCacheVersion(ctx, 'lossEvent');
 }

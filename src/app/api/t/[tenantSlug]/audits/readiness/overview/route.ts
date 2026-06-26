@@ -13,11 +13,20 @@ import { getTenantCtx } from '@/app-layer/context';
 import { getReadinessOverview } from '@/app-layer/usecases/audit-readiness';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
+import { cachedAggregationRead } from '@/lib/cache/aggregation-cache';
+import { AGGREGATIONS } from '@/lib/cache/aggregation-registry';
 
 export const GET = withApiErrorHandling(
     async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
         const params = await paramsPromise;
         const ctx = await getTenantCtx(params, req);
-        return jsonResponse(await getReadinessOverview(ctx));
+        const overview = await cachedAggregationRead({
+            scopeKey: ctx.tenantId,
+            aggregation: 'audits-readiness-overview',
+            dependsOn: AGGREGATIONS['audits-readiness-overview'].dependsOn,
+            ttlSeconds: AGGREGATIONS['audits-readiness-overview'].ttlSeconds,
+            compute: () => getReadinessOverview(ctx),
+        });
+        return jsonResponse(overview);
     },
 );

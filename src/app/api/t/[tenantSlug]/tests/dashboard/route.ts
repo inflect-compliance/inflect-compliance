@@ -28,6 +28,8 @@ import { getTestDashboardMetrics } from '@/app-layer/usecases/due-planning';
 import { getTestDashboard } from '@/app-layer/usecases/test-scheduling';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
+import { cachedAggregationRead } from '@/lib/cache/aggregation-cache';
+import { AGGREGATIONS } from '@/lib/cache/aggregation-registry';
 
 export const GET = withApiErrorHandling(
     async (req: NextRequest, { params: paramsPromise }: { params: Promise<{ tenantSlug: string }> }) => {
@@ -37,16 +39,26 @@ export const GET = withApiErrorHandling(
         const period = parseInt(url.searchParams.get('period') || '30', 10);
         const validPeriod = [30, 90, 180, 365].includes(period) ? period : 30;
 
-        const [legacy, g2] = await Promise.all([
-            getTestDashboardMetrics(ctx, validPeriod),
-            getTestDashboard(ctx, validPeriod),
-        ]);
-
-        return jsonResponse({
-            ...legacy,
-            automation: g2.automation,
-            upcoming: g2.upcoming,
-            trend: g2.trend,
+        const dashboard = await cachedAggregationRead({
+            scopeKey: ctx.tenantId,
+            aggregation: 'tests-dashboard',
+            dependsOn: AGGREGATIONS['tests-dashboard'].dependsOn,
+            ttlSeconds: AGGREGATIONS['tests-dashboard'].ttlSeconds,
+            variant: { period: validPeriod },
+            compute: async () => {
+                const [legacy, g2] = await Promise.all([
+                    getTestDashboardMetrics(ctx, validPeriod),
+                    getTestDashboard(ctx, validPeriod),
+                ]);
+                return {
+                    ...legacy,
+                    automation: g2.automation,
+                    upcoming: g2.upcoming,
+                    trend: g2.trend,
+                };
+            },
         });
+
+        return jsonResponse(dashboard);
     },
 );

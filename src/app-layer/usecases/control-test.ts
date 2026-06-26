@@ -27,6 +27,7 @@ import { runInTenantContext } from '@/lib/db-context';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { computeNextDueAt } from '../utils/cadence';
 import { createTask } from './task';
+import { bumpEntityCacheVersion } from '@/lib/cache/list-cache';
 
 // Epic D.2 — preserve the three-state contract on update paths.
 function sanitizeOptional(v: string | null | undefined): string | null | undefined {
@@ -189,7 +190,7 @@ export async function createTestPlan(ctx: RequestContext, controlId: string, inp
                 : sanitizePlainText(s.expectedOutput),
         })),
     };
-    return runInTenantContext(ctx, async (db) => {
+    const result = await runInTenantContext(ctx, async (db) => {
         const plan = await TestPlanRepository.create(db, ctx, controlId, sanitisedInput);
 
         // Compute initial nextDueAt
@@ -201,6 +202,8 @@ export async function createTestPlan(ctx: RequestContext, controlId: string, inp
         await emitTestPlanCreated(db, ctx, { id: plan.id, name: plan.name, controlId });
         return { ...plan, nextDueAt };
     });
+    await bumpEntityCacheVersion(ctx, 'test');
+    return result;
 }
 
 export async function updateTestPlan(ctx: RequestContext, planId: string, patch: {
@@ -222,7 +225,7 @@ export async function updateTestPlan(ctx: RequestContext, planId: string, patch:
         name: sanitizeOptional(patch.name) ?? undefined,
         description: sanitizeOptional(patch.description),
     };
-    return runInTenantContext(ctx, async (db) => {
+    const result = await runInTenantContext(ctx, async (db) => {
         const existing = await TestPlanRepository.getById(db, ctx, planId);
         if (!existing) throw notFound('Test plan not found');
 
@@ -247,6 +250,8 @@ export async function updateTestPlan(ctx: RequestContext, planId: string, patch:
 
         return updated;
     });
+    await bumpEntityCacheVersion(ctx, 'test');
+    return result;
 }
 
 // ─── Test Runs ───
@@ -254,7 +259,7 @@ export async function updateTestPlan(ctx: RequestContext, planId: string, patch:
 export async function createTestRun(ctx: RequestContext, planId: string) {
     assertCanExecuteTests(ctx);
 
-    return runInTenantContext(ctx, async (db) => {
+    const result = await runInTenantContext(ctx, async (db) => {
         const plan = await TestPlanRepository.getById(db, ctx, planId);
         if (!plan) throw notFound('Test plan not found');
         if (plan.status !== 'ACTIVE') throw badRequest('Cannot create a run for a paused test plan');
@@ -267,6 +272,8 @@ export async function createTestRun(ctx: RequestContext, planId: string) {
         await emitTestRunCreated(db, ctx, { id: run.id, testPlanId: planId });
         return run;
     });
+    await bumpEntityCacheVersion(ctx, 'test');
+    return result;
 }
 
 export async function completeTestRun(ctx: RequestContext, runId: string, input: {
@@ -286,7 +293,7 @@ export async function completeTestRun(ctx: RequestContext, runId: string, input:
         notes: sanitizeOptional(input.notes),
         findingSummary: sanitizeOptional(input.findingSummary),
     };
-    return runInTenantContext(ctx, async (db) => {
+    const result = await runInTenantContext(ctx, async (db) => {
         const run = await TestRunRepository.getById(db, ctx, runId);
         if (!run) throw notFound('Test run not found');
         if (run.status === 'COMPLETED') throw badRequest('Test run is already completed');
@@ -346,6 +353,8 @@ export async function completeTestRun(ctx: RequestContext, runId: string, input:
 
         return completedRun;
     });
+    await bumpEntityCacheVersion(ctx, 'test');
+    return result;
 }
 
 // ─── Retest Flow ───
@@ -353,7 +362,7 @@ export async function completeTestRun(ctx: RequestContext, runId: string, input:
 export async function retestFromRun(ctx: RequestContext, runId: string) {
     assertCanExecuteTests(ctx);
 
-    return runInTenantContext(ctx, async (db) => {
+    const result = await runInTenantContext(ctx, async (db) => {
         const run = await db.controlTestRun.findFirst({
             where: { id: runId, tenantId: ctx.tenantId },
             include: { testPlan: { select: { id: true, name: true, status: true, controlId: true } } },
@@ -393,6 +402,8 @@ export async function retestFromRun(ctx: RequestContext, runId: string) {
 
         return newRun;
     });
+    await bumpEntityCacheVersion(ctx, 'test');
+    return result;
 }
 
 // ─── Evidence Linking ───
@@ -407,7 +418,7 @@ export async function linkEvidenceToRun(ctx: RequestContext, runId: string, inpu
 }) {
     assertCanLinkTestEvidence(ctx);
 
-    return runInTenantContext(ctx, async (db) => {
+    const result = await runInTenantContext(ctx, async (db) => {
         const run = await TestRunRepository.getById(db, ctx, runId);
         if (!run) throw notFound('Test run not found');
 
@@ -419,12 +430,14 @@ export async function linkEvidenceToRun(ctx: RequestContext, runId: string, inpu
         await emitTestEvidenceLinked(db, ctx, { id: link.id, testRunId: runId, kind: input.kind });
         return link;
     });
+    await bumpEntityCacheVersion(ctx, 'test');
+    return result;
 }
 
 export async function unlinkEvidenceFromRun(ctx: RequestContext, linkId: string) {
     assertCanLinkTestEvidence(ctx);
 
-    return runInTenantContext(ctx, async (db) => {
+    await runInTenantContext(ctx, async (db) => {
         // Verify the link exists and belongs to this tenant
         const existing = await db.controlTestEvidenceLink.findFirst({
             where: { id: linkId, tenantId: ctx.tenantId },
@@ -434,6 +447,7 @@ export async function unlinkEvidenceFromRun(ctx: RequestContext, linkId: string)
         await TestEvidenceRepository.unlink(db, ctx, linkId);
         await emitTestEvidenceUnlinked(db, ctx, linkId, existing.testRunId);
     });
+    await bumpEntityCacheVersion(ctx, 'test');
 }
 
 // ─── Automation Bridge ───
@@ -460,7 +474,7 @@ export async function createAutomatedTestRun(
 ) {
     assertCanExecuteTests(ctx);
 
-    return runInTenantContext(ctx, async (db) => {
+    const result = await runInTenantContext(ctx, async (db) => {
         const plan = await TestPlanRepository.getById(db, ctx, planId);
         if (!plan) throw notFound('Test plan not found');
 
@@ -563,6 +577,8 @@ export async function createAutomatedTestRun(
 
         return completedRun;
     });
+    await bumpEntityCacheVersion(ctx, 'test');
+    return result;
 }
 
 // ─── Bulk actions (canonical BulkActionBar rollout) ───
@@ -593,6 +609,7 @@ export async function bulkSetTestPlanStatus(
         }
         return rows.length;
     });
+    await bumpEntityCacheVersion(ctx, 'test');
     return { updated };
 }
 
@@ -626,5 +643,6 @@ export async function bulkAssignTestPlan(
         }
         return rows.length;
     });
+    await bumpEntityCacheVersion(ctx, 'test');
     return { updated };
 }

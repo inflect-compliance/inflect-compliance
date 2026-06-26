@@ -10,6 +10,7 @@ import { logEvent } from '../../events/audit';
 import { runInTenantContext } from '@/lib/db-context';
 import { notFound, badRequest } from '@/lib/errors/types';
 import { recordAuditCycleStarted } from '@/lib/observability/business-metrics';
+import { bumpEntityCacheVersion } from '@/lib/cache/list-cache';
 
 // РІвЂќР‚РІвЂќР‚РІвЂќР‚ Audit Cycles РІвЂќР‚РІвЂќР‚РІвЂќР‚
 
@@ -38,6 +39,7 @@ export async function createAuditCycle(
         return created;
     });
     recordAuditCycleStarted();
+    await bumpEntityCacheVersion(ctx, 'audit');
     return cycle;
 }
 
@@ -70,10 +72,10 @@ export async function updateAuditCycle(
     data: { name?: string; status?: string; periodStartAt?: string; periodEndAt?: string }
 ) {
     assertCanManageAuditCycles(ctx);
-    return runInTenantContext(ctx, async (tdb) => {
+    const cycle = await runInTenantContext(ctx, async (tdb) => {
         const existing = await tdb.auditCycle.findFirst({ where: { id: cycleId, tenantId: ctx.tenantId } });
         if (!existing) throw notFound('Audit cycle not found');
-        const cycle = await tdb.auditCycle.update({
+        const updated = await tdb.auditCycle.update({
             where: { id: cycleId },
             data: {
                 ...(data.name !== undefined && { name: data.name }),
@@ -82,7 +84,9 @@ export async function updateAuditCycle(
                 ...(data.periodEndAt !== undefined && { periodEndAt: data.periodEndAt ? new Date(data.periodEndAt) : null }),
             },
         });
-        await logEvent(tdb, ctx, { action: 'AUDIT_CYCLE_UPDATED', entityType: 'AuditCycle', entityId: cycle.id, details: JSON.stringify(data), detailsJson: { category: 'entity_lifecycle', entityName: 'AuditCycle', operation: 'updated', changedFields: Object.keys(data).filter(k => data[k as keyof typeof data] !== undefined), summary: 'Audit cycle updated' } });
-        return cycle;
+        await logEvent(tdb, ctx, { action: 'AUDIT_CYCLE_UPDATED', entityType: 'AuditCycle', entityId: updated.id, details: JSON.stringify(data), detailsJson: { category: 'entity_lifecycle', entityName: 'AuditCycle', operation: 'updated', changedFields: Object.keys(data).filter(k => data[k as keyof typeof data] !== undefined), summary: 'Audit cycle updated' } });
+        return updated;
     });
+    await bumpEntityCacheVersion(ctx, 'audit');
+    return cycle;
 }

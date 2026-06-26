@@ -950,6 +950,9 @@
     "docs/implementation-notes/2026-06-25-sizing-doc.md": {
       "class": "historical"
     },
+    "docs/implementation-notes/2026-06-26-aggregation-cache.md": {
+      "class": "historical"
+    },
     "docs/implementation-notes/2026-06-26-cdn-cloudfront.md": {
       "class": "historical"
     },
@@ -1056,6 +1059,9 @@
       "class": "authoritative"
     },
     "docs/requirement-mapping-sets.md": {
+      "class": "authoritative"
+    },
+    "docs/response-caching.md": {
       "class": "authoritative"
     },
     "docs/right-rail-aside-roadmap.md": {
