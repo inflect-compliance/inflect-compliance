@@ -37,3 +37,17 @@ Tail logs:
 
   kubectl --namespace {{ .Release.Namespace }} \
     logs -f -l "app.kubernetes.io/instance={{ .Release.Name }}"
+{{ if .Values.worker.autoscaling.enabled }}
+⚠️  Worker autoscaling (KEDA) is ENABLED.
+
+  PREREQUISITE — KEDA must be installed cluster-wide (this chart does NOT
+  manage the KEDA controller):
+
+    helm repo add kedacore https://kedacore.github.io/charts
+    helm install keda kedacore/keda -n keda --create-namespace
+
+  The worker scales on BullMQ queue depth (bull:{{ .Values.worker.autoscaling.queueName | default "inflect-jobs" }}:wait),
+  {{ .Values.worker.autoscaling.minReplicas }}→{{ .Values.worker.autoscaling.maxReplicas }} replicas. The redis scaler needs
+  REDIS host:port + password as SEPARATE keys (it can't parse REDIS_URL) —
+  ensure the worker's config/secret exposes them. See docs/worker-autoscaling.md.
+{{- end }}
