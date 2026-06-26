@@ -2137,3 +2137,108 @@ model TreatmentMilestone {
   @@index([tenantId, completedAt])
   @@index([treatmentPlanId, sortOrder])
 }
+
+// ─── NIS2 Gap Assessment (imported open-data, CC BY 4.0) ──────────────
+//
+// The 116-question / 15-domain NIS2 self-assessment question set imported
+// from NISD2/nis2-gap-assessment-schema (content CC BY 4.0 — see
+// prisma/fixtures/nis2-gap-assessment.LICENSE.md). This is a SEPARATE
+// artifact from the seeded NIS2 `Framework` (key='NIS2',
+// version='2022/2555') and its requirements — the two live side by side,
+// never merged. Enum-shaped columns (criticality/respondent/consequence/
+// timeToFix/answer/status) are stored as String, validated at ingest by
+// the Zod string enums in src/lib/schemas/nis2-gap-assessment.ts — the
+// codebase never deals with the upstream integer codes.
+
+/// Global reference: one of the 15 NIS2 gap-assessment domains.
+/// Not tenant-scoped (shared library content, no RLS).
+model Nis2GapDomain {
+  /// Upstream domain id (0–14) — stable natural key from the source.
+  id          Int    @id
+  /// Short stable code, e.g. "SCOPE" (upstream `code`).
+  code        String @unique
+  /// Bilingual { en, de } — stored verbatim from upstream.
+  name        Json
+  description Json
+  /// Suggested assessment "day" bucket (1–5) from upstream.
+  day         Int
+
+  questions Nis2GapQuestion[]
+}
+
+/// Global reference: one NIS2 gap-assessment question.
+/// Not tenant-scoped (shared library content, no RLS).
+model Nis2GapQuestion {
+  /// Upstream question id, e.g. "gap-0-01" (globally unique).
+  id           String  @id
+  /// FK → Nis2GapDomain.id (upstream `domain` integer).
+  domainId     Int
+  /// Bilingual { en, de } legalese question text.
+  text         Json
+  /// Bilingual { en, de } plain-language restatement.
+  plainText    Json
+  /// Statutory anchor, e.g. "§28 BSIG" or "Art 21(2)(a)". German-law
+  /// citations are PRESERVED and tagged here, never dropped.
+  legalBasis   String
+  /// String enums — validated at ingest. See NIS2_* in the Zod schema.
+  criticality  String
+  respondent   String
+  consequence  String
+  fineExposure Boolean
+  timeToFix    String
+  day          Int
+  /// Upstream question ids this question depends on (gating order).
+  dependsOn    String[]
+
+  domain  Nis2GapDomain              @relation(fields: [domainId], references: [id])
+  answers Nis2SelfAssessmentAnswer[]
+
+  @@index([domainId])
+}
+
+/// Tenant-scoped: one tenant's run through the NIS2 gap assessment.
+model Nis2SelfAssessment {
+  id          String    @id @default(cuid())
+  tenantId    String
+  title       String?
+  /// Lifecycle: DRAFT | IN_PROGRESS | COMPLETED | ARCHIVED (String, not a
+  /// Prisma enum, to mirror the source's string-enum convention).
+  status      String    @default("DRAFT")
+  /// Opaque actor ids — plain String (no User FK) so the assessment is
+  /// independent of user-lifecycle cascades.
+  createdById String?
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tenant  Tenant                     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  answers Nis2SelfAssessmentAnswer[]
+
+  @@index([tenantId, updatedAt])
+}
+
+/// Tenant-scoped: one answer within a self-assessment.
+/// `note` is encrypted at rest (Epic B manifest).
+model Nis2SelfAssessmentAnswer {
+  id           String   @id @default(cuid())
+  tenantId     String
+  assessmentId String
+  questionId   String
+  /// String enum: NA | NO | PARTIALLY | YES (validated at the usecase).
+  answer       String
+  /// Free-text rationale — ENCRYPTED at rest (see encrypted-fields.ts).
+  note         String?
+  answeredById String?
+  answeredAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant     Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assessment Nis2SelfAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  question   Nis2GapQuestion    @relation(fields: [questionId], references: [id])
+
+  @@unique([assessmentId, questionId])
+  @@index([tenantId, assessmentId])
+  @@index([questionId])
+}

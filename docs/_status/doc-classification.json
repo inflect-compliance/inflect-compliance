@@ -1180,6 +1180,9 @@
     },
     "docs/worker-autoscaling.md": {
       "class": "authoritative"
+    },
+    "docs/implementation-notes/2026-06-26-nis2-gap-assessment-data.md": {
+      "class": "historical"
     }
   }
 }

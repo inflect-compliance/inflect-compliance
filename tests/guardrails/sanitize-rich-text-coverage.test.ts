@@ -110,6 +110,13 @@ const KNOWN_UNCOVERED: Readonly<Record<string, string>> = {
         'sanitiser. Ratchet target: identify the write usecase and ' +
         'either register it in RICH_TEXT_COVERAGE (if it already ' +
         'sanitises) or wire sanitizePlainText into it.',
+    Nis2SelfAssessmentAnswer:
+        'Nis2SelfAssessmentAnswer.note (answer rationale) is encrypted ' +
+        'at rest but has NO write usecase yet — the NIS2 gap-assessment ' +
+        'shipped as a DATA LAYER only (2026-06-26-nis2-gap-assessment-data). ' +
+        'Ratchet target: when the answer-write usecase lands it MUST run ' +
+        'note through sanitizePlainText and move this entry into ' +
+        'RICH_TEXT_COVERAGE.',
 };
 
 const fileExists = (rel: string) => fs.existsSync(path.join(REPO_ROOT, rel));
@@ -181,8 +188,9 @@ describe('rich-text sanitiser coverage — structural completeness', () => {
 
     it('KNOWN_UNCOVERED is a ratchet — it should trend to zero', () => {
         // Not a hard cap — but a visible reminder. If this grows, the
-        // diff is the conversation. Today: 1 (EvidenceReview).
-        expect(Object.keys(KNOWN_UNCOVERED).length).toBeLessThanOrEqual(1);
+        // diff is the conversation. Today: 2 (EvidenceReview;
+        // Nis2SelfAssessmentAnswer — data-layer only, no write usecase yet).
+        expect(Object.keys(KNOWN_UNCOVERED).length).toBeLessThanOrEqual(2);
     });
 
     const coverageEntries = Object.entries(RICH_TEXT_COVERAGE).flatMap(

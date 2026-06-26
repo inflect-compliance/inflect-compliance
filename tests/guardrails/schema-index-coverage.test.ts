@@ -332,6 +332,19 @@ const LIST_QUERY_INDEXES: readonly CompositeIndex[] = [
         justification:
             'WorkItemRepository.list() linkedEntityType+linkedEntityId reverse-lookup',
     },
+    // ── NIS2 gap-assessment (Nis2GapAssessmentRepository) ───────────
+    {
+        model: 'Nis2SelfAssessment',
+        fields: ['tenantId', 'updatedAt'],
+        justification:
+            "Nis2GapAssessmentRepository.listAssessments default sort: orderBy { updatedAt: 'desc' }",
+    },
+    {
+        model: 'Nis2SelfAssessmentAnswer',
+        fields: ['tenantId', 'assessmentId'],
+        justification:
+            'Nis2GapAssessmentRepository.listAnswers filters by [tenantId, assessmentId]',
+    },
 ];
 
 // ─────────────────────────────────────────────────────────────────────
