@@ -28,21 +28,33 @@ async function startAndCompleteCompanyProfile(page: import('@playwright/test').P
     await gotoAndVerify(page, `/t/${slug}/onboarding`, 'main');
     await page.waitForLoadState('networkidle').catch(() => {});
 
+    // Welcome screen → Start Setup (only on a fresh, NOT_STARTED wizard).
     const startBtn = page.locator('button:has-text("Start Setup")');
-    if (await startBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+    if (await startBtn.isVisible({ timeout: 10000 }).catch(() => false)) {
         await startBtn.click();
         await page.waitForLoadState('networkidle').catch(() => {});
     }
 
+    // Company Profile — the Company Name is REQUIRED to complete the step.
+    // The first onboarding hit can cold-compile slowly, so wait for the
+    // input (don't skip it) and fill it deterministically.
     const nameInput = page.locator('[data-testid="company-name"]');
-    if (await nameInput.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await nameInput.fill('Acme Corporation');
-    }
-    const continueBtn = page.locator('button:has-text("Continue")');
-    if (await continueBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await continueBtn.click();
-        await page.waitForLoadState('networkidle').catch(() => {});
-    }
+    await nameInput.waitFor({ state: 'visible', timeout: 20000 });
+    await nameInput.fill('Acme Corporation');
+
+    // Continue → advance to the Frameworks step. The first cold "complete"
+    // can race the React state update (the API 200s but activeStepIdx hasn't
+    // advanced yet), so RETRY the click until a framework card actually
+    // renders — proof the wizard left Company Profile.
+    const frameworkCard = page
+        .locator('[data-testid="fw-nis2"], [data-testid="fw-iso27001"]')
+        .first();
+    await expect(async () => {
+        if (!(await frameworkCard.isVisible().catch(() => false))) {
+            await page.locator('button:has-text("Continue")').first().click();
+        }
+        await expect(frameworkCard).toBeVisible({ timeout: 4000 });
+    }).toPass({ timeout: 40000 });
 }
 
 test.describe('NIS2 self-assessment — NIS2 selected', () => {
@@ -134,7 +146,10 @@ test.describe('NIS2 self-assessment — NIS2 NOT selected', () => {
         await expect(page.locator('[data-testid="step-nav-NIS2_SELF_ASSESSMENT"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="nis2-self-assessment"]')).toHaveCount(0);
 
-        // Completing FRAMEWORK_SELECTION advanced straight to Assets.
-        await expect(page.getByText(/Assets|Step \d+ of 7/)).toBeVisible({ timeout: 10000 });
+        // Completing FRAMEWORK_SELECTION advanced straight to Assets (the
+        // NIS2 step is absent, so the visible-step count is 7). `.first()`
+        // because the step label "Assets" + the "Step n of 7" caption both
+        // match — either being present proves the advance.
+        await expect(page.getByText(/Assets|Step \d+ of 7/).first()).toBeVisible({ timeout: 10000 });
     });
 });

@@ -95,7 +95,15 @@ export async function saveNis2Answer(
             action: 'NIS2_ASSESSMENT_ANSWERED',
             entityType: 'Nis2SelfAssessmentAnswer',
             entityId: saved.id,
-            detailsJson: { questionId: input.questionId, answer: input.answer },
+            // `category` is the required discriminator on AuditDetailsJsonSchema;
+            // without it the audit write 400s ("Invalid detailsJson structure")
+            // and the answer autosave fails. The extra keys pass through.
+            detailsJson: {
+                category: 'custom',
+                event: 'nis2_assessment_answered',
+                questionId: input.questionId,
+                answer: input.answer,
+            },
         });
         return saved;
     });
