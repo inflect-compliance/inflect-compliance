@@ -44,7 +44,7 @@
  * planned tool for that.
  */
 
-import type { Prisma } from '@prisma/client';
+import type { Prisma, OrgDashboardWidgetType } from '@prisma/client';
 import type { CreateOrgDashboardWidgetInput } from '@/app-layer/schemas/org-dashboard-widget.schemas';
 
 /**
@@ -55,13 +55,24 @@ import type { CreateOrgDashboardWidgetInput } from '@/app-layer/schemas/org-dash
  * `tests/unit/org-dashboard-preset.test.ts`.
  */
 export const DEFAULT_ORG_DASHBOARD_PRESET: ReadonlyArray<CreateOrgDashboardWidgetInput> = [
+    // ─── Row 0: org-wide threat posture (human-curated; top, full width) ──
+    {
+        type: 'ORG_THREAT_LEVEL',
+        chartType: 'banner',
+        title: 'Threat Level',
+        config: { showHistory: true },
+        position: { x: 0, y: 0 },
+        size: { w: 12, h: 2 },
+        enabled: true,
+    },
+
     // ─── Row 1: four KPI tiles ──────────────────────────────────────
     {
         type: 'KPI',
         chartType: 'coverage',
         title: 'Coverage',
         config: { format: 'percent' },
-        position: { x: 0, y: 0 },
+        position: { x: 0, y: 2 },
         size: { w: 3, h: 2 },
         enabled: true,
     },
@@ -70,7 +81,7 @@ export const DEFAULT_ORG_DASHBOARD_PRESET: ReadonlyArray<CreateOrgDashboardWidge
         chartType: 'critical-risks',
         title: 'Critical Risks',
         config: { format: 'number' },
-        position: { x: 3, y: 0 },
+        position: { x: 3, y: 2 },
         size: { w: 3, h: 2 },
         enabled: true,
     },
@@ -79,7 +90,7 @@ export const DEFAULT_ORG_DASHBOARD_PRESET: ReadonlyArray<CreateOrgDashboardWidge
         chartType: 'overdue-evidence',
         title: 'Overdue Evidence',
         config: { format: 'number' },
-        position: { x: 6, y: 0 },
+        position: { x: 6, y: 2 },
         size: { w: 3, h: 2 },
         enabled: true,
     },
@@ -88,7 +99,7 @@ export const DEFAULT_ORG_DASHBOARD_PRESET: ReadonlyArray<CreateOrgDashboardWidge
         chartType: 'tenants',
         title: 'Tenants',
         config: { format: 'number' },
-        position: { x: 9, y: 0 },
+        position: { x: 9, y: 2 },
         size: { w: 3, h: 2 },
         enabled: true,
     },
@@ -99,7 +110,7 @@ export const DEFAULT_ORG_DASHBOARD_PRESET: ReadonlyArray<CreateOrgDashboardWidge
         chartType: 'rag-distribution',
         title: 'Tenant Health Distribution',
         config: { showLegend: true },
-        position: { x: 0, y: 2 },
+        position: { x: 0, y: 4 },
         size: { w: 6, h: 4 },
         enabled: true,
     },
@@ -108,7 +119,7 @@ export const DEFAULT_ORG_DASHBOARD_PRESET: ReadonlyArray<CreateOrgDashboardWidge
         chartType: 'risks-open',
         title: 'Open Risks (90 days)',
         config: { days: 90 },
-        position: { x: 6, y: 2 },
+        position: { x: 6, y: 4 },
         size: { w: 6, h: 4 },
         enabled: true,
     },
@@ -119,7 +130,7 @@ export const DEFAULT_ORG_DASHBOARD_PRESET: ReadonlyArray<CreateOrgDashboardWidge
         chartType: 'coverage',
         title: 'Coverage by Tenant',
         config: { sortBy: 'rag' },
-        position: { x: 0, y: 6 },
+        position: { x: 0, y: 8 },
         size: { w: 12, h: 6 },
         enabled: true,
     },
@@ -130,7 +141,7 @@ export const DEFAULT_ORG_DASHBOARD_PRESET: ReadonlyArray<CreateOrgDashboardWidge
         chartType: 'default',
         title: 'Drill-down',
         config: {},
-        position: { x: 0, y: 12 },
+        position: { x: 0, y: 14 },
         size: { w: 12, h: 2 },
         enabled: true,
     },
@@ -148,7 +159,7 @@ type SeederClient = Prisma.TransactionClient | {
         createMany(args: {
             data: Array<{
                 organizationId: string;
-                type: 'KPI' | 'DONUT' | 'TREND' | 'TENANT_LIST' | 'DRILLDOWN_CTAS';
+                type: OrgDashboardWidgetType;
                 chartType: string;
                 title: string | null;
                 config: Prisma.InputJsonValue;

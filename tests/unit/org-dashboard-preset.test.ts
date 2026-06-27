@@ -22,11 +22,11 @@ import {
 import { CreateOrgDashboardWidgetInput } from '@/app-layer/schemas/org-dashboard-widget.schemas';
 
 describe('Epic 41 — default org dashboard preset', () => {
-    it('contains exactly eight widgets', () => {
+    it('contains exactly nine widgets (incl. the ORG_THREAT_LEVEL banner)', () => {
         // The prior `/org/[orgSlug]` page rendered four KPI cards +
         // one donut + one trend + one tenant list + one drilldown
-        // CTA group = 8 sections. The preset preserves that count.
-        expect(DEFAULT_ORG_DASHBOARD_PRESET.length).toBe(8);
+        // CTA group = 8 sections, + the ORG_THREAT_LEVEL banner = 9.
+        expect(DEFAULT_ORG_DASHBOARD_PRESET.length).toBe(9);
     });
 
     it('every entry is Zod-valid against CreateOrgDashboardWidgetInput', () => {
@@ -62,12 +62,12 @@ describe('Epic 41 — default org dashboard preset', () => {
 
         // All four sit on row y=0, columns 0/3/6/9.
         for (let i = 0; i < kpis.length; i++) {
-            expect(kpis[i].position).toEqual({ x: i * 3, y: 0 });
+            expect(kpis[i].position).toEqual({ x: i * 3, y: 2 });
             expect(kpis[i].size).toEqual({ w: 3, h: 2 });
         }
     });
 
-    it('places the donut + trend side-by-side on row y=2', () => {
+    it('places the donut + trend side-by-side on row y=4', () => {
         const donut = DEFAULT_ORG_DASHBOARD_PRESET.find(
             (w) => w.type === 'DONUT',
         );
@@ -76,25 +76,25 @@ describe('Epic 41 — default org dashboard preset', () => {
         );
         expect(donut).toBeDefined();
         expect(trend).toBeDefined();
-        expect(donut?.position).toEqual({ x: 0, y: 2 });
+        expect(donut?.position).toEqual({ x: 0, y: 4 });
         expect(donut?.size).toEqual({ w: 6, h: 4 });
-        expect(trend?.position).toEqual({ x: 6, y: 2 });
+        expect(trend?.position).toEqual({ x: 6, y: 4 });
         expect(trend?.size).toEqual({ w: 6, h: 4 });
     });
 
-    it('places the tenant list full-width on row y=6', () => {
+    it('places the tenant list full-width on row y=8', () => {
         const list = DEFAULT_ORG_DASHBOARD_PRESET.find(
             (w) => w.type === 'TENANT_LIST',
         );
-        expect(list?.position).toEqual({ x: 0, y: 6 });
+        expect(list?.position).toEqual({ x: 0, y: 8 });
         expect(list?.size).toEqual({ w: 12, h: 6 });
     });
 
-    it('places the drilldown CTAs full-width on row y=12', () => {
+    it('places the drilldown CTAs full-width on row y=14', () => {
         const ctas = DEFAULT_ORG_DASHBOARD_PRESET.find(
             (w) => w.type === 'DRILLDOWN_CTAS',
         );
-        expect(ctas?.position).toEqual({ x: 0, y: 12 });
+        expect(ctas?.position).toEqual({ x: 0, y: 14 });
         expect(ctas?.size).toEqual({ w: 12, h: 2 });
     });
 
@@ -150,7 +150,7 @@ describe('Epic 41 — default org dashboard preset', () => {
 
     it('mutation regression — dropping a widget trips the count assertion', () => {
         const broken = DEFAULT_ORG_DASHBOARD_PRESET.slice(0, -1);
-        expect(broken.length).toBe(7);
-        expect(broken.length).not.toBe(8);
+        expect(broken.length).toBe(8);
+        expect(broken.length).not.toBe(9);
     });
 });

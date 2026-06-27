@@ -259,6 +259,7 @@ model Organization {
   provisionedTenantMemberships TenantMembership[]   @relation("OrgProvisionedTenantMemberships")
   auditLogs                    OrgAuditLog[]
   dashboardWidgets             OrgDashboardWidget[]
+  threatLevels                 OrgThreatLevel[]
 }
 
 // Per-user, per-org role assignment.
@@ -380,6 +381,34 @@ model OrgDashboardWidget {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
+}
+
+/// Org-wide, human-curated threat posture (concept ported from
+/// Cybether, MIT — the idea, not the code). ORG-SCOPED like the other
+/// org-* models: global prisma, organizationId filter, NOT in
+/// TENANT_SCOPED_MODELS, so no per-tenant RLS / Epic-B tenant-DEK
+/// applies (that machinery is tenant-keyed). One org → one current
+/// posture; rows are append-only history. Current = most recent by
+/// setAt. `summary`/`detail` are org-internal curated text, sanitised
+/// at the usecase layer (org models have no per-tenant DEK).
+model OrgThreatLevel {
+  id             String        @id @default(cuid())
+  organizationId String
+  level          OrgThreatTier
+  /// Curated headline (sanitised).
+  summary        String
+  /// Optional longer context (sanitised).
+  detail         String?
+  /// Opaque actor id (no User FK — keeps this append-only org log
+  /// independent of user-lifecycle cascades; the display name is
+  /// resolved in the usecase).
+  setByUserId    String
+  setAt          DateTime      @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Current = ORDER BY setAt DESC LIMIT 1; history = the full set.
+  @@index([organizationId, setAt])
 }
 
 model TenantOnboarding {

@@ -38,6 +38,7 @@ function makeOrgCtx(overrides: Partial<OrgContext>): OrgContext {
             canManageTenants: true,
             canManageMembers: true,
             canConfigureDashboard: true,
+            canSetThreatLevel: true,
         },
     };
 }

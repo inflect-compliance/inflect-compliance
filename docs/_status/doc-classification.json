@@ -4,7 +4,7 @@
   "counts": {
     "authoritative": 104,
     "living": 5,
-    "historical": 283,
+    "historical": 284,
     "deprecated": 1
   },
   "docs": {
@@ -1188,6 +1188,9 @@
       "class": "historical"
     },
     "docs/implementation-notes/2026-06-27-nis2-readiness.md": {
+      "class": "historical"
+    },
+    "docs/implementation-notes/2026-06-27-org-threat-level-widget.md": {
       "class": "historical"
     }
   }

@@ -22,6 +22,8 @@ import {
     type ChartRendererProps,
 } from '@/components/ui/dashboard-widgets';
 import type { OrgDashboardWidgetDto } from '@/app-layer/schemas/org-dashboard-widget.schemas';
+import type { OrgThreatLevelDto } from '@/app-layer/usecases/org-threat-level';
+import { OrgThreatLevelWidget } from './OrgThreatLevelWidget';
 import type {
     PortfolioSummary,
     PortfolioTrend,
@@ -41,6 +43,10 @@ export interface PortfolioData {
     tenantHealth: TenantHealthRow[];
     trends: PortfolioTrend;
     orgSlug: string;
+    /** Current org-wide threat posture (ORG_THREAT_LEVEL widget). */
+    threatLevel: OrgThreatLevelDto;
+    /** Whether the viewer may set the posture (ORG_ADMIN). */
+    canSetThreatLevel: boolean;
 }
 
 interface DispatcherProps {
@@ -262,6 +268,21 @@ export function DispatchedWidget({
             return (
                 <div id={domId} className="h-full">
                     <ChartRenderer {...props} />
+                </div>
+            );
+        }
+        case 'ORG_THREAT_LEVEL': {
+            // Human-curated posture banner — owns its own surface/padding,
+            // so render bare like KPI rather than inside a DashboardWidget.
+            const cfg = widget.config as { showHistory?: boolean };
+            return (
+                <div id={domId} className="h-full">
+                    <OrgThreatLevelWidget
+                        data={data.threatLevel}
+                        canSet={data.canSetThreatLevel}
+                        showHistory={Boolean(cfg.showHistory)}
+                        orgSlug={data.orgSlug}
+                    />
                 </div>
             );
         }

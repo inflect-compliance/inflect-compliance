@@ -69,6 +69,16 @@ function makeSummary(overrides: Partial<PortfolioSummary> = {}): PortfolioSummar
 function makePortfolioData(summary: PortfolioSummary = makeSummary()): PortfolioData {
     return {
         orgSlug: 'acme-org',
+        threatLevel: {
+            level: 'GUARDED',
+            summary: 'No active threat assessment',
+            detail: null,
+            setAt: null,
+            setByUserId: null,
+            setByName: null,
+            isDefault: true,
+        },
+        canSetThreatLevel: false,
         summary,
         tenantHealth: [],
         trends: {

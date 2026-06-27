@@ -53,6 +53,7 @@ describeFn('Portfolio overview orchestrator — single-fetch (DB-backed)', () =>
                 canManageTenants: true,
                 canManageMembers: true,
             canConfigureDashboard: true,
+            canSetThreatLevel: true,
             },
         };
     }
