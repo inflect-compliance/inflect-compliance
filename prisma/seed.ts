@@ -557,6 +557,80 @@ Reviewed at least annually.` },
             await prisma.policyTemplate.create({ data: tmpl });
         }
     }
+
+    // ─── Flagship full-text HTML templates ───
+    // Rich, ready-to-publish documents (cover title → page break →
+    // section headings → real prose). Authored as HTML so the policy
+    // view auto-renders a Table of Contents from the headings and the
+    // `<hr>` renders as a page break (on screen + in PDF export). These
+    // UPSERT their content — re-seeding upgrades the matching thin
+    // starter to the full document.
+    const flagshipTemplates: Array<{
+        title: string; category: string; tags: string; contentType: 'HTML'; contentText: string;
+    }> = [
+        {
+            title: 'Acceptable Use Policy',
+            category: 'HR',
+            tags: 'acceptable-use,hr,information-security',
+            contentType: 'HTML',
+            contentText:
+                '<h1>Acceptable Use Policy</h1>' +
+                '<hr>' +
+                '<h2>Purpose and Scope</h2>' +
+                '<p>This policy defines the acceptable use of the organisation’s information, information assets, and IT facilities. It applies to all employees, contractors, and third parties who access organisational systems or data, on any device, whether on or off premises.</p>' +
+                '<h2>Introduction</h2>' +
+                '<p>Information and the systems that process it are valuable assets. Used appropriately they enable the business; used carelessly they expose the organisation to legal, financial, and reputational harm. Every user shares responsibility for protecting these assets and must act in line with this policy at all times.</p>' +
+                '<h2>Business use of information assets</h2>' +
+                '<p>Information assets are provided primarily for legitimate business purposes. Users must access only the information required to perform their role, must not bypass or disable security controls, and must protect their authentication credentials. Loss, theft, or suspected compromise of any asset must be reported to IT without delay.</p>' +
+                '<h2>Personal use of information assets</h2>' +
+                '<p>Limited, reasonable personal use is permitted provided it does not interfere with work, consume disproportionate resources, incur cost to the organisation, or breach any policy or law. The organisation may monitor use of its systems in accordance with applicable law.</p>' +
+                '<h2>Use of email and other electronic communication</h2>' +
+                '<p>Email and messaging must be used professionally. Users must not send confidential information to unauthorised recipients, open unexpected attachments or links, or use organisational addresses for personal registrations, spam, or unlawful content. Suspected phishing must be reported, not actioned.</p>' +
+                '<h2>Use of internet</h2>' +
+                '<p>Internet access is provided for business use. Users must not access, store, or distribute material that is illegal, offensive, or infringes intellectual-property rights, and must not download software or services that have not been approved by IT.</p>' +
+                '<h2>Use of social media</h2>' +
+                '<p>When identifiable as associated with the organisation, users must be respectful, must not disclose confidential or personal information, and must not speak on the organisation’s behalf unless explicitly authorised to do so.</p>' +
+                '<h2>Clear desk policy</h2>' +
+                '<p>Sensitive information in physical form must not be left unattended. Documents must be secured when away from the desk and at the end of the working day, and disposed of via approved confidential-waste channels.</p>' +
+                '<h2>Clear screen policy</h2>' +
+                '<p>Devices must be locked when unattended and configured to lock automatically after a short period of inactivity. Sensitive information must not be displayed where unauthorised people can view it.</p>' +
+                '<h2>Compliance</h2>' +
+                '<p>Breaches of this policy may result in withdrawal of access and disciplinary action up to and including termination, and may be reported to the relevant authorities where the law has been broken. Questions about this policy should be raised with the information security team.</p>',
+        },
+        {
+            title: 'Information Security Policy',
+            category: 'Core',
+            tags: 'isms,governance,information-security',
+            contentType: 'HTML',
+            contentText:
+                '<h1>Information Security Policy</h1>' +
+                '<hr>' +
+                '<h2>Purpose and Scope</h2>' +
+                '<p>This policy sets out the organisation’s commitment to protecting the confidentiality, integrity, and availability of its information. It applies to all information assets, all personnel, and all systems and locations through which organisational information is processed.</p>' +
+                '<h2>Policy Statements</h2>' +
+                '<ul>' +
+                '<li>Information is classified and protected according to its sensitivity and value.</li>' +
+                '<li>Access is granted on a least-privilege, need-to-know basis and reviewed regularly.</li>' +
+                '<li>Security risks are identified, assessed, treated, and monitored on an ongoing basis.</li>' +
+                '<li>Security events and incidents are reported promptly and investigated.</li>' +
+                '</ul>' +
+                '<h2>Roles and Responsibilities</h2>' +
+                '<p>Executive management owns and sponsors the information security programme. The information security function maintains controls and monitors compliance. All personnel are responsible for complying with this policy and reporting suspected weaknesses or incidents.</p>' +
+                '<h2>Compliance and Review</h2>' +
+                '<p>Compliance with this policy is mandatory and monitored. The policy is reviewed at least annually, and after significant change, to ensure it remains effective and aligned with business and regulatory requirements.</p>',
+        },
+    ];
+    for (const tmpl of flagshipTemplates) {
+        const existing = await prisma.policyTemplate.findFirst({ where: { title: tmpl.title } });
+        if (existing) {
+            await prisma.policyTemplate.update({
+                where: { id: existing.id },
+                data: { category: tmpl.category, tags: tmpl.tags, contentType: tmpl.contentType, contentText: tmpl.contentText },
+            });
+        } else {
+            await prisma.policyTemplate.create({ data: tmpl });
+        }
+    }
     console.log('✅ Policy Templates seeded');
 
     // ─── Frameworks & Requirements ───

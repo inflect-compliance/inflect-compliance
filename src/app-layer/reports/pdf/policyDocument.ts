@@ -21,6 +21,9 @@
  * policy still exports cleanly.
  */
 import crypto from 'crypto';
+import { parseDocument } from 'htmlparser2';
+import { textContent } from 'domutils';
+import type { ChildNode, Element } from 'domhandler';
 import { runInTenantContext } from '@/lib/db-context';
 import type { RequestContext } from '@/app-layer/types';
 import { assertCanRead } from '@/app-layer/policies/common';
@@ -98,6 +101,62 @@ function parseSections(content: string): ParsedSection[] {
     return sections;
 }
 
+/**
+ * Parse an HTML policy body (contentType === 'HTML') into the same ordered
+ * `ParsedSection[]` the markdown path produces, so the cover + clickable TOC
+ * + per-section page breaks all work unchanged. Headings (`<h1>`–`<h3>`) open
+ * sections; block elements (`<p>`, lists, `<blockquote>`, `<table>`) become
+ * body paragraphs; `<hr>` page breaks are implicit section boundaries (each
+ * section already starts a fresh page). Uses a real HTML parser (htmlparser2 +
+ * domutils) — no regex HTML handling.
+ */
+export function htmlToSections(html: string): ParsedSection[] {
+    const doc = parseDocument(html);
+    const sections: ParsedSection[] = [];
+    let current: ParsedSection | null = null;
+
+    const clean = (s: string) => s.replace(/\s+/g, ' ').trim();
+    const appendParagraph = (text: string) => {
+        const t = text.trim();
+        if (!t) return;
+        if (!current) current = { title: 'Policy', body: '' };
+        current.body += (current.body ? '\n\n' : '') + t;
+    };
+
+    const walk = (nodes: ChildNode[]) => {
+        for (const node of nodes) {
+            if (node.type !== 'tag') continue;
+            const el = node as Element;
+            const tag = el.name.toLowerCase();
+            if (/^h[1-3]$/.test(tag)) {
+                if (current) sections.push(current);
+                current = { title: clean(textContent(el)) || 'Section', body: '' };
+            } else if (tag === 'ul' || tag === 'ol') {
+                const items = el.children
+                    .filter((c): c is Element => c.type === 'tag' && c.name.toLowerCase() === 'li')
+                    .map((li) => `• ${clean(textContent(li))}`)
+                    .filter((s) => s.length > 2);
+                if (items.length) appendParagraph(items.join('\n'));
+            } else if (tag === 'div') {
+                walk(el.children); // unwrap layout wrappers
+            } else if (tag === 'p' || tag === 'blockquote' || tag === 'table' || tag === 'pre') {
+                appendParagraph(clean(textContent(el)));
+            }
+            // <hr> and inline/other tags: no section text of their own.
+        }
+    };
+
+    walk(doc.children as ChildNode[]);
+    if (current) sections.push(current);
+    if (sections.length === 0) return [{ title: 'Policy', body: '' }];
+    return sections;
+}
+
+/** Heuristic: does this body look like HTML (vs markdown/plain text)? */
+export function looksLikeHtml(content: string): boolean {
+    return /<\/?(h[1-6]|p|hr|ul|ol|li|div|table|blockquote)\b/i.test(content);
+}
+
 export async function generatePolicyDocumentPdf(
     ctx: RequestContext,
     policyId: string,
@@ -122,7 +181,10 @@ export async function generatePolicyDocumentPdf(
     const currentVersion = policy.currentVersion;
     const versionNumber = currentVersion?.versionNumber ?? policy.lifecycleVersion ?? 1;
     const content = currentVersion?.contentText ?? '';
-    const sections = parseSections(content);
+    // HTML policies (page-break <hr> + heading sections) parse via the DOM so
+    // tags never bleed into the PDF; markdown keeps the `#`-heading parser.
+    const isHtml = currentVersion?.contentType === 'HTML' || looksLikeHtml(content);
+    const sections = isHtml ? htmlToSections(content) : parseSections(content);
 
     const policyMeta: PolicyPdfMeta = {
         tenantName: tenant?.name || 'Tenant',
