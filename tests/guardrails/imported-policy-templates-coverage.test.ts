@@ -63,11 +63,12 @@ describe('imported policy templates — fixture', () => {
 });
 
 describe('imported policy templates — seed + converter', () => {
-    it('seed upserts imported templates by externalRef only (no title clobber)', () => {
+    it('seed upserts imported templates by externalRef OR title (imported is canonical)', () => {
         const seed = read('prisma/seed.ts');
         expect(seed).toContain('policy-templates-imported.json');
-        // The imported loop must match by externalRef, NOT by an OR-title.
-        expect(seed).toMatch(/where:\s*\{\s*externalRef:\s*t\.externalRef\s*\}/);
+        // The imported loop supersedes any earlier same-titled template
+        // (ciso-toolkit / expanded-starter) so there is one card per title.
+        expect(seed).toMatch(/where:\s*\{\s*OR:\s*\[\s*\{\s*externalRef:\s*t\.externalRef\s*\}\s*,\s*\{\s*title:\s*t\.title\s*\}\s*\]\s*\}/);
     });
 
     it('htmlPolicyToMarkdown converts headings + bullets and drops messy markup', () => {

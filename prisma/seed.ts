@@ -310,18 +310,14 @@ async function main() {
 
     // ─── Policy Templates ───
     const policyTemplates = [
-        { title: 'Information Security Policy', category: 'Core', tags: 'isms,governance', contentText: '# Information Security Policy\n\n## Purpose\nEstablish the organization\'s commitment to information security.\n\n## Policy Statements\n1. Information classified and protected by sensitivity.\n2. Access granted on need-to-know basis.\n3. Incidents reported and investigated promptly.' },
-        { title: 'Access Control Policy', category: 'Technical', tags: 'access,authentication', contentText: '# Access Control Policy\n\n## Purpose\nEnsure authorized access and prevent unauthorized access.\n\n## Statements\n1. Least privilege principle.\n2. MFA for privileged accounts.\n3. Quarterly access reviews.' },
-        { title: 'Data Classification Policy', category: 'Core', tags: 'data,classification', contentText: '# Data Classification Policy\n\n## Levels\n- Public\n- Internal\n- Confidential\n- Restricted' },
-        { title: 'Acceptable Use Policy', category: 'HR', tags: 'acceptable-use', contentText: '# Acceptable Use Policy\n\n## Statements\n1. IT resources for business purposes.\n2. No bypassing security controls.\n3. Protect credentials.' },
-        { title: 'Incident Response Policy', category: 'Operations', tags: 'incident,response', contentText: '# Incident Response Policy\n\n## Phases\n1. Identification\n2. Containment\n3. Eradication\n4. Recovery\n5. Lessons Learned' },
-        { title: 'Business Continuity Policy', category: 'Operations', tags: 'bcp,disaster-recovery', contentText: '# Business Continuity Policy\n\n## Statements\n1. Annual BIA.\n2. Defined RTO/RPO.\n3. Annual BC/DR tests.' },
-        { title: 'Risk Management Policy', category: 'Core', tags: 'risk,assessment', contentText: '# Risk Management Policy\n\n## Framework\n1. Identify\n2. Assess\n3. Treat\n4. Monitor' },
-        { title: 'Change Management Policy', category: 'Operations', tags: 'change,management', contentText: '# Change Management Policy\n\n## Types\n- Standard\n- Normal\n- Emergency' },
-        { title: 'Physical Security Policy', category: 'Physical', tags: 'physical,facilities', contentText: '# Physical Security Policy\n\n## Statements\n1. Appropriate entry controls.\n2. Visitor logging.\n3. Clear desk policy.' },
-        { title: 'Human Resources Security Policy', category: 'HR', tags: 'hr,screening', contentText: '# HR Security Policy\n\n## Statements\n1. Background screening.\n2. Annual awareness training.\n3. NDA before access.' },
-        { title: 'Third-Party Security Policy', category: 'Vendor', tags: 'vendor,supplier', contentText: '# Third-Party Security\n\n## Statements\n1. Security in supplier agreements.\n2. Minimum access.\n3. Monitor performance.' },
-        { title: 'Logging and Monitoring Policy', category: 'Technical', tags: 'logging,monitoring', contentText: '# Logging and Monitoring\n\n## Statements\n1. Log security events.\n2. Protect logs.\n3. Automated alerting.' },
+        // NOTE: the thin one-paragraph "starter stubs" (Information Security,
+        // Access Control, Data Classification, Acceptable Use, Incident
+        // Response, Business Continuity, Risk Management, Change Management,
+        // Physical Security, HR Security, Third-Party, Logging) were removed —
+        // they rendered as near-empty "5-6 row" documents. The full versions
+        // of those topics come from the Expanded starter set below, the
+        // flagship HTML templates, the ciso-toolkit library, and the imported
+        // library (which supersedes overlaps by title).
 
         // ─── Expanded starter set ───────────────────────────────────────
         // ORIGINAL content authored for Inflect. The topic coverage was
@@ -597,28 +593,6 @@ Reviewed at least annually.` },
                 '<h2>Compliance</h2>' +
                 '<p>Breaches of this policy may result in withdrawal of access and disciplinary action up to and including termination, and may be reported to the relevant authorities where the law has been broken. Questions about this policy should be raised with the information security team.</p>',
         },
-        {
-            title: 'Information Security Policy',
-            category: 'Core',
-            tags: 'isms,governance,information-security',
-            contentType: 'HTML',
-            contentText:
-                '<h1>Information Security Policy</h1>' +
-                '<hr>' +
-                '<h2>Purpose and Scope</h2>' +
-                '<p>This policy sets out the organisation’s commitment to protecting the confidentiality, integrity, and availability of its information. It applies to all information assets, all personnel, and all systems and locations through which organisational information is processed.</p>' +
-                '<h2>Policy Statements</h2>' +
-                '<ul>' +
-                '<li>Information is classified and protected according to its sensitivity and value.</li>' +
-                '<li>Access is granted on a least-privilege, need-to-know basis and reviewed regularly.</li>' +
-                '<li>Security risks are identified, assessed, treated, and monitored on an ongoing basis.</li>' +
-                '<li>Security events and incidents are reported promptly and investigated.</li>' +
-                '</ul>' +
-                '<h2>Roles and Responsibilities</h2>' +
-                '<p>Executive management owns and sponsors the information security programme. The information security function maintains controls and monitors compliance. All personnel are responsible for complying with this policy and reporting suspected weaknesses or incidents.</p>' +
-                '<h2>Compliance and Review</h2>' +
-                '<p>Compliance with this policy is mandatory and monitored. The policy is reviewed at least annually, and after significant change, to ensure it remains effective and aligned with business and regulatory requirements.</p>',
-        },
     ];
     for (const tmpl of flagshipTemplates) {
         const existing = await prisma.policyTemplate.findFirst({ where: { title: tmpl.title } });
@@ -671,10 +645,12 @@ Reviewed at least annually.` },
 
     // Imported policy templates (generic security policies converted from a
     // vendored CSV export to clean Markdown — see
-    // scripts/import-policy-templates.ts). Upsert by externalRef ONLY (a
-    // stable slug) so a title that overlaps a ciso-toolkit template — e.g.
-    // "Information Security Policy" / "Risk Management Policy" — coexists
-    // instead of clobbering POL-xx.
+    // scripts/import-policy-templates.ts). These are the canonical copies:
+    // upsert by externalRef OR title so an imported policy SUPERSEDES any
+    // earlier same-titled template (the ciso-toolkit "Information Security
+    // Policy" / "Risk Management Policy", the expanded-starter originals)
+    // rather than creating a duplicate card. The imported externalRefs are
+    // mapped to the same frameworks in policy-template-framework-map.json.
     const importedPolicies = require('./fixtures/policy-templates-imported.json') as {
         templates: Array<{
             externalRef: string; title: string; category: string; language: string;
@@ -694,7 +670,7 @@ Reviewed at least annually.` },
             externalRef: t.externalRef,
         };
         const existing = await prisma.policyTemplate.findFirst({
-            where: { externalRef: t.externalRef },
+            where: { OR: [{ externalRef: t.externalRef }, { title: t.title }] },
         });
         if (existing) {
             await prisma.policyTemplate.update({ where: { id: existing.id }, data });
