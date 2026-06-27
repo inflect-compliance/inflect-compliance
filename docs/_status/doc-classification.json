@@ -4,7 +4,7 @@
   "counts": {
     "authoritative": 104,
     "living": 5,
-    "historical": 284,
+    "historical": 285,
     "deprecated": 1
   },
   "docs": {
@@ -1191,6 +1191,9 @@
       "class": "historical"
     },
     "docs/implementation-notes/2026-06-27-org-threat-level-widget.md": {
+      "class": "historical"
+    },
+    "docs/implementation-notes/2026-06-27-org-maturity-widget.md": {
       "class": "historical"
     }
   }

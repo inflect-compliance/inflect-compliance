@@ -214,6 +214,12 @@ export type OrgPermissionSet = {
      * ORG_ADMIN in v1. The set action audits via ORG_THREAT_LEVEL_SET.
      */
     canSetThreatLevel: boolean;
+    /**
+     * Set the org security-maturity rating (the ORG_MATURITY widget).
+     * Like canSetThreatLevel, a privileged curated-judgment action
+     * (ORG_ADMIN only); audits via ORG_MATURITY_RATING_SET.
+     */
+    canSetMaturity: boolean;
 };
 
 /**
@@ -235,6 +241,7 @@ export function getOrgPermissions(role: OrgRole): OrgPermissionSet {
                 canManageMembers: true,
                 canConfigureDashboard: true,
                 canSetThreatLevel: true,
+                canSetMaturity: true,
             };
         case 'ORG_READER':
             return {
@@ -249,6 +256,7 @@ export function getOrgPermissions(role: OrgRole): OrgPermissionSet {
                 canManageMembers: false,
                 canConfigureDashboard: false,
                 canSetThreatLevel: false,
+                canSetMaturity: false,
             };
         default: {
             // Defensive — Prisma's enum is closed, so the runtime
@@ -265,6 +273,7 @@ export function getOrgPermissions(role: OrgRole): OrgPermissionSet {
                 canManageMembers: false,
                 canConfigureDashboard: false,
                 canSetThreatLevel: false,
+                canSetMaturity: false,
             };
         }
     }

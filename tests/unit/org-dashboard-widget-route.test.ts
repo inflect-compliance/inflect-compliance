@@ -62,6 +62,7 @@ const adminCtx = {
         canManageMembers: true,
         canConfigureDashboard: true,
         canSetThreatLevel: true,
+        canSetMaturity: true,
     },
 };
 

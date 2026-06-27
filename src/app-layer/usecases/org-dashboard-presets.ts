@@ -124,13 +124,24 @@ export const DEFAULT_ORG_DASHBOARD_PRESET: ReadonlyArray<CreateOrgDashboardWidge
         enabled: true,
     },
 
+    // ─── Row 3: security-maturity radar (half-width, self-assessed) ──
+    {
+        type: 'ORG_MATURITY',
+        chartType: 'radar',
+        title: 'Security Maturity',
+        config: { view: 'radar', showCoverageHint: true },
+        position: { x: 0, y: 8 },
+        size: { w: 6, h: 4 },
+        enabled: true,
+    },
+
     // ─── Row 3: tenant coverage list (full width) ───────────────────
     {
         type: 'TENANT_LIST',
         chartType: 'coverage',
         title: 'Coverage by Tenant',
         config: { sortBy: 'rag' },
-        position: { x: 0, y: 8 },
+        position: { x: 0, y: 12 },
         size: { w: 12, h: 6 },
         enabled: true,
     },
@@ -141,7 +152,7 @@ export const DEFAULT_ORG_DASHBOARD_PRESET: ReadonlyArray<CreateOrgDashboardWidge
         chartType: 'default',
         title: 'Drill-down',
         config: {},
-        position: { x: 0, y: 14 },
+        position: { x: 0, y: 18 },
         size: { w: 12, h: 2 },
         enabled: true,
     },

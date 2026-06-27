@@ -260,6 +260,7 @@ model Organization {
   auditLogs                    OrgAuditLog[]
   dashboardWidgets             OrgDashboardWidget[]
   threatLevels                 OrgThreatLevel[]
+  maturityRatings              OrgMaturityRating[]
 }
 
 // Per-user, per-org role assignment.
@@ -409,6 +410,33 @@ model OrgThreatLevel {
 
   // Current = ORDER BY setAt DESC LIMIT 1; history = the full set.
   @@index([organizationId, setAt])
+}
+
+/// Org-wide, self-assessed SECURITY MATURITY rating per NIST CSF 2.0
+/// function (concept ported from Cybether, MIT). A judgment-based CMM
+/// level (1..5) per capability domain — DISTINCT from derived control
+/// coverage % (coverage = "how many controls have evidence"; maturity =
+/// "how good are we, by professional judgment"). ORG-scoped like the
+/// other org-* models (global prisma, organizationId, NOT
+/// TENANT_SCOPED_MODELS → no per-tenant RLS / tenant-DEK). Append-only:
+/// current per domain = most-recent by ratedAt; the series IS the trend.
+/// Modelled per-(org, domain) so a future per-tenant overlay is additive.
+model OrgMaturityRating {
+  id             String         @id @default(cuid())
+  organizationId String
+  domain         MaturityDomain
+  level          MaturityLevel
+  /// Judgment context (sanitised at the usecase layer).
+  rationale      String?
+  /// Opaque actor id (no User FK — keeps the append-only log
+  /// independent of user-lifecycle cascades; name resolved in usecase).
+  ratedByUserId  String
+  ratedAt        DateTime       @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Current per domain = ORDER BY ratedAt DESC LIMIT 1; trend = the series.
+  @@index([organizationId, domain, ratedAt])
 }
 
 model TenantOnboarding {

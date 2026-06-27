@@ -121,6 +121,9 @@ describe('CI Guard: No direct prisma in tenant-scoped code', () => {
         // the other org usecases. Read gated by canViewPortfolio, set by
         // canSetThreatLevel (ORG_ADMIN), audited via ORG_THREAT_LEVEL_SET.
         'org-threat-level.ts',
+        // ORG_MATURITY widget — org-scoped maturity ratings; same
+        // global-prisma + getOrgCtx shape as the other org usecases.
+        'org-maturity.ts',
         // Epic E.3 — request-scoped portfolio data helper. Memoises
         // tenants + snapshots reads via the AsyncLocalStorage
         // RequestContext + WeakMap. The repository methods it calls

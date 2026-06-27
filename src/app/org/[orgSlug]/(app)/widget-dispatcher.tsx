@@ -24,6 +24,8 @@ import {
 import type { OrgDashboardWidgetDto } from '@/app-layer/schemas/org-dashboard-widget.schemas';
 import type { OrgThreatLevelDto } from '@/app-layer/usecases/org-threat-level';
 import { OrgThreatLevelWidget } from './OrgThreatLevelWidget';
+import type { OrgMaturityDto } from '@/app-layer/usecases/org-maturity';
+import { OrgMaturityWidget } from './OrgMaturityWidget';
 import type {
     PortfolioSummary,
     PortfolioTrend,
@@ -47,6 +49,10 @@ export interface PortfolioData {
     threatLevel: OrgThreatLevelDto;
     /** Whether the viewer may set the posture (ORG_ADMIN). */
     canSetThreatLevel: boolean;
+    /** Current org security-maturity rating (ORG_MATURITY widget). */
+    maturity: OrgMaturityDto;
+    /** Whether the viewer may set the maturity rating (ORG_ADMIN). */
+    canSetMaturity: boolean;
 }
 
 interface DispatcherProps {
@@ -281,6 +287,21 @@ export function DispatchedWidget({
                         data={data.threatLevel}
                         canSet={data.canSetThreatLevel}
                         showHistory={Boolean(cfg.showHistory)}
+                        orgSlug={data.orgSlug}
+                    />
+                </div>
+            );
+        }
+        case 'ORG_MATURITY': {
+            // Self-assessed maturity — radar + overall KPI; owns its surface.
+            const cfg = widget.config as { view?: 'radar' | 'trend'; showCoverageHint?: boolean };
+            return (
+                <div id={domId} className="h-full">
+                    <OrgMaturityWidget
+                        data={data.maturity}
+                        canSet={data.canSetMaturity}
+                        view={cfg.view ?? 'radar'}
+                        showCoverageHint={Boolean(cfg.showCoverageHint)}
                         orgSlug={data.orgSlug}
                     />
                 </div>

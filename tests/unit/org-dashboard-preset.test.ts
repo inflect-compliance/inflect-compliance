@@ -22,11 +22,11 @@ import {
 import { CreateOrgDashboardWidgetInput } from '@/app-layer/schemas/org-dashboard-widget.schemas';
 
 describe('Epic 41 — default org dashboard preset', () => {
-    it('contains exactly nine widgets (incl. the ORG_THREAT_LEVEL banner)', () => {
+    it('contains exactly ten widgets (incl. ORG_THREAT_LEVEL + ORG_MATURITY)', () => {
         // The prior `/org/[orgSlug]` page rendered four KPI cards +
         // one donut + one trend + one tenant list + one drilldown
         // CTA group = 8 sections, + the ORG_THREAT_LEVEL banner = 9.
-        expect(DEFAULT_ORG_DASHBOARD_PRESET.length).toBe(9);
+        expect(DEFAULT_ORG_DASHBOARD_PRESET.length).toBe(10);
     });
 
     it('every entry is Zod-valid against CreateOrgDashboardWidgetInput', () => {
@@ -82,20 +82,27 @@ describe('Epic 41 — default org dashboard preset', () => {
         expect(trend?.size).toEqual({ w: 6, h: 4 });
     });
 
-    it('places the tenant list full-width on row y=8', () => {
+    it('places the tenant list full-width on row y=12', () => {
         const list = DEFAULT_ORG_DASHBOARD_PRESET.find(
             (w) => w.type === 'TENANT_LIST',
         );
-        expect(list?.position).toEqual({ x: 0, y: 8 });
+        expect(list?.position).toEqual({ x: 0, y: 12 });
         expect(list?.size).toEqual({ w: 12, h: 6 });
     });
 
-    it('places the drilldown CTAs full-width on row y=14', () => {
+    it('places the drilldown CTAs full-width on row y=18', () => {
         const ctas = DEFAULT_ORG_DASHBOARD_PRESET.find(
             (w) => w.type === 'DRILLDOWN_CTAS',
         );
-        expect(ctas?.position).toEqual({ x: 0, y: 14 });
+        expect(ctas?.position).toEqual({ x: 0, y: 18 });
         expect(ctas?.size).toEqual({ w: 12, h: 2 });
+    });
+
+    it('includes the ORG_MATURITY radar (half-width)', () => {
+        const m = DEFAULT_ORG_DASHBOARD_PRESET.find((w) => w.type === 'ORG_MATURITY');
+        expect(m).toBeDefined();
+        expect(m?.chartType).toBe('radar');
+        expect(m?.size.w).toBe(6);
     });
 
     it('has no overlapping (x..x+w, y..y+h) rectangles between any two widgets', () => {
@@ -150,7 +157,7 @@ describe('Epic 41 — default org dashboard preset', () => {
 
     it('mutation regression — dropping a widget trips the count assertion', () => {
         const broken = DEFAULT_ORG_DASHBOARD_PRESET.slice(0, -1);
-        expect(broken.length).toBe(8);
-        expect(broken.length).not.toBe(9);
+        expect(broken.length).toBe(9);
+        expect(broken.length).not.toBe(10);
     });
 });

@@ -69,6 +69,8 @@ enum OrgAuditAction {
   ORG_INVITE_REVOKED
   // Org-wide threat posture set by an org admin (substantive action).
   ORG_THREAT_LEVEL_SET
+  // Org security-maturity rating set by an org admin (substantive action).
+  ORG_MATURITY_RATING_SET
 }
 
 enum MembershipStatus {
@@ -93,6 +95,7 @@ enum OrgDashboardWidgetType {
   TENANT_LIST // Per-tenant coverage list with drill-down
   DRILLDOWN_CTAS // Drill-down navigation cards (controls / risks / evidence)
   ORG_THREAT_LEVEL // Human-curated org-wide threat-posture banner
+  ORG_MATURITY // Self-assessed security-maturity rating (radar/trend)
 }
 
 /// Org-wide threat-posture tiers (low → high). Named OrgThreatTier
@@ -104,6 +107,27 @@ enum OrgThreatTier {
   ELEVATED
   HIGH
   SEVERE
+}
+
+/// The 6 NIST CSF 2.0 functions — fixed capability domains for the
+/// org-wide security-maturity rating (ORG_MATURITY widget).
+enum MaturityDomain {
+  GOVERN
+  IDENTIFY
+  PROTECT
+  DETECT
+  RESPOND
+  RECOVER
+}
+
+/// CMM maturity levels 1..5 (Initial → Optimizing). A judgment-based
+/// self-rating, DISTINCT from derived control-coverage %.
+enum MaturityLevel {
+  INITIAL // 1
+  REPEATABLE // 2
+  DEFINED // 3
+  MANAGED // 4
+  OPTIMIZING // 5
 }
 
 enum ClauseStatus {

@@ -4,6 +4,7 @@ import { getOrgCtx } from '@/app-layer/context';
 import { getPortfolioOverview } from '@/app-layer/usecases/portfolio';
 import { listOrgDashboardWidgets } from '@/app-layer/usecases/org-dashboard-widgets';
 import { getCurrentOrgThreatLevel } from '@/app-layer/usecases/org-threat-level';
+import { getCurrentOrgMaturity } from '@/app-layer/usecases/org-maturity';
 import { toPlainJson } from '@/lib/server/to-plain-json';
 
 import { PortfolioDashboard } from './PortfolioDashboard';
@@ -53,10 +54,11 @@ export default async function PortfolioOverviewPage({ params }: PageProps) {
     // are org-scoped; the `getPortfolioData` helper memoises tenants
     // + snapshots within the request scope so the parallel reads
     // don't duplicate.
-    const [widgets, overview, threatLevel] = await Promise.all([
+    const [widgets, overview, threatLevel, maturity] = await Promise.all([
         listOrgDashboardWidgets(ctx),
         getPortfolioOverview(ctx, { trendDays: 90 }),
         getCurrentOrgThreatLevel(ctx),
+        getCurrentOrgMaturity(ctx),
     ]);
 
     return (
@@ -69,6 +71,8 @@ export default async function PortfolioOverviewPage({ params }: PageProps) {
                 orgSlug,
                 threatLevel,
                 canSetThreatLevel: ctx.permissions.canSetThreatLevel,
+                maturity,
+                canSetMaturity: ctx.permissions.canSetMaturity,
             })}
             canEdit={ctx.permissions.canConfigureDashboard}
         />
