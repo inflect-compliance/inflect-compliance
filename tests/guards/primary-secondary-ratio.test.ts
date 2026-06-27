@@ -150,7 +150,12 @@ const MIN_SECONDARY_TO_PRIMARY_RATIO = 0.9;
 // is a genuinely-earned primary (the panel IS the edit surface now), and
 // each pairs with a secondary "Cancel" + the evidence box's secondary
 // "Add evidence", so the secondary:primary ratio still rises. +2 primary.
-const MAX_PRIMARY_COUNT = 127;
+//
+// 2026-06-27 — bumped 127 → 128 for the framework-aware policy-template
+// confirm-and-link modal (TemplateControlSuggestModal). Its "Link N
+// controls" confirm is the dialog's earned primary, paired with a ghost
+// "Skip". +1 primary.
+const MAX_PRIMARY_COUNT = 128;
 
 describe("primary:secondary ratio direction", () => {
     const counts = (() => {

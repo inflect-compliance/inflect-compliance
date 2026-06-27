@@ -72,6 +72,15 @@ permissions:
 env:
   NODE_VERSION: "24"
   SKIP_ENV_VALIDATION: "1"
+  # The Jest test job runs ~1/4 of ~1650 test files per shard with
+  # `jest --runInBand`, which holds every file's module graph in ONE
+  # process for the whole shard (no worker recycling —
+  # `workerIdleMemoryLimit` is inert in-band), and the coverage job runs
+  # the full suite in-band. As the suite grew, the heaviest shard
+  # partitions began exceeding Node's default old-space ceiling and OOM'd
+  # ("Ineffective mark-compacts near heap limit"). Raise the heap to 6 GB
+  # (runners have 16 GB) so suite growth has headroom.
+  NODE_OPTIONS: "--max-old-space-size=6144"
   # ── Dummy secrets (CI-only — no real credentials) ──
   AUTH_SECRET: ci-auth-secret-that-is-long-enough
   JWT_SECRET: ci-jwt-secret-that-is-long-enough
