@@ -95,6 +95,8 @@ function makePortfolioData(summary: PortfolioSummary = makeSummary()): Portfolio
             coverageHint: null,
         },
         canSetMaturity: false,
+        initiatives: { rows: [], inFlight: 0, atRisk: 0 },
+        canManageInitiatives: false,
         summary,
         tenantHealth: [],
         trends: {

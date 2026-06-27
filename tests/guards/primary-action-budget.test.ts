@@ -52,6 +52,9 @@ const EXEMPT_FILE_PATTERNS: RegExp[] = [
  * as a separate visual zone.
  */
 const PRIMARY_BUDGET: Record<string, number> = {
+    // Initiatives list: "New initiative" (page) + "Create initiative"
+    // (modal confirm) — two distinct regions, both legit primaries.
+    "src/app/org/[orgSlug]/(app)/initiatives/InitiativesClient.tsx": 2,
     // SP-F1 — the file picker has two mutually-exclusive footer modes:
     // file-select ("Import/Select") and folder-select ("Use this folder").
     // Each is the single primary of its mode; the static scanner counts both.

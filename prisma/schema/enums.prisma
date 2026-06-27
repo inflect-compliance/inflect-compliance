@@ -71,6 +71,9 @@ enum OrgAuditAction {
   ORG_THREAT_LEVEL_SET
   // Org security-maturity rating set by an org admin (substantive action).
   ORG_MATURITY_RATING_SET
+  // Portfolio security-initiative lifecycle (substantive actions).
+  ORG_INITIATIVE_CREATED
+  ORG_INITIATIVE_STATUS_CHANGED
 }
 
 enum MembershipStatus {
@@ -96,6 +99,16 @@ enum OrgDashboardWidgetType {
   DRILLDOWN_CTAS // Drill-down navigation cards (controls / risks / evidence)
   ORG_THREAT_LEVEL // Human-curated org-wide threat-posture banner
   ORG_MATURITY // Self-assessed security-maturity rating (radar/trend)
+  ORG_INITIATIVES // Portfolio security-programme progress tracker
+}
+
+/// Lifecycle of a portfolio-level security initiative (programme).
+enum InitiativeStatus {
+  PLANNED
+  IN_PROGRESS
+  BLOCKED
+  COMPLETED
+  CANCELLED
 }
 
 /// Org-wide threat-posture tiers (low → high). Named OrgThreatTier

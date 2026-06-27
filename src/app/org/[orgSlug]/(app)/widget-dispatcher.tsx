@@ -26,6 +26,8 @@ import type { OrgThreatLevelDto } from '@/app-layer/usecases/org-threat-level';
 import { OrgThreatLevelWidget } from './OrgThreatLevelWidget';
 import type { OrgMaturityDto } from '@/app-layer/usecases/org-maturity';
 import { OrgMaturityWidget } from './OrgMaturityWidget';
+import type { InitiativeWidgetData } from '@/app-layer/usecases/org-security-initiative';
+import { OrgInitiativesWidget } from './OrgInitiativesWidget';
 import type {
     PortfolioSummary,
     PortfolioTrend,
@@ -53,6 +55,10 @@ export interface PortfolioData {
     maturity: OrgMaturityDto;
     /** Whether the viewer may set the maturity rating (ORG_ADMIN). */
     canSetMaturity: boolean;
+    /** Top-N portfolio security initiatives (ORG_INITIATIVES widget). */
+    initiatives: InitiativeWidgetData;
+    /** Whether the viewer may manage initiatives (ORG_ADMIN). */
+    canManageInitiatives: boolean;
 }
 
 interface DispatcherProps {
@@ -304,6 +310,14 @@ export function DispatchedWidget({
                         showCoverageHint={Boolean(cfg.showCoverageHint)}
                         orgSlug={data.orgSlug}
                     />
+                </div>
+            );
+        }
+        case 'ORG_INITIATIVES': {
+            // Portfolio programme tracker — top-N in-flight initiatives.
+            return (
+                <div id={domId} className="h-full">
+                    <OrgInitiativesWidget data={data.initiatives} orgSlug={data.orgSlug} />
                 </div>
             );
         }

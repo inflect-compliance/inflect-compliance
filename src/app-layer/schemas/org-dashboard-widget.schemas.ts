@@ -227,6 +227,22 @@ const OrgMaturityConfigSchema = z.object({
         .strict(),
 });
 
+// ORG_INITIATIVES — portfolio security-programme progress tracker. Shows
+// the top-N in-flight initiatives with rolled-up progress; config is the
+// status filter + how many rows to surface.
+const OrgInitiativesConfigSchema = z.object({
+    type: z.literal('ORG_INITIATIVES'),
+    chartType: z.literal('list'),
+    config: z
+        .object({
+            statusFilter: z
+                .array(z.enum(['PLANNED', 'IN_PROGRESS', 'BLOCKED', 'COMPLETED', 'CANCELLED']))
+                .optional(),
+            topN: z.number().int().min(1).max(20).optional(),
+        })
+        .strict(),
+});
+
 /**
  * The widget shape contract. Discriminated on `type`; each variant
  * locks `chartType` and `config` together. Reject-by-default for any
@@ -240,6 +256,7 @@ export const WidgetTypedShapeSchema = z.discriminatedUnion('type', [
     DrilldownCtasConfigSchema,
     OrgThreatLevelConfigSchema,
     OrgMaturityConfigSchema,
+    OrgInitiativesConfigSchema,
 ]);
 export type WidgetTypedShape = z.infer<typeof WidgetTypedShapeSchema>;
 

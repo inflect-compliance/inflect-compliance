@@ -1,0 +1,389 @@
+/**
+ * Org security initiatives — portfolio-level programme tracking.
+ *
+ * Concept ported from Cybether (MIT) — its "Security Projects" tracker.
+ * Reimplemented native to the Epic 41 org layer.
+ *
+ * LOAD-BEARING DISTINCTION: an Initiative is a STRATEGIC, named programme
+ * the org tracks across its tenants ("Roll out MFA org-wide", "Achieve
+ * SOC 2") with its own lifecycle + progress — DISTINCT from atomic tenant
+ * remediation (Task / ControlTask: "fix gap X in tenant Y"). An initiative
+ * LINKS tenant work; it doesn't replace it.
+ *
+ * Org-scoped (global prisma, NOT tenant-scoped → no per-tenant RLS / DEK).
+ * Cross-tenant link resolution goes through the SANCTIONED path —
+ * `withTenantDb(tenantId, …)` per linked tenant (runs as app_user, RLS
+ * enforced via the org's auto-provisioned AUDITOR membership) — NEVER by
+ * bypassing tenant isolation. `description` is sanitised here. Create +
+ * status-change are substantive → they audit.
+ */
+import type { InitiativeStatus, Prisma } from '@prisma/client';
+
+import prisma from '@/lib/prisma';
+import { withTenantDb } from '@/lib/db-context';
+import { OrgContext } from '../types';
+import { forbidden, badRequest, notFound } from '@/lib/errors/types';
+import { sanitizePlainText } from '@/lib/security/sanitize';
+import { appendOrgAuditEntry } from '@/lib/audit/org-audit-writer';
+import { logger } from '@/lib/observability/logger';
+
+export const INITIATIVE_STATUSES = ['PLANNED', 'IN_PROGRESS', 'BLOCKED', 'COMPLETED', 'CANCELLED'] as const;
+export const INITIATIVE_LINK_TYPES = ['CONTROL', 'RISK', 'TASK', 'FINDING'] as const;
+const STALE_DAYS = 30;
+
+/** Terminal/"done" statuses per linked entity type for the progress rollup. */
+const DONE_STATUS: Record<string, Set<string>> = {
+    CONTROL: new Set(['IMPLEMENTED']),
+    RISK: new Set(['MITIGATED', 'ACCEPTED', 'CLOSED']),
+    TASK: new Set(['RESOLVED', 'CLOSED']),
+    FINDING: new Set(['CLOSED']),
+};
+
+export interface InitiativeProgress {
+    percent: number;
+    completed: number;
+    total: number;
+    /** True when manualProgressPercent overrode the rollup. */
+    manual: boolean;
+}
+
+function assertRead(ctx: OrgContext) {
+    if (!ctx.permissions.canViewPortfolio) {
+        throw forbidden('You do not have access to this organization.');
+    }
+}
+function assertWrite(ctx: OrgContext) {
+    // Write = canConfigureDashboard (ORG_ADMIN). Initiatives are managed
+    // from the org dashboard surface by the same admin who configures it;
+    // no separate flag in v1 (all org-write is ORG_ADMIN). Documented.
+    if (!ctx.permissions.canConfigureDashboard) {
+        throw forbidden('Only an organization admin can manage initiatives.');
+    }
+}
+
+export function isInitiativeAtRisk(i: { status: InitiativeStatus; targetDate: Date | string | null }): boolean {
+    if (i.status === 'BLOCKED') return true;
+    if (!i.targetDate || i.status === 'COMPLETED' || i.status === 'CANCELLED') return false;
+    return new Date(i.targetDate).getTime() < Date.now();
+}
+
+export function isInitiativeStale(i: { status: InitiativeStatus; updatedAt: Date | string }): boolean {
+    if (i.status !== 'IN_PROGRESS') return false;
+    const days = (Date.now() - new Date(i.updatedAt).getTime()) / (1000 * 60 * 60 * 24);
+    return days > STALE_DAYS;
+}
+
+/**
+ * Pure progress derivation given resolved link completion counts.
+ * manualProgressPercent WINS; otherwise completed/total of linked work.
+ * Unit-tested directly (no DB).
+ */
+export function deriveProgress(
+    manualProgressPercent: number | null | undefined,
+    completed: number,
+    total: number,
+): InitiativeProgress {
+    if (manualProgressPercent != null) {
+        return { percent: Math.max(0, Math.min(100, manualProgressPercent)), completed, total, manual: true };
+    }
+    return { percent: total > 0 ? Math.round((completed / total) * 100) : 0, completed, total, manual: false };
+}
+
+/**
+ * Resolve linked-work completion ACROSS TENANTS via the sanctioned
+ * per-tenant read path. Groups links by tenant, opens one
+ * `withTenantDb(tenantId, …)` per tenant (RLS enforced), batch-reads the
+ * linked entities, and counts the "done" ones. Never bypasses isolation.
+ */
+async function resolveLinkCompletion(
+    links: Array<{ linkedTenantId: string; entityType: string; entityId: string }>,
+): Promise<{ completed: number; total: number }> {
+    const total = links.length;
+    if (total === 0) return { completed: 0, total: 0 };
+
+    const byTenant = new Map<string, typeof links>();
+    for (const l of links) {
+        const arr = byTenant.get(l.linkedTenantId) ?? [];
+        arr.push(l);
+        byTenant.set(l.linkedTenantId, arr);
+    }
+
+    let completed = 0;
+    // guardrail-allow: n+1 — intentional per-tenant loop: each tenant needs
+    // its OWN withTenantDb transaction (RLS bound per-tenant); cross-tenant
+    // batching is impossible by design. Bounded by the org's tenant count.
+    for (const [tenantId, tLinks] of byTenant) { // guardrail-allow: n+1
+        try {
+            completed += await withTenantDb(tenantId, async (db) => {
+                let done = 0;
+                const byType = (t: string) => tLinks.filter((l) => l.entityType === t).map((l) => l.entityId);
+                const readDone = async (
+                    type: string,
+                    rows: Array<{ status: string }>,
+                ) => {
+                    done += rows.filter((r) => DONE_STATUS[type]?.has(r.status)).length;
+                };
+                const controlIds = byType('CONTROL');
+                if (controlIds.length) {
+                    await readDone('CONTROL', await db.control.findMany({ where: { id: { in: controlIds } }, select: { status: true } }));
+                }
+                const riskIds = byType('RISK');
+                if (riskIds.length) {
+                    await readDone('RISK', await db.risk.findMany({ where: { id: { in: riskIds } }, select: { status: true } }));
+                }
+                const taskIds = byType('TASK');
+                if (taskIds.length) {
+                    await readDone('TASK', await db.task.findMany({ where: { id: { in: taskIds } }, select: { status: true } }));
+                }
+                const findingIds = byType('FINDING');
+                if (findingIds.length) {
+                    await readDone('FINDING', await db.finding.findMany({ where: { id: { in: findingIds } }, select: { status: true } }));
+                }
+                return done;
+            });
+        } catch (err) {
+            logger.warn('org-initiative.link_resolution_failed', {
+                component: 'org-security-initiative',
+                tenantId,
+                error: err instanceof Error ? err.message : String(err),
+            });
+        }
+    }
+    return { completed, total };
+}
+
+/** Manual progress wins; else cross-tenant rollup of linked work. */
+export async function getInitiativeProgress(initiative: {
+    manualProgressPercent: number | null;
+    links: Array<{ linkedTenantId: string; entityType: string; entityId: string }>;
+}): Promise<InitiativeProgress> {
+    if (initiative.manualProgressPercent != null) {
+        return deriveProgress(initiative.manualProgressPercent, 0, initiative.links.length);
+    }
+    const { completed, total } = await resolveLinkCompletion(initiative.links);
+    return deriveProgress(null, completed, total);
+}
+
+// ─── CRUD ───────────────────────────────────────────────────────────
+
+export async function listInitiatives(ctx: OrgContext, options: { status?: InitiativeStatus; take?: number } = {}) {
+    assertRead(ctx);
+    return prisma.orgSecurityInitiative.findMany({
+        where: { organizationId: ctx.organizationId, ...(options.status ? { status: options.status } : {}) },
+        orderBy: [{ status: 'asc' }, { targetDate: 'asc' }],
+        include: { links: true },
+        take: options.take ?? 200,
+    });
+}
+
+export async function getInitiative(ctx: OrgContext, id: string) {
+    assertRead(ctx);
+    const init = await prisma.orgSecurityInitiative.findFirst({
+        where: { id, organizationId: ctx.organizationId },
+        include: { links: true },
+    });
+    if (!init) throw notFound('Initiative not found');
+    return init;
+}
+
+export async function createInitiative(
+    ctx: OrgContext,
+    input: { title: string; description?: string | null; ownerUserId?: string | null; targetDate?: string | null },
+) {
+    assertWrite(ctx);
+    const title = sanitizePlainText(input.title ?? '').trim();
+    if (!title) throw badRequest('A title is required.');
+    const created = await prisma.orgSecurityInitiative.create({
+        data: {
+            organizationId: ctx.organizationId,
+            title,
+            description: input.description ? sanitizePlainText(input.description) : null,
+            ownerUserId: input.ownerUserId ?? null,
+            targetDate: input.targetDate ? new Date(input.targetDate) : null,
+        },
+    });
+    await emitInitiativeAudit(ctx, 'ORG_INITIATIVE_CREATED', { initiativeId: created.id, title });
+    return created;
+}
+
+export async function updateInitiative(
+    ctx: OrgContext,
+    id: string,
+    input: {
+        title?: string;
+        description?: string | null;
+        ownerUserId?: string | null;
+        targetDate?: string | null;
+        manualProgressPercent?: number | null;
+    },
+) {
+    assertWrite(ctx);
+    await getInitiative(ctx, id); // existence + org scope
+    const data: Prisma.OrgSecurityInitiativeUpdateInput = {};
+    if (input.title !== undefined) data.title = sanitizePlainText(input.title);
+    if (input.description !== undefined) data.description = input.description ? sanitizePlainText(input.description) : null;
+    if (input.ownerUserId !== undefined) data.ownerUserId = input.ownerUserId;
+    if (input.targetDate !== undefined) data.targetDate = input.targetDate ? new Date(input.targetDate) : null;
+    if (input.manualProgressPercent !== undefined) {
+        data.manualProgressPercent =
+            input.manualProgressPercent === null ? null : Math.max(0, Math.min(100, input.manualProgressPercent));
+    }
+    await prisma.orgSecurityInitiative.updateMany({ where: { id, organizationId: ctx.organizationId }, data });
+    return getInitiative(ctx, id);
+}
+
+export async function changeInitiativeStatus(ctx: OrgContext, id: string, status: InitiativeStatus) {
+    assertWrite(ctx);
+    if (!(INITIATIVE_STATUSES as readonly string[]).includes(status)) {
+        throw badRequest(`Invalid initiative status "${status}".`);
+    }
+    const existing = await getInitiative(ctx, id);
+    const now = new Date();
+    const data: Prisma.OrgSecurityInitiativeUpdateInput = { status };
+    if (status === 'IN_PROGRESS' && !existing.startedAt) data.startedAt = now;
+    if (status === 'COMPLETED') data.completedAt = now;
+    await prisma.orgSecurityInitiative.updateMany({ where: { id, organizationId: ctx.organizationId }, data });
+    await emitInitiativeAudit(ctx, 'ORG_INITIATIVE_STATUS_CHANGED', {
+        initiativeId: id,
+        from: existing.status,
+        to: status,
+    });
+    return getInitiative(ctx, id);
+}
+
+export async function deleteInitiative(ctx: OrgContext, id: string) {
+    assertWrite(ctx);
+    await getInitiative(ctx, id);
+    await prisma.orgSecurityInitiative.deleteMany({ where: { id, organizationId: ctx.organizationId } });
+}
+
+// ─── Links (cross-tenant) ───────────────────────────────────────────
+
+export async function linkWork(
+    ctx: OrgContext,
+    initiativeId: string,
+    input: { tenantId: string; entityType: string; entityId: string },
+) {
+    assertWrite(ctx);
+    await getInitiative(ctx, initiativeId);
+    if (!(INITIATIVE_LINK_TYPES as readonly string[]).includes(input.entityType)) {
+        throw badRequest(`Invalid link entity type "${input.entityType}".`);
+    }
+    // The linked work MUST live in a tenant this org owns (authority check).
+    const tenant = await prisma.tenant.findFirst({
+        where: { id: input.tenantId, organizationId: ctx.organizationId },
+        select: { id: true },
+    });
+    if (!tenant) throw badRequest('Linked work must belong to a tenant in this organization.');
+
+    return prisma.orgInitiativeLink.upsert({
+        where: {
+            initiativeId_linkedTenantId_entityType_entityId: {
+                initiativeId,
+                linkedTenantId: input.tenantId,
+                entityType: input.entityType,
+                entityId: input.entityId,
+            },
+        },
+        update: {},
+        create: {
+            initiativeId,
+            organizationId: ctx.organizationId,
+            linkedTenantId: input.tenantId,
+            entityType: input.entityType,
+            entityId: input.entityId,
+        },
+    });
+}
+
+export async function unlinkWork(ctx: OrgContext, linkId: string) {
+    assertWrite(ctx);
+    await prisma.orgInitiativeLink.deleteMany({ where: { id: linkId, organizationId: ctx.organizationId } });
+}
+
+// ─── Widget surface ─────────────────────────────────────────────────
+
+export interface InitiativeWidgetRow {
+    id: string;
+    title: string;
+    status: InitiativeStatus;
+    ownerUserId: string | null;
+    targetDate: string | null;
+    progress: InitiativeProgress;
+    linkCount: number;
+    tenantSpan: number;
+    atRisk: boolean;
+    stale: boolean;
+}
+
+export interface InitiativeWidgetData {
+    rows: InitiativeWidgetRow[];
+    inFlight: number;
+    atRisk: number;
+}
+
+/** Top-N in-flight initiatives with rolled-up progress, for the widget. */
+export async function getInitiativesForWidget(
+    ctx: OrgContext,
+    options: { topN?: number; statusFilter?: InitiativeStatus[] } = {},
+): Promise<InitiativeWidgetData> {
+    assertRead(ctx);
+    const topN = Math.min(Math.max(options.topN ?? 5, 1), 20);
+    const statusFilter = options.statusFilter?.length
+        ? options.statusFilter
+        : (['PLANNED', 'IN_PROGRESS', 'BLOCKED'] as InitiativeStatus[]);
+
+    const all = await prisma.orgSecurityInitiative.findMany({
+        where: { organizationId: ctx.organizationId, status: { in: statusFilter } },
+        orderBy: [{ targetDate: 'asc' }, { createdAt: 'desc' }],
+        include: { links: true },
+        take: 200,
+    });
+
+    const inFlight = all.length;
+    const atRisk = all.filter((i) => isInitiativeAtRisk(i)).length;
+
+    // Resolve progress only for the surfaced rows (cap cross-tenant cost).
+    const top = all.slice(0, topN);
+    const rows: InitiativeWidgetRow[] = [];
+    for (const i of top) {
+        const progress = await getInitiativeProgress(i);
+        rows.push({
+            id: i.id,
+            title: i.title,
+            status: i.status,
+            ownerUserId: i.ownerUserId,
+            targetDate: i.targetDate?.toISOString() ?? null,
+            progress,
+            linkCount: i.links.length,
+            tenantSpan: new Set(i.links.map((l) => l.linkedTenantId)).size,
+            atRisk: isInitiativeAtRisk(i),
+            stale: isInitiativeStale(i),
+        });
+    }
+    return { rows, inFlight, atRisk };
+}
+
+async function emitInitiativeAudit(
+    ctx: OrgContext,
+    action: 'ORG_INITIATIVE_CREATED' | 'ORG_INITIATIVE_STATUS_CHANGED',
+    detailsJson: Record<string, unknown>,
+): Promise<void> {
+    try {
+        await appendOrgAuditEntry({
+            organizationId: ctx.organizationId,
+            actorUserId: ctx.userId,
+            actorType: 'USER',
+            action,
+            targetUserId: null,
+            detailsJson,
+            requestId: ctx.requestId,
+        });
+    } catch (err) {
+        logger.warn('org-initiative.audit_emit_failed', {
+            component: 'org-security-initiative',
+            action,
+            error: err instanceof Error ? err.message : String(err),
+        });
+    }
+}

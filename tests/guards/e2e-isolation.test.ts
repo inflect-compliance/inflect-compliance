@@ -384,6 +384,7 @@ const SHARED_SEED_ALLOWLIST: ReadonlyArray<{ file: string; reason: string }> = [
     // (org + ORG_ADMIN/AUDITOR + child-tenant create) for ciso-portfolio.
     { file: 'ai-risk-assessment.spec.ts', reason: 'applies AI suggestions → writes risks to shared tenant; pinned mode:serial so its own tests never race. Isolate later (risk-seed + framework-install factory)' },
     { file: 'ciso-portfolio.spec.ts', reason: 'creates a child tenant in the seeded org; pinned mode:serial. Isolate later (org-topology factory)' },
+    { file: 'org-initiatives.spec.ts', reason: 'seeded acme-org ORG_ADMIN (ciso@acme.com) — org-level surface, serial; no shared-tenant DATA mutation beyond the org\'s own initiatives' },
 ];
 
 describe('E2E test isolation — shared-seed specs are allowlisted (fullyParallel safety)', () => {

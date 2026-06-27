@@ -47,6 +47,10 @@ const EXEMPT_FILE_PATTERNS: RegExp[] = [
  * length to stop hand-waved exemptions.
  */
 const EXEMPTIONS: Record<string, string> = {
+    "src/app/org/[orgSlug]/(app)/initiatives/InitiativesClient.tsx":
+        "Org-level portfolio programme list — cross-tenant initiative records with sort + row click-through, no per-tenant faceted filters at the portfolio tier.",
+    "src/app/org/[orgSlug]/(app)/initiatives/[initiativeId]/InitiativeDetailClient.tsx":
+        "Detail-page linked-work sub-table — not a filterable list surface; the parent detail owns the chrome.",
     "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/readiness/Nis2ReadinessClient.tsx":
         "NIS2 readiness results view — derived score + prioritized gap tables (sorted by priority); not a faceted-filter list surface.",
     // ── Cross-tenant read-only aggregation views (org-level) ──

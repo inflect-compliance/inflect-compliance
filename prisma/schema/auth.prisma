@@ -261,6 +261,8 @@ model Organization {
   dashboardWidgets             OrgDashboardWidget[]
   threatLevels                 OrgThreatLevel[]
   maturityRatings              OrgMaturityRating[]
+  securityInitiatives          OrgSecurityInitiative[]
+  initiativeLinks              OrgInitiativeLink[]
 }
 
 // Per-user, per-org role assignment.
@@ -437,6 +439,59 @@ model OrgMaturityRating {
 
   // Current per domain = ORDER BY ratedAt DESC LIMIT 1; trend = the series.
   @@index([organizationId, domain, ratedAt])
+}
+
+/// Portfolio-level SECURITY INITIATIVE / programme (concept ported from
+/// Cybether, MIT). A discrete, named improvement effort the org tracks
+/// across its tenants ("Roll out MFA org-wide", "Achieve SOC 2") with its
+/// own lifecycle + progress — DISTINCT from atomic tenant remediation
+/// (Task/ControlTask). ORG-scoped (global prisma, NOT TENANT_SCOPED_MODELS,
+/// no per-tenant RLS / DEK). `description` sanitised at the usecase.
+model OrgSecurityInitiative {
+  id                    String           @id @default(cuid())
+  organizationId        String
+  title                 String
+  description           String?
+  status                InitiativeStatus @default(PLANNED)
+  ownerUserId           String?
+  targetDate            DateTime?
+  /// When set, overrides the derived (linked-work) progress. Null = derive.
+  manualProgressPercent Int?
+  startedAt             DateTime?
+  completedAt           DateTime?
+  createdAt             DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  links        OrgInitiativeLink[]
+
+  @@index([organizationId, status])
+  @@index([organizationId, targetDate])
+}
+
+/// Link from an initiative to a piece of tenant-level work. CROSS-TENANT:
+/// an initiative can link work in ANY tenant the org owns. Stores both the
+/// tenantId and the entity ref so the progress rollup can resolve
+/// completion through the sanctioned cross-tenant read path (withTenantDb
+/// per tenant — never bypassing tenant isolation).
+model OrgInitiativeLink {
+  id             String @id @default(cuid())
+  initiativeId   String
+  organizationId String
+  /// Which tenant the linked work lives in (a REFERENCE, not a
+  /// tenant-isolation column — this model is org-scoped, not
+  /// tenant-scoped; named linkedTenantId so it isn't auto-detected as
+  /// RLS-isolated tenant data).
+  linkedTenantId String
+  /// 'CONTROL' | 'RISK' | 'TASK' | 'FINDING'.
+  entityType     String
+  entityId       String
+
+  initiative OrgSecurityInitiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([initiativeId, linkedTenantId, entityType, entityId])
+  @@index([organizationId, initiativeId])
 }
 
 model TenantOnboarding {

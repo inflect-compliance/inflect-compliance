@@ -39,6 +39,8 @@ const SCAN_ROOT = path.join(ROOT, 'src');
 const LEGACY_LUCIDE_USERS = new Set<string>([
     'src/app/org/[orgSlug]/(app)/OrgThreatLevelWidget.tsx',
     'src/app/org/[orgSlug]/(app)/OrgMaturityWidget.tsx',
+    'src/app/org/[orgSlug]/(app)/OrgInitiativesWidget.tsx',
+    'src/app/org/[orgSlug]/(app)/initiatives/[initiativeId]/InitiativeDetailClient.tsx',
     // NIS2 self-assessment surfaces — consistent with the sibling
     // onboarding family (OnboardingWizard) which uses lucide; Nucleo
     // migration tracked for the whole onboarding family.
