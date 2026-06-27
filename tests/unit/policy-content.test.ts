@@ -8,7 +8,34 @@ import {
     slugifyHeading,
     assignHeadingIds,
     enrichPolicyHtml,
+    renderPolicyMarkdown,
 } from '@/lib/policy/policy-content';
+
+describe('renderPolicyMarkdown', () => {
+    it('converts markdown headings, lists and emphasis to HTML', () => {
+        const html = renderPolicyMarkdown('# Title\n\n## Purpose\n- a\n- b\n\nBody **bold**.');
+        expect(html).toContain('<h1>Title</h1>');
+        expect(html).toContain('<h2>Purpose</h2>');
+        expect(html).toContain('<li>a</li>');
+        expect(html).toContain('<strong>bold</strong>');
+    });
+    it('converts a markdown thematic break to <hr> (page break)', () => {
+        expect(renderPolicyMarkdown('Intro\n\n---\n\n## Next')).toContain('<hr>');
+    });
+    it('is null/empty-safe', () => {
+        expect(renderPolicyMarkdown('')).toBe('');
+        expect(renderPolicyMarkdown(null)).toBe('');
+        expect(renderPolicyMarkdown('   ')).toBe('');
+    });
+    it('feeds enrichPolicyHtml — a markdown doc gains heading anchors + a TOC', () => {
+        const html = enrichPolicyHtml(
+            renderPolicyMarkdown('# Acceptable Use\n\n## Purpose and Scope\nx\n\n## Introduction\ny'),
+        );
+        expect(html).toContain('<h2 id="purpose-and-scope">');
+        expect(html).toContain('policy-toc');
+        expect(html).toContain('<a href="#introduction">Introduction</a>');
+    });
+});
 
 describe('slugifyHeading', () => {
     it('lowercases, strips punctuation, and hyphenates', () => {
