@@ -99,12 +99,28 @@ describe('policy-template framework mapping — fixture integrity', () => {
         expect(allCodes.some((c) => c.startsWith('nis2-'))).toBe(false);
     });
 
-    it('every policy has at least one from_toolkit mapping somewhere (the feature is toolkit-grounded)', () => {
-        for (const m of Object.values(fixture.mappings)) {
+    it('every ciso (POL-xx) policy has at least one from_toolkit mapping (toolkit-grounded)', () => {
+        // Only the ciso-toolkit set is toolkit-grounded. The imported policies
+        // carry no toolkit provenance, so their mappings are wholly `curated`.
+        for (const [ref, m] of Object.entries(fixture.mappings)) {
+            if (!/^POL-\d\d$/.test(ref)) continue;
             const provs = [...(m.iso27001 ?? []), ...(m.nis2 ?? [])].map((e) => e.provenance);
             expect(provs.length).toBeGreaterThan(0);
             expect(provs).toContain('from_toolkit');
         }
+    });
+
+    it('every imported policy is mapped to at least one framework requirement', () => {
+        const imported = JSON.parse(read('prisma/fixtures/policy-templates-imported.json')) as {
+            templates: Array<{ externalRef: string }>;
+        };
+        const unmapped: string[] = [];
+        for (const t of imported.templates) {
+            const m = fixture.mappings[t.externalRef];
+            const n = (m?.iso27001?.length ?? 0) + (m?.nis2?.length ?? 0);
+            if (n === 0) unmapped.push(t.externalRef);
+        }
+        expect(unmapped).toEqual([]);
     });
 });
 

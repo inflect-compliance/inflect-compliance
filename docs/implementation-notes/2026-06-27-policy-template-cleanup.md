@@ -22,11 +22,15 @@ two cards for the same policy.
   (was externalRef-only), so an imported policy SUPERSEDES any earlier
   same-titled template instead of creating a duplicate card. Result on a fresh
   seed: 0 stubs, 0 duplicate titles (verified on a real DB).
-- **Framework mapping carried over:** the imported `information-security-policy`
-  and `risk-management-policy` are mapped to the same ISO 27001 / NIS2
-  requirements as their ciso twins (POL-01 / POL-02) in
-  `policy-template-framework-map.json`, so the kept (imported) copies keep the
-  framework link-suggestion feature.
+- **Framework mapping carried over + extended to the whole imported set:** the
+  imported `information-security-policy` and `risk-management-policy` mirror their
+  ciso twins (POL-01 / POL-02); the remaining 24 imported policies are now mapped
+  too (curated ISO 27001 Annex A + NIS2 requirements per policy domain) in
+  `policy-template-framework-map.json`. Imported mappings are wholly `curated`
+  (the imported export carries no toolkit/CSF provenance), so the
+  "every policy has a from_toolkit mapping" ratchet is scoped to the ciso POL-xx
+  set, and a new ratchet asserts every imported policy is mapped to ≥1
+  requirement. All 26 imported → framework-aware suggestions.
 - **Prod:** the live picker was already deduped/de-stubbed by a one-off
   templates-only DB prune (11 rows removed → 40). This PR makes the SOURCE match
   so a reseed stays clean; the imported-copy framework mappings activate on the

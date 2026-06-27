@@ -19,215 +19,1180 @@
   "mappings": {
     "POL-00": {
       "iso27001": [
-        { "code": "5.1", "provenance": "from_toolkit" },
-        { "code": "5.37", "provenance": "from_toolkit" },
-        { "code": "5.31", "provenance": "from_toolkit" },
-        { "code": "5.33", "provenance": "curated" },
-        { "code": "5.36", "provenance": "curated" }
+        {
+          "code": "5.1",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "5.37",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "5.31",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "5.33",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.36",
+          "provenance": "curated"
+        }
       ],
       "nis2": [
-        { "code": "Art.20(1)", "provenance": "from_toolkit" }
+        {
+          "code": "Art.20(1)",
+          "provenance": "from_toolkit"
+        }
       ]
     },
     "POL-01": {
       "iso27001": [
-        { "code": "5.1", "provenance": "from_toolkit" },
-        { "code": "5.2", "provenance": "from_toolkit" },
-        { "code": "5.4", "provenance": "from_toolkit" },
-        { "code": "5.31", "provenance": "from_toolkit" },
-        { "code": "5.35", "provenance": "curated" },
-        { "code": "5.36", "provenance": "curated" }
+        {
+          "code": "5.1",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "5.2",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "5.4",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "5.31",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "5.35",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.36",
+          "provenance": "curated"
+        }
       ],
       "nis2": [
-        { "code": "Art.20(1)", "provenance": "from_toolkit" },
-        { "code": "Art.21(2)(a)", "provenance": "from_toolkit" }
+        {
+          "code": "Art.20(1)",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "Art.21(2)(a)",
+          "provenance": "from_toolkit"
+        }
       ]
     },
     "POL-02": {
       "iso27001": [
-        { "code": "5.7", "provenance": "curated" },
-        { "code": "5.8", "provenance": "curated" }
+        {
+          "code": "5.7",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.8",
+          "provenance": "curated"
+        }
       ],
       "nis2": [
-        { "code": "Art.21(2)(a)", "provenance": "from_toolkit" },
-        { "code": "Art.21(2)(f)", "provenance": "curated" }
+        {
+          "code": "Art.21(2)(a)",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "Art.21(2)(f)",
+          "provenance": "curated"
+        }
       ]
     },
     "POL-03": {
       "iso27001": [
-        { "code": "5.9", "provenance": "from_toolkit" },
-        { "code": "5.12", "provenance": "from_toolkit" },
-        { "code": "5.14", "provenance": "from_toolkit" },
-        { "code": "5.10", "provenance": "curated" },
-        { "code": "5.13", "provenance": "curated" }
+        {
+          "code": "5.9",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "5.12",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "5.14",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "5.10",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.13",
+          "provenance": "curated"
+        }
       ],
       "nis2": [
-        { "code": "Art.21(2)(i)", "provenance": "from_toolkit" }
+        {
+          "code": "Art.21(2)(i)",
+          "provenance": "from_toolkit"
+        }
       ]
     },
     "POL-04": {
       "iso27001": [
-        { "code": "5.19", "provenance": "from_toolkit" },
-        { "code": "5.20", "provenance": "from_toolkit" },
-        { "code": "5.21", "provenance": "curated" },
-        { "code": "5.22", "provenance": "curated" },
-        { "code": "5.23", "provenance": "curated" }
+        {
+          "code": "5.19",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "5.20",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "5.21",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.22",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.23",
+          "provenance": "curated"
+        }
       ],
       "nis2": [
-        { "code": "Art.21(2)(d)", "provenance": "from_toolkit" }
+        {
+          "code": "Art.21(2)(d)",
+          "provenance": "from_toolkit"
+        }
       ]
     },
     "POL-05": {
       "iso27001": [
-        { "code": "5.15", "provenance": "from_toolkit" },
-        { "code": "5.16", "provenance": "from_toolkit" },
-        { "code": "5.17", "provenance": "from_toolkit" },
-        { "code": "5.18", "provenance": "from_toolkit" },
-        { "code": "8.2", "provenance": "from_toolkit" },
-        { "code": "8.3", "provenance": "curated" },
-        { "code": "5.3", "provenance": "curated" },
-        { "code": "8.5", "provenance": "curated" }
+        {
+          "code": "5.15",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "5.16",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "5.17",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "5.18",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "8.2",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "8.3",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.3",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.5",
+          "provenance": "curated"
+        }
       ],
       "nis2": [
-        { "code": "Art.21(2)(i)", "provenance": "from_toolkit" },
-        { "code": "Art.21(2)(j)", "provenance": "from_toolkit" }
+        {
+          "code": "Art.21(2)(i)",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "Art.21(2)(j)",
+          "provenance": "from_toolkit"
+        }
       ]
     },
     "POL-06": {
       "iso27001": [
-        { "code": "8.20", "provenance": "from_toolkit" },
-        { "code": "8.21", "provenance": "from_toolkit" },
-        { "code": "8.22", "provenance": "from_toolkit" },
-        { "code": "8.23", "provenance": "curated" }
+        {
+          "code": "8.20",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "8.21",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "8.22",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "8.23",
+          "provenance": "curated"
+        }
       ],
       "nis2": [
-        { "code": "Art.21(2)(e)", "provenance": "curated" }
+        {
+          "code": "Art.21(2)(e)",
+          "provenance": "curated"
+        }
       ]
     },
     "POL-07": {
       "iso27001": [
-        { "code": "8.24", "provenance": "from_toolkit" },
-        { "code": "5.14", "provenance": "from_toolkit" },
-        { "code": "5.33", "provenance": "curated" },
-        { "code": "5.34", "provenance": "curated" },
-        { "code": "8.5", "provenance": "curated" }
+        {
+          "code": "8.24",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "5.14",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "5.33",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.34",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.5",
+          "provenance": "curated"
+        }
       ],
       "nis2": [
-        { "code": "Art.21(2)(h)", "provenance": "from_toolkit" }
+        {
+          "code": "Art.21(2)(h)",
+          "provenance": "from_toolkit"
+        }
       ]
     },
     "POL-08": {
       "iso27001": [
-        { "code": "8.12", "provenance": "from_toolkit" },
-        { "code": "8.31", "provenance": "from_toolkit" },
-        { "code": "8.16", "provenance": "from_toolkit" },
-        { "code": "8.32", "provenance": "curated" },
-        { "code": "8.9", "provenance": "curated" },
-        { "code": "5.37", "provenance": "curated" }
+        {
+          "code": "8.12",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "8.31",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "8.16",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "8.32",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.9",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.37",
+          "provenance": "curated"
+        }
       ],
       "nis2": [
-        { "code": "Art.21(2)(e)", "provenance": "curated" },
-        { "code": "Art.21(2)(f)", "provenance": "curated" }
+        {
+          "code": "Art.21(2)(e)",
+          "provenance": "curated"
+        },
+        {
+          "code": "Art.21(2)(f)",
+          "provenance": "curated"
+        }
       ]
     },
     "POL-09": {
       "iso27001": [
-        { "code": "8.13", "provenance": "from_toolkit" },
-        { "code": "8.14", "provenance": "from_toolkit" },
-        { "code": "7.10", "provenance": "curated" },
-        { "code": "7.14", "provenance": "curated" }
+        {
+          "code": "8.13",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "8.14",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "7.10",
+          "provenance": "curated"
+        },
+        {
+          "code": "7.14",
+          "provenance": "curated"
+        }
       ],
       "nis2": [
-        { "code": "Art.21(2)(c)", "provenance": "from_toolkit" }
+        {
+          "code": "Art.21(2)(c)",
+          "provenance": "from_toolkit"
+        }
       ]
     },
     "POL-10": {
       "iso27001": [
-        { "code": "8.15", "provenance": "from_toolkit" },
-        { "code": "8.16", "provenance": "from_toolkit" },
-        { "code": "8.17", "provenance": "curated" },
-        { "code": "5.28", "provenance": "curated" }
+        {
+          "code": "8.15",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "8.16",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "8.17",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.28",
+          "provenance": "curated"
+        }
       ],
       "nis2": [
-        { "code": "Art.21(2)(b)", "provenance": "curated" },
-        { "code": "Art.21(2)(f)", "provenance": "curated" }
+        {
+          "code": "Art.21(2)(b)",
+          "provenance": "curated"
+        },
+        {
+          "code": "Art.21(2)(f)",
+          "provenance": "curated"
+        }
       ]
     },
     "POL-11": {
       "iso27001": [
-        { "code": "8.1", "provenance": "from_toolkit" },
-        { "code": "8.7", "provenance": "from_toolkit" },
-        { "code": "8.9", "provenance": "curated" },
-        { "code": "7.7", "provenance": "curated" }
+        {
+          "code": "8.1",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "8.7",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "8.9",
+          "provenance": "curated"
+        },
+        {
+          "code": "7.7",
+          "provenance": "curated"
+        }
       ],
       "nis2": [
-        { "code": "Art.21(2)(g)", "provenance": "from_toolkit" }
+        {
+          "code": "Art.21(2)(g)",
+          "provenance": "from_toolkit"
+        }
       ]
     },
     "POL-12": {
       "iso27001": [
-        { "code": "6.3", "provenance": "from_toolkit" },
-        { "code": "6.1", "provenance": "from_toolkit" },
-        { "code": "6.2", "provenance": "from_toolkit" },
-        { "code": "6.4", "provenance": "curated" },
-        { "code": "6.5", "provenance": "curated" },
-        { "code": "6.6", "provenance": "curated" }
+        {
+          "code": "6.3",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "6.1",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "6.2",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "6.4",
+          "provenance": "curated"
+        },
+        {
+          "code": "6.5",
+          "provenance": "curated"
+        },
+        {
+          "code": "6.6",
+          "provenance": "curated"
+        }
       ],
       "nis2": [
-        { "code": "Art.21(2)(g)", "provenance": "from_toolkit" },
-        { "code": "Art.20(2)", "provenance": "from_toolkit" }
+        {
+          "code": "Art.21(2)(g)",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "Art.20(2)",
+          "provenance": "from_toolkit"
+        }
       ]
     },
     "POL-13": {
       "iso27001": [
-        { "code": "5.24", "provenance": "from_toolkit" },
-        { "code": "5.25", "provenance": "from_toolkit" },
-        { "code": "5.26", "provenance": "from_toolkit" },
-        { "code": "5.27", "provenance": "curated" },
-        { "code": "5.28", "provenance": "curated" },
-        { "code": "8.15", "provenance": "curated" }
+        {
+          "code": "5.24",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "5.25",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "5.26",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "5.27",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.28",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.15",
+          "provenance": "curated"
+        }
       ],
       "nis2": [
-        { "code": "Art.21(2)(b)", "provenance": "from_toolkit" },
-        { "code": "Art.23(1)", "provenance": "from_toolkit" },
-        { "code": "Art.23(2)", "provenance": "from_toolkit" },
-        { "code": "Art.23(3)", "provenance": "curated" }
+        {
+          "code": "Art.21(2)(b)",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "Art.23(1)",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "Art.23(2)",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "Art.23(3)",
+          "provenance": "curated"
+        }
       ]
     },
     "POL-14": {
       "iso27001": [
-        { "code": "5.29", "provenance": "from_toolkit" },
-        { "code": "5.30", "provenance": "from_toolkit" },
-        { "code": "8.13", "provenance": "curated" },
-        { "code": "8.14", "provenance": "curated" },
-        { "code": "5.27", "provenance": "curated" }
+        {
+          "code": "5.29",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "5.30",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "8.13",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.14",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.27",
+          "provenance": "curated"
+        }
       ],
       "nis2": [
-        { "code": "Art.21(2)(c)", "provenance": "from_toolkit" }
+        {
+          "code": "Art.21(2)(c)",
+          "provenance": "from_toolkit"
+        }
       ]
     },
     "information-security-policy": {
       "iso27001": [
-        { "code": "5.1", "provenance": "from_toolkit" },
-        { "code": "5.2", "provenance": "from_toolkit" },
-        { "code": "5.4", "provenance": "from_toolkit" },
-        { "code": "5.31", "provenance": "from_toolkit" },
-        { "code": "5.35", "provenance": "curated" },
-        { "code": "5.36", "provenance": "curated" }
+        {
+          "code": "5.1",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "5.2",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "5.4",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "5.31",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "5.35",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.36",
+          "provenance": "curated"
+        }
       ],
       "nis2": [
-        { "code": "Art.20(1)", "provenance": "from_toolkit" },
-        { "code": "Art.21(2)(a)", "provenance": "from_toolkit" }
+        {
+          "code": "Art.20(1)",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "Art.21(2)(a)",
+          "provenance": "from_toolkit"
+        }
       ]
     },
     "risk-management-policy": {
       "iso27001": [
-        { "code": "5.7", "provenance": "curated" },
-        { "code": "5.8", "provenance": "curated" }
+        {
+          "code": "5.7",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.8",
+          "provenance": "curated"
+        }
       ],
       "nis2": [
-        { "code": "Art.21(2)(a)", "provenance": "from_toolkit" },
-        { "code": "Art.21(2)(f)", "provenance": "curated" }
+        {
+          "code": "Art.21(2)(a)",
+          "provenance": "from_toolkit"
+        },
+        {
+          "code": "Art.21(2)(f)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "access-management-policy": {
+      "iso27001": [
+        {
+          "code": "5.15",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.16",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.17",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.18",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.2",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.3",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.5",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.21(2)(i)",
+          "provenance": "curated"
+        },
+        {
+          "code": "Art.21(2)(j)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "asset-management-policy": {
+      "iso27001": [
+        {
+          "code": "5.9",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.10",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.11",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.12",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.13",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.21(2)(i)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "awareness-management-policy": {
+      "iso27001": [
+        {
+          "code": "6.3",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.21(2)(g)",
+          "provenance": "curated"
+        },
+        {
+          "code": "Art.20(2)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "backup-policy": {
+      "iso27001": [
+        {
+          "code": "8.13",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.14",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.21(2)(c)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "business-continuity-plan": {
+      "iso27001": [
+        {
+          "code": "5.29",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.30",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.13",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.21(2)(c)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "business-continuity-policy": {
+      "iso27001": [
+        {
+          "code": "5.29",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.30",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.13",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.14",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.21(2)(c)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "business-impact-analysis-procedure": {
+      "iso27001": [
+        {
+          "code": "5.29",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.30",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.21(2)(c)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "change-and-configuration-management-policy": {
+      "iso27001": [
+        {
+          "code": "8.9",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.31",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.32",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.21(2)(e)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "cloud-services-policy": {
+      "iso27001": [
+        {
+          "code": "5.23",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.19",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.21",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.21(2)(d)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "communication-procedure-and-plan": {
+      "iso27001": [
+        {
+          "code": "5.5",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.6",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.14",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.23(1)",
+          "provenance": "curated"
+        },
+        {
+          "code": "Art.23(2)",
+          "provenance": "curated"
+        },
+        {
+          "code": "Art.23(3)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "communication-security-policy": {
+      "iso27001": [
+        {
+          "code": "5.14",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.20",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.21",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.21(2)(e)",
+          "provenance": "curated"
+        },
+        {
+          "code": "Art.21(2)(j)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "compliance-management-policy": {
+      "iso27001": [
+        {
+          "code": "5.31",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.34",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.35",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.36",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.21(2)(f)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "crisis-management-policy": {
+      "iso27001": [
+        {
+          "code": "5.24",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.26",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.29",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.21(2)(c)",
+          "provenance": "curated"
+        },
+        {
+          "code": "Art.23(1)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "documents-and-records-policy": {
+      "iso27001": [
+        {
+          "code": "5.37",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.33",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.20(1)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "hardening-policy": {
+      "iso27001": [
+        {
+          "code": "8.9",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.8",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.21(2)(e)",
+          "provenance": "curated"
+        },
+        {
+          "code": "Art.21(2)(g)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "human-resources-security-policy": {
+      "iso27001": [
+        {
+          "code": "6.1",
+          "provenance": "curated"
+        },
+        {
+          "code": "6.2",
+          "provenance": "curated"
+        },
+        {
+          "code": "6.4",
+          "provenance": "curated"
+        },
+        {
+          "code": "6.5",
+          "provenance": "curated"
+        },
+        {
+          "code": "6.6",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.21(2)(i)",
+          "provenance": "curated"
+        },
+        {
+          "code": "Art.21(2)(g)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "ics-ot-security-policy": {
+      "iso27001": [
+        {
+          "code": "8.1",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.20",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.22",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.21(2)(e)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "incident-management-policy": {
+      "iso27001": [
+        {
+          "code": "5.24",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.25",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.26",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.27",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.28",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.21(2)(b)",
+          "provenance": "curated"
+        },
+        {
+          "code": "Art.23(1)",
+          "provenance": "curated"
+        },
+        {
+          "code": "Art.23(2)",
+          "provenance": "curated"
+        },
+        {
+          "code": "Art.23(3)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "it-security-policy": {
+      "iso27001": [
+        {
+          "code": "5.1",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.1",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.7",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.8",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.21(2)(a)",
+          "provenance": "curated"
+        },
+        {
+          "code": "Art.21(2)(e)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "logging-and-monitoring-policy": {
+      "iso27001": [
+        {
+          "code": "8.15",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.16",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.17",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.21(2)(b)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "physical-security-policy": {
+      "iso27001": [
+        {
+          "code": "7.1",
+          "provenance": "curated"
+        },
+        {
+          "code": "7.2",
+          "provenance": "curated"
+        },
+        {
+          "code": "7.3",
+          "provenance": "curated"
+        },
+        {
+          "code": "7.4",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.21(2)(i)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "privacy-policy": {
+      "iso27001": [
+        {
+          "code": "5.34",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.33",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.10",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.11",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.21(2)(h)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "secure-development-policy": {
+      "iso27001": [
+        {
+          "code": "8.25",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.26",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.27",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.28",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.29",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.31",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.21(2)(e)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "supplier-management-policy": {
+      "iso27001": [
+        {
+          "code": "5.19",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.20",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.21",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.22",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.23",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.21(2)(d)",
+          "provenance": "curated"
+        }
       ]
     }
   }
