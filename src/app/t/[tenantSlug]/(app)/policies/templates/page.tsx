@@ -13,6 +13,7 @@ import { Heading } from '@/components/ui/typography';
 import { Card, cardVariants } from '@/components/ui/card';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { cn } from '@/lib/cn';
+import { TemplateControlSuggestModal, type SuggestionResultDTO } from './TemplateControlSuggestModal';
 
 interface PolicyTemplateRow {
     id: string;
@@ -22,6 +23,15 @@ interface PolicyTemplateRow {
     tags: string | null;
     contentText: string;
     source: string | null;
+    externalRef: string | null;
+    /** Installed frameworks this template pre-maps to (powers the badge). */
+    mappedFrameworks?: string[];
+}
+
+const FRAMEWORK_LABEL: Record<string, string> = { ISO27001: 'ISO 27001', NIS2: 'NIS2' };
+
+function mappedFrameworksLabel(keys: string[]): string {
+    return keys.map((k) => FRAMEWORK_LABEL[k] ?? k).join(' + ');
 }
 
 export default function TemplatesPage() {
@@ -34,6 +44,7 @@ export default function TemplatesPage() {
     const [loading, setLoading] = useState(true);
     const [categoryFilter, setCategoryFilter] = useState('');
     const [creating, setCreating] = useState('');
+    const [suggestModal, setSuggestModal] = useState<{ policyId: string; policyTitle: string; result: SuggestionResultDTO } | null>(null);
 
     useEffect(() => {
         fetch(apiUrl('/policies/templates'))
@@ -69,11 +80,33 @@ export default function TemplatesPage() {
             });
             if (res.ok) {
                 const policy = await res.json();
+                const suggestions: SuggestionResultDTO | null = policy.suggestedControlLinks ?? null;
+                // Framework-aware template with installed-framework matches →
+                // show the explicit confirm-and-link panel before navigating.
+                if (suggestions && suggestions.totalSuggested > 0) {
+                    setSuggestModal({ policyId: policy.id, policyTitle: policy.title, result: suggestions });
+                    return;
+                }
                 router.push(tenantHref(`/policies/${policy.id}`));
             }
         } finally {
             setCreating('');
         }
+    };
+
+    const handleConfirmLinks = async (controlIds: string[]) => {
+        if (!suggestModal) return;
+        await fetch(apiUrl(`/policies/${suggestModal.policyId}/control-links`), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ controlIds }),
+        }).catch(() => {});
+        router.push(tenantHref(`/policies/${suggestModal.policyId}`));
+    };
+
+    const handleSkipLinks = () => {
+        if (!suggestModal) return;
+        router.push(tenantHref(`/policies/${suggestModal.policyId}`));
     };
 
     return (
@@ -128,9 +161,12 @@ export default function TemplatesPage() {
                         <Card className="flex flex-col justify-between hover:ring-1 hover:ring-[var(--brand-default)]/30 transition" key={tpl.id}>
                             <div>
                                 <Heading level={3} className="mb-1">{tpl.title}</Heading>
-                                <div className="flex gap-tight mb-2">
+                                <div className="flex gap-tight mb-2 flex-wrap items-center">
                                     {tpl.category && <StatusBadge variant="neutral">{tpl.category}</StatusBadge>}
                                     {tpl.language && <span className="text-xs text-content-subtle">{tpl.language.toUpperCase()}</span>}
+                                    {tpl.mappedFrameworks && tpl.mappedFrameworks.length > 0 && (
+                                        <StatusBadge variant="info">Maps to {mappedFrameworksLabel(tpl.mappedFrameworks)}</StatusBadge>
+                                    )}
                                 </div>
                                 {tpl.tags && (
                                     <div className="flex flex-wrap gap-1 mb-3">
@@ -174,6 +210,15 @@ export default function TemplatesPage() {
                         </Card>
                     ))}
                 </div>
+            )}
+
+            {suggestModal && (
+                <TemplateControlSuggestModal
+                    policyTitle={suggestModal.policyTitle}
+                    result={suggestModal.result}
+                    onConfirm={handleConfirmLinks}
+                    onSkip={handleSkipLinks}
+                />
             )}
         </div>
     );

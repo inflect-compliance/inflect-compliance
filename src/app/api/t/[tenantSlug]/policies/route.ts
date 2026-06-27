@@ -3,6 +3,7 @@ import { requirePermission } from '@/lib/security/permission-middleware';
 import { parseJsonBody } from '@/lib/validation/route';
 import { CreatePolicySchema } from '@/lib/schemas';
 import * as policyUsecases from '@/app-layer/usecases/policy';
+import { getTemplateExternalRef, getSuggestedControlLinks } from '@/app-layer/usecases/policy-template-mapping';
 import { z } from 'zod';
 import { normalizeQ } from '@/lib/filters/query-helpers';
 import { jsonResponse } from '@/lib/api-response';
@@ -71,26 +72,31 @@ export const POST = withApiErrorHandling(
   requirePermission<{ tenantSlug: string }>('policies.create', async (req, _routeArgs, ctx) => {
     const body = await parseJsonBody(req, CreatePolicySchema);
 
-    let policy;
     if (body.templateId) {
-      policy = await policyUsecases.createPolicyFromTemplate(ctx, body.templateId, {
+      const policy = await policyUsecases.createPolicyFromTemplate(ctx, body.templateId, {
         title: body.title,
         description: body.description,
         category: body.category,
         ownerUserId: body.ownerUserId,
         language: body.language,
       });
-    } else {
-      policy = await policyUsecases.createPolicy(ctx, {
-        title: body.title,
-        description: body.description,
-        category: body.category,
-        ownerUserId: body.ownerUserId,
-        reviewFrequencyDays: body.reviewFrequencyDays,
-        language: body.language,
-        content: body.content,
-      });
+      // Framework-aware templates surface control-link SUGGESTIONS alongside
+      // the created policy — the tenant confirms them explicitly via
+      // POST /policies/[id]/control-links. Links are NEVER auto-created.
+      const ref = await getTemplateExternalRef(ctx, body.templateId);
+      const suggestedControlLinks = ref ? await getSuggestedControlLinks(ctx, ref) : null;
+      return jsonResponse({ ...policy, suggestedControlLinks }, { status: 201 });
     }
+
+    const policy = await policyUsecases.createPolicy(ctx, {
+      title: body.title,
+      description: body.description,
+      category: body.category,
+      ownerUserId: body.ownerUserId,
+      reviewFrequencyDays: body.reviewFrequencyDays,
+      language: body.language,
+      content: body.content,
+    });
 
     return jsonResponse(policy, { status: 201 });
   })

@@ -363,6 +363,13 @@ const LIST_QUERY_INDEXES: readonly CompositeIndex[] = [
 // curated composite index is needed."
 
 const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
+    // Policy-template mapping — linkPolicyControls reads existing links by
+    // policyId (+ controlId in-filter) to dedupe before createMany; covered
+    // by @@index([tenantId, policyId]) (policyId is the leading filter under
+    // the RLS-bound tenantId) and @@unique([policyId, controlId]). Bounded
+    // by the supplied controlIds (max 200), never a full per-tenant list.
+    PolicyControlLink:
+        'linkPolicyControls reads existing links by policyId (+ controlId in-filter) to dedupe — covered by @@index([tenantId, policyId]) + @@unique([policyId, controlId]); bounded by controlIds input.',
     // Business-KPI — dau-mau-aggregator builds a tenantId→plan map with a
     // full BillingAccount scan (cross-tenant, no filter). One row per
     // paying tenant (tenantId @unique) → table bounded by tenant count;
