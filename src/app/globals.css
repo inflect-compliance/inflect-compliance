@@ -461,3 +461,76 @@ textarea.input { @apply resize-y min-h-[80px]; }
     animation: canvas-connection-shake-reduced 200ms ease-in-out;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────
+ * Policy document chrome — page breaks + auto Table of Contents.
+ * Scoped to `.policy-content` (the rendered policy body) so it never
+ * touches other `<hr>`/`<nav>` elements. On screen a page break shows
+ * as a labelled "PAGE BREAK" divider; in print it becomes a real page
+ * break. The TOC is a bordered Contents box with linked sections.
+ * ───────────────────────────────────────────────────────────────── */
+.policy-content hr {
+  position: relative;
+  height: 0;
+  border: 0;
+  border-top: 1px dashed var(--border-default);
+  margin: 2rem 0;
+}
+.policy-content hr::after {
+  content: "PAGE BREAK";
+  position: absolute;
+  top: -0.65em;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.1rem 0.5rem;
+  background: var(--bg-default);
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--content-subtle);
+  white-space: nowrap;
+}
+.policy-content .policy-toc {
+  margin: 1.5rem 0;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-subtle);
+}
+.policy-content .policy-toc-title {
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+  color: var(--content-emphasis, var(--content-default));
+}
+.policy-content .policy-toc ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.policy-content .policy-toc li {
+  margin: 0.25rem 0;
+}
+.policy-content .policy-toc li.policy-toc-l2 { padding-left: 1rem; }
+.policy-content .policy-toc li.policy-toc-l3 { padding-left: 2rem; }
+.policy-content .policy-toc a {
+  color: var(--content-default);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.policy-content .policy-toc a:hover {
+  color: var(--brand-default);
+}
+
+@media print {
+  .policy-content hr {
+    border: 0;
+    margin: 0;
+    break-after: page;
+    page-break-after: always;
+  }
+  .policy-content hr::after {
+    display: none;
+  }
+}

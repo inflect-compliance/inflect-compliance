@@ -101,6 +101,19 @@ describe('<RichTextEditor>', () => {
         expect(within(wrapper).getByLabelText(/^Heading 1$/i)).toBeInTheDocument();
         expect(within(wrapper).getByLabelText(/^Bullet list$/i)).toBeInTheDocument();
         expect(within(wrapper).getByLabelText(/^Insert link$/i)).toBeInTheDocument();
+        // Page-break button (inserts an <hr> the policy view renders as a
+        // labelled break + a real page break in print/PDF).
+        expect(within(wrapper).getByLabelText(/^Page break$/i)).toBeInTheDocument();
+    });
+
+    it('the Page break button inserts a horizontal rule into the document', () => {
+        render(<Harness initial="Intro paragraph." />);
+        fireEvent.click(screen.getByTestId('rich-text-editor-toggle'));
+        const wrapper = screen.getByTestId('rich-text-editor');
+        fireEvent.click(within(wrapper).getByLabelText(/^Page break$/i));
+        expect(
+            screen.getByTestId('rich-text-editor-content').querySelector('hr'),
+        ).not.toBeNull();
     });
 
     it('toggle dispatches onChange with the new contentType', () => {

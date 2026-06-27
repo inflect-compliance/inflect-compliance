@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/date-picker/date-utils';
 import { NumberStepper } from '@/components/ui/number-stepper';
 import { sanitizeRichTextHtml } from '@/lib/security/sanitize';
+import { enrichPolicyHtml } from '@/lib/policy/policy-content';
 import type { RichTextContentType } from '@/components/ui/RichTextEditor';
 import { ApprovalBanner } from '@/components/ui/ApprovalBanner';
 import { VersionDiff } from '@/components/ui/VersionDiff';
@@ -283,11 +284,17 @@ export default function PolicyDetailPage() {
             if (!safe.trim()) {
                 return <span className="text-content-subtle italic">No content</span>;
             }
+            // Enrich the sanitised body with heading anchors + an auto
+            // Table of Contents (inserted after the first page break).
+            // The enrichment only emits markup derived from the doc's own
+            // escaped heading text + slug ids, so it adds no injection
+            // surface. `.policy-content` scopes the page-break + TOC styling.
+            const enriched = enrichPolicyHtml(safe);
             return (
                 <div
-                    className="prose prose-sm prose-invert max-w-none text-content-default text-sm"
+                    className="policy-content prose prose-sm prose-invert max-w-none text-content-default text-sm"
                     data-testid={`policy-version-html-${v.id}`}
-                    dangerouslySetInnerHTML={{ __html: safe }}
+                    dangerouslySetInnerHTML={{ __html: enriched }}
                 />
             );
         }

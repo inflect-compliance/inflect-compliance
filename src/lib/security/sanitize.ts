@@ -57,10 +57,14 @@ const RICH_TEXT_ALLOWED_TAGS: string[] = [
 
 /**
  * Per-tag attribute allowlist. Anything not listed here is stripped.
- * Notably, NO `style`, `class`, `id`, or any `on*` handlers anywhere.
+ * Notably, NO `style`, `class`, or any `on*` handlers anywhere. The
+ * only `id`s permitted are on headings — inert anchor targets for the
+ * policy Table of Contents (`<a href="#...">`). No other tag may carry
+ * an `id`.
  */
 const RICH_TEXT_ALLOWED_ATTRS: Record<string, string[]> = {
     a: ['href', 'title', 'rel', 'target'],
+    h1: ['id'], h2: ['id'], h3: ['id'], h4: ['id'], h5: ['id'], h6: ['id'],
     th: ['scope', 'colspan', 'rowspan'],
     td: ['colspan', 'rowspan'],
     code: ['data-language'],

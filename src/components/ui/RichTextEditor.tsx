@@ -52,6 +52,7 @@ import {
     Quote,
     Code as CodeIcon,
     Link as LinkIcon,
+    SeparatorHorizontal,
     Eye,
     Pencil,
 } from 'lucide-react';
@@ -370,6 +371,14 @@ function Toolbar({
                         active={editor.isActive('code')}
                         icon={<CodeIcon size={12} />}
                         label="Inline code"
+                    />
+                    <Divider />
+                    <FormatButton
+                        editor={editor}
+                        action={() => editor.chain().focus().setHorizontalRule().run()}
+                        active={false}
+                        icon={<SeparatorHorizontal size={12} />}
+                        label="Page break"
                     />
                     <Divider />
                     <button
