@@ -25,7 +25,9 @@ import {
     getRiskInheritedTestPlans,
     getAssetInheritedMappings,
     getRiskInheritedMappings,
+    getPolicyInheritedMappings,
 } from '@/app-layer/usecases/inherited-control-data';
+import { getPolicyTraceability } from '@/app-layer/usecases/traceability';
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: DB_URL }) });
 const describeFn = DB_AVAILABLE ? describe : describe.skip;
@@ -39,6 +41,8 @@ let mappedAssetId: string;
 let mappedRiskId: string;
 let bareAssetId: string;
 let bareRiskId: string;
+let mappedPolicyId: string;
+let barePolicyId: string;
 
 describeFn('inherited-control-data usecases (real DB)', () => {
     beforeAll(async () => {
@@ -57,6 +61,12 @@ describeFn('inherited-control-data usecases (real DB)', () => {
 
         await prisma.controlAsset.create({ data: { tenantId: TENANT, controlId, assetId: mappedAssetId } });
         await prisma.riskControl.create({ data: { tenantId: TENANT, controlId, riskId: mappedRiskId } });
+
+        const policy = await prisma.policy.create({ data: { tenantId: TENANT, slug: `pol-${SUITE}`, title: 'Pol' } });
+        mappedPolicyId = policy.id;
+        const barePolicy = await prisma.policy.create({ data: { tenantId: TENANT, slug: `pol-bare-${SUITE}`, title: 'BarePol' } });
+        barePolicyId = barePolicy.id;
+        await prisma.policyControlLink.create({ data: { tenantId: TENANT, policyId: mappedPolicyId, controlId } });
 
         await prisma.evidence.create({ data: { tenantId: TENANT, controlId, type: 'FILE', title: 'Ev' } });
 
@@ -96,6 +106,8 @@ describeFn('inherited-control-data usecases (real DB)', () => {
     }
 
     afterAll(async () => {
+        await prisma.policyControlLink.deleteMany({ where: { tenantId: TENANT } });
+        await prisma.policy.deleteMany({ where: { tenantId: TENANT } });
         await prisma.controlRequirementLink.deleteMany({ where: { tenantId: TENANT } });
         await prisma.frameworkRequirement.deleteMany({ where: { framework: { key: `fw-${SUITE}` } } });
         await prisma.framework.deleteMany({ where: { key: `fw-${SUITE}` } });
@@ -149,12 +161,38 @@ describeFn('inherited-control-data usecases (real DB)', () => {
         expect(maps).toHaveLength(1);
     });
 
-    it('unmapped asset/risk return [] from every aggregator (empty short-circuit)', async () => {
+    it('policy inherited mappings resolve via PolicyControlLink', async () => {
+        const maps = await getPolicyInheritedMappings(ctx, mappedPolicyId);
+        expect(maps).toHaveLength(1);
+        expect(maps[0].code).toBe('R.1');
+        expect(maps[0].framework?.name).toBe('FW');
+        expect(maps[0].control?.id).toBe(controlId);
+    });
+
+    it('policy traceability returns linked control + risks/assets inherited via it', async () => {
+        const trace = await getPolicyTraceability(ctx, mappedPolicyId);
+        expect(trace.policyId).toBe(mappedPolicyId);
+        expect(trace.controls).toHaveLength(1);
+        expect(trace.controls[0].control.id).toBe(controlId);
+        expect(trace.risks).toHaveLength(1);
+        expect(trace.risks[0].risk.id).toBe(mappedRiskId);
+        expect(trace.risks[0].viaControls).toBe(1);
+        expect(trace.assets).toHaveLength(1);
+        expect(trace.assets[0].asset.id).toBe(mappedAssetId);
+        expect(trace.assets[0].viaControls).toBe(1);
+    });
+
+    it('unmapped asset/risk/policy return [] from every aggregator (empty short-circuit)', async () => {
         expect(await getAssetInheritedEvidence(ctx, bareAssetId)).toEqual([]);
         expect(await getAssetInheritedTestPlans(ctx, bareAssetId)).toEqual([]);
         expect(await getAssetInheritedMappings(ctx, bareAssetId)).toEqual([]);
         expect(await getRiskInheritedEvidence(ctx, bareRiskId)).toEqual([]);
         expect(await getRiskInheritedTestPlans(ctx, bareRiskId)).toEqual([]);
         expect(await getRiskInheritedMappings(ctx, bareRiskId)).toEqual([]);
+        expect(await getPolicyInheritedMappings(ctx, barePolicyId)).toEqual([]);
+        const bareTrace = await getPolicyTraceability(ctx, barePolicyId);
+        expect(bareTrace.controls).toEqual([]);
+        expect(bareTrace.risks).toEqual([]);
+        expect(bareTrace.assets).toEqual([]);
     });
 });

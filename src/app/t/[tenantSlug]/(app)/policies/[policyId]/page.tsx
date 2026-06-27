@@ -33,8 +33,16 @@ import { POLICY_STATUS_VARIANT } from '@/app-layer/domain/entity-status-mapping'
 import { Card, cardVariants } from '@/components/ui/card';
 import { InlineNotice } from '@/components/ui/inline-notice';
 import { cn } from '@/lib/cn';
+import { InheritedMappingsPanel } from '@/components/InheritedMappingsPanel';
 import { PolicySharePointSection } from './PolicySharePointSection';
 import { PolicyEvidenceChecklist } from './PolicyEvidenceChecklist';
+
+// Read-only traceability panel (linked controls + inherited risks/assets).
+// Lazy — only the Traceability tab needs it.
+const PolicyTraceabilityPanel = dynamic(() => import('@/components/PolicyTraceabilityPanel'), {
+    ssr: false,
+    loading: () => <div className="text-center text-content-subtle animate-pulse py-8">Loading traceability…</div>,
+});
 
 // Lazy-load Tiptap. The editor + ProseMirror chunks land at
 // ~200KB gzipped; deferring the import means the static parts of
@@ -75,7 +83,7 @@ export default function PolicyDetailPage() {
     const [policy, setPolicy] = useState<PolicyDetailDTO | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [tab, setTab] = useState<'current' | 'versions' | 'editor' | 'activity'>('current');
+    const [tab, setTab] = useState<'current' | 'versions' | 'mappings' | 'traceability' | 'editor' | 'activity'>('current');
 
     // Editor state
     const [contentMode, setContentMode] = useState<ContentMode>('MARKDOWN');
@@ -382,10 +390,12 @@ export default function PolicyDetailPage() {
     const canWrite = tenant.permissions.canWrite;
     const canAdmin = tenant.permissions.canAdmin;
 
-    type PolicyTab = 'current' | 'versions' | 'editor' | 'activity';
+    type PolicyTab = 'current' | 'versions' | 'mappings' | 'traceability' | 'editor' | 'activity';
     const tabs: ReadonlyArray<{ key: PolicyTab; label: string }> = [
         { key: 'current', label: 'Current' },
         { key: 'versions', label: 'Versions' },
+        { key: 'mappings', label: 'Mappings' },
+        { key: 'traceability', label: 'Traceability' },
         ...(canWrite ? ([{ key: 'editor' as const, label: 'Editor' }]) : []),
         { key: 'activity', label: 'Activity' },
     ];
@@ -817,6 +827,19 @@ export default function PolicyDetailPage() {
             )}
 
             {/* ── Activity Feed ── */}
+            {tab === 'mappings' && (
+                <InheritedMappingsPanel
+                    endpoint={apiUrl(`/policies/${policyId}/mappings`)}
+                    tenantHref={tenantHref}
+                    entityLabel="policy"
+                />
+            )}
+            {tab === 'traceability' && (
+                <PolicyTraceabilityPanel
+                    endpoint={apiUrl(`/policies/${policyId}/traceability`)}
+                    tenantHref={tenantHref}
+                />
+            )}
             {tab === 'activity' && (
                 <div className={cardVariants()} id="activity-feed">
                     <Heading level={3} className="mb-4">Activity Timeline</Heading>

@@ -142,6 +142,87 @@ export async function getAssetTraceability(ctx: RequestContext, assetId: string)
     });
 }
 
+/**
+ * Policy traceability — read-only.
+ *
+ * A policy links DIRECTLY to controls (`PolicyControlLink`); risks and
+ * assets are INHERITED through those controls (a policy "covers" the
+ * risks its controls mitigate and the assets they protect). So this
+ * view returns the directly-linked controls plus the deduped set of
+ * risks/assets reachable via them, each tagged with how many of the
+ * policy's controls reach it. Mirrors the Asset/Risk inherited-data
+ * aggregators (`inherited-control-data.ts`); no link/unlink surface —
+ * controls are managed via the policy↔control link flow, risks/assets
+ * are purely derived.
+ */
+const POLICY_TRACE_TAKE = 200;
+
+export async function getPolicyTraceability(ctx: RequestContext, policyId: string) {
+    assertCanRead(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const t = ctx.tenantId;
+        const links = await db.policyControlLink.findMany({
+            where: { tenantId: t, policyId },
+            select: {
+                id: true,
+                control: { select: { id: true, code: true, name: true, status: true, category: true } },
+            },
+            take: POLICY_TRACE_TAKE,
+        });
+        const controls = links
+            .filter((l) => l.control)
+            .map((l) => ({ id: l.id, control: l.control! }));
+        const controlIds = controls.map((c) => c.control.id);
+
+        if (controlIds.length === 0) {
+            return { policyId, controls, risks: [], assets: [] };
+        }
+
+        const [riskLinks, assetLinks] = await Promise.all([
+            db.riskControl.findMany({
+                where: { tenantId: t, controlId: { in: controlIds } },
+                select: {
+                    controlId: true,
+                    risk: { select: { id: true, title: true, status: true, score: true, category: true } },
+                },
+                take: POLICY_TRACE_TAKE,
+            }),
+            db.controlAsset.findMany({
+                where: { tenantId: t, controlId: { in: controlIds } },
+                select: {
+                    controlId: true,
+                    asset: { select: { id: true, name: true, type: true, criticality: true, status: true } },
+                },
+                take: POLICY_TRACE_TAKE,
+            }),
+        ]);
+
+        // Dedup inherited entities by id; count the distinct policy
+        // controls each is reachable through (the "via N controls" hint).
+        const riskBy = new Map<string, { id: string; risk: (typeof riskLinks)[number]['risk']; viaControls: number }>();
+        for (const r of riskLinks) {
+            if (!r.risk) continue;
+            const e = riskBy.get(r.risk.id);
+            if (e) e.viaControls += 1;
+            else riskBy.set(r.risk.id, { id: r.risk.id, risk: r.risk, viaControls: 1 });
+        }
+        const assetBy = new Map<string, { id: string; asset: (typeof assetLinks)[number]['asset']; viaControls: number }>();
+        for (const a of assetLinks) {
+            if (!a.asset) continue;
+            const e = assetBy.get(a.asset.id);
+            if (e) e.viaControls += 1;
+            else assetBy.set(a.asset.id, { id: a.asset.id, asset: a.asset, viaControls: 1 });
+        }
+
+        return {
+            policyId,
+            controls,
+            risks: [...riskBy.values()],
+            assets: [...assetBy.values()],
+        };
+    });
+}
+
 // ─── Coverage Summary ───
 
 export async function coverageSummary(ctx: RequestContext) {
