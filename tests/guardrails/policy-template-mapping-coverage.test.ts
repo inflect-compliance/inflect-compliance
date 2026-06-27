@@ -41,8 +41,16 @@ const nis2Codes = new Set((readJson(NIS2_FIXTURE) as Array<{ key: string }>).map
 
 describe('policy-template framework mapping — fixture integrity', () => {
     it('maps all 15 ciso-toolkit policies (POL-00…POL-14)', () => {
-        const refs = Object.keys(fixture.mappings).sort();
-        expect(refs).toEqual(Array.from({ length: 15 }, (_, i) => `POL-${String(i).padStart(2, '0')}`));
+        const refs = new Set(Object.keys(fixture.mappings));
+        for (let i = 0; i < 15; i++) expect(refs.has(`POL-${String(i).padStart(2, '0')}`)).toBe(true);
+    });
+
+    it('maps the canonical imported overlaps to the same frameworks as their ciso twin', () => {
+        // The imported "Information Security Policy" / "Risk Management Policy"
+        // supersede POL-01 / POL-02 by title in the seed, so their slug
+        // externalRefs carry the same framework mappings.
+        expect(fixture.mappings['information-security-policy']).toEqual(fixture.mappings['POL-01']);
+        expect(fixture.mappings['risk-management-policy']).toEqual(fixture.mappings['POL-02']);
     });
 
     it('carries MIT attribution + the toolkit-vs-curated provenance legend', () => {

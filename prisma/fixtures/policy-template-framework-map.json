@@ -205,6 +205,30 @@
       "nis2": [
         { "code": "Art.21(2)(c)", "provenance": "from_toolkit" }
       ]
+    },
+    "information-security-policy": {
+      "iso27001": [
+        { "code": "5.1", "provenance": "from_toolkit" },
+        { "code": "5.2", "provenance": "from_toolkit" },
+        { "code": "5.4", "provenance": "from_toolkit" },
+        { "code": "5.31", "provenance": "from_toolkit" },
+        { "code": "5.35", "provenance": "curated" },
+        { "code": "5.36", "provenance": "curated" }
+      ],
+      "nis2": [
+        { "code": "Art.20(1)", "provenance": "from_toolkit" },
+        { "code": "Art.21(2)(a)", "provenance": "from_toolkit" }
+      ]
+    },
+    "risk-management-policy": {
+      "iso27001": [
+        { "code": "5.7", "provenance": "curated" },
+        { "code": "5.8", "provenance": "curated" }
+      ],
+      "nis2": [
+        { "code": "Art.21(2)(a)", "provenance": "from_toolkit" },
+        { "code": "Art.21(2)(f)", "provenance": "curated" }
+      ]
     }
   }
 }

@@ -19,13 +19,12 @@ const ROOT = path.resolve(__dirname, '../..');
 const seed = fs.readFileSync(path.join(ROOT, 'prisma/seed.ts'), 'utf8');
 
 // Titles that must exist in the seeded starter set (original content).
+// NOTE: the thin one-paragraph pre-existing stubs (Information Security,
+// Access Control, Incident Response, Business Continuity, Risk Management)
+// were removed — they rendered as near-empty "5-6 row" documents. Those
+// topics are now covered by the richer ciso-toolkit + imported fixture
+// libraries (which the seed loops load), not by inline originals here.
 const REQUIRED_TITLES = [
-    // pre-existing
-    'Information Security Policy',
-    'Access Control Policy',
-    'Incident Response Policy',
-    'Business Continuity Policy',
-    'Risk Management Policy',
     // expanded coverage (JupiterOne domains, original text)
     'Asset Management Policy',
     'Vulnerability Management Policy',
