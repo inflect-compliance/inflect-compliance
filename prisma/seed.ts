@@ -633,6 +633,42 @@ Reviewed at least annually.` },
     }
     console.log('✅ Policy Templates seeded');
 
+    // ─── ciso-toolkit ISMS policy library (MIT — imported content) ───
+    // 15 ISO 27001 + NIS2 policy templates from the pinned fixture. Upsert
+    // by externalRef OR title (idempotent + re-syncable) so the rich
+    // toolkit versions SUPERSEDE the two thin hand-written overlaps
+    // ('Information Security Policy', 'Risk Management Policy') by title,
+    // while the other 13 are added new. Attribution rides the `source`
+    // column (see prisma/fixtures/policy-templates-ciso-toolkit.LICENSE.md).
+    const cisoToolkit = require('./fixtures/policy-templates-ciso-toolkit.json') as {
+        templates: Array<{
+            externalRef: string; title: string; category: string; language: string;
+            contentType: string; contentText: string; tags: string; source: string;
+        }>;
+    };
+    for (const t of cisoToolkit.templates) {
+        const data = {
+            title: t.title,
+            category: t.category,
+            language: t.language,
+            contentType: t.contentType as 'MARKDOWN',
+            contentText: t.contentText,
+            tags: t.tags,
+            isGlobal: true,
+            source: t.source,
+            externalRef: t.externalRef,
+        };
+        const existing = await prisma.policyTemplate.findFirst({
+            where: { OR: [{ externalRef: t.externalRef }, { title: t.title }] },
+        });
+        if (existing) {
+            await prisma.policyTemplate.update({ where: { id: existing.id }, data });
+        } else {
+            await prisma.policyTemplate.create({ data });
+        }
+    }
+    console.log(`✅ ciso-toolkit policy templates seeded (${cisoToolkit.templates.length})`);
+
     // ─── Frameworks & Requirements ───
     const annexAData = require('./fixtures/iso27001_2022_annexA.json') as Array<{
         key: string; theme: string; themeNumber: number; sortOrder: number; title: string; summary?: string;

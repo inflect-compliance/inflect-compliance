@@ -1477,6 +1477,14 @@ model PolicyTemplate {
   contentText String
   tags        String?
   isGlobal    Boolean           @default(true)
+  /// Provenance for imported templates (e.g. 'ciso-toolkit'). NULL for
+  /// hand-written templates. Gates the "Adapted from …" attribution
+  /// credit in the template picker — a licensing obligation for
+  /// third-party content (MIT etc.).
+  source      String?
+  /// Stable upstream id for imported templates (e.g. 'POL-02'). Lets the
+  /// seed/sync upsert idempotently without relying on title.
+  externalRef String?
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 }

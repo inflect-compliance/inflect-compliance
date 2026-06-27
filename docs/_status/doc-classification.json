@@ -4,7 +4,7 @@
   "counts": {
     "authoritative": 104,
     "living": 5,
-    "historical": 286,
+    "historical": 287,
     "deprecated": 1
   },
   "docs": {
@@ -1197,6 +1197,9 @@
       "class": "historical"
     },
     "docs/implementation-notes/2026-06-27-org-initiatives-widget.md": {
+      "class": "historical"
+    },
+    "docs/implementation-notes/2026-06-27-policy-template-library.md": {
       "class": "historical"
     }
   }
