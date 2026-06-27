@@ -21,6 +21,7 @@ interface PolicyTemplateRow {
     language: string | null;
     tags: string | null;
     contentText: string;
+    source: string | null;
 }
 
 export default function TemplatesPage() {
@@ -143,6 +144,20 @@ export default function TemplatesPage() {
                                 <p className="text-xs text-content-subtle line-clamp-3">
                                     {tpl.contentText?.substring(0, 150)}...
                                 </p>
+                                {tpl.source === 'ciso-toolkit' && (
+                                    <p className="mt-2 text-[10px] text-content-subtle italic" data-testid="template-source-credit">
+                                        Adapted from{' '}
+                                        <a
+                                            href="https://github.com/D4d0/ciso-toolkit"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="underline hover:text-content-muted"
+                                        >
+                                            ciso-toolkit
+                                        </a>{' '}
+                                        (MIT)
+                                    </p>
+                                )}
                             </div>
                             {tenant.permissions.canWrite && (
                                 <Button
