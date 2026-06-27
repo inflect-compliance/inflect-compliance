@@ -134,6 +134,26 @@ export default function PolicyDetailPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { if (tab === 'activity') fetchActivity(); }, [tab, fetchActivity]);
 
+    // Pre-load the current version's content into the editor when the
+    // Editor tab is opened directly (the "+ Version" button already seeds
+    // it on its own click). Without this, opening the tab showed an empty
+    // editor and the operator couldn't edit the existing policy. Only
+    // text-bearing versions (MARKDOWN / HTML) are loaded; the rich editor
+    // lives under the MARKDOWN content-mode and renders HTML in WYSIWYG.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    useEffect(() => {
+        if (tab !== 'editor' || editorContent) return;
+        const cv = policy?.currentVersion || policy?.versions?.[0];
+        if (cv?.contentText && (cv.contentType === 'HTML' || cv.contentType === 'MARKDOWN')) {
+            setContentMode('MARKDOWN');
+            setEditorContent(cv.contentText);
+            setEditorContentType(cv.contentType === 'HTML' ? 'HTML' : 'MARKDOWN');
+        }
+        // editorContent intentionally omitted — re-seeding on every keystroke
+        // would fight the operator's edits; the guard above runs it once.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tab, policy]);
+
     // ── Actions ──
 
     const createVersion = async () => {
@@ -292,14 +312,14 @@ export default function PolicyDetailPage() {
             const enriched = enrichPolicyHtml(safe);
             return (
                 <div
-                    className="policy-content prose prose-sm prose-invert max-w-none text-content-default text-sm"
+                    className="policy-content"
                     data-testid={`policy-version-html-${v.id}`}
                     dangerouslySetInnerHTML={{ __html: enriched }}
                 />
             );
         }
         return (
-            <div className="prose prose-sm prose-invert max-w-none text-content-default whitespace-pre-wrap text-sm">
+            <div className="policy-content whitespace-pre-wrap text-sm">
                 {v.contentText || <span className="text-content-subtle italic">No content</span>}
             </div>
         );
