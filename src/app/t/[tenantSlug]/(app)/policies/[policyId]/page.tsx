@@ -515,7 +515,7 @@ export default function PolicyDetailPage() {
                             <div className="flex gap-tight items-end mt-2">
                                 <div>
                                     <label
-                                        className="text-xs text-content-subtle"
+                                        className="block text-center text-xs text-content-subtle mb-1"
                                         htmlFor="policy-review-frequency-input"
                                     >
                                         Frequency (days)
@@ -524,10 +524,12 @@ export default function PolicyDetailPage() {
                                         ArrowUp/Down keyboard, bounded clamping, and
                                         a single accessible spinbutton. `reviewDays`
                                         stays a string in state so saveReview()'s
-                                        parseInt() path is unchanged. */}
+                                        parseInt() path is unchanged. The value is the
+                                        bare number ("− 30 +") — the unit lives in the
+                                        label, not inside the counter. */}
                                     <NumberStepper
                                         id="policy-review-frequency-input"
-                                        className="w-36"
+                                        className="w-32"
                                         size="sm"
                                         ariaLabel="Policy review frequency in days"
                                         value={
@@ -538,12 +540,11 @@ export default function PolicyDetailPage() {
                                         onChange={(v) => setReviewDays(String(v))}
                                         min={1}
                                         max={3650}
-                                        formatValue={(v) => `${v} days`}
                                     />
                                 </div>
                                 <div>
                                     <label
-                                        className="text-xs text-content-subtle"
+                                        className="block text-xs text-content-subtle mb-1"
                                         htmlFor="policy-next-review-input"
                                     >
                                         Next review
