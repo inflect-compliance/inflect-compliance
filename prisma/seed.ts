@@ -669,6 +669,41 @@ Reviewed at least annually.` },
     }
     console.log(`✅ ciso-toolkit policy templates seeded (${cisoToolkit.templates.length})`);
 
+    // Imported policy templates (generic security policies converted from a
+    // vendored CSV export to clean Markdown — see
+    // scripts/import-policy-templates.ts). Upsert by externalRef ONLY (a
+    // stable slug) so a title that overlaps a ciso-toolkit template — e.g.
+    // "Information Security Policy" / "Risk Management Policy" — coexists
+    // instead of clobbering POL-xx.
+    const importedPolicies = require('./fixtures/policy-templates-imported.json') as {
+        templates: Array<{
+            externalRef: string; title: string; category: string; language: string;
+            contentType: string; contentText: string; tags: string; source: string;
+        }>;
+    };
+    for (const t of importedPolicies.templates) {
+        const data = {
+            title: t.title,
+            category: t.category,
+            language: t.language,
+            contentType: t.contentType as 'MARKDOWN',
+            contentText: t.contentText,
+            tags: t.tags,
+            isGlobal: true,
+            source: t.source,
+            externalRef: t.externalRef,
+        };
+        const existing = await prisma.policyTemplate.findFirst({
+            where: { externalRef: t.externalRef },
+        });
+        if (existing) {
+            await prisma.policyTemplate.update({ where: { id: existing.id }, data });
+        } else {
+            await prisma.policyTemplate.create({ data });
+        }
+    }
+    console.log(`✅ imported policy templates seeded (${importedPolicies.templates.length})`);
+
     // ─── Frameworks & Requirements ───
     const annexAData = require('./fixtures/iso27001_2022_annexA.json') as Array<{
         key: string; theme: string; themeNumber: number; sortOrder: number; title: string; summary?: string;
