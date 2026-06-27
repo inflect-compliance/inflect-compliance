@@ -122,6 +122,12 @@ export class PolicyRepository {
                         control: { select: { id: true, name: true, annexId: true } },
                     },
                 },
+                evidenceItems: {
+                    orderBy: { sortOrder: 'asc' },
+                    include: {
+                        evidence: { select: { id: true, title: true, type: true, retentionUntil: true } },
+                    },
+                },
             },
         });
     }
@@ -165,6 +171,7 @@ export class PolicyRepository {
         ownerUserId?: string | null;
         reviewFrequencyDays?: number | null;
         nextReviewAt?: Date | null;
+        lastReviewedAt?: Date | null;
         language?: string | null;
     }) {
         return db.policy.updateMany({

@@ -1239,6 +1239,7 @@ model Evidence {
   /// Sanitised + trimmed at the usecase boundary.
   folder            String?
   testEvidenceLinks ControlTestEvidenceLink[]
+  policyEvidenceItems PolicyEvidenceItem[]
   // Epic G-3 — vendor questionnaire FILE_UPLOAD answers attach
   // their proof here.
   vendorAnswers     VendorAssessmentAnswer[]  @relation("VendorAnswerEvidence")
@@ -1347,6 +1348,10 @@ model Policy {
   ownerUserId          String?
   reviewFrequencyDays  Int?
   nextReviewAt         DateTime?
+  /// Last time the policy was marked reviewed (periodic re-validation).
+  /// Distinct from PolicyApproval (initial sign-off): markPolicyReviewed
+  /// stamps this + recomputes nextReviewAt = now + reviewFrequencyDays.
+  lastReviewedAt       DateTime?
   language             String?             @default("en")
   /// Lifecycle version counter (matches CISO-Assistant editing_version).
   /// 1 = initial content, 2+ = published. Incremented only on publish.
@@ -1376,6 +1381,7 @@ model Policy {
   tenant               Tenant              @relation(fields: [tenantId], references: [id])
   approvals            PolicyApproval[]
   controlLinks         PolicyControlLink[]
+  evidenceItems        PolicyEvidenceItem[]
   versions             PolicyVersion[]     @relation("PolicyVersions")
 
   @@unique([id, tenantId])
@@ -1466,6 +1472,30 @@ model PolicyControlLink {
   @@index([tenantId])
   @@index([tenantId, policyId])
   @@index([tenantId, controlId])
+}
+
+/// Evidence-to-Retain checklist for a policy. Items are parsed
+/// best-effort from the template's "Evidence to Retain" section on
+/// creation (label only); the tenant then links each to a real
+/// Evidence record. The link makes a policy's operational proof
+/// navigable instead of just prose. evidenceId is nullable (SetNull on
+/// evidence delete) — an unlinked item is a still-open checklist entry.
+model PolicyEvidenceItem {
+  id         String    @id @default(cuid())
+  tenantId   String
+  policyId   String
+  /// Free-text checklist label (e.g. "Risk register: 7 years").
+  label      String
+  sortOrder  Int       @default(0)
+  evidenceId String?
+  createdAt  DateTime  @default(now())
+  policy     Policy    @relation(fields: [policyId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  evidence   Evidence? @relation(fields: [evidenceId], references: [id], onDelete: SetNull)
+  tenant     Tenant    @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, policyId])
+  @@index([evidenceId])
 }
 
 model PolicyTemplate {

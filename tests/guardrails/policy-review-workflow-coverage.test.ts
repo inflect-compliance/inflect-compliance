@@ -1,0 +1,141 @@
+/**
+ * Policy review-workflow + evidence-to-retain ratchet.
+ *
+ * Locks the load-bearing pieces of the canonical-skeleton / review-cadence
+ * / evidence-linkage feature:
+ *
+ *   1. Policy carries the review fields (ownerUserId / reviewFrequencyDays /
+ *      nextReviewAt / lastReviewedAt) and the PolicyEvidenceItem model exists.
+ *   2. The review-reminder job exists AND is registered (schedules + executor).
+ *   3. createPolicyFromTemplate pre-fills the cadence (parse runs) + seeds
+ *      evidence-to-retain checklist items.
+ *   4. markPolicyReviewed recomputes nextReviewAt + audits.
+ *   5. The canonical-skeleton lint helper exists (warning-level) and the
+ *      cadence/evidence parsers actually work on the imported templates.
+ *   6. The detail page flags overdue policies + exposes "mark reviewed".
+ *
+ * Credit: section skeleton adapted from ciso-toolkit (MIT).
+ */
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+
+import {
+    CANONICAL_POLICY_SECTIONS,
+    lintPolicySkeleton,
+    parseReviewCadenceDays,
+    parseEvidenceToRetain,
+} from '@/lib/policy/template-skeleton';
+
+const ROOT = path.resolve(__dirname, '../..');
+const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+
+describe('policy review workflow — schema', () => {
+    const schema = read('prisma/schema/compliance.prisma');
+
+    it('Policy carries the four review fields', () => {
+        const model = schema.slice(schema.indexOf('model Policy {'), schema.indexOf('model PolicyApproval'));
+        for (const f of ['ownerUserId', 'reviewFrequencyDays', 'nextReviewAt', 'lastReviewedAt']) {
+            expect(model).toContain(f);
+        }
+    });
+
+    it('PolicyEvidenceItem model exists, tenant-scoped, with an optional evidence link', () => {
+        const m = schema.slice(schema.indexOf('model PolicyEvidenceItem {'));
+        const body = m.slice(0, m.indexOf('\n}'));
+        expect(body).toMatch(/tenantId\s+String/);
+        expect(body).toMatch(/policyId\s+String/);
+        expect(body).toMatch(/label\s+String/);
+        expect(body).toMatch(/evidenceId\s+String\?/);
+        expect(body).toMatch(/evidence\s+Evidence\?/);
+        expect(body).toMatch(/@@index\(\[tenantId, policyId\]\)/);
+    });
+});
+
+describe('policy review workflow — job registration', () => {
+    it('the policy-review-reminder job is scheduled + registered', () => {
+        expect(read('src/app-layer/jobs/schedules.ts')).toContain("'policy-review-reminder'");
+        expect(read('src/app-layer/jobs/executor-registry.ts')).toContain("'policy-review-reminder'");
+    });
+
+    it('the reminder job uses the tenant reminder window + notifies + emits automation', () => {
+        const job = read('src/app-layer/jobs/policyReviewReminder.ts');
+        expect(job).toMatch(/reminderDaysBefore/);
+        expect(job).toMatch(/notificationOutbox/);
+        expect(job).toMatch(/type: 'POLICY_REVIEW_DUE'/); // notification type
+        expect(job).toMatch(/event: 'POLICY_REVIEW_DUE'/); // automation emit (kept)
+    });
+});
+
+describe('policy review workflow — usecases', () => {
+    const usecase = read('src/app-layer/usecases/policy.ts');
+
+    it('createPolicyFromTemplate pre-fills cadence + seeds evidence items (parse runs)', () => {
+        const start = usecase.indexOf('export async function createPolicyFromTemplate');
+        const body = usecase.slice(start, usecase.indexOf('export async function', start + 1));
+        expect(body).toMatch(/parseReviewCadenceDays\(template\.contentText\)/);
+        expect(body).toMatch(/parseEvidenceToRetain\(template\.contentText\)/);
+        expect(body).toMatch(/policyEvidenceItem\.createMany/);
+        // owner defaults to the creating user.
+        expect(body).toMatch(/ownerUserId:\s*overrides\?\.ownerUserId\s*\?\?\s*ctx\.userId/);
+    });
+
+    it('markPolicyReviewed recomputes nextReviewAt + stamps lastReviewedAt + audits', () => {
+        const start = usecase.indexOf('export async function markPolicyReviewed');
+        expect(start).toBeGreaterThan(-1);
+        const body = usecase.slice(start, usecase.indexOf('\nexport ', start + 1) === -1 ? undefined : usecase.indexOf('\nexport ', start + 1));
+        expect(body).toMatch(/reviewFrequencyDays \* 86_400_000/);
+        expect(body).toMatch(/lastReviewedAt: now/);
+        expect(body).toMatch(/action: 'POLICY_REVIEWED'/);
+    });
+
+    it('the explicit evidence link/unlink usecases exist', () => {
+        const ev = read('src/app-layer/usecases/policy-evidence.ts');
+        expect(ev).toMatch(/export async function linkPolicyEvidenceItem/);
+        expect(ev).toMatch(/export async function unlinkPolicyEvidenceItem/);
+        expect(ev).toMatch(/action: 'POLICY_EVIDENCE_LINKED'/);
+    });
+});
+
+describe('policy review workflow — canonical skeleton + parsers', () => {
+    it('exposes the canonical section list + a warning-level lint', () => {
+        expect(CANONICAL_POLICY_SECTIONS).toContain('Evidence to Retain');
+        expect(CANONICAL_POLICY_SECTIONS).toContain('Document Control');
+        const result = lintPolicySkeleton('# Title\n## Purpose & Scope\nbody');
+        expect(result.missing).toContain('Document Control'); // warning, not throw
+        expect(result.conforms).toBe(false);
+    });
+
+    it('the cadence + evidence parsers work on the imported ciso-toolkit templates', () => {
+        const fixture = JSON.parse(read('prisma/fixtures/policy-templates-ciso-toolkit.json')) as {
+            templates: Array<{ externalRef: string; contentText: string }>;
+        };
+        let cadenceHits = 0;
+        let evidenceHits = 0;
+        for (const t of fixture.templates) {
+            expect(lintPolicySkeleton(t.contentText).conforms).toBe(true);
+            const days = parseReviewCadenceDays(t.contentText);
+            if (days) cadenceHits++;
+            if (parseEvidenceToRetain(t.contentText).length) evidenceHits++;
+        }
+        // Every toolkit template states an (annual) cadence + evidence list.
+        expect(cadenceHits).toBe(fixture.templates.length);
+        expect(evidenceHits).toBe(fixture.templates.length);
+        // Annual cadence snaps to 365.
+        expect(parseReviewCadenceDays(fixture.templates[0].contentText)).toBe(365);
+    });
+});
+
+describe('policy review workflow — detail page', () => {
+    const page = read('src/app/t/[tenantSlug]/(app)/policies/[policyId]/page.tsx');
+
+    it('flags overdue review with a warning tone + exposes a mark-reviewed action', () => {
+        expect(page).toMatch(/const isOverdue =/);
+        expect(page).toMatch(/'critical'/); // MetaStrip overdue tone
+        expect(page).toMatch(/mark-reviewed-btn/);
+        expect(page).toMatch(/markReviewed/);
+    });
+
+    it('renders the evidence-to-retain checklist', () => {
+        expect(page).toMatch(/PolicyEvidenceChecklist/);
+    });
+});

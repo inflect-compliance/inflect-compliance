@@ -209,6 +209,7 @@ model Tenant {
   auditorPackAccesses               AuditorPackAccess[]
   // PolicyControlLink denormalisation (single-table follow-on).
   policyControlLinks                PolicyControlLink[]
+  policyEvidenceItems               PolicyEvidenceItem[]
   // Epic G-4 — Access Review Campaigns.
   accessReviews                     AccessReview[]
   accessReviewDecisions             AccessReviewDecision[]

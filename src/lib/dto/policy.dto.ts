@@ -40,6 +40,22 @@ export const PolicyControlLinkDTOSchema = z.object({
 }).passthrough();
 export type PolicyControlLinkDTO = z.infer<typeof PolicyControlLinkDTOSchema>;
 
+// ─── Policy Evidence-to-Retain checklist item ───
+
+export const PolicyEvidenceItemDTOSchema = z.object({
+    id: z.string(),
+    label: z.string(),
+    sortOrder: z.number().optional(),
+    evidenceId: z.string().nullable().optional(),
+    evidence: z.object({
+        id: z.string(),
+        title: z.string(),
+        type: z.string().nullable().optional(),
+        retentionUntil: z.string().nullable().optional(),
+    }).passthrough().nullable().optional(),
+}).passthrough();
+export type PolicyEvidenceItemDTO = z.infer<typeof PolicyEvidenceItemDTOSchema>;
+
 // ─── Policy List Item ───
 // Returned by PolicyRepository.list()
 
@@ -55,6 +71,7 @@ export const PolicyListItemDTOSchema = z.object({
     language: z.string().nullable().optional(),
     reviewFrequencyDays: z.number().nullable().optional(),
     nextReviewAt: z.string().nullable().optional(),
+    lastReviewedAt: z.string().nullable().optional(),
     currentVersionId: z.string().nullable().optional(),
     createdAt: z.string().optional(),
     updatedAt: z.string().optional(),
@@ -77,6 +94,7 @@ export type PolicyListItemDTO = z.infer<typeof PolicyListItemDTOSchema>;
 export const PolicyDetailDTOSchema = PolicyListItemDTOSchema.extend({
     versions: z.array(PolicyVersionDTOSchema).optional(),
     controlLinks: z.array(PolicyControlLinkDTOSchema).optional(),
+    evidenceItems: z.array(PolicyEvidenceItemDTOSchema).optional(),
     approvals: z.array(z.object({
         id: z.string(),
         status: z.string(),

@@ -8,7 +8,8 @@ import { logEvent } from '../events/audit';
 import { enqueueEmail } from '../notifications/enqueue';
 import { notFound, badRequest, forbidden, conflict } from '@/lib/errors/types';
 import { runInTenantContext } from '@/lib/db-context';
-import { sanitizePolicyContent } from '@/lib/security/sanitize';
+import { sanitizePolicyContent, sanitizePlainText } from '@/lib/security/sanitize';
+import { parseReviewCadenceDays, parseEvidenceToRetain } from '@/lib/policy/template-skeleton';
 import { logger } from '@/lib/observability/logger';
 import { recordPolicyPublished } from '@/lib/observability/business-metrics';
 
@@ -163,12 +164,23 @@ export async function createPolicyFromTemplate(ctx: RequestContext, templateId: 
             slug = `${baseSlug}-${counter}`;
         }
 
+        // Adopt the template's canonical structure into operational data:
+        //   - "Document Control" review cadence → reviewFrequencyDays +
+        //     a first nextReviewAt (the tenant adjusts).
+        //   - owner defaults to the creating user.
+        // Best-effort: a template without a parseable cadence leaves the
+        // fields null (no schedule) rather than guessing.
+        const cadenceDays = parseReviewCadenceDays(template.contentText);
+        const nextReviewAt = cadenceDays ? new Date(Date.now() + cadenceDays * 86_400_000) : null;
+
         const policy = await PolicyRepository.create(db, ctx, {
             slug,
             title,
             description: overrides?.description ?? null,
             category: overrides?.category || template.category,
-            ownerUserId: overrides?.ownerUserId,
+            ownerUserId: overrides?.ownerUserId ?? ctx.userId,
+            reviewFrequencyDays: cadenceDays,
+            nextReviewAt,
             language: overrides?.language || template.language,
         });
 
@@ -180,6 +192,20 @@ export async function createPolicyFromTemplate(ctx: RequestContext, templateId: 
         });
         await PolicyRepository.setCurrentVersion(db, ctx, policy.id, version.id);
 
+        // "Evidence to Retain" → checklist items (label only; the tenant
+        // links real Evidence on the detail page). Sanitised free text.
+        const evidenceLabels = parseEvidenceToRetain(template.contentText);
+        if (evidenceLabels.length) {
+            await db.policyEvidenceItem.createMany({
+                data: evidenceLabels.map((label, i) => ({
+                    tenantId: ctx.tenantId,
+                    policyId: policy.id,
+                    label: sanitizePlainText(label).slice(0, 500),
+                    sortOrder: i,
+                })),
+            });
+        }
+
         await logEvent(db, ctx, {
             action: 'POLICY_CREATED',
             entityType: 'Policy',
@@ -189,13 +215,63 @@ export async function createPolicyFromTemplate(ctx: RequestContext, templateId: 
                 category: 'entity_lifecycle',
                 entityName: 'Policy',
                 operation: 'created',
-                after: { title, templateId: template.id, templateTitle: template.title },
+                after: {
+                    title,
+                    templateId: template.id,
+                    templateTitle: template.title,
+                    reviewFrequencyDays: cadenceDays,
+                    evidenceItemCount: evidenceLabels.length,
+                },
                 summary: `Created from template: ${template.title}`,
             },
             metadata: { templateId: template.id },
         });
 
         return policy;
+    });
+}
+
+/**
+ * Mark a policy as reviewed (periodic re-validation — distinct from
+ * PolicyApproval's initial sign-off). Stamps lastReviewedAt = now and
+ * recomputes nextReviewAt = now + reviewFrequencyDays (cleared if no
+ * cadence is set). Audited.
+ */
+export async function markPolicyReviewed(ctx: RequestContext, policyId: string) {
+    assertCanWrite(ctx);
+
+    return runInTenantContext(ctx, async (db) => {
+        const policy = await PolicyRepository.getById(db, ctx, policyId);
+        if (!policy) throw notFound('Policy not found');
+
+        const now = new Date();
+        const nextReviewAt = policy.reviewFrequencyDays
+            ? new Date(now.getTime() + policy.reviewFrequencyDays * 86_400_000)
+            : null;
+
+        await PolicyRepository.updateMetadata(db, ctx, policyId, {
+            lastReviewedAt: now,
+            nextReviewAt,
+        });
+
+        await logEvent(db, ctx, {
+            action: 'POLICY_REVIEWED',
+            entityType: 'Policy',
+            entityId: policyId,
+            details: `Policy reviewed${nextReviewAt ? `; next review ${nextReviewAt.toISOString().slice(0, 10)}` : ''}`,
+            detailsJson: {
+                category: 'status_change',
+                entityName: 'Policy',
+                operation: 'reviewed',
+                after: {
+                    lastReviewedAt: now.toISOString(),
+                    nextReviewAt: nextReviewAt?.toISOString() ?? null,
+                },
+                summary: `Policy marked reviewed`,
+            },
+        });
+
+        return PolicyRepository.getById(db, ctx, policyId);
     });
 }
 
