@@ -3078,6 +3078,65 @@ exports[`API contract — per-schema snapshots schema: PolicyDetail 1`] = `
             "additionalProperties": {}
           }
         },
+        "evidenceItems": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "sortOrder": {
+                "type": "number"
+              },
+              "evidenceId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "evidence": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "retentionUntil": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "title"
+                ],
+                "additionalProperties": {}
+              }
+            },
+            "required": [
+              "id",
+              "label"
+            ],
+            "additionalProperties": {}
+          }
+        },
         "approvals": {
           "type": "array",
           "items": {
@@ -3193,6 +3252,12 @@ exports[`API contract — per-schema snapshots schema: PolicyListItem 1`] = `
       ]
     },
     "nextReviewAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "lastReviewedAt": {
       "type": [
         "string",
         "null"
