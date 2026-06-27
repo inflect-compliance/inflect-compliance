@@ -31,6 +31,16 @@ async function controlsForAsset(db: PrismaTx, tenantId: string, assetId: string)
     return mapControls(maps);
 }
 
+/** Resolve the controls linked to a policy → (controlId[], control-by-id map). */
+async function controlsForPolicy(db: PrismaTx, tenantId: string, policyId: string) {
+    const maps = await db.policyControlLink.findMany({
+        where: { tenantId, policyId },
+        select: { controlId: true, control: { select: CONTROL_SELECT } },
+        take: AGG_TAKE,
+    });
+    return mapControls(maps);
+}
+
 /** Resolve the controls mapped to a risk → (controlId[], control-by-id map). */
 async function controlsForRisk(db: PrismaTx, tenantId: string, riskId: string) {
     const maps = await db.riskControl.findMany({
@@ -163,6 +173,13 @@ export function getAssetInheritedMappings(ctx: RequestContext, assetId: string) 
 export function getRiskInheritedMappings(ctx: RequestContext, riskId: string) {
     return runInTenantContext(ctx, async (db) => {
         const { controlIds, byId } = await controlsForRisk(db, ctx.tenantId, riskId);
+        return mappingsForControls(db, ctx.tenantId, controlIds, byId);
+    });
+}
+
+export function getPolicyInheritedMappings(ctx: RequestContext, policyId: string) {
+    return runInTenantContext(ctx, async (db) => {
+        const { controlIds, byId } = await controlsForPolicy(db, ctx.tenantId, policyId);
         return mappingsForControls(db, ctx.tenantId, controlIds, byId);
     });
 }

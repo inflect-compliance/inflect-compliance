@@ -4,7 +4,7 @@
   "counts": {
     "authoritative": 104,
     "living": 5,
-    "historical": 291,
+    "historical": 292,
     "deprecated": 1
   },
   "docs": {
@@ -1209,6 +1209,9 @@
       "class": "historical"
     },
     "docs/implementation-notes/2026-06-27-imported-policy-templates.md": {
+      "class": "historical"
+    },
+    "docs/implementation-notes/2026-06-27-policy-mappings-traceability-tabs.md": {
       "class": "historical"
     }
   }
