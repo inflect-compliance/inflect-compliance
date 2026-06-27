@@ -24,6 +24,7 @@
 import type { PrismaClient, Prisma } from '@prisma/client';
 import { logger } from '@/lib/observability/logger';
 import { emitAutomationEvent } from '../automation';
+import { isNotificationsEnabled } from '../notifications/settings';
 import type { RequestContext } from '../types';
 
 export interface OverduePolicy {
@@ -170,6 +171,9 @@ export async function processOverdueReminders(
     });
 
     const out: Array<{ id: string; tenantId: string; title: string; daysOverdue: number }> = [];
+    // Per-tenant notification-eligibility cache — avoids re-querying
+    // tenantNotificationSettings for every policy of the same tenant.
+    const notifEnabled = new Map<string, boolean>();
 
     for (const policy of policies) {
         if (!policy.nextReviewAt) continue;
@@ -217,8 +221,15 @@ export async function processOverdueReminders(
         // overdue flag still surface the deadline.
         const ownerEmail = policy.owner?.email;
         if (ownerEmail && db.notificationOutbox?.create) {
+            // Respect the tenant's notification eligibility (single source of
+            // truth — settings.ts), cached per tenant for this run.
+            let enabled = notifEnabled.get(policy.tenantId);
+            if (enabled === undefined) {
+                enabled = await isNotificationsEnabled(db, policy.tenantId).catch(() => false);
+                notifEnabled.set(policy.tenantId, enabled);
+            }
             const dueStr = policy.nextReviewAt.toISOString().slice(0, 10);
-            await db.notificationOutbox.create({
+            if (enabled) await db.notificationOutbox.create({
                 data: {
                     tenantId: policy.tenantId,
                     type: 'POLICY_REVIEW_DUE',
