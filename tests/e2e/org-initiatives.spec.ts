@@ -39,7 +39,6 @@ test.describe('Org security initiatives', () => {
         await expect(page.getByRole('heading', { name: 'Security initiatives' })).toBeVisible({ timeout: 15000 });
     });
 
-    // eslint-disable-next-line playwright/no-skipped-test
     test.fixme('create via API → appears in list + dashboard widget (CI apiRequest hang)', async ({ page }) => {
         await login(page);
         const title = `MFA rollout ${Date.now()}`;
