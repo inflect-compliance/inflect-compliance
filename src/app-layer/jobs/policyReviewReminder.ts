@@ -117,7 +117,22 @@ export async function findOverduePolicies(
 }
 
 /**
- * Process overdue policy reminders.
+ * Upper bound (days) on the pre-filter scan window. The per-policy
+ * reminder window is the tenant's `reminderDaysBefore`; this caps the
+ * query so the scan stays bounded regardless of tenant config.
+ */
+const MAX_REVIEW_WINDOW_DAYS = 60;
+const DEFAULT_REMINDER_DAYS_BEFORE = 14;
+
+/**
+ * Process policy review reminders.
+ *
+ * Finds policies due for review within the tenant's reminder window
+ * (`Tenant.reminderDaysBefore`) OR already overdue, and for each:
+ *   - writes an immutable `POLICY_REVIEW_OVERDUE` audit row (overdue only),
+ *   - emits the `POLICY_REVIEW_DUE` automation event (overdue + due-soon),
+ *   - enqueues a notification to the policy owner (deduped per day).
+ * On review, `markPolicyReviewed` advances `nextReviewAt`, closing the loop.
  *
  * @param db        PrismaClient instance (dependency injection)
  * @param options   If tenantId is provided, only process that tenant's policies.
@@ -129,21 +144,59 @@ export async function processOverdueReminders(
     processed: number;
     policies: Array<{ id: string; tenantId: string; title: string; daysOverdue: number }>;
 }> {
-    const overdue = await findOverduePolicies(db, options);
+    const now = new Date();
+    const { tenantId } = options;
+    const horizon = new Date(now.getTime() + MAX_REVIEW_WINDOW_DAYS * 86_400_000);
 
-    for (const policy of overdue) {
-        await db.auditLog.create({
-            data: {
-                tenantId: policy.tenantId,
-                userId: null,
-                action: 'POLICY_REVIEW_OVERDUE',
-                entity: 'Policy',
-                entityId: policy.id,
-                details: `Policy "${policy.title}" is ${policy.daysOverdue} day(s) overdue for review.`,
-            },
-        });
-        // Domain-emit (cycle-2 follow-up) — surface policy-governance deadlines
-        // to automation. Best-effort; the system job carries no user actor.
+    const where: Prisma.PolicyWhereInput = {
+        nextReviewAt: { not: null, lte: horizon },
+        status: { not: 'ARCHIVED' },
+    };
+    if (tenantId) where.tenantId = tenantId;
+
+    const policies = await db.policy.findMany({
+        where,
+        select: {
+            id: true,
+            tenantId: true,
+            title: true,
+            slug: true,
+            nextReviewAt: true,
+            ownerUserId: true,
+            owner: { select: { email: true } },
+            tenant: { select: { reminderDaysBefore: true } },
+        },
+        take: 1000,
+    });
+
+    const out: Array<{ id: string; tenantId: string; title: string; daysOverdue: number }> = [];
+
+    for (const policy of policies) {
+        if (!policy.nextReviewAt) continue;
+        const reminderDays = policy.tenant?.reminderDaysBefore ?? DEFAULT_REMINDER_DAYS_BEFORE;
+        const dueThreshold = new Date(now.getTime() + reminderDays * 86_400_000);
+        // Skip policies not yet inside their reminder window.
+        if (policy.nextReviewAt > dueThreshold) continue;
+
+        const overdue = policy.nextReviewAt < now;
+        const dOver = daysOverdue(policy.nextReviewAt, now);
+
+        // Immutable audit — overdue only (matches the prior contract).
+        if (overdue) {
+            await db.auditLog.create({
+                data: {
+                    tenantId: policy.tenantId,
+                    userId: null,
+                    action: 'POLICY_REVIEW_OVERDUE',
+                    entity: 'Policy',
+                    entityId: policy.id,
+                    details: `Policy "${policy.title}" is ${dOver} day(s) overdue for review.`,
+                },
+            });
+        }
+
+        // Domain-emit — surface policy-governance deadlines to automation.
+        // Best-effort; the system job carries no user actor.
         await emitAutomationEvent(
             { tenantId: policy.tenantId, userId: null } as unknown as RequestContext,
             {
@@ -154,19 +207,39 @@ export async function processOverdueReminders(
                 data: {
                     title: policy.title,
                     nextReviewAt: policy.nextReviewAt.toISOString(),
-                    daysOverdue: policy.daysOverdue,
+                    daysOverdue: dOver,
                 },
             },
         ).catch(() => {});
+
+        // Notify the policy owner (deduped per day). Skipped when the owner
+        // has no resolvable email — the audit + automation + detail-page
+        // overdue flag still surface the deadline.
+        const ownerEmail = policy.owner?.email;
+        if (ownerEmail && db.notificationOutbox?.create) {
+            const dueStr = policy.nextReviewAt.toISOString().slice(0, 10);
+            await db.notificationOutbox.create({
+                data: {
+                    tenantId: policy.tenantId,
+                    type: 'POLICY_REVIEW_DUE',
+                    toEmail: ownerEmail,
+                    subject: `${overdue ? '⚠️ ' : ''}Policy ${overdue ? 'overdue for' : 'due for'} review: ${policy.title}`,
+                    bodyText: `Policy "${policy.title}" is ${overdue ? `${dOver} day(s) overdue for review` : `due for review on ${dueStr}`}. Open it in Inflect, review the content, and mark it reviewed to reset the review cycle.`,
+                    bodyHtml: null,
+                    dedupeKey: `${policy.tenantId}:POLICY_REVIEW_DUE:${ownerEmail}:${policy.id}:${now.toISOString().slice(0, 10)}`,
+                },
+            }).catch(() => {});
+        }
+
+        out.push({ id: policy.id, tenantId: policy.tenantId, title: policy.title, daysOverdue: dOver });
     }
 
-    return {
-        processed: overdue.length,
-        policies: overdue.map(p => ({
-            id: p.id,
-            tenantId: p.tenantId,
-            title: p.title,
-            daysOverdue: p.daysOverdue,
-        })),
-    };
+    logger.info('policy review reminders processed', {
+        component: 'policy-review-reminder',
+        scope: tenantId ? 'tenant-scoped' : 'system-wide',
+        ...(tenantId ? { tenantId } : {}),
+        processed: out.length,
+    });
+
+    return { processed: out.length, policies: out };
 }

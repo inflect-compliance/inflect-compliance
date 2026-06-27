@@ -34,6 +34,7 @@ import { Card, cardVariants } from '@/components/ui/card';
 import { InlineNotice } from '@/components/ui/inline-notice';
 import { cn } from '@/lib/cn';
 import { PolicySharePointSection } from './PolicySharePointSection';
+import { PolicyEvidenceChecklist } from './PolicyEvidenceChecklist';
 
 // Lazy-load Tiptap. The editor + ProseMirror chunks land at
 // ~200KB gzipped; deferring the import means the static parts of
@@ -232,6 +233,15 @@ export default function PolicyDetailPage() {
         } finally {
             setSavingReview(false);
         }
+    };
+
+    const markReviewed = async () => {
+        setActionLoading('review');
+        try {
+            const res = await fetch(apiUrl(`/policies/${policyId}/review`), { method: 'POST' });
+            if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Failed'); }
+            await fetchPolicy();
+        } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Unknown error'); } finally { setActionLoading(''); }
     };
 
     const requestApproval = async (versionId: string) => {
@@ -523,13 +533,28 @@ export default function PolicyDetailPage() {
                                 </span>
                             )}
                             {policy.reviewFrequencyDays && <span>Every {policy.reviewFrequencyDays}d</span>}
+                            {policy.lastReviewedAt && <span>Last reviewed {formatDate(policy.lastReviewedAt)}</span>}
+                            {isOverdue && <span className="text-content-error font-medium">Review overdue</span>}
                             <span>{versions.length} version{versions.length !== 1 ? 's' : ''}</span>
                         </div>
-                        {/* Review edit toggle */}
+                        {/* Review controls */}
                         {canWrite && !editingReview && (
-                            <button onClick={() => setEditingReview(true)} className="text-xs text-[var(--brand-default)] hover:text-[var(--brand-muted)] mt-2">
-                                Edit review schedule
-                            </button>
+                            <div className="flex items-center gap-default mt-2">
+                                <button onClick={() => setEditingReview(true)} className="text-xs text-[var(--brand-default)] hover:text-[var(--brand-muted)]">
+                                    Edit review schedule
+                                </button>
+                                {policy.status !== 'ARCHIVED' && (
+                                    <Button
+                                        variant="secondary"
+                                        size="xs"
+                                        onClick={markReviewed}
+                                        disabled={actionLoading === 'review'}
+                                        id="mark-reviewed-btn"
+                                    >
+                                        {actionLoading === 'review' ? '…' : 'Mark reviewed'}
+                                    </Button>
+                                )}
+                            </div>
                         )}
                         {editingReview && (
                             <div className="flex gap-tight items-end mt-2">
@@ -630,6 +655,15 @@ export default function PolicyDetailPage() {
             )}
 
             {/* SP-4 — SharePoint link (renders nothing if SharePoint isn't set up) */}
+            {tab === 'current' && (policy.evidenceItems?.length ?? 0) > 0 && (
+                <PolicyEvidenceChecklist
+                    policyId={policyId}
+                    items={policy.evidenceItems ?? []}
+                    canWrite={canWrite}
+                    onChanged={fetchPolicy}
+                />
+            )}
+
             {tab === 'current' && <PolicySharePointSection policyId={policyId} />}
 
             {/* ── Version History ── */}

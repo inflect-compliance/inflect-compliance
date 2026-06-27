@@ -370,6 +370,11 @@ const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
     // by the supplied controlIds (max 200), never a full per-tenant list.
     PolicyControlLink:
         'linkPolicyControls reads existing links by policyId (+ controlId in-filter) to dedupe — covered by @@index([tenantId, policyId]) + @@unique([policyId, controlId]); bounded by controlIds input.',
+    // Policy review workflow — evidence-to-retain checklist listed by
+    // tenantId + policyId, ordered by sortOrder; covered by
+    // @@index([tenantId, policyId]). Bounded take:200.
+    PolicyEvidenceItem:
+        'listPolicyEvidenceItems filters by tenantId + policyId, orders by sortOrder — covered by @@index([tenantId, policyId]); bounded take:200.',
     // Business-KPI — dau-mau-aggregator builds a tenantId→plan map with a
     // full BillingAccount scan (cross-tenant, no filter). One row per
     // paying tenant (tenantId @unique) → table bounded by tenant count;

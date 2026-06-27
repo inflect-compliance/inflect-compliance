@@ -4,7 +4,7 @@
   "counts": {
     "authoritative": 104,
     "living": 5,
-    "historical": 289,
+    "historical": 290,
     "deprecated": 1
   },
   "docs": {
@@ -1203,6 +1203,9 @@
       "class": "historical"
     },
     "docs/implementation-notes/2026-06-27-policy-template-mapping.md": {
+      "class": "historical"
+    },
+    "docs/implementation-notes/2026-06-27-policy-review-workflow.md": {
       "class": "historical"
     }
   }
