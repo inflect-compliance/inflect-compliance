@@ -40,6 +40,16 @@ import type { OrgDashboardWidgetDto } from '@/app-layer/schemas/org-dashboard-wi
 function makeData(): PortfolioData {
     return {
         orgSlug: 'acme-org',
+        threatLevel: {
+            level: 'GUARDED',
+            summary: 'No active threat assessment',
+            detail: null,
+            setAt: null,
+            setByUserId: null,
+            setByName: null,
+            isDefault: true,
+        },
+        canSetThreatLevel: false,
         summary: {
             organizationId: 'org-1',
             organizationSlug: 'acme-org',

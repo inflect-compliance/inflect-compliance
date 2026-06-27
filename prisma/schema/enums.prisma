@@ -67,6 +67,8 @@ enum OrgAuditAction {
   ORG_INVITE_CREATED
   ORG_INVITE_REDEEMED
   ORG_INVITE_REVOKED
+  // Org-wide threat posture set by an org admin (substantive action).
+  ORG_THREAT_LEVEL_SET
 }
 
 enum MembershipStatus {
@@ -90,6 +92,18 @@ enum OrgDashboardWidgetType {
   TREND // Time-series sparkline / area chart
   TENANT_LIST // Per-tenant coverage list with drill-down
   DRILLDOWN_CTAS // Drill-down navigation cards (controls / risks / evidence)
+  ORG_THREAT_LEVEL // Human-curated org-wide threat-posture banner
+}
+
+/// Org-wide threat-posture tiers (low → high). Named OrgThreatTier
+/// rather than OrgThreatLevel because the model is `OrgThreatLevel`
+/// and Prisma forbids an enum and a model sharing a name.
+enum OrgThreatTier {
+  GUARDED
+  LOW
+  ELEVATED
+  HIGH
+  SEVERE
 }
 
 enum ClauseStatus {

@@ -62,6 +62,7 @@ const adminCtx = {
         canManageTenants: true,
         canManageMembers: true,
             canConfigureDashboard: true,
+            canSetThreatLevel: true,
     },
 };
 const readerCtx = {
@@ -74,6 +75,7 @@ const readerCtx = {
         canManageTenants: false,
         canManageMembers: false,
             canConfigureDashboard: false,
+            canSetThreatLevel: false,
     },
 };
 

@@ -197,6 +197,20 @@ const DrilldownCtasConfigSchema = z.object({
         .strict(),
 });
 
+// ORG_THREAT_LEVEL — the human-curated org-wide posture banner. Its
+// data (current level/summary/provenance) is read live at render time;
+// the widget config is minimal display state only.
+const OrgThreatLevelConfigSchema = z.object({
+    type: z.literal('ORG_THREAT_LEVEL'),
+    chartType: z.literal('banner'),
+    config: z
+        .object({
+            /** Show the "history" affordance (Sheet timeline). Default off. */
+            showHistory: z.boolean().optional(),
+        })
+        .strict(),
+});
+
 /**
  * The widget shape contract. Discriminated on `type`; each variant
  * locks `chartType` and `config` together. Reject-by-default for any
@@ -208,6 +222,7 @@ export const WidgetTypedShapeSchema = z.discriminatedUnion('type', [
     TrendConfigSchema,
     TenantListConfigSchema,
     DrilldownCtasConfigSchema,
+    OrgThreatLevelConfigSchema,
 ]);
 export type WidgetTypedShape = z.infer<typeof WidgetTypedShapeSchema>;
 

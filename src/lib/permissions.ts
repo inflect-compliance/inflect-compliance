@@ -206,6 +206,14 @@ export type OrgPermissionSet = {
     canManageTenants: boolean;
     canManageMembers: boolean;
     canConfigureDashboard: boolean;
+    /**
+     * Set the org-wide threat posture (the ORG_THREAT_LEVEL widget).
+     * Narrower-intent than `canConfigureDashboard` — broadcasting a
+     * curated security signal is more privileged than moving a widget,
+     * so it gets its own flag (ORG_ADMIN only) even though both map to
+     * ORG_ADMIN in v1. The set action audits via ORG_THREAT_LEVEL_SET.
+     */
+    canSetThreatLevel: boolean;
 };
 
 /**
@@ -226,6 +234,7 @@ export function getOrgPermissions(role: OrgRole): OrgPermissionSet {
                 canManageTenants: true,
                 canManageMembers: true,
                 canConfigureDashboard: true,
+                canSetThreatLevel: true,
             };
         case 'ORG_READER':
             return {
@@ -239,6 +248,7 @@ export function getOrgPermissions(role: OrgRole): OrgPermissionSet {
                 canManageTenants: false,
                 canManageMembers: false,
                 canConfigureDashboard: false,
+                canSetThreatLevel: false,
             };
         default: {
             // Defensive — Prisma's enum is closed, so the runtime
@@ -254,6 +264,7 @@ export function getOrgPermissions(role: OrgRole): OrgPermissionSet {
                 canManageTenants: false,
                 canManageMembers: false,
                 canConfigureDashboard: false,
+                canSetThreatLevel: false,
             };
         }
     }
