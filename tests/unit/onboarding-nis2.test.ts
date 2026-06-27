@@ -11,6 +11,9 @@ import {
     completeNis2Assessment,
 } from '@/app-layer/usecases/onboarding-nis2';
 import { makeRequestContext } from '../helpers/make-context';
+import { validateAuditDetailsJson } from '@/app-layer/schemas/json-columns.schemas';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 describe('onboarding-nis2 usecases', () => {
     it('exports the three step usecases', () => {
@@ -40,5 +43,41 @@ describe('onboarding-nis2 usecases', () => {
         await expect(
             saveNis2Answer(reader, { questionId: 'gap-0-01', answer: 'YES' }),
         ).rejects.toThrow();
+    });
+
+    // Regression: the answer-save audit event must carry a valid `detailsJson`.
+    // It previously shipped `{ questionId, answer }` with NO `category`
+    // discriminator, so the audit write 400'd ("Invalid detailsJson
+    // structure") and the answer autosave failed in production.
+    describe('answer-save audit detailsJson', () => {
+        it('the bare {questionId, answer} shape is rejected by the audit validator', () => {
+            expect(() =>
+                validateAuditDetailsJson({ questionId: 'gap-0-01', answer: 'YES' }),
+            ).toThrow(/Invalid detailsJson structure/);
+        });
+
+        it('the shape the usecase now emits passes the audit validator', () => {
+            expect(() =>
+                validateAuditDetailsJson({
+                    category: 'custom',
+                    event: 'nis2_assessment_answered',
+                    questionId: 'gap-0-01',
+                    answer: 'YES',
+                }),
+            ).not.toThrow();
+        });
+
+        it('saveNis2Answer logs a NIS2_ASSESSMENT_ANSWERED event WITH a category', () => {
+            // Source-level guard: the usecase must build the audit detailsJson
+            // with a `category` (the required discriminator). Structural so it
+            // does not depend on a live DB/audit pipeline.
+            const src = fs.readFileSync(
+                path.resolve(__dirname, '../../src/app-layer/usecases/onboarding-nis2.ts'),
+                'utf8',
+            );
+            const block = src.slice(src.indexOf('NIS2_ASSESSMENT_ANSWERED'));
+            const detailsJson = block.slice(0, block.indexOf('});') + 3);
+            expect(detailsJson).toMatch(/category:\s*['"]custom['"]/);
+        });
     });
 });
