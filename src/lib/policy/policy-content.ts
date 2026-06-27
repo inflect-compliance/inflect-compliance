@@ -24,6 +24,8 @@
  * the browser serialiser escapes it — no injection surface is added.
  */
 
+import { marked } from 'marked';
+
 export interface PolicyHeading {
     level: number;
     text: string;
@@ -31,6 +33,18 @@ export interface PolicyHeading {
 }
 
 const HAS_DOM = typeof DOMParser !== 'undefined';
+
+/**
+ * Convert a MARKDOWN policy body to HTML so it renders with the same
+ * document styling (headers, lists, page breaks) as native-HTML policies.
+ * The output is UNSANITISED — the caller MUST run it through
+ * `sanitizeRichTextHtml` (then `enrichPolicyHtml`) before rendering. Uses
+ * the `marked` CommonMark/GFM parser — no regex HTML construction.
+ */
+export function renderPolicyMarkdown(md: string | null | undefined): string {
+    if (!md || !md.trim()) return '';
+    return marked.parse(md, { gfm: true, breaks: false, async: false });
+}
 
 /** URL-safe slug from already-plain heading text. Falls back to `section`. */
 export function slugifyHeading(text: string): string {

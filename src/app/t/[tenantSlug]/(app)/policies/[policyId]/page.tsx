@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/date-picker/date-utils';
 import { NumberStepper } from '@/components/ui/number-stepper';
 import { sanitizeRichTextHtml } from '@/lib/security/sanitize';
-import { enrichPolicyHtml } from '@/lib/policy/policy-content';
+import { enrichPolicyHtml, renderPolicyMarkdown } from '@/lib/policy/policy-content';
 import type { RichTextContentType } from '@/components/ui/RichTextEditor';
 import { ApprovalBanner } from '@/components/ui/ApprovalBanner';
 import { VersionDiff } from '@/components/ui/VersionDiff';
@@ -292,36 +292,30 @@ export default function PolicyDetailPage() {
                 </a>
             );
         }
-        // Epic 45.2 — HTML versions render via dangerouslySetInnerHTML
-        // with `sanitizeRichTextHtml` as defence-in-depth (the
-        // backend already sanitises on write via
-        // `sanitizePolicyContent('HTML', …)`). MARKDOWN versions
-        // keep the legacy whitespace-pre rendering — the existing
-        // policy content path stores markdown as literal text and
-        // we deliberately don't add a markdown parser here.
-        if (v.contentType === 'HTML') {
-            const safe = sanitizeRichTextHtml(v.contentText ?? '');
-            if (!safe.trim()) {
-                return <span className="text-content-subtle italic">No content</span>;
-            }
-            // Enrich the sanitised body with heading anchors + an auto
-            // Table of Contents (inserted after the first page break).
-            // The enrichment only emits markup derived from the doc's own
-            // escaped heading text + slug ids, so it adds no injection
-            // surface. `.policy-content` scopes the page-break + TOC styling.
-            const enriched = enrichPolicyHtml(safe);
-            return (
-                <div
-                    className="policy-content"
-                    data-testid={`policy-version-html-${v.id}`}
-                    dangerouslySetInnerHTML={{ __html: enriched }}
-                />
-            );
+        // Both HTML and MARKDOWN versions render as a styled document:
+        //   - HTML  → sanitise the stored markup.
+        //   - MARKDOWN → parse to HTML (marked), THEN sanitise — so the
+        //     imported ciso-toolkit + legacy markdown policies get the same
+        //     headers / lists / page breaks as native-HTML policies instead
+        //     of rendering as a wall of raw markdown text.
+        // The sanitised body is then enriched (heading anchors + auto Table
+        // of Contents) and rendered inside `.policy-content` (the document
+        // stylesheet: centred page, headers, page-break divider, print CSS).
+        const rawHtml =
+            v.contentType === 'HTML'
+                ? v.contentText ?? ''
+                : renderPolicyMarkdown(v.contentText);
+        const safe = sanitizeRichTextHtml(rawHtml);
+        if (!safe.trim()) {
+            return <span className="text-content-subtle italic">No content</span>;
         }
+        const enriched = enrichPolicyHtml(safe);
         return (
-            <div className="policy-content whitespace-pre-wrap text-sm">
-                {v.contentText || <span className="text-content-subtle italic">No content</span>}
-            </div>
+            <div
+                className="policy-content"
+                data-testid={`policy-version-html-${v.id}`}
+                dangerouslySetInnerHTML={{ __html: enriched }}
+            />
         );
     };
 
