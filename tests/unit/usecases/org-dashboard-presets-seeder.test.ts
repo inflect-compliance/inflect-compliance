@@ -89,11 +89,11 @@ describe('seedDefaultOrgDashboard — payload shape', () => {
         }
     });
 
-    it('preserves the preset KPI ordering (first four widgets are KPIs)', async () => {
+    it('preserves the preset KPI ordering (the four KPIs follow the threat banner)', async () => {
         const { db, createMany } = makeStub({ existing: 0 });
         await seedDefaultOrgDashboard(db, 'org-1');
         const payload = createMany.mock.calls[0][0].data;
-        const types = payload.slice(0, 4).map((r: any) => r.type);
+        const types = payload.slice(1, 5).map((r: any) => r.type);
         expect(types).toEqual(['KPI', 'KPI', 'KPI', 'KPI']);
     });
 
