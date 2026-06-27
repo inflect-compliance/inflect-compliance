@@ -4,9 +4,9 @@
  * Covers the migration / new-org / idempotency surface that's hard
  * to exercise without a real DB:
  *
- *   - Seeding an empty org inserts the ten preset widgets
+ *   - Seeding an empty org inserts the eleven preset widgets
  *   - Seeding an org that already has widgets is a no-op
- *   - Concurrent seeds on the same fresh org converge to 10 widgets
+ *   - Concurrent seeds on the same fresh org converge to 11 widgets
  *   - Layout fidelity: the persisted rows reproduce the preset's
  *     `(x, y, w, h)` exactly — proves the seeder doesn't mangle
  *     positions on the way through Prisma's `Json` columns
@@ -56,27 +56,27 @@ describeFn('Epic 41 — default-preset seeding (DB-backed)', () => {
 
     // ─── Happy path ───────────────────────────────────────────────
 
-    it('seeds an empty org with exactly ten widgets', async () => {
+    it('seeds an empty org with exactly eleven widgets', async () => {
         const orgId = await makeOrg('happy');
         const result = await seedDefaultOrgDashboard(prisma, orgId);
 
         expect(result.seeded).toBe(true);
-        expect(result.created).toBe(10);
+        expect(result.created).toBe(11);
 
         const persisted = await prisma.orgDashboardWidget.count({
             where: { organizationId: orgId },
         });
-        expect(persisted).toBe(10);
+        expect(persisted).toBe(11);
     });
 
     // ─── Idempotency ──────────────────────────────────────────────
 
-    it('seeding twice yields ten widgets total (not twenty)', async () => {
+    it('seeding twice yields eleven widgets total (not twenty-two)', async () => {
         const orgId = await makeOrg('idempotent');
 
         const first = await seedDefaultOrgDashboard(prisma, orgId);
         expect(first.seeded).toBe(true);
-        expect(first.created).toBe(10);
+        expect(first.created).toBe(11);
 
         const second = await seedDefaultOrgDashboard(prisma, orgId);
         expect(second.seeded).toBe(false);
@@ -85,7 +85,7 @@ describeFn('Epic 41 — default-preset seeding (DB-backed)', () => {
         const persisted = await prisma.orgDashboardWidget.count({
             where: { organizationId: orgId },
         });
-        expect(persisted).toBe(10);
+        expect(persisted).toBe(11);
     });
 
     it('seeding an org that already has a manual widget is a no-op', async () => {
@@ -119,7 +119,7 @@ describeFn('Epic 41 — default-preset seeding (DB-backed)', () => {
 
     // ─── Concurrent seed safety ───────────────────────────────────
 
-    it('two concurrent seeds on the same fresh org converge to 10 widgets', async () => {
+    it('two concurrent seeds on the same fresh org converge to 11 widgets', async () => {
         const orgId = await makeOrg('concurrent');
 
         const [a, b] = await Promise.all([
@@ -128,7 +128,7 @@ describeFn('Epic 41 — default-preset seeding (DB-backed)', () => {
         ]);
 
         // One of the two won the race. The combined widget count
-        // must still be exactly 10 — we never want a 20-widget org
+        // must still be exactly 11 — we never want a 22-widget org
         // from a parallel run.
         const winners = [a, b].filter((r) => r.seeded);
         expect(winners.length).toBeGreaterThanOrEqual(1);
@@ -136,7 +136,7 @@ describeFn('Epic 41 — default-preset seeding (DB-backed)', () => {
         // pass the count check before either inserts. The seeder
         // documents this as acceptable (race window is single-digit
         // ms; ops re-run is the cleanup tool). When the rare
-        // double-insert happens, the count is 20, so we accept
+        // double-insert happens, the count is 22, so we accept
         // 9 OR 18 here — both reflect documented behaviour. The
         // FIX for this race is per-org seeding via a transaction
         // with serializable isolation, planned for a follow-up if
@@ -144,7 +144,7 @@ describeFn('Epic 41 — default-preset seeding (DB-backed)', () => {
         const total = await prisma.orgDashboardWidget.count({
             where: { organizationId: orgId },
         });
-        expect([10, 20]).toContain(total);
+        expect([11, 22]).toContain(total);
     });
 
     // ─── Layout fidelity ──────────────────────────────────────────
@@ -157,7 +157,7 @@ describeFn('Epic 41 — default-preset seeding (DB-backed)', () => {
             where: { organizationId: orgId },
             orderBy: { createdAt: 'asc' },
         });
-        expect(rows).toHaveLength(10);
+        expect(rows).toHaveLength(11);
 
         // Group by (type, chartType) since createMany doesn't preserve
         // input order across drivers. Map key type is a string —

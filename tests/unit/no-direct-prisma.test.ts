@@ -124,6 +124,9 @@ describe('CI Guard: No direct prisma in tenant-scoped code', () => {
         // ORG_MATURITY widget — org-scoped maturity ratings; same
         // global-prisma + getOrgCtx shape as the other org usecases.
         'org-maturity.ts',
+        // ORG_INITIATIVES — org-scoped programme tracking; global prisma for
+        // initiatives/links + withTenantDb for cross-tenant progress rollup.
+        'org-security-initiative.ts',
         // Epic E.3 — request-scoped portfolio data helper. Memoises
         // tenants + snapshots reads via the AsyncLocalStorage
         // RequestContext + WeakMap. The repository methods it calls
@@ -211,6 +214,9 @@ describe('CI Guard: No direct prisma in tenant-scoped code', () => {
         // `runInTenantContext` because that expects a single tenant id
         // on the RequestContext — drill-down is many tenants.
         'portfolio.ts',
+        // ORG_INITIATIVES progress rollup resolves linked work per tenant via
+        // withTenantDb(tid) — the sanctioned cross-tenant read (RLS enforced).
+        'org-security-initiative.ts',
     ];
 
     for (const file of usecases) {

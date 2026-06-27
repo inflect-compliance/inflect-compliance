@@ -22,11 +22,11 @@ import {
 import { CreateOrgDashboardWidgetInput } from '@/app-layer/schemas/org-dashboard-widget.schemas';
 
 describe('Epic 41 — default org dashboard preset', () => {
-    it('contains exactly ten widgets (incl. ORG_THREAT_LEVEL + ORG_MATURITY)', () => {
+    it('contains exactly eleven widgets (incl. ORG_THREAT_LEVEL + ORG_MATURITY + ORG_INITIATIVES)', () => {
         // The prior `/org/[orgSlug]` page rendered four KPI cards +
         // one donut + one trend + one tenant list + one drilldown
         // CTA group = 8 sections, + the ORG_THREAT_LEVEL banner = 9.
-        expect(DEFAULT_ORG_DASHBOARD_PRESET.length).toBe(10);
+        expect(DEFAULT_ORG_DASHBOARD_PRESET.length).toBe(11);
     });
 
     it('every entry is Zod-valid against CreateOrgDashboardWidgetInput', () => {
@@ -105,6 +105,12 @@ describe('Epic 41 — default org dashboard preset', () => {
         expect(m?.size.w).toBe(6);
     });
 
+    it('includes the ORG_INITIATIVES tracker (wide)', () => {
+        const i = DEFAULT_ORG_DASHBOARD_PRESET.find((w) => w.type === 'ORG_INITIATIVES');
+        expect(i).toBeDefined();
+        expect(i?.size.w).toBe(12);
+    });
+
     it('has no overlapping (x..x+w, y..y+h) rectangles between any two widgets', () => {
         // Catches a future preset edit that accidentally puts two
         // widgets at the same coordinates — RGL would auto-compact
@@ -157,7 +163,7 @@ describe('Epic 41 — default org dashboard preset', () => {
 
     it('mutation regression — dropping a widget trips the count assertion', () => {
         const broken = DEFAULT_ORG_DASHBOARD_PRESET.slice(0, -1);
-        expect(broken.length).toBe(9);
-        expect(broken.length).not.toBe(10);
+        expect(broken.length).toBe(10);
+        expect(broken.length).not.toBe(11);
     });
 });

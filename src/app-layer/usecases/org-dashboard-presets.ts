@@ -156,6 +156,16 @@ export const DEFAULT_ORG_DASHBOARD_PRESET: ReadonlyArray<CreateOrgDashboardWidge
         size: { w: 12, h: 2 },
         enabled: true,
     },
+    // ─── Row 5: portfolio security-initiatives (wide, bottom) ───────
+    {
+        type: 'ORG_INITIATIVES',
+        chartType: 'list',
+        title: 'Security Initiatives',
+        config: { topN: 5 },
+        position: { x: 0, y: 20 },
+        size: { w: 12, h: 4 },
+        enabled: true,
+    },
 ];
 
 /**
