@@ -39,22 +39,28 @@ async function startAndCompleteCompanyProfile(page: import('@playwright/test').P
         await page.waitForLoadState('networkidle').catch(() => {});
     }
 
+    // Company Profile — the Company Name is REQUIRED to complete the step.
+    // Wait for the input (cold compile of the first onboarding hit is slow)
+    // and fill it deterministically.
     const nameInput = page.locator('[data-testid="company-name"]');
-    if (await nameInput.isVisible({ timeout: 10000 }).catch(() => false)) {
+    await nameInput.waitFor({ state: 'visible', timeout: 20000 }).catch(() => {});
+    if (await nameInput.isVisible().catch(() => false)) {
         await nameInput.fill('Acme Corporation');
     }
-    const continueBtn = page.getByRole('main').locator('button:has-text("Continue")');
-    if (await continueBtn.isVisible({ timeout: 10000 }).catch(() => false)) {
-        await continueBtn.click();
-        await page.waitForLoadState('networkidle').catch(() => {});
-    }
-    // Guarantee the Frameworks step is reached before the spec proceeds —
-    // any `fw-*` card proves the step loaded (generous budget for CI).
-    await page
-        .locator('[data-testid^="fw-"]')
-        .first()
-        .waitFor({ state: 'visible', timeout: 25000 })
-        .catch(() => {});
+
+    // Continue → advance to the Frameworks step. The first cold "complete"
+    // can race the React state update (the API 200s but `activeStepIdx`
+    // hasn't advanced yet, so the wizard is still on Company Profile when we
+    // look for a framework card). RETRY the click until a `fw-*` card renders
+    // — that is the deterministic proof the step advanced. This is the fix
+    // for the intermittent fw-card timeout that flaked unrelated PRs.
+    const frameworkCard = page.locator('[data-testid^="fw-"]').first();
+    await expect(async () => {
+        if (!(await frameworkCard.isVisible().catch(() => false))) {
+            await page.getByRole('main').locator('button:has-text("Continue")').first().click();
+        }
+        await expect(frameworkCard).toBeVisible({ timeout: 4000 });
+    }).toPass({ timeout: 45000 });
 }
 
 test.describe('NIS2 self-assessment — NIS2 selected', () => {
