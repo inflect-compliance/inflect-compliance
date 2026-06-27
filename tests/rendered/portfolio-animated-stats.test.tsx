@@ -79,6 +79,22 @@ function makePortfolioData(summary: PortfolioSummary = makeSummary()): Portfolio
             isDefault: true,
         },
         canSetThreatLevel: false,
+        maturity: {
+            domains: [
+                { domain: 'GOVERN', level: null, levelNum: 0, rationale: null, ratedAt: null, ratedByName: null },
+                { domain: 'IDENTIFY', level: null, levelNum: 0, rationale: null, ratedAt: null, ratedByName: null },
+                { domain: 'PROTECT', level: null, levelNum: 0, rationale: null, ratedAt: null, ratedByName: null },
+                { domain: 'DETECT', level: null, levelNum: 0, rationale: null, ratedAt: null, ratedByName: null },
+                { domain: 'RESPOND', level: null, levelNum: 0, rationale: null, ratedAt: null, ratedByName: null },
+                { domain: 'RECOVER', level: null, levelNum: 0, rationale: null, ratedAt: null, ratedByName: null },
+            ],
+            overall: 0,
+            overallLabel: null,
+            lastRatedAt: null,
+            isDefault: true,
+            coverageHint: null,
+        },
+        canSetMaturity: false,
         summary,
         tenantHealth: [],
         trends: {

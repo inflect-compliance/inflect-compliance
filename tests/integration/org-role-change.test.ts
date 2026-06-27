@@ -68,6 +68,7 @@ describeFn('Epic O-2 — atomic org member role change (DB-backed)', () => {
                 canManageMembers: role === 'ORG_ADMIN',
                 canConfigureDashboard: role === 'ORG_ADMIN',
                 canSetThreatLevel: role === 'ORG_ADMIN',
+                canSetMaturity: role === 'ORG_ADMIN',
             },
         };
     }

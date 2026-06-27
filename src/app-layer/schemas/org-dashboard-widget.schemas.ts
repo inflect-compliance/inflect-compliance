@@ -211,6 +211,22 @@ const OrgThreatLevelConfigSchema = z.object({
         .strict(),
 });
 
+// ORG_MATURITY — self-assessed security-maturity rating. Default view is
+// the radar (6 CSF domains as spokes); 'trend' shows overall maturity over
+// time. The current levels + trend are read live at render; config holds
+// only display state.
+const OrgMaturityConfigSchema = z.object({
+    type: z.literal('ORG_MATURITY'),
+    chartType: z.literal('radar'),
+    config: z
+        .object({
+            view: z.enum(['radar', 'trend']).optional(),
+            /** Surface the derived-coverage hint alongside the rating. */
+            showCoverageHint: z.boolean().optional(),
+        })
+        .strict(),
+});
+
 /**
  * The widget shape contract. Discriminated on `type`; each variant
  * locks `chartType` and `config` together. Reject-by-default for any
@@ -223,6 +239,7 @@ export const WidgetTypedShapeSchema = z.discriminatedUnion('type', [
     TenantListConfigSchema,
     DrilldownCtasConfigSchema,
     OrgThreatLevelConfigSchema,
+    OrgMaturityConfigSchema,
 ]);
 export type WidgetTypedShape = z.infer<typeof WidgetTypedShapeSchema>;
 

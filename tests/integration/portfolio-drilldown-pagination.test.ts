@@ -54,6 +54,7 @@ describeFn('Portfolio drill-down — cursor pagination (DB-backed)', () => {
                 canManageMembers: true,
             canConfigureDashboard: true,
             canSetThreatLevel: true,
+            canSetMaturity: true,
             },
         };
     }

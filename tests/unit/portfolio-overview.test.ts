@@ -56,6 +56,7 @@ function ctxFor(): OrgContext {
             canManageMembers: true,
             canConfigureDashboard: true,
             canSetThreatLevel: true,
+            canSetMaturity: true,
         },
     };
 }

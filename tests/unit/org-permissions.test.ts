@@ -19,6 +19,7 @@ describe('Epic O-2 — getOrgPermissions', () => {
             canManageMembers: true,
             canConfigureDashboard: true,
             canSetThreatLevel: true,
+            canSetMaturity: true,
         });
     });
 
@@ -32,6 +33,7 @@ describe('Epic O-2 — getOrgPermissions', () => {
             canManageMembers: false,
             canConfigureDashboard: false,
             canSetThreatLevel: false,
+            canSetMaturity: false,
         });
     });
 

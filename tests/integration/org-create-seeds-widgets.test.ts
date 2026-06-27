@@ -77,7 +77,7 @@ describeFn('Epic 41 — POST /api/org seeds default widgets (DB-backed)', () => 
         });
     }
 
-    it('creates the org + persists nine default widgets atomically', async () => {
+    it('creates the org + persists ten default widgets atomically', async () => {
         const user = await prisma.user.create({
             data: {
                 email: `${uniq}-creator@example.com`,
@@ -104,7 +104,7 @@ describeFn('Epic 41 — POST /api/org seeds default widgets (DB-backed)', () => 
         const widgets = await prisma.orgDashboardWidget.findMany({
             where: { organizationId: orgId },
         });
-        expect(widgets).toHaveLength(9);
+        expect(widgets).toHaveLength(10);
 
         const distinctOrgIds = new Set(widgets.map((w) => w.organizationId));
         expect(distinctOrgIds).toEqual(new Set([orgId]));
