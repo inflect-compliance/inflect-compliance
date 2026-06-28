@@ -7,12 +7,12 @@
  * predicate. `q` is the separate search slot owned by
  * `useFilterContext` (matches reference + title).
  */
+import { CircleDot, ShieldAlert, Flag } from 'lucide-react';
 import type { FilterDefInput } from '@/components/ui/filter/filter-definitions';
 import {
     createTypedFilterDefs,
     optionsFromEnum,
 } from '@/components/ui/filter/filter-definitions';
-import { CircleDot, ShieldAlert, Flag } from 'lucide-react';
 
 export const SEVERITY_LABELS = {
     LOW: 'Low',

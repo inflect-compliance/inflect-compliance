@@ -6,6 +6,8 @@ import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import { EntityDetailLayout, type EntityDetailTab } from '@/components/layout/EntityDetailLayout';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
+import { MetaStrip, type MetaItem } from '@/components/ui/meta-strip';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { FormField } from '@/components/ui/form-field';
@@ -133,7 +135,11 @@ export default function IncidentDetailPage() {
     if (!incident) {
         return (
             <EntityDetailLayout<TabKey>
-                back={{ href: `/t/${tenantSlug}/incidents`, label: 'Incidents' }}
+                back={{ smart: true }}
+                breadcrumbs={[
+                    { label: 'Incidents', href: `/t/${tenantSlug}/incidents` },
+                    { label: 'Incident' },
+                ]}
                 title="Incident"
                 loading={query.isLoading}
                 error={query.error ? 'Failed to load incident' : null}
@@ -147,18 +153,41 @@ export default function IncidentDetailPage() {
 
     return (
         <EntityDetailLayout<TabKey>
-            back={{ href: `/t/${tenantSlug}/incidents`, label: 'Incidents' }}
+            back={{ smart: true }}
+            breadcrumbs={[
+                { label: 'Incidents', href: `/t/${tenantSlug}/incidents` },
+                { label: incident.reference },
+            ]}
             title={`[${incident.reference}] ${incident.title}`}
             meta={
-                <span className="inline-flex items-center gap-tight">
-                    <StatusBadge variant={SEVERITY_TONE[incident.severity] ?? 'neutral'}>
-                        {SEVERITY_LABELS[incident.severity] ?? incident.severity}
-                    </StatusBadge>
-                    <StatusBadge variant="neutral">
-                        {INCIDENT_TYPE_LABELS[incident.incidentType as keyof typeof INCIDENT_TYPE_LABELS] ??
-                            incident.incidentType}
-                    </StatusBadge>
-                </span>
+                <MetaStrip
+                    items={[
+                        {
+                            kind: 'status',
+                            label: 'Severity',
+                            value: SEVERITY_LABELS[incident.severity] ?? incident.severity,
+                            variant: SEVERITY_TONE[incident.severity] ?? 'neutral',
+                        },
+                        {
+                            kind: 'text',
+                            label: 'Type',
+                            value:
+                                INCIDENT_TYPE_LABELS[
+                                    incident.incidentType as keyof typeof INCIDENT_TYPE_LABELS
+                                ] ?? incident.incidentType,
+                        },
+                        {
+                            kind: 'text',
+                            label: 'Phase',
+                            value: PHASE_LABELS[incident.phase] ?? incident.phase,
+                        },
+                        {
+                            kind: 'text',
+                            label: 'Detected',
+                            value: formatDateTime(incident.detectedAt),
+                        },
+                    ] satisfies MetaItem[]}
+                />
             }
             tabs={tabs}
             activeTab={activeTab}
@@ -173,12 +202,12 @@ export default function IncidentDetailPage() {
             {activeTab === 'overview' && (
                 <div className="space-y-section">
                     {/* Not-legal-advice disclaimer — prominent. */}
-                    <div className="rounded-lg border border-border-default bg-bg-subtle px-4 py-3 text-sm text-content-muted">
+                    <Card elevation="inset" className="px-4 py-3 text-sm text-content-muted">
                         <strong className="text-content-default">Not legal advice.</strong>{' '}
                         The NIS2 Article 23 reportability threshold and the 24h / 72h / 1-month
                         deadlines below are operational aids. Your DPO/legal team owns the actual
                         reporting determination.
-                    </div>
+                    </Card>
 
                     {/* 7-phase response tracker (the seven-phase NIS2 flow + CLOSED). */}
                     <section className="space-y-default">
@@ -218,7 +247,7 @@ export default function IncidentDetailPage() {
                                     24h / 72h / 1-month clocks.
                                 </p>
                                 <Button
-                                    variant="primary"
+                                    variant="secondary"
                                     size="sm"
                                     disabled={busy}
                                     onClick={() => setReportableOpen(true)}
