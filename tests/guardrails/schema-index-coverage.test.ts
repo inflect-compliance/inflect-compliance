@@ -573,6 +573,21 @@ const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
         'join table — fetched by tenantId plus a leading-indexed FK; Layers A/B cover its query shapes; no curated composite index needed.',
     VendorRelationship:
         'fetched per vendor via a leading-indexed FK; Layers A/B cover its query shapes; no curated composite index needed today.',
+    // NIS2 incident response — listIncidents filters by tenantId (+ optional
+    // phase / severity), orders by detectedAt DESC; covered by
+    // @@index([tenantId, phase]) + @@index([tenantId, severity, detectedAt]);
+    // bounded take:200.
+    Incident:
+        'listIncidents filters by tenantId (+ optional phase / severity), orders by detectedAt DESC — covered by @@index([tenantId, phase]) + @@index([tenantId, severity, detectedAt]); bounded take:200.',
+    // Notification deadlines fetched per incident (detail page) and scanned
+    // by [tenantId, status, dueAt] (the deadline-clock job); covered by
+    // @@index([tenantId, incidentId]) + @@index([tenantId, status, dueAt]).
+    IncidentNotification:
+        'listed per incident (detail) and scanned by status+dueAt (deadline-clock job) — covered by @@index([tenantId, incidentId]) + @@index([tenantId, status, dueAt]); bounded take.',
+    // Timeline fetched per incident ordered by `at`; covered by
+    // @@index([tenantId, incidentId, at]); bounded take:500.
+    IncidentTimelineEntry:
+        'listIncidentTimeline filters by tenantId + incidentId, orders by at DESC — covered by @@index([tenantId, incidentId, at]); bounded take:500.',
 };
 
 // ─────────────────────────────────────────────────────────────────────

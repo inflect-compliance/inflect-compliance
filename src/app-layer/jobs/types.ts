@@ -148,6 +148,15 @@ export interface AccessReviewReminderPayload {
     tenantId?: string;
 }
 
+/** NIS2 Article 23 deadline-clock job — flips PENDING→DUE→OVERDUE and
+ *  fires notifications. Runs frequently (hourly) because a 24h deadline
+ *  needs sub-day granularity. */
+export interface IncidentNotificationDeadlinesPayload {
+    /** Optional: scope the scan to a single tenant. Omit for the
+     *  system-wide hourly scan. */
+    tenantId?: string;
+}
+
 export interface PolicyReviewReminderPayload {
     tenantId?: string;
 }
@@ -563,6 +572,7 @@ export interface JobPayloadMap {
     'report-delivery': ReportDeliveryPayload;
     'dau-mau-aggregator': DauMauAggregatorPayload;
     'onboarding-abandonment-sweep': OnboardingAbandonmentPayload;
+    'incident-notification-deadlines': IncidentNotificationDeadlinesPayload;
 }
 
 /** Union of all valid job names */
@@ -719,6 +729,14 @@ export const JOB_DEFAULTS: Record<JobName, {
         backoff: { type: 'fixed', delay: 0 },
         removeOnComplete: 20,
         removeOnFail: 50,
+    },
+    'incident-notification-deadlines': {
+        // Idempotent (status transitions + dedupeKey'd notifications),
+        // so a retry is safe.
+        attempts: 2,
+        backoff: { type: 'exponential', delay: 5000 },
+        removeOnComplete: 200,
+        removeOnFail: 500,
     },
     'exception-expiry-monitor': {
         attempts: 2,

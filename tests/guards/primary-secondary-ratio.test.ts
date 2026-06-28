@@ -155,7 +155,14 @@ const MIN_SECONDARY_TO_PRIMARY_RATIO = 0.9;
 // confirm-and-link modal (TemplateControlSuggestModal). Its "Link N
 // controls" confirm is the dialog's earned primary, paired with a ghost
 // "Skip". +1 primary.
-const MAX_PRIMARY_COUNT = 128;
+//
+// 2026-06-28 — bumped 128 → 133 for the NIS2 Article 23 incident-response
+// feature. Five earned primaries: the incidents-list "Incident" create
+// CTA, the create-incident modal confirm, and the three incident-detail
+// modal confirms (submit report, add timeline entry, confirm reportable).
+// Each pairs with a secondary Cancel; the page-level mark-reportable
+// trigger was kept a secondary to hold the line. +5 primary.
+const MAX_PRIMARY_COUNT = 133;
 
 describe("primary:secondary ratio direction", () => {
     const counts = (() => {
