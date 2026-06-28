@@ -1,0 +1,538 @@
+# DORA — Digital Operational Resilience Act — Framework Library
+# Paraphrased requirement descriptions — NOT verbatim regulation text.
+# This is a structural outline for compliance tracking purposes.
+#
+# Source: Regulation (EU) 2022/2554 of the European Parliament and of the
+# Council of 14 December 2022 on digital operational resilience for the
+# financial sector (DORA). The full regulation text is published in the
+# Official Journal of the European Union (OJ L 333, 27.12.2022, p. 1).
+#
+# Structured by DORA's five pillars:
+#   1. ICT Risk Management ................ Chapter II  (Art 5-16)
+#   2. ICT Incident Management & Reporting  Chapter III (Art 17-23)
+#   3. Digital Operational Resilience Testing Chapter IV (Art 24-27)
+#   4. ICT Third-Party Risk Management ...  Chapter V   (Art 28-44)
+#   5. Information Sharing ................  Chapter VI  (Art 45)
+#
+# Requirement node ref_ids follow the official article structure
+# (DORA.Art.5, DORA.Art.6, …) so they remain stable and citable.
+
+urn: urn:inflect:library:dora-2022
+locale: en
+ref_id: DORA-2022
+name: Digital Operational Resilience Act (EU 2022/2554)
+description: >
+  Regulation on digital operational resilience for the financial sector.
+  This library covers the entity-facing obligations across DORA's five
+  pillars: ICT risk management, ICT-related incident management and
+  reporting, digital operational resilience testing, ICT third-party risk
+  management, and information-sharing arrangements.
+copyright: >
+  This is a structural outline of Regulation (EU) 2022/2554 (DORA). The full
+  regulation text is published in the Official Journal of the European Union.
+version: 1
+publication_date: "2022-12-14"
+provider: European Union
+packager: inflect
+kind: REGULATION
+
+objects:
+  framework:
+    urn: urn:inflect:framework:dora-2022
+    ref_id: DORA-2022
+    name: Digital Operational Resilience Act
+    description: >
+      Digital operational resilience requirements for EU financial entities
+      and their ICT third-party service providers under Regulation (EU)
+      2022/2554, applicable since 17 January 2025.
+
+    requirement_nodes:
+
+      # ─── Pillar 1 — ICT Risk Management (Chapter II, Art 5-16) ────────
+
+      - urn: urn:inflect:req:dora-2022:p1
+        ref_id: DORA.P1
+        name: "Pillar 1 — ICT Risk Management"
+        description: >
+          Internal governance and control framework ensuring effective and
+          prudent management of ICT risk. (Paraphrase — Chapter II)
+        depth: 1
+        assessable: false
+        category: ICT Risk Management
+
+      - urn: urn:inflect:req:dora-2022:art5
+        ref_id: DORA.Art.5
+        name: Governance and organisation
+        description: >
+          The management body defines, approves, oversees and is accountable
+          for the ICT risk management framework, allocating clear roles and
+          responsibilities for all ICT-related functions. (Paraphrase — Art. 5)
+        parent_urn: urn:inflect:req:dora-2022:p1
+        depth: 2
+        assessable: true
+        category: ICT Risk Management
+        artifacts: "ICT governance policy, Management body responsibilities matrix, Board ICT risk training records"
+        checklist:
+          - Assign management-body accountability for the ICT risk framework
+          - Define roles and responsibilities for ICT functions
+          - Approve and periodically review the ICT risk framework
+          - Maintain appropriate ICT-risk knowledge at board level
+
+      - urn: urn:inflect:req:dora-2022:art6
+        ref_id: DORA.Art.6
+        name: ICT risk management framework
+        description: >
+          Maintain a sound, comprehensive and well-documented ICT risk
+          management framework as part of the overall risk management system,
+          reviewed at least annually. (Paraphrase — Art. 6)
+        parent_urn: urn:inflect:req:dora-2022:p1
+        depth: 2
+        assessable: true
+        category: ICT Risk Management
+        artifacts: "ICT risk management framework document, Digital operational resilience strategy, Annual review records"
+        checklist:
+          - Document the ICT risk management framework
+          - Define the digital operational resilience strategy
+          - Review the framework at least annually and after major incidents
+          - Allocate adequate budget for digital operational resilience
+
+      - urn: urn:inflect:req:dora-2022:art7
+        ref_id: DORA.Art.7
+        name: ICT systems, protocols and tools
+        description: >
+          Use and maintain ICT systems, protocols and tools that are reliable,
+          have sufficient capacity, and are technologically resilient.
+          (Paraphrase — Art. 7)
+        parent_urn: urn:inflect:req:dora-2022:p1
+        depth: 2
+        assessable: true
+        category: ICT Risk Management
+        artifacts: "ICT asset capacity plans, Architecture standards, Technology currency records"
+        checklist:
+          - Ensure ICT systems are appropriate to the scale of operations
+          - Maintain sufficient capacity and reliability
+          - Keep ICT tools technologically resilient and up to date
+
+      - urn: urn:inflect:req:dora-2022:art8
+        ref_id: DORA.Art.8
+        name: Identification
+        description: >
+          Identify, classify and document all ICT-supported business functions,
+          information assets and ICT assets, and map dependencies. (Paraphrase — Art. 8)
+        parent_urn: urn:inflect:req:dora-2022:p1
+        depth: 2
+        assessable: true
+        category: ICT Risk Management
+        artifacts: "ICT asset inventory, Business-function criticality mapping, ICT dependency map"
+        checklist:
+          - Maintain an inventory of ICT assets and information assets
+          - Classify business functions by criticality
+          - Map dependencies between assets, functions and third parties
+          - Review the identification on a regular basis
+
+      - urn: urn:inflect:req:dora-2022:art9
+        ref_id: DORA.Art.9
+        name: Protection and prevention
+        description: >
+          Continuously monitor and control ICT systems, and implement policies,
+          procedures and tools (access control, encryption, network security)
+          to protect against ICT risk. (Paraphrase — Art. 9)
+        parent_urn: urn:inflect:req:dora-2022:p1
+        depth: 2
+        assessable: true
+        category: ICT Risk Management
+        artifacts: "Access control policy, Encryption standards, Network security configuration, ICT change management policy"
+        checklist:
+          - Implement identity and access management controls
+          - Apply encryption to data at rest and in transit
+          - Harden networks and segregate critical systems
+          - Govern ICT changes through a documented process
+
+      - urn: urn:inflect:req:dora-2022:art10
+        ref_id: DORA.Art.10
+        name: Detection
+        description: >
+          Have mechanisms to promptly detect anomalous activities, including
+          ICT network performance issues and ICT-related incidents, with
+          multiple layers of control and defined alert thresholds. (Paraphrase — Art. 10)
+        parent_urn: urn:inflect:req:dora-2022:p1
+        depth: 2
+        assessable: true
+        category: ICT Risk Management
+        artifacts: "Monitoring and alerting configuration, Anomaly detection thresholds, Log review procedures"
+        checklist:
+          - Deploy monitoring to detect anomalous activity
+          - Define alert thresholds and escalation triggers
+          - Test detection mechanisms regularly
+
+      - urn: urn:inflect:req:dora-2022:art11
+        ref_id: DORA.Art.11
+        name: Response and recovery
+        description: >
+          Put in place a comprehensive ICT business continuity policy and
+          response-and-recovery plans to ensure continuity of critical
+          functions and limit damage. (Paraphrase — Art. 11)
+        parent_urn: urn:inflect:req:dora-2022:p1
+        depth: 2
+        assessable: true
+        category: ICT Risk Management
+        artifacts: "ICT business continuity policy, Response and recovery plans, BCP test results"
+        checklist:
+          - Maintain an ICT business continuity policy
+          - Define response and recovery plans for critical functions
+          - Test continuity plans at least annually
+          - Estimate impacts, losses and recovery objectives
+
+      - urn: urn:inflect:req:dora-2022:art12
+        ref_id: DORA.Art.12
+        name: Backup policies, restoration and recovery procedures
+        description: >
+          Develop and document backup policies and restoration/recovery
+          procedures, with backups stored securely and recovery tested
+          periodically. (Paraphrase — Art. 12)
+        parent_urn: urn:inflect:req:dora-2022:p1
+        depth: 2
+        assessable: true
+        category: ICT Risk Management
+        artifacts: "Backup policy, Restoration procedures, Recovery test logs, Redundant capacity records"
+        checklist:
+          - Define backup scope, frequency and retention
+          - Store backups securely and separately from source systems
+          - Test restoration and recovery procedures periodically
+          - Maintain redundant ICT capacity where appropriate
+
+      - urn: urn:inflect:req:dora-2022:art13
+        ref_id: DORA.Art.13
+        name: Learning and evolving
+        description: >
+          Gather information on vulnerabilities, ICT-related incidents and
+          cyber threats, conduct post-incident reviews, and feed lessons
+          learned back into the framework. (Paraphrase — Art. 13)
+        parent_urn: urn:inflect:req:dora-2022:p1
+        depth: 2
+        assessable: true
+        category: ICT Risk Management
+        artifacts: "Post-incident review reports, Lessons-learned register, Threat-intelligence intake records, Awareness programme"
+        checklist:
+          - Conduct post-incident reviews of major incidents
+          - Maintain a lessons-learned process feeding the framework
+          - Run ICT security awareness and training programmes
+
+      - urn: urn:inflect:req:dora-2022:art14
+        ref_id: DORA.Art.14
+        name: Communication
+        description: >
+          Have crisis communication plans enabling responsible disclosure of
+          major ICT-related incidents to clients, counterparts and the public
+          as appropriate. (Paraphrase — Art. 14)
+        parent_urn: urn:inflect:req:dora-2022:p1
+        depth: 2
+        assessable: true
+        category: ICT Risk Management
+        artifacts: "Crisis communication plan, Stakeholder notification procedures, Designated spokesperson records"
+        checklist:
+          - Maintain crisis communication plans
+          - Define internal and external disclosure procedures
+          - Designate roles responsible for communications
+
+      - urn: urn:inflect:req:dora-2022:art16
+        ref_id: DORA.Art.16
+        name: Simplified ICT risk management framework
+        description: >
+          Certain smaller and non-interconnected entities apply a simplified
+          but still sound ICT risk management framework proportionate to their
+          risk profile. (Paraphrase — Art. 16)
+        parent_urn: urn:inflect:req:dora-2022:p1
+        depth: 2
+        assessable: true
+        category: ICT Risk Management
+        artifacts: "Simplified ICT risk framework document, Proportionality assessment"
+        checklist:
+          - Determine eligibility for the simplified regime
+          - Document a proportionate ICT risk framework
+          - Monitor ICT risk and continuity of critical functions
+
+      # ─── Pillar 2 — ICT Incident Management & Reporting (Ch. III) ─────
+
+      - urn: urn:inflect:req:dora-2022:p2
+        ref_id: DORA.P2
+        name: "Pillar 2 — ICT Incident Management & Reporting"
+        description: >
+          Detect, manage, classify and report ICT-related incidents to
+          competent authorities within harmonised deadlines. (Paraphrase — Chapter III)
+        depth: 1
+        assessable: false
+        category: Incident Management & Reporting
+
+      - urn: urn:inflect:req:dora-2022:art17
+        ref_id: DORA.Art.17
+        name: ICT-related incident management process
+        description: >
+          Define, establish and implement an ICT-related incident management
+          process to detect, manage, log and resolve ICT-related incidents.
+          (Paraphrase — Art. 17)
+        parent_urn: urn:inflect:req:dora-2022:p2
+        depth: 2
+        assessable: true
+        category: Incident Management & Reporting
+        artifacts: "Incident management procedure, Incident log, Early-warning and escalation procedures"
+        checklist:
+          - Establish an ICT-related incident management process
+          - Log and track all ICT-related incidents
+          - Define escalation and internal notification procedures
+          - Assign roles for incident handling
+
+      - urn: urn:inflect:req:dora-2022:art18
+        ref_id: DORA.Art.18
+        name: Classification of ICT-related incidents and cyber threats
+        description: >
+          Classify ICT-related incidents and determine their impact using the
+          criteria set out in DORA and the related RTS (clients affected,
+          duration, geographical spread, data losses, criticality, economic
+          impact). (Paraphrase — Art. 18)
+        parent_urn: urn:inflect:req:dora-2022:p2
+        depth: 2
+        assessable: true
+        category: Incident Management & Reporting
+        artifacts: "Incident classification matrix, Major-incident determination criteria, Materiality thresholds"
+        checklist:
+          - Adopt the DORA classification criteria
+          - Determine whether an incident is "major"
+          - Assess significance of cyber threats
+          - Document classification decisions
+
+      - urn: urn:inflect:req:dora-2022:art19
+        ref_id: DORA.Art.19
+        name: Reporting of major ICT-related incidents and voluntary notification of significant cyber threats
+        description: >
+          Report major ICT-related incidents to the relevant competent
+          authority through an initial notification, an intermediate report and
+          a final report within the deadlines set by DORA and its RTS/ITS.
+          (Paraphrase — Art. 19)
+        parent_urn: urn:inflect:req:dora-2022:p2
+        depth: 2
+        assessable: true
+        category: Incident Management & Reporting
+        artifacts: "Regulatory reporting procedure, Initial/intermediate/final report templates, Reporting deadline tracker"
+        checklist:
+          - Submit the initial notification within the regulatory deadline
+          - Provide intermediate and final reports as required
+          - Use the harmonised reporting templates
+          - Optionally notify significant cyber threats
+
+      - urn: urn:inflect:req:dora-2022:art23
+        ref_id: DORA.Art.23
+        name: Operational or security payment-related incidents
+        description: >
+          Credit institutions, payment institutions, account information
+          service providers and electronic money institutions apply the
+          incident provisions to operational or security payment-related
+          incidents. (Paraphrase — Art. 23)
+        parent_urn: urn:inflect:req:dora-2022:p2
+        depth: 2
+        assessable: true
+        category: Incident Management & Reporting
+        artifacts: "Payment-incident handling procedure, Scope-applicability assessment"
+        checklist:
+          - Determine applicability to payment-related incidents
+          - Apply incident management and reporting to those incidents
+
+      # ─── Pillar 3 — Digital Operational Resilience Testing (Ch. IV) ───
+
+      - urn: urn:inflect:req:dora-2022:p3
+        ref_id: DORA.P3
+        name: "Pillar 3 — Digital Operational Resilience Testing"
+        description: >
+          Establish a sound and comprehensive digital operational resilience
+          testing programme, including advanced threat-led penetration testing
+          where required. (Paraphrase — Chapter IV)
+        depth: 1
+        assessable: false
+        category: Resilience Testing
+
+      - urn: urn:inflect:req:dora-2022:art24
+        ref_id: DORA.Art.24
+        name: General requirements for the performance of digital operational resilience testing
+        description: >
+          Establish a risk-based digital operational resilience testing
+          programme as an integral part of the ICT risk management framework.
+          (Paraphrase — Art. 24)
+        parent_urn: urn:inflect:req:dora-2022:p3
+        depth: 2
+        assessable: true
+        category: Resilience Testing
+        artifacts: "Resilience testing programme, Test plan and schedule, Remediation tracking of findings"
+        checklist:
+          - Define a risk-based testing programme
+          - Ensure tests are performed by independent parties
+          - Prioritise and remediate vulnerabilities found
+          - Cover all critical ICT systems over time
+
+      - urn: urn:inflect:req:dora-2022:art25
+        ref_id: DORA.Art.25
+        name: Testing of ICT tools and systems
+        description: >
+          Perform an appropriate range of tests on ICT systems and tools —
+          including vulnerability assessments, scans, gap analyses,
+          penetration testing and scenario-based tests — at least yearly on
+          critical systems. (Paraphrase — Art. 25)
+        parent_urn: urn:inflect:req:dora-2022:p3
+        depth: 2
+        assessable: true
+        category: Resilience Testing
+        artifacts: "Vulnerability assessment reports, Penetration test reports, Scenario test results"
+        checklist:
+          - Run vulnerability assessments and scans
+          - Perform penetration and scenario-based tests
+          - Test critical ICT systems at least annually
+
+      - urn: urn:inflect:req:dora-2022:art26
+        ref_id: DORA.Art.26
+        name: Advanced testing of ICT tools, systems and processes based on TLPT
+        description: >
+          Identified financial entities carry out threat-led penetration
+          testing (TLPT) on live production systems covering critical functions
+          at least every three years. (Paraphrase — Art. 26)
+        parent_urn: urn:inflect:req:dora-2022:p3
+        depth: 2
+        assessable: true
+        category: Resilience Testing
+        artifacts: "TLPT scope document, TLPT report, Attestation by authorities, Remediation plan"
+        checklist:
+          - Determine whether the entity is in scope for TLPT
+          - Scope TLPT to cover critical or important functions
+          - Conduct TLPT at least every three years
+          - Obtain authority attestation and remediate findings
+
+      - urn: urn:inflect:req:dora-2022:art27
+        ref_id: DORA.Art.27
+        name: Requirements for testers for the carrying out of TLPT
+        description: >
+          Use testers for TLPT that meet suitability, independence and
+          professional-ethics requirements, with appropriate certification or
+          accreditation. (Paraphrase — Art. 27)
+        parent_urn: urn:inflect:req:dora-2022:p3
+        depth: 2
+        assessable: true
+        category: Resilience Testing
+        artifacts: "Tester due-diligence records, Independence assessment, Professional indemnity evidence"
+        checklist:
+          - Verify tester suitability and reputation
+          - Confirm tester independence
+          - Confirm certification/accreditation and indemnity cover
+
+      # ─── Pillar 4 — ICT Third-Party Risk Management (Chapter V) ───────
+
+      - urn: urn:inflect:req:dora-2022:p4
+        ref_id: DORA.P4
+        name: "Pillar 4 — ICT Third-Party Risk Management"
+        description: >
+          Manage ICT third-party risk as an integral component of ICT risk,
+          including key contractual provisions and an oversight framework for
+          critical ICT third-party service providers. (Paraphrase — Chapter V)
+        depth: 1
+        assessable: false
+        category: Third-Party Risk Management
+
+      - urn: urn:inflect:req:dora-2022:art28
+        ref_id: DORA.Art.28
+        name: General principles (incl. Register of Information)
+        description: >
+          Manage ICT third-party risk as part of the ICT risk framework, adopt
+          a strategy on ICT third-party risk, and maintain a Register of
+          Information on all contractual arrangements for the use of ICT
+          services. (Paraphrase — Art. 28)
+        parent_urn: urn:inflect:req:dora-2022:p4
+        depth: 2
+        assessable: true
+        category: Third-Party Risk Management
+        artifacts: "ICT third-party risk strategy, Register of Information, Multi-vendor strategy, Exit plans"
+        checklist:
+          - Adopt an ICT third-party risk strategy
+          - Maintain a Register of Information on ICT contracts
+          - Assess risk before entering ICT contracts
+          - Maintain exit strategies for critical ICT services
+
+      - urn: urn:inflect:req:dora-2022:art29
+        ref_id: DORA.Art.29
+        name: Preliminary assessment of ICT concentration risk at entity level
+        description: >
+          Assess ICT concentration risk when entering contractual arrangements
+          for critical or important functions, including risks from
+          sub-outsourcing and hard-to-substitute providers. (Paraphrase — Art. 29)
+        parent_urn: urn:inflect:req:dora-2022:p4
+        depth: 2
+        assessable: true
+        category: Third-Party Risk Management
+        artifacts: "Concentration risk assessment, Sub-outsourcing risk analysis, Substitutability analysis"
+        checklist:
+          - Assess concentration risk before contracting
+          - Evaluate sub-outsourcing chains
+          - Consider substitutability of providers
+
+      - urn: urn:inflect:req:dora-2022:art30
+        ref_id: DORA.Art.30
+        name: Key contractual provisions
+        description: >
+          Ensure ICT service contracts contain the mandatory key contractual
+          provisions (service descriptions, locations, data protection, access
+          and audit rights, termination, exit support, incident assistance).
+          (Paraphrase — Art. 30)
+        parent_urn: urn:inflect:req:dora-2022:p4
+        depth: 2
+        assessable: true
+        category: Third-Party Risk Management
+        artifacts: "Contract clause checklist, Standard contractual templates, Audit and access-rights register"
+        checklist:
+          - Include all mandatory contractual provisions
+          - Secure access, inspection and audit rights
+          - Define service levels and termination rights
+          - Require incident assistance and exit support
+
+      - urn: urn:inflect:req:dora-2022:art31
+        ref_id: DORA.Art.31
+        name: Designation of critical ICT third-party service providers
+        description: >
+          Recognise that certain ICT third-party providers are designated as
+          critical by the ESAs and become subject to the Union Oversight
+          Framework; account for this in third-party risk management.
+          (Paraphrase — Art. 31)
+        parent_urn: urn:inflect:req:dora-2022:p4
+        depth: 2
+        assessable: true
+        category: Third-Party Risk Management
+        artifacts: "Critical-provider identification records, Oversight-framework impact assessment"
+        checklist:
+          - Track which providers are designated critical (CTPPs)
+          - Account for oversight-framework implications
+          - Reflect designation in contingency and exit planning
+
+      # ─── Pillar 5 — Information Sharing (Chapter VI, Art 45) ──────────
+
+      - urn: urn:inflect:req:dora-2022:p5
+        ref_id: DORA.P5
+        name: "Pillar 5 — Information Sharing"
+        description: >
+          Voluntary exchange of cyber threat information and intelligence
+          within trusted communities of financial entities. (Paraphrase — Chapter VI)
+        depth: 1
+        assessable: false
+        category: Information Sharing
+
+      - urn: urn:inflect:req:dora-2022:art45
+        ref_id: DORA.Art.45
+        name: Information-sharing arrangements on cyber threat information and intelligence
+        description: >
+          Financial entities may exchange cyber threat information and
+          intelligence within trusted communities under arrangements that
+          protect confidentiality, personal data and competition-sensitive
+          information. (Paraphrase — Art. 45)
+        parent_urn: urn:inflect:req:dora-2022:p5
+        depth: 2
+        assessable: true
+        category: Information Sharing
+        artifacts: "Information-sharing arrangement, Membership records, Data protection safeguards"
+        checklist:
+          - Join or establish trusted information-sharing communities
+          - Define safeguards for confidential and personal data
+          - Notify authorities of participation as required

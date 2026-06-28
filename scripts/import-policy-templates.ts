@@ -47,11 +47,30 @@ function parseCSV(text: string): string[][] {
 }
 
 function decodeEntities(s: string): string {
+    // Unescape the ampersand LAST: `&amp;` decodes to the escape character
+    // itself, so decoding it first would let a literal `&amp;lt;` collapse to
+    // `<` (double-unescaping). The catch-all skips `&amp;` for the same reason.
     return s
-        .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+        .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
         .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&rsquo;|&lsquo;/g, "'")
         .replace(/&ldquo;|&rdquo;/g, '"').replace(/&mdash;/g, '—').replace(/&ndash;/g, '–')
-        .replace(/&hellip;/g, '…').replace(/&#?[a-z0-9]+;/gi, ' ');
+        .replace(/&hellip;/g, '…').replace(/&(?!amp;)#?[a-z0-9]+;/gi, ' ')
+        .replace(/&amp;/g, '&');
+}
+
+/**
+ * Strip HTML tags, looping until the string stops changing. A single pass of
+ * `/<[^>]+>/g` can splice two surviving halves into a fresh tag
+ * (e.g. `<scr<script>ipt>` → `<script>`), so we repeat to a fixed point, then
+ * drop any truncated/unclosed trailing tag fragment (`<script` with no `>`).
+ */
+function stripTags(s: string): string {
+    let prev: string;
+    do {
+        prev = s;
+        s = s.replace(/<[^>]+>/g, '');
+    } while (s !== prev);
+    return s.replace(/<\/?[a-z][^>]*$/i, '');
 }
 
 /** Convert the export's HTML body into clean Markdown. */
@@ -73,7 +92,7 @@ export function htmlPolicyToMarkdown(html: string): string {
     // bold — only genuine short inline emphasis; block-wrapper <b> (the source
     // wraps whole paragraphs incl. <br>) → keep text, drop the markers.
     s = s.replace(/<(b|strong)>([\s\S]*?)<\/(b|strong)>/gi, (_m, _t1: string, inner: string) => {
-        const plain = inner.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
+        const plain = stripTags(inner).replace(/&nbsp;/g, ' ').trim();
         if (!plain) return '';
         if (/<br|<h[1-4]|<p|<li|<ul|<ol/i.test(inner) || plain.length > 100) return inner;
         return `**${plain}**`;
@@ -82,8 +101,8 @@ export function htmlPolicyToMarkdown(html: string): string {
     s = s.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n\n').replace(/<p[^>]*>/gi, '');
     // unwrap spans (keep inner text)
     s = s.replace(/<span[^>]*>([\s\S]*?)<\/span>/gi, '$1');
-    // strip remaining tags + any truncated/unclosed trailing tag fragment
-    s = s.replace(/<[^>]+>/g, '').replace(/<\/?[a-z][^>]*$/i, '');
+    // strip remaining tags (loop to a fixed point) + any truncated trailing fragment
+    s = stripTags(s);
     s = decodeEntities(s);
     // fake bullets (•/◦/▪) at line start → markdown dash
     s = s.split('\n').map((line) => {

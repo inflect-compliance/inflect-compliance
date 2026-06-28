@@ -3,7 +3,6 @@
 import { useRouter } from 'next/navigation';
 
 import { Nis2SelfAssessmentStep } from '@/components/onboarding/Nis2SelfAssessmentStep';
-import { Button } from '@/components/ui/button';
 import { Heading } from '@/components/ui/typography';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useTenantHref } from '@/lib/tenant-context-provider';

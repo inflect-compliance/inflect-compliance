@@ -16,12 +16,6 @@ process.env.REDIS_URL = 'redis://localhost:6379';
 import { cachedAggregationRead } from '@/lib/cache/aggregation-cache';
 import { bumpEntityCacheVersionForScope } from '@/lib/cache/list-cache';
 import { getRedis, disconnectRedis } from '@/lib/redis';
-import type { RequestContext } from '@/app-layer/types';
-
-function ctxFor(scopeKey: string): RequestContext {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return { tenantId: scopeKey, userId: 'u', role: 'EDITOR', permissions: {}, appPermissions: {} } as any;
-}
 
 beforeEach(async () => {
     process.env.REDIS_URL = 'redis://localhost:6379';
