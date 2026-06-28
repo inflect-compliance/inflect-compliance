@@ -62,6 +62,10 @@ const RICH_TEXT_COVERAGE: Readonly<
     },
     Finding: { usecases: ['src/app-layer/usecases/finding.ts'], sanitizer: 'sanitizePlainText' },
     Risk: { usecases: ['src/app-layer/usecases/risk.ts'], sanitizer: 'sanitizePlainText' },
+    // Vuln integration — analyst note on a CVE↔asset link, sanitised at the
+    // linkCveToAsset / updateVulnerabilityStatus write seams (sanitizeOptional
+    // wraps sanitizePlainText for the three-state contract).
+    AssetVulnerability: { usecases: ['src/app-layer/usecases/vulnerability.ts'], sanitizer: 'sanitizePlainText' },
     // RQ3-6 — loss-event narrative + reviewer justification; sanitised
     // at the single createLossEvent write seam before the Epic B
     // middleware persists them.

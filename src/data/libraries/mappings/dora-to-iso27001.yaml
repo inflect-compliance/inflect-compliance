@@ -1,0 +1,134 @@
+# Cross-Framework Mapping Set: DORA (2022) → ISO 27001:2022
+# Data-driven mapping file for the RequirementMapping ingestion pipeline.
+#
+# Maps DORA (Regulation (EU) 2022/2554) entity-facing obligations to ISO/IEC
+# 27001:2022 Annex A controls. ISO 27001 is the most widely used control
+# framework for demonstrating ICT risk management, and many DORA obligations
+# (asset identification, access control, cryptography, backup, incident
+# management, supplier relationships, threat intelligence) map directly onto
+# Annex A controls.
+#
+# Provenance is encoded in each rationale:
+#   [official-overlap] — the control directly implements the DORA obligation.
+#   [curated]          — Inflect judgement on conceptual alignment.
+#
+# Refs use the YAML library ref_ids (DORA.Art.N / A.x.y), which the
+# library-importer writes as FrameworkRequirement.code; the importer resolves
+# them to DB ids via the (framework key, requirement code) pair. Only ISO
+# Annex A controls present in iso27001-2022.yaml are referenced.
+
+urn: urn:inflect:mappingset:dora-to-iso27001
+name: "DORA (2022) → ISO 27001:2022"
+description: >
+  Cross-framework traceability mapping between DORA (EU 2022/2554) entity
+  obligations and ISO/IEC 27001:2022 Annex A controls. Mappings are
+  structural guidance, not compliance guarantees.
+version: 1
+source_framework_ref: DORA-2022
+target_framework_ref: ISO27001-2022
+
+mapping_entries:
+  # ─── ICT Risk Management ─────────────────────────────────────────
+  - source_ref: DORA.Art.5
+    target_ref: A.5.1
+    strength: INTERSECT
+    rationale: "[official-overlap] DORA governance is implemented through information security policies (A.5.1)."
+
+  - source_ref: DORA.Art.6
+    target_ref: A.5.1
+    strength: RELATED
+    rationale: "[curated] The ICT risk management framework is underpinned by the policy set in A.5.1."
+
+  - source_ref: DORA.Art.8
+    target_ref: A.5.9
+    strength: INTERSECT
+    rationale: "[official-overlap] DORA identification maps to inventory of information and other associated assets (A.5.9)."
+
+  - source_ref: DORA.Art.9
+    target_ref: A.5.15
+    strength: INTERSECT
+    rationale: "[official-overlap] DORA protection & prevention includes access control (A.5.15)."
+
+  - source_ref: DORA.Art.9
+    target_ref: A.8.24
+    strength: RELATED
+    rationale: "[curated] DORA encryption requirements map to use of cryptography (A.8.24)."
+
+  - source_ref: DORA.Art.10
+    target_ref: A.8.15
+    strength: INTERSECT
+    rationale: "[official-overlap] DORA detection relies on logging and monitoring (A.8.15)."
+
+  - source_ref: DORA.Art.11
+    target_ref: A.5.26
+    strength: INTERSECT
+    rationale: "[curated] DORA response & recovery aligns with response to information security incidents (A.5.26)."
+
+  - source_ref: DORA.Art.12
+    target_ref: A.8.13
+    strength: EQUAL
+    rationale: "[official-overlap] DORA backup/restoration maps directly to information backup (A.8.13)."
+
+  - source_ref: DORA.Art.13
+    target_ref: A.5.24
+    strength: RELATED
+    rationale: "[curated] Learning and evolving aligns with incident management planning and preparation (A.5.24)."
+
+  # ─── Incident Management & Reporting ─────────────────────────────
+  - source_ref: DORA.Art.17
+    target_ref: A.5.24
+    strength: INTERSECT
+    rationale: "[official-overlap] DORA incident management process maps to incident management planning and preparation (A.5.24)."
+
+  - source_ref: DORA.Art.18
+    target_ref: A.5.24
+    strength: RELATED
+    rationale: "[curated] Incident classification is part of incident management planning (A.5.24)."
+
+  - source_ref: DORA.Art.19
+    target_ref: A.5.26
+    strength: RELATED
+    rationale: "[curated] Major-incident reporting builds on the incident response process (A.5.26)."
+
+  # ─── Resilience Testing ──────────────────────────────────────────
+  - source_ref: DORA.Art.24
+    target_ref: A.8.8
+    strength: INTERSECT
+    rationale: "[official-overlap] DORA resilience testing aligns with management of technical vulnerabilities (A.8.8)."
+
+  - source_ref: DORA.Art.25
+    target_ref: A.8.8
+    strength: INTERSECT
+    rationale: "[curated] Vulnerability assessments and pen tests evidence A.8.8."
+
+  - source_ref: DORA.Art.26
+    target_ref: A.8.8
+    strength: RELATED
+    rationale: "[curated] Threat-led penetration testing extends technical vulnerability management (A.8.8)."
+
+  # ─── Third-Party Risk ────────────────────────────────────────────
+  - source_ref: DORA.Art.28
+    target_ref: A.5.19
+    strength: INTERSECT
+    rationale: "[official-overlap] DORA third-party risk management maps to information security in supplier relationships (A.5.19)."
+
+  - source_ref: DORA.Art.29
+    target_ref: A.5.19
+    strength: RELATED
+    rationale: "[curated] Concentration-risk assessment is part of managing supplier relationships (A.5.19)."
+
+  - source_ref: DORA.Art.30
+    target_ref: A.5.20
+    strength: INTERSECT
+    rationale: "[official-overlap] DORA key contractual provisions map to addressing information security within supplier agreements (A.5.20)."
+
+  - source_ref: DORA.Art.31
+    target_ref: A.5.23
+    strength: RELATED
+    rationale: "[curated] Critical ICT providers are typically cloud providers; A.5.23 governs information security for cloud services."
+
+  # ─── Information Sharing ─────────────────────────────────────────
+  - source_ref: DORA.Art.45
+    target_ref: A.5.7
+    strength: INTERSECT
+    rationale: "[official-overlap] DORA information-sharing arrangements map to threat intelligence (A.5.7)."
