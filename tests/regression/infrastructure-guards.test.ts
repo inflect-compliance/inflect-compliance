@@ -74,8 +74,8 @@ describe('Infrastructure Regression Guards', () => {
             }
         });
 
-        test('exactly 22 scheduled jobs exist', () => {
-            expect(SCHEDULED_JOBS).toHaveLength(22);
+        test('exactly 23 scheduled jobs exist', () => {
+            expect(SCHEDULED_JOBS).toHaveLength(23);
         });
 
         test('scheduled job names match expected set', () => {
@@ -103,6 +103,9 @@ describe('Infrastructure Regression Guards', () => {
                 // control exceptions.
                 'exception-expiry-monitor',
                 'notification-dispatch',
+                // Vuln integration — daily NVD CVE catalog ingestion +
+                // cross-tenant asset-match pass.
+                'nvd-cve-sync',
                 // Business-KPI — daily sweep emitting business.onboarding.abandoned
                 // for tenants idle ≥7 days on an onboarding step.
                 'onboarding-abandonment-sweep',
