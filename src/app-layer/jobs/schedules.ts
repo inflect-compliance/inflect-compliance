@@ -128,6 +128,12 @@ export const SCHEDULED_JOBS: ScheduleDefinition[] = [
         defaultPayload: { dryRun: false },
     },
     {
+        name: 'nvd-cve-sync',
+        pattern: '0 1 * * *',     // daily at 01:00 UTC (before the morning monitors)
+        description: 'Ingest recent CVEs from the NIST NVD 2.0 API into the global catalog, then match against tenant asset CPE data. No-op when NVD_SYNC_ENABLED=0.',
+        defaultPayload: {},
+    },
+    {
         name: 'policy-review-reminder',
         pattern: '0 8 * * *',     // daily at 08:00 UTC
         description: 'Find overdue policies and emit audit events / notifications',

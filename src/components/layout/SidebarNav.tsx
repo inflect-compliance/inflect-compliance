@@ -15,6 +15,7 @@ import {
     Building2,
     AlertTriangle,
     ShieldCheck,
+    ShieldAlert,
     Paperclip,
     FileText,
     ClipboardList,
@@ -92,6 +93,7 @@ export function useNavSections(): NavSectionDef[] {
                 { href: tenantHref('/assets'), label: 'Asset', icon: Building2 },
                 { href: tenantHref('/risks'), label: 'Risk', icon: AlertTriangle },
                 { href: tenantHref('/controls'), label: 'Control', icon: ShieldCheck },
+                { href: tenantHref('/vulnerabilities'), label: 'Vulnerability', icon: ShieldAlert },
             ],
         },
         {
