@@ -106,6 +106,9 @@ describe('Infrastructure Regression Guards', () => {
                 // incident notification deadlines PENDING→DUE→OVERDUE.
                 'incident-notification-deadlines',
                 'notification-dispatch',
+                // Vuln integration — daily NVD CVE catalog ingestion +
+                // cross-tenant asset-match pass.
+                'nvd-cve-sync',
                 // Business-KPI — daily sweep emitting business.onboarding.abandoned
                 // for tenants idle ≥7 days on an onboarding step.
                 'onboarding-abandonment-sweep',

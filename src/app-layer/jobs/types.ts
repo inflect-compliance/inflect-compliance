@@ -528,8 +528,15 @@ export interface OnboardingAbandonmentPayload {
     requestId?: string;
 }
 
+/** NVD CVE sync — daily global CVE catalog ingestion + asset matching. */
+export interface NvdCveSyncPayload {
+    /** Override the first-run backfill window on an empty catalog (days). */
+    backfillDays?: number;
+}
+
 export interface JobPayloadMap {
     'health-check': HealthCheckPayload;
+    'nvd-cve-sync': NvdCveSyncPayload;
     'automation-runner': AutomationRunnerPayload;
     'daily-evidence-expiry': DailyEvidenceExpiryPayload;
     'data-lifecycle': DataLifecyclePayload;
@@ -587,6 +594,15 @@ export const JOB_DEFAULTS: Record<JobName, {
         attempts: 1,
         backoff: { type: 'fixed', delay: 1000 },
         removeOnComplete: 100,
+        removeOnFail: 200,
+    },
+    'nvd-cve-sync': {
+        // One attempt — the incremental cursor (max lastModifiedAt) means the
+        // next daily run resumes from where this one stopped, so a transient
+        // failure self-heals without retry storms against NVD's rate limit.
+        attempts: 1,
+        backoff: { type: 'fixed', delay: 0 },
+        removeOnComplete: 50,
         removeOnFail: 200,
     },
     'automation-runner': {

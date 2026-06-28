@@ -111,6 +111,13 @@ export const ENCRYPTED_FIELDS: Readonly<Record<string, readonly string[]>> = {
     //  `description` omitted — searched via RiskRepository `contains`.
     Risk: ['treatmentNotes', 'threat', 'vulnerability'],
 
+    // ─── Asset vulnerability (CVE↔asset link) ──────────
+    //  Analyst note may describe exploitation status, compensating
+    //  controls, or why a CVE is a false positive on this asset —
+    //  confidential security context. The CVE catalog itself is public
+    //  reference data (Cve table), so only the per-tenant note encrypts.
+    AssetVulnerability: ['note'],
+
     // ─── Loss-event register (RQ3-6) ───────────────────
     //  Loss narratives are confidential business content (customer
     //  data exposed, settlement amounts, vendor reputation): the

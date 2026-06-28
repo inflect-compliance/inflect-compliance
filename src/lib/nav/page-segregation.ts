@@ -124,6 +124,7 @@ export const MAIN_PAGES: readonly string[] = [
     '/tasks',
     '/tests',
     '/vendors',
+    '/vulnerabilities',
 ] as const;
 
 /**
