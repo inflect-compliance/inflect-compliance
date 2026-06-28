@@ -752,6 +752,28 @@ Reviewed at least annually.` },
     }
     console.log(`✅ NIS2 framework + ${nis2Data.length} requirements seeded`);
 
+    // DORA — Digital Operational Resilience Act (Regulation (EU) 2022/2554).
+    // Fixture-driven, mirroring the NIS2 pattern above. DORA is a Regulation
+    // (directly applicable), so kind=REGULATION (vs NIS2's EU_DIRECTIVE).
+    // Requirement codes follow the official article structure (DORA.Art.N),
+    // matching the dora-2022.yaml library ref_ids.
+    const doraData = require('./fixtures/dora_requirements.json') as Array<{ key: string; section: string; sortOrder: number; title: string }>;
+    const dora = await prisma.framework.upsert({
+        where: { key_version: { key: 'DORA', version: '2022/2554' } },
+        update: { name: 'Digital Operational Resilience Act', kind: 'REGULATION', description: 'Regulation (EU) 2022/2554 on digital operational resilience for the financial sector' },
+        create: { key: 'DORA', name: 'Digital Operational Resilience Act', version: '2022/2554', kind: 'REGULATION', description: 'Regulation (EU) 2022/2554 on digital operational resilience for the financial sector' },
+    });
+    const doraReqMap: Record<string, string> = {};
+    for (const req of doraData) {
+        const r = await prisma.frameworkRequirement.upsert({
+            where: { frameworkId_code: { frameworkId: dora.id, code: req.key } },
+            update: { title: req.title, section: req.section, sortOrder: req.sortOrder },
+            create: { frameworkId: dora.id, code: req.key, title: req.title, section: req.section, category: req.section, sortOrder: req.sortOrder },
+        });
+        doraReqMap[req.key] = r.id;
+    }
+    console.log(`✅ DORA framework + ${doraData.length} requirements seeded`);
+
     // NIS2 gap-assessment question set — imported open-data (CC BY 4.0).
     // SEPARATE artifact from the NIS2 framework requirements above: the
     // gap-assessment questions are a self-assessment checklist, not
@@ -940,6 +962,55 @@ Reviewed at least annually.` },
     }
     console.log('✅ NIS2 control templates seeded');
 
+    // ─── DORA Control Templates ───
+    // One starter control per assessable DORA article, linked to its
+    // requirement. Stable codes (DORA-<article>) keep the pack + install
+    // flow idempotent. Rides the generic ControlTemplate/Pack machinery —
+    // no DORA-specific install path.
+    const doraTemplates = [
+        { code: 'DORA-5',  title: 'ICT governance and management-body accountability', reqs: ['DORA.Art.5'] },
+        { code: 'DORA-6',  title: 'ICT risk management framework', reqs: ['DORA.Art.6'] },
+        { code: 'DORA-7',  title: 'ICT systems, protocols and tools', reqs: ['DORA.Art.7'] },
+        { code: 'DORA-8',  title: 'Asset and dependency identification', reqs: ['DORA.Art.8'] },
+        { code: 'DORA-9',  title: 'Protection and prevention controls', reqs: ['DORA.Art.9'] },
+        { code: 'DORA-10', title: 'Anomalous-activity detection', reqs: ['DORA.Art.10'] },
+        { code: 'DORA-11', title: 'Response and recovery / ICT business continuity', reqs: ['DORA.Art.11'] },
+        { code: 'DORA-12', title: 'Backup, restoration and recovery procedures', reqs: ['DORA.Art.12'] },
+        { code: 'DORA-13', title: 'Learning and evolving (post-incident review)', reqs: ['DORA.Art.13'] },
+        { code: 'DORA-14', title: 'Crisis communication', reqs: ['DORA.Art.14'] },
+        { code: 'DORA-16', title: 'Simplified ICT risk management framework', reqs: ['DORA.Art.16'] },
+        { code: 'DORA-17', title: 'ICT-related incident management process', reqs: ['DORA.Art.17'] },
+        { code: 'DORA-18', title: 'Incident classification', reqs: ['DORA.Art.18'] },
+        { code: 'DORA-19', title: 'Major-incident reporting to competent authority', reqs: ['DORA.Art.19'] },
+        { code: 'DORA-23', title: 'Payment-related operational/security incident handling', reqs: ['DORA.Art.23'] },
+        { code: 'DORA-24', title: 'Digital operational resilience testing programme', reqs: ['DORA.Art.24'] },
+        { code: 'DORA-25', title: 'Testing of ICT tools and systems', reqs: ['DORA.Art.25'] },
+        { code: 'DORA-26', title: 'Threat-led penetration testing (TLPT)', reqs: ['DORA.Art.26'] },
+        { code: 'DORA-27', title: 'TLPT tester suitability and independence', reqs: ['DORA.Art.27'] },
+        { code: 'DORA-28', title: 'ICT third-party risk strategy and Register of Information', reqs: ['DORA.Art.28'] },
+        { code: 'DORA-29', title: 'ICT concentration-risk assessment', reqs: ['DORA.Art.29'] },
+        { code: 'DORA-30', title: 'Key contractual provisions for ICT services', reqs: ['DORA.Art.30'] },
+        { code: 'DORA-31', title: 'Critical ICT third-party provider tracking', reqs: ['DORA.Art.31'] },
+        { code: 'DORA-45', title: 'Cyber threat information-sharing arrangements', reqs: ['DORA.Art.45'] },
+    ];
+    for (const t of doraTemplates) {
+        const existing = await prisma.controlTemplate.findUnique({ where: { code: t.code } });
+        if (!existing) {
+            const tmpl = await prisma.controlTemplate.create({
+                data: { code: t.code, title: t.title, category: 'DORA', defaultFrequency: 'QUARTERLY' },
+            });
+            for (const task of defaultTasks) {
+                await prisma.controlTemplateTask.create({ data: { templateId: tmpl.id, title: task.title, description: task.description } });
+            }
+            for (const rk of t.reqs) {
+                if (doraReqMap[rk]) {
+                    await prisma.controlTemplateRequirementLink.create({ data: { templateId: tmpl.id, requirementId: doraReqMap[rk] } }).catch(() => { });
+                }
+            }
+        }
+    }
+    console.log('✅ DORA control templates seeded');
+
     // ─── ISO 9001 Control Templates ───
     const iso9001Templates = [
         { code: 'QMS-CTX', title: 'Organizational context determination', reqs: ['4.1', '4.2'] },
@@ -1084,6 +1155,20 @@ Reviewed at least annually.` },
         await prisma.packTemplateLink.upsert({
             where: { packId_templateId: { packId: nis2Pack.id, templateId: tmpl.id } },
             create: { packId: nis2Pack.id, templateId: tmpl.id }, update: {},
+        });
+    }
+
+    // DORA Pack
+    const doraTmpls = await prisma.controlTemplate.findMany({ where: { code: { startsWith: 'DORA-' } } });
+    const doraPack = await prisma.frameworkPack.upsert({
+        where: { key: 'DORA_BASELINE' },
+        update: { name: 'DORA Baseline Pack', frameworkId: dora.id, version: '2022/2554' },
+        create: { key: 'DORA_BASELINE', name: 'DORA Baseline Pack', frameworkId: dora.id, version: '2022/2554', description: 'DORA digital operational resilience baseline controls across the five pillars.' },
+    });
+    for (const tmpl of doraTmpls) {
+        await prisma.packTemplateLink.upsert({
+            where: { packId_templateId: { packId: doraPack.id, templateId: tmpl.id } },
+            create: { packId: doraPack.id, templateId: tmpl.id }, update: {},
         });
     }
 
