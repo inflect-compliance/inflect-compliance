@@ -105,6 +105,9 @@ const LEGACY_LUCIDE_USERS = new Set<string>([
     'src/app/t/[tenantSlug]/(app)/tasks/filter-defs.ts',
     'src/app/t/[tenantSlug]/(app)/tests/runs/[runId]/page.tsx',
     'src/app/t/[tenantSlug]/(app)/vendors/filter-defs.ts',
+    // FilterDefInput.icon is typed `LucideIcon`; no Nucleo equivalent fits the
+    // type contract — same precedent as every other *filter-defs.ts here.
+    'src/app/t/[tenantSlug]/(app)/vulnerabilities/filter-defs.ts',
     'src/app/t/[tenantSlug]/(app)/vendors/VendorsClient.tsx',
     'src/components/command-palette/command-palette.tsx',
     'src/components/command-palette/use-palette-commands.ts',
