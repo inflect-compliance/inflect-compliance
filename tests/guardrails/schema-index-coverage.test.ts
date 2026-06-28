@@ -363,6 +363,13 @@ const LIST_QUERY_INDEXES: readonly CompositeIndex[] = [
 // curated composite index is needed."
 
 const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
+    // Vuln integration — listVulnerabilities filters by tenantId (+ optional
+    // status / assetId), ordered by the related Cve.cvssScore. Covered by
+    // @@index([tenantId, status]) + @@index([tenantId, assetId]) (status /
+    // assetId are the leading filters under the RLS-bound tenantId); the
+    // cross-table cvssScore sort is a small in-page sort. Bounded take ≤500.
+    AssetVulnerability:
+        'listVulnerabilities filters by tenantId (+status/assetId) — covered by @@index([tenantId, status]) / @@index([tenantId, assetId]); cvssScore sort is cross-table, bounded take ≤500.',
     // Policy-template mapping — linkPolicyControls reads existing links by
     // policyId (+ controlId in-filter) to dedupe before createMany; covered
     // by @@index([tenantId, policyId]) (policyId is the leading filter under

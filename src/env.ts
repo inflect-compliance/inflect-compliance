@@ -223,6 +223,15 @@ export const env = createEnv({
         // Kill-switch for debugging a misbehaving SIEM without redeploy.
         AUDIT_STREAM_RETRY_ENABLED: z.string().optional(),
 
+        // NVD CVE ingestion (vuln integration).
+        // NVD_SYNC_ENABLED='0' disables the daily nvd-cve-sync job — for
+        // air-gapped deployments that cannot reach services.nvd.nist.gov.
+        // Anything else (or unset) keeps it on.
+        NVD_SYNC_ENABLED: z.enum(['0', '1']).optional(),
+        // Optional NVD API key. Without it NVD throttles to ~5 req / 30s;
+        // with it, ~50 req / 30s. The sync paces itself to respect both.
+        NVD_API_KEY: z.string().optional(),
+
         // Epic 1, PR 2 — Platform-admin API key.
         // Optional platform-scoped secret for the tenant-creation endpoint
         // (POST /api/admin/tenants). Keep out of tenant env — inject via
@@ -342,6 +351,8 @@ export const env = createEnv({
         AI_RISK_PLAN_REQUIRED: process.env.AI_RISK_PLAN_REQUIRED,
 
         AUDIT_STREAM_RETRY_ENABLED: process.env.AUDIT_STREAM_RETRY_ENABLED,
+        NVD_SYNC_ENABLED: process.env.NVD_SYNC_ENABLED,
+        NVD_API_KEY: process.env.NVD_API_KEY,
         PLATFORM_ADMIN_API_KEY: process.env.PLATFORM_ADMIN_API_KEY,
         PLATFORM_ADMIN_API_KEY_PREVIOUS: process.env.PLATFORM_ADMIN_API_KEY_PREVIOUS,
         NOTIFICATIONS_TZ: process.env.NOTIFICATIONS_TZ,
