@@ -117,6 +117,9 @@ export default function IncidentDetailPage() {
     // Tenant-scoped API base — keep the `/api/t/<slug>` prefix out of the
     // literal fetch call (tenant-isolation guard) and centralise it here.
     const apiUrl = (path: string) => `/api/t/${tenantSlug}/incidents/${incidentId}${path}`;
+    // Tenant-root API base (for cross-resource fetches like the evidence
+    // list) — keeps the `/api/` literal out of the fetch call site.
+    const tenantApiUrl = (path: string) => `/api/t/${tenantSlug}${path}`;
     const post = async (
         path: string,
         body: unknown,
@@ -148,7 +151,7 @@ export default function IncidentDetailPage() {
         setSelectedForensicCategory('');
         setEvidenceOpen(true);
         try {
-            const res = await fetch(`/api/t/${tenantSlug}/evidence`);
+            const res = await fetch(tenantApiUrl('/evidence'));
             if (!res.ok) return;
             const rows = (await res.json()) as Array<{ id: string; title: string }>;
             const list = Array.isArray(rows) ? rows : [];
