@@ -8,8 +8,10 @@
  * to the SSR-fetched rows.
  */
 import { createTypedFilterDefs, optionsFromEnum } from '@/components/ui/filter/filter-definitions';
-import { CircleDotted } from '@/components/ui/icons/nucleo/circle-dotted';
-import { ShieldAlert } from '@/components/ui/icons/nucleo/shield-alert';
+// FilterDefInput.icon is typed `LucideIcon` (the filter platform hasn't
+// migrated to Nucleo), so filter-defs use lucide-react — same as every other
+// *filter-defs.ts. This file is allowlisted in tests/guards/no-lucide.test.ts.
+import { CircleDot, ShieldAlert } from 'lucide-react';
 
 export const VULN_STATUS_LABELS = {
     OPEN: 'Open',
@@ -31,7 +33,7 @@ const STATIC_DEFS = {
         label: 'Status',
         description: 'Remediation status of the vulnerability.',
         group: 'Attributes',
-        icon: CircleDotted,
+        icon: CircleDot,
         options: optionsFromEnum(VULN_STATUS_LABELS),
         multiple: true,
         resetBehavior: 'clearable',
