@@ -138,4 +138,28 @@ describe('policy review workflow — detail page', () => {
     it('renders the evidence-to-retain checklist', () => {
         expect(page).toMatch(/PolicyEvidenceChecklist/);
     });
+
+    it('keys the version "Published" badge off lifecycle status, not currentVersionId', () => {
+        // Regression guard: a fresh draft / template-created policy has
+        // currentVersionId set (so the Current tab has content) but
+        // status DRAFT. The Versions tab must NOT call that "Published".
+        expect(page).toMatch(/isPublishedVersion\s*=\s*isCurrentVersion\s*&&\s*policy\.status === 'PUBLISHED'/);
+        // The publish badge + the Request Approval / Publish gating all
+        // hang off isPublishedVersion, never a bare currentVersionId check.
+        expect(page).not.toMatch(/isCurrentPublished/);
+        expect(page).toMatch(/isPublishedVersion && <StatusBadge variant="success">Published/);
+    });
+
+    it('surfaces the next publication step from the Current tab', () => {
+        // DRAFT / APPROVED actions live in the Versions tab — the Current
+        // view points the user there so the flow is discoverable.
+        expect(page).toMatch(/goto-versions-btn/);
+        expect(page).toMatch(/setTab\('versions'\)/);
+    });
+
+    it('clarifies that "Mark reviewed" does not change publication status', () => {
+        expect(page).toMatch(/does not change the publication status/);
+        // Success feedback so the (otherwise subtle) action is visible.
+        expect(page).toMatch(/toast\.success\(/);
+    });
 });
