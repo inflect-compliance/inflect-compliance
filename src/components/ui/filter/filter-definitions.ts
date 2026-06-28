@@ -29,6 +29,7 @@
 import { LucideIcon } from "lucide-react";
 import type {
   Filter,
+  FilterIcon,
   FilterOption,
   FilterResetBehavior,
   FilterValueCodec,
@@ -53,8 +54,8 @@ export interface FilterDefInput {
   group?: string;
   /** Clear/reset behavior. Default: `clearable`. */
   resetBehavior?: FilterResetBehavior;
-  /** Lucide icon component. */
-  icon: LucideIcon;
+  /** Filter icon — a Lucide icon, a Nucleo SVG component, or any node. */
+  icon: FilterIcon;
   /** Filter options. Pass `null` for async-loaded options. */
   options: FilterOption[] | null;
   /** Filter type. Default: "default". */

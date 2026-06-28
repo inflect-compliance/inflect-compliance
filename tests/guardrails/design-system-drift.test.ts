@@ -261,10 +261,15 @@ describe('New page token discipline', () => {
         //     reuses <Card>/<KPIStat>/<StatusBadge>/<DashboardLayout>);
         //     in the unmigrated tally only because the surface is new
         //     and not yet promoted to MIGRATED_PAGES.
+        //   - 108 (+2): #1309 NVD CVE feature — vulnerabilities/page.tsx
+        //     + vulnerabilities/VulnerabilitiesClient.tsx. New surfaces
+        //     (built on EntityListPage + FilterToolbar + DataTable) in
+        //     the unmigrated tally only because they aren't yet promoted
+        //     to MIGRATED_PAGES; a #1309 follow-up.
         // Each increment names the epic + page + reason; promotion
         // to MIGRATED_PAGES is the path forward, never silent
         // floor-bumping.
-        expect(unmigrated.length).toBeLessThanOrEqual(106);
+        expect(unmigrated.length).toBeLessThanOrEqual(108);
     });
 
     it('migrated page count is at least 4', () => {
