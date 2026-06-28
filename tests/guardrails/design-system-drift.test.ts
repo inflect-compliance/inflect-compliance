@@ -61,6 +61,14 @@ const MIGRATED_PAGES = [
     'frameworks/[frameworkKey]/readiness/Nis2ReadinessClient.tsx',
     'frameworks/[frameworkKey]/self-assessment/page.tsx',
     'frameworks/[frameworkKey]/self-assessment/Nis2SelfAssessmentResume.tsx',
+    // NIS2 Article 23 incident-response surfaces — token-clean from the
+    // start (semantic tokens + EntityListPage/EntityDetailLayout/
+    // StatusBadge/KpiFilterCard/Modal/FormField only; no raw color
+    // utilities, no legacy btn/badge CSS). Promoted on landing rather
+    // than parked in the unmigrated tally.
+    'incidents/page.tsx',
+    'incidents/IncidentsClient.tsx',
+    'incidents/[incidentId]/page.tsx',
 ];
 
 const RAW_COLOR_RE = /\b(?:text|bg|border)-(?:slate|gray|neutral|zinc)-\d{2,3}\b/g;

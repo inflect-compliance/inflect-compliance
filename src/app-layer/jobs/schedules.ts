@@ -217,5 +217,12 @@ export const SCHEDULED_JOBS: ScheduleDefinition[] = [
             'Epic G-2 — scan ControlTestPlan rows with automationType IN (SCRIPT, INTEGRATION) and nextRunAt <= now, enqueue per-plan control-test-runner jobs.',
         defaultPayload: {},
     },
+    {
+        name: 'incident-notification-deadlines',
+        pattern: '0 * * * *',     // hourly — a 24h Article 23 deadline needs sub-day granularity
+        description:
+            'NIS2 Article 23 deadline clock — flip incident notification deadlines PENDING→DUE→OVERDUE and fire owner + admin alerts. Runs hourly because a 24h early-warning deadline needs sub-day granularity.',
+        defaultPayload: {},
+    },
 ];
 

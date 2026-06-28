@@ -71,6 +71,10 @@ const PRIVILEGED_ROOTS: ReadonlyArray<{
         relPath: 'src/app/api/t/[tenantSlug]/security',
         why: 'Tenant security surface — MFA policy mutations + admin-driven session revocation.',
     },
+    {
+        relPath: 'src/app/api/t/[tenantSlug]/incidents',
+        why: 'NIS2 Article 23 incident response — privileged security-team mutations (incidents.manage) + member-visibility reads (incidents.view).',
+    },
 ];
 
 /**

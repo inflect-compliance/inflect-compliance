@@ -245,6 +245,28 @@ export const ROUTE_PERMISSIONS: readonly RoutePermissionRule[] = [
             'Creating, listing, and revoking pending tenant invites. ' +
             'Changes who can join the tenant — gated under admin.members.',
     },
+
+    // ── NIS2 Article 23 incident response ────────────────────────────
+    // Mutations (create, advance phase, mark reportable, file a
+    // regulatory notification, link controls, append timeline) are a
+    // privileged security-team action — gated under `incidents.manage`.
+    {
+        path: new RegExp(`^${T}\\/incidents(\\/.*)?$`),
+        methods: ['POST', 'PUT', 'PATCH', 'DELETE'],
+        permission: 'incidents.manage',
+        note:
+            'Create / advance / mark-reportable / submit-notification / ' +
+            'link-controls / timeline writes — a privileged security-team ' +
+            'action, not a general editor action. ADMIN/OWNER only.',
+    },
+    // Reads (list + detail + deadlines + timeline) are visible to every
+    // member for compliance visibility — gated under `incidents.view`.
+    {
+        path: new RegExp(`^${T}\\/incidents(\\/.*)?$`),
+        methods: ['GET'],
+        permission: 'incidents.view',
+        note: 'List / detail incident reads — compliance visibility for every member.',
+    },
 ] as const;
 
 // ─── Resolver ───────────────────────────────────────────────────────

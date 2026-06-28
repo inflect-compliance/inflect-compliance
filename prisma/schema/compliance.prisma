@@ -1616,6 +1616,103 @@ model FindingEvidence {
   @@index([tenantId, evidenceId])
 }
 
+// ─── NIS2 Article 23 incident response ──────────────────────────────
+// A live security incident (distinct from Finding, which is an AUDIT
+// observation). The detectedAt clock drives the Article 23 regulatory
+// notification deadlines (24h / 72h / 1 month). Methodology adapted
+// (CC BY 4.0) from Kshreenath/NIS2-Checklist — Paolo Carner / BARE
+// Consulting. See docs/implementation-notes/2026-06-28-incident-response.md.
+model Incident {
+  id              String                  @id @default(cuid())
+  tenantId        String
+  // Tenant-scoped human reference, e.g. INC-2026-001.
+  reference       String
+  title           String
+  // Free-text incident description. Encrypted at rest (Epic B) +
+  // sanitized on write (Epic D).
+  description     String
+  severity        IncidentSeverity
+  phase           IncidentPhase           @default(DETECTION)
+  // 'RANSOMWARE' | 'DATA_BREACH' | 'DDOS' | 'UNAUTHORIZED_ACCESS' | 'OTHER'
+  incidentType    String
+  // The clock starts here — drives the 24h/72h/1-month deadlines.
+  detectedAt      DateTime
+  // Whether NIS2 Article 23 notification is required. SUGGESTED from
+  // severity (HIGH/CRITICAL) but never auto-asserted — a human confirms
+  // (the tenant's DPO/legal owns the legal determination).
+  reportable      Boolean                 @default(false)
+  reportedAt      DateTime?
+  containedAt     DateTime?
+  resolvedAt      DateTime?
+  // Incident commander (a tenant member). Plain userId — no FK relation,
+  // mirroring Finding.verifiedBy / deletedByUserId.
+  ownerUserId     String?
+  // Art.21(2) controls implicated by this incident.
+  linkedControlIds String[]
+  createdByUserId String
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  tenant          Tenant                  @relation(fields: [tenantId], references: [id])
+  notifications   IncidentNotification[]
+  timeline        IncidentTimelineEntry[]
+
+  @@unique([id, tenantId])
+  @@unique([tenantId, reference])
+  @@index([tenantId])
+  @@index([tenantId, phase])
+  @@index([tenantId, severity, detectedAt])
+  @@index([tenantId, ownerUserId])
+}
+
+// The Article 23 notification clock — one row per required notification
+// kind. Auto-created (3 rows) when an incident is marked reportable; the
+// deadline derives from the incident's detectedAt.
+model IncidentNotification {
+  id            String                     @id @default(cuid())
+  tenantId      String
+  incidentId    String
+  kind          IncidentNotificationKind
+  // detectedAt + 24h / +72h / +1 month.
+  dueAt         DateTime
+  status        IncidentNotificationStatus @default(PENDING)
+  submittedAt   DateTime?
+  // Authority case ref returned on submission (plaintext — load-bearing).
+  submissionRef String?
+  // What was submitted (the report text). Encrypted at rest (Epic B) +
+  // sanitized on write (Epic D).
+  submissionNote String?
+  createdAt     DateTime                   @default(now())
+  updatedAt     DateTime                   @updatedAt
+  incident      Incident                   @relation(fields: [incidentId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  tenant        Tenant                     @relation(fields: [tenantId], references: [id])
+
+  @@unique([incidentId, kind])
+  @@index([tenantId])
+  @@index([tenantId, incidentId])
+  @@index([tenantId, status, dueAt])
+}
+
+// Append-only incident timeline (who did what, when) — the forensic +
+// narrative record. Distinct from AuditLog (this is incident-narrative,
+// not the hash-chained system audit).
+model IncidentTimelineEntry {
+  id          String        @id @default(cuid())
+  tenantId    String
+  incidentId  String
+  at          DateTime      @default(now())
+  // Plain userId of the actor — no FK relation.
+  actorUserId String?
+  // Free-text narrative entry. Encrypted at rest (Epic B) + sanitized
+  // on write (Epic D).
+  entry       String
+  phaseAtTime IncidentPhase
+  incident    Incident      @relation(fields: [incidentId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  tenant      Tenant        @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, incidentId, at])
+}
+
 model Framework {
   id                  String                  @id @default(cuid())
   key                 String                  @unique
