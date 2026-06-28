@@ -110,6 +110,7 @@ model Tenant {
   createdAt                         DateTime                           @default(now())
   updatedAt                         DateTime                           @updatedAt
   assets                            Asset[]
+  trustCenter                       TrustCenter?
   assetRiskLinks                    AssetRiskLink[]
   audits                            Audit[]
   auditCycles                       AuditCycle[]

@@ -26,6 +26,11 @@ const PUBLIC_PATH_PREFIXES = [
     '/api/audit/shared', // Shared audit pack API endpoint (token-gated)
     '/vendor-assessment/',     // Epic G-3 — external respondent page (token-gated)
     '/api/vendor-assessment/', // Epic G-3 — external respondent API (token-gated)
+    // Trust Center — INTENTIONALLY public, unauthenticated compliance page at
+    // /trust/<slug>. The page reads ONLY the curated TrustCenter row (enabled
+    // ones), never tenant data. Middleware edge-rate-limits /trust/ BEFORE
+    // this allow (see src/middleware.ts) to protect against scraping/DoS.
+    '/trust/',
     '/_next',            // Next.js internals
 ];
 

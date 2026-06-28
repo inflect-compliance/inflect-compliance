@@ -61,6 +61,21 @@ import { shouldBlockAdminRequest } from '@/lib/security/admin-session-guard';
 async function authMiddleware(req: NextRequest): Promise<NextResponse> {
     const { pathname } = req.nextUrl;
 
+    // ── 0. Public Trust Center — rate-limit at the edge, THEN allow. ──
+    // /trust/<slug> is intentionally public + unauthenticated + indexable.
+    // Because it's public it's a scraping/DoS target, so it is edge-rate-
+    // limited (keyed per-IP + per-slug) BEFORE the public-path allow below.
+    // The page itself reads ONLY the curated TrustCenter row — never tenant
+    // data (enforced by tests/guardrails/trust-center-coverage.test.ts).
+    if (pathname.startsWith('/trust/')) {
+        const slug = pathname.split('/')[2] ?? '';
+        const rl = await checkApiReadRateLimit(req, null, `trust:${slug}`);
+        if (!rl.ok && rl.response) {
+            return rl.response;
+        }
+        return NextResponse.next();
+    }
+
     // ── 1. Allow public paths (login, auth callbacks, static, etc.) ──
     if (isPublicPath(pathname)) {
         return NextResponse.next();

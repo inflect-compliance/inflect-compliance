@@ -5,7 +5,7 @@ await legal / compliance / finance sign-off (see [Open questions](#open-question
 **Owners:** Engineering (mechanism + inventory) · Compliance/Legal (regulatory
 periods + GDPR) · Finance (financial-record periods) · Product (tenant tiers).
 
-This document categorizes **every one of the 147 Prisma models**, declares the
+This document categorizes **every one of the 148 Prisma models**, declares the
 retention behaviour that exists *today*, names who owns each undecided number,
 and enumerates the cleanup machinery. It is the companion to
 [`docs/encryption-data-protection.md`](encryption-data-protection.md) — that doc
@@ -25,12 +25,12 @@ covers confidentiality *at rest*; this one covers *lifecycle*.
   supported today (**it is not**, beyond `User.deletedAt` soft-delete) and what
   landing it would require — it does not implement it.
 
-## Category breakdown (147 models)
+## Category breakdown (148 models)
 
 | Category | Count | One-line posture |
 |----------|-------|------------------|
 | Business record | 65 | Compliance domain (Risk/Control/Policy/Audit/Vendor/…). Retained indefinitely while the tenant is active; soft-delete + 90-day purge on the 12 `SOFT_DELETE_MODELS`; `retentionUntil` sweep on 8. |
-| Configuration | 38 | Tenant/org structure, templates, framework reference data, integration + security settings. Lives with the tenant; purged on tenant deletion. |
+| Configuration | 39 | Tenant/org structure, templates, framework reference data, integration + security settings. Lives with the tenant; purged on tenant deletion. |
 | Operational | 24 | Notifications, executions, snapshots, key-sequences, onboarding. No TTL today — prime candidates for time-boxed pruning. |
 | Security ephemeral | 13 | Tokens / sessions / credentials. `expiresAt`-driven; security lifetime, **not** a data-retention conversation. |
 | Regulatory artefact | 3 | `AuditLog`, `OrgAuditLog`, `ReadinessSnapshot` — immutable + hash-chained. Retention is a **legal** decision; we do not delete by default. |
@@ -176,6 +176,7 @@ a `userId` but stores no contact PII).
 | `TenantScimToken` | Security ephemeral | No | None today — cascade on parent/tenant delete only | DEFINED — expiry-driven |
 | `TenantSecuritySettings` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
 | `TreatmentMilestone` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `TrustCenter` | Configuration | No | Cascade on tenant delete; `enabled=false` by default (no public page until published) | Lives with tenant; purged on tenant deletion. Public projection only — no PII unless the tenant types it |
 | `User` | PII subject | Yes | None today — cascade on parent/tenant delete only | UNDEFINED — GDPR erasure question |
 | `UserIdentityLink` | Security ephemeral | No | None today — cascade on parent/tenant delete only | DEFINED — expiry-driven |
 | `UserMfaEnrollment` | Security ephemeral | No | None today — cascade on parent/tenant delete only | DEFINED — expiry-driven |
