@@ -10,7 +10,8 @@
  */
 import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus } from '@/components/ui/icons/nucleo/plus';
+import { Trash } from '@/components/ui/icons/nucleo/trash';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,6 +20,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 import { useToast } from '@/components/ui/hooks';
 
 interface Framework { key: string; statusLabel: string; badge?: string }
@@ -111,6 +113,7 @@ export function TrustCenterAdminClient({ tenantSlug, initial, canPublish }: Prop
     return (
         <div className="space-y-section">
             <div className="space-y-default">
+                <BackAffordance override={{ href: `/t/${tenantSlug}/admin`, label: 'Admin' }} />
                 <PageBreadcrumbs
                     items={[
                         { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
@@ -153,7 +156,7 @@ export function TrustCenterAdminClient({ tenantSlug, initial, canPublish }: Prop
                                 <div key={i} className="flex gap-tight">
                                     <Input value={f.key} onChange={(e) => setFrameworks((p) => p.map((x, j) => j === i ? { ...x, key: e.target.value } : x))} placeholder="SOC 2" />
                                     <Input value={f.statusLabel} onChange={(e) => setFrameworks((p) => p.map((x, j) => j === i ? { ...x, statusLabel: e.target.value } : x))} placeholder="Type II — current" />
-                                    <Button variant="ghost" size="icon" aria-label="Remove framework" onClick={() => setFrameworks((p) => p.filter((_, j) => j !== i))}><Trash2 className="h-4 w-4" /></Button>
+                                    <Button variant="ghost" size="icon" aria-label="Remove framework" onClick={() => setFrameworks((p) => p.filter((_, j) => j !== i))}><Trash className="h-4 w-4" /></Button>
                                 </div>
                             ))}
                             <Button variant="secondary" size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => setFrameworks((p) => [...p, { key: '', statusLabel: '' }])}>Framework</Button>
@@ -166,7 +169,7 @@ export function TrustCenterAdminClient({ tenantSlug, initial, canPublish }: Prop
                                 <div key={i} className="flex gap-tight">
                                     <Input value={d.label} onChange={(e) => setDocuments((p) => p.map((x, j) => j === i ? { ...x, label: e.target.value } : x))} placeholder="Security whitepaper" />
                                     <Input value={d.url} onChange={(e) => setDocuments((p) => p.map((x, j) => j === i ? { ...x, url: e.target.value } : x))} placeholder="https://…" />
-                                    <Button variant="ghost" size="icon" aria-label="Remove document" onClick={() => setDocuments((p) => p.filter((_, j) => j !== i))}><Trash2 className="h-4 w-4" /></Button>
+                                    <Button variant="ghost" size="icon" aria-label="Remove document" onClick={() => setDocuments((p) => p.filter((_, j) => j !== i))}><Trash className="h-4 w-4" /></Button>
                                 </div>
                             ))}
                             <Button variant="secondary" size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => setDocuments((p) => [...p, { label: '', url: '' }])}>Document</Button>
