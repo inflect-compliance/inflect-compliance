@@ -155,7 +155,11 @@ const MIN_SECONDARY_TO_PRIMARY_RATIO = 0.9;
 // confirm-and-link modal (TemplateControlSuggestModal). Its "Link N
 // controls" confirm is the dialog's earned primary, paired with a ghost
 // "Skip". +1 primary.
-const MAX_PRIMARY_COUNT = 128;
+// 2026-06-28 — bumped 128 → 129 for the Trust Center admin compose page
+// (admin/trust-center). Its "Save" is the genuine page primary CTA, paired
+// with secondary "Publish…"/"Unpublish" + ghost row-remove affordances, so
+// the secondary:primary ratio still rises. +1 primary. Measured = 129.
+const MAX_PRIMARY_COUNT = 129;
 
 describe("primary:secondary ratio direction", () => {
     const counts = (() => {

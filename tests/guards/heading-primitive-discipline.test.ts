@@ -60,6 +60,11 @@ const ALLOWLIST: AllowlistEntry[] = [
         reason:
             'External public surface (vendor-facing assessment, no auth, no app shell). Same allowlist rationale as Roadmap-4 PR-1 no-raw-palette-greys — the surface is intentionally on a separate visual ledger and uses raw Tailwind palette classes throughout.',
     },
+    {
+        file: 'src/app/trust/[slug]/page.tsx',
+        reason:
+            'External public surface (Trust Center, /trust/<slug>, no auth, no app shell). Intentionally minimal markup on a separate visual ledger from the in-app type scale — and deliberately import-isolated from app primitives (see trust-center-coverage.test.ts), so it renders semantic-token HTML directly rather than pulling in the <Heading> primitive.',
+    },
 ];
 
 const ALLOWLIST_PATHS = new Set(ALLOWLIST.map((e) => e.file));

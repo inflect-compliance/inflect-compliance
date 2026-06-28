@@ -101,6 +101,11 @@ describe('Structural Guard: Tenant Isolation Conventions', () => {
             // assessment row's tenantId; the page lives outside /t/ by
             // design. Mirrors the audit/shared shape.
             'vendor-assessment',
+            // Trust Center — INTENTIONALLY public, unauthenticated compliance
+            // page (/trust/<slug>). Lives outside /t/ by design and reads ONLY
+            // the curated TrustCenter projection — never tenant data (import
+            // isolation enforced by trust-center-coverage.test.ts).
+            'trust',
         ]);
 
         // Get immediate children of app/ that are page directories

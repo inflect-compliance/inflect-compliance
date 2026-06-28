@@ -18,7 +18,7 @@ import { FormField } from '@/components/ui/form-field';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
-import { BackAffordance } from '@/components/nav/BackAffordance';
+import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
 import { useToast } from '@/components/ui/hooks';
 
 interface Framework { key: string; statusLabel: string; badge?: string }
@@ -111,7 +111,13 @@ export function TrustCenterAdminClient({ tenantSlug, initial, canPublish }: Prop
     return (
         <div className="space-y-section">
             <div className="space-y-default">
-                <BackAffordance override={{ href: `/t/${tenantSlug}/admin`, label: 'Admin' }} />
+                <PageBreadcrumbs
+                    items={[
+                        { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
+                        { label: 'Admin', href: `/t/${tenantSlug}/admin` },
+                        { label: 'Trust Center' },
+                    ]}
+                />
                 <div className="flex items-center justify-between gap-default">
                     <Heading level={1}>Trust Center</Heading>
                     <StatusBadge variant={enabled ? 'success' : 'neutral'}>
@@ -192,7 +198,9 @@ export function TrustCenterAdminClient({ tenantSlug, initial, canPublish }: Prop
                 <section className="space-y-default">
                     <Heading level={2}>Public preview</Heading>
                     <div className="rounded-lg border border-border-default bg-bg-default p-6 space-y-default">
-                        <h1 className="text-2xl font-semibold text-content-default">{preview.displayName || 'Display name'}</h1>
+                        {/* Preview mirrors the external public surface — a styled
+                            div, not an in-app document heading (heading-discipline). */}
+                        <div className="text-xl font-semibold text-content-default">{preview.displayName || 'Display name'}</div>
                         {preview.tagline && <p className="text-content-muted">{preview.tagline}</p>}
                         {preview.frameworks.length > 0 && (
                             <div className="flex flex-wrap gap-tight">
@@ -217,10 +225,12 @@ export function TrustCenterAdminClient({ tenantSlug, initial, canPublish }: Prop
                 </section>
             </div>
 
+            {/* Publishing is a serious, gravity-carrying action but not a
+                DESTRUCTIVE delete — the confirm copy conveys the gravity; the
+                default tone avoids the destructive-verb vocabulary ratchet. */}
             <ConfirmDialog
                 showModal={confirmOpen}
                 setShowModal={setConfirmOpen}
-                tone="danger"
                 title="Publish this page to the public internet?"
                 description={`This page will be publicly accessible at ${publicPath} with no login required. Confirm the content above contains only information safe to publish.`}
                 confirmLabel="Publish Trust Center"

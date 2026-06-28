@@ -49,6 +49,12 @@ const EXEMPT_FILES = new Set<string>([
   "src/app/vendor-assessment/[assessmentId]/VendorAssessmentClient.tsx",
   "src/app/t/[tenantSlug]/(app)/reports/soa/print/SoAPrintView.tsx",
   "src/components/onboarding/OnboardingWizard.tsx",
+  // External public surface (Trust Center, /trust/<slug>, no auth, no app
+  // shell). Deliberately import-isolated from app primitives (see
+  // trust-center-coverage.test.ts), so it renders semantic-token HTML
+  // headings directly rather than pulling in the <Heading> primitive. Same
+  // separate-visual-ledger rationale as the vendor-assessment surface above.
+  "src/app/trust/[slug]/page.tsx",
 ]);
 
 const EXEMPT_DIR_NAMES = new Set<string>([
