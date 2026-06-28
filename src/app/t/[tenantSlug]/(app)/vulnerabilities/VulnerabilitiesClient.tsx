@@ -10,7 +10,8 @@
  */
 import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldAlert, ExternalLink } from 'lucide-react';
+import { ShieldAlert } from '@/components/ui/icons/nucleo/shield-alert';
+import { ArrowUpRight } from '@/components/ui/icons/nucleo/arrow-up-right';
 import { EntityListPage } from '@/components/layout/EntityListPage';
 import { FilterProvider, useFilterContext, useFilters } from '@/components/ui/filter';
 import type { ColumnDef } from '@/components/ui/table';
@@ -116,7 +117,7 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
                         className="inline-flex items-center gap-1 font-medium text-content-link hover:underline"
                     >
                         {cve.id}
-                        <ExternalLink className="h-3 w-3 shrink-0" />
+                        <ArrowUpRight className="h-3 w-3 shrink-0" />
                     </a>
                 );
             },

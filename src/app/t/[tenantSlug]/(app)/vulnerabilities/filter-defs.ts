@@ -8,7 +8,8 @@
  * to the SSR-fetched rows.
  */
 import { createTypedFilterDefs, optionsFromEnum } from '@/components/ui/filter/filter-definitions';
-import { CircleDot, ShieldAlert } from 'lucide-react';
+import { CircleDotted } from '@/components/ui/icons/nucleo/circle-dotted';
+import { ShieldAlert } from '@/components/ui/icons/nucleo/shield-alert';
 
 export const VULN_STATUS_LABELS = {
     OPEN: 'Open',
@@ -30,7 +31,7 @@ const STATIC_DEFS = {
         label: 'Status',
         description: 'Remediation status of the vulnerability.',
         group: 'Attributes',
-        icon: CircleDot,
+        icon: CircleDotted,
         options: optionsFromEnum(VULN_STATUS_LABELS),
         multiple: true,
         resetBehavior: 'clearable',
