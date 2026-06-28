@@ -162,7 +162,12 @@ const MIN_SECONDARY_TO_PRIMARY_RATIO = 0.9;
 // modal confirms (submit report, add timeline entry, confirm reportable).
 // Each pairs with a secondary Cancel; the page-level mark-reportable
 // trigger was kept a secondary to hold the line. +5 primary.
-const MAX_PRIMARY_COUNT = 133;
+//
+// 2026-06-29 — bumped 133 → 134 for the incident containment/forensics
+// follow-up: the link-forensic-evidence modal's confirm is its earned
+// primary (paired with a secondary Cancel; the page-level trigger is a
+// secondary). +1 primary.
+const MAX_PRIMARY_COUNT = 134;
 
 describe("primary:secondary ratio direction", () => {
     const counts = (() => {

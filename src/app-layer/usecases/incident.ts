@@ -34,7 +34,10 @@ import type {
     SubmitNotificationInput,
     AddTimelineEntryInput,
     LinkControlsInput,
+    ToggleContainmentStepInput,
+    LinkEvidenceInput,
 } from '../schemas/incident.schemas';
+import { containmentRunbookFor } from '@/data/incident-containment';
 
 /** sanitize an optional free-text field, preserving the three-state contract. */
 function sanitizeOptional(v: string | null | undefined): string | null | undefined {
@@ -425,6 +428,153 @@ export async function linkControls(
         });
 
         return updated;
+    });
+}
+
+// ─── Containment runbook ────────────────────────────────────────────
+
+/**
+ * Mark a per-incidentType containment-runbook step complete (or undo it).
+ * `completedContainmentSteps` is the persisted checkbox state; completing
+ * a step also appends a timeline entry. The step must belong to the
+ * incident's type runbook (src/data/incident-containment.ts).
+ */
+export async function toggleContainmentStep(
+    ctx: RequestContext,
+    id: string,
+    input: ToggleContainmentStepInput,
+) {
+    assertCanManageIncidents(ctx);
+
+    return runInTenantContext(ctx, async (db) => {
+        const incident = await IncidentRepository.getById(db, ctx, id);
+        if (!incident) throw notFound('Incident not found');
+
+        const runbook = containmentRunbookFor(incident.incidentType);
+        const validKeys = new Set((runbook?.steps ?? []).map((s) => s.key));
+        if (!validKeys.has(input.stepKey)) {
+            throw badRequest('Unknown containment step for this incident type.');
+        }
+
+        const current = new Set(incident.completedContainmentSteps);
+        const wasCompleted = current.has(input.stepKey);
+        if (input.completed) current.add(input.stepKey);
+        else current.delete(input.stepKey);
+
+        const updated = await IncidentRepository.update(db, ctx, id, {
+            completedContainmentSteps: { set: Array.from(current) },
+        });
+
+        // Only completing (not un-completing) writes a timeline entry.
+        if (input.completed && !wasCompleted) {
+            const label =
+                runbook?.steps.find((s) => s.key === input.stepKey)?.label ?? input.stepKey;
+            await IncidentRepository.addTimelineEntry(db, ctx, {
+                incidentId: id,
+                actorUserId: ctx.userId,
+                entry: `Containment step completed: ${sanitizePlainText(label)}`,
+                phaseAtTime: incident.phase,
+            });
+        }
+
+        await logEvent(db, ctx, {
+            action: 'UPDATE',
+            entityType: 'Incident',
+            entityId: id,
+            details: `Containment step ${input.stepKey} ${input.completed ? 'completed' : 'reopened'} on ${incident.reference}`,
+            detailsJson: {
+                category: 'entity_lifecycle',
+                entityName: 'Incident',
+                operation: 'containment_step_toggled',
+                after: { stepKey: input.stepKey, completed: input.completed },
+                summary: `Containment step ${input.stepKey} on ${incident.reference}`,
+            },
+        });
+
+        return updated;
+    });
+}
+
+// ─── Forensic evidence linking ──────────────────────────────────────
+
+/**
+ * Link an existing tenant Evidence record to this incident (forensic
+ * evidence collection). Validates the evidence belongs to the tenant.
+ */
+export async function linkEvidence(
+    ctx: RequestContext,
+    id: string,
+    input: LinkEvidenceInput,
+) {
+    assertCanManageIncidents(ctx);
+
+    return runInTenantContext(ctx, async (db) => {
+        const incident = await IncidentRepository.getById(db, ctx, id);
+        if (!incident) throw notFound('Incident not found');
+
+        const exists = await IncidentRepository.evidenceExists(db, ctx, input.evidenceId);
+        if (!exists) throw badRequest('Evidence record not found in this tenant.');
+
+        const link = await IncidentRepository.linkEvidence(db, ctx, {
+            incidentId: id,
+            evidenceId: input.evidenceId,
+            forensicCategory: input.forensicCategory ?? null,
+        });
+
+        await IncidentRepository.addTimelineEntry(db, ctx, {
+            incidentId: id,
+            actorUserId: ctx.userId,
+            entry: input.forensicCategory
+                ? `Linked forensic evidence (${sanitizePlainText(input.forensicCategory)}).`
+                : 'Linked forensic evidence.',
+            phaseAtTime: incident.phase,
+        });
+
+        await logEvent(db, ctx, {
+            action: 'CREATE',
+            entityType: 'IncidentEvidence',
+            entityId: link.id,
+            details: `Linked evidence to incident ${incident.reference}`,
+            detailsJson: {
+                category: 'entity_lifecycle',
+                entityName: 'IncidentEvidence',
+                operation: 'created',
+                after: { evidenceId: input.evidenceId, forensicCategory: input.forensicCategory ?? null },
+                summary: `Linked evidence to ${incident.reference}`,
+            },
+        });
+
+        return link;
+    });
+}
+
+export async function unlinkEvidence(
+    ctx: RequestContext,
+    id: string,
+    evidenceId: string,
+) {
+    assertCanManageIncidents(ctx);
+
+    return runInTenantContext(ctx, async (db) => {
+        const incident = await IncidentRepository.getById(db, ctx, id);
+        if (!incident) throw notFound('Incident not found');
+
+        await IncidentRepository.unlinkEvidence(db, ctx, id, evidenceId);
+
+        await logEvent(db, ctx, {
+            action: 'DELETE',
+            entityType: 'IncidentEvidence',
+            entityId: evidenceId,
+            details: `Unlinked evidence from incident ${incident.reference}`,
+            detailsJson: {
+                category: 'entity_lifecycle',
+                entityName: 'IncidentEvidence',
+                operation: 'deleted',
+                summary: `Unlinked evidence from ${incident.reference}`,
+            },
+        });
+
+        return { ok: true };
     });
 }
 
