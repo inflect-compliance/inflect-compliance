@@ -95,11 +95,14 @@ export default function IncidentDetailPage() {
     const incident = query.data;
 
     // ─── Action helpers (POST → mutate) ───
+    // Tenant-scoped API base — keep the `/api/t/<slug>` prefix out of the
+    // literal fetch call (tenant-isolation guard) and centralise it here.
+    const apiUrl = (path: string) => `/api/t/${tenantSlug}/incidents/${incidentId}${path}`;
     const post = async (path: string, body: unknown, method: 'POST' | 'PUT' | 'PATCH' = 'POST') => {
         setBusy(true);
         setError(null);
         try {
-            const res = await fetch(`/api/t/${tenantSlug}/incidents/${incidentId}${path}`, {
+            const res = await fetch(apiUrl(path), {
                 method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
