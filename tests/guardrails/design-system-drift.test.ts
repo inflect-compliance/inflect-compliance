@@ -253,10 +253,16 @@ describe('New page token discipline', () => {
         //     reuses <Card>/<KPIStat>/<StatusBadge>/<DashboardLayout>);
         //     in the unmigrated tally only because the surface is new
         //     and not yet promoted to MIGRATED_PAGES.
+        //   - 108 (+2): vuln integration (#1309) — vulnerabilities/page.tsx
+        //     + VulnerabilitiesClient.tsx, the matched-CVE list. Token-clean
+        //     (semantic content-*/bg-*/border-* tokens only; EntityListPage +
+        //     FilterToolbar + StatusBadge); in the unmigrated tally only
+        //     because the surface is new and not yet promoted to
+        //     MIGRATED_PAGES.
         // Each increment names the epic + page + reason; promotion
         // to MIGRATED_PAGES is the path forward, never silent
         // floor-bumping.
-        expect(unmigrated.length).toBeLessThanOrEqual(106);
+        expect(unmigrated.length).toBeLessThanOrEqual(108);
     });
 
     it('migrated page count is at least 4', () => {
