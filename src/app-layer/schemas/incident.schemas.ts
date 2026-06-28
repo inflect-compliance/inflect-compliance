@@ -87,6 +87,19 @@ export const LinkControlsSchema = z.object({
     controlIds: z.array(z.string()).max(200),
 });
 
+export const ToggleContainmentStepSchema = z.object({
+    // The stable step key from the incidentType's containment runbook
+    // (src/data/incident-containment.ts), e.g. 'RANSOMWARE-1'.
+    stepKey: z.string().min(1).max(64),
+    completed: z.boolean(),
+});
+
+export const LinkEvidenceSchema = z.object({
+    evidenceId: z.string().min(1),
+    // Optional forensic-checklist category this evidence satisfies.
+    forensicCategory: z.string().max(64).optional().nullable(),
+});
+
 export type CreateIncidentInput = z.infer<typeof CreateIncidentSchema>;
 export type UpdateIncidentInput = z.infer<typeof UpdateIncidentSchema>;
 export type AdvancePhaseInput = z.infer<typeof AdvancePhaseSchema>;
@@ -94,3 +107,5 @@ export type MarkReportableInput = z.infer<typeof MarkReportableSchema>;
 export type SubmitNotificationInput = z.infer<typeof SubmitNotificationSchema>;
 export type AddTimelineEntryInput = z.infer<typeof AddTimelineEntrySchema>;
 export type LinkControlsInput = z.infer<typeof LinkControlsSchema>;
+export type ToggleContainmentStepInput = z.infer<typeof ToggleContainmentStepSchema>;
+export type LinkEvidenceInput = z.infer<typeof LinkEvidenceSchema>;

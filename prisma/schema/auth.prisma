@@ -140,6 +140,7 @@ model Tenant {
   incidents                         Incident[]
   incidentNotifications             IncidentNotification[]
   incidentTimelineEntries           IncidentTimelineEntry[]
+  incidentEvidence                  IncidentEvidence[]
   integrationConnections            IntegrationConnection[]
   integrationExecutions             IntegrationExecution[]
   integrationWebhookEvents          IntegrationWebhookEvent[]

@@ -10,6 +10,7 @@ import { MetaStrip, type MetaItem } from '@/components/ui/meta-strip';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
+import { Combobox } from '@/components/ui/combobox';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,6 +18,11 @@ import { Heading } from '@/components/ui/typography';
 import { formatDateTime } from '@/lib/format-date';
 import { useHydratedNow } from '@/lib/hooks/use-hydrated-now';
 import { PHASE_ORDER } from '@/lib/incidents/deadlines';
+import {
+    containmentRunbookFor,
+    INCIDENT_RESPONSE_RACI,
+    FORENSIC_EVIDENCE_CHECKLIST,
+} from '@/data/incident-containment';
 import { SEVERITY_LABELS, PHASE_LABELS, INCIDENT_TYPE_LABELS } from '../filter-defs';
 
 // ─── Types (the GET /incidents/{id} payload) ───────────────────────
@@ -48,9 +54,22 @@ interface IncidentDetail {
     reportedAt: string | null;
     ownerUserId: string | null;
     linkedControlIds: string[];
+    completedContainmentSteps: string[];
     notifications: IncidentNotification[];
     timeline: TimelineEntry[];
+    evidenceLinks: IncidentEvidenceLink[];
 }
+interface IncidentEvidenceLink {
+    id: string;
+    evidenceId: string;
+    forensicCategory: string | null;
+    evidence: { id: string; title: string; type: string; status: string } | null;
+}
+
+const forensicCategoryOptions = FORENSIC_EVIDENCE_CHECKLIST.map((c) => ({
+    value: c.key,
+    label: c.label,
+}));
 
 const SEVERITY_TONE: Record<string, StatusBadgeVariant> = {
     LOW: 'neutral', MEDIUM: 'info', HIGH: 'warning', CRITICAL: 'error',
@@ -98,7 +117,11 @@ export default function IncidentDetailPage() {
     // Tenant-scoped API base — keep the `/api/t/<slug>` prefix out of the
     // literal fetch call (tenant-isolation guard) and centralise it here.
     const apiUrl = (path: string) => `/api/t/${tenantSlug}/incidents/${incidentId}${path}`;
-    const post = async (path: string, body: unknown, method: 'POST' | 'PUT' | 'PATCH' = 'POST') => {
+    const post = async (
+        path: string,
+        body: unknown,
+        method: 'POST' | 'PUT' | 'PATCH' | 'DELETE' = 'POST',
+    ) => {
         setBusy(true);
         setError(null);
         try {
@@ -118,6 +141,23 @@ export default function IncidentDetailPage() {
         }
     };
 
+    // Load the tenant's evidence records into the picker, then open the
+    // link-evidence modal.
+    const openEvidenceModal = async () => {
+        setSelectedEvidenceId('');
+        setSelectedForensicCategory('');
+        setEvidenceOpen(true);
+        try {
+            const res = await fetch(`/api/t/${tenantSlug}/evidence`);
+            if (!res.ok) return;
+            const rows = (await res.json()) as Array<{ id: string; title: string }>;
+            const list = Array.isArray(rows) ? rows : [];
+            setEvidenceOptions(list.map((e) => ({ value: e.id, label: e.title })));
+        } catch {
+            /* non-fatal — the picker just shows no options */
+        }
+    };
+
     // ─── Submit-notification modal state ───
     const [submitKind, setSubmitKind] = useState<IncidentNotification['kind'] | null>(null);
     const [reportText, setReportText] = useState('');
@@ -125,6 +165,11 @@ export default function IncidentDetailPage() {
     const [timelineOpen, setTimelineOpen] = useState(false);
     const [timelineEntry, setTimelineEntry] = useState('');
     const [reportableOpen, setReportableOpen] = useState(false);
+    // ─── Link-evidence modal state ───
+    const [evidenceOpen, setEvidenceOpen] = useState(false);
+    const [evidenceOptions, setEvidenceOptions] = useState<{ value: string; label: string }[]>([]);
+    const [selectedEvidenceId, setSelectedEvidenceId] = useState('');
+    const [selectedForensicCategory, setSelectedForensicCategory] = useState('');
 
     const tabs: EntityDetailTab<TabKey>[] = useMemo(
         () => [
@@ -239,6 +284,55 @@ export default function IncidentDetailPage() {
                         </Button>
                     </section>
 
+                    {/* Containment runbook — per incident-type checklist. */}
+                    {(() => {
+                        const runbook = containmentRunbookFor(incident.incidentType);
+                        if (!runbook) return null;
+                        const done = new Set(incident.completedContainmentSteps);
+                        return (
+                            <section className="space-y-default" aria-label="Incident containment runbook">
+                                <Heading level={2}>Containment runbook</Heading>
+                                <p className="text-xs text-content-muted">
+                                    First-response containment steps for a {INCIDENT_TYPE_LABELS[
+                                        incident.incidentType as keyof typeof INCIDENT_TYPE_LABELS
+                                    ] ?? incident.incidentType} incident. Operational guidance, not legal
+                                    advice. Completing a step records it on the timeline.
+                                </p>
+                                <ul className="space-y-tight">
+                                    {runbook.steps.map((step) => {
+                                        const checked = done.has(step.key);
+                                        return (
+                                            <li key={step.key} className="flex items-start gap-tight">
+                                                <input
+                                                    type="checkbox"
+                                                    className="mt-1"
+                                                    checked={checked}
+                                                    disabled={busy}
+                                                    onChange={(e) =>
+                                                        post('/containment-step', {
+                                                            stepKey: step.key,
+                                                            completed: e.target.checked,
+                                                        })
+                                                    }
+                                                    aria-label={step.label}
+                                                />
+                                                <span
+                                                    className={
+                                                        checked
+                                                            ? 'text-sm text-content-muted line-through'
+                                                            : 'text-sm text-content-default'
+                                                    }
+                                                >
+                                                    {step.label}
+                                                </span>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </section>
+                        );
+                    })()}
+
                     {/* Article 23 notification deadlines. */}
                     <section className="space-y-default">
                         <Heading level={2}>Article 23 notification deadlines</Heading>
@@ -331,19 +425,96 @@ export default function IncidentDetailPage() {
                         </p>
                     </section>
 
-                    {/* Forensic evidence checklist. */}
-                    <section className="space-y-default">
-                        <Heading level={2}>Forensic evidence</Heading>
-                        <p className="text-sm text-content-muted">
-                            Collect and attach forensic evidence (logs, disk images, indicators) to
-                            the tenant evidence register so the incident record stays audit-ready.
+                    {/* Forensic evidence collection checklist. */}
+                    <section className="space-y-default" aria-label="Forensic evidence checklist">
+                        <div className="flex items-center justify-between">
+                            <Heading level={2}>Forensic evidence</Heading>
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                disabled={busy}
+                                onClick={openEvidenceModal}
+                                id="link-evidence-btn"
+                            >
+                                Link evidence
+                            </Button>
+                        </div>
+                        <p className="text-xs text-content-muted">
+                            Capture forensic evidence for each category and link the real Evidence
+                            records so the incident stays audit-ready.
                         </p>
+                        <ul className="space-y-tight">
+                            {FORENSIC_EVIDENCE_CHECKLIST.map((cat) => {
+                                const links = incident.evidenceLinks.filter(
+                                    (l) => l.forensicCategory === cat.key,
+                                );
+                                return (
+                                    <li
+                                        key={cat.key}
+                                        className="flex flex-wrap items-center justify-between gap-default rounded-lg border border-border-subtle px-4 py-2"
+                                    >
+                                        <div className="space-y-tight">
+                                            <div className="text-sm font-medium text-content-emphasis">
+                                                {cat.label}
+                                            </div>
+                                            <div className="text-xs text-content-muted">{cat.hint}</div>
+                                        </div>
+                                        <StatusBadge variant={links.length > 0 ? 'success' : 'neutral'}>
+                                            {links.length > 0 ? `${links.length} linked` : 'none'}
+                                        </StatusBadge>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                        {incident.evidenceLinks.length > 0 && (
+                            <ul className="space-y-tight">
+                                {incident.evidenceLinks.map((l) => (
+                                    <li
+                                        key={l.id}
+                                        className="flex items-center justify-between gap-default text-sm"
+                                    >
+                                        <Link
+                                            href={`/t/${tenantSlug}/evidence`}
+                                            className="text-content-link underline"
+                                        >
+                                            {l.evidence?.title ?? l.evidenceId}
+                                        </Link>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            disabled={busy}
+                                            onClick={() =>
+                                                post('/evidence', { evidenceId: l.evidenceId }, 'DELETE')
+                                            }
+                                        >
+                                            Unlink
+                                        </Button>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                         <Link
                             href={`/t/${tenantSlug}/evidence`}
-                            className="text-content-link underline text-sm"
+                            className="text-content-link underline text-xs"
                         >
                             Open the evidence register →
                         </Link>
+                    </section>
+
+                    {/* Incident-response roles (informational RACI). */}
+                    <section className="space-y-default" aria-label="Incident response roles">
+                        <Heading level={2}>Incident response roles</Heading>
+                        <ul className="space-y-tight">
+                            {INCIDENT_RESPONSE_RACI.map((r) => (
+                                <li key={r.role} className="flex flex-wrap items-baseline gap-tight text-sm">
+                                    <span className="font-medium text-content-emphasis">{r.role}</span>
+                                    <span className="rounded bg-bg-subtle px-1.5 py-0.5 text-xs font-semibold text-content-muted">
+                                        {r.raci}
+                                    </span>
+                                    <span className="text-content-muted">{r.responsibility}</span>
+                                </li>
+                            ))}
+                        </ul>
                     </section>
 
                     <p className="text-sm text-content-muted">{incident.description}</p>
@@ -512,6 +683,55 @@ export default function IncidentDetailPage() {
                             }}
                         >
                             Mark reportable
+                        </Button>
+                    </Modal.Actions>
+                </Modal>
+            )}
+
+            {/* ─── Link forensic evidence modal ─── */}
+            {evidenceOpen && (
+                <Modal showModal setShowModal={(v) => { if (!v) setEvidenceOpen(false); }} size="md" title="Link evidence">
+                    <Modal.Header
+                        title="Link forensic evidence"
+                        description="Attach an existing tenant Evidence record to this incident."
+                    />
+                    <Modal.Body>
+                        <div className="space-y-default">
+                            <FormField label="Evidence record" required>
+                                <Combobox
+                                    options={evidenceOptions}
+                                    selected={evidenceOptions.find((o) => o.value === selectedEvidenceId) ?? null}
+                                    setSelected={(opt) => setSelectedEvidenceId(opt?.value ?? '')}
+                                    placeholder="Select evidence…"
+                                />
+                            </FormField>
+                            <FormField label="Forensic category" hint="Which checklist category this evidence satisfies.">
+                                <Combobox
+                                    options={forensicCategoryOptions}
+                                    selected={forensicCategoryOptions.find((o) => o.value === selectedForensicCategory) ?? null}
+                                    setSelected={(opt) => setSelectedForensicCategory(opt?.value ?? '')}
+                                    placeholder="Select category…"
+                                />
+                            </FormField>
+                        </div>
+                    </Modal.Body>
+                    <Modal.Actions>
+                        <Button variant="secondary" size="sm" onClick={() => setEvidenceOpen(false)} disabled={busy}>
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="primary"
+                            size="sm"
+                            disabled={busy || !selectedEvidenceId}
+                            onClick={async () => {
+                                const ok = await post('/evidence', {
+                                    evidenceId: selectedEvidenceId,
+                                    forensicCategory: selectedForensicCategory || undefined,
+                                });
+                                if (ok) setEvidenceOpen(false);
+                            }}
+                        >
+                            Link evidence
                         </Button>
                     </Modal.Actions>
                 </Modal>

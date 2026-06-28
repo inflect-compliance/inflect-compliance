@@ -41,6 +41,14 @@ export class IncidentRepository {
             include: {
                 notifications: { orderBy: { dueAt: 'asc' } },
                 timeline: { orderBy: { at: 'desc' }, take: 500 },
+                evidenceLinks: {
+                    include: {
+                        evidence: {
+                            select: { id: true, title: true, type: true, status: true },
+                        },
+                    },
+                    orderBy: { createdAt: 'desc' },
+                },
             },
         });
     }
@@ -152,6 +160,43 @@ export class IncidentRepository {
             where: { tenantId: ctx.tenantId, incidentId },
             orderBy: { at: 'desc' },
             take: 500,
+        });
+    }
+
+    // ─── Forensic evidence links ────────────────────────────────────
+
+    /** Confirm an evidence record belongs to this tenant (FK safety). */
+    static async evidenceExists(db: PrismaTx, ctx: RequestContext, evidenceId: string) {
+        const e = await db.evidence.findFirst({
+            where: { id: evidenceId, tenantId: ctx.tenantId },
+            select: { id: true },
+        });
+        return Boolean(e);
+    }
+
+    static async linkEvidence(
+        db: PrismaTx,
+        ctx: RequestContext,
+        data: { incidentId: string; evidenceId: string; forensicCategory?: string | null },
+    ) {
+        return db.incidentEvidence.create({
+            data: {
+                tenantId: ctx.tenantId,
+                incidentId: data.incidentId,
+                evidenceId: data.evidenceId,
+                forensicCategory: data.forensicCategory ?? null,
+            },
+        });
+    }
+
+    static async unlinkEvidence(
+        db: PrismaTx,
+        ctx: RequestContext,
+        incidentId: string,
+        evidenceId: string,
+    ) {
+        return db.incidentEvidence.deleteMany({
+            where: { tenantId: ctx.tenantId, incidentId, evidenceId },
         });
     }
 }

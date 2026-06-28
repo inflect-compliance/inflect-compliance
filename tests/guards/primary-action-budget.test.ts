@@ -70,11 +70,11 @@ const PRIMARY_BUDGET: Record<string, number> = {
     "src/app/t/[tenantSlug]/(app)/controls/[controlId]/page.tsx": 8,
     "src/app/t/[tenantSlug]/(app)/controls/[controlId]/_tabs/ControlMappingsTab.tsx": 2,
     "src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx": 9,
-    // NIS2 incident detail — three modal confirms, each its own dialog,
-    // never on screen together: submit-report, add-timeline-entry, and
-    // confirm-mark-reportable. The page-level mark-reportable trigger is
-    // a secondary.
-    "src/app/t/[tenantSlug]/(app)/incidents/[incidentId]/page.tsx": 3,
+    // NIS2 incident detail — four modal confirms, each its own dialog,
+    // never on screen together: submit-report, add-timeline-entry,
+    // confirm-mark-reportable, and link-forensic-evidence. The page-level
+    // mark-reportable + link-evidence triggers are secondaries.
+    "src/app/t/[tenantSlug]/(app)/incidents/[incidentId]/page.tsx": 4,
 
     // Cross-entity link/unlink panel — multiple pairwise actions
     "src/components/TraceabilityPanel.tsx": 6,
