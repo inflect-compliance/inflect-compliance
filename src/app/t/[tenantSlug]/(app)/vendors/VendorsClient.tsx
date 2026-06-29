@@ -292,7 +292,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                     />
                 ),
             },
-            { value: 'delete', label: 'Delete', confirm: { confirmLabel: 'Delete' } },
+            { value: 'delete', label: 'Delete', confirm: true },
         ],
         [tenantSlug],
     );

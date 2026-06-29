@@ -432,6 +432,7 @@ function TasksPageInner({
         optimisticUpdate: (current, { action, value, ids, label }) => {
             if (action === 'delete') {
                 return {
+                    // guardrail-ignore: optimistic removal of just-deleted rows from the loaded page, not a server-data re-filter.
                     rows: (current?.rows ?? []).filter((task) => !ids.includes(task.id)),
                     truncated: current?.truncated ?? false,
                 };
@@ -531,7 +532,7 @@ function TasksPageInner({
                     />
                 ),
             },
-            { value: 'delete', label: 'Delete', confirm: { confirmLabel: 'Delete' } },
+            { value: 'delete', label: 'Delete', confirm: true },
         ],
         [tenantSlug],
     );

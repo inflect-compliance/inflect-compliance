@@ -305,7 +305,7 @@ function PoliciesPageInner({
         // archivePolicy / bulkDeletePolicy).
         if (permissions.canAdmin) {
             defs.push({ value: 'archive', label: 'Archive' });
-            defs.push({ value: 'delete', label: 'Delete', confirm: { confirmLabel: 'Delete' } });
+            defs.push({ value: 'delete', label: 'Delete', confirm: true });
         }
         return defs;
     }, [tenantSlug, permissions.canAdmin]);

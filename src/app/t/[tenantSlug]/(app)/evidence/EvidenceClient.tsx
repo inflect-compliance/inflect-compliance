@@ -264,7 +264,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                     />
                 ),
             },
-            { value: 'delete', label: 'Delete', confirm: { confirmLabel: 'Delete' } },
+            { value: 'delete', label: 'Delete', confirm: true },
         ],
         [tenantSlug],
     );

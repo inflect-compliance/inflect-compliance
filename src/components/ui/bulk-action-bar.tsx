@@ -51,10 +51,10 @@ export interface BulkActionDef {
     /**
      * Require a danger-tone confirmation dialog before `onApply` fires. Use for
      * destructive actions (e.g. bulk delete). The dialog reports the selected
-     * count + `entityLabel`. The confirm button reads `confirmLabel` (default
-     * "Delete") — keep it on the canonical destructive-verb vocabulary.
+     * count + `entityLabel` and confirms with the canonical "Delete" verb
+     * (locked by the destructive-vocabulary ratchet).
      */
-    confirm?: { confirmLabel?: string };
+    confirm?: boolean;
 }
 
 export interface BulkActionBarProps {
@@ -147,7 +147,7 @@ export function BulkActionBar({
                     tone="danger"
                     title={`Delete ${selectedCount ?? 0} ${noun}?`}
                     description={`This removes the selected ${noun} from your workspace.`}
-                    confirmLabel={active.confirm.confirmLabel ?? 'Delete'}
+                    confirmLabel="Delete"
                     onConfirm={() => {
                         setConfirmOpen(false);
                         onApply(action, value, label);

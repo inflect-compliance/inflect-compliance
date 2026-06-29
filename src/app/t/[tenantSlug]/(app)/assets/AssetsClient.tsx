@@ -301,7 +301,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                     />
                 ),
             },
-            { value: 'delete', label: 'Delete', confirm: { confirmLabel: 'Delete' } },
+            { value: 'delete', label: 'Delete', confirm: true },
         ],
         [tenantSlug],
     );
