@@ -575,28 +575,11 @@ function PoliciesPageInner({
                 title: t.title,
                 // Roadmap-2 PR-4 — editorial framing.
                 description: t.listDescription,
-                actions: permissions.canWrite ? (
-                    <>
-                        <Link
-                            href={tenantHref('/policies/templates')}
-                            className={buttonVariants({ variant: 'secondary' })}
-                            id="policy-from-template-btn"
-                        >
-                            From Template
-                        </Link>
-                        <Button
-                            variant="primary"
-                            icon={<Plus className="-ml-0.5 -mr-2.5" />}
-                            onClick={() => {
-                                setCreateTemplateMode(false);
-                                setIsCreateOpen(true);
-                            }}
-                            id="new-policy-btn"
-                        >
-                            Policy
-                        </Button>
-                    </>
-                ) : null,
+                // Header action cluster is intentionally empty — the
+                // create button moved into the toolbar leading slot and
+                // the "From Template" affordance into the toolbar actions
+                // slot (left of the gears).
+                actions: undefined,
             }}
             kpis={
                 /* R23-PR-F — KPI strip rendered via EntityListPage's
@@ -647,8 +630,30 @@ function PoliciesPageInner({
                 defs: visibleFilterDefs,
                 searchId: 'policies-search',
                 searchPlaceholder: 'Search policies…',
+                toolbarLeading: permissions.canWrite ? (
+                    <Button
+                        variant="primary"
+                        icon={<Plus className="-ml-0.5 -mr-2.5" />}
+                        onClick={() => {
+                            setCreateTemplateMode(false);
+                            setIsCreateOpen(true);
+                        }}
+                        id="new-policy-btn"
+                    >
+                        Policy
+                    </Button>
+                ) : undefined,
                 toolbarActions: (
                     <>
+                        {permissions.canWrite && (
+                            <Link
+                                href={tenantHref('/policies/templates')}
+                                className={buttonVariants({ variant: 'secondary' })}
+                                id="policy-from-template-btn"
+                            >
+                                From Template
+                            </Link>
+                        )}
                         {columnsDropdown}
                         {filtersDropdown}
                     </>

@@ -94,6 +94,14 @@ export interface FilterToolbarProps {
      * the toolbar mutate-only.
      */
     primary?: ReactNode;
+    /**
+     * Leading slot — rendered at the START of the toolbar, BEFORE the
+     * Filter trigger button (and to the LEFT of the active-pill `flex-1`
+     * spacer that right-pins `actions`/`primary`). The page's primary
+     * "+ Entity" create action lives here so it sits to the LEFT of the
+     * filter rather than crowding the page header.
+     */
+    leading?: ReactNode;
     /** Optional className forwarded to the outer container. */
     className?: string;
 }
@@ -130,6 +138,7 @@ export function FilterToolbar({
     triggerLabel,
     actions,
     primary,
+    leading,
     className,
 }: FilterToolbarProps) {
     const ctx = useFilters();
@@ -163,6 +172,14 @@ export function FilterToolbar({
 
     return (
         <div className={`flex flex-wrap items-start gap-compact${className ? ` ${className}` : ''}`}>
+            {leading ? (
+                <div
+                    className="flex items-center gap-tight"
+                    data-testid="filter-toolbar-leading"
+                >
+                    {leading}
+                </div>
+            ) : null}
             <div className="flex flex-wrap items-center gap-tight">
                 <FilterUI.Select
                     filters={filters}

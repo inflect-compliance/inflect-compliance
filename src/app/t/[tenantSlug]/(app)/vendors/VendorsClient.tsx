@@ -486,23 +486,6 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                             Third-party relationships, assessed and renewed on a cadence.
                         </p>
                     </div>
-                    <div className="flex gap-tight">
-                        <Tooltip content="Dashboard">
-                            <Link href={tenantHref('/vendors/dashboard')} aria-label="Dashboard" className={cn(buttonVariants({ variant: 'secondary', size: 'icon' }))} id="vendor-dashboard-btn">
-                                <AppIcon name="dashboard" size={16} />
-                            </Link>
-                        </Tooltip>
-                        {permissions.canCreate && (
-                            <Button
-                                variant="primary"
-                                icon={<Plus className="-ml-0.5 -mr-2.5" />}
-                                onClick={() => setIsCreateOpen(true)}
-                                id="new-vendor-btn"
-                            >
-                                Vendor
-                            </Button>
-                        )}
-                    </div>
                 </div>
             </ListPageShell.Header>
 
@@ -553,7 +536,29 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                     filters={visibleFilterDefs}
                     searchId="vendors-search"
                     searchPlaceholder="Search vendors…"
-                    actions={<>{columnsDropdown}{filtersDropdown}</>}
+                    leading={
+                        permissions.canCreate ? (
+                            <Button
+                                variant="primary"
+                                icon={<Plus className="-ml-0.5 -mr-2.5" />}
+                                onClick={() => setIsCreateOpen(true)}
+                                id="new-vendor-btn"
+                            >
+                                Vendor
+                            </Button>
+                        ) : undefined
+                    }
+                    actions={
+                        <>
+                            <Tooltip content="Dashboard">
+                                <Link href={tenantHref('/vendors/dashboard')} aria-label="Dashboard" className={cn(buttonVariants({ variant: 'secondary', size: 'icon' }))} id="vendor-dashboard-btn">
+                                    <AppIcon name="dashboard" size={16} />
+                                </Link>
+                            </Tooltip>
+                            {columnsDropdown}
+                            {filtersDropdown}
+                        </>
+                    }
                 />
             </ListPageShell.Filters>
 
