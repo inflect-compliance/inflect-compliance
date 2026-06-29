@@ -12,7 +12,12 @@ import { StubRiskSuggestionProvider } from './stub-provider';
 import { logger } from '@/lib/observability/logger';
 
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const DEFAULT_MODEL = 'anthropic/claude-3.5-sonnet';
+// AISVS C6 (model supply chain): PIN to a dated model snapshot rather than the
+// floating `anthropic/claude-3.5-sonnet` alias, so an upstream model swap can't
+// silently change risk-assessment behaviour. Updating the model is a deliberate,
+// reviewed change to this constant (or the OPENROUTER_MODEL env override) — see
+// docs/security/aisvs-self-assessment.md (Ch6) for the model-update process.
+const DEFAULT_MODEL = 'anthropic/claude-3.5-sonnet-20241022';
 
 export class OpenRouterRiskSuggestionProvider implements RiskSuggestionProvider {
     readonly providerName = 'openrouter';
