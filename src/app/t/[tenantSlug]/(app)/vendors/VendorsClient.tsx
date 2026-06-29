@@ -23,7 +23,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/cn';
-import { DataTable, createColumns, useColumnsDropdown } from '@/components/ui/table';
+import { DataTable, createColumns, useColumnsDropdown, sortRowsByDisplay, type SortAccessors } from '@/components/ui/table';
 import { Package } from 'lucide-react';
 import {
     FilterProvider,
@@ -190,29 +190,30 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
         ],
         [],
     );
-    const sortedVendors = useMemo(() => {
-        if (!sortBy) return vendors;
-        const accessor = (v: (typeof vendors)[number]): string | number => {
-            switch (sortBy) {
-                case 'name': return (v.name ?? '').toString().toLowerCase();
-                case 'status': return (v.status ?? '').toString().toLowerCase();
-                case 'criticality': return (v.criticality ?? '').toString().toLowerCase();
-                case 'risk': return (v.inherentRisk ?? '').toString().toLowerCase();
-                case 'nextReviewAt': return v.nextReviewAt ?? '';
-                case 'contractRenewalAt': return v.contractRenewalAt ?? '';
-                case 'owner': return (v.owner?.name ?? '').toString().toLowerCase();
-                default: return '';
-            }
-        };
-        const dir = sortOrder === 'asc' ? 1 : -1;
-        return [...vendors].sort((a, b) => {
-            const av = accessor(a);
-            const bv = accessor(b);
-            if (av === bv) return 0;
-            if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir;
-            return String(av) > String(bv) ? dir : -dir;
-        });
-    }, [vendors, sortBy, sortOrder]);
+    // Sort accessors return the value each column DISPLAYS, so sorting groups
+    // same-displayed-value rows contiguously and can never drift from the
+    // rendered cell. `risk` + `owner` point their column `accessorFn` at the
+    // SAME function below (see the column defs) to keep the key and the
+    // rendered value in lockstep.
+    const sortAccessors = useMemo<SortAccessors<VendorRow>>(
+        () => ({
+            name: (v) => v.name || '',
+            status: (v) => v.status || '',
+            criticality: (v) => v.criticality || '',
+            risk: (v) => v.inherentRisk || '',
+            // Cells render the relative form of these timestamps, which is a
+            // monotonic transform of the ISO value — sorting on the raw ISO
+            // preserves the displayed order and grouping.
+            nextReviewAt: (v) => v.nextReviewAt || '',
+            contractRenewalAt: (v) => v.contractRenewalAt || '',
+            owner: (v) => v.owner?.name || '—',
+        }),
+        [],
+    );
+    const sortedVendors = useMemo(
+        () => sortRowsByDisplay(vendors, sortAccessors, sortBy, sortOrder),
+        [vendors, sortAccessors, sortBy, sortOrder],
+    );
 
     // Load-on-scroll windowing — render the first batch, append more as
     // the user nears the bottom (DataTable onReachEnd sentinel).
@@ -432,7 +433,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
         {
             id: 'risk',
             header: 'Risk',
-            accessorFn: (v) => v.inherentRisk || '',
+            accessorFn: sortAccessors.risk,
             cell: ({ row }) => {
                 const v = row.original;
                 return v.inherentRisk
@@ -466,7 +467,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
             accessorFn: (v) => v.owner?.name || '—',
             cell: ({ getValue }) => <span className="text-content-muted">{getValue()}</span>,
         },
-    ])), [tenantHref, hydratedNow, orderColumns]);
+    ])), [tenantHref, hydratedNow, orderColumns, sortAccessors]);
 
     return (
         <ListPageShell className="animate-fadeIn gap-section">

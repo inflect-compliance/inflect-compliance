@@ -34,6 +34,8 @@ import { Paperclip, ChevronDown, ChevronLeft } from 'lucide-react';
 import {
     createColumns,
     useColumnsDropdown,
+    sortRowsByDisplay,
+    type SortAccessors,
 } from '@/components/ui/table';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -294,34 +296,26 @@ function ControlsPageInner({
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | undefined>(
         undefined,
     );
-    const controls = useMemo(() => {
-        if (!sortBy) return rawControls;
-        const accessor = (c: ControlListItem): string | number => {
-            switch (sortBy) {
-                case 'code':
-                    return (c.code || c.annexId || '').toString();
-                case 'name':
-                    return (c.name || '').toString();
-                case 'status':
-                    return (c.status || '').toString();
-                case 'category':
-                    return (c.category || '').toString();
-                case 'frequency':
-                    return (c.frequency || '').toString();
-                case 'owner':
-                    return (c.owner?.name || c.owner?.email || '').toString();
-                default:
-                    return '';
-            }
-        };
-        const dir = sortOrder === 'asc' ? 1 : -1;
-        return [...rawControls].sort((a, b) => {
-            const av = accessor(a);
-            const bv = accessor(b);
-            if (av === bv) return 0;
-            return av > bv ? dir : -dir;
-        });
-    }, [rawControls, sortBy, sortOrder]);
+    // Sort accessors return the value each column DISPLAYS, so sorting groups
+    // same-displayed-value rows contiguously. The drift-prone columns (category,
+    // frequency) point their `accessorFn` at the SAME function below — the sort
+    // key and the rendered value can never diverge.
+    const sortAccessors = useMemo<SortAccessors<ControlListItem>>(
+        () => ({
+            code: (c) => c.code || c.annexId || '',
+            name: (c) => c.name || '',
+            status: (c) => c.status || '',
+            category: (c) => categorizeControl(c)?.category || '',
+            frequency: (c) =>
+                c.frequency ? FREQ_LABELS[c.frequency] || c.frequency : '',
+            owner: (c) => c.owner?.name || c.owner?.email || '',
+        }),
+        [],
+    );
+    const controls = useMemo(
+        () => sortRowsByDisplay(rawControls, sortAccessors, sortBy, sortOrder),
+        [rawControls, sortAccessors, sortBy, sortOrder],
+    );
     const sortableColumns = useMemo(
         () => ['code', 'name', 'status', 'category', 'frequency', 'owner'],
         [],
@@ -744,7 +738,7 @@ function ControlsPageInner({
             // persisted TSC / section category. No category → `—`.
             id: 'category',
             header: 'Category',
-            accessorFn: (c) => categorizeControl(c)?.category || '',
+            accessorFn: sortAccessors.category,
             cell: ({ row }) => {
                 const cat = categorizeControl(row.original);
                 if (!cat) {

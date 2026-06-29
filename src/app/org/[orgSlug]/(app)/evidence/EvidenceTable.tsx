@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 import { Paperclip } from 'lucide-react';
 
 import { ListPageShell } from '@/components/layout/ListPageShell';
-import { DataTable, createColumns } from '@/components/ui/table';
+import { DataTable, createColumns, sortRowsByDisplay, type SortAccessors } from '@/components/ui/table';
 import { TableEmptyState } from '@/components/ui/table';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
@@ -48,26 +48,24 @@ export function EvidenceTable({ rows: initialRows, nextCursor: initialNextCursor
             `/api/org/${orgSlug ?? ''}/portfolio?view=evidence&cursor=${encodeURIComponent(cursor)}`,
     });
 
-    const sorted = useMemo(() => {
-        const copy = [...pagination.rows];
-        copy.sort((a, b) => {
-            const dir = sortOrder === 'asc' ? 1 : -1;
-            switch (sortBy) {
-                case 'tenantName':
-                    return dir * a.tenantName.localeCompare(b.tenantName);
-                case 'title':
-                    return dir * a.title.localeCompare(b.title);
-                case 'status':
-                    return dir * a.status.localeCompare(b.status);
-                case 'nextReviewDate':
-                    return dir * (new Date(a.nextReviewDate).getTime() - new Date(b.nextReviewDate).getTime());
-                case 'daysOverdue':
-                default:
-                    return dir * (a.daysOverdue - b.daysOverdue) || a.tenantName.localeCompare(b.tenantName);
-            }
-        });
-        return copy;
-    }, [pagination.rows, sortBy, sortOrder]);
+    // Sort by what each column DISPLAYS so same-displayed-value rows group
+    // contiguously. The Overdue cell renders the `daysOverdue` number (sort
+    // numerically), Status renders the raw status, Review-due renders the
+    // formatted `nextReviewDate` (raw ISO sorts chronologically + groups).
+    const sortAccessors = useMemo<SortAccessors<OverdueEvidenceRow>>(
+        () => ({
+            tenantName: (x) => x.tenantName || '',
+            title: (x) => x.title || '',
+            daysOverdue: (x) => x.daysOverdue,
+            status: (x) => x.status,
+            nextReviewDate: (x) => x.nextReviewDate,
+        }),
+        [],
+    );
+    const sorted = useMemo(
+        () => sortRowsByDisplay(pagination.rows, sortAccessors, sortBy, sortOrder),
+        [pagination.rows, sortAccessors, sortBy, sortOrder],
+    );
 
     const columns = useMemo(
         () =>

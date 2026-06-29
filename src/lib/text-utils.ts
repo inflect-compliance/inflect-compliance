@@ -22,6 +22,22 @@ export function truncate(
 }
 
 /**
+ * Truncate `str` to at most `max` characters of content, appending the
+ * single-glyph ellipsis `…` (U+2026, ONE character) when it overflows.
+ * Unlike {@link truncate}, the `…` is NOT counted within `max` — a long
+ * value renders as its first `max` characters followed by `…`. Returns the
+ * input untouched when it already fits, and `null` for nullish input.
+ */
+export function truncateGlyph(
+    str: string | null | undefined,
+    max: number,
+): string | null {
+    if (str == null) return null;
+    if (str.length <= max) return str;
+    return `${str.slice(0, max)}…`;
+}
+
+/**
  * Pick the singular or plural form of `word` for `count`. A custom
  * plural may be supplied; otherwise an `s` is appended.
  */

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Building2, Plus, Trash2 } from 'lucide-react';
 
 import { ListPageShell } from '@/components/layout/ListPageShell';
-import { DataTable, createColumns } from '@/components/ui/table';
+import { DataTable, createColumns, sortRowsByDisplay, type SortAccessors } from '@/components/ui/table';
 import { TableEmptyState } from '@/components/ui/table';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -22,13 +22,6 @@ interface Props {
     rows: TenantHealthRow[];
     orgSlug: string;
 }
-
-const RAG_RANK: Record<RagBadge | 'PENDING', number> = {
-    RED: 0,
-    AMBER: 1,
-    GREEN: 2,
-    PENDING: 3,
-};
 
 function formatPercent(value: number | null): string {
     return value === null ? '—' : `${value.toFixed(1)}%`;
@@ -103,32 +96,27 @@ export function TenantsTable({ rows, orgSlug }: Props) {
         }
     };
 
-    const sorted = useMemo(() => {
-        const copy = [...rows];
-        copy.sort((a, b) => {
-            const dir = sortOrder === 'asc' ? 1 : -1;
-            switch (sortBy) {
-                case 'name':
-                    return dir * a.name.localeCompare(b.name);
-                case 'coverage':
-                    return dir * ((a.coveragePercent ?? -1) - (b.coveragePercent ?? -1));
-                case 'openRisks':
-                    return dir * ((a.openRisks ?? -1) - (b.openRisks ?? -1));
-                case 'criticalRisks':
-                    return dir * ((a.criticalRisks ?? -1) - (b.criticalRisks ?? -1));
-                case 'overdueEvidence':
-                    return dir * ((a.overdueEvidence ?? -1) - (b.overdueEvidence ?? -1));
-                case 'rag':
-                default: {
-                    const ra = RAG_RANK[a.rag ?? 'PENDING'];
-                    const rb = RAG_RANK[b.rag ?? 'PENDING'];
-                    if (ra !== rb) return dir * (ra - rb);
-                    return a.name.localeCompare(b.name);
-                }
-            }
-        });
-        return copy;
-    }, [rows, sortBy, sortOrder]);
+    // Sort by what each column DISPLAYS so same-displayed-value rows group
+    // contiguously. The Health cell (`RagPill`) renders the RAG label, or
+    // "Pending" when null — sort by that label, not the old severity rank,
+    // which drifted from the displayed text. The numeric cells render their
+    // raw counts / percentage (null → "—"); returning the raw number sorts
+    // numerically and keeps the null rows grouped at one end.
+    const sortAccessors = useMemo<SortAccessors<TenantHealthRow>>(
+        () => ({
+            name: (x) => x.name || '',
+            rag: (x) => x.rag ?? 'Pending',
+            coverage: (x) => x.coveragePercent,
+            openRisks: (x) => x.openRisks,
+            criticalRisks: (x) => x.criticalRisks,
+            overdueEvidence: (x) => x.overdueEvidence,
+        }),
+        [],
+    );
+    const sorted = useMemo(
+        () => sortRowsByDisplay(rows, sortAccessors, sortBy, sortOrder),
+        [rows, sortAccessors, sortBy, sortOrder],
+    );
 
     const columns = useMemo(
         () =>

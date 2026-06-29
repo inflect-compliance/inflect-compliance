@@ -7,7 +7,7 @@
 import { formatDate } from '@/lib/format-date';
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { DataTable, createColumns, useColumnsDropdown } from '@/components/ui/table';
+import { DataTable, createColumns, useColumnsDropdown, sortRowsByDisplay, type SortAccessors } from '@/components/ui/table';
 import { ListPageShell } from '@/components/layout/ListPageShell';
 import { useRouter } from 'next/navigation';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
@@ -252,31 +252,25 @@ function TestsRollupContent() {
         () => ['name', 'status', 'control', 'frequency', 'nextDue', 'lastResult', 'runs'],
         [],
     );
-    const sortedPlans = useMemo(() => {
-        if (!sortBy) return filteredPlans;
-        const accessor = (p: TestPlanSummary): string | number => {
-            switch (sortBy) {
-                case 'name': return (p.name ?? '').toLowerCase();
-                case 'status': return (p.status ?? '').toLowerCase();
-                case 'control':
-                    return (p.control?.code || p.control?.name || '').toLowerCase();
-                case 'frequency':
-                    return (FREQ_LABELS[p.frequency] || p.frequency || '').toLowerCase();
-                case 'nextDue': return p.nextDueAt ?? '';
-                case 'lastResult': return (getLastResult(p) || '').toLowerCase();
-                case 'runs': return p._count?.runs ?? 0;
-                default: return '';
-            }
-        };
-        const dir = sortOrder === 'asc' ? 1 : -1;
-        return [...filteredPlans].sort((a, b) => {
-            const av = accessor(a);
-            const bv = accessor(b);
-            if (av === bv) return 0;
-            if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir;
-            return String(av) > String(bv) ? dir : -dir;
-        });
-    }, [filteredPlans, sortBy, sortOrder]);
+    // Each accessor returns the value its column DISPLAYS, so sorting groups
+    // same-displayed-value rows contiguously (case-insensitive via the shared
+    // helper's locale compare).
+    const sortAccessors = useMemo<SortAccessors<TestPlanSummary>>(
+        () => ({
+            name: (p) => p.name ?? '',
+            status: (p) => p.status ?? '',
+            control: (p) => p.control?.code || p.control?.name || '',
+            frequency: (p) => FREQ_LABELS[p.frequency] || p.frequency || '',
+            nextDue: (p) => p.nextDueAt ?? '',
+            lastResult: (p) => getLastResult(p) || '',
+            runs: (p) => p._count?.runs ?? 0,
+        }),
+        [],
+    );
+    const sortedPlans = useMemo(
+        () => sortRowsByDisplay(filteredPlans, sortAccessors, sortBy, sortOrder),
+        [filteredPlans, sortAccessors, sortBy, sortOrder],
+    );
 
     // KPI-card counts — total + the three TestPlanStatus buckets. These power
     // the clickable KpiFilterCard row (each toggles the table's status filter).

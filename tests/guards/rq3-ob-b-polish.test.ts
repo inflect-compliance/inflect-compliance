@@ -62,9 +62,13 @@ describe('RQ3-OB-B — ALE sortability on the risks register', () => {
         );
     });
 
-    test('the sort accessor maps \'ale\' to riskAle (honest-null: -Infinity)', () => {
-        expect(risksClient).toMatch(/case 'ale': \{/);
-        expect(risksClient).toMatch(/return v \?\? -Infinity;/);
+    test('the sort accessor maps \'ale\' to riskAle (honest-null sorts last)', () => {
+        // Migrated off the per-page `case 'ale'` comparator onto the shared
+        // `sortRowsByDisplay` helper (which orders nullish values last, so the
+        // honest-null behaviour is preserved). The accessor returns the same
+        // value the ALE column displays — `riskAle(r) ?? null`.
+        expect(risksClient).toMatch(/sortRowsByDisplay\(/);
+        expect(risksClient).toMatch(/ale:\s*\(r\)\s*=>\s*riskAle\(r\)\s*\?\?\s*null/);
     });
 
     test('a column with id=\'ale\' exists so the header click can trigger the sort', () => {

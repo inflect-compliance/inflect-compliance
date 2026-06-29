@@ -23,11 +23,14 @@ import { EditEvidenceModal } from './EditEvidenceModal';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
+import { truncateGlyph } from '@/lib/text-utils';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import {
     DataTable,
     createColumns,
     useColumnsDropdown,
+    sortRowsByDisplay,
+    type SortAccessors,
 } from '@/components/ui/table';
 import { Tooltip } from '@/components/ui/tooltip';
 import {
@@ -62,7 +65,7 @@ import {
 } from './filter-defs';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
-import { Plus, Pen2, Download, BoxArchive } from '@/components/ui/icons/nucleo';
+import { Plus, Pen2, Download, BoxArchive, PaperPlane, Check, Xmark } from '@/components/ui/icons/nucleo';
 
 interface Permissions {
     canRead: boolean;
@@ -534,49 +537,40 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | undefined>(
         undefined,
     );
-    const sortedEvidence = useMemo(() => {
-        if (!sortBy) return displayEvidence;
-        // Minimal structural shape for the sort accessor — the sort
-        // path only touches these fields, so a local `Sortable` keeps
-        // the accessor narrow without re-deriving the full EvidenceRow.
-        type Sortable = {
-            title?: string | null;
-            type?: string | null;
-            control?: {
-                annexId?: string | null;
-                name?: string | null;
-            } | null;
-            retentionUntil?: string | null;
-            status?: string | null;
-            ownerUser?: { name?: string | null } | null;
-            owner?: string | null;
-        };
-        const accessor = (ev: Sortable): string | number => {
-            switch (sortBy) {
-                case 'title':
-                    return ev.title || '';
-                case 'type':
-                    return ev.type || '';
-                case 'control':
-                    return ev.control?.annexId || ev.control?.name || '';
-                case 'retention':
-                    return ev.retentionUntil || '';
-                case 'status':
-                    return ev.status || '';
-                case 'owner':
-                    return ev.ownerUser?.name || ev.owner || '';
-                default:
-                    return '';
-            }
-        };
-        const dir = sortOrder === 'asc' ? 1 : -1;
-        return [...displayEvidence].sort((a: Sortable, b: Sortable) => {
-            const av = accessor(a);
-            const bv = accessor(b);
-            if (av === bv) return 0;
-            return av > bv ? dir : -dir;
-        });
-    }, [displayEvidence, sortBy, sortOrder]);
+    // Sort accessors return the value each column DISPLAYS, so sorting groups
+    // same-displayed-value rows contiguously. Several columns render a DERIVED
+    // label, not a raw field — the old comparator sorted by the raw field and
+    // so failed to group rows that look identical:
+    //   - `type`      → the cell shows resolveFileTypeIcon(...).label (PDF /
+    //                   Image / Link), not the raw `ev.type` enum.
+    //   - `control`   → the cell shows "{annexId} {name}", not just annexId.
+    //   - `retention` → the cell shows getRetentionStatus(...).label
+    //                   (Active / Expiring / Expired), not the raw ISO date.
+    //   - `status`    → the cell shows statusLabel(ev.status), not the enum.
+    //   - `owner`     → the cell shows `ev.owner`, not `ev.ownerUser?.name`.
+    // Each accessor below reuses the SAME derivation as its column cell.
+    const sortAccessors = useMemo<SortAccessors<EvidenceRow>>(
+        () => ({
+            title: (ev) => ev.title || '',
+            type: (ev) =>
+                resolveFileTypeIcon(
+                    ev.fileName ?? null,
+                    ev.fileRecord?.mimeType ?? null,
+                    ev.type ?? null,
+                ).label,
+            control: (ev) =>
+                ev.control ? `${ev.control.annexId || ''} ${ev.control.name}` : '—',
+            retention: (ev) => getRetentionStatus(ev, hydratedNow).label,
+            status: (ev) => statusLabel(ev.status),
+            owner: (ev) => ev.owner || '—',
+        }),
+        // statusLabel closes over `t`; getRetentionStatus is pure of `hydratedNow`.
+        [t, hydratedNow],
+    );
+    const sortedEvidence = useMemo(
+        () => sortRowsByDisplay(displayEvidence, sortAccessors, sortBy, sortOrder),
+        [displayEvidence, sortAccessors, sortBy, sortOrder],
+    );
     const sortableEvidenceColumns = useMemo(
         () => ['title', 'type', 'control', 'retention', 'status', 'owner'],
         [],
@@ -685,14 +679,24 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             // page's baseline. File type information is still in the
             // dedicated Type column.
 
-            cell: ({ row }) => (
+            cell: ({ row }) => {
                 // Evidence has no dedicated detail page yet — the
                 // record opens via the master/detail pattern from
-                // this list page. Wiring a navigation href here is
-                // part of B5 (Evidence workflow completion), which
-                // also introduces the detail surface.
-                <TableTitleCell>{row.original.title}</TableTitleCell>
-            ),
+                // this list page. Title is truncated to 20 chars (ending
+                // with a single … glyph); the full value shows on hover.
+                const title = row.original.title;
+                const truncated = !!title && title.length > 20;
+                const inner = (
+                    <TableTitleCell>{truncateGlyph(title, 20)}</TableTitleCell>
+                );
+                return truncated ? (
+                    <Tooltip content={title}>
+                        <span className="inline-flex">{inner}</span>
+                    </Tooltip>
+                ) : (
+                    inner
+                );
+            },
         },
         {
             accessorKey: 'type',
@@ -913,7 +917,10 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
         // Review workflow — the remaining state-transition actions.
         {
             id: 'actions',
-            header: t.actions,
+            // Leaf header is blank — the spanning "Actions" group header (added
+            // in `tableColumns` below) labels this + the edit/archive/download
+            // icon columns together.
+            header: '',
             enableHiding: false,
 
             cell: ({ row }) => {
@@ -921,20 +928,46 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                 const isPending = ev.id?.startsWith('temp:');
                 if (isPending) return <span className="text-xs text-content-subtle">Uploading...</span>;
                 if (!permissions.canWrite) return null;
+                const submitBtn = (
+                    <Tooltip content={t.submitForReview}>
+                        <button
+                            type="button"
+                            aria-label={t.submitForReview}
+                            className={ICON_ACTION_CLASS}
+                            onClick={() => submitReview(ev.id, 'SUBMITTED')}
+                        >
+                            <PaperPlane className="size-3.5" />
+                        </button>
+                    </Tooltip>
+                );
                 return (
                     <div className="flex gap-1 flex-wrap" onClick={e => e.stopPropagation()}>
-                        {ev.status === 'DRAFT' && (
-                            <Button variant="secondary" size="sm" onClick={() => submitReview(ev.id, 'SUBMITTED')}>{t.submitForReview}</Button>
-                        )}
+                        {ev.status === 'DRAFT' && submitBtn}
                         {ev.status === 'SUBMITTED' && (
                             <>
-                                <Button variant="secondary" size="sm" onClick={() => submitReview(ev.id, 'APPROVED')}>{t.approveEvidence}</Button>
-                                <Button variant="destructive" size="sm" onClick={() => submitReview(ev.id, 'REJECTED', 'Needs improvement')}>{t.rejectEvidence}</Button>
+                                <Tooltip content={t.approveEvidence}>
+                                    <button
+                                        type="button"
+                                        aria-label={t.approveEvidence}
+                                        className={ICON_ACTION_CLASS}
+                                        onClick={() => submitReview(ev.id, 'APPROVED')}
+                                    >
+                                        <Check className="size-3.5" />
+                                    </button>
+                                </Tooltip>
+                                <Tooltip content={t.rejectEvidence}>
+                                    <button
+                                        type="button"
+                                        aria-label={t.rejectEvidence}
+                                        className={`${ICON_ACTION_CLASS} hover:text-content-error`}
+                                        onClick={() => submitReview(ev.id, 'REJECTED', 'Needs improvement')}
+                                    >
+                                        <Xmark className="size-3.5" />
+                                    </button>
+                                </Tooltip>
                             </>
                         )}
-                        {ev.status === 'REJECTED' && (
-                            <Button variant="secondary" size="sm" onClick={() => submitReview(ev.id, 'SUBMITTED')}>{t.submitForReview}</Button>
-                        )}
+                        {ev.status === 'REJECTED' && submitBtn}
                     </div>
                 );
             },
@@ -942,6 +975,23 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
         },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     ]), [t, permissions, apiUrl]);
+
+    // Item 3 — collapse the four right-most columns (edit / archive /
+    // download / actions) under ONE spanning "Actions" header. orderColumns
+    // (flat slot-merge) runs first; then the action columns are lifted into a
+    // single TanStack group so its header cell spans them. The other columns
+    // get a placeholder top-row header cell automatically.
+    const tableColumns = useMemo(() => {
+        const ordered = orderColumns(evidenceColumns);
+        const actionIds = new Set(['edit', 'archive', 'download', 'actions']);
+        const actionCols = ordered.filter((c) => actionIds.has(c.id as string));
+        if (actionCols.length === 0) return ordered;
+        const rest = ordered.filter((c) => !actionIds.has(c.id as string));
+        return [
+            ...rest,
+            { id: 'actionsGroup', header: t.actions, columns: actionCols },
+        ];
+    }, [orderColumns, evidenceColumns, t.actions]);
 
     return (
         <ListPageShell className="animate-fadeIn gap-section">
@@ -1206,9 +1256,14 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                 ) : (
                     <DataTable
                         fillBody
+                        // The spanning "Actions" group header (grouped column
+                        // defs) needs the real <table> path — the virtualized
+                        // grid header can't colSpan. Evidence is bounded (cap
+                        // 5000, internal scroll), mirroring the Controls page.
+                        virtualize={false}
                         onReachEnd={hasMoreEvidence ? loadMoreEvidence : undefined}
                         data={visibleEvidence}
-                        columns={orderColumns(evidenceColumns)}
+                        columns={tableColumns}
                         getRowId={(ev) => ev.id}
                         // Column resizing is opt-in per table (disabled
                         // by default since #823). Re-enabled here only —
