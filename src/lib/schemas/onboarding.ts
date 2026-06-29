@@ -11,6 +11,10 @@ export const ONBOARDING_STEPS = [
     // right after FRAMEWORK_SELECTION so its results can feed the
     // CONTROL_BASELINE_INSTALL step that follows.
     'NIS2_SELF_ASSESSMENT',
+    // Conditional step: applicable when an AI framework (AISVS / ISO42001 /
+    // EU_AI_ACT) is selected OR the tenant builds/uses AI systems (see
+    // `isStepApplicable`). Unified AISVS / ISO 42001 / EU AI Act self-assessment.
+    'AI_GOVERNANCE_SELF_ASSESSMENT',
     'ASSET_SETUP',
     'CONTROL_BASELINE_INSTALL',
     'INITIAL_RISK_REGISTER',
@@ -35,6 +39,9 @@ export const SKIPPABLE_STEPS: OnboardingStep[] = [
     // Skippable: skipped entirely when NIS2 isn't chosen, and skippable
     // on demand ("complete later from the NIS2 dashboard") when it is.
     'NIS2_SELF_ASSESSMENT',
+    // Skippable: skipped entirely when no AI framework / AI-systems flag, and
+    // skippable on demand ("complete later") when applicable.
+    'AI_GOVERNANCE_SELF_ASSESSMENT',
     'ASSET_SETUP',
     'CONTROL_BASELINE_INSTALL',
     'INITIAL_RISK_REGISTER',

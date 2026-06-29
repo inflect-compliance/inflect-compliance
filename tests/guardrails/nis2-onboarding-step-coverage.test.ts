@@ -19,16 +19,21 @@ const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 const STEP = 'NIS2_SELF_ASSESSMENT';
 
 describe('NIS2 onboarding step — registration', () => {
-    it('sits between FRAMEWORK_SELECTION and ASSET_SETUP in ONBOARDING_STEPS', () => {
+    it('sits right after FRAMEWORK_SELECTION and before ASSET_SETUP in ONBOARDING_STEPS', () => {
         const i = ONBOARDING_STEPS.indexOf(STEP as never);
         expect(i).toBeGreaterThan(-1);
         expect(ONBOARDING_STEPS[i - 1]).toBe('FRAMEWORK_SELECTION');
-        expect(ONBOARDING_STEPS[i + 1]).toBe('ASSET_SETUP');
+        // ASSET_SETUP follows the conditional self-assessment slot — NIS2 and
+        // AI_GOVERNANCE_SELF_ASSESSMENT both live between the two.
+        expect(ONBOARDING_STEPS.indexOf('ASSET_SETUP' as never)).toBeGreaterThan(i);
     });
 
     it('mirrors the same position in the usecase STEP_ORDER', () => {
         const src = read('src/app-layer/usecases/onboarding.ts');
-        expect(src).toMatch(/'FRAMEWORK_SELECTION',\s*(?:\/\/[^\n]*\n\s*)?'NIS2_SELF_ASSESSMENT',\s*'ASSET_SETUP'/);
+        // FRAMEWORK_SELECTION is immediately followed by NIS2_SELF_ASSESSMENT;
+        // the AI_GOVERNANCE_SELF_ASSESSMENT conditional step follows before
+        // ASSET_SETUP.
+        expect(src).toMatch(/'FRAMEWORK_SELECTION',\s*(?:\/\/[^\n]*\n\s*)?'NIS2_SELF_ASSESSMENT',/);
     });
 
     it('is skippable', () => {
