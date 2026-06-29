@@ -1,0 +1,79 @@
+# Cross-Framework Mapping Set: OWASP AISVS v1.0 → ISO/IEC 42001:2023
+# Data-driven mapping file for the RequirementMapping ingestion pipeline.
+#
+# Connects AISVS TECHNICAL AI-security controls to the ISO 42001 AI MANAGEMENT
+# SYSTEM clauses + Annex A controls, so a tenant's AISVS verification rolls up
+# into their AIMS. Every entry is [curated] — Inflect's judgement of conceptual
+# alignment, NOT part of either standard. Structural guidance, not a compliance
+# guarantee.
+#
+# Refs use the YAML library ref_ids (AISVS C<ch>.<sec>.<req> → ISO 42001 clause
+# / Annex A control). Only nodes present in the libraries are referenced.
+
+urn: urn:inflect:mappingset:aisvs-to-iso-42001
+name: "OWASP AISVS v1.0 → ISO/IEC 42001:2023"
+description: >
+  Cross-framework traceability between OWASP AISVS v1.0 technical controls and
+  ISO/IEC 42001:2023 AI management system clauses + Annex A controls. Curated
+  alignment, not a compliance guarantee.
+version: 1
+source_framework_ref: AISVS-1.0
+target_framework_ref: ISO42001-2023
+
+mapping_entries:
+  - source_ref: C1.1.2
+    target_ref: A.7.3
+    strength: INTERSECT
+    rationale: "[curated] Inventorying training-data sources is documenting dataset origin/selection (A.7.3)."
+  - source_ref: C1.3.1
+    target_ref: A.7.4
+    strength: RELATED
+    rationale: "[curated] Detecting data poisoning supports the data-quality criteria (A.7.4)."
+  - source_ref: C3.1.1
+    target_ref: A.4.2
+    strength: INTERSECT
+    rationale: "[curated] A model-artifact inventory is part of the AI resource inventory (A.4.2)."
+  - source_ref: C3.2.1
+    target_ref: A.6.2.4
+    strength: INTERSECT
+    rationale: "[curated] Automated safety/validation testing implements verification & validation methodologies (A.6.2.4)."
+  - source_ref: C3.3.1
+    target_ref: A.6.2.5
+    strength: INTERSECT
+    rationale: "[curated] Staged rollout with rollback realises the deployment plan with release criteria (A.6.2.5)."
+  - source_ref: C4.3.1
+    target_ref: A.4.5
+    strength: RELATED
+    rationale: "[curated] Edge/runtime controls relate to recording computing infrastructure and environments (A.4.5)."
+  - source_ref: C5.1.1
+    target_ref: A.3.2
+    strength: RELATED
+    rationale: "[curated] Step-up auth for high-risk operations depends on defined AI roles/accountability (A.3.2)."
+  - source_ref: C5.2.1
+    target_ref: A.9.2
+    strength: RELATED
+    rationale: "[curated] Default-deny authorization underpins responsible-use operational processes (A.9.2)."
+  - source_ref: C6.1.1
+    target_ref: A.10.3
+    strength: RELATED
+    rationale: "[curated] Scanning third-party models supports assessing/managing supplier AI expectations (A.10.3)."
+  - source_ref: C7.1.1
+    target_ref: A.6.2.6
+    strength: RELATED
+    rationale: "[curated] Output validation feeds operation and performance monitoring (A.6.2.6)."
+  - source_ref: C11.1.3
+    target_ref: A.5.2
+    strength: RELATED
+    rationale: "[curated] Adversarial evaluation informs the repeatable AI impact-assessment process (A.5.2)."
+  - source_ref: C12.1.1
+    target_ref: A.6.2.8
+    strength: INTERSECT
+    rationale: "[curated] Logging AI interactions is logging events across the life cycle (A.6.2.8)."
+  - source_ref: C12.2.1
+    target_ref: "9.1"
+    strength: RELATED
+    rationale: "[curated] Detection/alerting feeds monitoring, measurement, analysis and evaluation (clause 9.1)."
+  - source_ref: C2.1.3
+    target_ref: A.6.2.4
+    strength: RELATED
+    rationale: "[curated] Input-injection screening is exercised by verification & validation (A.6.2.4)."

@@ -1,0 +1,75 @@
+# Cross-Framework Mapping Set: OWASP AISVS v1.0 → EU AI Act (2024/1689)
+# Data-driven mapping file for the RequirementMapping ingestion pipeline.
+#
+# Connects AISVS TECHNICAL AI-security controls to EU AI Act regulatory
+# OBLIGATIONS, so a tenant's technical verification evidences (part of) their
+# high-risk-AI obligations. Every entry is [curated] — Inflect's judgement, NOT
+# part of either source. Structural guidance, NOT legal advice and NOT a
+# compliance determination (the AI system's risk tier is a tenant + counsel
+# decision).
+#
+# Refs use the YAML library ref_ids (AISVS C<ch>.<sec>.<req> → EU AI Act Art.N).
+
+urn: urn:inflect:mappingset:aisvs-to-eu-ai-act
+name: "OWASP AISVS v1.0 → EU AI Act (2024/1689)"
+description: >
+  Cross-framework traceability between OWASP AISVS v1.0 technical controls and
+  EU AI Act obligations (chiefly the Article 9-15 high-risk requirements).
+  Curated alignment — structural guidance, not legal advice.
+version: 1
+source_framework_ref: AISVS-1.0
+target_framework_ref: EU-AI-ACT-2024
+
+mapping_entries:
+  - source_ref: C2.1.3
+    target_ref: Art.15
+    strength: INTERSECT
+    rationale: "[curated] Input-injection screening contributes to accuracy, robustness and cybersecurity (Art 15)."
+  - source_ref: C2.1.6
+    target_ref: Art.15
+    strength: RELATED
+    rationale: "[curated] Enforcing the instruction hierarchy hardens robustness against manipulation (Art 15)."
+  - source_ref: C7.1.1
+    target_ref: Art.15
+    strength: INTERSECT
+    rationale: "[curated] Output schema/range validation supports accuracy and robustness (Art 15)."
+  - source_ref: C7.4.1
+    target_ref: Art.13
+    strength: RELATED
+    rationale: "[curated] Source attribution in responses supports transparency/information to deployers (Art 13)."
+  - source_ref: C1.1.2
+    target_ref: Art.10
+    strength: INTERSECT
+    rationale: "[curated] Inventorying data sources contributes to data and data governance (Art 10)."
+  - source_ref: C1.3.1
+    target_ref: Art.10
+    strength: RELATED
+    rationale: "[curated] Detecting data poisoning supports data-governance quality criteria (Art 10)."
+  - source_ref: C3.1.1
+    target_ref: Art.11
+    strength: RELATED
+    rationale: "[curated] A model-artifact inventory feeds the technical documentation (Art 11)."
+  - source_ref: C12.1.1
+    target_ref: Art.12
+    strength: INTERSECT
+    rationale: "[curated] Logging AI interactions implements record-keeping (Art 12)."
+  - source_ref: C12.2.1
+    target_ref: Art.12
+    strength: RELATED
+    rationale: "[curated] Detection/alerting builds on the automatic logging required by Art 12."
+  - source_ref: C9.2.1
+    target_ref: Art.14
+    strength: INTERSECT
+    rationale: "[curated] Human approval for high-impact actions realises human oversight (Art 14)."
+  - source_ref: C11.1.3
+    target_ref: Art.15
+    strength: INTERSECT
+    rationale: "[curated] Adversarial evaluation evidences robustness/cybersecurity (Art 15)."
+  - source_ref: C3.2.1
+    target_ref: Art.9
+    strength: RELATED
+    rationale: "[curated] Safety/validation testing feeds the risk management system (Art 9)."
+  - source_ref: C6.1.1
+    target_ref: Art.11
+    strength: RELATED
+    rationale: "[curated] Model supply-chain scanning supports technical documentation/traceability (Art 11)."
