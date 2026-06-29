@@ -93,7 +93,7 @@ const TENANT_CTX: TenantContextValue = {
 };
 
 function wrapper({ children }: { children: React.ReactNode }) {
-    return React.createElement(TenantProvider, { value: TENANT_CTX }, children);
+    return React.createElement(TenantProvider, { value: TENANT_CTX, children });
 }
 
 const COLLECTIONS = ['controls', 'risks', 'policies', 'assets', 'tasks', 'evidence'];
