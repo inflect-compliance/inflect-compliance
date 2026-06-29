@@ -21,6 +21,7 @@ import { sanitizeProviderInput, describePayload } from '@/app-layer/ai/risk-asse
 import { checkRateLimit, recordGeneration } from '@/app-layer/ai/risk-assessment/rate-limiter';
 import { enforceFeatureGate } from '@/app-layer/ai/risk-assessment/feature-gate';
 import { bumpEntityCacheVersion } from '@/lib/cache/list-cache';
+import { recordAiRiskAssessment } from '@/lib/observability/metrics';
 
 // ─── Generate Risk Suggestions ───
 
@@ -96,10 +97,18 @@ export async function generateRiskSuggestions(
 
         // 10. Call provider with sanitized input
         const provider = getProvider();
+        const aiStart = Date.now();
         let output;
         try {
             output = await provider.generateSuggestions(sanitizedInput);
         } catch (err) {
+            // AISVS C12 — record the failed AI generation before re-raising.
+            recordAiRiskAssessment({
+                provider: provider.providerName,
+                outcome: 'failure',
+                durationMs: Date.now() - aiStart,
+                fallback: true,
+            });
             // Mark session as failed
             await db.riskSuggestionSession.update({
                 where: { id: session.id },
@@ -125,6 +134,16 @@ export async function generateRiskSuggestions(
 
             throw err;
         }
+
+        // AISVS C12 — record the successful AI generation (fallback=true when the
+        // provider degraded to the deterministic stub but still returned output).
+        recordAiRiskAssessment({
+            provider: output.provider,
+            outcome: 'success',
+            durationMs: Date.now() - aiStart,
+            fallback: output.isFallback ?? false,
+            suggestionCount: output.suggestions.length,
+        });
 
         // 11. Store suggestion items
         const items = await Promise.all(

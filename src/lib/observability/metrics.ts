@@ -874,3 +874,76 @@ export function recordSsrCacheMiss(route: string, durationMs: number): void {
     getSsrMiss().add(1, { route });
     getSsrDuration().record(durationMs, { route, outcome: 'miss' });
 }
+
+// ─── AI risk-assessment metrics (AISVS C12 — monitoring of the AI subsystem) ──
+//
+// Operational observability for IC's AI-enabled risk-assessment feature: how
+// often it runs, how long the provider call takes, and how often it falls back
+// to the deterministic stub (a degraded-but-safe outcome). `tenant.id` is NOT a
+// label (cardinality discipline); `provider` + `outcome` are bounded enums.
+let _aiRiskCalls: ReturnType<ReturnType<typeof getMeter>['createCounter']> | null = null;
+let _aiRiskDuration: ReturnType<ReturnType<typeof getMeter>['createHistogram']> | null = null;
+let _aiRiskFallbacks: ReturnType<ReturnType<typeof getMeter>['createCounter']> | null = null;
+let _aiRiskSuggestions: ReturnType<ReturnType<typeof getMeter>['createHistogram']> | null = null;
+
+function getAiRiskCalls() {
+    if (!_aiRiskCalls) {
+        _aiRiskCalls = getMeter().createCounter('ai.risk_assessment.calls', {
+            description: 'AI risk-assessment generations, labelled by provider + outcome (success/failure)',
+            unit: '1',
+        });
+    }
+    return _aiRiskCalls;
+}
+function getAiRiskDuration() {
+    if (!_aiRiskDuration) {
+        _aiRiskDuration = getMeter().createHistogram('ai.risk_assessment.duration', {
+            description: 'Wall-clock time for an AI risk-assessment generation (provider call + validation)',
+            unit: 'ms',
+        });
+    }
+    return _aiRiskDuration;
+}
+function getAiRiskFallbacks() {
+    if (!_aiRiskFallbacks) {
+        _aiRiskFallbacks = getMeter().createCounter('ai.risk_assessment.fallbacks', {
+            description: 'AI risk-assessments served from the deterministic stub fallback (provider unavailable or output rejected)',
+            unit: '1',
+        });
+    }
+    return _aiRiskFallbacks;
+}
+function getAiRiskSuggestions() {
+    if (!_aiRiskSuggestions) {
+        _aiRiskSuggestions = getMeter().createHistogram('ai.risk_assessment.suggestions', {
+            description: 'Number of risk suggestions returned per AI generation',
+            unit: '1',
+        });
+    }
+    return _aiRiskSuggestions;
+}
+
+/**
+ * Record one AI risk-assessment generation — called once at the usecase
+ * boundary after the provider call settles (success OR failure).
+ *
+ *   - `ai.risk_assessment.calls`       counter  (provider, outcome)
+ *   - `ai.risk_assessment.duration`    histogram(provider, outcome)
+ *   - `ai.risk_assessment.fallbacks`   counter  (provider) — when fallback=true
+ *   - `ai.risk_assessment.suggestions` histogram(provider) — on success
+ */
+export function recordAiRiskAssessment(attrs: {
+    provider: string;
+    outcome: 'success' | 'failure';
+    durationMs: number;
+    fallback: boolean;
+    suggestionCount?: number;
+}): void {
+    const labels = { provider: attrs.provider, outcome: attrs.outcome };
+    getAiRiskCalls().add(1, labels);
+    getAiRiskDuration().record(attrs.durationMs, labels);
+    if (attrs.fallback) getAiRiskFallbacks().add(1, { provider: attrs.provider });
+    if (attrs.outcome === 'success' && typeof attrs.suggestionCount === 'number') {
+        getAiRiskSuggestions().record(attrs.suggestionCount, { provider: attrs.provider });
+    }
+}
