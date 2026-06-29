@@ -56,7 +56,7 @@ export default async function TrustCenterPage({
                         {tc.publishedFrameworks.map((f) => (
                             <li
                                 key={f.key}
-                                className="inline-flex items-center gap-tight rounded-md border border-border-default bg-bg-subtle px-3 py-2"
+                                className="inline-flex items-center gap-tight rounded-md border border-border-subtle bg-bg-subtle px-3 py-2"
                             >
                                 <span className="font-medium text-content-default">{f.key}</span>
                                 <span className="text-content-muted">{f.statusLabel}</span>
