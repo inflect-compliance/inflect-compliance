@@ -113,7 +113,6 @@ export const MAIN_PAGES: readonly string[] = [
     '/evidence',
     '/findings',
     '/frameworks',
-    '/incidents',
     '/issues',
     '/mapping',
     '/notifications',
@@ -124,7 +123,6 @@ export const MAIN_PAGES: readonly string[] = [
     '/tasks',
     '/tests',
     '/vendors',
-    '/vulnerabilities',
 ] as const;
 
 /**
@@ -184,7 +182,8 @@ export const SUBPAGES: readonly string[] = [
     '/controls/sankey',
     '/controls/templates',
 
-    // Incidents (NIS2 Article 23)
+    // Incidents (NIS2 Article 23) — subpage of Internal Audit
+    '/incidents',
     '/incidents/[incidentId]',
 
     // Frameworks
@@ -247,6 +246,9 @@ export const SUBPAGES: readonly string[] = [
     '/vendors/[vendorId]/assessment/[assessmentId]',
     '/vendors/dashboard',
     '/vendors/new',
+
+    // Vulnerabilities — subpage of the Risk Register
+    '/vulnerabilities',
 ] as const;
 
 /**

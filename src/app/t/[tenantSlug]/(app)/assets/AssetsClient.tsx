@@ -233,11 +233,15 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
             const url =
                 action === 'status'
                     ? apiUrl('/assets/bulk/status')
-                    : apiUrl('/assets/bulk/assign');
+                    : action === 'delete'
+                        ? apiUrl('/assets/bulk/delete')
+                        : apiUrl('/assets/bulk/assign');
             const body =
                 action === 'status'
                     ? { assetIds: ids, status: value }
-                    : { assetIds: ids, ownerUserId: value || null };
+                    : action === 'delete'
+                        ? { assetIds: ids }
+                        : { assetIds: ids, ownerUserId: value || null };
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -297,6 +301,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                     />
                 ),
             },
+            { value: 'delete', label: 'Delete', confirm: true },
         ],
         [tenantSlug],
     );
@@ -694,6 +699,8 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                             actions={assetBulkActions}
                             onApply={handleBulkApply}
                             applying={bulkApplying}
+                            selectedCount={selected.size}
+                            entityLabel="assets"
                         />
                     )}
                     onRowClick={(row) =>

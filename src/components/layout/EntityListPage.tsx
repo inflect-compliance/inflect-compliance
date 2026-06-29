@@ -53,6 +53,7 @@ import { type ReactNode } from 'react';
 
 import { ListPageShell } from '@/components/layout/ListPageShell';
 import { PageHeader } from '@/components/layout/PageHeader';
+import type { PageHeaderBack } from '@/components/layout/PageHeader';
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
 import { DataTable, type DataTableProps } from '@/components/ui/table';
 import type { FilterType } from '@/components/ui/filter';
@@ -68,6 +69,14 @@ export interface EntityListPageHeader {
      * shape (truncation, separators, custom current).
      */
     breadcrumbs?: ReadonlyArray<BreadcrumbItem>;
+    /**
+     * Optional back affordance rendered above the title. Pass
+     * `{ smart: true }` (RQ4-4) on a subpage so the page mounts
+     * `<BackAffordance>` — it resolves the in-tab referrer first, then
+     * the IA-canonical parent from `resolveCanonicalParent`. Forwarded
+     * verbatim to `<PageHeader back=…>`.
+     */
+    back?: PageHeaderBack;
     /**
      * Optional uppercase eyebrow rendered above the title (v2-PR-12).
      * Conventionally the resource name in screaming-quiet caps —
@@ -267,6 +276,7 @@ export function EntityListPage<TRow>(props: EntityListPageProps<TRow>) {
             <ListPageShell.Header>
                 <PageHeader
                     breadcrumbs={header.breadcrumbs}
+                    back={header.back}
                     eyebrow={header.eyebrow}
                     title={header.title}
                     // v2-PR-12 — `description` wins over `count` so

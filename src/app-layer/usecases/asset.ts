@@ -267,6 +267,26 @@ export async function bulkAssignAsset(
     return { updated };
 }
 
+/** Bulk soft-delete assets selected in the table action bar. */
+export async function bulkDeleteAsset(ctx: RequestContext, assetIds: string[]) {
+    assertCanAdmin(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const rows = await AssetRepository.listByIds(db, ctx, assetIds);
+        if (rows.length === 0) return { deleted: 0 };
+        await db.asset.deleteMany({ where: { id: { in: rows.map((r) => r.id) }, tenantId: ctx.tenantId } });
+        for (const r of rows) {
+            await logEvent(db, ctx, {
+                action: 'SOFT_DELETE',
+                entityType: 'Asset',
+                entityId: r.id,
+                details: 'Asset soft-deleted (bulk)',
+                detailsJson: { category: 'entity_lifecycle', entityName: 'Asset', operation: 'deleted', summary: 'Asset soft-deleted' },
+            });
+        }
+        return { deleted: rows.length };
+    });
+}
+
 export async function deleteAsset(ctx: RequestContext, id: string) {
     assertCanAdmin(ctx);
 

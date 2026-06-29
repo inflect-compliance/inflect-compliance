@@ -231,11 +231,17 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
         if (!action || ids.length === 0) return;
         setBulkApplying(true);
         try {
-            const url = action === 'status' ? apiUrl('/vendors/bulk/status') : apiUrl('/vendors/bulk/assign');
+            const url = action === 'status'
+                ? apiUrl('/vendors/bulk/status')
+                : action === 'delete'
+                    ? apiUrl('/vendors/bulk/delete')
+                    : apiUrl('/vendors/bulk/assign');
             const body =
                 action === 'status'
                     ? { vendorIds: ids, status: value }
-                    : { vendorIds: ids, ownerUserId: value || null };
+                    : action === 'delete'
+                        ? { vendorIds: ids }
+                        : { vendorIds: ids, ownerUserId: value || null };
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -286,6 +292,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                     />
                 ),
             },
+            { value: 'delete', label: 'Delete', confirm: true },
         ],
         [tenantSlug],
     );
@@ -583,6 +590,8 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                                 actions={vendorBulkActions}
                                 onApply={handleBulkApply}
                                 applying={bulkApplying}
+                                selectedCount={selected.size}
+                                entityLabel="vendors"
                             />
                         )}
                         emptyState={

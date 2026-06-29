@@ -76,7 +76,8 @@ const PARENT_MAP: Record<string, CanonicalParent> = {
 
     // Controls
     '/controls/[controlId]': { href: '/controls', label: 'Controls' },
-    // Incidents (NIS2 Article 23)
+    // Incidents (NIS2 Article 23) — subpage of Internal Audit
+    '/incidents': { href: '/audits', label: 'Internal Audit' },
     '/incidents/[incidentId]': { href: '/incidents', label: 'Incidents' },
     // Test-plan detail lives URL-wise under a control, but the user's
     // mental model is "I'm working on a test"; the canonical parent is
@@ -161,6 +162,9 @@ const PARENT_MAP: Record<string, CanonicalParent> = {
     },
     '/vendors/dashboard': { href: '/vendors', label: 'Vendors' },
     '/vendors/new': { href: '/vendors', label: 'Vendors' },
+
+    // Vulnerabilities — subpage of the Risk Register
+    '/vulnerabilities': { href: '/risks', label: 'Risk Register' },
 };
 
 /**

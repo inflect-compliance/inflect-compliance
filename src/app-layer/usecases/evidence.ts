@@ -323,6 +323,26 @@ export async function reviewEvidence(ctx: RequestContext, id: string, data: { ac
 import { restoreEntity, purgeEntity } from './soft-delete-operations';
 import { withDeleted } from '@/lib/soft-delete';
 
+/** Bulk soft-delete evidence selected in the table action bar. */
+export async function bulkDeleteEvidence(ctx: RequestContext, evidenceIds: string[]) {
+    assertCanAdmin(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const rows = await EvidenceRepository.listByIds(db, ctx, evidenceIds);
+        if (rows.length === 0) return { deleted: 0 };
+        await db.evidence.deleteMany({ where: { id: { in: rows.map((r) => r.id) }, tenantId: ctx.tenantId } });
+        for (const r of rows) {
+            await logEvent(db, ctx, {
+                action: 'SOFT_DELETE',
+                entityType: 'Evidence',
+                entityId: r.id,
+                details: 'Evidence soft-deleted (bulk)',
+                detailsJson: { category: 'entity_lifecycle', entityName: 'Evidence', operation: 'deleted', summary: 'Evidence soft-deleted' },
+            });
+        }
+        return { deleted: rows.length };
+    });
+}
+
 export async function deleteEvidence(ctx: RequestContext, id: string) {
     assertCanAdmin(ctx);
     const result = await runInTenantContext(ctx, async (db) => {

@@ -243,6 +243,26 @@ export async function updateTask(ctx: RequestContext, taskId: string, patch: {
 // TaskWatcher) all cascade via `onDelete: Cascade`, so removing the
 // task row cleans up its comments, entity links, and watchers in one
 // statement. Gated on write permission (same tier as edit) and audited.
+/** Bulk soft-delete tasks selected in the table action bar. */
+export async function bulkDeleteTask(ctx: RequestContext, taskIds: string[]) {
+    assertCanWriteTasks(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const rows = await WorkItemRepository.listByIds(db, ctx, taskIds);
+        if (rows.length === 0) return { deleted: 0 };
+        await db.task.deleteMany({ where: { id: { in: rows.map((r) => r.id) }, tenantId: ctx.tenantId } });
+        for (const r of rows) {
+            await logEvent(db, ctx, {
+                action: 'SOFT_DELETE',
+                entityType: 'Task',
+                entityId: r.id,
+                details: 'Task soft-deleted (bulk)',
+                detailsJson: { category: 'entity_lifecycle', entityName: 'Task', operation: 'deleted', summary: 'Task soft-deleted' },
+            });
+        }
+        return { deleted: rows.length };
+    });
+}
+
 export async function deleteTask(ctx: RequestContext, taskId: string) {
     assertCanWriteTasks(ctx);
     const result = await runInTenantContext(ctx, async (db) => {

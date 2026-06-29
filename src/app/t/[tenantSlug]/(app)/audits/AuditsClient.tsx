@@ -205,6 +205,15 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
                         >
                             {t.findingsTab}
                         </Link>
+                        {/* Incidents (NIS2 Article 23) is a subpage of Internal
+                            Audit — reached via this text button. */}
+                        <Link
+                            href={`/t/${tenantSlug}/incidents`}
+                            className={cn(buttonVariants({ variant: 'secondary' }))}
+                            id="audits-incidents-link"
+                        >
+                            Incidents
+                        </Link>
                         <Button variant="primary" icon={<Plus className="-ml-0.5 -mr-2.5" />} onClick={() => setIsCreateOpen(true)} id="new-audit-btn">{t.newAudit}</Button>
                     </div>
                 }

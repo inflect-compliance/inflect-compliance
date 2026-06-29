@@ -512,11 +512,15 @@ function ControlsPageInner({
             const url =
                 action === 'status'
                     ? apiUrl('/controls/bulk/status')
-                    : apiUrl('/controls/bulk/assign');
+                    : action === 'delete'
+                        ? apiUrl('/controls/bulk/delete')
+                        : apiUrl('/controls/bulk/assign');
             const body =
                 action === 'status'
                     ? { controlIds: ids, status: value }
-                    : { controlIds: ids, ownerUserId: value || null };
+                    : action === 'delete'
+                        ? { controlIds: ids }
+                        : { controlIds: ids, ownerUserId: value || null };
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -568,6 +572,7 @@ function ControlsPageInner({
                     />
                 ),
             },
+            { value: 'delete', label: 'Delete', confirm: true },
         ],
         [tenantSlug],
     );
@@ -942,11 +947,40 @@ function ControlsPageInner({
         allSectionKeys.length > 0 &&
         openSections.length === allSectionKeys.length;
 
+    // UI-13: the "Expand all / Collapse all" toggle — a single chevron that
+    // points DOWN when every section is expanded, LEFT when collapsed. It now
+    // rides the AsidePanel header (to the LEFT of the panel collapse toggle)
+    // via the `headerActions` slot, rather than sitting below the header in the
+    // content. Canonical Tooltip carries the hint (not a popover trigger, so a
+    // plain wrap is safe). Only meaningful when there are sections to toggle.
+    const browseExpandAll =
+        categoryGroups.length > 0 ? (
+            <Tooltip content={allExpanded ? 'Collapse all' : 'Expand all'}>
+                <button
+                    type="button"
+                    onClick={() =>
+                        setOpenSections(allExpanded ? [] : allSectionKeys)
+                    }
+                    className="flex items-center justify-center rounded-md p-1 text-content-muted hover:bg-bg-muted/50 hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:h-4 [&_svg]:w-4"
+                    data-testid="controls-browse-expand-all"
+                    aria-label={allExpanded ? 'Collapse all' : 'Expand all'}
+                    aria-expanded={allExpanded}
+                >
+                    {allExpanded ? <ChevronDown /> : <ChevronLeft />}
+                </button>
+            </Tooltip>
+        ) : undefined;
+
     const browseAside = (
         <AsidePanel
             title="Browse"
             surfaceKey="controls-list-browse"
             defaultWidth={480}
+            // The Browse rail starts collapsed-to-spine — the table is the
+            // primary surface; the user opens Browse when they want to navigate
+            // by category. (Persists per-user once toggled.)
+            defaultCollapsed
+            headerActions={browseExpandAll}
             icon={<AppIcon name="controls" size={16} />}
         >
             <div data-testid="controls-browse-aside" className="space-y-default">
@@ -956,31 +990,6 @@ function ControlsPageInner({
                     </p>
                 ) : (
                     <>
-                        {/* UI-13: the "Expand all / Collapse all" text button is
-                            now a single left-aligned chevron toggle — points DOWN
-                            when every section is expanded, LEFT when collapsed.
-                            Canonical Tooltip carries the hint (not a popover
-                            trigger, so a plain wrap is safe). */}
-                        <div className="flex justify-start">
-                            <Tooltip
-                                content={allExpanded ? 'Collapse all' : 'Expand all'}
-                            >
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        setOpenSections(
-                                            allExpanded ? [] : allSectionKeys,
-                                        )
-                                    }
-                                    className="flex items-center justify-center rounded-md p-1 text-content-muted hover:bg-bg-muted/50 hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:h-4 [&_svg]:w-4"
-                                    data-testid="controls-browse-expand-all"
-                                    aria-label={allExpanded ? 'Collapse all' : 'Expand all'}
-                                    aria-expanded={allExpanded}
-                                >
-                                    {allExpanded ? <ChevronDown /> : <ChevronLeft />}
-                                </button>
-                            </Tooltip>
-                        </div>
                         {/* Scroll stays INSIDE the browse box (viewport-
                             clamped) so an all-expanded rail doesn't push
                             the whole page — mirrors the table's
@@ -1388,6 +1397,8 @@ function ControlsPageInner({
                               actions={controlBulkActions}
                               onApply={handleBulkApply}
                               applying={bulkApplying}
+                              selectedCount={selectedIds.length}
+                              entityLabel="controls"
                           />
                       )
                     : undefined,

@@ -2009,6 +2009,9 @@ model ControlTestPlan {
   createdByUserId    String
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
+  /// Soft-delete (bulk-delete support) — enrolled in SOFT_DELETE_MODELS.
+  deletedAt          DateTime?
+  deletedByUserId    String?
   control            Control           @relation(fields: [controlId], references: [id])
   createdBy          User              @relation("TestPlanCreator", fields: [createdByUserId], references: [id])
   owner              User?             @relation("TestPlanOwner", fields: [ownerUserId], references: [id])
@@ -2022,6 +2025,7 @@ model ControlTestPlan {
   @@index([tenantId, status])
   @@index([tenantId, nextRunAt])
   @@index([tenantId, automationType, status])
+  @@index([tenantId, deletedAt])
 }
 
 model ControlTestRun {
@@ -2044,7 +2048,9 @@ model ControlTestRun {
   createdBy        User                      @relation("TestRunCreator", fields: [createdByUserId], references: [id])
   executedBy       User?                     @relation("TestRunExecutor", fields: [executedByUserId], references: [id])
   tenant           Tenant                    @relation(fields: [tenantId], references: [id])
-  testPlan         ControlTestPlan           @relation(fields: [testPlanId], references: [id])
+  // Cascade so the data-lifecycle hard-purge of a soft-deleted test plan
+  // (90d) erases its runs too (runs' evidence links already cascade).
+  testPlan         ControlTestPlan           @relation(fields: [testPlanId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([tenantId, testPlanId])

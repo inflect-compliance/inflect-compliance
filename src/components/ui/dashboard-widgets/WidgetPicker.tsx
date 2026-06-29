@@ -69,7 +69,10 @@ type WidgetTypeKey =
     | 'DONUT'
     | 'TREND'
     | 'TENANT_LIST'
-    | 'DRILLDOWN_CTAS';
+    | 'DRILLDOWN_CTAS'
+    | 'ORG_THREAT_LEVEL'
+    | 'ORG_MATURITY'
+    | 'ORG_INITIATIVES';
 
 interface WidgetTypeOption {
     type: WidgetTypeKey;
@@ -117,7 +120,41 @@ const WIDGET_TYPES: ReadonlyArray<WidgetTypeOption> = [
         defaultSize: { w: 12, h: 2 },
         defaultChartType: 'default',
     },
+    // ─── Org-specific widgets (ported) ──────────────────────────────
+    // Each locks a single chartType (banner / radar / list) per the Zod
+    // discriminated union; the dispatcher renders the bespoke component.
+    {
+        type: 'ORG_THREAT_LEVEL',
+        label: 'Threat level',
+        description: 'Human-curated org-wide security posture banner.',
+        defaultSize: { w: 6, h: 2 },
+        defaultChartType: 'banner',
+    },
+    {
+        type: 'ORG_MATURITY',
+        label: 'Security maturity',
+        description: 'Self-assessed maturity rating across the CSF domains.',
+        defaultSize: { w: 6, h: 4 },
+        defaultChartType: 'radar',
+    },
+    {
+        type: 'ORG_INITIATIVES',
+        label: 'Security initiatives',
+        description: 'Top in-flight portfolio security programmes + progress.',
+        defaultSize: { w: 6, h: 4 },
+        defaultChartType: 'list',
+    },
 ];
+
+/**
+ * The widget types the "Add widget" picker offers. Exported so a parity test
+ * can assert it covers EVERY type in the schema's discriminated union — the
+ * check that was missing when the three ORG_* widgets shipped wired into the
+ * dispatcher + schema + presets but absent from the picker.
+ */
+export const WIDGET_PICKER_TYPE_KEYS: ReadonlyArray<string> = WIDGET_TYPES.map(
+    (w) => w.type,
+);
 
 const CHART_TYPE_OPTIONS: Record<WidgetTypeKey, ReadonlyArray<{ value: string; label: string }>> = {
     KPI: [
@@ -140,6 +177,17 @@ const CHART_TYPE_OPTIONS: Record<WidgetTypeKey, ReadonlyArray<{ value: string; l
     DRILLDOWN_CTAS: [
         { value: 'default', label: 'Default (controls / risks / evidence)' },
     ],
+    // Org widgets each have one fixed visualization; the "Data source"
+    // dropdown shows a single, self-describing option.
+    ORG_THREAT_LEVEL: [
+        { value: 'banner', label: 'Posture banner' },
+    ],
+    ORG_MATURITY: [
+        { value: 'radar', label: 'Maturity radar' },
+    ],
+    ORG_INITIATIVES: [
+        { value: 'list', label: 'Initiative list' },
+    ],
 };
 
 function defaultConfigFor(
@@ -157,6 +205,12 @@ function defaultConfigFor(
             return { sortBy: 'rag' };
         case 'DRILLDOWN_CTAS':
             return {};
+        case 'ORG_THREAT_LEVEL':
+            return { showHistory: false };
+        case 'ORG_MATURITY':
+            return { view: 'radar' };
+        case 'ORG_INITIATIVES':
+            return { topN: 5 };
     }
 }
 
@@ -203,6 +257,11 @@ export function WidgetPicker({
     const [tenantSort, setTenantSort] = useState<'rag' | 'name' | 'coverage'>(
         'rag',
     );
+    // Org-widget config state.
+    const [orgShowHistory, setOrgShowHistory] = useState<boolean>(false);
+    const [maturityView, setMaturityView] = useState<'radar' | 'trend'>('radar');
+    const [maturityCoverageHint, setMaturityCoverageHint] = useState<boolean>(false);
+    const [initiativesTopN, setInitiativesTopN] = useState<number>(5);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -223,6 +282,10 @@ export function WidgetPicker({
         setShowLegend(true);
         setKpiFormat('percent');
         setTenantSort('rag');
+        setOrgShowHistory(false);
+        setMaturityView('radar');
+        setMaturityCoverageHint(false);
+        setInitiativesTopN(5);
         setError(null);
         setSubmitting(false);
     }
@@ -248,6 +311,14 @@ export function WidgetPicker({
                 return { ...base, sortBy: tenantSort };
             case 'DRILLDOWN_CTAS':
                 return base;
+            // Org configs are `.strict()` in the schema — emit ONLY the
+            // allowed keys (no `base` spread that could leak a stray field).
+            case 'ORG_THREAT_LEVEL':
+                return { showHistory: orgShowHistory };
+            case 'ORG_MATURITY':
+                return { view: maturityView, showCoverageHint: maturityCoverageHint };
+            case 'ORG_INITIATIVES':
+                return { topN: initiativesTopN };
         }
     }
 
@@ -459,6 +530,77 @@ export function WidgetPicker({
                                 <option value="name">Name (alphabetical)</option>
                                 <option value="coverage">Coverage</option>
                             </select>
+                        </FormField>
+                    )}
+
+                    {type === 'ORG_THREAT_LEVEL' && (
+                        <FormField label="Options">
+                            <label className="flex items-center gap-tight text-sm text-content-emphasis">
+                                <input
+                                    type="checkbox"
+                                    checked={orgShowHistory}
+                                    onChange={(e) => setOrgShowHistory(e.target.checked)}
+                                    data-testid="widget-picker-threat-history"
+                                    className="size-4 rounded border-border-default focus:ring-ring"
+                                />
+                                Show the posture-history timeline
+                            </label>
+                        </FormField>
+                    )}
+
+                    {type === 'ORG_MATURITY' && (
+                        <>
+                            <FormField
+                                label="Default view"
+                                description="Radar (CSF domains) or maturity-over-time trend."
+                            >
+                                <select
+                                    value={maturityView}
+                                    onChange={(e) =>
+                                        setMaturityView(e.target.value as 'radar' | 'trend')
+                                    }
+                                    data-testid="widget-picker-maturity-view"
+                                    className="block w-full rounded-md border border-border-default bg-bg-default px-3 py-2 text-sm text-content-emphasis focus:outline-none focus:ring-2 focus:ring-ring"
+                                >
+                                    <option value="radar">Radar</option>
+                                    <option value="trend">Trend</option>
+                                </select>
+                            </FormField>
+                            <FormField label="Options">
+                                <label className="flex items-center gap-tight text-sm text-content-emphasis">
+                                    <input
+                                        type="checkbox"
+                                        checked={maturityCoverageHint}
+                                        onChange={(e) => setMaturityCoverageHint(e.target.checked)}
+                                        data-testid="widget-picker-maturity-coverage-hint"
+                                        className="size-4 rounded border-border-default focus:ring-ring"
+                                    />
+                                    Show the derived-coverage hint
+                                </label>
+                            </FormField>
+                        </>
+                    )}
+
+                    {type === 'ORG_INITIATIVES' && (
+                        <FormField
+                            label="How many to show"
+                            description="Top in-flight initiatives to surface. Min 1, max 20."
+                        >
+                            <input
+                                type="number"
+                                min={1}
+                                max={20}
+                                step={1}
+                                value={initiativesTopN}
+                                onChange={(e) => {
+                                    const next = Number.parseInt(e.target.value, 10);
+                                    if (Number.isFinite(next)) {
+                                        setInitiativesTopN(Math.min(20, Math.max(1, next)));
+                                    }
+                                }}
+                                data-testid="widget-picker-initiatives-topn"
+                                className="block w-full rounded-md border border-border-default bg-bg-default px-3 py-2 text-sm text-content-emphasis focus:outline-none focus:ring-2 focus:ring-ring"
+                            />
                         </FormField>
                     )}
 

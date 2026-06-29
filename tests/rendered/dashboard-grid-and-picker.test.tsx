@@ -45,7 +45,8 @@ import {
     DashboardGrid,
     type DashboardGridWidget,
 } from '@/components/ui/dashboard-widgets/DashboardGrid';
-import { WidgetPicker } from '@/components/ui/dashboard-widgets/WidgetPicker';
+import { WidgetPicker, WIDGET_PICKER_TYPE_KEYS } from '@/components/ui/dashboard-widgets/WidgetPicker';
+import { WidgetTypedShapeSchema } from '@/app-layer/schemas/org-dashboard-widget.schemas';
 
 // ─── Fixtures ───────────────────────────────────────────────────────
 
@@ -358,5 +359,22 @@ describe('Epic 41 — WidgetPicker', () => {
             await user.click(screen.getByTestId('widget-picker-cancel'));
         });
         expect(onSubmit).not.toHaveBeenCalled();
+    });
+});
+
+// ─── Picker ↔ schema parity (regression guard) ──────────────────────
+// The three ORG_* widgets shipped wired into the dispatcher + schema +
+// presets but were ABSENT from the picker, so users couldn't add them.
+// Nothing caught it because no test compared the picker catalogue to the
+// schema's type union. This lock does: every type the schema accepts must
+// be offerable in "Add widget", and the picker must not offer a type the
+// schema would reject.
+describe('WidgetPicker ↔ schema type parity', () => {
+    it('the picker offers exactly the schema discriminated-union types', () => {
+        const schemaTypes = WidgetTypedShapeSchema.options
+            .map((opt) => opt.shape.type.value as string)
+            .sort();
+        const pickerTypes = [...WIDGET_PICKER_TYPE_KEYS].sort();
+        expect(pickerTypes).toEqual(schemaTypes);
     });
 });

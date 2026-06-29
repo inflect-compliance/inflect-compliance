@@ -1217,6 +1217,9 @@
     "docs/implementation-notes/2026-06-27-policy-template-cleanup.md": {
       "class": "historical"
     },
+    "docs/implementation-notes/2026-06-28-bulk-delete-action.md": {
+      "class": "historical"
+    },
     "docs/implementation-notes/2026-06-28-dora-framework.md": {
       "class": "historical"
     },

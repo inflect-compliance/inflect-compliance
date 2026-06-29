@@ -775,6 +775,26 @@ export async function bulkAssignPolicy(
     return { updated };
 }
 
+/** Bulk soft-delete policies selected in the table action bar. */
+export async function bulkDeletePolicy(ctx: RequestContext, policyIds: string[]) {
+    assertCanAdmin(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const rows = await PolicyRepository.listByIds(db, ctx, policyIds);
+        if (rows.length === 0) return { deleted: 0 };
+        await db.policy.deleteMany({ where: { id: { in: rows.map((r) => r.id) }, tenantId: ctx.tenantId } });
+        for (const r of rows) {
+            await logEvent(db, ctx, {
+                action: 'SOFT_DELETE',
+                entityType: 'Policy',
+                entityId: r.id,
+                details: 'Policy soft-deleted (bulk)',
+                detailsJson: { category: 'entity_lifecycle', entityName: 'Policy', operation: 'deleted', summary: 'Policy soft-deleted' },
+            });
+        }
+        return { deleted: rows.length };
+    });
+}
+
 export async function bulkArchivePolicy(ctx: RequestContext, policyIds: string[]) {
     assertCanAdmin(ctx);
     const updated = await runInTenantContext(ctx, async (db) => {

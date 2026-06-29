@@ -26,6 +26,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { IconAction } from '@/components/ui/icon-action';
 import { AppIcon } from '@/components/icons/AppIcon';
+import { Modal } from '@/components/ui/modal';
 import { cn } from '@/lib/cn';
 
 export interface BulkActionDef {
@@ -47,6 +48,13 @@ export interface BulkActionDef {
     }) => ReactNode;
     /** Whether Apply is enabled for the current value. Default: always. */
     canApply?: (value: string) => boolean;
+    /**
+     * Require a danger-tone confirmation dialog before `onApply` fires. Use for
+     * destructive actions (e.g. bulk delete). The dialog reports the selected
+     * count + `entityLabel` and confirms with the canonical "Delete" verb
+     * (locked by the destructive-vocabulary ratchet).
+     */
+    confirm?: boolean;
 }
 
 export interface BulkActionBarProps {
@@ -55,6 +63,10 @@ export interface BulkActionBarProps {
     onApply: (action: string, value: string, label: string) => void;
     /** True while the consumer's bulk mutation is in flight. */
     applying?: boolean;
+    /** Number of selected rows — surfaced in the confirm dialog. */
+    selectedCount?: number;
+    /** Plural entity noun for the confirm dialog (e.g. "assets"). */
+    entityLabel?: string;
     className?: string;
 }
 
@@ -62,11 +74,14 @@ export function BulkActionBar({
     actions,
     onApply,
     applying,
+    selectedCount,
+    entityLabel,
     className,
 }: BulkActionBarProps) {
     const [action, setAction] = useState('');
     const [value, setValue] = useState('');
     const [label, setLabel] = useState('');
+    const [confirmOpen, setConfirmOpen] = useState(false);
     const wasApplying = useRef(false);
 
     // Clear the form once an apply settles (success OR failure) — mirrors the
@@ -86,6 +101,14 @@ export function BulkActionBar({
     }));
     const active = actions.find((a) => a.value === action) ?? null;
     const ready = !!action && (active?.canApply ? active.canApply(value) : true);
+
+    // Apply — destructive actions route through a confirm dialog first.
+    const handleApply = () => {
+        if (active?.confirm) setConfirmOpen(true);
+        else onApply(action, value, label);
+    };
+
+    const noun = entityLabel ?? 'items';
 
     return (
         <div className={cn('flex items-center gap-compact', className)}>
@@ -108,7 +131,7 @@ export function BulkActionBar({
                 variant="primary"
                 disabled={!ready}
                 loading={applying}
-                onClick={() => onApply(action, value, label)}
+                onClick={handleApply}
                 id="bulk-apply-btn"
                 // One size smaller than the canonical icon button (h-9 → h-8,
                 // sm-equivalent square + sm icon rhythm) so it sits a notch
@@ -117,6 +140,20 @@ export function BulkActionBar({
                 icon={<AppIcon name="checkCircle" size={14} />}
                 label="Apply"
             />
+            {active?.confirm && (
+                <Modal.Confirm
+                    showModal={confirmOpen}
+                    setShowModal={setConfirmOpen}
+                    tone="danger"
+                    title={`Delete ${selectedCount ?? 0} ${noun}?`}
+                    description={`This removes the selected ${noun} from your workspace.`}
+                    confirmLabel="Delete"
+                    onConfirm={() => {
+                        setConfirmOpen(false);
+                        onApply(action, value, label);
+                    }}
+                />
+            )}
         </div>
     );
 }

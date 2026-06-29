@@ -28,6 +28,9 @@ export const SOFT_DELETE_MODELS = new Set([
     'Audit',
     'AuditCycle',
     'AuditPack',
+    // Bulk-delete support (row-select action bar) — deletedAt added in
+    // 20260628120000_control_test_plan_soft_delete.
+    'ControlTestPlan',
 ]);
 
 // ─── Read actions that should filter out deleted records ───
