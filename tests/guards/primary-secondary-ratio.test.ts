@@ -155,11 +155,24 @@ const MIN_SECONDARY_TO_PRIMARY_RATIO = 0.9;
 // confirm-and-link modal (TemplateControlSuggestModal). Its "Link N
 // controls" confirm is the dialog's earned primary, paired with a ghost
 // "Skip". +1 primary.
-// 2026-06-28 — bumped 128 → 129 for the Trust Center admin compose page
+//
+// 2026-06-28 — bumped 128 → 133 for the NIS2 Article 23 incident-response
+// feature. Five earned primaries: the incidents-list "Incident" create
+// CTA, the create-incident modal confirm, and the three incident-detail
+// modal confirms (submit report, add timeline entry, confirm reportable).
+// Each pairs with a secondary Cancel; the page-level mark-reportable
+// trigger was kept a secondary to hold the line. +5 primary.
+//
+// 2026-06-29 — bumped 133 → 134 for the incident containment/forensics
+// follow-up: the link-forensic-evidence modal's confirm is its earned
+// primary (paired with a secondary Cancel; the page-level trigger is a
+// secondary). +1 primary.
+//
+// 2026-06-29 — bumped 134 → 135 for the Trust Center admin compose page
 // (admin/trust-center). Its "Save" is the genuine page primary CTA, paired
 // with secondary "Publish…"/"Unpublish" + ghost row-remove affordances, so
-// the secondary:primary ratio still rises. +1 primary. Measured = 129.
-const MAX_PRIMARY_COUNT = 129;
+// the secondary:primary ratio still rises. +1 primary.
+const MAX_PRIMARY_COUNT = 135;
 
 describe("primary:secondary ratio direction", () => {
     const counts = (() => {

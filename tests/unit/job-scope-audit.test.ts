@@ -65,7 +65,10 @@ describe('Executor Registry — tenantId propagation audit', () => {
             // dau-mau-aggregator + onboarding-abandonment-sweep are
             // cross-tenant business-KPI sweeps (aggregate/scan all tenants),
             // same class as risk-snapshot / report-delivery.
-            if (['health-check', 'sync-pull', 'schedule-trigger-sweep', 'sharepoint-delta-sync-dispatch', 'sharepoint-subscription-renew', 'risk-appetite-monitor', 'risk-snapshot', 'report-delivery', 'dau-mau-aggregator', 'onboarding-abandonment-sweep'].includes(jobName)) continue;
+            // nvd-cve-sync ingests the global NVD CVE feed (provider-wide,
+            // not tenant-scoped) — the per-tenant asset matching runs
+            // separately, so this executor legitimately has no tenantId.
+            if (['health-check', 'sync-pull', 'schedule-trigger-sweep', 'sharepoint-delta-sync-dispatch', 'sharepoint-subscription-renew', 'risk-appetite-monitor', 'risk-snapshot', 'report-delivery', 'dau-mau-aggregator', 'onboarding-abandonment-sweep', 'nvd-cve-sync'].includes(jobName)) continue;
 
             // If the parameter is named _payload, it means tenantId is being ignored
             if (paramName.startsWith('_')) {

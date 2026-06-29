@@ -73,6 +73,7 @@ const PERMISSION_SCHEMA: Record<keyof PermissionSet, string[]> = {
     assets: ['view', 'create', 'edit'],
     vendors: ['view', 'create', 'edit'],
     tests: ['view', 'create', 'execute'],
+    incidents: ['view', 'manage'],
     frameworks: ['view', 'install'],
     audits: ['view', 'manage', 'freeze', 'share'],
     reports: ['view', 'export'],

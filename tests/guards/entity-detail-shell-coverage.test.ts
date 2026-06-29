@@ -53,6 +53,8 @@ const ADOPTED_PAGES: ReadonlyArray<Adopter> = [
   { page: "src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx", entity: "Vendor" },
   { page: "src/app/t/[tenantSlug]/(app)/policies/[policyId]/page.tsx", entity: "Policy" },
   { page: "src/app/t/[tenantSlug]/(app)/tests/runs/[runId]/page.tsx", entity: "Test run" },
+  // NIS2 Article 23 incident response
+  { page: "src/app/t/[tenantSlug]/(app)/incidents/[incidentId]/page.tsx", entity: "Incident" },
 ];
 
 /**

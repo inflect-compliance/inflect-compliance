@@ -516,6 +516,13 @@ enum NotificationType {
   // overdue vendor (routed to the vendor's `ownerUserId`). Bumps
   // the date forward by the cadence so the reminder isn't spam.
   VENDOR_REVIEW_DUE
+  // NIS2 Article 23 deadline clock (incident-notification-deadlines job).
+  // INCIDENT_DEADLINE_DUE fires when a 24h/72h/1-month deadline enters
+  // its lead window; INCIDENT_DEADLINE_OVERDUE is the loud one — a
+  // regulatory deadline lapsed without a filed report. Routed to the
+  // incident owner + tenant OWNER/ADMINs, deduped per (deadline, day).
+  INCIDENT_DEADLINE_DUE
+  INCIDENT_DEADLINE_OVERDUE
   GENERAL
 }
 
@@ -1003,4 +1010,50 @@ enum DataSubjectRequestStatus {
   IN_PROGRESS
   COMPLETED
   REJECTED
+}
+
+/// NIS2 Article 23 incident severity. Four-level scale; HIGH/CRITICAL
+/// is the default heuristic that SUGGESTS (never asserts) a reporting
+/// obligation — the tenant's DPO/legal makes the final call.
+enum IncidentSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+/// The seven-phase NIS2 incident-response flow (+ CLOSED terminal).
+/// DETECTION → CLASSIFICATION → EARLY_WARNING → CONTAINMENT →
+/// INVESTIGATION → DETAILED_REPORT → RECOVERY → CLOSED.
+/// Methodology adapted (CC BY 4.0) from Kshreenath/NIS2-Checklist
+/// (Paolo Carner / BARE Consulting).
+enum IncidentPhase {
+  DETECTION
+  CLASSIFICATION
+  EARLY_WARNING
+  CONTAINMENT
+  INVESTIGATION
+  DETAILED_REPORT
+  RECOVERY
+  CLOSED
+}
+
+/// The three Article 23 regulatory notification milestones, each with a
+/// deadline derived from the incident's detectedAt: early warning within
+/// 24h, detailed report within 72h, final report within 1 month.
+enum IncidentNotificationKind {
+  EARLY_WARNING_24H
+  DETAILED_72H
+  FINAL_1MONTH
+}
+
+/// Notification deadline state. PENDING → DUE (deadline approaching) →
+/// OVERDUE (deadline passed, not submitted — the loud one) or SUBMITTED.
+/// NOT_REQUIRED when the tenant determines this milestone does not apply.
+enum IncidentNotificationStatus {
+  PENDING
+  DUE
+  OVERDUE
+  SUBMITTED
+  NOT_REQUIRED
 }

@@ -14,7 +14,7 @@ import { ShieldAlert } from '@/components/ui/icons/nucleo/shield-alert';
 import { ArrowUpRight } from '@/components/ui/icons/nucleo/arrow-up-right';
 import { EntityListPage } from '@/components/layout/EntityListPage';
 import { FilterProvider, useFilterContext, useFilters } from '@/components/ui/filter';
-import type { ColumnDef } from '@/components/ui/table';
+import { createColumns } from '@/components/ui/table';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -101,7 +101,7 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
         [apiUrl, router, toast],
     );
 
-    const columns = useMemo<ColumnDef<VulnRow>[]>(() => [
+    const columns = useMemo(() => createColumns<VulnRow>([
         {
             id: 'cve',
             header: 'CVE',
@@ -114,6 +114,7 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
                         href={href}
                         target="_blank"
                         rel="noopener noreferrer"
+                        data-testid={`vuln-cve-${row.original.id}`}
                         className="inline-flex items-center gap-1 font-medium text-content-link hover:underline"
                     >
                         {cve.id}
@@ -195,7 +196,7 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
                 ),
             }]
             : []),
-    ], [canWrite, convert, pendingId]);
+    ]), [canWrite, convert, pendingId]);
 
     return (
         <EntityListPage<VulnRow>
