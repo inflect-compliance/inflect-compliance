@@ -111,6 +111,7 @@ model Tenant {
   updatedAt                         DateTime                           @updatedAt
   assets                            Asset[]
   assetVulnerabilities              AssetVulnerability[]
+  trustCenter                       TrustCenter?
   assetRiskLinks                    AssetRiskLink[]
   audits                            Audit[]
   auditCycles                       AuditCycle[]

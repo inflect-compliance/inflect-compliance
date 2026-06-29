@@ -45,6 +45,10 @@ const ADMIN_ONLY_ROUTES = [
     'admin/integrations/sharepoint/test/route.ts',
     'admin/roles/route.ts',
     'admin/roles/[roleId]/route.ts',
+    // Trust Center — compose (ADMIN) + publish toggle (OWNER). Both use
+    // requirePermission; publishing the public page is OWNER-gated.
+    'admin/trust-center/route.ts',
+    'admin/trust-center/enable/route.ts',
     'admin/api-keys/route.ts',
     'admin/api-keys/[keyId]/route.ts',
     'admin/key-rotation/route.ts',

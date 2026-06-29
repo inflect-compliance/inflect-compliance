@@ -167,7 +167,12 @@ const MIN_SECONDARY_TO_PRIMARY_RATIO = 0.9;
 // follow-up: the link-forensic-evidence modal's confirm is its earned
 // primary (paired with a secondary Cancel; the page-level trigger is a
 // secondary). +1 primary.
-const MAX_PRIMARY_COUNT = 134;
+//
+// 2026-06-29 — bumped 134 → 135 for the Trust Center admin compose page
+// (admin/trust-center). Its "Save" is the genuine page primary CTA, paired
+// with secondary "Publish…"/"Unpublish" + ghost row-remove affordances, so
+// the secondary:primary ratio still rises. +1 primary.
+const MAX_PRIMARY_COUNT = 135;
 
 describe("primary:secondary ratio direction", () => {
     const counts = (() => {

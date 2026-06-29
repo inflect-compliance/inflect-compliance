@@ -1,5 +1,5 @@
 import { getTranslations } from 'next-intl/server';
-import { Shield, CreditCard, KeyRound, ShieldCheck, ShieldPlus, Users, UserCog, CloudCog, Plug, Palette, Grid3x3, Gauge, Bell, ScrollText } from 'lucide-react';
+import { Shield, CreditCard, KeyRound, ShieldCheck, ShieldPlus, Users, UserCog, CloudCog, Plug, Palette, Grid3x3, Gauge, Bell, ScrollText, Globe } from 'lucide-react';
 import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
@@ -128,6 +128,14 @@ export default async function AdminPage({
                 >
                     <ShieldCheck className="w-3.5 h-3.5" />
                     Security &amp; MFA
+                </Link>
+                <Link
+                    href={tenantHref('/admin/trust-center')}
+                    className={buttonVariants({ variant: 'secondary' })}
+                    id="trust-center-pill-btn"
+                >
+                    <Globe className="w-3.5 h-3.5" />
+                    Trust Center
                 </Link>
                 <Link
                     href={tenantHref('/admin/risk-matrix')}

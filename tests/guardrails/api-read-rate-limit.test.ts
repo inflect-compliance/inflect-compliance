@@ -168,8 +168,16 @@ describe('GAP-17 ratchet — middleware wire-up', () => {
         // reorder that puts the rate-limit check first would let
         // attackers burn another tenant's budget by probing.
         const tenantGateIdx = src.indexOf('checkTenantAccess(');
-        const readRateIdx = src.indexOf('checkApiReadRateLimit(');
+        // The GAP-17 read-tier call is the one guarded by the
+        // `isApiReadRateLimited(...)` predicate. A SEPARATE public-page tier
+        // (the unauthenticated /trust/<slug> Trust Center) also calls
+        // checkApiReadRateLimit earlier in the file — that's correct (it runs
+        // before auth because the page is public). Anchor on the GAP-17
+        // predicate so this assertion measures the GAP-17 block specifically.
+        const gap17PredicateIdx = src.indexOf('isApiReadRateLimited(');
+        const readRateIdx = src.indexOf('checkApiReadRateLimit(', gap17PredicateIdx);
         expect(tenantGateIdx).toBeGreaterThan(0);
+        expect(gap17PredicateIdx).toBeGreaterThan(0);
         expect(readRateIdx).toBeGreaterThan(0);
         expect(readRateIdx).toBeGreaterThan(tenantGateIdx);
     });

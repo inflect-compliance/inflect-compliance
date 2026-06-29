@@ -2495,3 +2495,44 @@ model Nis2SelfAssessmentAnswer {
   @@index([tenantId, assessmentId])
   @@index([questionId])
 }
+
+/// Public Trust Center — an EXPLICIT, tenant-curated projection published to
+/// the open internet at `/trust/<slug>`. SECURITY-CRITICAL: this is the only
+/// intentionally-public surface in an otherwise auth+RLS-locked app. The
+/// public page reads ONLY this row (never Risk/Control/Evidence/Finding/…),
+/// renders ONLY the fields the tenant explicitly composed, and is OFF by
+/// default. Nothing here is auto-derived from live posture — the tenant
+/// curates every claim. Free text is sanitised on write (public XSS surface).
+/// RLS-covered (carries tenantId) for the authenticated compose path; the
+/// public read goes through the system role by `slug` (single curated row).
+model TrustCenter {
+  id                  String   @id @default(cuid())
+  tenantId            String   @unique
+  tenant              Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  /// Public URL segment: /trust/<slug>. Globally unique.
+  slug                String   @unique
+  /// OFF by default — a tenant has no public page until they explicitly enable.
+  enabled             Boolean  @default(false)
+  /// Drives X-Robots-Tag — some tenants want the page indexed for marketing,
+  /// some want it noindex. OFF (noindex) by default.
+  indexable           Boolean  @default(false)
+  displayName         String
+  tagline             String?
+  /// Explicit allowlist of frameworks to show + the status label the TENANT
+  /// sets (NOT derived from coverage %, which could leak a low number).
+  /// Shape: [{ key, statusLabel, badge }]. Sanitised on write.
+  publishedFrameworks Json     @default("[]")
+  /// Curated prose the tenant writes — NOT a live control count. Sanitised.
+  postureSummary      String?
+  /// Links to tenant-chosen, already-public artifacts (whitepaper, SOC2 cover
+  /// letter). NEVER auto-exposed evidence. Shape: [{ label, url }]. Sanitised.
+  publishedDocuments  Json     @default("[]")
+  securityContact     String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  /// Audit pointer — who last toggled publish. Plain column (no relation) to
+  /// keep the public read graph minimal.
+  publishedByUserId   String?
+
+  @@index([tenantId])
+}

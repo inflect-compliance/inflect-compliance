@@ -246,6 +246,30 @@ export const ROUTE_PERMISSIONS: readonly RoutePermissionRule[] = [
             'Changes who can join the tenant — gated under admin.members.',
     },
 
+    // ── Trust Center — publish toggle (OWNER) ───────────────────────
+    // MUST precede the compose rule below — first-match wins and this is the
+    // more specific path. Publishing exposes company data on the PUBLIC
+    // internet, so it is OWNER-only (admin.tenant_lifecycle), audited.
+    {
+        path: new RegExp(`^${T}\\/admin\\/trust-center\\/enable(\\/.*)?$`),
+        permission: 'admin.tenant_lifecycle',
+        note:
+            'Enable/disable the PUBLIC /trust/<slug> page — exposes or ' +
+            'withdraws company data on the open internet. OWNER-only; ' +
+            'audited (TRUST_CENTER_PUBLISHED/UNPUBLISHED).',
+    },
+
+    // ── Trust Center — compose content (ADMIN) ──────────────────────
+    {
+        path: new RegExp(`^${T}\\/admin\\/trust-center(\\/.*)?$`),
+        permission: 'admin.manage',
+        note:
+            'Compose the curated trust-center projection (display name, ' +
+            'frameworks-to-show, posture prose, documents). ADMIN-tier; ' +
+            'publishing it to the internet is the separate OWNER-gated ' +
+            '/enable route above.',
+    },
+
     // ── NIS2 Article 23 incident response ────────────────────────────
     // Mutations (create, advance phase, mark reportable, file a
     // regulatory notification, link controls, append timeline) are a

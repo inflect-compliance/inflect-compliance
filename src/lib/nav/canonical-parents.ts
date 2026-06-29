@@ -50,6 +50,7 @@ const PARENT_MAP: Record<string, CanonicalParent> = {
     '/admin/scim': { href: '/admin', label: 'Admin' },
     '/admin/security': { href: '/admin', label: 'Admin' },
     '/admin/sso': { href: '/admin', label: 'Admin' },
+    '/admin/trust-center': { href: '/admin', label: 'Admin' },
     '/admin/vendor-assessment-reviews/[assessmentId]': { href: '/admin', label: 'Admin' },
     '/admin/vendor-templates': { href: '/admin', label: 'Admin' },
     '/admin/vendor-templates/[templateId]': { href: '/admin/vendor-templates', label: 'Vendor templates' },

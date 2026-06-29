@@ -266,10 +266,16 @@ describe('New page token discipline', () => {
         //     (built on EntityListPage + FilterToolbar + DataTable) in
         //     the unmigrated tally only because they aren't yet promoted
         //     to MIGRATED_PAGES; a #1309 follow-up.
+        //   - 110 (+2): Trust Center compose — admin/trust-center/page.tsx
+        //     + admin/trust-center/TrustCenterAdminClient.tsx. New admin
+        //     surfaces (semantic tokens only; PageBreadcrumbs +
+        //     BackAffordance + ConfirmDialog primitives) in the unmigrated
+        //     tally only because they aren't yet promoted to
+        //     MIGRATED_PAGES; a trust-center follow-up.
         // Each increment names the epic + page + reason; promotion
         // to MIGRATED_PAGES is the path forward, never silent
         // floor-bumping.
-        expect(unmigrated.length).toBeLessThanOrEqual(108);
+        expect(unmigrated.length).toBeLessThanOrEqual(110);
     });
 
     it('migrated page count is at least 4', () => {

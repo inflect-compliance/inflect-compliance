@@ -1226,6 +1226,9 @@
     "docs/implementation-notes/2026-06-28-cve-nvd-integration.md": {
       "class": "historical"
     },
+    "docs/implementation-notes/2026-06-28-trust-center.md": {
+      "class": "historical"
+    },
     "docs/implementation-notes/2026-06-28-incident-response.md": {
       "class": "historical"
     },

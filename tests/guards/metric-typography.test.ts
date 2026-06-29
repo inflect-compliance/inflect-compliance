@@ -58,6 +58,10 @@ const EXEMPT_FILES = new Set<string>([
     // Auth landing pages render brand wordmark / heroic copy that's
     // editorial, not a number.
     'src/app/login/page.tsx',
+    // External public Trust Center surface (/trust/<slug>): the oversized
+    // text is the company display name (editorial brand copy), not a metric,
+    // and the page is import-isolated from app primitives by design.
+    'src/app/trust/[slug]/page.tsx',
 ]);
 
 const SIZE_RE = /\btext-(2xl|3xl|4xl|5xl|6xl)\b/;
