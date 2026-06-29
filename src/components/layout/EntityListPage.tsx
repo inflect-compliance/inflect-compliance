@@ -52,7 +52,8 @@
 import { type ReactNode } from 'react';
 
 import { ListPageShell } from '@/components/layout/ListPageShell';
-import { PageHeader, type PageHeaderBack } from '@/components/layout/PageHeader';
+import { PageHeader } from '@/components/layout/PageHeader';
+import type { PageHeaderBack } from '@/components/layout/PageHeader';
 import { FilterToolbar } from '@/components/filters/FilterToolbar';
 import { DataTable, type DataTableProps } from '@/components/ui/table';
 import type { FilterType } from '@/components/ui/filter';
