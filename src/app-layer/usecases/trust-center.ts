@@ -15,7 +15,6 @@
 import { RequestContext } from '../types';
 import { assertCanRead, assertCanWrite } from '../policies/common';
 import { runInTenantContext } from '@/lib/db-context';
-import { prisma } from '@/lib/prisma';
 import { notFound, badRequest, forbidden } from '@/lib/errors/types';
 import { logEvent } from '../events/audit';
 import { sanitizePlainText } from '@/lib/security/sanitize';
@@ -102,7 +101,9 @@ export async function upsertTrustCenter(ctx: RequestContext, input: TrustCenterI
         });
 
         // First create mints the public slug from the tenant slug (unique).
-        const tenant = await prisma.tenant.findUnique({ where: { id: ctx.tenantId }, select: { slug: true } });
+        // Tenant has no RLS, so the context-bound db reads it fine (same shape
+        // as createRisk) — no global prisma import in this tenant-scoped usecase.
+        const tenant = await db.tenant.findUnique({ where: { id: ctx.tenantId }, select: { slug: true } });
         const slug = tenant?.slug ?? ctx.tenantId;
 
         const row = await db.trustCenter.upsert({
