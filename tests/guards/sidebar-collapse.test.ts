@@ -48,7 +48,11 @@ describe('sidebar collapse / icon rail', () => {
             const src = read(`src/components/layout/${f}`);
             expect(src).toMatch(/onToggleCollapse/);
             expect(src).toMatch(/data-testid="sidebar-collapse-toggle"/);
-            expect(src).toMatch(/PanelLeftOpen|PanelLeftClose/);
+            // The collapse toggle's icon is either the `Menu` hamburger (main
+            // app sidebar — the toggle now lives in the brand/logo slot above
+            // "Board") or the `PanelLeft*` chevrons (org sidebar, whose brand
+            // slot is the load-bearing org switcher).
+            expect(src).toMatch(/Menu|PanelLeftOpen|PanelLeftClose/);
         }
     });
 });

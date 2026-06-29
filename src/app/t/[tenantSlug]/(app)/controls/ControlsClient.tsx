@@ -1205,41 +1205,9 @@ function ControlsPageInner({
                 // editorial intent.
                 description:
                     'Every control mapped to its requirements and evidence.',
-                actions: (
-                    <>
-                        {/* Sankey is read-only and informational — keep it
-                            outside the create-permission gate so READERs
-                            can still glance at the asset → risk → control
-                            flow. */}
-                        <Tooltip content="Sankey flow">
-                            <Link href={tenantHref('/controls/sankey')} aria-label="Sankey flow" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="controls-sankey-btn">
-                                <AppIcon name="share" size={16} />
-                            </Link>
-                        </Tooltip>
-                        {appPermissions.controls.create && (
-                            <>
-                                <Tooltip content="Controls dashboard">
-                                    <Link href={tenantHref('/controls/dashboard')} aria-label="Controls dashboard" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="controls-dashboard-btn">
-                                        <AppIcon name="dashboard" size={16} />
-                                    </Link>
-                                </Tooltip>
-                                <Tooltip content="Install from templates">
-                                    <Link href={tenantHref('/controls/templates')} aria-label="Install from templates" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="install-templates-btn">
-                                        <AppIcon name="templates" size={16} />
-                                    </Link>
-                                </Tooltip>
-                                <Button
-                                    variant="primary"
-                                    icon={<Plus className="-ml-0.5 -mr-2.5" />}
-                                    id="new-control-btn"
-                                    onClick={() => setIsCreateOpen(true)}
-                                >
-                                    Control
-                                </Button>
-                            </>
-                        )}
-                    </>
-                ),
+                // Item 4/5 — the create button moved to the toolbar's
+                // leading slot and the nav icons moved into the toolbar's
+                // actions slot, so the page header action cluster is empty.
             }}
             kpis={
                 /* R23-PR-D — KPI strip above the filter toolbar.
@@ -1308,8 +1276,45 @@ function ControlsPageInner({
                 defs: liveFilterDefs,
                 searchId: 'controls-search',
                 searchPlaceholder: 'Search controls…',
+                // Item 4 — primary create button lives in the toolbar's
+                // leading slot (left of the Filter trigger).
+                toolbarLeading: appPermissions.controls.create ? (
+                    <Button
+                        variant="primary"
+                        icon={<Plus className="-ml-0.5 -mr-2.5" />}
+                        id="new-control-btn"
+                        onClick={() => setIsCreateOpen(true)}
+                    >
+                        Control
+                    </Button>
+                ) : undefined,
+                // Item 5 — nav icon links sit in the toolbar actions slot,
+                // to the LEFT of the kpi/columns gears.
                 toolbarActions: (
                     <>
+                        {/* Sankey is read-only and informational — keep it
+                            outside the create-permission gate so READERs
+                            can still glance at the asset → risk → control
+                            flow. */}
+                        <Tooltip content="Sankey flow">
+                            <Link href={tenantHref('/controls/sankey')} aria-label="Sankey flow" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="controls-sankey-btn">
+                                <AppIcon name="share" size={16} />
+                            </Link>
+                        </Tooltip>
+                        {appPermissions.controls.create && (
+                            <>
+                                <Tooltip content="Controls dashboard">
+                                    <Link href={tenantHref('/controls/dashboard')} aria-label="Controls dashboard" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="controls-dashboard-btn">
+                                        <AppIcon name="dashboard" size={16} />
+                                    </Link>
+                                </Tooltip>
+                                <Tooltip content="Install from templates">
+                                    <Link href={tenantHref('/controls/templates')} aria-label="Install from templates" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="install-templates-btn">
+                                        <AppIcon name="templates" size={16} />
+                                    </Link>
+                                </Tooltip>
+                            </>
+                        )}
                         {columnsDropdown}
                         {filtersDropdown}
                     </>

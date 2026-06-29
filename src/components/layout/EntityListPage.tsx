@@ -139,6 +139,12 @@ export interface EntityListPageFilters {
      * is the only place that mutates the list.
      */
     toolbarPrimary?: ReactNode;
+    /**
+     * Leading slot inside the toolbar (LEFT of the Filter trigger). The
+     * page's primary "+ Entity" create button lives here so it sits to
+     * the left of the filter.
+     */
+    toolbarLeading?: ReactNode;
 }
 
 // ─── Public props ────────────────────────────────────────────────
@@ -302,6 +308,7 @@ export function EntityListPage<TRow>(props: EntityListPageProps<TRow>) {
                             triggerLabel={filters.triggerLabel}
                             actions={filters.toolbarActions}
                             primary={filters.toolbarPrimary}
+                            leading={filters.toolbarLeading}
                         />
                     )}
                 </ListPageShell.Filters>

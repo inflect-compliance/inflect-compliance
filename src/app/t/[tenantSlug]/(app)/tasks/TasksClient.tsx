@@ -708,35 +708,22 @@ function TasksPageInner({
     return (
         <ListPageShell className="animate-fadeIn gap-section" data-hydrated={hydrated || undefined}>
             <ListPageShell.Header>
-                <div className="flex items-center justify-between">
-                    <div>
-                        <PageBreadcrumbs
-                            items={[
-                                { label: 'Dashboard', href: tenantHref('/dashboard') },
-                                { label: 'Tasks' },
-                            ]}
-                            className="mb-1"
-                        />
-                        <Heading level={1}>Tasks</Heading>
-                        <p className="text-sm text-content-muted mt-1">
-                            Compliance work prioritised, assigned, and tracked to closure.
-                        </p>
-                    </div>
-                    <div className="flex gap-tight">
-                        <Tooltip content="Dashboard">
-                            <Link href={tenantHref('/tasks/dashboard')} aria-label="Dashboard" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="dashboard-btn"><AppIcon name="dashboard" size={16} /></Link>
-                        </Tooltip>
-                        {appPermissions.tasks.create && (
-                            <Button
-                                variant="primary"
-                                icon={<Plus className="-ml-0.5 -mr-2.5" />}
-                                onClick={() => setIsCreateOpen(true)}
-                                id="new-task-btn"
-                            >
-                                Task
-                            </Button>
-                        )}
-                    </div>
+                {/* Header action cluster is intentionally empty — the
+                    create button moved into the FilterToolbar leading slot
+                    and the Dashboard nav icon into the toolbar actions slot
+                    (left of the gears). */}
+                <div>
+                    <PageBreadcrumbs
+                        items={[
+                            { label: 'Dashboard', href: tenantHref('/dashboard') },
+                            { label: 'Tasks' },
+                        ]}
+                        className="mb-1"
+                    />
+                    <Heading level={1}>Tasks</Heading>
+                    <p className="text-sm text-content-muted mt-1">
+                        Compliance work prioritised, assigned, and tracked to closure.
+                    </p>
                 </div>
             </ListPageShell.Header>
 
@@ -787,7 +774,25 @@ function TasksPageInner({
                     filters={visibleFilterDefs}
                     searchId="tasks-search"
                     searchPlaceholder="Search tasks…"
-                    actions={<>{columnsDropdown}{filtersDropdown}</>}
+                    leading={appPermissions.tasks.create ? (
+                        <Button
+                            variant="primary"
+                            icon={<Plus className="-ml-0.5 -mr-2.5" />}
+                            onClick={() => setIsCreateOpen(true)}
+                            id="new-task-btn"
+                        >
+                            Task
+                        </Button>
+                    ) : undefined}
+                    actions={
+                        <>
+                            <Tooltip content="Dashboard">
+                                <Link href={tenantHref('/tasks/dashboard')} aria-label="Dashboard" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="dashboard-btn"><AppIcon name="dashboard" size={16} /></Link>
+                            </Tooltip>
+                            {columnsDropdown}
+                            {filtersDropdown}
+                        </>
+                    }
                 />
             </ListPageShell.Filters>
 

@@ -597,12 +597,6 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                             <p className="text-sm text-content-muted mt-1">{t.listDescription}</p>
                         )}
                     </div>
-                    <div className="flex gap-tight">
-                        <Tooltip content="Coverage">
-                            <Link href={tenantHref('/coverage')} aria-label="Coverage" className={buttonVariants({ variant: 'secondary', size: 'icon' })}><AppIcon name="shield" size={16} /></Link>
-                        </Tooltip>
-                        <Button variant="primary" icon={<Plus className="-ml-0.5 -mr-2.5" />} onClick={() => setIsCreateOpen(true)} id="new-asset-btn">{t.addAsset}</Button>
-                    </div>
                 </div>
             </ListPageShell.Header>
 
@@ -664,7 +658,18 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                     filters={liveFilters}
                     searchId="assets-search"
                     searchPlaceholder="Search assets…"
-                    actions={<>{columnsDropdown}{filtersDropdown}</>}
+                    leading={
+                        <Button variant="primary" icon={<Plus className="-ml-0.5 -mr-2.5" />} onClick={() => setIsCreateOpen(true)} id="new-asset-btn">{t.addAsset}</Button>
+                    }
+                    actions={
+                        <>
+                            <Tooltip content="Coverage">
+                                <Link href={tenantHref('/coverage')} aria-label="Coverage" className={buttonVariants({ variant: 'secondary', size: 'icon' })}><AppIcon name="shield" size={16} /></Link>
+                            </Tooltip>
+                            {columnsDropdown}
+                            {filtersDropdown}
+                        </>
+                    }
                 />
             </ListPageShell.Filters>
 

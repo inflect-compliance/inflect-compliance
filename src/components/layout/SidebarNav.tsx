@@ -26,8 +26,7 @@ import {
     LogOut,
     Calendar as CalendarIcon,
     Workflow,
-    PanelLeftClose,
-    PanelLeftOpen,
+    Menu,
     type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -166,16 +165,40 @@ export function SidebarContent({ user, onLogout, onNavClick, onToggleCollapse }:
 
     return (
         <div className="flex flex-col h-full">
-            {/* Logo */}
+            {/* Brand / collapse. On desktop the brand slot IS the collapse
+                control — a hamburger that toggles the icon rail (replacing the
+                old bottom-of-sidebar collapse button). The mobile drawer has no
+                `onToggleCollapse`, so it keeps the static brand mark. */}
             <div className="p-4 border-b border-border-subtle">
-                <div className={collapsed ? 'flex items-center justify-center' : 'flex items-center gap-tight'}>
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--brand-emphasis)] to-[var(--brand-default)] flex items-center justify-center flex-shrink-0">
-                        <span className="text-content-inverted text-sm font-bold">IC</span>
+                {onToggleCollapse ? (
+                    <button
+                        type="button"
+                        onClick={onToggleCollapse}
+                        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                        aria-pressed={collapsed}
+                        data-testid="sidebar-collapse-toggle"
+                        className={cn(
+                            'flex w-full items-center rounded-lg text-content-muted transition-colors hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]',
+                            collapsed ? 'justify-center' : 'gap-tight',
+                        )}
+                    >
+                        <Menu className="h-5 w-5 shrink-0" aria-hidden="true" />
+                        {!collapsed && (
+                            <span className="text-sm font-semibold text-content-emphasis truncate">
+                                {tc('appName')}
+                            </span>
+                        )}
+                    </button>
+                ) : (
+                    <div className="flex items-center gap-tight">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--brand-emphasis)] to-[var(--brand-default)] flex items-center justify-center flex-shrink-0">
+                            <span className="text-content-inverted text-sm font-bold">IC</span>
+                        </div>
+                        <span className="text-sm font-semibold text-content-emphasis truncate">
+                            {tc('appName')}
+                        </span>
                     </div>
-                    {!collapsed && (
-                        <span className="text-sm font-semibold text-content-emphasis truncate">{tc('appName')}</span>
-                    )}
-                </div>
+                )}
             </div>
 
             {/* Nav */}
@@ -262,32 +285,6 @@ export function SidebarContent({ user, onLogout, onNavClick, onToggleCollapse }:
                     </span>
                 )}
             </button>
-
-            {/* Collapse / expand the desktop sidebar to an icon rail.
-                Desktop only — `onToggleCollapse` is undefined in the mobile
-                drawer, so this row never renders there. */}
-            {onToggleCollapse && (
-                <div className="mx-2 mb-2">
-                    <button
-                        type="button"
-                        onClick={onToggleCollapse}
-                        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                        aria-pressed={collapsed}
-                        data-testid="sidebar-collapse-toggle"
-                        className={cn(
-                            'flex w-full items-center rounded-lg border border-border-subtle bg-bg-default px-3 py-2 text-xs text-content-muted transition-colors hover:bg-bg-muted hover:text-content-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]',
-                            collapsed ? 'justify-center' : 'gap-tight',
-                        )}
-                    >
-                        {collapsed ? (
-                            <PanelLeftOpen className="h-4 w-4 shrink-0" aria-hidden="true" />
-                        ) : (
-                            <PanelLeftClose className="h-4 w-4 shrink-0" aria-hidden="true" />
-                        )}
-                        {!collapsed && <span className="flex-1 text-left">Collapse</span>}
-                    </button>
-                </div>
-            )}
 
             {/* User. Admin + Sign-out sit on a single horizontal
                 row, vertically centred against the three-line

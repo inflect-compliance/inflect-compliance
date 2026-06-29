@@ -971,75 +971,10 @@ function RisksPageInner({
                             <p className="text-sm text-content-muted mt-1">{t.listDescription}</p>
                         )}
                     </div>
-                    <div className="flex gap-tight">
-                        {/* Vulnerabilities is a subpage of the Risk Register —
-                            reached via this leading icon button (the sidebar
-                            entry was retired). */}
-                        <Tooltip content="Vulnerabilities">
-                            <Link
-                                href={tenantHref('/vulnerabilities')}
-                                aria-label="Vulnerabilities"
-                                className={buttonVariants({ variant: 'secondary', size: 'icon' })}
-                                id="risks-vulnerabilities-btn"
-                            >
-                                <AppIcon name="shield" size={16} />
-                            </Link>
-                        </Tooltip>
-                        {RISK_VIEW_LINKS.map((v) => (
-                            <Tooltip key={v.href} content={v.label}>
-                                <Link
-                                    href={tenantHref(v.href)}
-                                    aria-label={v.label}
-                                    className={buttonVariants({ variant: 'secondary', size: 'icon' })}
-                                >
-                                    <AppIcon name={v.icon} size={16} />
-                                </Link>
-                            </Tooltip>
-                        ))}
-                        {/* Item 30 — Register and Matrix collapse to a single
-                            two-state toggle (table ⇄ heatmap of the same
-                            register). The histogram is no longer a third peer
-                            in this toggle — it is its own standalone button
-                            below, so the distribution view reads as a distinct
-                            analytical mode rather than a register layout.
-                            The choice persists (polish #13 pattern). */}
-                        <ToggleGroup
-                            size="sm"
-                            ariaLabel="Risks view"
-                            options={[
-                                { value: 'register', label: t.register, id: 'risks-view-register' },
-                                { value: 'heatmap', label: t.heatmap, id: 'risks-view-heatmap' },
-                            ]}
-                            selected={view === 'histogram' ? null : view}
-                            selectAction={(v) => setView(v as 'register' | 'heatmap')}
-                        />
-                        <Button
-                            variant={view === 'histogram' ? 'primary' : 'secondary'}
-                            size="sm"
-                            id="risks-view-histogram"
-                            aria-pressed={view === 'histogram'}
-                            onClick={() => setView('histogram')}
-                        >
-                            {t.histogram}
-                        </Button>
-                        {permissions.canWrite && (
-                            <>
-                                <Tooltip content="Import risks">
-                                    <Link href={tenantHref('/risks/import')} aria-label="Import risks" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="risk-import-btn">
-                                        <AppIcon name="upload" size={16} />
-                                    </Link>
-                                </Tooltip>
-                                <Button
-                                    variant="primary"
-                                    icon={<Plus className="-ml-0.5 -mr-2.5" />}
-                                    onClick={() => setIsCreateOpen(true)}
-                                    id="new-risk-btn"
-                                >
-                                    {t.addRisk}
-                                </Button>
-                            </>
-                        )}
-                    </div>
+                    {/* Item 4/5 — the create button moved to the toolbar's
+                        leading slot and the nav icons/toggles moved into the
+                        toolbar's actions slot, so the header action cluster is
+                        empty and the wrapping div is gone. */}
                 </div>
             </ListPageShell.Header>
 
@@ -1111,6 +1046,80 @@ function RisksPageInner({
                     risks={risks}
                     columnsDropdown={columnsDropdown}
                     filtersDropdown={filtersDropdown}
+                    leading={
+                        permissions.canWrite ? (
+                            <Button
+                                variant="primary"
+                                icon={<Plus className="-ml-0.5 -mr-2.5" />}
+                                onClick={() => setIsCreateOpen(true)}
+                                id="new-risk-btn"
+                            >
+                                {t.addRisk}
+                            </Button>
+                        ) : undefined
+                    }
+                    navActions={
+                        <>
+                            {/* Vulnerabilities is a subpage of the Risk
+                                Register — reached via this leading icon button
+                                (the sidebar entry was retired). */}
+                            <Tooltip content="Vulnerabilities">
+                                <Link
+                                    href={tenantHref('/vulnerabilities')}
+                                    aria-label="Vulnerabilities"
+                                    className={buttonVariants({ variant: 'secondary', size: 'icon' })}
+                                    id="risks-vulnerabilities-btn"
+                                >
+                                    <AppIcon name="shield" size={16} />
+                                </Link>
+                            </Tooltip>
+                            {RISK_VIEW_LINKS.map((v) => (
+                                <Tooltip key={v.href} content={v.label}>
+                                    <Link
+                                        href={tenantHref(v.href)}
+                                        aria-label={v.label}
+                                        className={buttonVariants({ variant: 'secondary', size: 'icon' })}
+                                    >
+                                        <AppIcon name={v.icon} size={16} />
+                                    </Link>
+                                </Tooltip>
+                            ))}
+                            {/* Item 30 — Register and Matrix collapse to a
+                                single two-state toggle (table ⇄ heatmap of the
+                                same register). The histogram is no longer a
+                                third peer in this toggle — it is its own
+                                standalone button, so the distribution view
+                                reads as a distinct analytical mode rather than
+                                a register layout. The choice persists
+                                (polish #13 pattern). */}
+                            <ToggleGroup
+                                size="sm"
+                                ariaLabel="Risks view"
+                                options={[
+                                    { value: 'register', label: t.register, id: 'risks-view-register' },
+                                    { value: 'heatmap', label: t.heatmap, id: 'risks-view-heatmap' },
+                                ]}
+                                selected={view === 'histogram' ? null : view}
+                                selectAction={(v) => setView(v as 'register' | 'heatmap')}
+                            />
+                            <Button
+                                variant={view === 'histogram' ? 'primary' : 'secondary'}
+                                size="sm"
+                                id="risks-view-histogram"
+                                aria-pressed={view === 'histogram'}
+                                onClick={() => setView('histogram')}
+                            >
+                                {t.histogram}
+                            </Button>
+                            {permissions.canWrite && (
+                                <Tooltip content="Import risks">
+                                    <Link href={tenantHref('/risks/import')} aria-label="Import risks" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="risk-import-btn">
+                                        <AppIcon name="upload" size={16} />
+                                    </Link>
+                                </Tooltip>
+                            )}
+                        </>
+                    }
                 />
             </ListPageShell.Filters>
 
@@ -1280,10 +1289,16 @@ function RisksFilterToolbar({
     risks,
     columnsDropdown,
     filtersDropdown,
+    leading,
+    navActions,
 }: {
     risks: RiskListItem[];
     columnsDropdown?: React.ReactNode;
     filtersDropdown?: React.ReactNode;
+    // Item 4 — primary create button rendered in the toolbar's leading slot.
+    leading?: React.ReactNode;
+    // Item 5 — page nav icon links/toggles, rendered to the LEFT of the gears.
+    navActions?: React.ReactNode;
 }) {
     // R-filter-gear (#3): the KPI-card gear is built in the PARENT (it
     // controls the parent's KPI grid) and threaded in here; this toolbar
@@ -1294,7 +1309,8 @@ function RisksFilterToolbar({
             filters={filters}
             searchId="risks-search"
             searchPlaceholder="Search risks…"
-            actions={<>{columnsDropdown}{filtersDropdown}</>}
+            leading={leading}
+            actions={<>{navActions}{columnsDropdown}{filtersDropdown}</>}
         />
     );
 }

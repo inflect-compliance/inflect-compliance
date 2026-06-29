@@ -1017,22 +1017,6 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                             <p className="text-sm text-content-muted mt-1">{t.listDescription}</p>
                         )}
                     </div>
-                    {permissions.canWrite && (
-                        <div className="flex gap-tight">
-                            {/* UI-18: a single +Evidence button that opens the
-                                Upload-a-file modal directly. The separate
-                                "Upload file" + "Import ZIP" icon buttons (and the
-                                text-only evidence modal) were removed. */}
-                            <Button
-                                variant="primary"
-                                icon={<Plus className="-ml-0.5 -mr-2.5" />}
-                                onClick={() => setShowUpload(true)}
-                                id="add-evidence-btn"
-                            >
-                                {t.addEvidence}
-                            </Button>
-                        </div>
-                    )}
                 </div>
             </ListPageShell.Header>
 
@@ -1183,6 +1167,23 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                 */}
                 <EvidenceFilterToolbar
                     filters={visibleFilterDefs}
+                    leading={
+                        permissions.canWrite ? (
+                            // UI-18: a single +Evidence button that opens the
+                            // Upload-a-file modal directly. The separate
+                            // "Upload file" + "Import ZIP" icon buttons (and the
+                            // text-only evidence modal) were removed. Relocated
+                            // from the page header into the toolbar's leading slot.
+                            <Button
+                                variant="primary"
+                                icon={<Plus className="-ml-0.5 -mr-2.5" />}
+                                onClick={() => setShowUpload(true)}
+                                id="add-evidence-btn"
+                            >
+                                {t.addEvidence}
+                            </Button>
+                        ) : undefined
+                    }
                     actions={
                         <>
                             <ToggleGroup
@@ -1357,15 +1358,18 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
 function EvidenceFilterToolbar({
     filters,
     actions,
+    leading,
 }: {
     filters: FilterType[];
     actions?: React.ReactNode;
+    leading?: React.ReactNode;
 }) {
     return (
         <FilterToolbar
             filters={filters}
             searchId="evidence-search"
             searchPlaceholder="Search evidence…"
+            leading={leading}
             actions={actions}
         />
     );
