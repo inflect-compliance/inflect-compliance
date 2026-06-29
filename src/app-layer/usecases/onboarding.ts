@@ -24,6 +24,9 @@ const STEP_ORDER = [
     'FRAMEWORK_SELECTION',
     // Conditional — only when NIS2 is selected (see isStepApplicable).
     'NIS2_SELF_ASSESSMENT',
+    // Conditional — only when an AI framework is selected OR the tenant builds/
+    // uses AI systems (see isStepApplicable).
+    'AI_GOVERNANCE_SELF_ASSESSMENT',
     'ASSET_SETUP',
     'CONTROL_BASELINE_INSTALL',
     'INITIAL_RISK_REGISTER',
@@ -50,6 +53,18 @@ export function isStepApplicable(
         // keys ('nis2'), while other call sites may use the canonical
         // 'NIS2'. Match either so the step actually appears.
         return Array.isArray(fws) && fws.some((f) => String(f).toUpperCase() === 'NIS2');
+    }
+    if (step === 'AI_GOVERNANCE_SELF_ASSESSMENT') {
+        // Applicable when ANY AI framework is selected OR the tenant flagged
+        // that it builds/uses AI systems in COMPANY_PROFILE. Otherwise the step
+        // is never shown and is excluded from the progress denominator.
+        const fws: string[] =
+            stepData?.FRAMEWORK_SELECTION?.selectedFrameworks ?? [];
+        const AI_FWS = new Set(['AISVS', 'ISO42001', 'EU_AI_ACT', 'EU-AI-ACT', 'OWASP-AISVS']);
+        const hasAiFramework =
+            Array.isArray(fws) && fws.some((f) => AI_FWS.has(String(f).toUpperCase().replace(/\s+/g, '')));
+        const buildsAi = stepData?.COMPANY_PROFILE?.usesAiSystems === true;
+        return hasAiFramework || buildsAi;
     }
     return true;
 }

@@ -1,0 +1,52 @@
+{
+  "questionSetVersion": 1,
+  "attribution": "Question set unifies OWASP AISVS v1.0 (CC-BY-SA-4.0, © OWASP Foundation, https://github.com/OWASP/AISVS), ISO/IEC 42001:2023 (clause references only — © ISO/IEC), and the EU AI Act / Regulation (EU) 2024/1689 (public domain). Questions are paraphrased references, not verbatim standard text.",
+  "disclaimer": "This is a self-assessment aid, NOT legal advice. EU AI Act risk classification and fundamental-rights determinations are legal calls owned by your counsel.",
+  "domains": [
+    { "id": 1, "code": "GOVERNANCE", "name": "AI Governance & Accountability" },
+    { "id": 2, "code": "RISK_IMPACT", "name": "AI Risk & Impact Assessment" },
+    { "id": 3, "code": "DATA_SUPPLY_CHAIN", "name": "Training Data & Model Supply Chain" },
+    { "id": 4, "code": "BEHAVIOR_SECURITY", "name": "Input, Output & Model Behavior Security" },
+    { "id": 5, "code": "ACCESS_INFRA", "name": "Access, Infrastructure & Deployment Security" },
+    { "id": 6, "code": "OVERSIGHT_TRANSPARENCY", "name": "Human Oversight & Transparency" },
+    { "id": 7, "code": "MONITORING_IR", "name": "Monitoring, Incident Response & Improvement" }
+  ],
+  "questions": [
+    { "id": "aig-1-01", "domainId": 1, "criticality": "HIGH", "conditional": null, "text": "Do you maintain an inventory of all AI systems your organization develops, deploys, or procures?", "mappings": { "aisvs": ["C3"], "iso42001": ["6.1.2"], "euAiAct": ["Art.49"] } },
+    { "id": "aig-1-02", "domainId": 1, "criticality": "HIGH", "conditional": null, "text": "Have you assigned clear ownership and accountability for AI systems (e.g. an AI governance lead or responsible person)?", "mappings": { "aisvs": [], "iso42001": ["5.3"], "euAiAct": ["Art.26"] } },
+    { "id": "aig-1-03", "domainId": 1, "criticality": "MEDIUM", "conditional": null, "text": "Do you have a documented AI policy defining acceptable use, risk tolerance, and ethical principles for AI?", "mappings": { "aisvs": [], "iso42001": ["5.2"], "euAiAct": [] } },
+    { "id": "aig-1-04", "domainId": 1, "criticality": "MEDIUM", "conditional": null, "text": "Do staff who build or operate AI systems receive AI-specific risk and security training?", "mappings": { "aisvs": [], "iso42001": ["7.2", "7.3"], "euAiAct": ["Art.4"] } },
+    { "id": "aig-1-05", "domainId": 1, "criticality": "CRITICAL", "conditional": null, "text": "Have you classified each AI system by its EU AI Act risk tier (prohibited / high-risk / limited / minimal)?", "mappings": { "aisvs": [], "iso42001": ["6.1"], "euAiAct": ["Art.6", "Annex.III"] } },
+
+    { "id": "aig-2-01", "domainId": 2, "criticality": "HIGH", "conditional": null, "text": "Do you perform a risk assessment before deploying a new AI system or a significant model change?", "mappings": { "aisvs": ["C3"], "iso42001": ["6.1.2", "8.2"], "euAiAct": ["Art.9"] } },
+    { "id": "aig-2-02", "domainId": 2, "criticality": "HIGH", "conditional": null, "text": "For high-risk AI systems, have you conducted a fundamental rights impact assessment (FRIA)?", "mappings": { "aisvs": [], "iso42001": ["6.1.4"], "euAiAct": ["Art.27"] } },
+    { "id": "aig-2-03", "domainId": 2, "criticality": "HIGH", "conditional": null, "text": "Do you assess and document the potential for bias, discrimination, or harmful outcomes in your AI systems?", "mappings": { "aisvs": ["C7"], "iso42001": ["6.1.4"], "euAiAct": ["Art.10"] } },
+    { "id": "aig-2-04", "domainId": 2, "criticality": "CRITICAL", "conditional": null, "text": "Have you verified that none of your AI systems engage in EU AI Act prohibited practices (e.g. social scoring, manipulative techniques, prohibited biometric categorization)?", "mappings": { "aisvs": [], "iso42001": [], "euAiAct": ["Art.5"] } },
+
+    { "id": "aig-3-01", "domainId": 3, "criticality": "HIGH", "conditional": null, "text": "Do you maintain traceability of the data used to train or fine-tune your models (provenance, lineage, version)?", "mappings": { "aisvs": ["C1"], "iso42001": ["7.4", "8.3"], "euAiAct": ["Art.10"] } },
+    { "id": "aig-3-02", "domainId": 3, "criticality": "HIGH", "conditional": null, "text": "Do you assess training/input data for quality, representativeness, and presence of sensitive or personal data?", "mappings": { "aisvs": ["C1"], "iso42001": ["8.3"], "euAiAct": ["Art.10"] } },
+    { "id": "aig-3-03", "domainId": 3, "criticality": "HIGH", "conditional": null, "text": "For third-party or open-source models you use, do you verify their provenance, integrity, and known vulnerabilities?", "mappings": { "aisvs": ["C6"], "iso42001": ["8.4"], "euAiAct": ["Art.25"] } },
+    { "id": "aig-3-04", "domainId": 3, "criticality": "MEDIUM", "conditional": null, "text": "Do you maintain a bill of materials (SBOM/MBOM) for the AI/model components in your systems?", "mappings": { "aisvs": ["C6"], "iso42001": ["8.4"], "euAiAct": [] } },
+    { "id": "aig-3-05", "domainId": 3, "criticality": "MEDIUM", "conditional": null, "text": "When procuring AI from a vendor, do you assess the vendor's AI security posture against a recognized standard?", "mappings": { "aisvs": ["C6"], "iso42001": ["8.4"], "euAiAct": ["Art.25"] } },
+
+    { "id": "aig-4-01", "domainId": 4, "criticality": "HIGH", "conditional": null, "text": "Do you validate and sanitize inputs to your AI systems to defend against prompt injection and adversarial inputs?", "mappings": { "aisvs": ["C2", "C11"], "iso42001": ["8.2"], "euAiAct": ["Art.15"] } },
+    { "id": "aig-4-02", "domainId": 4, "criticality": "HIGH", "conditional": null, "text": "Do you validate and constrain AI-generated outputs before they are used or shown (schema, range, safety checks)?", "mappings": { "aisvs": ["C7"], "iso42001": ["8.2"], "euAiAct": ["Art.15"] } },
+    { "id": "aig-4-03", "domainId": 4, "criticality": "HIGH", "conditional": null, "text": "Have you implemented guardrails to prevent your AI from producing harmful, biased, or unsafe outputs?", "mappings": { "aisvs": ["C7"], "iso42001": ["8.2"], "euAiAct": ["Art.15"] } },
+    { "id": "aig-4-04", "domainId": 4, "criticality": "HIGH", "conditional": null, "text": "Have you tested your AI systems against adversarial attacks (prompt injection, evasion, data poisoning, model extraction)?", "mappings": { "aisvs": ["C11"], "iso42001": ["8.2"], "euAiAct": ["Art.15"] } },
+    { "id": "aig-4-05", "domainId": 4, "criticality": "HIGH", "conditional": null, "text": "For AI that interacts with people, do you clearly disclose AI use and label AI-generated content / deepfakes?", "mappings": { "aisvs": ["C7"], "iso42001": [], "euAiAct": ["Art.50"] } },
+
+    { "id": "aig-5-01", "domainId": 5, "criticality": "HIGH", "conditional": null, "text": "Do you enforce access controls and authentication for AI components (models, training pipelines, inference endpoints)?", "mappings": { "aisvs": ["C5"], "iso42001": ["8.2"], "euAiAct": ["Art.15"] } },
+    { "id": "aig-5-02", "domainId": 5, "criticality": "HIGH", "conditional": null, "text": "Are your AI infrastructure and deployment configs hardened and reviewed (secrets, network isolation, least privilege)?", "mappings": { "aisvs": ["C4"], "iso42001": ["8.2"], "euAiAct": ["Art.15"] } },
+    { "id": "aig-5-03", "domainId": 5, "criticality": "MEDIUM", "conditional": "RAG", "text": "If you use vector databases, embeddings, or retrieval (RAG), do you secure them against unauthorized access and injection?", "mappings": { "aisvs": ["C8"], "iso42001": ["8.2"], "euAiAct": [] } },
+    { "id": "aig-5-04", "domainId": 5, "criticality": "HIGH", "conditional": "AGENTIC", "text": "If you use AI agents, tool-use, or the Model Context Protocol (MCP), do you constrain and monitor what actions the AI can take?", "mappings": { "aisvs": ["C9", "C10"], "iso42001": ["8.2"], "euAiAct": [] } },
+
+    { "id": "aig-6-01", "domainId": 6, "criticality": "CRITICAL", "conditional": null, "text": "For high-risk AI systems, have you implemented meaningful human oversight (a human can review, override, or stop the system)?", "mappings": { "aisvs": [], "iso42001": ["8.2"], "euAiAct": ["Art.14"] } },
+    { "id": "aig-6-02", "domainId": 6, "criticality": "HIGH", "conditional": null, "text": "Do you maintain technical documentation describing how each AI system works, its intended purpose, and its limitations?", "mappings": { "aisvs": ["C3"], "iso42001": ["7.5"], "euAiAct": ["Art.11"] } },
+    { "id": "aig-6-03", "domainId": 6, "criticality": "HIGH", "conditional": null, "text": "Do you keep records/logs that let you trace and explain AI system decisions (automatic logging)?", "mappings": { "aisvs": ["C12"], "iso42001": ["7.5"], "euAiAct": ["Art.12"] } },
+
+    { "id": "aig-7-01", "domainId": 7, "criticality": "HIGH", "conditional": null, "text": "Do you continuously monitor production AI systems for anomalies, drift, performance degradation, and abuse?", "mappings": { "aisvs": ["C12"], "iso42001": ["9.1"], "euAiAct": ["Art.72"] } },
+    { "id": "aig-7-02", "domainId": 7, "criticality": "HIGH", "conditional": null, "text": "Do you have a process to detect, respond to, and report serious AI incidents or malfunctions?", "mappings": { "aisvs": ["C12"], "iso42001": ["10.2"], "euAiAct": ["Art.73"] } },
+    { "id": "aig-7-03", "domainId": 7, "criticality": "MEDIUM", "conditional": null, "text": "Do you periodically re-assess your AI systems against changing risks, regulations, and model updates?", "mappings": { "aisvs": [], "iso42001": ["9.3", "10.1"], "euAiAct": ["Art.9"] } },
+    { "id": "aig-7-04", "domainId": 7, "criticality": "MEDIUM", "conditional": null, "text": "Do you run a measurable AI governance improvement process (metrics, internal audits, corrective actions)?", "mappings": { "aisvs": [], "iso42001": ["9.1", "9.2", "10.1"], "euAiAct": [] } }
+  ]
+}

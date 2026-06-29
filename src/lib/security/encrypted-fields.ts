@@ -220,6 +220,9 @@ export const ENCRYPTED_FIELDS: Readonly<Record<string, readonly string[]>> = {
     // gaps, or vendor exposure. Encrypted at rest like every other
     // business-content free-text field.
     Nis2SelfAssessmentAnswer: ['note'],
+    // AI-governance self-assessment rationale — per-question free text that may
+    // describe AI risk gaps or exposure. Encrypted at rest + sanitised on write.
+    AiGovSelfAssessmentAnswer: ['note'],
 
     // ─── NIS2 Article 23 incident response ─────────────
     //  Live security-incident narrative — the highest attacker value

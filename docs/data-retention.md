@@ -112,6 +112,10 @@ a `userId` but stores no contact PII).
 | `Nis2GapQuestion` | Configuration | No | Global seed reference (CC BY 4.0 import) — reseeded, never tenant-purged | Lives with the deployment; refreshed via `sync-nis2-gap-assessment` |
 | `Nis2SelfAssessment` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
 | `Nis2SelfAssessmentAnswer` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active; `note` encrypted at rest |
+| `AiGovDomain` | Configuration | No | Global seed reference — reseeded, never tenant-purged | Lives with the deployment; refreshed from the AI-governance fixture |
+| `AiGovQuestion` | Configuration | No | Global seed reference (AISVS CC-BY-SA-4.0 / ISO 42001 clause refs / EU AI Act public domain) — reseeded, never tenant-purged | Lives with the deployment; refreshed from the AI-governance fixture |
+| `AiGovSelfAssessment` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `AiGovSelfAssessmentAnswer` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active; `note` encrypted at rest |
 | `Notification` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
 | `NotificationOutbox` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
 | `OrgAuditLog` | Regulatory artefact | ind. | Immutable + hash-chained (never deleted) | Regulatory min/max — **needs legal/auditor input** |

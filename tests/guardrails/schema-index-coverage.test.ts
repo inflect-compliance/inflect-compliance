@@ -345,6 +345,19 @@ const LIST_QUERY_INDEXES: readonly CompositeIndex[] = [
         justification:
             'Nis2GapAssessmentRepository.listAnswers filters by [tenantId, assessmentId]',
     },
+    // ── AI-governance self-assessment (ai-gov-self-assessment usecase) ──
+    {
+        model: 'AiGovSelfAssessment',
+        fields: ['tenantId', 'updatedAt'],
+        justification:
+            "ai-gov-self-assessment.activeAssessment: findFirst by [tenantId, status] orderBy { updatedAt: 'desc' }",
+    },
+    {
+        model: 'AiGovSelfAssessmentAnswer',
+        fields: ['tenantId', 'assessmentId'],
+        justification:
+            'ai-gov-self-assessment getState/raiseFindings filter answers by [tenantId, assessmentId]',
+    },
 ];
 
 // ─────────────────────────────────────────────────────────────────────
