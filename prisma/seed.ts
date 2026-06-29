@@ -1317,6 +1317,77 @@ Reviewed at least annually.` },
     }
     console.log(`✅ ISO 42001 framework + ${iso42001Data.length} requirements + ${iso42001Groups.size} group packs seeded`);
 
+    // ─── EU AI Act — Regulation (EU) 2024/1689 ───
+    // EU legislation = PUBLIC DOMAIN: obligation text may be used directly.
+    // Modelled risk-tiered (prohibited / high-risk / limited / GPAI / minimal);
+    // tier classification is a tenant + counsel decision, NOT legal advice.
+    // Rides the generic framework/pack machinery.
+    const euAiActData = require('./fixtures/eu_ai_act_requirements.json') as Array<{ key: string; section: string; sortOrder: number; title: string }>;
+    const euAiActMeta = JSON.stringify({
+        locale: 'en',
+        provider: 'European Union',
+        packager: 'inflect',
+        publicationDate: '2024-06-13',
+        license: 'public-domain',
+        sourceUrl: 'https://eur-lex.europa.eu/eli/reg/2024/1689/oj',
+        notLegalAdvice: true,
+        copyright:
+            'Regulation (EU) 2024/1689 is EU legislation in the public domain. ' +
+            'Source: https://eur-lex.europa.eu/eli/reg/2024/1689/oj. Risk-tier ' +
+            'classification is a tenant + legal-counsel decision; not legal advice.',
+    });
+    const euAiAct = await prisma.framework.upsert({
+        where: { key_version: { key: 'EU-AI-ACT', version: '2024' } },
+        update: { name: 'EU AI Act (2024/1689)', kind: 'REGULATION', description: 'Risk-tiered AI regulation obligations (prohibited / high-risk / limited / GPAI / minimal).', metadataJson: euAiActMeta, sourceUrn: 'urn:inflect:library:eu-ai-act' },
+        create: { key: 'EU-AI-ACT', name: 'EU AI Act (2024/1689)', version: '2024', kind: 'REGULATION', description: 'Risk-tiered AI regulation obligations (prohibited / high-risk / limited / GPAI / minimal).', metadataJson: euAiActMeta, sourceUrn: 'urn:inflect:library:eu-ai-act' },
+    });
+    const euAiActReqMap: Record<string, string> = {};
+    for (const req of euAiActData) {
+        const r = await prisma.frameworkRequirement.upsert({
+            where: { frameworkId_code: { frameworkId: euAiAct.id, code: req.key } },
+            update: { title: req.title, section: req.section, sortOrder: req.sortOrder },
+            create: { frameworkId: euAiAct.id, code: req.key, title: req.title, section: req.section, category: req.section, sortOrder: req.sortOrder },
+        });
+        euAiActReqMap[req.key] = r.id;
+    }
+    // One control template per risk tier.
+    const euAiActTiers = new Map<string, { title: string; reqs: string[] }>();
+    for (const req of euAiActData) {
+        if (!euAiActTiers.has(req.section)) euAiActTiers.set(req.section, { title: req.section, reqs: [] });
+        euAiActTiers.get(req.section)!.reqs.push(req.key);
+    }
+    let euTierIdx = 0;
+    for (const [, info] of euAiActTiers) {
+        const code = `EUAIA-${String(euTierIdx++).padStart(2, '0')}`;
+        const existing = await prisma.controlTemplate.findUnique({ where: { code } });
+        if (!existing) {
+            const tmpl = await prisma.controlTemplate.create({
+                data: { code, title: info.title, category: 'EU AI Act', defaultFrequency: 'ANNUALLY' },
+            });
+            for (const task of defaultTasks) {
+                await prisma.controlTemplateTask.create({ data: { templateId: tmpl.id, title: task.title, description: task.description } });
+            }
+            for (const rk of info.reqs) {
+                if (euAiActReqMap[rk]) {
+                    await prisma.controlTemplateRequirementLink.create({ data: { templateId: tmpl.id, requirementId: euAiActReqMap[rk] } }).catch(() => { });
+                }
+            }
+        }
+    }
+    const euAiActTmpls = await prisma.controlTemplate.findMany({ where: { code: { startsWith: 'EUAIA-' } } });
+    const euAiActPack = await prisma.frameworkPack.upsert({
+        where: { key: 'EU_AI_ACT_BASELINE' },
+        update: { name: 'EU AI Act Baseline Pack', frameworkId: euAiAct.id, version: '2024' },
+        create: { key: 'EU_AI_ACT_BASELINE', name: 'EU AI Act Baseline Pack', frameworkId: euAiAct.id, version: '2024', description: 'EU AI Act (2024/1689) obligations across the five risk tiers.' },
+    });
+    for (const tmpl of euAiActTmpls) {
+        await prisma.packTemplateLink.upsert({
+            where: { packId_templateId: { packId: euAiActPack.id, templateId: tmpl.id } },
+            create: { packId: euAiActPack.id, templateId: tmpl.id }, update: {},
+        });
+    }
+    console.log(`✅ EU AI Act framework + ${euAiActData.length} obligations + ${euAiActTiers.size} risk-tier packs seeded`);
+
     // ISO 9001 Pack
     const iso9001Tmpls = await prisma.controlTemplate.findMany({ where: { code: { startsWith: 'QMS-' } } });
     const iso9001Pack = await prisma.frameworkPack.upsert({
