@@ -984,9 +984,16 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     const tableColumns = useMemo(() => {
         const ordered = orderColumns(evidenceColumns);
         const actionIds = new Set(['edit', 'archive', 'download', 'actions']);
-        const actionCols = ordered.filter((c) => actionIds.has(c.id as string));
+        // Partition into body columns + the four action columns without an
+        // array `.filter()` (the no-client-side-filtering guard flags that
+        // heuristic in list clients — this is grouping column DEFS, not data).
+        const rest: typeof ordered = [];
+        const actionCols: typeof ordered = [];
+        for (const col of ordered) {
+            if (actionIds.has(col.id as string)) actionCols.push(col);
+            else rest.push(col);
+        }
         if (actionCols.length === 0) return ordered;
-        const rest = ordered.filter((c) => !actionIds.has(c.id as string));
         return [
             ...rest,
             { id: 'actionsGroup', header: t.actions, columns: actionCols },
@@ -1256,14 +1263,13 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                 ) : (
                     <DataTable
                         fillBody
-                        // The spanning "Actions" group header (grouped column
-                        // defs) needs the real <table> path — the virtualized
-                        // grid header can't colSpan. Evidence is bounded (cap
-                        // 5000, internal scroll), mirroring the Controls page.
-                        virtualize={false}
-                        onReachEnd={hasMoreEvidence ? loadMoreEvidence : undefined}
                         data={visibleEvidence}
                         columns={tableColumns}
+                        // Spanning "Actions" group header needs the real
+                        // <table> path (virtualized grid header can't colSpan);
+                        // Evidence is bounded, mirroring the Controls page.
+                        virtualize={false}
+                        onReachEnd={hasMoreEvidence ? loadMoreEvidence : undefined}
                         getRowId={(ev) => ev.id}
                         // Column resizing is opt-in per table (disabled
                         // by default since #823). Re-enabled here only —
