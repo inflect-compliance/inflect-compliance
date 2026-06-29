@@ -1246,6 +1246,77 @@ Reviewed at least annually.` },
     }
     console.log(`✅ OWASP AISVS framework + ${aisvsData.length} requirements + ${aisvsChapters.size} chapter packs seeded`);
 
+    // ─── ISO/IEC 42001:2023 — AI Management System ───
+    // COPYRIGHTED ISO standard: IC stores a structural outline (clause + Annex A
+    // control numbers + paraphrased titles), NOT the verbatim ISO text — mirrors
+    // the ISO 27001 handling. Rides the generic framework/pack machinery.
+    const iso42001Data = require('./fixtures/iso_42001_requirements.json') as Array<{ key: string; section: string; sortOrder: number; title: string }>;
+    const iso42001Meta = JSON.stringify({
+        locale: 'en',
+        provider: 'ISO/IEC',
+        packager: 'inflect',
+        publicationDate: '2023-12-18',
+        license: 'ISO-copyright',
+        sourceUrl: 'https://www.iso.org/standard/81230',
+        referenceIndexOnly: true,
+        copyright:
+            'Structural outline of ISO/IEC 42001:2023 (clause + Annex A control ' +
+            'numbers with paraphrased titles), NOT a reproduction of the ' +
+            'copyrighted ISO text. Purchase the full standard from ISO.',
+    });
+    const iso42001 = await prisma.framework.upsert({
+        where: { key_version: { key: 'ISO42001', version: '2023' } },
+        update: { name: 'ISO/IEC 42001:2023', kind: 'ISO_STANDARD', description: 'AI Management System (AIMS) — requirements + Annex A controls.', metadataJson: iso42001Meta, sourceUrn: 'urn:inflect:library:iso-42001' },
+        create: { key: 'ISO42001', name: 'ISO/IEC 42001:2023', version: '2023', kind: 'ISO_STANDARD', description: 'AI Management System (AIMS) — requirements + Annex A controls.', metadataJson: iso42001Meta, sourceUrn: 'urn:inflect:library:iso-42001' },
+    });
+    const iso42001ReqMap: Record<string, string> = {};
+    for (const req of iso42001Data) {
+        const r = await prisma.frameworkRequirement.upsert({
+            where: { frameworkId_code: { frameworkId: iso42001.id, code: req.key } },
+            update: { title: req.title, section: req.section, sortOrder: req.sortOrder },
+            create: { frameworkId: iso42001.id, code: req.key, title: req.title, section: req.section, category: req.section, sortOrder: req.sortOrder },
+        });
+        iso42001ReqMap[req.key] = r.id;
+    }
+    // One control template per top-level grouping (clauses 4-10 + Annex A.2-A.10).
+    const iso42001Groups = new Map<string, { title: string; reqs: string[] }>();
+    for (const req of iso42001Data) {
+        const group = req.section; // already the grouping label
+        if (!iso42001Groups.has(group)) iso42001Groups.set(group, { title: group, reqs: [] });
+        iso42001Groups.get(group)!.reqs.push(req.key);
+    }
+    let iso42001GroupIdx = 0;
+    for (const [, info] of iso42001Groups) {
+        const code = `AIMS-${String(iso42001GroupIdx++).padStart(2, '0')}`;
+        const existing = await prisma.controlTemplate.findUnique({ where: { code } });
+        if (!existing) {
+            const tmpl = await prisma.controlTemplate.create({
+                data: { code, title: info.title, category: 'ISO 42001', defaultFrequency: 'ANNUALLY' },
+            });
+            for (const task of defaultTasks) {
+                await prisma.controlTemplateTask.create({ data: { templateId: tmpl.id, title: task.title, description: task.description } });
+            }
+            for (const rk of info.reqs) {
+                if (iso42001ReqMap[rk]) {
+                    await prisma.controlTemplateRequirementLink.create({ data: { templateId: tmpl.id, requirementId: iso42001ReqMap[rk] } }).catch(() => { });
+                }
+            }
+        }
+    }
+    const iso42001Tmpls = await prisma.controlTemplate.findMany({ where: { code: { startsWith: 'AIMS-' } } });
+    const iso42001Pack = await prisma.frameworkPack.upsert({
+        where: { key: 'ISO42001_BASELINE' },
+        update: { name: 'ISO 42001 AIMS Baseline Pack', frameworkId: iso42001.id, version: '2023' },
+        create: { key: 'ISO42001_BASELINE', name: 'ISO 42001 AIMS Baseline Pack', frameworkId: iso42001.id, version: '2023', description: 'ISO/IEC 42001:2023 AI management system clauses + Annex A controls.' },
+    });
+    for (const tmpl of iso42001Tmpls) {
+        await prisma.packTemplateLink.upsert({
+            where: { packId_templateId: { packId: iso42001Pack.id, templateId: tmpl.id } },
+            create: { packId: iso42001Pack.id, templateId: tmpl.id }, update: {},
+        });
+    }
+    console.log(`✅ ISO 42001 framework + ${iso42001Data.length} requirements + ${iso42001Groups.size} group packs seeded`);
+
     // ISO 9001 Pack
     const iso9001Tmpls = await prisma.controlTemplate.findMany({ where: { code: { startsWith: 'QMS-' } } });
     const iso9001Pack = await prisma.frameworkPack.upsert({

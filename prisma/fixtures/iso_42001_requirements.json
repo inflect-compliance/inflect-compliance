@@ -1,0 +1,374 @@
+[
+  {
+    "key": "4.1",
+    "section": "Clause 4 Context of the organization",
+    "sortOrder": 0,
+    "title": "Understand the organization and its AI context"
+  },
+  {
+    "key": "4.2",
+    "section": "Clause 4 Context of the organization",
+    "sortOrder": 1,
+    "title": "Determine needs and expectations of interested parties"
+  },
+  {
+    "key": "4.3",
+    "section": "Clause 4 Context of the organization",
+    "sortOrder": 2,
+    "title": "Determine the scope of the AI management system"
+  },
+  {
+    "key": "4.4",
+    "section": "Clause 4 Context of the organization",
+    "sortOrder": 3,
+    "title": "Establish and maintain the AI management system"
+  },
+  {
+    "key": "5.1",
+    "section": "Clause 5 Leadership",
+    "sortOrder": 4,
+    "title": "Top-management leadership and commitment to the AIMS"
+  },
+  {
+    "key": "5.2",
+    "section": "Clause 5 Leadership",
+    "sortOrder": 5,
+    "title": "Establish an AI policy"
+  },
+  {
+    "key": "5.3",
+    "section": "Clause 5 Leadership",
+    "sortOrder": 6,
+    "title": "Assign AI roles, responsibilities and authorities"
+  },
+  {
+    "key": "6.1",
+    "section": "Clause 6 Planning",
+    "sortOrder": 7,
+    "title": "Actions to address AI risks and opportunities (assessment, treatment, impact)"
+  },
+  {
+    "key": "6.2",
+    "section": "Clause 6 Planning",
+    "sortOrder": 8,
+    "title": "Set AI objectives and plans to achieve them"
+  },
+  {
+    "key": "6.3",
+    "section": "Clause 6 Planning",
+    "sortOrder": 9,
+    "title": "Plan changes to the AI management system"
+  },
+  {
+    "key": "7.1",
+    "section": "Clause 7 Support",
+    "sortOrder": 10,
+    "title": "Provide resources for the AIMS"
+  },
+  {
+    "key": "7.2",
+    "section": "Clause 7 Support",
+    "sortOrder": 11,
+    "title": "Ensure competence of people affecting AI performance"
+  },
+  {
+    "key": "7.3",
+    "section": "Clause 7 Support",
+    "sortOrder": 12,
+    "title": "Ensure awareness of the AI policy and roles"
+  },
+  {
+    "key": "7.4",
+    "section": "Clause 7 Support",
+    "sortOrder": 13,
+    "title": "Determine internal and external AI communication"
+  },
+  {
+    "key": "7.5",
+    "section": "Clause 7 Support",
+    "sortOrder": 14,
+    "title": "Create and control documented information"
+  },
+  {
+    "key": "8.1",
+    "section": "Clause 8 Operation",
+    "sortOrder": 15,
+    "title": "Operational planning and control of AI processes"
+  },
+  {
+    "key": "8.2",
+    "section": "Clause 8 Operation",
+    "sortOrder": 16,
+    "title": "Perform the AI risk assessment"
+  },
+  {
+    "key": "8.3",
+    "section": "Clause 8 Operation",
+    "sortOrder": 17,
+    "title": "Implement the AI risk treatment"
+  },
+  {
+    "key": "8.4",
+    "section": "Clause 8 Operation",
+    "sortOrder": 18,
+    "title": "Perform the AI system impact assessment"
+  },
+  {
+    "key": "9.1",
+    "section": "Clause 9 Performance evaluation",
+    "sortOrder": 19,
+    "title": "Monitor, measure, analyse and evaluate the AIMS"
+  },
+  {
+    "key": "9.2",
+    "section": "Clause 9 Performance evaluation",
+    "sortOrder": 20,
+    "title": "Conduct internal audits of the AIMS"
+  },
+  {
+    "key": "9.3",
+    "section": "Clause 9 Performance evaluation",
+    "sortOrder": 21,
+    "title": "Conduct management review of the AIMS"
+  },
+  {
+    "key": "10.1",
+    "section": "Clause 10 Improvement",
+    "sortOrder": 22,
+    "title": "Drive continual improvement of the AIMS"
+  },
+  {
+    "key": "10.2",
+    "section": "Clause 10 Improvement",
+    "sortOrder": 23,
+    "title": "Manage nonconformity and corrective action"
+  },
+  {
+    "key": "A.2.2",
+    "section": "A.2 Policies related to AI",
+    "sortOrder": 24,
+    "title": "Establish a written AI policy framework"
+  },
+  {
+    "key": "A.2.3",
+    "section": "A.2 Policies related to AI",
+    "sortOrder": 25,
+    "title": "Align the AI policy with other organizational policies"
+  },
+  {
+    "key": "A.2.4",
+    "section": "A.2 Policies related to AI",
+    "sortOrder": 26,
+    "title": "Review the AI policy at planned intervals"
+  },
+  {
+    "key": "A.3.2",
+    "section": "A.3 Internal organization",
+    "sortOrder": 27,
+    "title": "Define AI roles and accountability structures"
+  },
+  {
+    "key": "A.3.3",
+    "section": "A.3 Internal organization",
+    "sortOrder": 28,
+    "title": "Establish a mechanism for reporting concerns"
+  },
+  {
+    "key": "A.4.2",
+    "section": "A.4 Resources for AI systems",
+    "sortOrder": 29,
+    "title": "Document an inventory of AI system resources"
+  },
+  {
+    "key": "A.4.3",
+    "section": "A.4 Resources for AI systems",
+    "sortOrder": 30,
+    "title": "Record dataset provenance and characteristics"
+  },
+  {
+    "key": "A.4.4",
+    "section": "A.4 Resources for AI systems",
+    "sortOrder": 31,
+    "title": "Track algorithms, models and tooling dependencies"
+  },
+  {
+    "key": "A.4.5",
+    "section": "A.4 Resources for AI systems",
+    "sortOrder": 32,
+    "title": "Record computing infrastructure and environments"
+  },
+  {
+    "key": "A.4.6",
+    "section": "A.4 Resources for AI systems",
+    "sortOrder": 33,
+    "title": "Identify the people and competencies involved"
+  },
+  {
+    "key": "A.5.2",
+    "section": "A.5 Assessing impacts of AI systems",
+    "sortOrder": 34,
+    "title": "Define a repeatable AI impact-assessment process"
+  },
+  {
+    "key": "A.5.3",
+    "section": "A.5 Assessing impacts of AI systems",
+    "sortOrder": 35,
+    "title": "Document impact-assessment findings and records"
+  },
+  {
+    "key": "A.5.4",
+    "section": "A.5 Assessing impacts of AI systems",
+    "sortOrder": 36,
+    "title": "Evaluate effects on individuals and groups"
+  },
+  {
+    "key": "A.5.5",
+    "section": "A.5 Assessing impacts of AI systems",
+    "sortOrder": 37,
+    "title": "Assess broader societal impacts"
+  },
+  {
+    "key": "A.6.1.2",
+    "section": "A.6 AI system life cycle",
+    "sortOrder": 38,
+    "title": "Set responsible AI development objectives"
+  },
+  {
+    "key": "A.6.1.3",
+    "section": "A.6 AI system life cycle",
+    "sortOrder": 39,
+    "title": "Document responsible design and development processes"
+  },
+  {
+    "key": "A.6.2.2",
+    "section": "A.6 AI system life cycle",
+    "sortOrder": 40,
+    "title": "Capture functional and non-functional requirements"
+  },
+  {
+    "key": "A.6.2.3",
+    "section": "A.6 AI system life cycle",
+    "sortOrder": 41,
+    "title": "Maintain design and development documentation"
+  },
+  {
+    "key": "A.6.2.4",
+    "section": "A.6 AI system life cycle",
+    "sortOrder": 42,
+    "title": "Define verification and validation methodologies"
+  },
+  {
+    "key": "A.6.2.5",
+    "section": "A.6 AI system life cycle",
+    "sortOrder": 43,
+    "title": "Create a deployment plan with release criteria"
+  },
+  {
+    "key": "A.6.2.6",
+    "section": "A.6 AI system life cycle",
+    "sortOrder": 44,
+    "title": "Establish operation and performance monitoring"
+  },
+  {
+    "key": "A.6.2.7",
+    "section": "A.6 AI system life cycle",
+    "sortOrder": 45,
+    "title": "Provide technical documentation for audiences"
+  },
+  {
+    "key": "A.6.2.8",
+    "section": "A.6 AI system life cycle",
+    "sortOrder": 46,
+    "title": "Log events across the system life cycle"
+  },
+  {
+    "key": "A.7.2",
+    "section": "A.7 Data for AI systems",
+    "sortOrder": 47,
+    "title": "Manage data for development and enhancement"
+  },
+  {
+    "key": "A.7.3",
+    "section": "A.7 Data for AI systems",
+    "sortOrder": 48,
+    "title": "Document dataset origin and selection rationale"
+  },
+  {
+    "key": "A.7.4",
+    "section": "A.7 Data for AI systems",
+    "sortOrder": 49,
+    "title": "Define and verify data-quality criteria"
+  },
+  {
+    "key": "A.7.5",
+    "section": "A.7 Data for AI systems",
+    "sortOrder": 50,
+    "title": "Track data lineage and transformation history"
+  },
+  {
+    "key": "A.7.6",
+    "section": "A.7 Data for AI systems",
+    "sortOrder": 51,
+    "title": "Document data-preparation techniques used"
+  },
+  {
+    "key": "A.8.2",
+    "section": "A.8 Information for interested parties",
+    "sortOrder": 52,
+    "title": "Provide user-facing system documentation"
+  },
+  {
+    "key": "A.8.3",
+    "section": "A.8 Information for interested parties",
+    "sortOrder": 53,
+    "title": "Enable an external problem-reporting mechanism"
+  },
+  {
+    "key": "A.8.4",
+    "section": "A.8 Information for interested parties",
+    "sortOrder": 54,
+    "title": "Plan incident-notification communication"
+  },
+  {
+    "key": "A.8.5",
+    "section": "A.8 Information for interested parties",
+    "sortOrder": 55,
+    "title": "Share relevant AI system information proactively"
+  },
+  {
+    "key": "A.9.2",
+    "section": "A.9 Use of AI systems",
+    "sortOrder": 56,
+    "title": "Define responsible-use operational processes"
+  },
+  {
+    "key": "A.9.3",
+    "section": "A.9 Use of AI systems",
+    "sortOrder": 57,
+    "title": "Set responsible-use objectives"
+  },
+  {
+    "key": "A.9.4",
+    "section": "A.9 Use of AI systems",
+    "sortOrder": 58,
+    "title": "Prevent scope creep from the intended purpose"
+  },
+  {
+    "key": "A.10.2",
+    "section": "A.10 Third-party and customer relationships",
+    "sortOrder": 59,
+    "title": "Allocate accountability across the AI supply chain"
+  },
+  {
+    "key": "A.10.3",
+    "section": "A.10 Third-party and customer relationships",
+    "sortOrder": 60,
+    "title": "Assess and manage supplier AI expectations"
+  },
+  {
+    "key": "A.10.4",
+    "section": "A.10 Third-party and customer relationships",
+    "sortOrder": 61,
+    "title": "Incorporate customer obligations into the approach"
+  }
+]
