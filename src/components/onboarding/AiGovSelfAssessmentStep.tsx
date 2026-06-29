@@ -259,7 +259,7 @@ export function AiGovSelfAssessmentStep({
 
             {cov.criticalGaps.length > 0 && (
                 <div
-                    className="rounded-lg border border-border-emphasis bg-bg-error-subtle px-3 py-2 text-sm text-content-default"
+                    className="rounded-lg border border-border-emphasis bg-bg-subtle px-3 py-2 text-sm text-content-default"
                     data-testid="ai-gov-critical-gaps"
                 >
                     <strong>{cov.criticalGaps.length} critical gap{cov.criticalGaps.length === 1 ? '' : 's'}</strong>{' '}
