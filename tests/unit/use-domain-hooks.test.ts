@@ -93,7 +93,13 @@ const TENANT_CTX: TenantContextValue = {
 };
 
 function wrapper({ children }: { children: React.ReactNode }) {
-    return React.createElement(TenantProvider, { value: TENANT_CTX, children });
+    // children as the 3rd arg (eslint react/no-children-prop), and cast the
+    // provider so tsc doesn't require children inside the props object.
+    const Provider = TenantProvider as React.FunctionComponent<{
+        value: TenantContextValue;
+        children?: React.ReactNode;
+    }>;
+    return React.createElement(Provider, { value: TENANT_CTX }, children);
 }
 
 const COLLECTIONS = ['controls', 'risks', 'policies', 'assets', 'tasks', 'evidence'];
