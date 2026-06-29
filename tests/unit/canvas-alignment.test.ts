@@ -84,6 +84,63 @@ describe("alignNodes", () => {
         const out = alignNodes(nodes, new Set(["a", "b"]), "left");
         expect(out[2]).toBe(nodes[2]);
     });
+
+    it("align bottom snaps every selected to the lowest bottom edge", () => {
+        // a bottom = 100+50 = 150, b bottom = 200+50 = 250 (max),
+        // c bottom = 50+50 = 100. Anchor = 250; each y = 250 - h.
+        const out = alignNodes(nodes, new Set(["a", "b", "c"]), "bottom");
+        expect(out[0].position.y).toBe(200); // 250 - 50
+        expect(out[1].position.y).toBe(200);
+        expect(out[2].position.y).toBe(200);
+        // x untouched on a y-axis align.
+        expect(out[0].position.x).toBe(10);
+        expect(out[2].position.x).toBe(200);
+    });
+
+    it("centre-y averages the centres, then computes per-node offset", () => {
+        // Centres on y: a@125, b@225, c@75 → avg 141.666..., each
+        // node sits at avg - h/2 = 116.666... (h=50 for all).
+        const out = alignNodes(nodes, new Set(["a", "b", "c"]), "center-y");
+        for (const node of out) {
+            expect(
+                Math.abs(node.position.y - (125 + 225 + 75) / 3 + 25),
+            ).toBeLessThan(1e-6);
+        }
+        // x untouched.
+        expect(out[0].position.x).toBe(10);
+    });
+
+    it("falls back to FALLBACK_W / FALLBACK_H when dimensions are absent", () => {
+        // No measured / width / height → fallback 180 x 72 used in
+        // the right + bottom branches (which subtract w / h).
+        const bare = (id: string, x: number, y: number): Node =>
+            ({ id, position: { x, y }, data: {} }) as unknown as Node;
+        const nodes2 = [bare("p", 0, 0), bare("q", 100, 40)];
+        const right = alignNodes(nodes2, new Set(["p", "q"]), "right");
+        // anchor = max(0+180, 100+180) = 280; both width 180.
+        expect(right[0].position.x).toBe(280 - 180); // 100
+        expect(right[1].position.x).toBe(280 - 180); // 100
+        const bottom = alignNodes(nodes2, new Set(["p", "q"]), "bottom");
+        // anchor = max(0+72, 40+72) = 112; both height 72.
+        expect(bottom[0].position.y).toBe(112 - 72); // 40
+        expect(bottom[1].position.y).toBe(112 - 72); // 40
+    });
+
+    it("prefers node.width / node.height when measured is absent", () => {
+        const sized = (id: string, x: number, y: number): Node =>
+            ({
+                id,
+                position: { x, y },
+                width: 40,
+                height: 20,
+                data: {},
+            }) as unknown as Node;
+        const nodes2 = [sized("p", 0, 0), sized("q", 50, 0)];
+        const out = alignNodes(nodes2, new Set(["p", "q"]), "right");
+        // anchor = max(40, 90) = 90; width 40.
+        expect(out[0].position.x).toBe(90 - 40); // 50
+        expect(out[1].position.x).toBe(90 - 40); // 50
+    });
 });
 
 describe("distributeNodes", () => {
