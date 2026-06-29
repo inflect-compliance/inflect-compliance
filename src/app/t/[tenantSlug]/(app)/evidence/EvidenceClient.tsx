@@ -222,13 +222,19 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     const [bulkApplying, setBulkApplying] = useState(false);
     const handleBulkApply = async (action: string, value: string) => {
         const ids = Array.from(selected);
-        if (action !== 'assign' || ids.length === 0) return;
+        if (ids.length === 0 || (action !== 'assign' && action !== 'delete')) return;
         setBulkApplying(true);
         try {
-            const res = await fetch(apiUrl('/evidence/bulk/assign'), {
+            const url = action === 'delete'
+                ? apiUrl('/evidence/bulk/delete')
+                : apiUrl('/evidence/bulk/assign');
+            const body = action === 'delete'
+                ? { evidenceIds: ids }
+                : { evidenceIds: ids, ownerUserId: value || null };
+            const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ evidenceIds: ids, ownerUserId: value || null }),
+                body: JSON.stringify(body),
             });
             if (!res.ok) throw new Error('Bulk action failed');
             await evidenceQuery.mutate();
@@ -258,6 +264,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                     />
                 ),
             },
+            { value: 'delete', label: 'Delete', confirm: true },
         ],
         [tenantSlug],
     );
@@ -1241,6 +1248,8 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                                 actions={evidenceBulkActions}
                                 onApply={handleBulkApply}
                                 applying={bulkApplying}
+                                selectedCount={selected.size}
+                                entityLabel="evidence"
                             />
                         )}
                         emptyState={

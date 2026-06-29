@@ -190,16 +190,18 @@ describeFn('Dual-Write Verification', () => {
 // ═══════════════════════════════════════════════════════════════
 
 describeFn('Soft-Delete Guards', () => {
-    it('SOFT_DELETE_MODELS includes all 12 critical entities', () => {
+    it('SOFT_DELETE_MODELS includes all 13 critical entities', () => {
         const expected = [
             'Asset', 'Risk', 'Control', 'Evidence', 'Policy',
             'Vendor', 'FileRecord', 'Task', 'Finding',
             'Audit', 'AuditCycle', 'AuditPack',
+            // Bulk-delete support (row-select action bar).
+            'ControlTestPlan',
         ];
         for (const model of expected) {
             expect(SOFT_DELETE_MODELS.has(model)).toBe(true);
         }
-        expect(SOFT_DELETE_MODELS.size).toBe(12);
+        expect(SOFT_DELETE_MODELS.size).toBe(13);
     });
 
     it('deleting a Risk sets deletedAt instead of hard-deleting', async () => {

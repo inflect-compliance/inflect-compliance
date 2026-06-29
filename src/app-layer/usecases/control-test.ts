@@ -613,6 +613,29 @@ export async function bulkSetTestPlanStatus(
     return { updated };
 }
 
+/** Bulk soft-delete control test plans selected in the table action bar. */
+export async function bulkDeleteTestPlan(ctx: RequestContext, planIds: string[]) {
+    assertCanManageTestPlans(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const rows = await db.controlTestPlan.findMany({
+            where: { id: { in: planIds }, tenantId: ctx.tenantId },
+            select: { id: true },
+        });
+        if (rows.length === 0) return { deleted: 0 };
+        await db.controlTestPlan.deleteMany({ where: { id: { in: rows.map((r) => r.id) }, tenantId: ctx.tenantId } });
+        for (const r of rows) {
+            await logEvent(db, ctx, {
+                action: 'SOFT_DELETE',
+                entityType: 'ControlTestPlan',
+                entityId: r.id,
+                details: 'Control test plan soft-deleted (bulk)',
+                detailsJson: { category: 'entity_lifecycle', entityName: 'ControlTestPlan', operation: 'deleted', summary: 'Control test plan soft-deleted' },
+            });
+        }
+        return { deleted: rows.length };
+    });
+}
+
 export async function bulkAssignTestPlan(
     ctx: RequestContext,
     planIds: string[],

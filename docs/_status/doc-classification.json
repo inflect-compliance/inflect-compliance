@@ -3,7 +3,7 @@
   "description": "Classification of every docs/**/*.md. authoritative = true today; living = partially-shipped design direction; historical = moment-in-time record (incl. all of docs/implementation-notes/); deprecated = superseded redirect. Enforced by tests/guardrails/docs-accuracy.test.ts. See CLAUDE.md \"Doc classifications\".",
   "counts": {
     "authoritative": 104,
-    "historical": 297,
+    "historical": 298,
     "living": 5,
     "deprecated": 1
   },
@@ -1215,6 +1215,9 @@
       "class": "historical"
     },
     "docs/implementation-notes/2026-06-27-policy-template-cleanup.md": {
+      "class": "historical"
+    },
+    "docs/implementation-notes/2026-06-28-bulk-delete-action.md": {
       "class": "historical"
     },
     "docs/implementation-notes/2026-06-28-dora-framework.md": {

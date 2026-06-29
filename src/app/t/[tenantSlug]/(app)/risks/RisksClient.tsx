@@ -351,11 +351,17 @@ function RisksPageInner({
         if (!action || ids.length === 0) return;
         setBulkApplying(true);
         try {
-            const url = action === 'status' ? apiUrl('/risks/bulk/status') : apiUrl('/risks/bulk/assign');
+            const url = action === 'status'
+                ? apiUrl('/risks/bulk/status')
+                : action === 'delete'
+                    ? apiUrl('/risks/bulk/delete')
+                    : apiUrl('/risks/bulk/assign');
             const body =
                 action === 'status'
                     ? { riskIds: ids, status: value }
-                    : { riskIds: ids, ownerUserId: value || null };
+                    : action === 'delete'
+                        ? { riskIds: ids }
+                        : { riskIds: ids, ownerUserId: value || null };
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -408,6 +414,7 @@ function RisksPageInner({
                     />
                 ),
             },
+            { value: 'delete', label: 'Delete', confirm: true },
         ],
         [tenantSlug],
     );
@@ -1225,6 +1232,8 @@ function RisksPageInner({
                                 actions={riskBulkActions}
                                 onApply={handleBulkApply}
                                 applying={bulkApplying}
+                                selectedCount={selected.size}
+                                entityLabel="risks"
                             />
                         )}
                         emptyState={

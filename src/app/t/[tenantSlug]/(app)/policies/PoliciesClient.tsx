@@ -260,11 +260,13 @@ function PoliciesPageInner({
             const url =
                 action === 'archive'
                     ? `/api/t/${tenantSlug}/policies/bulk/archive`
-                    : `/api/t/${tenantSlug}/policies/bulk/assign`;
+                    : action === 'delete'
+                        ? `/api/t/${tenantSlug}/policies/bulk/delete`
+                        : `/api/t/${tenantSlug}/policies/bulk/assign`;
             const body =
-                action === 'archive'
-                    ? { policyIds: ids }
-                    : { policyIds: ids, ownerUserId: value || null };
+                action === 'assign'
+                    ? { policyIds: ids, ownerUserId: value || null }
+                    : { policyIds: ids };
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -299,9 +301,11 @@ function PoliciesPageInner({
                 ),
             },
         ];
-        // Archive is admin-gated (mirrors archivePolicy's OWNER/ADMIN guard).
+        // Archive + Delete are admin-gated (mirror the OWNER/ADMIN guards on
+        // archivePolicy / bulkDeletePolicy).
         if (permissions.canAdmin) {
             defs.push({ value: 'archive', label: 'Archive' });
+            defs.push({ value: 'delete', label: 'Delete', confirm: true });
         }
         return defs;
     }, [tenantSlug, permissions.canAdmin]);
@@ -702,6 +706,8 @@ function PoliciesPageInner({
                               actions={policyBulkActions}
                               onApply={handleBulkApply}
                               applying={bulkApplying}
+                              selectedCount={selected.size}
+                              entityLabel="policies"
                           />
                       )
                     : undefined,

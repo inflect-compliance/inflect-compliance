@@ -220,7 +220,9 @@ describe('Soft-Delete Middleware', () => {
             expect(SOFT_DELETE_MODELS.has('Audit')).toBe(true);
             expect(SOFT_DELETE_MODELS.has('AuditCycle')).toBe(true);
             expect(SOFT_DELETE_MODELS.has('AuditPack')).toBe(true);
-            expect(SOFT_DELETE_MODELS.size).toBe(12);
+            // Bulk-delete support (row-select action bar)
+            expect(SOFT_DELETE_MODELS.has('ControlTestPlan')).toBe(true);
+            expect(SOFT_DELETE_MODELS.size).toBe(13);
         });
 
         test('does NOT include ephemeral models', () => {

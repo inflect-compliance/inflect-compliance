@@ -123,11 +123,17 @@ function TestsRollupContent() {
         if (!action || ids.length === 0) return;
         setBulkApplying(true);
         try {
-            const url = action === 'status' ? apiUrl('/tests/plans/bulk/status') : apiUrl('/tests/plans/bulk/assign');
+            const url = action === 'status'
+                ? apiUrl('/tests/plans/bulk/status')
+                : action === 'delete'
+                    ? apiUrl('/tests/plans/bulk/delete')
+                    : apiUrl('/tests/plans/bulk/assign');
             const body =
                 action === 'status'
                     ? { planIds: ids, status: value }
-                    : { planIds: ids, ownerUserId: value || null };
+                    : action === 'delete'
+                        ? { planIds: ids }
+                        : { planIds: ids, ownerUserId: value || null };
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -178,6 +184,7 @@ function TestsRollupContent() {
                     />
                 ),
             },
+            { value: 'delete', label: 'Delete', confirm: true },
         ],
         [tenantSlug],
     );
@@ -512,6 +519,8 @@ function TestsRollupContent() {
                             actions={testBulkActions}
                             onApply={handleBulkApply}
                             applying={bulkApplying}
+                            selectedCount={selected.size}
+                            entityLabel="test plans"
                         />
                     )}
                     emptyState={
