@@ -1,0 +1,113 @@
+{
+  "key": "AISVS_AI_VENDOR",
+  "name": "OWASP AISVS — AI Vendor Security Questionnaire",
+  "description": "Due-diligence questionnaire for assessing a third-party AI vendor / tool against OWASP AISVS v1.0. Questions are vendor self-attestations, paraphrased from AISVS L1/L2 requirements (referenced by ID); they are not a guarantee of vendor AI safety. Based on OWASP AISVS v1.0 (CC-BY-SA-4.0). Source: https://github.com/OWASP/AISVS",
+  "attribution": "Based on OWASP AISVS v1.0 — © OWASP Foundation, CC-BY-SA-4.0 (https://creativecommons.org/licenses/by-sa/4.0/). Source: https://github.com/OWASP/AISVS. Questions are paraphrased references to AISVS requirement IDs, not verbatim requirement text.",
+  "sections": [
+    {
+      "title": "Vendor AI profile (screening)",
+      "weight": 1.0,
+      "conditional": false,
+      "questions": [
+        { "aisvsId": "PROFILE", "level": "L1", "weight": 1, "type": "ARCHETYPE", "prompt": "Which best describes the AI system being procured? (Used to decide which sections apply — RAG/embeddings and agentic sections only apply to those architectures.)" }
+      ]
+    },
+    {
+      "title": "Training Data Integrity & Traceability (AISVS C1)",
+      "weight": 1.5,
+      "conditional": false,
+      "questions": [
+        { "aisvsId": "C1.1.2", "level": "L2", "weight": 1.5, "prompt": "Do you maintain an inventory of all training-data sources and their origin/provenance? (AISVS C1.1.2, L2)" },
+        { "aisvsId": "C1.1.3", "level": "L2", "weight": 1.5, "prompt": "Do you protect training-data integrity in storage and transfer (e.g. checksums, access control)? (AISVS C1.1.3, L2)" },
+        { "aisvsId": "C1.3.1", "level": "L2", "weight": 2, "prompt": "Do you screen training pipelines for data poisoning? (AISVS C1.3.1, L2)" },
+        { "aisvsId": "C1.3.4", "level": "L2", "weight": 1.5, "prompt": "Do you remove disallowed or unlawful content from training data before training? (AISVS C1.3.4, L2)" }
+      ]
+    },
+    {
+      "title": "Input Validation & Prompt-Injection Defense (AISVS C2)",
+      "weight": 2.0,
+      "conditional": false,
+      "questions": [
+        { "aisvsId": "C2.1.3", "level": "L1", "weight": 2, "prompt": "Do you screen untrusted inputs for prompt-injection attempts before they reach the model? (AISVS C2.1.3, L1)" },
+        { "aisvsId": "C2.1.6", "level": "L2", "weight": 2, "prompt": "Do you enforce an instruction hierarchy that protects system instructions from user/tenant-supplied content? (AISVS C2.1.6, L2)" },
+        { "aisvsId": "C2.2.1", "level": "L1", "weight": 1.5, "prompt": "Do you score prompts for harmful content against defined thresholds? (AISVS C2.2.1, L1)" }
+      ]
+    },
+    {
+      "title": "Model Lifecycle & Change Control (AISVS C3)",
+      "weight": 1.5,
+      "conditional": false,
+      "questions": [
+        { "aisvsId": "C3.1.1", "level": "L1", "weight": 1.5, "prompt": "Do you maintain an inventory of deployed model artifacts and versions? (AISVS C3.1.1, L1)" },
+        { "aisvsId": "C3.1.2", "level": "L2", "weight": 1.5, "prompt": "Do you cryptographically sign model artifacts? (AISVS C3.1.2, L2)" },
+        { "aisvsId": "C3.2.1", "level": "L1", "weight": 1.5, "prompt": "Do you run automated safety and validation testing before deploying a model change? (AISVS C3.2.1, L1)" },
+        { "aisvsId": "C3.3.1", "level": "L2", "weight": 1, "prompt": "Do you stage model rollouts with an automated rollback path? (AISVS C3.3.1, L2)" }
+      ]
+    },
+    {
+      "title": "Access Control & Identity for AI (AISVS C5)",
+      "weight": 1.5,
+      "conditional": false,
+      "questions": [
+        { "aisvsId": "C5.2.1", "level": "L2", "weight": 1.5, "prompt": "Do you enforce default-deny authorization on AI resources and capabilities? (AISVS C5.2.1, L2)" },
+        { "aisvsId": "C5.2.4", "level": "L2", "weight": 1.5, "prompt": "Do you filter model outputs to block exposure of unauthorized data? (AISVS C5.2.4, L2)" },
+        { "aisvsId": "C5.3.1", "level": "L2", "weight": 2, "prompt": "Do you prevent cross-tenant interference and data leakage on shared AI infrastructure? (AISVS C5.3.1, L2)" }
+      ]
+    },
+    {
+      "title": "Model Supply Chain Security (AISVS C6)",
+      "weight": 2.0,
+      "conditional": false,
+      "questions": [
+        { "aisvsId": "C6.1.1", "level": "L1", "weight": 2, "prompt": "Do you scan third-party models for malicious code before use? (AISVS C6.1.1, L1)" },
+        { "aisvsId": "C6.1.2", "level": "L1", "weight": 1.5, "prompt": "Do you obtain models only from approved, trusted sources? (AISVS C6.1.2, L1)" },
+        { "aisvsId": "C6.2.1", "level": "L1", "weight": 1.5, "prompt": "Can you provide a machine-readable AI bill of materials (AI BOM) for the system? (AISVS C6.2.1, L1)" },
+        { "aisvsId": "C6.1.3", "level": "L2", "weight": 1.5, "prompt": "Are third-party model artifacts integrity-verifiable (signatures/hashes)? (AISVS C6.1.3, L2)" }
+      ]
+    },
+    {
+      "title": "Model Behavior & Output Control (AISVS C7)",
+      "weight": 2.0,
+      "conditional": false,
+      "questions": [
+        { "aisvsId": "C7.1.1", "level": "L1", "weight": 2, "prompt": "Do you validate model outputs against a defined schema before returning them? (AISVS C7.1.1, L1)" },
+        { "aisvsId": "C7.3.1", "level": "L1", "weight": 2, "prompt": "Do you scan responses and block harmful content (output guardrails)? (AISVS C7.3.1, L1)" },
+        { "aisvsId": "C7.2.1", "level": "L2", "weight": 1.5, "prompt": "Do you estimate answer reliability/confidence and handle low-confidence outputs? (AISVS C7.2.1, L2)" },
+        { "aisvsId": "C7.4.1", "level": "L1", "weight": 1, "prompt": "For retrieval-grounded answers, do you include source attribution? (AISVS C7.4.1, L1)" }
+      ]
+    },
+    {
+      "title": "Monitoring, Logging & Anomaly Detection (AISVS C12)",
+      "weight": 1.5,
+      "conditional": false,
+      "questions": [
+        { "aisvsId": "C12.1.1", "level": "L1", "weight": 1.5, "prompt": "Do you log AI interactions with sufficient context for investigation? (AISVS C12.1.1, L1)" },
+        { "aisvsId": "C12.2.1", "level": "L1", "weight": 1.5, "prompt": "Do you detect jailbreak and prompt-injection attempts at runtime? (AISVS C12.2.1, L1)" },
+        { "aisvsId": "C12.3.2", "level": "L2", "weight": 1.5, "prompt": "Do you detect and flag hallucinations in model outputs? (AISVS C12.3.2, L2)" },
+        { "aisvsId": "C12.4.2", "level": "L2", "weight": 1, "prompt": "Do you keep an audit log of security-critical AI actions with approver identity? (AISVS C12.4.2, L2)" }
+      ]
+    },
+    {
+      "title": "Memory, Embeddings & Vector DB — RAG vendors only (AISVS C8)",
+      "weight": 1.5,
+      "conditional": true,
+      "appliesTo": "RAG",
+      "questions": [
+        { "aisvsId": "C8.1.1", "level": "L1", "weight": 1.5, "prompt": "Do vector identifiers enforce per-tenant uniqueness/isolation in the index? (AISVS C8.1.1, L1)" },
+        { "aisvsId": "C8.2.1", "level": "L1", "weight": 1.5, "prompt": "Do you mask sensitive fields before vectorization/embedding? (AISVS C8.2.1, L1)" },
+        { "aisvsId": "C8.3.2", "level": "L2", "weight": 1, "prompt": "Do you provide a memory/embedding reset (deletion) capability? (AISVS C8.3.2, L2)" }
+      ]
+    },
+    {
+      "title": "Orchestration & Agentic Security — agentic vendors only (AISVS C9)",
+      "weight": 1.5,
+      "conditional": true,
+      "appliesTo": "AGENTIC",
+      "questions": [
+        { "aisvsId": "C9.1.1", "level": "L1", "weight": 1.5, "prompt": "Do you enforce per-tool quotas and timeouts on agent actions? (AISVS C9.1.1, L1)" },
+        { "aisvsId": "C9.2.1", "level": "L1", "weight": 2, "prompt": "Do high-impact / privileged agent actions require human approval? (AISVS C9.2.1, L1)" },
+        { "aisvsId": "C9.3.1", "level": "L1", "weight": 1.5, "prompt": "Do you execute tools in least-privilege sandboxes? (AISVS C9.3.1, L1)" }
+      ]
+    }
+  ]
+}
