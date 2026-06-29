@@ -200,6 +200,12 @@ function IncidentsPageInner({ initialIncidents, tenantSlug, canManage }: Inciden
     return (
         <EntityListPage<IncidentRow>
             header={{
+                back: { smart: true },
+                breadcrumbs: [
+                    { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
+                    { label: 'Internal Audits', href: `/t/${tenantSlug}/audits` },
+                    { label: 'Incidents' },
+                ],
                 title: 'Incidents',
                 count: `${incidents.length} incident${incidents.length === 1 ? '' : 's'}`,
                 description:

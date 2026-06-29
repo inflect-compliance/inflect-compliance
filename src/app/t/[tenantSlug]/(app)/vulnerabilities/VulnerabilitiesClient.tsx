@@ -201,7 +201,12 @@ function VulnerabilitiesInner({ initialRows, tenantSlug, canWrite }: Props) {
     return (
         <EntityListPage<VulnRow>
             header={{
-                breadcrumbs: [{ label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` }, { label: 'Vulnerabilities' }],
+                back: { smart: true },
+                breadcrumbs: [
+                    { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
+                    { label: 'Risk Register', href: `/t/${tenantSlug}/risks` },
+                    { label: 'Vulnerabilities' },
+                ],
                 title: (
                     <>
                         <ShieldAlert className="inline-block mr-2 h-5 w-5 align-text-bottom" />

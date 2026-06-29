@@ -987,6 +987,19 @@ function RisksPageInner({
                         )}
                     </div>
                     <div className="flex gap-tight">
+                        {/* Vulnerabilities is a subpage of the Risk Register —
+                            reached via this leading icon button (the sidebar
+                            entry was retired). */}
+                        <Tooltip content="Vulnerabilities">
+                            <Link
+                                href={tenantHref('/vulnerabilities')}
+                                aria-label="Vulnerabilities"
+                                className={buttonVariants({ variant: 'secondary', size: 'icon' })}
+                                id="risks-vulnerabilities-btn"
+                            >
+                                <AppIcon name="shield" size={16} />
+                            </Link>
+                        </Tooltip>
                         {RISK_VIEW_LINKS.map((v) => (
                             <Tooltip key={v.href} content={v.label}>
                                 <Link
