@@ -258,7 +258,7 @@ describeFn('policy usecase — branch coverage (integration)', () => {
 
         // DRAFT + bypass reason → publishes (bypass audit)
         const bypassed = await publishPolicy(ctx, policy.id, v.id, { bypassApprovalReason: 'emergency hotfix' });
-        expect(bypassed.status).toBe('PUBLISHED');
+        expect(bypassed!.status).toBe('PUBLISHED');
         const bypassRows = await globalPrisma.auditLog.findMany({
             where: { tenantId: TENANT_ID, entityId: policy.id, action: 'POLICY_PUBLISH_BYPASS' },
         });
@@ -269,7 +269,7 @@ describeFn('policy usecase — branch coverage (integration)', () => {
         const v2 = await createPolicyVersion(ctx, policy2.id, { contentType: 'MARKDOWN', contentText: 'b' });
         await globalPrisma.policy.update({ where: { id: policy2.id }, data: { status: 'APPROVED' } });
         const published = await publishPolicy(ctx, policy2.id, v2.id);
-        expect(published.status).toBe('PUBLISHED');
+        expect(published!.status).toBe('PUBLISHED');
     });
 
     it('markPolicyReviewed + updatePolicyMetadata three-state branches', async () => {

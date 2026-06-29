@@ -64,7 +64,7 @@ describe('surfaceVersionConflict', () => {
         expect(opts?.action).toEqual({ label: 'Reload', onClick: onReload });
 
         // The wired action invokes the supplied reload callback.
-        (opts?.action as { onClick: () => void }).onClick();
+        (opts?.action as unknown as { onClick: () => void }).onClick();
         expect(onReload).toHaveBeenCalledTimes(1);
     });
 

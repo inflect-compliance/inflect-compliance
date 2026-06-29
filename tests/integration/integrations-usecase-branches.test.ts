@@ -240,7 +240,7 @@ describeFn('integrations usecase — branch coverage (integration)', () => {
         nextRun = new Error('provider blew up');
         const errored = await runAutomationForControl(ctx, control.id);
         expect(errored.execution.status).toBe('ERROR');
-        expect(errored.execution.errorMessage).toBe('provider blew up');
+        expect((errored.execution as { errorMessage: string }).errorMessage).toBe('provider blew up');
 
         // execution history lists what we created.
         const history = await listExecutionsForControl(ctx, control.id, { limit: 5 });
