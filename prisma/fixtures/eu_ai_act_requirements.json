@@ -1,0 +1,98 @@
+[
+  {
+    "key": "Art.5",
+    "section": "Prohibited AI practices",
+    "sortOrder": 0,
+    "title": "Prohibited AI practices"
+  },
+  {
+    "key": "Art.9",
+    "section": "High-risk AI systems",
+    "sortOrder": 1,
+    "title": "Risk management system"
+  },
+  {
+    "key": "Art.10",
+    "section": "High-risk AI systems",
+    "sortOrder": 2,
+    "title": "Data and data governance"
+  },
+  {
+    "key": "Art.11",
+    "section": "High-risk AI systems",
+    "sortOrder": 3,
+    "title": "Technical documentation"
+  },
+  {
+    "key": "Art.12",
+    "section": "High-risk AI systems",
+    "sortOrder": 4,
+    "title": "Record-keeping"
+  },
+  {
+    "key": "Art.13",
+    "section": "High-risk AI systems",
+    "sortOrder": 5,
+    "title": "Transparency and information to deployers"
+  },
+  {
+    "key": "Art.14",
+    "section": "High-risk AI systems",
+    "sortOrder": 6,
+    "title": "Human oversight"
+  },
+  {
+    "key": "Art.15",
+    "section": "High-risk AI systems",
+    "sortOrder": 7,
+    "title": "Accuracy, robustness and cybersecurity"
+  },
+  {
+    "key": "Art.16",
+    "section": "High-risk AI systems",
+    "sortOrder": 8,
+    "title": "Obligations of providers"
+  },
+  {
+    "key": "Art.17",
+    "section": "High-risk AI systems",
+    "sortOrder": 9,
+    "title": "Quality management system"
+  },
+  {
+    "key": "Art.26",
+    "section": "High-risk AI systems",
+    "sortOrder": 10,
+    "title": "Obligations of deployers"
+  },
+  {
+    "key": "Art.27",
+    "section": "High-risk AI systems",
+    "sortOrder": 11,
+    "title": "Fundamental rights impact assessment"
+  },
+  {
+    "key": "Art.50",
+    "section": "Limited-risk (transparency obligations)",
+    "sortOrder": 12,
+    "title": "Transparency obligations for certain AI systems"
+  },
+  {
+    "key": "Art.53",
+    "section": "General-purpose AI models",
+    "sortOrder": 13,
+    "title": "Obligations for providers of GPAI models"
+  },
+  {
+    "key": "Art.55",
+    "section": "General-purpose AI models",
+    "sortOrder": 14,
+    "title": "Obligations for GPAI models with systemic risk"
+  },
+  {
+    "key": "Art.95",
+    "section": "Minimal-risk AI systems",
+    "sortOrder": 15,
+    "title": "Codes of conduct (voluntary)"
+  }
+]
