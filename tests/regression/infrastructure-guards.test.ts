@@ -74,8 +74,8 @@ describe('Infrastructure Regression Guards', () => {
             }
         });
 
-        test('exactly 22 scheduled jobs exist', () => {
-            expect(SCHEDULED_JOBS).toHaveLength(22);
+        test('exactly 24 scheduled jobs exist', () => {
+            expect(SCHEDULED_JOBS).toHaveLength(24);
         });
 
         test('scheduled job names match expected set', () => {
@@ -102,7 +102,13 @@ describe('Infrastructure Regression Guards', () => {
                 // Epic G-5 — daily 30/14/7-day expiry reminder for
                 // control exceptions.
                 'exception-expiry-monitor',
+                // NIS2 Article 23 — hourly deadline clock flipping
+                // incident notification deadlines PENDING→DUE→OVERDUE.
+                'incident-notification-deadlines',
                 'notification-dispatch',
+                // Vuln integration — daily NVD CVE catalog ingestion +
+                // cross-tenant asset-match pass.
+                'nvd-cve-sync',
                 // Business-KPI — daily sweep emitting business.onboarding.abandoned
                 // for tenants idle ≥7 days on an onboarding step.
                 'onboarding-abandonment-sweep',

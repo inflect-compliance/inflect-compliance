@@ -86,6 +86,11 @@ const LEGACY_LUCIDE_USERS = new Set<string>([
     'src/app/t/[tenantSlug]/(app)/dashboard/DashboardClient.tsx',
     'src/app/t/[tenantSlug]/(app)/evidence/filter-defs.ts',
     'src/app/t/[tenantSlug]/(app)/frameworks/FrameworksClient.tsx',
+    // NIS2 Article 23 incidents — filter defs. `FilterDefInput.icon` is
+    // typed `LucideIcon`, so a new filter-defs file has no Nucleo option
+    // until the filter platform migrates. Same precedent as every other
+    // *filter-defs.ts entry here.
+    'src/app/t/[tenantSlug]/(app)/incidents/filter-defs.ts',
     'src/app/t/[tenantSlug]/(app)/policies/filter-defs.ts',
     'src/app/t/[tenantSlug]/(app)/policies/templates/page.tsx',
     // Roadmap-2 PR-12 — moved a single `Download` icon import
@@ -100,6 +105,9 @@ const LEGACY_LUCIDE_USERS = new Set<string>([
     'src/app/t/[tenantSlug]/(app)/tasks/filter-defs.ts',
     'src/app/t/[tenantSlug]/(app)/tests/runs/[runId]/page.tsx',
     'src/app/t/[tenantSlug]/(app)/vendors/filter-defs.ts',
+    // FilterDefInput.icon is typed `LucideIcon`; no Nucleo equivalent fits the
+    // type contract — same precedent as every other *filter-defs.ts here.
+    'src/app/t/[tenantSlug]/(app)/vulnerabilities/filter-defs.ts',
     'src/app/t/[tenantSlug]/(app)/vendors/VendorsClient.tsx',
     'src/components/command-palette/command-palette.tsx',
     'src/components/command-palette/use-palette-commands.ts',

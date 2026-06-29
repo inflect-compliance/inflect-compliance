@@ -128,6 +128,12 @@ export const SCHEDULED_JOBS: ScheduleDefinition[] = [
         defaultPayload: { dryRun: false },
     },
     {
+        name: 'nvd-cve-sync',
+        pattern: '0 1 * * *',     // daily at 01:00 UTC (before the morning monitors)
+        description: 'Ingest recent CVEs from the NIST NVD 2.0 API into the global catalog, then match against tenant asset CPE data. No-op when NVD_SYNC_ENABLED=0.',
+        defaultPayload: {},
+    },
+    {
         name: 'policy-review-reminder',
         pattern: '0 8 * * *',     // daily at 08:00 UTC
         description: 'Find overdue policies and emit audit events / notifications',
@@ -215,6 +221,13 @@ export const SCHEDULED_JOBS: ScheduleDefinition[] = [
         pattern: '*/5 * * * *',   // every 5 minutes
         description:
             'Epic G-2 — scan ControlTestPlan rows with automationType IN (SCRIPT, INTEGRATION) and nextRunAt <= now, enqueue per-plan control-test-runner jobs.',
+        defaultPayload: {},
+    },
+    {
+        name: 'incident-notification-deadlines',
+        pattern: '0 * * * *',     // hourly — a 24h Article 23 deadline needs sub-day granularity
+        description:
+            'NIS2 Article 23 deadline clock — flip incident notification deadlines PENDING→DUE→OVERDUE and fire owner + admin alerts. Runs hourly because a 24h early-warning deadline needs sub-day granularity.',
         defaultPayload: {},
     },
 ];

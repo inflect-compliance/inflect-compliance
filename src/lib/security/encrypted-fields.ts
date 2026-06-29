@@ -111,6 +111,13 @@ export const ENCRYPTED_FIELDS: Readonly<Record<string, readonly string[]>> = {
     //  `description` omitted — searched via RiskRepository `contains`.
     Risk: ['treatmentNotes', 'threat', 'vulnerability'],
 
+    // ─── Asset vulnerability (CVE↔asset link) ──────────
+    //  Analyst note may describe exploitation status, compensating
+    //  controls, or why a CVE is a false positive on this asset —
+    //  confidential security context. The CVE catalog itself is public
+    //  reference data (Cve table), so only the per-tenant note encrypts.
+    AssetVulnerability: ['note'],
+
     // ─── Loss-event register (RQ3-6) ───────────────────
     //  Loss narratives are confidential business content (customer
     //  data exposed, settlement amounts, vendor reputation): the
@@ -213,6 +220,20 @@ export const ENCRYPTED_FIELDS: Readonly<Record<string, readonly string[]>> = {
     // gaps, or vendor exposure. Encrypted at rest like every other
     // business-content free-text field.
     Nis2SelfAssessmentAnswer: ['note'],
+
+    // ─── NIS2 Article 23 incident response ─────────────
+    //  Live security-incident narrative — the highest attacker value
+    //  in the product (what was breached, when, how, what data was
+    //  exposed). Encrypted at rest like Finding.
+    //    - Incident.description — the incident narrative.
+    //    - IncidentNotification.submissionNote — the report text filed
+    //      with the authority (may quote the breach scope verbatim).
+    //      `submissionRef` stays plaintext (authority case ref — a
+    //      load-bearing lookup key, not sensitive content).
+    //    - IncidentTimelineEntry.entry — the forensic narrative log.
+    Incident: ['description'],
+    IncidentNotification: ['submissionNote'],
+    IncidentTimelineEntry: ['entry'],
 } as const;
 
 /** Set of model names with at least one encrypted field. Fast-path check. */

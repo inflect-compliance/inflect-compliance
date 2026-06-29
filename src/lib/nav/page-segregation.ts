@@ -113,6 +113,7 @@ export const MAIN_PAGES: readonly string[] = [
     '/evidence',
     '/findings',
     '/frameworks',
+    '/incidents',
     '/issues',
     '/mapping',
     '/notifications',
@@ -123,6 +124,7 @@ export const MAIN_PAGES: readonly string[] = [
     '/tasks',
     '/tests',
     '/vendors',
+    '/vulnerabilities',
 ] as const;
 
 /**
@@ -180,6 +182,9 @@ export const SUBPAGES: readonly string[] = [
     '/controls/new',
     '/controls/sankey',
     '/controls/templates',
+
+    // Incidents (NIS2 Article 23)
+    '/incidents/[incidentId]',
 
     // Frameworks
     '/frameworks/[frameworkKey]',

@@ -75,6 +75,8 @@ const PARENT_MAP: Record<string, CanonicalParent> = {
 
     // Controls
     '/controls/[controlId]': { href: '/controls', label: 'Controls' },
+    // Incidents (NIS2 Article 23)
+    '/incidents/[incidentId]': { href: '/incidents', label: 'Incidents' },
     // Test-plan detail lives URL-wise under a control, but the user's
     // mental model is "I'm working on a test"; the canonical parent is
     // the Tests list. The in-tab referrer still wins — drilling in from

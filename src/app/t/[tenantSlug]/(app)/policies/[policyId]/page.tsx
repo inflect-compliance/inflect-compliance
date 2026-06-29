@@ -32,6 +32,8 @@ import { MetaStrip } from '@/components/ui/meta-strip';
 import { POLICY_STATUS_VARIANT } from '@/app-layer/domain/entity-status-mapping';
 import { Card, cardVariants } from '@/components/ui/card';
 import { InlineNotice } from '@/components/ui/inline-notice';
+import { Tooltip } from '@/components/ui/tooltip';
+import { useToast } from '@/components/ui/hooks';
 import { cn } from '@/lib/cn';
 import { InheritedMappingsPanel } from '@/components/InheritedMappingsPanel';
 import { PolicySharePointSection } from './PolicySharePointSection';
@@ -78,6 +80,7 @@ export default function PolicyDetailPage() {
     const apiUrl = useTenantApiUrl();
     const tenantHref = useTenantHref();
     const tenant = useTenantContext();
+    const toast = useToast();
     const policyId = params?.policyId as string;
 
     const [policy, setPolicy] = useState<PolicyDetailDTO | null>(null);
@@ -248,7 +251,15 @@ export default function PolicyDetailPage() {
         try {
             const res = await fetch(apiUrl(`/policies/${policyId}/review`), { method: 'POST' });
             if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Failed'); }
+            const updated = await res.json().catch(() => null);
             await fetchPolicy();
+            // "Mark reviewed" stamps the periodic review date — it does NOT
+            // change publication status. The toast makes the (otherwise
+            // subtle) success visible and reinforces what it did.
+            const next = updated?.nextReviewAt;
+            toast.success(
+                next ? `Marked reviewed — next review ${formatDate(next)}` : 'Marked reviewed',
+            );
         } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Unknown error'); } finally { setActionLoading(''); }
     };
 
@@ -548,15 +559,17 @@ export default function PolicyDetailPage() {
                                     Edit review schedule
                                 </button>
                                 {policy.status !== 'ARCHIVED' && (
-                                    <Button
-                                        variant="secondary"
-                                        size="xs"
-                                        onClick={markReviewed}
-                                        disabled={actionLoading === 'review'}
-                                        id="mark-reviewed-btn"
-                                    >
-                                        {actionLoading === 'review' ? '…' : 'Mark reviewed'}
-                                    </Button>
+                                    <Tooltip content="Records a periodic review of this policy and updates the next-review date. This does not change the publication status — to publish, use Request Approval → Publish in the Versions tab.">
+                                        <Button
+                                            variant="secondary"
+                                            size="xs"
+                                            onClick={markReviewed}
+                                            disabled={actionLoading === 'review'}
+                                            id="mark-reviewed-btn"
+                                        >
+                                            {actionLoading === 'review' ? '…' : 'Mark reviewed'}
+                                        </Button>
+                                    </Tooltip>
                                 )}
                             </div>
                         )}
@@ -637,6 +650,28 @@ export default function PolicyDetailPage() {
                 #tab-activity DOM ids E2E selectors rely on. */}
 
             {/* ── Current Version ── */}
+            {/* Publication-flow guide — the Request Approval / Publish
+                buttons live in the Versions tab, which isn't obvious from
+                the Current view. Surface the next step for the two states
+                whose action is a tab away (IN_REVIEW is already explained
+                by the ApprovalBanner above; PUBLISHED/ARCHIVED need none). */}
+            {tab === 'current' && canWrite && (policy.status === 'DRAFT' || policy.status === 'APPROVED') && (
+                <InlineNotice
+                    variant={policy.status === 'APPROVED' ? 'success' : 'info'}
+                    title={policy.status === 'APPROVED' ? 'Approved — ready to publish' : 'Draft — not yet published'}
+                >
+                    <div className="flex items-center justify-between gap-default flex-wrap">
+                        <span>
+                            {policy.status === 'APPROVED'
+                                ? 'Open the Versions tab and click Publish to make this the live policy.'
+                                : 'Edit the content in the Editor tab, then open the Versions tab and click Request Approval to start the publication workflow (review → approval → publish).'}
+                        </span>
+                        <Button variant="secondary" size="sm" onClick={() => setTab('versions')} id="goto-versions-btn">
+                            Go to Versions
+                        </Button>
+                    </div>
+                </InlineNotice>
+            )}
             {tab === 'current' && (
                 <div className={cn(cardVariants(), 'space-y-default')}>
                     {currentVersion ? (
@@ -693,26 +728,36 @@ export default function PolicyDetailPage() {
                         const vApprovals = (v.approvals || []).filter((a) => a.status === 'PENDING' || a.status === 'APPROVED' || a.status === 'REJECTED');
                         const hasPending = vApprovals.some((a) => a.status === 'PENDING');
                         const hasApproved = vApprovals.some((a) => a.status === 'APPROVED');
-                        const isCurrentPublished = policy.currentVersionId === v.id;
+                        // `currentVersionId` only marks the active/displayed version
+                        // (set at creation so the Current tab has content) — it does
+                        // NOT mean the policy is published. A version is "Published"
+                        // only when it's the current version AND the policy's lifecycle
+                        // status is PUBLISHED. Keying off currentVersionId alone made a
+                        // fresh draft's version show "Published" and hid Request Approval.
+                        const isCurrentVersion = policy.currentVersionId === v.id;
+                        const isPublishedVersion = isCurrentVersion && policy.status === 'PUBLISHED';
 
                         return (
                             <div key={v.id} className={cn(cardVariants({ density: 'compact' }), 'space-y-compact')}>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-compact">
                                         <span className="text-sm font-semibold text-[var(--brand-default)]">v{v.versionNumber}</span>
-                                        {isCurrentPublished && <StatusBadge variant="success">Published</StatusBadge>}
+                                        {isPublishedVersion && <StatusBadge variant="success">Published</StatusBadge>}
+                                        {isCurrentVersion && !isPublishedVersion && (
+                                            <span className="text-xs font-medium text-content-subtle">Current</span>
+                                        )}
                                         {v.contentType === 'EXTERNAL_LINK' && <StatusBadge variant="info">External Link</StatusBadge>}
                                         <span className="text-xs text-content-subtle">
                                             {v.createdBy?.name} · {formatDate(v.createdAt)}
                                         </span>
                                     </div>
                                     <div className="flex gap-tight">
-                                        {canWrite && !hasPending && !isCurrentPublished && (
+                                        {canWrite && !hasPending && !hasApproved && !isPublishedVersion && (
                                             <Button variant="secondary" size="sm" onClick={() => requestApproval(v.id)} disabled={!!actionLoading} id={`request-approval-${v.versionNumber}`}>
                                                 {actionLoading === 'approve-' + v.id ? '...' : 'Request Approval'}
                                             </Button>
                                         )}
-                                        {canAdmin && hasApproved && !isCurrentPublished && (
+                                        {canAdmin && hasApproved && !isPublishedVersion && (
                                             <Button variant="primary" size="sm" onClick={() => publishVersion(v.id)} disabled={!!actionLoading} id={`publish-version-${v.versionNumber}`}>
                                                 {actionLoading === 'publish-' + v.id ? '...' : 'Publish'}
                                             </Button>

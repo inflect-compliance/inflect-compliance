@@ -1,0 +1,114 @@
+# Cross-Framework Mapping Set: DORA (2022) → NIS2 Directive (2022)
+# Data-driven mapping file for the RequirementMapping ingestion pipeline.
+#
+# Maps DORA (Regulation (EU) 2022/2554) entity-facing obligations to NIS2
+# (Directive (EU) 2022/2555) Article 21/23 security and reporting measures.
+# DORA and NIS2 overlap heavily on ICT risk management, incident handling,
+# incident reporting deadlines, and supply-chain / third-party risk. DORA is
+# lex specialis for the financial sector — where both apply, DORA's detailed
+# ICT requirements generally supersede the broader NIS2 obligations.
+#
+# Provenance is encoded in each rationale:
+#   [official-overlap] — the overlap is explicit in the legal texts/recitals
+#                        (e.g. both mandate time-bound incident reporting).
+#   [curated]          — Inflect judgement on conceptual alignment.
+#
+# Refs use the YAML library ref_ids (DORA.Art.N / NIS2-XX), which the
+# library-importer writes as FrameworkRequirement.code; the importer resolves
+# them to DB ids via the (framework key, requirement code) pair.
+
+urn: urn:inflect:mappingset:dora-to-nis2
+name: "DORA (2022) → NIS2 (2022)"
+description: >
+  Cross-framework traceability mapping between DORA (EU 2022/2554) entity
+  obligations and NIS2 (EU 2022/2555) Article 21 security measures and
+  Article 23 reporting obligations. Mappings are structural guidance, not
+  compliance guarantees.
+version: 1
+source_framework_ref: DORA-2022
+target_framework_ref: NIS2-2022
+
+mapping_entries:
+  # ─── ICT Risk Management ─────────────────────────────────────────
+  - source_ref: DORA.Art.5
+    target_ref: NIS2-GOV
+    strength: INTERSECT
+    rationale: "[official-overlap] Both require management-body accountability and governance over cyber/ICT risk."
+
+  - source_ref: DORA.Art.6
+    target_ref: NIS2-RM
+    strength: INTERSECT
+    rationale: "[official-overlap] DORA's ICT risk management framework aligns with NIS2 Art.21(2)(a) risk-management measures."
+
+  - source_ref: DORA.Art.8
+    target_ref: NIS2-RM
+    strength: RELATED
+    rationale: "[curated] Asset/dependency identification underpins NIS2 risk-management measures."
+
+  - source_ref: DORA.Art.9
+    target_ref: NIS2-AM
+    strength: INTERSECT
+    rationale: "[curated] DORA protection/prevention includes access control, aligning with NIS2 authentication & access management."
+
+  - source_ref: DORA.Art.9
+    target_ref: NIS2-CR
+    strength: RELATED
+    rationale: "[curated] DORA encryption controls overlap with NIS2 cryptography measures (Art.21(2)(h))."
+
+  - source_ref: DORA.Art.10
+    target_ref: NIS2-IR
+    strength: RELATED
+    rationale: "[curated] Detection of anomalous activity feeds NIS2 incident handling."
+
+  - source_ref: DORA.Art.11
+    target_ref: NIS2-BC
+    strength: INTERSECT
+    rationale: "[official-overlap] DORA response & recovery aligns with NIS2 business continuity / crisis management (Art.21(2)(c))."
+
+  - source_ref: DORA.Art.12
+    target_ref: NIS2-BC
+    strength: INTERSECT
+    rationale: "[curated] Backup, restoration and recovery underpin NIS2 business continuity."
+
+  - source_ref: DORA.Art.13
+    target_ref: NIS2-AS
+    strength: RELATED
+    rationale: "[curated] Learning/evolving and effectiveness review align with NIS2 security-measure assessment (Art.21(2)(f))."
+
+  # ─── Incident Management & Reporting ─────────────────────────────
+  - source_ref: DORA.Art.17
+    target_ref: NIS2-IR
+    strength: INTERSECT
+    rationale: "[official-overlap] Both require a documented ICT/cyber incident management process."
+
+  - source_ref: DORA.Art.18
+    target_ref: NIS2-IR
+    strength: RELATED
+    rationale: "[curated] Incident classification supports NIS2 incident handling and reporting thresholds."
+
+  - source_ref: DORA.Art.19
+    target_ref: NIS2-RE
+    strength: INTERSECT
+    rationale: "[official-overlap] Both mandate time-bound major-incident reporting to competent authorities (DORA Art.19 ≈ NIS2 Art.23)."
+
+  # ─── Resilience Testing ──────────────────────────────────────────
+  - source_ref: DORA.Art.24
+    target_ref: NIS2-AS
+    strength: INTERSECT
+    rationale: "[curated] DORA resilience testing programme aligns with NIS2 assessment of the effectiveness of measures."
+
+  - source_ref: DORA.Art.25
+    target_ref: NIS2-AS
+    strength: RELATED
+    rationale: "[curated] Vulnerability assessment and penetration testing evidence NIS2 effectiveness assessment."
+
+  # ─── Third-Party Risk ────────────────────────────────────────────
+  - source_ref: DORA.Art.28
+    target_ref: NIS2-SC
+    strength: INTERSECT
+    rationale: "[official-overlap] DORA ICT third-party risk management aligns with NIS2 supply-chain security (Art.21(2)(d))."
+
+  - source_ref: DORA.Art.30
+    target_ref: NIS2-SC
+    strength: RELATED
+    rationale: "[curated] DORA key contractual provisions operationalise NIS2 supply-chain security for ICT providers."

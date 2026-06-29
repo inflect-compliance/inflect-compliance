@@ -128,6 +128,10 @@ export const CACHE_KEYS = {
     },
     assets: makeResource('assets'),
     findings: makeResource('findings'),
+    // NIS2 Article 23 incident response. `detail(id)` is the per-incident
+    // payload (notifications + timeline); mutations on the detail page
+    // invalidate it.
+    incidents: makeResource('incidents'),
     frameworks: makeResource('frameworks'),
     issues: makeResource('issues'),
     accessReviews: makeResource('access-reviews'),

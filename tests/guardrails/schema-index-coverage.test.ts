@@ -363,6 +363,13 @@ const LIST_QUERY_INDEXES: readonly CompositeIndex[] = [
 // curated composite index is needed."
 
 const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
+    // Vuln integration — listVulnerabilities filters by tenantId (+ optional
+    // status / assetId), ordered by the related Cve.cvssScore. Covered by
+    // @@index([tenantId, status]) + @@index([tenantId, assetId]) (status /
+    // assetId are the leading filters under the RLS-bound tenantId); the
+    // cross-table cvssScore sort is a small in-page sort. Bounded take ≤500.
+    AssetVulnerability:
+        'listVulnerabilities filters by tenantId (+status/assetId) — covered by @@index([tenantId, status]) / @@index([tenantId, assetId]); cvssScore sort is cross-table, bounded take ≤500.',
     // Policy-template mapping — linkPolicyControls reads existing links by
     // policyId (+ controlId in-filter) to dedupe before createMany; covered
     // by @@index([tenantId, policyId]) (policyId is the leading filter under
@@ -566,6 +573,21 @@ const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
         'join table — fetched by tenantId plus a leading-indexed FK; Layers A/B cover its query shapes; no curated composite index needed.',
     VendorRelationship:
         'fetched per vendor via a leading-indexed FK; Layers A/B cover its query shapes; no curated composite index needed today.',
+    // NIS2 incident response — listIncidents filters by tenantId (+ optional
+    // phase / severity), orders by detectedAt DESC; covered by
+    // @@index([tenantId, phase]) + @@index([tenantId, severity, detectedAt]);
+    // bounded take:200.
+    Incident:
+        'listIncidents filters by tenantId (+ optional phase / severity), orders by detectedAt DESC — covered by @@index([tenantId, phase]) + @@index([tenantId, severity, detectedAt]); bounded take:200.',
+    // Notification deadlines fetched per incident (detail page) and scanned
+    // by [tenantId, status, dueAt] (the deadline-clock job); covered by
+    // @@index([tenantId, incidentId]) + @@index([tenantId, status, dueAt]).
+    IncidentNotification:
+        'listed per incident (detail) and scanned by status+dueAt (deadline-clock job) — covered by @@index([tenantId, incidentId]) + @@index([tenantId, status, dueAt]); bounded take.',
+    // Timeline fetched per incident ordered by `at`; covered by
+    // @@index([tenantId, incidentId, at]); bounded take:500.
+    IncidentTimelineEntry:
+        'listIncidentTimeline filters by tenantId + incidentId, orders by at DESC — covered by @@index([tenantId, incidentId, at]); bounded take:500.',
 };
 
 // ─────────────────────────────────────────────────────────────────────

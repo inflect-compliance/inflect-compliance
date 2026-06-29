@@ -23,7 +23,11 @@
 // deps of providers that v4 still pulls in (e.g. JWT signing via
 // jose). `oauth4webapi` and `@auth/*` were v5-specific and can be
 // dropped from the allowlist.
-const ESM_TRANSFORM_ALLOW_LIST = 'jose|preact|preact-render-to-string';
+//
+// `marked` is pure ESM since v6 (v18 ships only lib/marked.esm.js with
+// `type: module` + no CJS entry), so `@/lib/policy/policy-content` —
+// which imports it — must be transformed for the CJS node test project.
+const ESM_TRANSFORM_ALLOW_LIST = 'jose|preact|preact-render-to-string|marked';
 
 // ─── Coverage thresholds ─────────────────────────────────────────────
 //

@@ -110,6 +110,7 @@ model Tenant {
   createdAt                         DateTime                           @default(now())
   updatedAt                         DateTime                           @updatedAt
   assets                            Asset[]
+  assetVulnerabilities              AssetVulnerability[]
   assetRiskLinks                    AssetRiskLink[]
   audits                            Audit[]
   auditCycles                       AuditCycle[]
@@ -136,6 +137,10 @@ model Tenant {
   evidence                          Evidence[]
   fileRecords                       FileRecord[]
   findings                          Finding[]
+  incidents                         Incident[]
+  incidentNotifications             IncidentNotification[]
+  incidentTimelineEntries           IncidentTimelineEntry[]
+  incidentEvidence                  IncidentEvidence[]
   integrationConnections            IntegrationConnection[]
   integrationExecutions             IntegrationExecution[]
   integrationWebhookEvents          IntegrationWebhookEvent[]
@@ -1114,6 +1119,13 @@ model TenantSecuritySettings {
   /// (added to `ENCRYPTED_FIELDS.TenantSecuritySettings`).
   auditStreamUrl             String?
   auditStreamSecretEncrypted String?
+  /// NIS2 Article 23 — the CSIRT / competent authority this tenant
+  /// notifies for significant incidents. Jurisdiction-specific (e.g.
+  /// "CCB (Belgium)", "NCSC-NL (Netherlands)", "BSI (Germany)"). Free
+  /// text so any EU member-state authority can be configured; the
+  /// incident view surfaces this as "notify: <authority>". Null = the
+  /// tenant has not configured an authority yet.
+  incidentAuthority          String?
   createdAt                  DateTime  @default(now())
   updatedAt                  DateTime  @updatedAt
   mfaFailClosed              Boolean   @default(false)

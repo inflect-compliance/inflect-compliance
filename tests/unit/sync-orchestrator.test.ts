@@ -71,6 +71,7 @@ export const mockCtx: RequestContext = {
         assets: { view: true, create: true, edit: true },
         vendors: { view: true, create: true, edit: true },
         tests: { view: true, create: true, execute: true },
+        incidents: { view: true, manage: true },
         frameworks: { view: true, install: true },
         audits: { view: true, manage: true, freeze: true, share: true },
         reports: { view: true, export: true },

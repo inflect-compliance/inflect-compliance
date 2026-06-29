@@ -62,6 +62,10 @@ const RICH_TEXT_COVERAGE: Readonly<
     },
     Finding: { usecases: ['src/app-layer/usecases/finding.ts'], sanitizer: 'sanitizePlainText' },
     Risk: { usecases: ['src/app-layer/usecases/risk.ts'], sanitizer: 'sanitizePlainText' },
+    // Vuln integration — analyst note on a CVE↔asset link, sanitised at the
+    // linkCveToAsset / updateVulnerabilityStatus write seams (sanitizeOptional
+    // wraps sanitizePlainText for the three-state contract).
+    AssetVulnerability: { usecases: ['src/app-layer/usecases/vulnerability.ts'], sanitizer: 'sanitizePlainText' },
     // RQ3-6 — loss-event narrative + reviewer justification; sanitised
     // at the single createLossEvent write seam before the Epic B
     // middleware persists them.
@@ -84,6 +88,13 @@ const RICH_TEXT_COVERAGE: Readonly<
     RiskScoreEvent: { usecases: ['src/app-layer/usecases/risk-score-events.ts'], sanitizer: 'sanitizePlainText' },
     RiskTreatmentPlan: { usecases: ['src/app-layer/usecases/risk-treatment-plan.ts'], sanitizer: 'sanitizePlainText' },
     TreatmentMilestone: { usecases: ['src/app-layer/usecases/risk-treatment-plan.ts'], sanitizer: 'sanitizePlainText' },
+    // NIS2 Article 23 incident response — incident narrative, the filed
+    // regulatory-report text, and the forensic timeline entries are all
+    // user-supplied free text, sanitised at the incident usecase write
+    // seams before the Epic B middleware persists them.
+    Incident: { usecases: ['src/app-layer/usecases/incident.ts'], sanitizer: 'sanitizePlainText' },
+    IncidentNotification: { usecases: ['src/app-layer/usecases/incident.ts'], sanitizer: 'sanitizePlainText' },
+    IncidentTimelineEntry: { usecases: ['src/app-layer/usecases/incident.ts'], sanitizer: 'sanitizePlainText' },
 };
 
 /**

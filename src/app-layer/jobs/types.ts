@@ -148,6 +148,15 @@ export interface AccessReviewReminderPayload {
     tenantId?: string;
 }
 
+/** NIS2 Article 23 deadline-clock job — flips PENDING→DUE→OVERDUE and
+ *  fires notifications. Runs frequently (hourly) because a 24h deadline
+ *  needs sub-day granularity. */
+export interface IncidentNotificationDeadlinesPayload {
+    /** Optional: scope the scan to a single tenant. Omit for the
+     *  system-wide hourly scan. */
+    tenantId?: string;
+}
+
 export interface PolicyReviewReminderPayload {
     tenantId?: string;
 }
@@ -519,8 +528,15 @@ export interface OnboardingAbandonmentPayload {
     requestId?: string;
 }
 
+/** NVD CVE sync — daily global CVE catalog ingestion + asset matching. */
+export interface NvdCveSyncPayload {
+    /** Override the first-run backfill window on an empty catalog (days). */
+    backfillDays?: number;
+}
+
 export interface JobPayloadMap {
     'health-check': HealthCheckPayload;
+    'nvd-cve-sync': NvdCveSyncPayload;
     'automation-runner': AutomationRunnerPayload;
     'daily-evidence-expiry': DailyEvidenceExpiryPayload;
     'data-lifecycle': DataLifecyclePayload;
@@ -556,6 +572,7 @@ export interface JobPayloadMap {
     'report-delivery': ReportDeliveryPayload;
     'dau-mau-aggregator': DauMauAggregatorPayload;
     'onboarding-abandonment-sweep': OnboardingAbandonmentPayload;
+    'incident-notification-deadlines': IncidentNotificationDeadlinesPayload;
 }
 
 /** Union of all valid job names */
@@ -577,6 +594,15 @@ export const JOB_DEFAULTS: Record<JobName, {
         attempts: 1,
         backoff: { type: 'fixed', delay: 1000 },
         removeOnComplete: 100,
+        removeOnFail: 200,
+    },
+    'nvd-cve-sync': {
+        // One attempt — the incremental cursor (max lastModifiedAt) means the
+        // next daily run resumes from where this one stopped, so a transient
+        // failure self-heals without retry storms against NVD's rate limit.
+        attempts: 1,
+        backoff: { type: 'fixed', delay: 0 },
+        removeOnComplete: 50,
         removeOnFail: 200,
     },
     'automation-runner': {
@@ -703,6 +729,14 @@ export const JOB_DEFAULTS: Record<JobName, {
         backoff: { type: 'fixed', delay: 0 },
         removeOnComplete: 20,
         removeOnFail: 50,
+    },
+    'incident-notification-deadlines': {
+        // Idempotent (status transitions + dedupeKey'd notifications),
+        // so a retry is safe.
+        attempts: 2,
+        backoff: { type: 'exponential', delay: 5000 },
+        removeOnComplete: 200,
+        removeOnFail: 500,
     },
     'exception-expiry-monitor': {
         attempts: 2,

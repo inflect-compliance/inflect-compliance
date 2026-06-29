@@ -299,6 +299,23 @@ executorRegistry.register('health-check', async (payload) => {
     });
 });
 
+// ── nvd-cve-sync ─────────────────────────────────────────────────────
+
+executorRegistry.register('nvd-cve-sync', async (payload) => {
+    const startedAt = new Date().toISOString();
+    const startMs = performance.now();
+    const { runNvdCveSync } = await import('./nvd-cve-sync');
+    const r = await runNvdCveSync(payload);
+    return makeResult('nvd-cve-sync', startedAt, startMs, r.fetched, r.upserted, 0, {
+        skipped: r.skipped,
+        fetched: r.fetched,
+        upserted: r.upserted,
+        matched: r.matched,
+        windowStart: r.windowStart,
+        windowEnd: r.windowEnd,
+    });
+});
+
 // ── automation-runner ────────────────────────────────────────────────
 
 executorRegistry.register('automation-runner', async (payload) => {
@@ -925,3 +942,31 @@ executorRegistry.register('onboarding-abandonment-sweep', async () => {
     });
 });
 
+
+// NIS2 Article 23 — hourly deadline clock: flip incident notification
+// deadlines PENDING→DUE→OVERDUE and fire owner + admin alerts.
+executorRegistry.register('incident-notification-deadlines', async (payload) => {
+    const startedAt = new Date().toISOString();
+    const startMs = performance.now();
+    const { processIncidentNotificationDeadlines } = await import(
+        './incident-notification-deadlines'
+    );
+    const { prisma } = await import('@/lib/prisma');
+    const r = await processIncidentNotificationDeadlines(prisma, {
+        tenantId: payload.tenantId,
+    });
+    return makeResult(
+        'incident-notification-deadlines',
+        startedAt,
+        startMs,
+        r.scanned,
+        r.becameDue + r.becameOverdue,
+        0,
+        {
+            becameDue: r.becameDue,
+            becameOverdue: r.becameOverdue,
+            notified: r.notified,
+            capped: r.capped,
+        },
+    );
+});
