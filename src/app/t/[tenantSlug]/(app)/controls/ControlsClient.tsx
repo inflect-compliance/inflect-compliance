@@ -512,11 +512,15 @@ function ControlsPageInner({
             const url =
                 action === 'status'
                     ? apiUrl('/controls/bulk/status')
-                    : apiUrl('/controls/bulk/assign');
+                    : action === 'delete'
+                        ? apiUrl('/controls/bulk/delete')
+                        : apiUrl('/controls/bulk/assign');
             const body =
                 action === 'status'
                     ? { controlIds: ids, status: value }
-                    : { controlIds: ids, ownerUserId: value || null };
+                    : action === 'delete'
+                        ? { controlIds: ids }
+                        : { controlIds: ids, ownerUserId: value || null };
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -568,6 +572,7 @@ function ControlsPageInner({
                     />
                 ),
             },
+            { value: 'delete', label: 'Delete', confirm: { confirmLabel: 'Delete' } },
         ],
         [tenantSlug],
     );
@@ -1388,6 +1393,8 @@ function ControlsPageInner({
                               actions={controlBulkActions}
                               onApply={handleBulkApply}
                               applying={bulkApplying}
+                              selectedCount={selectedIds.length}
+                              entityLabel="controls"
                           />
                       )
                     : undefined,

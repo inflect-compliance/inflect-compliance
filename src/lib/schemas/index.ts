@@ -634,6 +634,17 @@ export const BulkPolicyArchiveSchema = z.object({
     policyIds: z.array(z.string().min(1)).min(1).max(100),
 }).strip();
 
+// ─── Bulk delete (row-select action bar) ───
+// Soft-delete the selected rows (per the shared soft-delete middleware).
+export const BulkAssetDeleteSchema = z.object({ assetIds: z.array(z.string().min(1)).min(1).max(100) }).strip();
+export const BulkRiskDeleteSchema = z.object({ riskIds: z.array(z.string().min(1)).min(1).max(100) }).strip();
+export const BulkControlDeleteSchema = z.object({ controlIds: z.array(z.string().min(1)).min(1).max(100) }).strip();
+export const BulkTaskDeleteSchema = z.object({ taskIds: z.array(z.string().min(1)).min(1).max(100) }).strip();
+export const BulkTestPlanDeleteSchema = z.object({ planIds: z.array(z.string().min(1)).min(1).max(100) }).strip();
+export const BulkEvidenceDeleteSchema = z.object({ evidenceIds: z.array(z.string().min(1)).min(1).max(100) }).strip();
+export const BulkPolicyDeleteSchema = z.object({ policyIds: z.array(z.string().min(1)).min(1).max(100) }).strip();
+export const BulkVendorDeleteSchema = z.object({ vendorIds: z.array(z.string().min(1)).min(1).max(100) }).strip();
+
 // ─── Issue Compatibility Aliases (deprecated — use Task schemas) ───
 
 /** @deprecated Use CreateTaskSchema */ export const CreateIssueSchema = CreateTaskSchema;

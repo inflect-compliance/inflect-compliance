@@ -318,6 +318,26 @@ export async function markControlTestCompleted(ctx: RequestContext, controlId: s
 
 // ─── Soft Delete / Restore / Purge ───
 
+/** Bulk soft-delete controls selected in the table action bar. */
+export async function bulkDeleteControl(ctx: RequestContext, controlIds: string[]) {
+    assertCanAdmin(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const rows = await ControlRepository.listByIds(db, ctx, controlIds);
+        if (rows.length === 0) return { deleted: 0 };
+        await db.control.deleteMany({ where: { id: { in: rows.map((r) => r.id) }, tenantId: ctx.tenantId } });
+        for (const r of rows) {
+            await logEvent(db, ctx, {
+                action: 'SOFT_DELETE',
+                entityType: 'Control',
+                entityId: r.id,
+                details: 'Control soft-deleted (bulk)',
+                detailsJson: { category: 'entity_lifecycle', entityName: 'Control', operation: 'deleted', summary: 'Control soft-deleted' },
+            });
+        }
+        return { deleted: rows.length };
+    });
+}
+
 export async function deleteControl(ctx: RequestContext, id: string) {
     assertCanAdmin(ctx);
     const result = await runInTenantContext(ctx, async (db) => {

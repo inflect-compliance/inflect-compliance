@@ -417,6 +417,8 @@ function TasksPageInner({
             } else if (action === 'due') {
                 url = apiUrl('/tasks/bulk/due');
                 body.dueAt = value || null;
+            } else if (action === 'delete') {
+                url = apiUrl('/tasks/bulk/delete');
             }
 
             const res = await fetch(url, {
@@ -428,6 +430,12 @@ function TasksPageInner({
             return res.json();
         },
         optimisticUpdate: (current, { action, value, ids, label }) => {
+            if (action === 'delete') {
+                return {
+                    rows: (current?.rows ?? []).filter((task) => !ids.includes(task.id)),
+                    truncated: current?.truncated ?? false,
+                };
+            }
             const rows = (current?.rows ?? []).map((task) => {
                 if (!ids.includes(task.id)) return task;
                 if (action === 'status') return { ...task, status: value };
@@ -523,6 +531,7 @@ function TasksPageInner({
                     />
                 ),
             },
+            { value: 'delete', label: 'Delete', confirm: { confirmLabel: 'Delete' } },
         ],
         [tenantSlug],
     );
@@ -825,6 +834,8 @@ function TasksPageInner({
                             actions={taskBulkActions}
                             onApply={handleBulkApply}
                             applying={bulkMutation.isMutating}
+                            selectedCount={selected.size}
+                            entityLabel="tasks"
                         />
                     )}
                     onRowClick={(row) => router.push(tenantHref(`/tasks/${row.original.id}`))}

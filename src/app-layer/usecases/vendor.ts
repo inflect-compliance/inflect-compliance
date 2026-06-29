@@ -586,6 +586,26 @@ export async function bulkSetVendorStatus(
     return { updated };
 }
 
+/** Bulk soft-delete vendors selected in the table action bar. */
+export async function bulkDeleteVendor(ctx: RequestContext, vendorIds: string[]) {
+    assertCanManageVendors(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const rows = await VendorRepository.listByIds(db, ctx, vendorIds);
+        if (rows.length === 0) return { deleted: 0 };
+        await db.vendor.deleteMany({ where: { id: { in: rows.map((r) => r.id) }, tenantId: ctx.tenantId } });
+        for (const r of rows) {
+            await logEvent(db, ctx, {
+                action: 'SOFT_DELETE',
+                entityType: 'Vendor',
+                entityId: r.id,
+                details: 'Vendor soft-deleted (bulk)',
+                detailsJson: { category: 'entity_lifecycle', entityName: 'Vendor', operation: 'deleted', summary: 'Vendor soft-deleted' },
+            });
+        }
+        return { deleted: rows.length };
+    });
+}
+
 export async function bulkAssignVendor(
     ctx: RequestContext,
     vendorIds: string[],

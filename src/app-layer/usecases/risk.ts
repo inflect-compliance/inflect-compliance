@@ -656,6 +656,26 @@ export async function updateRiskFair(ctx: RequestContext, id: string, input: Ris
     return result;
 }
 
+/** Bulk soft-delete risks selected in the table action bar. */
+export async function bulkDeleteRisk(ctx: RequestContext, riskIds: string[]) {
+    assertCanAdmin(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const rows = await RiskRepository.listByIds(db, ctx, riskIds);
+        if (rows.length === 0) return { deleted: 0 };
+        await db.risk.deleteMany({ where: { id: { in: rows.map((r) => r.id) }, tenantId: ctx.tenantId } });
+        for (const r of rows) {
+            await logEvent(db, ctx, {
+                action: 'SOFT_DELETE',
+                entityType: 'Risk',
+                entityId: r.id,
+                details: 'Risk soft-deleted (bulk)',
+                detailsJson: { category: 'entity_lifecycle', entityName: 'Risk', operation: 'deleted', summary: 'Risk soft-deleted' },
+            });
+        }
+        return { deleted: rows.length };
+    });
+}
+
 export async function deleteRisk(ctx: RequestContext, id: string) {
     assertCanAdmin(ctx);
 

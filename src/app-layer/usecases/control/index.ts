@@ -27,6 +27,7 @@ export {
     purgeControl,
     bulkSetControlStatus,
     bulkAssignControl,
+    bulkDeleteControl,
 } from './mutations';
 
 export {
