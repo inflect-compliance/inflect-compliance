@@ -1674,6 +1674,95 @@ Reviewed at least annually.` },
         });
         console.log('✅ Audit log entries seeded (5 entries)');
     }
+    // ─── OWASP AISVS — AI Vendor Security Questionnaire ───
+    // A global, published VendorAssessmentTemplate the tenant sends to a
+    // third-party AI vendor (BUYER assessing a SELLER's AI). Rides the existing
+    // vendor-assessment send → respond → review → score flow + builder UI — this
+    // is TEMPLATE CONTENT only. Questions paraphrase AISVS L1/L2 requirements
+    // (referenced by ID); CC-BY-SA-4.0, attribution to OWASP. VendorAssessment-
+    // Template is RLS-tenant-scoped, so the global baseline is seeded per-tenant
+    // (here, the demo tenant); tenants clone+customise via the existing flow.
+    const aisvsVendorQ = require('./fixtures/aisvs-vendor-questionnaire.json') as {
+        key: string; name: string; description: string; attribution: string;
+        sections: Array<{ title: string; weight: number; conditional: boolean; appliesTo?: string;
+            questions: Array<{ aisvsId: string; level: string; weight: number; prompt: string; type?: string }> }>;
+    };
+    const existingAisvsTpl = await prisma.vendorAssessmentTemplate.findUnique({
+        where: { tenantId_key_version: { tenantId: tenant.id, key: aisvsVendorQ.key, version: 1 } },
+    });
+    if (!existingAisvsTpl) {
+        // Yes / Partial / No / N/A — risk points (Yes = lowest risk) for the
+        // existing vendor-scoring service; per-option points mirror it.
+        const SELECT_OPTIONS = [
+            { label: 'Yes', value: 'yes', points: 0 },
+            { label: 'Partial', value: 'partial', points: 5 },
+            { label: 'No', value: 'no', points: 10 },
+            { label: 'N/A', value: 'na', points: 0 },
+        ];
+        const SELECT_RISK = { YES: 0, PARTIAL: 5, NO: 10, 'N/A': 0 };
+        const ARCHETYPE_OPTIONS = [
+            { label: 'Prompt-completion (no RAG/agents)', value: 'prompt', points: 0 },
+            { label: 'RAG / retrieval-augmented', value: 'rag', points: 0 },
+            { label: 'Agentic / tool-using', value: 'agentic', points: 0 },
+            { label: 'Other', value: 'other', points: 0 },
+        ];
+        const tpl = await prisma.vendorAssessmentTemplate.create({
+            data: {
+                tenantId: tenant.id,
+                key: aisvsVendorQ.key,
+                version: 1,
+                isLatestVersion: true,
+                isPublished: true,
+                isGlobal: true,
+                name: aisvsVendorQ.name,
+                description: `${aisvsVendorQ.description}\n\n${aisvsVendorQ.attribution}`,
+                scoringConfigJson: {
+                    mode: 'WEIGHTED_AVERAGE',
+                    ratingThresholds: [
+                        { rating: 'LOW', minScore: 0, maxScore: 25 },
+                        { rating: 'MEDIUM', minScore: 26, maxScore: 50 },
+                        { rating: 'HIGH', minScore: 51, maxScore: 75 },
+                        { rating: 'CRITICAL', minScore: 76, maxScore: 100 },
+                    ],
+                },
+                createdByUserId: admin.id,
+            },
+        });
+        let sOrder = 0;
+        for (const section of aisvsVendorQ.sections) {
+            const sec = await prisma.vendorAssessmentTemplateSection.create({
+                data: {
+                    tenantId: tenant.id,
+                    templateId: tpl.id,
+                    sortOrder: sOrder++,
+                    title: section.title,
+                    description: section.conditional ? `Applies only to ${section.appliesTo} vendors — answer N/A otherwise.` : null,
+                    weight: section.weight,
+                },
+            });
+            let qOrder = 0;
+            for (const q of section.questions) {
+                const isArchetype = q.type === 'ARCHETYPE';
+                await prisma.vendorAssessmentTemplateQuestion.create({
+                    data: {
+                        tenantId: tenant.id,
+                        templateId: tpl.id,
+                        sectionId: sec.id,
+                        sortOrder: qOrder++,
+                        prompt: q.prompt,
+                        answerType: 'SINGLE_SELECT',
+                        required: !section.conditional && !isArchetype,
+                        weight: q.weight,
+                        optionsJson: isArchetype ? ARCHETYPE_OPTIONS : SELECT_OPTIONS,
+                        riskPointsJson: isArchetype ? {} : SELECT_RISK,
+                    },
+                });
+            }
+        }
+        const qCount = aisvsVendorQ.sections.reduce((n, s) => n + s.questions.length, 0);
+        console.log(`✅ AISVS AI-vendor questionnaire seeded (${aisvsVendorQ.sections.length} sections, ${qCount} questions)`);
+    }
+
     // Silence unused-binding lint for the re-exported bcrypt alias above.
     void bcryptLib;
 
