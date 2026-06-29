@@ -32,6 +32,7 @@ import { Card, cardVariants } from '@/components/ui/card';
 import { InlineNotice } from '@/components/ui/inline-notice';
 import { cn } from '@/lib/cn';
 import { Nis2SelfAssessmentStep } from './Nis2SelfAssessmentStep';
+import { AiGovSelfAssessmentStep } from './AiGovSelfAssessmentStep';
 
 // ─── Step Definitions ───
 //
@@ -44,6 +45,9 @@ const STEPS = [
     // Conditional — rendered only when NIS2 is among the selected
     // frameworks (see stepApplicable / visibleSteps below).
     { key: 'NIS2_SELF_ASSESSMENT', label: 'NIS2 Assessment', icon: ClipboardCheck },
+    // Conditional — rendered only when an AI framework is selected (or the
+    // AI-systems flag). See stepApplicable / visibleSteps below.
+    { key: 'AI_GOVERNANCE_SELF_ASSESSMENT', label: 'AI Governance', icon: Sparkles },
     { key: 'ASSET_SETUP', label: 'Assets', icon: Server },
     { key: 'CONTROL_BASELINE_INSTALL', label: 'Controls', icon: ShieldCheck },
     { key: 'INITIAL_RISK_REGISTER', label: 'Risks', icon: AlertTriangle },
@@ -66,6 +70,12 @@ function stepApplicable(key: string, data: StepData): boolean {
         const fws: string[] = data?.FRAMEWORK_SELECTION?.selectedFrameworks ?? [];
         // Case-insensitive — the picker stores lowercase 'nis2'.
         return Array.isArray(fws) && fws.some((f) => String(f).toUpperCase() === 'NIS2');
+    }
+    if (key === 'AI_GOVERNANCE_SELF_ASSESSMENT') {
+        const fws: string[] = data?.FRAMEWORK_SELECTION?.selectedFrameworks ?? [];
+        const AI_FWS = new Set(['AISVS', 'ISO42001', 'EU_AI_ACT', 'EU-AI-ACT', 'OWASP-AISVS']);
+        const hasAi = Array.isArray(fws) && fws.some((f) => AI_FWS.has(String(f).toUpperCase().replace(/\s+/g, '')));
+        return hasAi || data?.COMPANY_PROFILE?.usesAiSystems === true;
     }
     return true;
 }
@@ -205,6 +215,26 @@ export default function OnboardingWizard() {
             setSaving(true);
             await apiFetch(apiUrl(tenantSlug, 'step'), 'POST', {
                 step: 'NIS2_SELF_ASSESSMENT',
+                action: 'skip',
+            });
+            await loadState();
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'Failed to skip step');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    // ─── AI-governance step. Its component drives the assessment complete/
+    // materialize endpoints; the onboarding step itself is advanced here. ───
+    const handleAiGovCompleted = async () => {
+        await handleCompleteStep('AI_GOVERNANCE_SELF_ASSESSMENT');
+    };
+    const handleAiGovSkip = async () => {
+        try {
+            setSaving(true);
+            await apiFetch(apiUrl(tenantSlug, 'step'), 'POST', {
+                step: 'AI_GOVERNANCE_SELF_ASSESSMENT',
                 action: 'skip',
             });
             await loadState();
@@ -432,6 +462,8 @@ export default function OnboardingWizard() {
                                 tenantSlug={tenantSlug}
                                 onNis2Completed={handleNis2Completed}
                                 onNis2Skip={handleNis2Skip}
+                                onAiGovCompleted={handleAiGovCompleted}
+                                onAiGovSkip={handleAiGovSkip}
                             />
                         </div>
                         {/* Navigation footer */}
@@ -448,7 +480,7 @@ export default function OnboardingWizard() {
                                 {/* NIS2 step drives its own Complete/Skip inside
                                     the step component, so suppress the generic
                                     Continue button there. */}
-                                {!isLast && currentStep.key !== 'NIS2_SELF_ASSESSMENT' && (
+                                {!isLast && currentStep.key !== 'NIS2_SELF_ASSESSMENT' && currentStep.key !== 'AI_GOVERNANCE_SELF_ASSESSMENT' && (
                                     <Button
                                         variant="primary"
                                         onClick={() => handleCompleteStep(currentStep.key)}
@@ -480,7 +512,7 @@ export default function OnboardingWizard() {
 
 // ─── Step Content Components ───
 
-function StepContent({ step, data, onUpdate, completedSteps, allData, tenantSlug, onNis2Completed, onNis2Skip }: {
+function StepContent({ step, data, onUpdate, completedSteps, allData, tenantSlug, onNis2Completed, onNis2Skip, onAiGovCompleted, onAiGovSkip }: {
     step: StepKey;
     data: StepData;
     onUpdate: (d: StepData) => void;
@@ -489,11 +521,14 @@ function StepContent({ step, data, onUpdate, completedSteps, allData, tenantSlug
     tenantSlug: string;
     onNis2Completed: () => void;
     onNis2Skip: () => void;
+    onAiGovCompleted: () => void;
+    onAiGovSkip: () => void;
 }) {
     switch (step) {
         case 'COMPANY_PROFILE': return <CompanyProfileStep data={data} onUpdate={onUpdate} />;
         case 'FRAMEWORK_SELECTION': return <FrameworkSelectionStep data={data} onUpdate={onUpdate} />;
         case 'NIS2_SELF_ASSESSMENT': return <Nis2SelfAssessmentStep tenantSlug={tenantSlug} onCompleted={onNis2Completed} onSkip={onNis2Skip} />;
+        case 'AI_GOVERNANCE_SELF_ASSESSMENT': return <AiGovSelfAssessmentStep tenantSlug={tenantSlug} onCompleted={onAiGovCompleted} onSkip={onAiGovSkip} />;
         case 'ASSET_SETUP': return <AssetSetupStep data={data} onUpdate={onUpdate} />;
         case 'CONTROL_BASELINE_INSTALL': return <ControlInstallStep data={data} onUpdate={onUpdate} allData={allData} />;
         case 'INITIAL_RISK_REGISTER': return <RiskRegisterStep data={data} onUpdate={onUpdate} />;
@@ -571,6 +606,24 @@ function CompanyProfileStep({ data, onUpdate }: { data: StepData; onUpdate: (d: 
                     />
                 </div>
             </div>
+            {/* Screening toggle — gates the conditional AI-governance
+                self-assessment step (also triggered by selecting an AI
+                framework). */}
+            <label className="flex items-start gap-tight cursor-pointer rounded-lg border border-border-subtle p-3">
+                <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={data.usesAiSystems === true}
+                    onChange={(e) => onUpdate({ usesAiSystems: e.target.checked })}
+                    data-testid="company-uses-ai"
+                />
+                <span className="text-sm">
+                    <span className="font-medium text-content-default">We build or use AI systems</span>
+                    <span className="block text-xs text-content-muted">
+                        Adds a short AI-governance self-assessment (OWASP AISVS / ISO 42001 / EU AI Act).
+                    </span>
+                </span>
+            </label>
         </div>
     );
 }
