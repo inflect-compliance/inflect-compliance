@@ -1,0 +1,705 @@
+# ISO/IEC 42001:2023 — Framework Library (AI Management System)
+# Paraphrased clause / control titles — NOT verbatim ISO text.
+# ISO 42001 is a COPYRIGHTED standard: this is a structural outline
+# referencing clause + Annex A control NUMBERS only, mirroring
+# iso27001-2022.yaml. Purchase the full standard from ISO.
+
+urn: urn:inflect:library:iso-42001
+locale: en
+ref_id: ISO42001-2023
+name: ISO/IEC 42001:2023
+description: >
+  Information technology — Artificial intelligence — Management system.
+  Requirements for establishing, implementing, maintaining and continually
+  improving an AI management system (AIMS): management clauses 4-10 and
+  Annex A controls. Structural outline only (clause numbers + paraphrases).
+copyright: >
+  This is a structural outline of ISO/IEC 42001:2023 (clause + Annex A
+  control numbers with paraphrased titles), NOT a reproduction of the
+  copyrighted ISO text. Purchase the full standard from
+  https://www.iso.org/standard/81230 . © ISO/IEC.
+version: 1
+publication_date: "2023-12-18"
+provider: ISO/IEC
+packager: inflect
+kind: ISO_STANDARD
+
+objects:
+  framework:
+    urn: urn:inflect:framework:iso-42001
+    ref_id: ISO42001-2023
+    name: ISO/IEC 42001:2023
+    description: AI Management System — requirements + Annex A controls
+    requirement_nodes:
+      # ─── AI management system clauses (4-10) ───
+      - urn: urn:inflect:req:iso-42001:clause-4
+        ref_id: "4"
+        name: "Context of the organization"
+        description: "ISO 42001 clause 4: Context of the organization. (Paraphrase)"
+        depth: 1
+        assessable: false
+        category: AI management system
+      - urn: urn:inflect:req:iso-42001:4.1
+        ref_id: "4.1"
+        name: "Understand the organization and its AI context"
+        description: "Understand the organization and its AI context. (Paraphrase of ISO 42001 4.1)"
+        parent_urn: urn:inflect:req:iso-42001:clause-4
+        depth: 2
+        assessable: true
+        category: AI management system
+        section: "Clause 4 Context of the organization"
+      - urn: urn:inflect:req:iso-42001:4.2
+        ref_id: "4.2"
+        name: "Determine needs and expectations of interested parties"
+        description: "Determine needs and expectations of interested parties. (Paraphrase of ISO 42001 4.2)"
+        parent_urn: urn:inflect:req:iso-42001:clause-4
+        depth: 2
+        assessable: true
+        category: AI management system
+        section: "Clause 4 Context of the organization"
+      - urn: urn:inflect:req:iso-42001:4.3
+        ref_id: "4.3"
+        name: "Determine the scope of the AI management system"
+        description: "Determine the scope of the AI management system. (Paraphrase of ISO 42001 4.3)"
+        parent_urn: urn:inflect:req:iso-42001:clause-4
+        depth: 2
+        assessable: true
+        category: AI management system
+        section: "Clause 4 Context of the organization"
+      - urn: urn:inflect:req:iso-42001:4.4
+        ref_id: "4.4"
+        name: "Establish and maintain the AI management system"
+        description: "Establish and maintain the AI management system. (Paraphrase of ISO 42001 4.4)"
+        parent_urn: urn:inflect:req:iso-42001:clause-4
+        depth: 2
+        assessable: true
+        category: AI management system
+        section: "Clause 4 Context of the organization"
+      - urn: urn:inflect:req:iso-42001:clause-5
+        ref_id: "5"
+        name: "Leadership"
+        description: "ISO 42001 clause 5: Leadership. (Paraphrase)"
+        depth: 1
+        assessable: false
+        category: AI management system
+      - urn: urn:inflect:req:iso-42001:5.1
+        ref_id: "5.1"
+        name: "Top-management leadership and commitment to the AIMS"
+        description: "Top-management leadership and commitment to the AIMS. (Paraphrase of ISO 42001 5.1)"
+        parent_urn: urn:inflect:req:iso-42001:clause-5
+        depth: 2
+        assessable: true
+        category: AI management system
+        section: "Clause 5 Leadership"
+      - urn: urn:inflect:req:iso-42001:5.2
+        ref_id: "5.2"
+        name: "Establish an AI policy"
+        description: "Establish an AI policy. (Paraphrase of ISO 42001 5.2)"
+        parent_urn: urn:inflect:req:iso-42001:clause-5
+        depth: 2
+        assessable: true
+        category: AI management system
+        section: "Clause 5 Leadership"
+      - urn: urn:inflect:req:iso-42001:5.3
+        ref_id: "5.3"
+        name: "Assign AI roles, responsibilities and authorities"
+        description: "Assign AI roles, responsibilities and authorities. (Paraphrase of ISO 42001 5.3)"
+        parent_urn: urn:inflect:req:iso-42001:clause-5
+        depth: 2
+        assessable: true
+        category: AI management system
+        section: "Clause 5 Leadership"
+      - urn: urn:inflect:req:iso-42001:clause-6
+        ref_id: "6"
+        name: "Planning"
+        description: "ISO 42001 clause 6: Planning. (Paraphrase)"
+        depth: 1
+        assessable: false
+        category: AI management system
+      - urn: urn:inflect:req:iso-42001:6.1
+        ref_id: "6.1"
+        name: "Actions to address AI risks and opportunities (assessment, treatment, impact)"
+        description: "Actions to address AI risks and opportunities (assessment, treatment, impact). (Paraphrase of ISO 42001 6.1)"
+        parent_urn: urn:inflect:req:iso-42001:clause-6
+        depth: 2
+        assessable: true
+        category: AI management system
+        section: "Clause 6 Planning"
+      - urn: urn:inflect:req:iso-42001:6.2
+        ref_id: "6.2"
+        name: "Set AI objectives and plans to achieve them"
+        description: "Set AI objectives and plans to achieve them. (Paraphrase of ISO 42001 6.2)"
+        parent_urn: urn:inflect:req:iso-42001:clause-6
+        depth: 2
+        assessable: true
+        category: AI management system
+        section: "Clause 6 Planning"
+      - urn: urn:inflect:req:iso-42001:6.3
+        ref_id: "6.3"
+        name: "Plan changes to the AI management system"
+        description: "Plan changes to the AI management system. (Paraphrase of ISO 42001 6.3)"
+        parent_urn: urn:inflect:req:iso-42001:clause-6
+        depth: 2
+        assessable: true
+        category: AI management system
+        section: "Clause 6 Planning"
+      - urn: urn:inflect:req:iso-42001:clause-7
+        ref_id: "7"
+        name: "Support"
+        description: "ISO 42001 clause 7: Support. (Paraphrase)"
+        depth: 1
+        assessable: false
+        category: AI management system
+      - urn: urn:inflect:req:iso-42001:7.1
+        ref_id: "7.1"
+        name: "Provide resources for the AIMS"
+        description: "Provide resources for the AIMS. (Paraphrase of ISO 42001 7.1)"
+        parent_urn: urn:inflect:req:iso-42001:clause-7
+        depth: 2
+        assessable: true
+        category: AI management system
+        section: "Clause 7 Support"
+      - urn: urn:inflect:req:iso-42001:7.2
+        ref_id: "7.2"
+        name: "Ensure competence of people affecting AI performance"
+        description: "Ensure competence of people affecting AI performance. (Paraphrase of ISO 42001 7.2)"
+        parent_urn: urn:inflect:req:iso-42001:clause-7
+        depth: 2
+        assessable: true
+        category: AI management system
+        section: "Clause 7 Support"
+      - urn: urn:inflect:req:iso-42001:7.3
+        ref_id: "7.3"
+        name: "Ensure awareness of the AI policy and roles"
+        description: "Ensure awareness of the AI policy and roles. (Paraphrase of ISO 42001 7.3)"
+        parent_urn: urn:inflect:req:iso-42001:clause-7
+        depth: 2
+        assessable: true
+        category: AI management system
+        section: "Clause 7 Support"
+      - urn: urn:inflect:req:iso-42001:7.4
+        ref_id: "7.4"
+        name: "Determine internal and external AI communication"
+        description: "Determine internal and external AI communication. (Paraphrase of ISO 42001 7.4)"
+        parent_urn: urn:inflect:req:iso-42001:clause-7
+        depth: 2
+        assessable: true
+        category: AI management system
+        section: "Clause 7 Support"
+      - urn: urn:inflect:req:iso-42001:7.5
+        ref_id: "7.5"
+        name: "Create and control documented information"
+        description: "Create and control documented information. (Paraphrase of ISO 42001 7.5)"
+        parent_urn: urn:inflect:req:iso-42001:clause-7
+        depth: 2
+        assessable: true
+        category: AI management system
+        section: "Clause 7 Support"
+      - urn: urn:inflect:req:iso-42001:clause-8
+        ref_id: "8"
+        name: "Operation"
+        description: "ISO 42001 clause 8: Operation. (Paraphrase)"
+        depth: 1
+        assessable: false
+        category: AI management system
+      - urn: urn:inflect:req:iso-42001:8.1
+        ref_id: "8.1"
+        name: "Operational planning and control of AI processes"
+        description: "Operational planning and control of AI processes. (Paraphrase of ISO 42001 8.1)"
+        parent_urn: urn:inflect:req:iso-42001:clause-8
+        depth: 2
+        assessable: true
+        category: AI management system
+        section: "Clause 8 Operation"
+      - urn: urn:inflect:req:iso-42001:8.2
+        ref_id: "8.2"
+        name: "Perform the AI risk assessment"
+        description: "Perform the AI risk assessment. (Paraphrase of ISO 42001 8.2)"
+        parent_urn: urn:inflect:req:iso-42001:clause-8
+        depth: 2
+        assessable: true
+        category: AI management system
+        section: "Clause 8 Operation"
+      - urn: urn:inflect:req:iso-42001:8.3
+        ref_id: "8.3"
+        name: "Implement the AI risk treatment"
+        description: "Implement the AI risk treatment. (Paraphrase of ISO 42001 8.3)"
+        parent_urn: urn:inflect:req:iso-42001:clause-8
+        depth: 2
+        assessable: true
+        category: AI management system
+        section: "Clause 8 Operation"
+      - urn: urn:inflect:req:iso-42001:8.4
+        ref_id: "8.4"
+        name: "Perform the AI system impact assessment"
+        description: "Perform the AI system impact assessment. (Paraphrase of ISO 42001 8.4)"
+        parent_urn: urn:inflect:req:iso-42001:clause-8
+        depth: 2
+        assessable: true
+        category: AI management system
+        section: "Clause 8 Operation"
+      - urn: urn:inflect:req:iso-42001:clause-9
+        ref_id: "9"
+        name: "Performance evaluation"
+        description: "ISO 42001 clause 9: Performance evaluation. (Paraphrase)"
+        depth: 1
+        assessable: false
+        category: AI management system
+      - urn: urn:inflect:req:iso-42001:9.1
+        ref_id: "9.1"
+        name: "Monitor, measure, analyse and evaluate the AIMS"
+        description: "Monitor, measure, analyse and evaluate the AIMS. (Paraphrase of ISO 42001 9.1)"
+        parent_urn: urn:inflect:req:iso-42001:clause-9
+        depth: 2
+        assessable: true
+        category: AI management system
+        section: "Clause 9 Performance evaluation"
+      - urn: urn:inflect:req:iso-42001:9.2
+        ref_id: "9.2"
+        name: "Conduct internal audits of the AIMS"
+        description: "Conduct internal audits of the AIMS. (Paraphrase of ISO 42001 9.2)"
+        parent_urn: urn:inflect:req:iso-42001:clause-9
+        depth: 2
+        assessable: true
+        category: AI management system
+        section: "Clause 9 Performance evaluation"
+      - urn: urn:inflect:req:iso-42001:9.3
+        ref_id: "9.3"
+        name: "Conduct management review of the AIMS"
+        description: "Conduct management review of the AIMS. (Paraphrase of ISO 42001 9.3)"
+        parent_urn: urn:inflect:req:iso-42001:clause-9
+        depth: 2
+        assessable: true
+        category: AI management system
+        section: "Clause 9 Performance evaluation"
+      - urn: urn:inflect:req:iso-42001:clause-10
+        ref_id: "10"
+        name: "Improvement"
+        description: "ISO 42001 clause 10: Improvement. (Paraphrase)"
+        depth: 1
+        assessable: false
+        category: AI management system
+      - urn: urn:inflect:req:iso-42001:10.1
+        ref_id: "10.1"
+        name: "Drive continual improvement of the AIMS"
+        description: "Drive continual improvement of the AIMS. (Paraphrase of ISO 42001 10.1)"
+        parent_urn: urn:inflect:req:iso-42001:clause-10
+        depth: 2
+        assessable: true
+        category: AI management system
+        section: "Clause 10 Improvement"
+      - urn: urn:inflect:req:iso-42001:10.2
+        ref_id: "10.2"
+        name: "Manage nonconformity and corrective action"
+        description: "Manage nonconformity and corrective action. (Paraphrase of ISO 42001 10.2)"
+        parent_urn: urn:inflect:req:iso-42001:clause-10
+        depth: 2
+        assessable: true
+        category: AI management system
+        section: "Clause 10 Improvement"
+      # ─── Annex A controls (A.2-A.10) ───
+      - urn: urn:inflect:req:iso-42001:a.2
+        ref_id: "A.2"
+        name: "Policies related to AI"
+        description: "ISO 42001 Annex A objective A.2: Policies related to AI. (Paraphrase)"
+        depth: 1
+        assessable: false
+        category: Annex A controls
+      - urn: urn:inflect:req:iso-42001:a.2.2
+        ref_id: "A.2.2"
+        name: "Establish a written AI policy framework"
+        description: "Establish a written AI policy framework. (Paraphrase of ISO 42001 A.2.2)"
+        parent_urn: urn:inflect:req:iso-42001:a.2
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.2 Policies related to AI"
+      - urn: urn:inflect:req:iso-42001:a.2.3
+        ref_id: "A.2.3"
+        name: "Align the AI policy with other organizational policies"
+        description: "Align the AI policy with other organizational policies. (Paraphrase of ISO 42001 A.2.3)"
+        parent_urn: urn:inflect:req:iso-42001:a.2
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.2 Policies related to AI"
+      - urn: urn:inflect:req:iso-42001:a.2.4
+        ref_id: "A.2.4"
+        name: "Review the AI policy at planned intervals"
+        description: "Review the AI policy at planned intervals. (Paraphrase of ISO 42001 A.2.4)"
+        parent_urn: urn:inflect:req:iso-42001:a.2
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.2 Policies related to AI"
+      - urn: urn:inflect:req:iso-42001:a.3
+        ref_id: "A.3"
+        name: "Internal organization"
+        description: "ISO 42001 Annex A objective A.3: Internal organization. (Paraphrase)"
+        depth: 1
+        assessable: false
+        category: Annex A controls
+      - urn: urn:inflect:req:iso-42001:a.3.2
+        ref_id: "A.3.2"
+        name: "Define AI roles and accountability structures"
+        description: "Define AI roles and accountability structures. (Paraphrase of ISO 42001 A.3.2)"
+        parent_urn: urn:inflect:req:iso-42001:a.3
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.3 Internal organization"
+      - urn: urn:inflect:req:iso-42001:a.3.3
+        ref_id: "A.3.3"
+        name: "Establish a mechanism for reporting concerns"
+        description: "Establish a mechanism for reporting concerns. (Paraphrase of ISO 42001 A.3.3)"
+        parent_urn: urn:inflect:req:iso-42001:a.3
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.3 Internal organization"
+      - urn: urn:inflect:req:iso-42001:a.4
+        ref_id: "A.4"
+        name: "Resources for AI systems"
+        description: "ISO 42001 Annex A objective A.4: Resources for AI systems. (Paraphrase)"
+        depth: 1
+        assessable: false
+        category: Annex A controls
+      - urn: urn:inflect:req:iso-42001:a.4.2
+        ref_id: "A.4.2"
+        name: "Document an inventory of AI system resources"
+        description: "Document an inventory of AI system resources. (Paraphrase of ISO 42001 A.4.2)"
+        parent_urn: urn:inflect:req:iso-42001:a.4
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.4 Resources for AI systems"
+      - urn: urn:inflect:req:iso-42001:a.4.3
+        ref_id: "A.4.3"
+        name: "Record dataset provenance and characteristics"
+        description: "Record dataset provenance and characteristics. (Paraphrase of ISO 42001 A.4.3)"
+        parent_urn: urn:inflect:req:iso-42001:a.4
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.4 Resources for AI systems"
+      - urn: urn:inflect:req:iso-42001:a.4.4
+        ref_id: "A.4.4"
+        name: "Track algorithms, models and tooling dependencies"
+        description: "Track algorithms, models and tooling dependencies. (Paraphrase of ISO 42001 A.4.4)"
+        parent_urn: urn:inflect:req:iso-42001:a.4
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.4 Resources for AI systems"
+      - urn: urn:inflect:req:iso-42001:a.4.5
+        ref_id: "A.4.5"
+        name: "Record computing infrastructure and environments"
+        description: "Record computing infrastructure and environments. (Paraphrase of ISO 42001 A.4.5)"
+        parent_urn: urn:inflect:req:iso-42001:a.4
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.4 Resources for AI systems"
+      - urn: urn:inflect:req:iso-42001:a.4.6
+        ref_id: "A.4.6"
+        name: "Identify the people and competencies involved"
+        description: "Identify the people and competencies involved. (Paraphrase of ISO 42001 A.4.6)"
+        parent_urn: urn:inflect:req:iso-42001:a.4
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.4 Resources for AI systems"
+      - urn: urn:inflect:req:iso-42001:a.5
+        ref_id: "A.5"
+        name: "Assessing impacts of AI systems"
+        description: "ISO 42001 Annex A objective A.5: Assessing impacts of AI systems. (Paraphrase)"
+        depth: 1
+        assessable: false
+        category: Annex A controls
+      - urn: urn:inflect:req:iso-42001:a.5.2
+        ref_id: "A.5.2"
+        name: "Define a repeatable AI impact-assessment process"
+        description: "Define a repeatable AI impact-assessment process. (Paraphrase of ISO 42001 A.5.2)"
+        parent_urn: urn:inflect:req:iso-42001:a.5
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.5 Assessing impacts of AI systems"
+      - urn: urn:inflect:req:iso-42001:a.5.3
+        ref_id: "A.5.3"
+        name: "Document impact-assessment findings and records"
+        description: "Document impact-assessment findings and records. (Paraphrase of ISO 42001 A.5.3)"
+        parent_urn: urn:inflect:req:iso-42001:a.5
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.5 Assessing impacts of AI systems"
+      - urn: urn:inflect:req:iso-42001:a.5.4
+        ref_id: "A.5.4"
+        name: "Evaluate effects on individuals and groups"
+        description: "Evaluate effects on individuals and groups. (Paraphrase of ISO 42001 A.5.4)"
+        parent_urn: urn:inflect:req:iso-42001:a.5
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.5 Assessing impacts of AI systems"
+      - urn: urn:inflect:req:iso-42001:a.5.5
+        ref_id: "A.5.5"
+        name: "Assess broader societal impacts"
+        description: "Assess broader societal impacts. (Paraphrase of ISO 42001 A.5.5)"
+        parent_urn: urn:inflect:req:iso-42001:a.5
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.5 Assessing impacts of AI systems"
+      - urn: urn:inflect:req:iso-42001:a.6
+        ref_id: "A.6"
+        name: "AI system life cycle"
+        description: "ISO 42001 Annex A objective A.6: AI system life cycle. (Paraphrase)"
+        depth: 1
+        assessable: false
+        category: Annex A controls
+      - urn: urn:inflect:req:iso-42001:a.6.1.2
+        ref_id: "A.6.1.2"
+        name: "Set responsible AI development objectives"
+        description: "Set responsible AI development objectives. (Paraphrase of ISO 42001 A.6.1.2)"
+        parent_urn: urn:inflect:req:iso-42001:a.6
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.6 AI system life cycle"
+      - urn: urn:inflect:req:iso-42001:a.6.1.3
+        ref_id: "A.6.1.3"
+        name: "Document responsible design and development processes"
+        description: "Document responsible design and development processes. (Paraphrase of ISO 42001 A.6.1.3)"
+        parent_urn: urn:inflect:req:iso-42001:a.6
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.6 AI system life cycle"
+      - urn: urn:inflect:req:iso-42001:a.6.2.2
+        ref_id: "A.6.2.2"
+        name: "Capture functional and non-functional requirements"
+        description: "Capture functional and non-functional requirements. (Paraphrase of ISO 42001 A.6.2.2)"
+        parent_urn: urn:inflect:req:iso-42001:a.6
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.6 AI system life cycle"
+      - urn: urn:inflect:req:iso-42001:a.6.2.3
+        ref_id: "A.6.2.3"
+        name: "Maintain design and development documentation"
+        description: "Maintain design and development documentation. (Paraphrase of ISO 42001 A.6.2.3)"
+        parent_urn: urn:inflect:req:iso-42001:a.6
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.6 AI system life cycle"
+      - urn: urn:inflect:req:iso-42001:a.6.2.4
+        ref_id: "A.6.2.4"
+        name: "Define verification and validation methodologies"
+        description: "Define verification and validation methodologies. (Paraphrase of ISO 42001 A.6.2.4)"
+        parent_urn: urn:inflect:req:iso-42001:a.6
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.6 AI system life cycle"
+      - urn: urn:inflect:req:iso-42001:a.6.2.5
+        ref_id: "A.6.2.5"
+        name: "Create a deployment plan with release criteria"
+        description: "Create a deployment plan with release criteria. (Paraphrase of ISO 42001 A.6.2.5)"
+        parent_urn: urn:inflect:req:iso-42001:a.6
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.6 AI system life cycle"
+      - urn: urn:inflect:req:iso-42001:a.6.2.6
+        ref_id: "A.6.2.6"
+        name: "Establish operation and performance monitoring"
+        description: "Establish operation and performance monitoring. (Paraphrase of ISO 42001 A.6.2.6)"
+        parent_urn: urn:inflect:req:iso-42001:a.6
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.6 AI system life cycle"
+      - urn: urn:inflect:req:iso-42001:a.6.2.7
+        ref_id: "A.6.2.7"
+        name: "Provide technical documentation for audiences"
+        description: "Provide technical documentation for audiences. (Paraphrase of ISO 42001 A.6.2.7)"
+        parent_urn: urn:inflect:req:iso-42001:a.6
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.6 AI system life cycle"
+      - urn: urn:inflect:req:iso-42001:a.6.2.8
+        ref_id: "A.6.2.8"
+        name: "Log events across the system life cycle"
+        description: "Log events across the system life cycle. (Paraphrase of ISO 42001 A.6.2.8)"
+        parent_urn: urn:inflect:req:iso-42001:a.6
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.6 AI system life cycle"
+      - urn: urn:inflect:req:iso-42001:a.7
+        ref_id: "A.7"
+        name: "Data for AI systems"
+        description: "ISO 42001 Annex A objective A.7: Data for AI systems. (Paraphrase)"
+        depth: 1
+        assessable: false
+        category: Annex A controls
+      - urn: urn:inflect:req:iso-42001:a.7.2
+        ref_id: "A.7.2"
+        name: "Manage data for development and enhancement"
+        description: "Manage data for development and enhancement. (Paraphrase of ISO 42001 A.7.2)"
+        parent_urn: urn:inflect:req:iso-42001:a.7
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.7 Data for AI systems"
+      - urn: urn:inflect:req:iso-42001:a.7.3
+        ref_id: "A.7.3"
+        name: "Document dataset origin and selection rationale"
+        description: "Document dataset origin and selection rationale. (Paraphrase of ISO 42001 A.7.3)"
+        parent_urn: urn:inflect:req:iso-42001:a.7
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.7 Data for AI systems"
+      - urn: urn:inflect:req:iso-42001:a.7.4
+        ref_id: "A.7.4"
+        name: "Define and verify data-quality criteria"
+        description: "Define and verify data-quality criteria. (Paraphrase of ISO 42001 A.7.4)"
+        parent_urn: urn:inflect:req:iso-42001:a.7
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.7 Data for AI systems"
+      - urn: urn:inflect:req:iso-42001:a.7.5
+        ref_id: "A.7.5"
+        name: "Track data lineage and transformation history"
+        description: "Track data lineage and transformation history. (Paraphrase of ISO 42001 A.7.5)"
+        parent_urn: urn:inflect:req:iso-42001:a.7
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.7 Data for AI systems"
+      - urn: urn:inflect:req:iso-42001:a.7.6
+        ref_id: "A.7.6"
+        name: "Document data-preparation techniques used"
+        description: "Document data-preparation techniques used. (Paraphrase of ISO 42001 A.7.6)"
+        parent_urn: urn:inflect:req:iso-42001:a.7
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.7 Data for AI systems"
+      - urn: urn:inflect:req:iso-42001:a.8
+        ref_id: "A.8"
+        name: "Information for interested parties"
+        description: "ISO 42001 Annex A objective A.8: Information for interested parties. (Paraphrase)"
+        depth: 1
+        assessable: false
+        category: Annex A controls
+      - urn: urn:inflect:req:iso-42001:a.8.2
+        ref_id: "A.8.2"
+        name: "Provide user-facing system documentation"
+        description: "Provide user-facing system documentation. (Paraphrase of ISO 42001 A.8.2)"
+        parent_urn: urn:inflect:req:iso-42001:a.8
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.8 Information for interested parties"
+      - urn: urn:inflect:req:iso-42001:a.8.3
+        ref_id: "A.8.3"
+        name: "Enable an external problem-reporting mechanism"
+        description: "Enable an external problem-reporting mechanism. (Paraphrase of ISO 42001 A.8.3)"
+        parent_urn: urn:inflect:req:iso-42001:a.8
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.8 Information for interested parties"
+      - urn: urn:inflect:req:iso-42001:a.8.4
+        ref_id: "A.8.4"
+        name: "Plan incident-notification communication"
+        description: "Plan incident-notification communication. (Paraphrase of ISO 42001 A.8.4)"
+        parent_urn: urn:inflect:req:iso-42001:a.8
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.8 Information for interested parties"
+      - urn: urn:inflect:req:iso-42001:a.8.5
+        ref_id: "A.8.5"
+        name: "Share relevant AI system information proactively"
+        description: "Share relevant AI system information proactively. (Paraphrase of ISO 42001 A.8.5)"
+        parent_urn: urn:inflect:req:iso-42001:a.8
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.8 Information for interested parties"
+      - urn: urn:inflect:req:iso-42001:a.9
+        ref_id: "A.9"
+        name: "Use of AI systems"
+        description: "ISO 42001 Annex A objective A.9: Use of AI systems. (Paraphrase)"
+        depth: 1
+        assessable: false
+        category: Annex A controls
+      - urn: urn:inflect:req:iso-42001:a.9.2
+        ref_id: "A.9.2"
+        name: "Define responsible-use operational processes"
+        description: "Define responsible-use operational processes. (Paraphrase of ISO 42001 A.9.2)"
+        parent_urn: urn:inflect:req:iso-42001:a.9
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.9 Use of AI systems"
+      - urn: urn:inflect:req:iso-42001:a.9.3
+        ref_id: "A.9.3"
+        name: "Set responsible-use objectives"
+        description: "Set responsible-use objectives. (Paraphrase of ISO 42001 A.9.3)"
+        parent_urn: urn:inflect:req:iso-42001:a.9
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.9 Use of AI systems"
+      - urn: urn:inflect:req:iso-42001:a.9.4
+        ref_id: "A.9.4"
+        name: "Prevent scope creep from the intended purpose"
+        description: "Prevent scope creep from the intended purpose. (Paraphrase of ISO 42001 A.9.4)"
+        parent_urn: urn:inflect:req:iso-42001:a.9
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.9 Use of AI systems"
+      - urn: urn:inflect:req:iso-42001:a.10
+        ref_id: "A.10"
+        name: "Third-party and customer relationships"
+        description: "ISO 42001 Annex A objective A.10: Third-party and customer relationships. (Paraphrase)"
+        depth: 1
+        assessable: false
+        category: Annex A controls
+      - urn: urn:inflect:req:iso-42001:a.10.2
+        ref_id: "A.10.2"
+        name: "Allocate accountability across the AI supply chain"
+        description: "Allocate accountability across the AI supply chain. (Paraphrase of ISO 42001 A.10.2)"
+        parent_urn: urn:inflect:req:iso-42001:a.10
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.10 Third-party and customer relationships"
+      - urn: urn:inflect:req:iso-42001:a.10.3
+        ref_id: "A.10.3"
+        name: "Assess and manage supplier AI expectations"
+        description: "Assess and manage supplier AI expectations. (Paraphrase of ISO 42001 A.10.3)"
+        parent_urn: urn:inflect:req:iso-42001:a.10
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.10 Third-party and customer relationships"
+      - urn: urn:inflect:req:iso-42001:a.10.4
+        ref_id: "A.10.4"
+        name: "Incorporate customer obligations into the approach"
+        description: "Incorporate customer obligations into the approach. (Paraphrase of ISO 42001 A.10.4)"
+        parent_urn: urn:inflect:req:iso-42001:a.10
+        depth: 2
+        assessable: true
+        category: Annex A controls
+        section: "A.10 Third-party and customer relationships"
