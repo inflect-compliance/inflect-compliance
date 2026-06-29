@@ -18,19 +18,21 @@ import { checkCompletionCriteria } from '@/app-layer/usecases/onboarding';
 // ─── Step Model ───
 
 describe('Onboarding Step Model', () => {
-    test('ONBOARDING_STEPS has 8 canonical steps in order', () => {
+    test('ONBOARDING_STEPS has 9 canonical steps in order', () => {
         expect(ONBOARDING_STEPS).toEqual([
             'COMPANY_PROFILE',
             'FRAMEWORK_SELECTION',
             // Conditional — only applicable when NIS2 is selected.
             'NIS2_SELF_ASSESSMENT',
+            // Conditional — only when an AI framework / AI-systems flag is set.
+            'AI_GOVERNANCE_SELF_ASSESSMENT',
             'ASSET_SETUP',
             'CONTROL_BASELINE_INSTALL',
             'INITIAL_RISK_REGISTER',
             'TEAM_SETUP',
             'REVIEW_AND_FINISH',
         ]);
-        expect(ONBOARDING_STEPS.length).toBe(8);
+        expect(ONBOARDING_STEPS.length).toBe(9);
     });
 
     test('OnboardingStepEnum validates known steps', () => {
@@ -140,10 +142,11 @@ describe('Step Classification', () => {
         expect(REQUIRED_STEPS).toContain('REVIEW_AND_FINISH');
     });
 
-    test('SKIPPABLE_STEPS includes 6 optional steps', () => {
-        expect(SKIPPABLE_STEPS.length).toBe(6);
+    test('SKIPPABLE_STEPS includes 7 optional steps', () => {
+        expect(SKIPPABLE_STEPS.length).toBe(7);
         expect(SKIPPABLE_STEPS).toContain('FRAMEWORK_SELECTION');
         expect(SKIPPABLE_STEPS).toContain('NIS2_SELF_ASSESSMENT');
+        expect(SKIPPABLE_STEPS).toContain('AI_GOVERNANCE_SELF_ASSESSMENT');
         expect(SKIPPABLE_STEPS).toContain('ASSET_SETUP');
         expect(SKIPPABLE_STEPS).toContain('CONTROL_BASELINE_INSTALL');
         expect(SKIPPABLE_STEPS).toContain('INITIAL_RISK_REGISTER');

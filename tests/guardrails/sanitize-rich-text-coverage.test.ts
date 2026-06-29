@@ -62,6 +62,9 @@ const RICH_TEXT_COVERAGE: Readonly<
     },
     Finding: { usecases: ['src/app-layer/usecases/finding.ts'], sanitizer: 'sanitizePlainText' },
     Risk: { usecases: ['src/app-layer/usecases/risk.ts'], sanitizer: 'sanitizePlainText' },
+    // AI-governance self-assessment answer rationale — sanitised at the single
+    // saveAiGovAnswer write seam before the Epic B middleware encrypts `note`.
+    AiGovSelfAssessmentAnswer: { usecases: ['src/app-layer/usecases/ai-gov-self-assessment.ts'], sanitizer: 'sanitizePlainText' },
     // Vuln integration — analyst note on a CVE↔asset link, sanitised at the
     // linkCveToAsset / updateVulnerabilityStatus write seams (sanitizeOptional
     // wraps sanitizePlainText for the three-state contract).

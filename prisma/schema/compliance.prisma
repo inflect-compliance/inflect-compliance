@@ -2496,6 +2496,92 @@ model Nis2SelfAssessmentAnswer {
   @@index([questionId])
 }
 
+// ─── AI-Governance Self-Assessment (unified AISVS / ISO 42001 / EU AI Act) ───
+// Mirrors the NIS2 self-assessment shape: global reference content
+// (AiGovDomain + AiGovQuestion) + tenant-scoped run (AiGovSelfAssessment +
+// AiGovSelfAssessmentAnswer). One 30-question assessment whose answers project
+// onto three standards via each question's mappingsJson.
+
+/// Global reference: one AI-governance self-assessment domain (1-7).
+/// Not tenant-scoped (shared library content, no RLS).
+model AiGovDomain {
+  /// Stable domain id (1-7) from the fixture.
+  id        Int             @id
+  /// Short stable code, e.g. "GOVERNANCE".
+  code      String          @unique
+  name      String
+  questions AiGovQuestion[]
+}
+
+/// Global reference: one AI-governance self-assessment question.
+/// Not tenant-scoped (shared library content, no RLS).
+model AiGovQuestion {
+  /// Fixture question id, e.g. "aig-1-01" (globally unique).
+  id           String  @id
+  domainId     Int
+  /// Paraphrased question text (references standards by ID, never verbatim
+  /// AISVS/ISO prose — see the per-source license matrix).
+  text         String
+  /// `{ aisvs: string[], iso42001: string[], euAiAct: string[] }` — the
+  /// standard references each answer projects onto (the 3-way readout).
+  mappingsJson Json
+  /// Architecture gate: null | "RAG" | "AGENTIC" — auto-N/A otherwise.
+  conditional  String?
+  /// String enum: CRITICAL | HIGH | MEDIUM (validated at the usecase).
+  criticality  String
+
+  domain  AiGovDomain                 @relation(fields: [domainId], references: [id])
+  answers AiGovSelfAssessmentAnswer[]
+
+  @@index([domainId])
+}
+
+/// Tenant-scoped: one tenant's run through the AI-governance self-assessment.
+model AiGovSelfAssessment {
+  id                 String    @id @default(cuid())
+  tenantId           String
+  title              String?
+  /// Lifecycle: DRAFT | IN_PROGRESS | COMPLETED | ARCHIVED (String enum).
+  status             String    @default("DRAFT")
+  /// Pins the question-set version this run was started against.
+  questionSetVersion Int       @default(1)
+  createdById        String?
+  startedAt          DateTime  @default(now())
+  completedAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  tenant  Tenant                      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  answers AiGovSelfAssessmentAnswer[]
+
+  @@index([tenantId, updatedAt])
+}
+
+/// Tenant-scoped: one answer within an AI-governance self-assessment.
+/// `note` is encrypted at rest (Epic B manifest) + sanitised on write (Epic D).
+model AiGovSelfAssessmentAnswer {
+  id           String   @id @default(cuid())
+  tenantId     String
+  assessmentId String
+  questionId   String
+  /// String enum: NA | NO | PARTIALLY | YES (validated at the usecase).
+  answer       String
+  /// Free-text rationale — ENCRYPTED at rest (see encrypted-fields.ts).
+  note         String?
+  answeredById String?
+  answeredAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant     Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assessment AiGovSelfAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  question   AiGovQuestion       @relation(fields: [questionId], references: [id])
+
+  @@unique([assessmentId, questionId])
+  @@index([tenantId, assessmentId])
+  @@index([questionId])
+}
+
 /// Public Trust Center — an EXPLICIT, tenant-curated projection published to
 /// the open internet at `/trust/<slug>`. SECURITY-CRITICAL: this is the only
 /// intentionally-public surface in an otherwise auth+RLS-locked app. The

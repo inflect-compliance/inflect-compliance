@@ -835,6 +835,39 @@ Reviewed at least annually.` },
         `✅ NIS2 gap-assessment ${nis2Gap.version} — ${nis2Gap.domains.length} domains + ${nis2Gap.questions.length} questions seeded`,
     );
 
+    // ─── AI-Governance self-assessment (unified AISVS / ISO 42001 / EU AI Act) ───
+    // Global reference content (AiGovDomain + AiGovQuestion), idempotent —
+    // mirrors the NIS2 gap-assessment seed. One 30-question set whose answers
+    // project onto three standards via mappingsJson. Paraphrased questions
+    // (AISVS CC-BY-SA-4.0; ISO 42001 clause refs only; EU AI Act public domain).
+    const aiGov = require('./fixtures/ai-governance-self-assessment.json') as {
+        questionSetVersion: number;
+        domains: Array<{ id: number; code: string; name: string }>;
+        questions: Array<{ id: string; domainId: number; criticality: string; conditional: string | null; text: string; mappings: { aisvs: string[]; iso42001: string[]; euAiAct: string[] } }>;
+    };
+    for (const d of aiGov.domains) {
+        await prisma.aiGovDomain.upsert({
+            where: { id: d.id },
+            update: { code: d.code, name: d.name },
+            create: { id: d.id, code: d.code, name: d.name },
+        });
+    }
+    for (const q of aiGov.questions) {
+        const data = {
+            domainId: q.domainId,
+            text: q.text,
+            mappingsJson: q.mappings,
+            conditional: q.conditional,
+            criticality: q.criticality,
+        };
+        await prisma.aiGovQuestion.upsert({
+            where: { id: q.id },
+            update: data,
+            create: { id: q.id, ...data },
+        });
+    }
+    console.log(`✅ AI-governance self-assessment v${aiGov.questionSetVersion} — ${aiGov.domains.length} domains + ${aiGov.questions.length} questions seeded`);
+
     // ISO 9001
     const iso9001Data = require('./fixtures/iso9001_clauses.json') as Array<{ key: string; section: string; sortOrder: number; title: string }>;
     const iso9001 = await prisma.framework.upsert({
