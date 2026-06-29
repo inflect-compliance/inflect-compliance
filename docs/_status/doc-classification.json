@@ -3,7 +3,7 @@
   "description": "Classification of every docs/**/*.md. authoritative = true today; living = partially-shipped design direction; historical = moment-in-time record (incl. all of docs/implementation-notes/); deprecated = superseded redirect. Enforced by tests/guardrails/docs-accuracy.test.ts. See CLAUDE.md \"Doc classifications\".",
   "counts": {
     "authoritative": 105,
-    "historical": 302,
+    "historical": 303,
     "living": 5,
     "deprecated": 1
   },
@@ -1248,6 +1248,9 @@
       "class": "historical"
     },
     "docs/implementation-notes/2026-06-29-eu-ai-act-framework.md": {
+      "class": "historical"
+    },
+    "docs/implementation-notes/2026-06-29-ai-governance-bundle.md": {
       "class": "historical"
     }
   }

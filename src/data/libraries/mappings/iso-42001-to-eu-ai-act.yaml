@@ -1,0 +1,82 @@
+# Cross-Framework Mapping Set: ISO/IEC 42001:2023 → EU AI Act (2024/1689)
+# Data-driven mapping file for the RequirementMapping ingestion pipeline.
+#
+# Connects the ISO 42001 AI MANAGEMENT SYSTEM to EU AI Act regulatory
+# OBLIGATIONS, so a tenant running an AIMS sees how it advances their AI Act
+# obligations. Every entry is [curated] — Inflect's judgement, NOT part of
+# either source. Structural guidance, NOT legal advice (the AI system's risk
+# tier is a tenant + counsel decision).
+#
+# Refs use the YAML library ref_ids (ISO 42001 clause / Annex A → EU AI Act Art.N).
+
+urn: urn:inflect:mappingset:iso-42001-to-eu-ai-act
+name: "ISO/IEC 42001:2023 → EU AI Act (2024/1689)"
+description: >
+  Cross-framework traceability between the ISO/IEC 42001 AI management system
+  and EU AI Act obligations. Curated alignment — structural guidance, not legal
+  advice.
+version: 1
+source_framework_ref: ISO42001-2023
+target_framework_ref: EU-AI-ACT-2024
+
+mapping_entries:
+  - source_ref: "6.1"
+    target_ref: Art.9
+    strength: INTERSECT
+    rationale: "[curated] Planning to address AI risks aligns with the risk management system (Art 9)."
+  - source_ref: "8.2"
+    target_ref: Art.9
+    strength: INTERSECT
+    rationale: "[curated] Performing the AI risk assessment feeds the risk management system (Art 9)."
+  - source_ref: A.7.2
+    target_ref: Art.10
+    strength: INTERSECT
+    rationale: "[curated] Managing data for development supports data and data governance (Art 10)."
+  - source_ref: A.7.4
+    target_ref: Art.10
+    strength: RELATED
+    rationale: "[curated] Data-quality criteria support the governance quality bar (Art 10)."
+  - source_ref: A.6.2.3
+    target_ref: Art.11
+    strength: INTERSECT
+    rationale: "[curated] Design/development documentation contributes to the technical documentation (Art 11)."
+  - source_ref: A.6.2.7
+    target_ref: Art.11
+    strength: RELATED
+    rationale: "[curated] Technical documentation for audiences supports Art 11 documentation."
+  - source_ref: A.6.2.8
+    target_ref: Art.12
+    strength: INTERSECT
+    rationale: "[curated] Logging events across the life cycle realises record-keeping (Art 12)."
+  - source_ref: A.8.2
+    target_ref: Art.13
+    strength: INTERSECT
+    rationale: "[curated] User-facing system documentation supports transparency to deployers (Art 13)."
+  - source_ref: A.9.2
+    target_ref: Art.14
+    strength: RELATED
+    rationale: "[curated] Responsible-use operational processes support human oversight (Art 14)."
+  - source_ref: A.5.2
+    target_ref: Art.27
+    strength: INTERSECT
+    rationale: "[curated] The AI impact-assessment process aligns with the fundamental-rights impact assessment (Art 27)."
+  - source_ref: A.5.4
+    target_ref: Art.27
+    strength: RELATED
+    rationale: "[curated] Evaluating effects on individuals/groups supports the FRIA (Art 27)."
+  - source_ref: "9.1"
+    target_ref: Art.15
+    strength: RELATED
+    rationale: "[curated] Monitoring and measuring AIMS performance supports demonstrating accuracy/robustness (Art 15)."
+  - source_ref: A.10.2
+    target_ref: Art.53
+    strength: RELATED
+    rationale: "[curated] AI supply-chain accountability relates to GPAI provider obligations (Art 53)."
+  - source_ref: "5.2"
+    target_ref: Art.17
+    strength: RELATED
+    rationale: "[curated] An AI policy underpins the quality management system (Art 17)."
+  - source_ref: A.2.2
+    target_ref: Art.17
+    strength: RELATED
+    rationale: "[curated] A documented AI policy framework supports the quality management system (Art 17)."
