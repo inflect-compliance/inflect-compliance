@@ -18,6 +18,8 @@ import { TruncationBanner } from '@/components/ui/TruncationBanner';
 import {
     createColumns,
     useColumnsDropdown,
+    sortRowsByDisplay,
+    type SortAccessors,
 } from '@/components/ui/table';
 import {
     FilterProvider,
@@ -211,31 +213,31 @@ function PoliciesPageInner({
         ],
         [],
     );
-    const sortedPolicies = useMemo(() => {
-        if (!sortBy) return policies;
-        const accessor = (p: (typeof policies)[number]): string | number => {
-            switch (sortBy) {
-                case 'title': return (p.title ?? '').toString().toLowerCase();
-                case 'status': return (p.status ?? '').toString().toLowerCase();
-                case 'category': return (p.category ?? '').toString().toLowerCase();
-                case 'owner':
-                    return (p.owner?.name ?? p.owner?.email ?? '').toString().toLowerCase();
-                case 'version':
-                    return p.currentVersion?.versionNumber ?? p.lifecycleVersion ?? 0;
-                case 'nextReviewAt': return p.nextReviewAt ?? '';
-                case 'updatedAt': return p.updatedAt ?? '';
-                default: return '';
-            }
-        };
-        const dir = sortOrder === 'asc' ? 1 : -1;
-        return [...policies].sort((a, b) => {
-            const av = accessor(a);
-            const bv = accessor(b);
-            if (av === bv) return 0;
-            if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir;
-            return String(av) > String(bv) ? dir : -dir;
-        });
-    }, [policies, sortBy, sortOrder]);
+    // One accessor per sortable column id, each returning the value the
+    // matching COLUMN DISPLAYS (not the raw field) so sorting groups
+    // same-displayed-value rows. status → POLICY_STATUS_LABELS label
+    // (cell renders the label, not the raw enum); owner → ownerDisplayName
+    // (cell renders the derived username, not the raw email); category /
+    // version / nextReviewAt / updatedAt mirror their column accessorFn.
+    const sortAccessors = useMemo<SortAccessors<PolicyRow>>(
+        () => ({
+            title: (p) => p.title || '',
+            status: (p) =>
+                (POLICY_STATUS_LABELS as Record<string, string>)[p.status] ??
+                p.status,
+            category: (p) => p.category || '—',
+            owner: (p) => ownerDisplayName(p.owner?.name, p.owner?.email) ?? '—',
+            version: (p) =>
+                p.currentVersion?.versionNumber ?? p.lifecycleVersion ?? null,
+            nextReviewAt: (p) => p.nextReviewAt || '',
+            updatedAt: (p) => p.updatedAt,
+        }),
+        [],
+    );
+    const sortedPolicies = useMemo(
+        () => sortRowsByDisplay(policies, sortAccessors, sortBy, sortOrder),
+        [policies, sortAccessors, sortBy, sortOrder],
+    );
 
     // Load-on-scroll windowing — render the first batch, append more as
     // the user nears the bottom (DataTable onReachEnd sentinel).

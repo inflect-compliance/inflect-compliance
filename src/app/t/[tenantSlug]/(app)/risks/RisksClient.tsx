@@ -35,6 +35,8 @@ import {
     DataTable,
     createColumns,
     useColumnsDropdown,
+    sortRowsByDisplay,
+    type SortAccessors,
 } from '@/components/ui/table';
 import {
     FilterProvider,
@@ -424,45 +426,28 @@ function RisksPageInner({
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | undefined>(
         undefined,
     );
-    const risks = useMemo(() => {
-        if (!sortBy) return rawRisks;
-        const accessor = (r: RiskListItem): string | number => {
-            switch (sortBy) {
-                case 'title':
-                    return r.title || '';
-                case 'asset':
-                    return r.asset?.name || '';
-                case 'threat':
-                    return r.threat || '';
-                case 'inherentScore':
-                    return r.inherentScore || 0;
-                // RQ3-OB-B — ALE sortability. The risks list already
-                // surfaces an ALE chip next to the score; making the
-                // column sortable lets an analyst pivot a register
-                // of 200 risks into "the ones the money points at".
-                // Honest-null: un-quantified rows sort as -Infinity
-                // so they cluster at the bottom on desc (where you
-                // want them) and at the top on asc.
-                case 'ale': {
-                    const v = riskAle(r);
-                    return v ?? -Infinity;
-                }
-                case 'treatment':
-                    return r.treatment || '';
-                case 'status':
-                    return r.status || '';
-                default:
-                    return '';
-            }
-        };
-        const dir = sortOrder === 'asc' ? 1 : -1;
-        return [...rawRisks].sort((a, b) => {
-            const av = accessor(a);
-            const bv = accessor(b);
-            if (av === bv) return 0;
-            return av > bv ? dir : -dir;
-        });
-    }, [rawRisks, sortBy, sortOrder]);
+    // Sort accessors return the value each column DISPLAYS, so sorting groups
+    // same-displayed-value rows contiguously. The drift-prone columns (asset,
+    // ale, treatment, status) point their `accessorFn` at the SAME function
+    // below — the sort key and the rendered value can never diverge. (For ALE
+    // and the un-treated/OPEN fallbacks this also fixes the old comparator,
+    // which sorted by a RAW field while the cell rendered a derived label.)
+    const sortAccessors = useMemo<SortAccessors<RiskListItem>>(
+        () => ({
+            title: (r) => r.title || '',
+            asset: (r) => r.asset?.name || '—',
+            threat: (r) => r.threat || '',
+            inherentScore: (r) => r.inherentScore || 0,
+            ale: (r) => riskAle(r) ?? null,
+            treatment: (r) => r.treatment || t.untreated,
+            status: (r) => r.status ?? 'OPEN',
+        }),
+        [t],
+    );
+    const risks = useMemo(
+        () => sortRowsByDisplay(rawRisks, sortAccessors, sortBy, sortOrder),
+        [rawRisks, sortAccessors, sortBy, sortOrder],
+    );
     const sortableRiskColumns = useMemo(
         () => ['title', 'asset', 'threat', 'inherentScore', 'ale', 'treatment', 'status'],
         [],
@@ -743,7 +728,7 @@ function RisksPageInner({
             ),
         },
         {
-            accessorFn: (r) => r.asset?.name || '—',
+            accessorFn: sortAccessors.asset,
             id: 'asset',
             header: t.asset,
             cell: ({ getValue }) => (
@@ -864,7 +849,7 @@ function RisksPageInner({
             // at" via the column header.
             id: 'ale',
             header: 'ALE',
-            accessorFn: (r) => riskAle(r) ?? null,
+            accessorFn: sortAccessors.ale,
             cell: ({ getValue }) => {
                 const ale = getValue<number | null>();
                 return ale !== null ? (
@@ -879,7 +864,7 @@ function RisksPageInner({
         {
             id: 'status',
             header: 'Status',
-            accessorFn: (r) => r.status ?? 'OPEN',
+            accessorFn: sortAccessors.status,
             cell: ({ row }) => {
                 const status = row.original.status ?? 'OPEN';
                 return (
@@ -916,7 +901,7 @@ function RisksPageInner({
         {
             id: 'treatment',
             header: t.treatment,
-            accessorFn: (r) => r.treatment || t.untreated,
+            accessorFn: sortAccessors.treatment,
             cell: ({ getValue }) => (
                 <span className="text-xs">{getValue<string>()}</span>
             ),
@@ -950,7 +935,7 @@ function RisksPageInner({
                 );
             },
         },
-    ]), [t, getRiskBand, matrixConfig, tailByRisk]);
+    ]), [t, getRiskBand, matrixConfig, tailByRisk, sortAccessors]);
 
     // Right-rail Phase 3 — the AI assist co-pilot rail. A persistent,
     // co-resident entry point to the AI risk-assessment flow that

@@ -8,6 +8,7 @@ export * from "./edit-columns-button";
 export * from "./pagination-controls";
 export * from "./pagination-utils";
 export * from "./selection-toolbar";
+export * from "./sort-rows";
 export * from "./infinite-scroll-sentinel";
 export * from "./table";
 export * from "./table-empty-state";

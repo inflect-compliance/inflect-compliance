@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { CACHE_KEYS } from '@/lib/swr-keys';
-import { DataTable, createColumns, useColumnsDropdown } from '@/components/ui/table';
+import { DataTable, createColumns, useColumnsDropdown, sortRowsByDisplay, type SortAccessors } from '@/components/ui/table';
 import {
     FilterProvider,
     useFilterContext,
@@ -186,33 +186,40 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
         ],
         [],
     );
-    const sortedAssets = useMemo(() => {
-        if (!sortBy) return assets;
-        const accessor = (a: (typeof assets)[number]): string | number => {
-            switch (sortBy) {
-                case 'code': return (a.key ?? '').toString().toLowerCase();
-                case 'name': return (a.name ?? '').toString().toLowerCase();
-                case 'type': return (a.type ?? '').toString().toLowerCase();
-                case 'criticality':
-                    return getAssetCriticality(
-                        a.confidentiality ?? 3, a.integrity ?? 3, a.availability ?? 3,
-                    ).score;
-                case 'classification': return (a.classification ?? '').toString().toLowerCase();
-                case 'owner': return (a.owner ?? '').toString().toLowerCase();
-                case 'controls': return a._count?.controls ?? 0;
-                case 'tasks': return a.taskTotal ?? 0;
-                default: return '';
-            }
-        };
-        const dir = sortOrder === 'asc' ? 1 : -1;
-        return [...assets].sort((a, b) => {
-            const av = accessor(a);
-            const bv = accessor(b);
-            if (av === bv) return 0;
-            if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir;
-            return String(av) > String(bv) ? dir : -dir;
-        });
-    }, [assets, sortBy, sortOrder]);
+    // Sort accessors return the value each column DISPLAYS, so sorting groups
+    // same-displayed-value rows contiguously and can never drift from the
+    // rendered cell. The drift-prone columns are `type` (cell strips
+    // underscores) and `tasks` (cell renders the `done/total` string while the
+    // old comparator sorted by total only). `criticality` + `tasks` point
+    // their column `accessorFn` at the SAME function below.
+    const sortAccessors = useMemo<SortAccessors<AssetListRow>>(
+        () => ({
+            code: (a) => a.key || '',
+            name: (a) => a.name || '',
+            // Cell renders `String(type).replace(/_/g, ' ')` — sort on the same
+            // de-underscored label, not the raw enum.
+            type: (a) => (a.type ?? '').replace(/_/g, ' '),
+            // Cell renders the derived criticality label; the numeric score is
+            // monotonic with that label band, so sorting on the score keeps the
+            // bands contiguous AND in true severity order.
+            criticality: (a) =>
+                getAssetCriticality(
+                    a.confidentiality ?? 3,
+                    a.integrity ?? 3,
+                    a.availability ?? 3,
+                ).score,
+            classification: (a) => a.classification || '—',
+            owner: (a) => a.owner || '—',
+            controls: (a) => a._count?.controls || 0,
+            // Cell renders the `done/total` fraction — sort on that, not total.
+            tasks: (a) => `${a.taskDone ?? 0}/${a.taskTotal ?? 0}`,
+        }),
+        [],
+    );
+    const sortedAssets = useMemo(
+        () => sortRowsByDisplay(assets, sortAccessors, sortBy, sortOrder),
+        [assets, sortAccessors, sortBy, sortOrder],
+    );
 
     // Load-on-scroll windowing — render the first batch, append more as
     // the user nears the bottom (DataTable onReachEnd sentinel).
@@ -520,8 +527,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
             // critical-ceiling override), shown as a toned badge.
             id: 'criticality',
             header: 'Criticality',
-            accessorFn: (a) =>
-                getAssetCriticality(a.confidentiality ?? 3, a.integrity ?? 3, a.availability ?? 3).score,
+            accessorFn: sortAccessors.criticality,
             cell: ({ row }) => {
                 const crit = getAssetCriticality(
                     row.original.confidentiality ?? 3,
@@ -555,7 +561,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
             // B7 — unified linked-task count (done/total), matching Controls.
             id: 'tasks',
             header: 'Tasks',
-            accessorFn: (a) => `${a.taskDone ?? 0}/${a.taskTotal ?? 0}`,
+            accessorFn: sortAccessors.tasks,
             cell: ({ row }) => {
                 const total = row.original.taskTotal ?? 0;
                 const done = row.original.taskDone ?? 0;
@@ -572,7 +578,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                 );
             },
         },
-    ]), [t]);
+    ]), [t, sortAccessors]);
 
     return (
         <ListPageShell className="animate-fadeIn gap-section">

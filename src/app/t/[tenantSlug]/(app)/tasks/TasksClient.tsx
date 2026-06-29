@@ -23,7 +23,7 @@ import { useThresholdLoadMore } from '@/components/ui/hooks';
 import { TimestampTooltip } from '@/components/ui/timestamp-tooltip';
 import { Tooltip } from '@/components/ui/tooltip';
 import { TERMINAL_WORK_ITEM_STATUSES } from '@/app-layer/domain/work-item-status';
-import { DataTable, createColumns, useColumnsDropdown } from '@/components/ui/table';
+import { DataTable, createColumns, useColumnsDropdown, sortRowsByDisplay, type SortAccessors } from '@/components/ui/table';
 import {
     FilterProvider,
     useFilterContext,
@@ -231,36 +231,28 @@ function TasksPageInner({
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | undefined>(
         undefined,
     );
-    const sortedTasks = useMemo(() => {
-        if (!sortBy) return tasks;
-        const accessor = (t: TaskListItem): string => {
-            switch (sortBy) {
-                case 'title':
-                    return (t.title || '').toLowerCase();
-                case 'type':
-                    return (TYPE_LABELS[t.type] || t.type || '').toLowerCase();
-                case 'severity':
-                    return (t.severity || '').toString();
-                case 'status':
-                    return (t.status || '').toString();
-                case 'assignee':
-                    return (t.assignee?.name || '').toLowerCase();
-                case 'dueAt':
-                    return t.dueAt || '';
-                case 'updatedAt':
-                    return t.updatedAt || '';
-                default:
-                    return '';
-            }
-        };
-        const dir = sortOrder === 'asc' ? 1 : -1;
-        return [...tasks].sort((a, b) => {
-            const av = accessor(a);
-            const bv = accessor(b);
-            if (av === bv) return 0;
-            return av > bv ? dir : -dir;
-        });
-    }, [tasks, sortBy, sortOrder]);
+    // One accessor per sortable column id, each returning the value the
+    // matching COLUMN DISPLAYS (not the raw field) so sorting groups
+    // same-displayed-value rows. type → TYPE_LABELS label, status →
+    // STATUS_LABELS label (both cells render the label, not the raw enum);
+    // assignee mirrors its column accessorFn ('—' fallback). Sort still
+    // runs BEFORE the load-more window below.
+    const sortAccessors = useMemo<SortAccessors<TaskListItem>>(
+        () => ({
+            title: (t) => t.title || '',
+            type: (t) => TYPE_LABELS[t.type] || t.type,
+            severity: (t) => t.severity || '',
+            status: (t) => STATUS_LABELS[t.status] || t.status,
+            assignee: (t) => t.assignee?.name || '—',
+            dueAt: (t) => t.dueAt || '',
+            updatedAt: (t) => t.updatedAt || '',
+        }),
+        [],
+    );
+    const sortedTasks = useMemo(
+        () => sortRowsByDisplay(tasks, sortAccessors, sortBy, sortOrder),
+        [tasks, sortAccessors, sortBy, sortOrder],
+    );
     const sortableColumns = useMemo(
         () => ['title', 'type', 'severity', 'status', 'assignee', 'dueAt', 'updatedAt'],
         [],

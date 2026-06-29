@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
 
 import { ListPageShell } from '@/components/layout/ListPageShell';
-import { DataTable, createColumns } from '@/components/ui/table';
+import { DataTable, createColumns, sortRowsByDisplay, type SortAccessors } from '@/components/ui/table';
 import { TableEmptyState } from '@/components/ui/table';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
@@ -53,26 +53,24 @@ export function ControlsTable({ rows: initialRows, nextCursor: initialNextCursor
             `/api/org/${orgSlug ?? ''}/portfolio?view=controls&cursor=${encodeURIComponent(cursor)}`,
     });
 
-    const sorted = useMemo(() => {
-        const copy = [...pagination.rows];
-        copy.sort((a, b) => {
-            const dir = sortOrder === 'asc' ? 1 : -1;
-            switch (sortBy) {
-                case 'name':
-                    return dir * a.name.localeCompare(b.name);
-                case 'code':
-                    return dir * (a.code ?? '').localeCompare(b.code ?? '');
-                case 'status':
-                    return dir * a.status.localeCompare(b.status);
-                case 'updatedAt':
-                    return dir * (new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime());
-                case 'tenantName':
-                default:
-                    return dir * a.tenantName.localeCompare(b.tenantName) || a.name.localeCompare(b.name);
-            }
-        });
-        return copy;
-    }, [pagination.rows, sortBy, sortOrder]);
+    // Sort by what each column DISPLAYS so same-displayed-value rows group
+    // contiguously. The Status cell renders `status.replace(/_/g, ' ')`, so
+    // its accessor mirrors that derivation (the raw underscored enum would
+    // drift); the Code cell shows the `'—'` placeholder for a null code.
+    const sortAccessors = useMemo<SortAccessors<NonPerformingControlRow>>(
+        () => ({
+            tenantName: (x) => x.tenantName || '',
+            name: (x) => x.name || '',
+            code: (x) => x.code ?? '—',
+            status: (x) => x.status.replace(/_/g, ' '),
+            updatedAt: (x) => x.updatedAt,
+        }),
+        [],
+    );
+    const sorted = useMemo(
+        () => sortRowsByDisplay(pagination.rows, sortAccessors, sortBy, sortOrder),
+        [pagination.rows, sortAccessors, sortBy, sortOrder],
+    );
 
     const columns = useMemo(
         () =>
