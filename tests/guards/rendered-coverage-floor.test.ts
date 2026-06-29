@@ -57,11 +57,12 @@ const ROOT = path.resolve(__dirname, '../..');
 // renderHook tests for lib hooks/processes — useUrlFilters,
 // use-canvas-history, use-canvas-autosave, use-canvas-drill-stack,
 // canvas-change-events — plus accumulated rendered-test gains.
-// Raised 194 → 202 (2026-06-29): global-coverage rendered-test sweep —
-// mounts the largest previously-0%-jest-covered list clients
-// (Controls, Risks, Evidence, Policies, Assets) plus the two NIS2
-// incident UI tests, locking the gains in as the new minimum.
-const RENDERED_TEST_FLOOR = 202;
+// Briefly 202 (2026-06-29): a UI list-client rendered-test sweep was
+// reverted — those tests exercise UI files that are NOT in the backend
+// coverage denominator (collectCoverageFrom = src/app-layer + src/lib),
+// so they diluted rather than raised the global gate. Floor restored to
+// 194; backend coverage is the correct lever.
+const RENDERED_TEST_FLOOR = 194;
 // Raised 36 → 37 (2026-06-20): page-load-budget.spec.ts — the per-route
 // server-TTFB probe for the "instant pages" performance loop.
 // Raised 37 → 42 (2026-06-27): tracks accumulated E2E growth incl. the
