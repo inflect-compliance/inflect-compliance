@@ -220,6 +220,20 @@ export const ENCRYPTED_FIELDS: Readonly<Record<string, readonly string[]>> = {
     // gaps, or vendor exposure. Encrypted at rest like every other
     // business-content free-text field.
     Nis2SelfAssessmentAnswer: ['note'],
+
+    // ─── NIS2 Article 23 incident response ─────────────
+    //  Live security-incident narrative — the highest attacker value
+    //  in the product (what was breached, when, how, what data was
+    //  exposed). Encrypted at rest like Finding.
+    //    - Incident.description — the incident narrative.
+    //    - IncidentNotification.submissionNote — the report text filed
+    //      with the authority (may quote the breach scope verbatim).
+    //      `submissionRef` stays plaintext (authority case ref — a
+    //      load-bearing lookup key, not sensitive content).
+    //    - IncidentTimelineEntry.entry — the forensic narrative log.
+    Incident: ['description'],
+    IncidentNotification: ['submissionNote'],
+    IncidentTimelineEntry: ['entry'],
 } as const;
 
 /** Set of model names with at least one encrypted field. Fast-path check. */

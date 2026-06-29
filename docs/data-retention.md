@@ -33,7 +33,7 @@ covers confidentiality *at rest*; this one covers *lifecycle*.
 | Configuration | 39 | Tenant/org structure, templates, framework reference data, integration + security settings. Lives with the tenant; purged on tenant deletion. |
 | Operational | 24 | Notifications, executions, snapshots, key-sequences, onboarding. No TTL today — prime candidates for time-boxed pruning. |
 | Security ephemeral | 13 | Tokens / sessions / credentials. `expiresAt`-driven; security lifetime, **not** a data-retention conversation. |
-| Regulatory artefact | 3 | `AuditLog`, `OrgAuditLog`, `ReadinessSnapshot` — immutable + hash-chained. Retention is a **legal** decision; we do not delete by default. |
+| Regulatory artefact | 6 | `AuditLog`, `OrgAuditLog`, `ReadinessSnapshot` — immutable + hash-chained. Plus the NIS2 Article 23 incident triad (`Incident`, `IncidentNotification`, `IncidentTimelineEntry`) — incident + regulatory-notification records. Retention is a **legal** decision; we do not delete by default. |
 | PII subject | 2 | `User`, `AuditorAccount` — the GDPR right-to-erasure surface. **Undefined** beyond soft-delete. |
 | Financial | 2 | `BillingAccount`, `BillingEvent` — typically a 7-year regulatory floor; **needs finance input**. |
 
@@ -97,6 +97,10 @@ a `userId` but stores no contact PII).
 | `FrameworkPack` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
 | `FrameworkRequirement` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
 | `FrameworkRequirementOrder` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
+| `Incident` | Regulatory artefact | maybe | None today — indefinite while tenant active; `description` encrypted | NIS2 Article 23 record — retention is a **legal** decision (incident records often have multi-year statutory retention); **needs legal input** |
+| `IncidentNotification` | Regulatory artefact | maybe | None today — cascade on parent incident delete only; `submissionNote` encrypted | The filed Article 23 report + authority case ref — retention tracks the parent incident; **needs legal input** |
+| `IncidentTimelineEntry` | Regulatory artefact | maybe | None today — cascade on parent incident delete only; `entry` encrypted | Forensic incident narrative — retention tracks the parent incident; **needs legal input** |
+| `IncidentEvidence` | Regulatory artefact | No | None today — cascade on parent incident/evidence delete only | Junction linking forensic Evidence to an incident; retention tracks the parent incident + the Evidence record's own retention |
 | `IntegrationConnection` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
 | `IntegrationExecution` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
 | `IntegrationSyncMapping` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |

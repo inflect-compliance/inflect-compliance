@@ -61,6 +61,14 @@ const MIGRATED_PAGES = [
     'frameworks/[frameworkKey]/readiness/Nis2ReadinessClient.tsx',
     'frameworks/[frameworkKey]/self-assessment/page.tsx',
     'frameworks/[frameworkKey]/self-assessment/Nis2SelfAssessmentResume.tsx',
+    // NIS2 Article 23 incident-response surfaces — token-clean from the
+    // start (semantic tokens + EntityListPage/EntityDetailLayout/
+    // StatusBadge/KpiFilterCard/Modal/FormField only; no raw color
+    // utilities, no legacy btn/badge CSS). Promoted on landing rather
+    // than parked in the unmigrated tally.
+    'incidents/page.tsx',
+    'incidents/IncidentsClient.tsx',
+    'incidents/[incidentId]/page.tsx',
 ];
 
 const RAW_COLOR_RE = /\b(?:text|bg|border)-(?:slate|gray|neutral|zinc)-\d{2,3}\b/g;
@@ -253,12 +261,11 @@ describe('New page token discipline', () => {
         //     reuses <Card>/<KPIStat>/<StatusBadge>/<DashboardLayout>);
         //     in the unmigrated tally only because the surface is new
         //     and not yet promoted to MIGRATED_PAGES.
-        //   - 108 (+2): vuln integration (#1309) — vulnerabilities/page.tsx
-        //     + VulnerabilitiesClient.tsx, the matched-CVE list. Token-clean
-        //     (semantic content-*/bg-*/border-* tokens only; EntityListPage +
-        //     FilterToolbar + StatusBadge); in the unmigrated tally only
-        //     because the surface is new and not yet promoted to
-        //     MIGRATED_PAGES.
+        //   - 108 (+2): #1309 NVD CVE feature — vulnerabilities/page.tsx
+        //     + vulnerabilities/VulnerabilitiesClient.tsx. New surfaces
+        //     (built on EntityListPage + FilterToolbar + DataTable) in
+        //     the unmigrated tally only because they aren't yet promoted
+        //     to MIGRATED_PAGES; a #1309 follow-up.
         // Each increment names the epic + page + reason; promotion
         // to MIGRATED_PAGES is the path forward, never silent
         // floor-bumping.

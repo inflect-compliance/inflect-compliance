@@ -31,12 +31,12 @@ const POLICY = 'docs/sub-processor-change-policy.md';
  * a sub-processor" decision.
  */
 const NON_SUBPROCESSOR_ALLOWLIST: Record<string, string> = {
-    // NVD CVE feed (vuln integration). INBOUND public data source — the
-    // nvd-cve-sync job FETCHES the public CVE catalog from NIST; no tenant
-    // data is ever sent to NVD, so it is not a sub-processor. The API key is
-    // an unauthenticated rate-limit token, not a data-sharing credential.
-    NVD_API_KEY: 'inbound public CVE feed (NIST NVD) — no tenant data sent; rate-limit token only',
-    NVD_SYNC_ENABLED: 'feature flag — toggles the NVD CVE sync job (air-gapped installs)',
+    // #1309 NVD CVE feed — NIST's PUBLIC vulnerability database. We PULL
+    // CVE data from it; no customer/personal data is ever sent to NVD, so
+    // it is not a sub-processor. NVD_API_KEY is an optional rate-limit key;
+    // NVD_SYNC_ENABLED is an operator feature flag (not an endpoint).
+    NVD_API_KEY: 'optional rate-limit key for NIST NVD public CVE feed — pull-only, no data sent, not a sub-processor',
+    NVD_SYNC_ENABLED: 'operator feature flag toggling the NVD CVE sync job — not an external endpoint',
     // Internal secrets (env-provided; stored in AWS Secrets Manager, itself listed).
     AUTH_SECRET: 'internal JWT/session signing secret',
     JWT_SECRET: 'internal JWT signing secret',
