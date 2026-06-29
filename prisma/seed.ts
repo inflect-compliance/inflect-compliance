@@ -1172,6 +1172,80 @@ Reviewed at least annually.` },
         });
     }
 
+    // ─── OWASP AISVS v1.0 — AI Security Verification Standard ───
+    // CC-BY-SA-4.0 (OWASP). Inflect stores a REFERENCE INDEX (canonical IDs +
+    // verification levels + paraphrased titles), NOT the verbatim requirement
+    // prose; the full text stays at the OWASP source. metadataJson carries the
+    // OWASP attribution + license the framework picker surfaces. Rides the
+    // generic framework/pack machinery — no AISVS-specific code paths.
+    const aisvsData = require('./fixtures/owasp_aisvs_requirements.json') as Array<{ key: string; section: string; level: string; sortOrder: number; title: string }>;
+    const aisvsMeta = JSON.stringify({
+        locale: 'en',
+        provider: 'OWASP',
+        packager: 'inflect',
+        publicationDate: '2025-05-01',
+        license: 'CC-BY-SA-4.0',
+        sourceUrl: 'https://github.com/OWASP/AISVS',
+        referenceIndexOnly: true,
+        copyright:
+            'OWASP AISVS v1.0 © OWASP Foundation, licensed CC-BY-SA-4.0 ' +
+            '(https://creativecommons.org/licenses/by-sa/4.0/). Source: ' +
+            'https://github.com/OWASP/AISVS. Inflect stores a reference index ' +
+            '(IDs, levels, paraphrased titles) and links to the canonical text.',
+    });
+    const aisvs = await prisma.framework.upsert({
+        where: { key_version: { key: 'OWASP-AISVS', version: '1.0' } },
+        update: { name: 'OWASP AISVS v1.0', kind: 'INDUSTRY_STANDARD', description: 'OWASP AI Security Verification Standard v1.0 — AI-security controls for AI-enabled systems.', metadataJson: aisvsMeta, sourceUrn: 'urn:inflect:library:owasp-aisvs-1.0' },
+        create: { key: 'OWASP-AISVS', name: 'OWASP AISVS v1.0', version: '1.0', kind: 'INDUSTRY_STANDARD', description: 'OWASP AI Security Verification Standard v1.0 — AI-security controls for AI-enabled systems.', metadataJson: aisvsMeta, sourceUrn: 'urn:inflect:library:owasp-aisvs-1.0' },
+    });
+    const aisvsReqMap: Record<string, string> = {};
+    for (const req of aisvsData) {
+        const r = await prisma.frameworkRequirement.upsert({
+            where: { frameworkId_code: { frameworkId: aisvs.id, code: req.key } },
+            update: { title: req.title, section: req.section, sortOrder: req.sortOrder },
+            create: { frameworkId: aisvs.id, code: req.key, title: req.title, section: req.section, category: req.section, sortOrder: req.sortOrder },
+        });
+        aisvsReqMap[req.key] = r.id;
+    }
+    // One control template per AISVS chapter (12), each linked to its chapter's
+    // requirements — keeps the installable pack chapter-scoped.
+    const aisvsChapters = new Map<string, { title: string; reqs: string[] }>();
+    for (const req of aisvsData) {
+        const ch = req.key.split('.')[0]; // 'C1'..'C12'
+        if (!aisvsChapters.has(ch)) aisvsChapters.set(ch, { title: req.section, reqs: [] });
+        aisvsChapters.get(ch)!.reqs.push(req.key);
+    }
+    for (const [ch, info] of aisvsChapters) {
+        const code = `AISVS-${ch}`;
+        const existing = await prisma.controlTemplate.findUnique({ where: { code } });
+        if (!existing) {
+            const tmpl = await prisma.controlTemplate.create({
+                data: { code, title: info.title, category: 'OWASP AISVS', defaultFrequency: 'QUARTERLY' },
+            });
+            for (const task of defaultTasks) {
+                await prisma.controlTemplateTask.create({ data: { templateId: tmpl.id, title: task.title, description: task.description } });
+            }
+            for (const rk of info.reqs) {
+                if (aisvsReqMap[rk]) {
+                    await prisma.controlTemplateRequirementLink.create({ data: { templateId: tmpl.id, requirementId: aisvsReqMap[rk] } }).catch(() => { });
+                }
+            }
+        }
+    }
+    const aisvsTmpls = await prisma.controlTemplate.findMany({ where: { code: { startsWith: 'AISVS-' } } });
+    const aisvsPack = await prisma.frameworkPack.upsert({
+        where: { key: 'AISVS_BASELINE' },
+        update: { name: 'OWASP AISVS Baseline Pack', frameworkId: aisvs.id, version: '1.0' },
+        create: { key: 'AISVS_BASELINE', name: 'OWASP AISVS Baseline Pack', frameworkId: aisvs.id, version: '1.0', description: 'OWASP AISVS v1.0 AI-security controls across all 12 chapters.' },
+    });
+    for (const tmpl of aisvsTmpls) {
+        await prisma.packTemplateLink.upsert({
+            where: { packId_templateId: { packId: aisvsPack.id, templateId: tmpl.id } },
+            create: { packId: aisvsPack.id, templateId: tmpl.id }, update: {},
+        });
+    }
+    console.log(`✅ OWASP AISVS framework + ${aisvsData.length} requirements + ${aisvsChapters.size} chapter packs seeded`);
+
     // ISO 9001 Pack
     const iso9001Tmpls = await prisma.controlTemplate.findMany({ where: { code: { startsWith: 'QMS-' } } });
     const iso9001Pack = await prisma.frameworkPack.upsert({

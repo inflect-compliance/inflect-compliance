@@ -1,0 +1,104 @@
+# Cross-Framework Mapping Set: OWASP AISVS v1.0 → ISO/IEC 27001:2022
+# Data-driven mapping file for the RequirementMapping ingestion pipeline.
+#
+# Maps OWASP AISVS v1.0 AI-security requirements to ISO/IEC 27001:2022 Annex A
+# controls. AISVS's technical requirements (integrity, access control, logging,
+# change management, malware defense, cryptography, supplier/supply-chain) land
+# largely on the A.8 technological controls, with a few A.5 organizational ones.
+#
+# Provenance: every entry is [curated] — these crosswalks are Inflect's own
+# judgement of conceptual alignment, NOT part of the OWASP AISVS standard.
+# Mappings are structural guidance, not compliance guarantees.
+#
+# Refs use the YAML library ref_ids: AISVS C<ch>.<sec>.<req> (source) and ISO
+# Annex A control ids (target). Only Annex A controls present in
+# iso27001-2022.yaml are referenced.
+
+urn: urn:inflect:mappingset:aisvs-to-iso27001
+name: "OWASP AISVS v1.0 → ISO/IEC 27001:2022"
+description: >
+  Cross-framework traceability between OWASP AISVS v1.0 AI-security
+  requirements and ISO/IEC 27001:2022 Annex A controls. Curated alignment,
+  not a compliance guarantee.
+version: 1
+source_framework_ref: AISVS-1.0
+target_framework_ref: ISO27001-2022
+
+mapping_entries:
+  # ─── Asset inventory ─────────────────────────────────────────────
+  - source_ref: C1.1.2
+    target_ref: A.5.9
+    strength: INTERSECT
+    rationale: "[curated] An inventory of training-data sources is an inventory of information and associated assets (A.5.9)."
+  - source_ref: C3.1.1
+    target_ref: A.5.9
+    strength: INTERSECT
+    rationale: "[curated] An inventory of deployed model artifacts extends the asset inventory (A.5.9)."
+
+  # ─── Identity & access ───────────────────────────────────────────
+  - source_ref: C5.1.1
+    target_ref: A.8.5
+    strength: INTERSECT
+    rationale: "[curated] Step-up authentication for high-risk AI operations is secure authentication (A.8.5)."
+  - source_ref: C5.2.1
+    target_ref: A.8.2
+    strength: INTERSECT
+    rationale: "[curated] Default-deny authorization on AI resources aligns with privileged access rights (A.8.2)."
+  - source_ref: C5.3.1
+    target_ref: A.8.2
+    strength: RELATED
+    rationale: "[curated] Preventing cross-tenant interference depends on strict access-rights segregation (A.8.2)."
+
+  # ─── Cryptography & integrity ────────────────────────────────────
+  - source_ref: C1.1.3
+    target_ref: A.8.24
+    strength: INTERSECT
+    rationale: "[curated] Protecting training-data integrity in transit/storage uses cryptography (A.8.24)."
+  - source_ref: C4.3.4
+    target_ref: A.8.24
+    strength: RELATED
+    rationale: "[curated] Encrypting model weights with hardware-backed keys is use of cryptography (A.8.24)."
+
+  # ─── Malware / poisoning defense ─────────────────────────────────
+  - source_ref: C1.3.1
+    target_ref: A.8.7
+    strength: RELATED
+    rationale: "[curated] Detecting training-data poisoning parallels protection against malware (A.8.7)."
+  - source_ref: C6.1.1
+    target_ref: A.8.7
+    strength: INTERSECT
+    rationale: "[curated] Scanning imported models for malicious code is protection against malware (A.8.7)."
+
+  # ─── Change management ───────────────────────────────────────────
+  - source_ref: C3.3.1
+    target_ref: A.8.32
+    strength: INTERSECT
+    rationale: "[curated] Staged rollout with rollback is change management (A.8.32)."
+  - source_ref: C3.3.2
+    target_ref: A.8.13
+    strength: RELATED
+    rationale: "[curated] Restoring complete model state on rollback relies on information backup (A.8.13)."
+
+  # ─── Logging & monitoring ────────────────────────────────────────
+  - source_ref: C12.1.1
+    target_ref: A.8.15
+    strength: EQUAL
+    rationale: "[curated] Logging AI interactions is logging (A.8.15)."
+  - source_ref: C12.2.1
+    target_ref: A.8.15
+    strength: RELATED
+    rationale: "[curated] Detecting jailbreak/injection attempts builds on logging and monitoring (A.8.15)."
+
+  # ─── Vulnerability mgmt, incidents, supply chain ─────────────────
+  - source_ref: C11.1.3
+    target_ref: A.8.8
+    strength: RELATED
+    rationale: "[curated] Evaluating models against adversarial techniques is management of technical vulnerabilities (A.8.8)."
+  - source_ref: C9.6.1
+    target_ref: A.5.24
+    strength: RELATED
+    rationale: "[curated] A kill-switch supports information-security incident management planning (A.5.24)."
+  - source_ref: C6.2.1
+    target_ref: A.5.19
+    strength: RELATED
+    rationale: "[curated] Publishing an AI BOM supports information security in supplier relationships (A.5.19)."
