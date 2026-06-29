@@ -1,0 +1,1339 @@
+[
+  {
+    "key": "C1.1.1",
+    "section": "C1 Training Data Integrity & Traceability",
+    "level": "L1",
+    "sortOrder": 0,
+    "title": "Training data limited to necessary features"
+  },
+  {
+    "key": "C1.1.2",
+    "section": "C1 Training Data Integrity & Traceability",
+    "level": "L2",
+    "sortOrder": 1,
+    "title": "Inventory all training data sources and origins"
+  },
+  {
+    "key": "C1.1.3",
+    "section": "C1 Training Data Integrity & Traceability",
+    "level": "L2",
+    "sortOrder": 2,
+    "title": "Protect data integrity in storage and transfer"
+  },
+  {
+    "key": "C1.1.4",
+    "section": "C1 Training Data Integrity & Traceability",
+    "level": "L2",
+    "sortOrder": 3,
+    "title": "Monitor data for unauthorized modification or corruption"
+  },
+  {
+    "key": "C1.1.5",
+    "section": "C1 Training Data Integrity & Traceability",
+    "level": "L3",
+    "sortOrder": 4,
+    "title": "Watermark datasets to support attribution"
+  },
+  {
+    "key": "C1.2.1",
+    "section": "C1 Training Data Integrity & Traceability",
+    "level": "L1",
+    "sortOrder": 5,
+    "title": "Restrict labeling platform access by role"
+  },
+  {
+    "key": "C1.2.2",
+    "section": "C1 Training Data Integrity & Traceability",
+    "level": "L2",
+    "sortOrder": 6,
+    "title": "Apply cryptographic integrity to labeling artifacts"
+  },
+  {
+    "key": "C1.2.3",
+    "section": "C1 Training Data Integrity & Traceability",
+    "level": "L2",
+    "sortOrder": 7,
+    "title": "Redact or encrypt sensitive data in labels"
+  },
+  {
+    "key": "C1.3.1",
+    "section": "C1 Training Data Integrity & Traceability",
+    "level": "L2",
+    "sortOrder": 8,
+    "title": "Detect data poisoning in training pipelines"
+  },
+  {
+    "key": "C1.3.2",
+    "section": "C1 Training Data Integrity & Traceability",
+    "level": "L2",
+    "sortOrder": 9,
+    "title": "Apply confidence thresholds to auto-generated labels"
+  },
+  {
+    "key": "C1.3.3",
+    "section": "C1 Training Data Integrity & Traceability",
+    "level": "L2",
+    "sortOrder": 10,
+    "title": "Evaluate models for bias in decisions"
+  },
+  {
+    "key": "C1.3.4",
+    "section": "C1 Training Data Integrity & Traceability",
+    "level": "L2",
+    "sortOrder": 11,
+    "title": "Remove disallowed content before training"
+  },
+  {
+    "key": "C1.3.5",
+    "section": "C1 Training Data Integrity & Traceability",
+    "level": "L3",
+    "sortOrder": 12,
+    "title": "Defend against clean-label poisoning attacks"
+  },
+  {
+    "key": "C2.1.1",
+    "section": "C2 Input Validation",
+    "level": "L1",
+    "sortOrder": 13,
+    "title": "Normalize input before tokenization"
+  },
+  {
+    "key": "C2.1.2",
+    "section": "C2 Input Validation",
+    "level": "L1",
+    "sortOrder": 14,
+    "title": "Mitigate encoding and representation smuggling"
+  },
+  {
+    "key": "C2.1.3",
+    "section": "C2 Input Validation",
+    "level": "L1",
+    "sortOrder": 15,
+    "title": "Screen untrusted input with injection detection"
+  },
+  {
+    "key": "C2.1.4",
+    "section": "C2 Input Validation",
+    "level": "L1",
+    "sortOrder": 16,
+    "title": "Reject input exceeding context-window limits"
+  },
+  {
+    "key": "C2.1.5",
+    "section": "C2 Input Validation",
+    "level": "L1",
+    "sortOrder": 17,
+    "title": "Restrict character sets via allowlist"
+  },
+  {
+    "key": "C2.1.6",
+    "section": "C2 Input Validation",
+    "level": "L2",
+    "sortOrder": 18,
+    "title": "Enforce instruction hierarchy protecting system messages"
+  },
+  {
+    "key": "C2.1.7",
+    "section": "C2 Input Validation",
+    "level": "L2",
+    "sortOrder": 19,
+    "title": "Encode reserved tokens as literal characters"
+  },
+  {
+    "key": "C2.1.8",
+    "section": "C2 Input Validation",
+    "level": "L3",
+    "sortOrder": 20,
+    "title": "Detect many-shot jailbreak patterns"
+  },
+  {
+    "key": "C2.2.1",
+    "section": "C2 Input Validation",
+    "level": "L1",
+    "sortOrder": 21,
+    "title": "Score prompts for harmful content against thresholds"
+  },
+  {
+    "key": "C2.2.2",
+    "section": "C2 Input Validation",
+    "level": "L1",
+    "sortOrder": 22,
+    "title": "Evaluate classification for unsupported languages"
+  },
+  {
+    "key": "C2.2.3",
+    "section": "C2 Input Validation",
+    "level": "L2",
+    "sortOrder": 23,
+    "title": "Check non-text input for adversarial attacks"
+  },
+  {
+    "key": "C2.2.4",
+    "section": "C2 Input Validation",
+    "level": "L3",
+    "sortOrder": 24,
+    "title": "Detect coordinated multi-modal input attacks"
+  },
+  {
+    "key": "C3.1.1",
+    "section": "C3 Model Lifecycle Management & Change Control",
+    "level": "L1",
+    "sortOrder": 25,
+    "title": "Maintain inventory of deployed model artifacts"
+  },
+  {
+    "key": "C3.1.2",
+    "section": "C3 Model Lifecycle Management & Change Control",
+    "level": "L2",
+    "sortOrder": 26,
+    "title": "Cryptographically sign all model artifacts"
+  },
+  {
+    "key": "C3.1.3",
+    "section": "C3 Model Lifecycle Management & Change Control",
+    "level": "L2",
+    "sortOrder": 27,
+    "title": "Verify signatures at deployment and load"
+  },
+  {
+    "key": "C3.2.1",
+    "section": "C3 Model Lifecycle Management & Change Control",
+    "level": "L1",
+    "sortOrder": 28,
+    "title": "Run automated safety and validation testing"
+  },
+  {
+    "key": "C3.2.2",
+    "section": "C3 Model Lifecycle Management & Change Control",
+    "level": "L2",
+    "sortOrder": 29,
+    "title": "Re-evaluate quantized models against safety suite"
+  },
+  {
+    "key": "C3.2.3",
+    "section": "C3 Model Lifecycle Management & Change Control",
+    "level": "L3",
+    "sortOrder": 30,
+    "title": "Re-test security when models change"
+  },
+  {
+    "key": "C3.3.1",
+    "section": "C3 Model Lifecycle Management & Change Control",
+    "level": "L2",
+    "sortOrder": 31,
+    "title": "Stage rollouts with automated rollback triggers"
+  },
+  {
+    "key": "C3.3.2",
+    "section": "C3 Model Lifecycle Management & Change Control",
+    "level": "L2",
+    "sortOrder": 32,
+    "title": "Restore complete model state on rollback"
+  },
+  {
+    "key": "C3.3.3",
+    "section": "C3 Model Lifecycle Management & Change Control",
+    "level": "L2",
+    "sortOrder": 33,
+    "title": "Isolate runtime state across parallel versions"
+  },
+  {
+    "key": "C3.4.1",
+    "section": "C3 Model Lifecycle Management & Change Control",
+    "level": "L1",
+    "sortOrder": 34,
+    "title": "Separate AI runtime across environment boundaries"
+  },
+  {
+    "key": "C3.4.2",
+    "section": "C3 Model Lifecycle Management & Change Control",
+    "level": "L2",
+    "sortOrder": 35,
+    "title": "Isolate training from production environments"
+  },
+  {
+    "key": "C3.5.1",
+    "section": "C3 Model Lifecycle Management & Change Control",
+    "level": "L2",
+    "sortOrder": 36,
+    "title": "Version and verify models before RLHF"
+  },
+  {
+    "key": "C3.5.2",
+    "section": "C3 Model Lifecycle Management & Change Control",
+    "level": "L3",
+    "sortOrder": 37,
+    "title": "Detect reward hacking during RLHF"
+  },
+  {
+    "key": "C3.5.3",
+    "section": "C3 Model Lifecycle Management & Change Control",
+    "level": "L3",
+    "sortOrder": 38,
+    "title": "Verify output integrity between pipeline stages"
+  },
+  {
+    "key": "C3.5.4",
+    "section": "C3 Model Lifecycle Management & Change Control",
+    "level": "L3",
+    "sortOrder": 39,
+    "title": "Register fine-tuning checkpoints as artifacts"
+  },
+  {
+    "key": "C4.1.1",
+    "section": "C4 Infrastructure, Configuration & Deployment Security",
+    "level": "L1",
+    "sortOrder": 40,
+    "title": "Execute models within isolated sandboxes"
+  },
+  {
+    "key": "C4.1.2",
+    "section": "C4 Infrastructure, Configuration & Deployment Security",
+    "level": "L1",
+    "sortOrder": 41,
+    "title": "Restrict model-loading serialization formats safely"
+  },
+  {
+    "key": "C4.1.3",
+    "section": "C4 Infrastructure, Configuration & Deployment Security",
+    "level": "L3",
+    "sortOrder": 42,
+    "title": "Attest execution-environment integrity for workloads"
+  },
+  {
+    "key": "C4.1.4",
+    "section": "C4 Infrastructure, Configuration & Deployment Security",
+    "level": "L3",
+    "sortOrder": 43,
+    "title": "Protect model weights with confidential inference"
+  },
+  {
+    "key": "C4.2.1",
+    "section": "C4 Infrastructure, Configuration & Deployment Security",
+    "level": "L2",
+    "sortOrder": 44,
+    "title": "Pin, sign, and attest GPU firmware"
+  },
+  {
+    "key": "C4.2.2",
+    "section": "C4 Infrastructure, Configuration & Deployment Security",
+    "level": "L3",
+    "sortOrder": 45,
+    "title": "Use TEE for isolation and memory encryption"
+  },
+  {
+    "key": "C4.2.3",
+    "section": "C4 Infrastructure, Configuration & Deployment Security",
+    "level": "L3",
+    "sortOrder": 46,
+    "title": "Validate GPU integrity via attestation before workloads"
+  },
+  {
+    "key": "C4.2.4",
+    "section": "C4 Infrastructure, Configuration & Deployment Security",
+    "level": "L3",
+    "sortOrder": 47,
+    "title": "Isolate and sanitize GPU memory between workloads"
+  },
+  {
+    "key": "C4.2.5",
+    "section": "C4 Infrastructure, Configuration & Deployment Security",
+    "level": "L3",
+    "sortOrder": 48,
+    "title": "Restrict accelerator interconnects to approved topologies"
+  },
+  {
+    "key": "C4.3.1",
+    "section": "C4 Infrastructure, Configuration & Deployment Security",
+    "level": "L1",
+    "sortOrder": 49,
+    "title": "Authenticate edge devices with strong mechanisms"
+  },
+  {
+    "key": "C4.3.2",
+    "section": "C4 Infrastructure, Configuration & Deployment Security",
+    "level": "L2",
+    "sortOrder": 50,
+    "title": "Sign models before edge deployment"
+  },
+  {
+    "key": "C4.3.3",
+    "section": "C4 Infrastructure, Configuration & Deployment Security",
+    "level": "L3",
+    "sortOrder": 51,
+    "title": "Enforce process and memory isolation at inference"
+  },
+  {
+    "key": "C4.3.4",
+    "section": "C4 Infrastructure, Configuration & Deployment Security",
+    "level": "L3",
+    "sortOrder": 52,
+    "title": "Encrypt model weights with hardware-backed keys"
+  },
+  {
+    "key": "C4.3.5",
+    "section": "C4 Infrastructure, Configuration & Deployment Security",
+    "level": "L3",
+    "sortOrder": 53,
+    "title": "Encrypt mobile models at rest, decrypt securely"
+  },
+  {
+    "key": "C5.1.1",
+    "section": "C5 Access Control & Identity for AI Components & Users",
+    "level": "L3",
+    "sortOrder": 54,
+    "title": "Require step-up auth for high-risk AI operations"
+  },
+  {
+    "key": "C5.1.2",
+    "section": "C5 Access Control & Identity for AI Components & Users",
+    "level": "L3",
+    "sortOrder": 55,
+    "title": "Use short-lived tokens for federated agents"
+  },
+  {
+    "key": "C5.2.1",
+    "section": "C5 Access Control & Identity for AI Components & Users",
+    "level": "L2",
+    "sortOrder": 56,
+    "title": "Enforce default-deny allow-lists on AI resources"
+  },
+  {
+    "key": "C5.2.2",
+    "section": "C5 Access Control & Identity for AI Components & Users",
+    "level": "L2",
+    "sortOrder": 57,
+    "title": "Apply end-user authorization context in retrieval"
+  },
+  {
+    "key": "C5.2.3",
+    "section": "C5 Access Control & Identity for AI Components & Users",
+    "level": "L2",
+    "sortOrder": 58,
+    "title": "Retrieve sensitive data without permanent storage"
+  },
+  {
+    "key": "C5.2.4",
+    "section": "C5 Access Control & Identity for AI Components & Users",
+    "level": "L2",
+    "sortOrder": 59,
+    "title": "Filter outputs to block unauthorized data exposure"
+  },
+  {
+    "key": "C5.2.5",
+    "section": "C5 Access Control & Identity for AI Components & Users",
+    "level": "L2",
+    "sortOrder": 60,
+    "title": "Isolate authorization decisions from agent execution"
+  },
+  {
+    "key": "C5.2.6",
+    "section": "C5 Access Control & Identity for AI Components & Users",
+    "level": "L3",
+    "sortOrder": 61,
+    "title": "Grant privileged access just-in-time with expiry"
+  },
+  {
+    "key": "C5.2.7",
+    "section": "C5 Access Control & Identity for AI Components & Users",
+    "level": "L3",
+    "sortOrder": 62,
+    "title": "Propagate classification labels to downstream resources"
+  },
+  {
+    "key": "C5.3.1",
+    "section": "C5 Access Control & Identity for AI Components & Users",
+    "level": "L2",
+    "sortOrder": 63,
+    "title": "Prevent cross-tenant fine-tuning interference"
+  },
+  {
+    "key": "C5.3.2",
+    "section": "C5 Access Control & Identity for AI Components & Users",
+    "level": "L3",
+    "sortOrder": 64,
+    "title": "Prevent cross-tenant observation on shared compute"
+  },
+  {
+    "key": "C6.1.1",
+    "section": "C6 Supply Chain Security for Models",
+    "level": "L1",
+    "sortOrder": 65,
+    "title": "Scan models for malicious code before import"
+  },
+  {
+    "key": "C6.1.2",
+    "section": "C6 Supply Chain Security for Models",
+    "level": "L1",
+    "sortOrder": 66,
+    "title": "Download artifacts only from approved sources"
+  },
+  {
+    "key": "C6.1.3",
+    "section": "C6 Supply Chain Security for Models",
+    "level": "L2",
+    "sortOrder": 67,
+    "title": "Make third-party artifacts integrity-verifiable"
+  },
+  {
+    "key": "C6.1.4",
+    "section": "C6 Supply Chain Security for Models",
+    "level": "L2",
+    "sortOrder": 68,
+    "title": "Behaviorally test models before non-dev deployment"
+  },
+  {
+    "key": "C6.2.1",
+    "section": "C6 Supply Chain Security for Models",
+    "level": "L1",
+    "sortOrder": 69,
+    "title": "Publish version-controlled machine-readable AI BOMs"
+  },
+  {
+    "key": "C6.2.2",
+    "section": "C6 Supply Chain Security for Models",
+    "level": "L2",
+    "sortOrder": 70,
+    "title": "Sign AI BOMs before deployment"
+  },
+  {
+    "key": "C6.2.3",
+    "section": "C6 Supply Chain Security for Models",
+    "level": "L2",
+    "sortOrder": 71,
+    "title": "Fail builds on incomplete component metadata"
+  },
+  {
+    "key": "C7.1.1",
+    "section": "C7 Model Behavior, Output Control & Safety Assurance",
+    "level": "L1",
+    "sortOrder": 72,
+    "title": "Validate outputs against a defined schema"
+  },
+  {
+    "key": "C7.1.2",
+    "section": "C7 Model Behavior, Output Control & Safety Assurance",
+    "level": "L1",
+    "sortOrder": 73,
+    "title": "Enforce length limits and termination controls"
+  },
+  {
+    "key": "C7.2.1",
+    "section": "C7 Model Behavior, Output Control & Safety Assurance",
+    "level": "L2",
+    "sortOrder": 74,
+    "title": "Estimate answer reliability via confidence scoring"
+  },
+  {
+    "key": "C7.2.2",
+    "section": "C7 Model Behavior, Output Control & Safety Assurance",
+    "level": "L2",
+    "sortOrder": 75,
+    "title": "Block or fall back on low-confidence answers"
+  },
+  {
+    "key": "C7.2.3",
+    "section": "C7 Model Behavior, Output Control & Safety Assurance",
+    "level": "L3",
+    "sortOrder": 76,
+    "title": "Verify high-risk policy-flagged responses"
+  },
+  {
+    "key": "C7.3.1",
+    "section": "C7 Model Behavior, Output Control & Safety Assurance",
+    "level": "L1",
+    "sortOrder": 77,
+    "title": "Scan responses and block harmful content"
+  },
+  {
+    "key": "C7.3.2",
+    "section": "C7 Model Behavior, Output Control & Safety Assurance",
+    "level": "L2",
+    "sortOrder": 78,
+    "title": "Filter system prompts and backend data from output"
+  },
+  {
+    "key": "C7.3.3",
+    "section": "C7 Model Behavior, Output Control & Safety Assurance",
+    "level": "L2",
+    "sortOrder": 79,
+    "title": "Prevent outputs triggering outbound requests"
+  },
+  {
+    "key": "C7.3.4",
+    "section": "C7 Model Behavior, Output Control & Safety Assurance",
+    "level": "L3",
+    "sortOrder": 80,
+    "title": "Detect hidden, encoded, or misleading content"
+  },
+  {
+    "key": "C7.4.1",
+    "section": "C7 Model Behavior, Output Control & Safety Assurance",
+    "level": "L1",
+    "sortOrder": 81,
+    "title": "Include source attribution in RAG responses"
+  },
+  {
+    "key": "C7.4.2",
+    "section": "C7 Model Behavior, Output Control & Safety Assurance",
+    "level": "L1",
+    "sortOrder": 82,
+    "title": "Derive attributions from retrieval metadata"
+  },
+  {
+    "key": "C7.4.3",
+    "section": "C7 Model Behavior, Output Control & Safety Assurance",
+    "level": "L2",
+    "sortOrder": 83,
+    "title": "Trace claims to retrieved content chunks"
+  },
+  {
+    "key": "C7.4.4",
+    "section": "C7 Model Behavior, Output Control & Safety Assurance",
+    "level": "L3",
+    "sortOrder": 84,
+    "title": "Watermark generated media as AI-created"
+  },
+  {
+    "key": "C8.1.1",
+    "section": "C8 Memory, Embeddings & Vector Database Security",
+    "level": "L1",
+    "sortOrder": 85,
+    "title": "Enforce per-tenant uniqueness on vector identifiers"
+  },
+  {
+    "key": "C8.1.2",
+    "section": "C8 Memory, Embeddings & Vector Database Security",
+    "level": "L2",
+    "sortOrder": 86,
+    "title": "Keep document metadata tags immutable post-write"
+  },
+  {
+    "key": "C8.1.3",
+    "section": "C8 Memory, Embeddings & Vector Database Security",
+    "level": "L2",
+    "sortOrder": 87,
+    "title": "Enforce scope constraints on retrieval operations"
+  },
+  {
+    "key": "C8.2.1",
+    "section": "C8 Memory, Embeddings & Vector Database Security",
+    "level": "L1",
+    "sortOrder": 88,
+    "title": "Mask sensitive fields before vectorization"
+  },
+  {
+    "key": "C8.2.2",
+    "section": "C8 Memory, Embeddings & Vector Database Security",
+    "level": "L2",
+    "sortOrder": 89,
+    "title": "Flag and quarantine anomalous vectors"
+  },
+  {
+    "key": "C8.2.3",
+    "section": "C8 Memory, Embeddings & Vector Database Security",
+    "level": "L2",
+    "sortOrder": 90,
+    "title": "Validate agent outputs before trusted storage"
+  },
+  {
+    "key": "C8.2.4",
+    "section": "C8 Memory, Embeddings & Vector Database Security",
+    "level": "L3",
+    "sortOrder": 91,
+    "title": "Detect retrieval-manipulation content early"
+  },
+  {
+    "key": "C8.2.5",
+    "section": "C8 Memory, Embeddings & Vector Database Security",
+    "level": "L3",
+    "sortOrder": 92,
+    "title": "Check new content for storage contradictions"
+  },
+  {
+    "key": "C8.3.1",
+    "section": "C8 Memory, Embeddings & Vector Database Security",
+    "level": "L2",
+    "sortOrder": 93,
+    "title": "Exclude expired vectors from retrieval"
+  },
+  {
+    "key": "C8.3.2",
+    "section": "C8 Memory, Embeddings & Vector Database Security",
+    "level": "L2",
+    "sortOrder": 94,
+    "title": "Provide a memory reset capability"
+  },
+  {
+    "key": "C8.3.3",
+    "section": "C8 Memory, Embeddings & Vector Database Security",
+    "level": "L3",
+    "sortOrder": 95,
+    "title": "Retain quarantined content but keep inaccessible"
+  },
+  {
+    "key": "C9.1.1",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L1",
+    "sortOrder": 96,
+    "title": "Enforce per-tool quotas and timeouts"
+  },
+  {
+    "key": "C9.1.2",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L1",
+    "sortOrder": 97,
+    "title": "Configure and enforce per-execution budgets"
+  },
+  {
+    "key": "C9.1.3",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L2",
+    "sortOrder": 98,
+    "title": "Provide a swarm-level kill-switch"
+  },
+  {
+    "key": "C9.2.1",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L1",
+    "sortOrder": 99,
+    "title": "Block privileged actions until human approval"
+  },
+  {
+    "key": "C9.2.2",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L2",
+    "sortOrder": 100,
+    "title": "Display full action parameters without truncation"
+  },
+  {
+    "key": "C9.2.3",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L2",
+    "sortOrder": 101,
+    "title": "Classify actions by reversibility impact"
+  },
+  {
+    "key": "C9.2.4",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L2",
+    "sortOrder": 102,
+    "title": "Enforce reversibility classifications at runtime"
+  },
+  {
+    "key": "C9.2.5",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L2",
+    "sortOrder": 103,
+    "title": "Bound self-modification capabilities"
+  },
+  {
+    "key": "C9.2.6",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L2",
+    "sortOrder": 104,
+    "title": "Add AI-augmented review before high-risk execution"
+  },
+  {
+    "key": "C9.2.7",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L2",
+    "sortOrder": 105,
+    "title": "Protect AI review from prompt-injection manipulation"
+  },
+  {
+    "key": "C9.2.8",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L3",
+    "sortOrder": 106,
+    "title": "Cryptographically bind approvals to action context"
+  },
+  {
+    "key": "C9.2.9",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L3",
+    "sortOrder": 107,
+    "title": "Isolate approval credentials from agent runtime"
+  },
+  {
+    "key": "C9.2.10",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L3",
+    "sortOrder": 108,
+    "title": "Apply highest-impact classification to action chains"
+  },
+  {
+    "key": "C9.3.1",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L1",
+    "sortOrder": 109,
+    "title": "Execute tools in least-privilege sandboxes"
+  },
+  {
+    "key": "C9.3.2",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L1",
+    "sortOrder": 110,
+    "title": "Validate tool outputs against schemas"
+  },
+  {
+    "key": "C9.3.3",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L2",
+    "sortOrder": 111,
+    "title": "Declare privileges and limits in tool manifests"
+  },
+  {
+    "key": "C9.3.4",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L2",
+    "sortOrder": 112,
+    "title": "Enforce manifest requirements at runtime"
+  },
+  {
+    "key": "C9.3.5",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L2",
+    "sortOrder": 113,
+    "title": "Isolate untrusted data from tool-calling"
+  },
+  {
+    "key": "C9.3.6",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L2",
+    "sortOrder": 114,
+    "title": "Separate untrusted tool outputs from agent ops"
+  },
+  {
+    "key": "C9.3.7",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L2",
+    "sortOrder": 115,
+    "title": "Verify external resources against allow-list"
+  },
+  {
+    "key": "C9.3.8",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L3",
+    "sortOrder": 116,
+    "title": "Auto-contain tools on policy violations"
+  },
+  {
+    "key": "C9.4.1",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L2",
+    "sortOrder": 117,
+    "title": "Assign unique cryptographic identity per agent"
+  },
+  {
+    "key": "C9.4.2",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L2",
+    "sortOrder": 118,
+    "title": "Bind actions to the execution chain"
+  },
+  {
+    "key": "C9.4.3",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L3",
+    "sortOrder": 119,
+    "title": "Rotate agent identity credentials on schedule"
+  },
+  {
+    "key": "C9.4.4",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L3",
+    "sortOrder": 120,
+    "title": "Integrity-protect agent state between invocations"
+  },
+  {
+    "key": "C9.5.1",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L2",
+    "sortOrder": 121,
+    "title": "Enforce fine-grained tool and parameter policies"
+  },
+  {
+    "key": "C9.5.2",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L2",
+    "sortOrder": 122,
+    "title": "Propagate scope-limited authorization tokens downstream"
+  },
+  {
+    "key": "C9.5.3",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L2",
+    "sortOrder": 123,
+    "title": "Enforce access control via policy engine"
+  },
+  {
+    "key": "C9.5.4",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L2",
+    "sortOrder": 124,
+    "title": "Hide secrets from model context and parameters"
+  },
+  {
+    "key": "C9.5.5",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L2",
+    "sortOrder": 125,
+    "title": "Restrict inter-agent delegation by policy"
+  },
+  {
+    "key": "C9.5.6",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L3",
+    "sortOrder": 126,
+    "title": "Re-evaluate backend authorization on privileged actions"
+  },
+  {
+    "key": "C9.6.1",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L1",
+    "sortOrder": 127,
+    "title": "Provide a manual inference kill-switch"
+  },
+  {
+    "key": "C9.6.2",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L2",
+    "sortOrder": 128,
+    "title": "Block actions when approval deadline expires"
+  },
+  {
+    "key": "C9.6.3",
+    "section": "C9 Orchestration & Agentic Security",
+    "level": "L3",
+    "sortOrder": 129,
+    "title": "Provide kill-switch via out-of-band channel"
+  },
+  {
+    "key": "C10.1.1",
+    "section": "C10 Model Context Protocol (MCP) Security",
+    "level": "L1",
+    "sortOrder": 130,
+    "title": "Obtain MCP components from verified trusted sources"
+  },
+  {
+    "key": "C10.1.2",
+    "section": "C10 Model Context Protocol (MCP) Security",
+    "level": "L2",
+    "sortOrder": 131,
+    "title": "Permit only allowlisted MCP servers"
+  },
+  {
+    "key": "C10.1.3",
+    "section": "C10 Model Context Protocol (MCP) Security",
+    "level": "L2",
+    "sortOrder": 132,
+    "title": "Sandbox locally launched servers"
+  },
+  {
+    "key": "C10.2.1",
+    "section": "C10 Model Context Protocol (MCP) Security",
+    "level": "L1",
+    "sortOrder": 133,
+    "title": "Validate access tokens per request"
+  },
+  {
+    "key": "C10.2.2",
+    "section": "C10 Model Context Protocol (MCP) Security",
+    "level": "L1",
+    "sortOrder": 134,
+    "title": "Verify token issuer, audience, expiry, scope"
+  },
+  {
+    "key": "C10.2.3",
+    "section": "C10 Model Context Protocol (MCP) Security",
+    "level": "L1",
+    "sortOrder": 135,
+    "title": "Avoid storing access tokens or credentials"
+  },
+  {
+    "key": "C10.2.4",
+    "section": "C10 Model Context Protocol (MCP) Security",
+    "level": "L2",
+    "sortOrder": 136,
+    "title": "List only user-authorized tools"
+  },
+  {
+    "key": "C10.2.5",
+    "section": "C10 Model Context Protocol (MCP) Security",
+    "level": "L2",
+    "sortOrder": 137,
+    "title": "Enforce access control on each tool call"
+  },
+  {
+    "key": "C10.2.6",
+    "section": "C10 Model Context Protocol (MCP) Security",
+    "level": "L2",
+    "sortOrder": 138,
+    "title": "Remove session artifacts on termination"
+  },
+  {
+    "key": "C10.2.7",
+    "section": "C10 Model Context Protocol (MCP) Security",
+    "level": "L2",
+    "sortOrder": 139,
+    "title": "Avoid forwarding client tokens downstream"
+  },
+  {
+    "key": "C10.3.1",
+    "section": "C10 Model Context Protocol (MCP) Security",
+    "level": "L1",
+    "sortOrder": 140,
+    "title": "Use authenticated encrypted HTTP for remote MCP"
+  },
+  {
+    "key": "C10.3.2",
+    "section": "C10 Model Context Protocol (MCP) Security",
+    "level": "L1",
+    "sortOrder": 141,
+    "title": "Restrict stdio transport to controlled environments"
+  },
+  {
+    "key": "C10.3.3",
+    "section": "C10 Model Context Protocol (MCP) Security",
+    "level": "L2",
+    "sortOrder": 142,
+    "title": "Validate Origin and Host headers"
+  },
+  {
+    "key": "C10.3.4",
+    "section": "C10 Model Context Protocol (MCP) Security",
+    "level": "L2",
+    "sortOrder": 143,
+    "title": "Enforce minimum protocol version in responses"
+  },
+  {
+    "key": "C10.3.5",
+    "section": "C10 Model Context Protocol (MCP) Security",
+    "level": "L3",
+    "sortOrder": 144,
+    "title": "Constrain tokens with mTLS or DPoP"
+  },
+  {
+    "key": "C10.4.1",
+    "section": "C10 Model Context Protocol (MCP) Security",
+    "level": "L1",
+    "sortOrder": 145,
+    "title": "Validate responses against declared schemas"
+  },
+  {
+    "key": "C10.4.2",
+    "section": "C10 Model Context Protocol (MCP) Security",
+    "level": "L1",
+    "sortOrder": 146,
+    "title": "Screen responses for indirect prompt injection"
+  },
+  {
+    "key": "C10.4.3",
+    "section": "C10 Model Context Protocol (MCP) Security",
+    "level": "L1",
+    "sortOrder": 147,
+    "title": "Reject unrecognized or oversized parameters"
+  },
+  {
+    "key": "C10.4.4",
+    "section": "C10 Model Context Protocol (MCP) Security",
+    "level": "L2",
+    "sortOrder": 148,
+    "title": "Enforce strict schema validation everywhere"
+  },
+  {
+    "key": "C10.4.5",
+    "section": "C10 Model Context Protocol (MCP) Security",
+    "level": "L2",
+    "sortOrder": 149,
+    "title": "Enforce maximum payload size limits"
+  },
+  {
+    "key": "C10.4.6",
+    "section": "C10 Model Context Protocol (MCP) Security",
+    "level": "L2",
+    "sortOrder": 150,
+    "title": "Sign responses with nonce and timestamp"
+  },
+  {
+    "key": "C10.4.7",
+    "section": "C10 Model Context Protocol (MCP) Security",
+    "level": "L2",
+    "sortOrder": 151,
+    "title": "Present explicit consent at installation"
+  },
+  {
+    "key": "C10.4.8",
+    "section": "C10 Model Context Protocol (MCP) Security",
+    "level": "L3",
+    "sortOrder": 152,
+    "title": "Snapshot tools and re-approve on changes"
+  },
+  {
+    "key": "C11.1.1",
+    "section": "C11 Adversarial Robustness",
+    "level": "L1",
+    "sortOrder": 153,
+    "title": "Run alignment safety training against disallowed content"
+  },
+  {
+    "key": "C11.1.2",
+    "section": "C11 Adversarial Robustness",
+    "level": "L1",
+    "sortOrder": 154,
+    "title": "Run version-controlled alignment tests on updates"
+  },
+  {
+    "key": "C11.1.3",
+    "section": "C11 Adversarial Robustness",
+    "level": "L1",
+    "sortOrder": 155,
+    "title": "Evaluate models against known adversarial techniques"
+  },
+  {
+    "key": "C11.1.4",
+    "section": "C11 Adversarial Robustness",
+    "level": "L2",
+    "sortOrder": 156,
+    "title": "Harden models against adversarial inputs"
+  },
+  {
+    "key": "C11.1.5",
+    "section": "C11 Adversarial Robustness",
+    "level": "L3",
+    "sortOrder": 157,
+    "title": "Track harmful-content regressions automatically"
+  },
+  {
+    "key": "C11.2.1",
+    "section": "C11 Adversarial Robustness",
+    "level": "L1",
+    "sortOrder": 158,
+    "title": "Avoid returning inferred sensitive attributes"
+  },
+  {
+    "key": "C11.2.2",
+    "section": "C11 Adversarial Robustness",
+    "level": "L1",
+    "sortOrder": 159,
+    "title": "Rate-limit per principal against extraction"
+  },
+  {
+    "key": "C11.2.3",
+    "section": "C11 Adversarial Robustness",
+    "level": "L2",
+    "sortOrder": 160,
+    "title": "Calibrate outputs to reduce overconfidence"
+  },
+  {
+    "key": "C11.2.4",
+    "section": "C11 Adversarial Robustness",
+    "level": "L2",
+    "sortOrder": 161,
+    "title": "Apply differential privacy on sensitive training"
+  },
+  {
+    "key": "C11.2.5",
+    "section": "C11 Adversarial Robustness",
+    "level": "L3",
+    "sortOrder": 162,
+    "title": "Simulate membership-inference to random-level accuracy"
+  },
+  {
+    "key": "C11.3.1",
+    "section": "C11 Adversarial Robustness",
+    "level": "L1",
+    "sortOrder": 163,
+    "title": "Feed query-pattern analysis to extraction detector"
+  },
+  {
+    "key": "C11.3.2",
+    "section": "C11 Adversarial Robustness",
+    "level": "L2",
+    "sortOrder": 164,
+    "title": "Calibrate external responses to shield raw outputs"
+  },
+  {
+    "key": "C11.3.3",
+    "section": "C11 Adversarial Robustness",
+    "level": "L3",
+    "sortOrder": 165,
+    "title": "Watermark or fingerprint to identify copies"
+  },
+  {
+    "key": "C11.3.4",
+    "section": "C11 Adversarial Robustness",
+    "level": "L3",
+    "sortOrder": 166,
+    "title": "Respond to detected extraction attempts"
+  },
+  {
+    "key": "C11.4.1",
+    "section": "C11 Adversarial Robustness",
+    "level": "L2",
+    "sortOrder": 167,
+    "title": "Pass untrusted inputs through anomaly detection"
+  },
+  {
+    "key": "C11.4.2",
+    "section": "C11 Adversarial Robustness",
+    "level": "L2",
+    "sortOrder": 168,
+    "title": "Gate actions on flagged anomalies"
+  },
+  {
+    "key": "C11.4.3",
+    "section": "C11 Adversarial Robustness",
+    "level": "L3",
+    "sortOrder": 169,
+    "title": "Route poisoning-detection feedback to human review"
+  },
+  {
+    "key": "C12.1.1",
+    "section": "C12 Monitoring, Logging & Anomaly Detection",
+    "level": "L1",
+    "sortOrder": 170,
+    "title": "Log AI interactions with session context"
+  },
+  {
+    "key": "C12.1.2",
+    "section": "C12 Monitoring, Logging & Anomaly Detection",
+    "level": "L2",
+    "sortOrder": 171,
+    "title": "Log safety filtering and policy decisions"
+  },
+  {
+    "key": "C12.1.3",
+    "section": "C12 Monitoring, Logging & Anomaly Detection",
+    "level": "L2",
+    "sortOrder": 172,
+    "title": "Use a structured schema for inference logs"
+  },
+  {
+    "key": "C12.1.4",
+    "section": "C12 Monitoring, Logging & Anomaly Detection",
+    "level": "L2",
+    "sortOrder": 173,
+    "title": "Log RAG retrieval events with query detail"
+  },
+  {
+    "key": "C12.2.1",
+    "section": "C12 Monitoring, Logging & Anomaly Detection",
+    "level": "L1",
+    "sortOrder": 174,
+    "title": "Detect jailbreak and prompt-injection attempts"
+  },
+  {
+    "key": "C12.2.2",
+    "section": "C12 Monitoring, Logging & Anomaly Detection",
+    "level": "L2",
+    "sortOrder": 175,
+    "title": "Identify unusual conversation and probing patterns"
+  },
+  {
+    "key": "C12.2.3",
+    "section": "C12 Monitoring, Logging & Anomaly Detection",
+    "level": "L2",
+    "sortOrder": 176,
+    "title": "Detect AI-specific threats with custom rules"
+  },
+  {
+    "key": "C12.2.4",
+    "section": "C12 Monitoring, Logging & Anomaly Detection",
+    "level": "L2",
+    "sortOrder": 177,
+    "title": "Include offending query metadata in alerts"
+  },
+  {
+    "key": "C12.2.5",
+    "section": "C12 Monitoring, Logging & Anomaly Detection",
+    "level": "L2",
+    "sortOrder": 178,
+    "title": "Track token usage at granular attribution"
+  },
+  {
+    "key": "C12.2.6",
+    "section": "C12 Monitoring, Logging & Anomaly Detection",
+    "level": "L3",
+    "sortOrder": 179,
+    "title": "Monitor traffic for covert-channel indicators"
+  },
+  {
+    "key": "C12.3.1",
+    "section": "C12 Monitoring, Logging & Anomaly Detection",
+    "level": "L1",
+    "sortOrder": 180,
+    "title": "Monitor input-distribution changes with validated methods"
+  },
+  {
+    "key": "C12.3.2",
+    "section": "C12 Monitoring, Logging & Anomaly Detection",
+    "level": "L2",
+    "sortOrder": 181,
+    "title": "Detect and flag hallucinations in outputs"
+  },
+  {
+    "key": "C12.3.3",
+    "section": "C12 Monitoring, Logging & Anomaly Detection",
+    "level": "L2",
+    "sortOrder": 182,
+    "title": "Track hallucination rates as time-series"
+  },
+  {
+    "key": "C12.3.4",
+    "section": "C12 Monitoring, Logging & Anomaly Detection",
+    "level": "L3",
+    "sortOrder": 183,
+    "title": "Distinguish behavioral shifts from expected drift"
+  },
+  {
+    "key": "C12.4.1",
+    "section": "C12 Monitoring, Logging & Anomaly Detection",
+    "level": "L2",
+    "sortOrder": 184,
+    "title": "Analyze proactive behavior before action execution"
+  },
+  {
+    "key": "C12.4.2",
+    "section": "C12 Monitoring, Logging & Anomaly Detection",
+    "level": "L2",
+    "sortOrder": 185,
+    "title": "Audit-log security-critical actions with approver"
+  },
+  {
+    "key": "C12.4.3",
+    "section": "C12 Monitoring, Logging & Anomaly Detection",
+    "level": "L2",
+    "sortOrder": 186,
+    "title": "Log kill-switch activations and overrides"
+  },
+  {
+    "key": "C12.5.1",
+    "section": "C12 Monitoring, Logging & Anomaly Detection",
+    "level": "L1",
+    "sortOrder": 187,
+    "title": "Record dataset lineage and transformations"
+  },
+  {
+    "key": "C12.5.2",
+    "section": "C12 Monitoring, Logging & Anomaly Detection",
+    "level": "L1",
+    "sortOrder": 188,
+    "title": "Log all labeling activities"
+  },
+  {
+    "key": "C12.5.3",
+    "section": "C12 Monitoring, Logging & Anomaly Detection",
+    "level": "L2",
+    "sortOrder": 189,
+    "title": "Generate immutable audit records for model changes"
+  },
+  {
+    "key": "C12.5.4",
+    "section": "C12 Monitoring, Logging & Anomaly Detection",
+    "level": "L2",
+    "sortOrder": 190,
+    "title": "Tag ingested documents with source and metadata"
+  }
+]

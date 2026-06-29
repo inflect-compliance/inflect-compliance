@@ -67,7 +67,44 @@ interface FrameworkListItem {
     description: string | null;
     version: string | null;
     kind: string;
+    /** JSON blob carrying provider / copyright / license provenance. */
+    metadataJson?: string | null;
     _count: { requirements: number; packs: number };
+}
+
+/** Provenance surfaced on the framework card (e.g. OWASP attribution). */
+interface FwProvenance {
+    provider?: string;
+    license?: string;
+    sourceUrl?: string;
+    /** When true, IC stores an index + links to canonical text (not the prose). */
+    referenceIndexOnly?: boolean;
+}
+
+/**
+ * Parse the framework's metadataJson into a small provenance object. Both the
+ * library-importer and the seed write `{ provider, copyright, license?,
+ * sourceUrl?, referenceIndexOnly? }`; we surface attribution + license on the
+ * card so an upstream standard's terms (e.g. AISVS CC-BY-SA-4.0) are honoured.
+ */
+function parseProvenance(metadataJson?: string | null): FwProvenance | null {
+    if (!metadataJson) return null;
+    try {
+        const m = JSON.parse(metadataJson) as Record<string, unknown>;
+        const provider = typeof m.provider === 'string' ? m.provider : undefined;
+        const license =
+            typeof m.license === 'string'
+                ? m.license
+                : typeof m.copyright === 'string' && /CC-BY-SA-4\.0/i.test(m.copyright)
+                ? 'CC-BY-SA-4.0'
+                : undefined;
+        const sourceUrl = typeof m.sourceUrl === 'string' ? m.sourceUrl : undefined;
+        const referenceIndexOnly = m.referenceIndexOnly === true;
+        if (!provider && !license) return null;
+        return { provider, license, sourceUrl, referenceIndexOnly };
+    } catch {
+        return null;
+    }
 }
 
 interface FwRow {
@@ -85,6 +122,7 @@ interface FwRow {
     isInstalled: boolean;
     href: string;
     installHref: string;
+    provenance: FwProvenance | null;
 }
 
 export function FrameworksClient({
@@ -154,6 +192,7 @@ export function FrameworksClient({
                     isInstalled: !!(cov && cov.mapped > 0),
                     href: href(`/frameworks/${fw.key}`),
                     installHref: href(`/frameworks/${fw.key}/install`),
+                    provenance: parseProvenance(fw.metadataJson),
                 };
             }),
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -279,6 +318,22 @@ export function FrameworksClient({
                                     {row.description && (
                                         <p className="text-xs text-content-muted line-clamp-2">
                                             {row.description}
+                                        </p>
+                                    )}
+                                    {row.provenance && (
+                                        <p
+                                            className="text-[10px] text-content-subtle"
+                                            data-testid={`fw-provenance-${row.key}`}
+                                        >
+                                            {row.provenance.provider && (
+                                                <>Source: {row.provenance.provider}</>
+                                            )}
+                                            {row.provenance.license && (
+                                                <> · {row.provenance.license}</>
+                                            )}
+                                            {row.provenance.referenceIndexOnly && (
+                                                <> · links to canonical requirement text</>
+                                            )}
                                         </p>
                                     )}
                                     <ProgressBar
