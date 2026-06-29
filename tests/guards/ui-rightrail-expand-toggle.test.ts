@@ -1,9 +1,13 @@
 /**
  * UI roadmap 13 — controls Browse right-rail expand toggle.
  *
- * The "Expand all / Collapse all" TEXT button is now a single left-aligned
- * chevron toggle: ChevronDown when every section is expanded, ChevronLeft when
- * collapsed. The hint rides a canonical <Tooltip>; the E2E test-id is preserved.
+ * The "Expand all / Collapse all" control is a single chevron toggle:
+ * ChevronDown when every section is expanded, ChevronLeft when collapsed.
+ * The hint rides a canonical <Tooltip>; the E2E test-id is preserved.
+ *
+ * Layout revision: the toggle now rides the AsidePanel HEADER (to the left
+ * of the panel collapse toggle) via the `headerActions` slot — it is no
+ * longer rendered below the header in the rail content.
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -18,10 +22,13 @@ describe('UI-13 — browse expand toggle is a chevron, not a text button', () =>
         expect(SRC).toMatch(/allExpanded \? <ChevronDown \/> : <ChevronLeft \/>/);
         expect(SRC).toMatch(/ChevronDown,\s*ChevronLeft/);
     });
-    it('is left-aligned (justify-start), not the old right-aligned text button', () => {
-        // The toggle block is left-aligned now (was justify-end).
-        expect(SRC).toContain('flex justify-start');
+    it('rides the AsidePanel header via headerActions, not a below-header block', () => {
+        // The toggle is now mounted in the panel header (left of the collapse
+        // toggle) through the AsidePanel `headerActions` slot.
+        expect(SRC).toMatch(/headerActions=\{browseExpandAll\}/);
         expect(SRC).toContain('controls-browse-expand-all');
+        // The old below-header, left-aligned wrapper is gone.
+        expect(SRC).not.toContain('flex justify-start');
         // The visible button label is no longer the literal text — it's an icon
         // with the hint on aria-label / Tooltip.
         expect(SRC).not.toMatch(/>\s*\{allExpanded \? 'Collapse all' : 'Expand all'\}\s*</);

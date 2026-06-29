@@ -101,6 +101,13 @@ export interface AsidePanelProps {
     /** Rail content — rendered once, in the docked panel or the Sheet. */
     children: ReactNode;
     /**
+     * Optional controls rendered in the panel header, to the LEFT of the
+     * collapse toggle (and beside the title in the Sheet header below xl).
+     * Use for a per-rail affordance that belongs next to the title rather
+     * than buried in the content — e.g. an "expand/collapse all" toggle.
+     */
+    headerActions?: ReactNode;
+    /**
      * When true, the panel opens itself on mount: it expands the docked rail
      * (≥xl) and opens the Sheet (<xl). Use for a panel that mounts in RESPONSE
      * to a user action (e.g. a quick-view that appears when a row name is
@@ -127,6 +134,7 @@ export function AsidePanel({
     defaultCollapsed = false,
     defaultWidth = DEFAULT_WIDTH,
     children,
+    headerActions,
     openOnMount = false,
     onClose,
 }: AsidePanelProps) {
@@ -294,18 +302,21 @@ export function AsidePanel({
                             )}
                             {title}
                         </span>
-                        <button
-                            type="button"
-                            onClick={() => setCollapsed(true)}
-                            className={ICON_BUTTON_CLASS}
-                            aria-label={`Collapse ${title} panel`}
-                            aria-expanded
-                        >
-                            <ChevronRight
-                                className="h-4 w-4"
-                                aria-hidden="true"
-                            />
-                        </button>
+                        <div className="flex items-center gap-tight">
+                            {headerActions}
+                            <button
+                                type="button"
+                                onClick={() => setCollapsed(true)}
+                                className={ICON_BUTTON_CLASS}
+                                aria-label={`Collapse ${title} panel`}
+                                aria-expanded
+                            >
+                                <ChevronRight
+                                    className="h-4 w-4"
+                                    aria-hidden="true"
+                                />
+                            </button>
+                        </div>
                     </div>
                     <div className="min-h-0 flex-1 overflow-y-auto p-3">{children}</div>
                 </div>
@@ -334,6 +345,7 @@ export function AsidePanel({
             >
                 <Sheet.Header>
                     <Sheet.Title>{title}</Sheet.Title>
+                    {headerActions}
                 </Sheet.Header>
                 <Sheet.Body>{children}</Sheet.Body>
             </Sheet>
