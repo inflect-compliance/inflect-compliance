@@ -10,6 +10,8 @@
  * - Directory scanning
  * - Content hash stability
  */
+import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import {
     parseLibraryFile,
@@ -673,6 +675,93 @@ objects:
             expect(node!.artifacts!.length).toBeGreaterThan(0);
             expect(node!.checklist).toBeDefined();
             expect(node!.checklist!.length).toBeGreaterThan(0);
+        }
+    });
+});
+
+// ─── parseLibraryFile error branches (fs-backed) ─────────────────────
+// Exercises the read-failure / malformed-file / schema-invalid-file throws
+// that the disk-fixture happy-path tests above do not reach, plus the
+// scanLibraryDirectory skip-invalid catch.
+
+describe('parseLibraryFile + scan error branches', () => {
+    let tmpDir: string;
+
+    beforeAll(() => {
+        tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'library-loader-errs-'));
+    });
+
+    afterAll(() => {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+    });
+
+    it('throws LibraryParseError (read failure) for a non-existent path', () => {
+        const missing = path.join(tmpDir, 'does-not-exist.yaml');
+        expect(() => parseLibraryFile(missing)).toThrow(LibraryParseError);
+        try {
+            parseLibraryFile(missing);
+        } catch (err) {
+            expect(err).toBeInstanceOf(LibraryParseError);
+            expect((err as LibraryParseError).details).toBe('Failed to read file');
+            expect((err as LibraryParseError).filePath).toBe(missing);
+            expect((err as LibraryParseError).cause).toBeDefined();
+        }
+    });
+
+    it('throws LibraryParseError (invalid YAML syntax) for a malformed file', () => {
+        const p = path.join(tmpDir, 'malformed.yaml');
+        fs.writeFileSync(p, 'foo: [1, 2', 'utf-8');
+        try {
+            parseLibraryFile(p);
+            throw new Error('expected throw');
+        } catch (err) {
+            expect(err).toBeInstanceOf(LibraryParseError);
+            expect((err as LibraryParseError).details).toBe('Invalid YAML syntax');
+        }
+    });
+
+    it('throws LibraryParseError (not an object) when the file is a bare scalar', () => {
+        const p = path.join(tmpDir, 'scalar.yaml');
+        fs.writeFileSync(p, '42', 'utf-8');
+        try {
+            parseLibraryFile(p);
+            throw new Error('expected throw');
+        } catch (err) {
+            expect(err).toBeInstanceOf(LibraryParseError);
+            expect((err as LibraryParseError).details).toBe('YAML content is not an object');
+        }
+    });
+
+    it('throws LibraryValidationError for a schema-invalid file', () => {
+        const p = path.join(tmpDir, 'invalid.yaml');
+        // Valid YAML object, but missing every required field.
+        fs.writeFileSync(p, 'urn: urn:inflect:library:x\nlocale: en\n', 'utf-8');
+        try {
+            parseLibraryFile(p);
+            throw new Error('expected throw');
+        } catch (err) {
+            expect(err).toBeInstanceOf(LibraryValidationError);
+            expect((err as LibraryValidationError).filePath).toBe(p);
+            expect((err as LibraryValidationError).issues.length).toBeGreaterThan(0);
+        }
+    });
+
+    it('scanLibraryDirectory skips files that fail to parse', () => {
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'library-scan-'));
+        try {
+            // One valid library, one malformed — only the valid one should surface.
+            fs.writeFileSync(path.join(dir, 'good.yaml'), MINIMAL_LIBRARY_YAML, 'utf-8');
+            fs.writeFileSync(path.join(dir, 'bad.yaml'), 'foo: [1, 2', 'utf-8');
+            fs.writeFileSync(path.join(dir, 'ignored.txt'), 'not yaml', 'utf-8');
+
+            const entries = scanLibraryDirectory(dir);
+            expect(entries).toHaveLength(1);
+            expect(entries[0].urn).toBe('urn:inflect:library:test-framework');
+            expect(entries[0].loaded).toBe(false);
+            expect(entries[0].kind).toBe('CUSTOM');
+            expect(entries[0].filePath).toContain('good.yaml');
+        } finally {
+            fs.rmSync(dir, { recursive: true, force: true });
         }
     });
 });

@@ -391,3 +391,83 @@ describe('Cache management', () => {
         expect(libs1.map(l => l.urn).sort()).toEqual(libs2.map(l => l.urn).sort());
     });
 });
+
+// ─── Legacy Fallback Branches (YAML libraries unavailable) ───────────
+//
+// When the YAML loader yields no libraries (empty result, or a throw the
+// loader swallows), each legacy-compatible provider falls back to the
+// hardcoded data in @/data/frameworks and @/data/clauses. These branches
+// never execute against the real bundled libraries, so they are exercised
+// here with an isolated module instance whose loader is mocked.
+
+describe('legacy fallback branches (loader yields no libraries)', () => {
+    const BARREL = '@/app-layer/libraries/index';
+
+    afterEach(() => {
+        jest.dontMock(BARREL);
+        jest.resetModules();
+    });
+
+    function loadProviderWith(loadImpl: () => Map<string, unknown>) {
+        jest.doMock(BARREL, () => ({
+            loadAllFromDirectory: jest.fn(loadImpl),
+        }));
+        let mod: typeof import('@/app-layer/libraries/framework-provider');
+        jest.isolateModules(() => {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            mod = require('@/app-layer/libraries/framework-provider');
+        });
+        return mod!;
+    }
+
+    it('falls back to hardcoded data when the loader returns an empty map', () => {
+        const mod = loadProviderWith(() => new Map());
+
+        // No YAML libraries available → availability reports false.
+        expect(mod.isYamlBackedAvailable()).toBe(false);
+        expect(mod.getAllLibraries()).toEqual([]);
+        expect(mod.listAvailableFrameworks()).toEqual([]);
+
+        // Lookups all miss → undefined branches.
+        expect(mod.getLibraryByRefId('SOC2-2017')).toBeUndefined();
+        expect(mod.getLibraryByUrn('urn:inflect:library:soc2-2017')).toBeUndefined();
+        expect(mod.findNodeByUrn('urn:inflect:req:iso27001-2022:a.5.1')).toBeUndefined();
+        expect(mod.findNodeByRefId('ISO27001-2022', 'A.5.1')).toBeUndefined();
+        expect(mod.getAssessableNodes('SOC2-2017')).toBeUndefined();
+        expect(mod.getFrameworkTree('ISO27001-2022')).toBeUndefined();
+
+        // Legacy providers hit their hardcoded-fallback require() paths.
+        const soc2 = mod.getSOC2Requirements();
+        expect(Array.isArray(soc2)).toBe(true);
+        expect(soc2.length).toBeGreaterThan(0);
+
+        const nis2 = mod.getNIS2Requirements();
+        expect(Array.isArray(nis2)).toBe(true);
+        expect(nis2.length).toBeGreaterThan(0);
+
+        const clauses = mod.getISO27001Clauses();
+        expect(Array.isArray(clauses)).toBe(true);
+        expect(clauses.length).toBeGreaterThan(0);
+
+        const mappings = mod.getFrameworkMappings();
+        expect(Array.isArray(mappings)).toBe(true);
+        expect(mappings.length).toBeGreaterThan(0);
+    });
+
+    it('swallows a loader throw and degrades to the hardcoded fallback', () => {
+        const mod = loadProviderWith(() => {
+            throw new Error('simulated directory read failure');
+        });
+
+        // The catch block sets an empty cache and logs a warning.
+        expect(mod.isYamlBackedAvailable()).toBe(false);
+        // Second access returns the cached empty map (cache-hit branch).
+        expect(mod.getAllLibraries()).toEqual([]);
+
+        // Fallback data is still served.
+        expect(mod.getSOC2Requirements().length).toBeGreaterThan(0);
+        expect(mod.getNIS2Requirements().length).toBeGreaterThan(0);
+        expect(mod.getISO27001Clauses().length).toBeGreaterThan(0);
+        expect(mod.getFrameworkMappings().length).toBeGreaterThan(0);
+    });
+});
