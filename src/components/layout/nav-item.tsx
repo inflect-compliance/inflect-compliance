@@ -599,6 +599,15 @@ export function NavItem({ href, icon: Icon, label, active, badge, onClick }: Nav
     const link = (
         <Link
             href={href}
+            // Force a FULL-RSC prefetch (not just the loading-boundary slice
+            // Next prefetches by default for `force-dynamic` routes). The
+            // sidebar is always in the viewport, so every hot route prefetches
+            // its RSC into the client router cache on mount; combined with the
+            // 30 s `staleTimes.dynamic` (next.config.js) the click then renders
+            // from cache instead of paying the ~276 ms server round-trip — the
+            // "instant nav" lever. Background prefetch render cost is bounded
+            // by the 30 s `cachedSsrPayload` SSR cache.
+            prefetch
             onClick={onClick}
             className={cn(
                 NAV_ITEM_BASE,

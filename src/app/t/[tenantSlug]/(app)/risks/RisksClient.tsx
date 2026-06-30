@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
+import { useTenantSWR, usePrefetchTenant } from '@/lib/hooks/use-tenant-swr';
 import { ownerDisplayName } from '@/lib/owner-display';
 import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
 import { UserCombobox } from '@/components/ui/user-combobox';
@@ -236,27 +236,18 @@ function RisksPageInner({
     const apiUrl = (path: string) => `/api/t/${tenantSlug}${path}`;
     const tenantHref = (path: string) => `/t/${tenantSlug}${path}`;
     const router = useRouter();
+    const prefetchData = usePrefetchTenant();
     // RQ3-4 — per-risk tail percentiles (RQ3-1 cache); failure-soft:
     // without a run the chips render the mean register.
-    const [tailByRisk, setTailByRisk] = useState<Record<string, { aleMean: number; aleP90: number }> | null>(null);
-    // RQ3-5 — the per-risk appetite cap draws on the histogram
-    // (honest there: its x-axis IS per-risk ALE). Failure-soft.
-    const [appetiteCap, setAppetiteCap] = useState<number | null>(null);
-    useEffect(() => {
-        fetch(`/api/t/${tenantSlug}/risk-appetite`)
-            .then((r) => (r.ok ? r.json() : null))
-             
-            .then((d) => setAppetiteCap(d?.config?.singleRiskAleMax ?? null))
-            .catch(() => setAppetiteCap(null));
-    }, [tenantSlug]);
-
-    useEffect(() => {
-        fetch(`/api/t/${tenantSlug}/risks/tail-percentiles`)
-            .then((r) => (r.ok ? r.json() : null))
-             
-            .then((d) => setTailByRisk(d?.snapshot?.byRisk ?? null))
-            .catch(() => setTailByRisk(null));
-    }, [tenantSlug]);
+    // RQ3-4/5 — per-risk tail percentiles + appetite cap. Failure-soft via
+    // SWR: an error leaves the value null and the chips render the mean
+    // register. Cached client-side so revisits are instant (Epic 69).
+    const appetiteQuery = useTenantSWR<{ config?: { singleRiskAleMax?: number } }>('/risk-appetite');
+    const appetiteCap = appetiteQuery.data?.config?.singleRiskAleMax ?? null;
+    const tailQuery = useTenantSWR<{ snapshot?: { byRisk?: Record<string, { aleMean: number; aleP90: number }> } }>(
+        '/risks/tail-percentiles',
+    );
+    const tailByRisk = tailQuery.data?.snapshot?.byRisk ?? null;
     // RQ3-5 — three register views, persisted per tenant (polish #13
     // localStorage pattern) so the histogram preference survives
     // navigation without leaking across tenants.
@@ -1231,7 +1222,7 @@ function RisksPageInner({
                             setSortOrder(nextOrder);
                         }}
                         onRowClick={(row) => router.push(tenantHref(`/risks/${row.original.id}`))}
-                        onRowPrefetch={(row) => router.prefetch(tenantHref(`/risks/${row.original.id}`))}
+                        onRowPrefetch={(row) => { router.prefetch(tenantHref(`/risks/${row.original.id}`)); prefetchData(`/risks/${row.original.id}`); }}
                         selectionEnabled
                         selectedRows={Object.fromEntries(
                             Array.from(selected).map((id) => [id, true]),

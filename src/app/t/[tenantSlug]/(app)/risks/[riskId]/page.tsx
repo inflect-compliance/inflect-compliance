@@ -6,9 +6,10 @@
 
 import { formatDate } from '@/lib/format-date';
 import { SkeletonCard, SkeletonDetailPage } from '@/components/ui/skeleton';
-import { useEffect, useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useTenantContext, useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import dynamic from 'next/dynamic';
 import LinkedTasksPanel from '@/components/LinkedTasksPanel';
 import { Eyebrow } from '@/components/ui/typography';
@@ -145,8 +146,13 @@ export default function RiskDetailPage() {
     const canWrite = tenant.permissions.canWrite;
     const { data: riskMembers } = useTenantMembers(tenant.tenantSlug);
 
-    const [risk, setRisk] = useState<Risk | null>(null);
-    const [loading, setLoading] = useState(true);
+    const riskQuery = useTenantSWR<Risk>(`/risks/${riskId}`);
+    const risk = riskQuery.data ?? null;
+    const loading = riskQuery.isLoading;
+    const loadError = riskQuery.error
+        ? (riskQuery.error instanceof Error ? riskQuery.error.message : String(riskQuery.error))
+        : null;
+    // Mutation-error channel; load errors come from SWR above.
     const [error, setError] = useState<string | null>(null);
     const [editing, setEditing] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -189,34 +195,12 @@ export default function RiskDetailPage() {
     ];
     const [editForm, setEditForm] = useState<EditRiskForm>({});
 
-    const fetchRisk = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const res = await fetch(apiUrl(`/risks/${riskId}`));
-            if (!res.ok) throw new Error(`Failed to load risk (${res.status})`);
-            const data = await res.json();
-            setRisk(data);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : String(err));
-        } finally {
-            setLoading(false);
-        }
-    }, [apiUrl, riskId]);
-
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    useEffect(() => { fetchRisk(); }, [fetchRisk]);
-
     // RQ3-4 — this risk's tail percentile (RQ3-1 cache). Failure-soft:
     // the header chip renders the mean register without it.
-    const [tailP90, setTailP90] = useState<number | null>(null);
-    useEffect(() => {
-        fetch(apiUrl('/risks/tail-percentiles'))
-            .then((r) => (r.ok ? r.json() : null))
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            .then((d) => setTailP90(d?.snapshot?.byRisk?.[riskId]?.aleP90 ?? null))
-            .catch(() => setTailP90(null));
-    }, [apiUrl, riskId]);
+    const tailQuery = useTenantSWR<{ snapshot?: { byRisk?: Record<string, { aleP90?: number }> } }>(
+        '/risks/tail-percentiles',
+    );
+    const tailP90 = tailQuery.data?.snapshot?.byRisk?.[riskId]?.aleP90 ?? null;
 
     const startEditing = () => {
         if (!risk) return;
@@ -267,7 +251,7 @@ export default function RiskDetailPage() {
                 throw new Error(data.message || `Failed to save (${res.status})`);
             }
             const { risk: updated } = await res.json();
-            setRisk(updated);
+            riskQuery.mutate(updated, { revalidate: false });
             setEditing(false);
         } catch (err) {
             setError(err instanceof Error ? err.message : String(err));
@@ -289,7 +273,7 @@ export default function RiskDetailPage() {
                 throw new Error(data.message || `Failed to change status (${res.status})`);
             }
             const updated = await res.json();
-            setRisk(updated);
+            riskQuery.mutate(updated, { revalidate: false });
         } catch (err) {
             setError(err instanceof Error ? err.message : String(err));
         }
@@ -312,9 +296,9 @@ export default function RiskDetailPage() {
             </EntityDetailLayout>
         );
     }
-    if (error && !risk) {
+    if (loadError && !risk) {
         return (
-            <EntityDetailLayout error={error} title="" breadcrumbs={breadcrumbs}>
+            <EntityDetailLayout error={loadError} title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
@@ -536,7 +520,7 @@ export default function RiskDetailPage() {
                         fairAle: risk.fairAle,
                     }}
                     canWrite={canWrite}
-                    onRiskUpdated={fetchRisk}
+                    onRiskUpdated={() => riskQuery.mutate()}
                     onQuantify={() => setActiveTab('quantification')}
                     onLinkControls={() => setActiveTab('traceability')}
                 />

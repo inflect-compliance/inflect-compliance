@@ -1,14 +1,11 @@
 'use client';
-/* TODO(swr-migration): this file has fetch-on-mount + setState
- * patterns flagged by react-hooks/set-state-in-effect. Each call site
- * carries an inline disable directive; collectively they should
- * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
 import { formatDate } from '@/lib/format-date';
 import { SkeletonCard } from '@/components/ui/skeleton';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
+import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
 import { useTenantMembers } from '@/components/ui/user-combobox';
 import dynamic from 'next/dynamic';
 import LinkedTasksPanel from '@/components/LinkedTasksPanel';
@@ -66,8 +63,13 @@ export default function AssetDetailPage() {
     const { permissions, tenantSlug } = useTenantContext();
     const assetId = params.id as string;
 
-    const [asset, setAsset] = useState<AssetDetail | null>(null);
-    const [loading, setLoading] = useState(true);
+    const assetQuery = useTenantSWR<AssetDetail>(`/assets/${assetId}`);
+    const asset = assetQuery.data ?? null;
+    const loading = assetQuery.isLoading;
+    const loadError = assetQuery.error
+        ? (assetQuery.error instanceof Error ? assetQuery.error.message : String(assetQuery.error))
+        : '';
+    // Mutation-error channel (status change etc.); load errors come from SWR above.
     const [error, setError] = useState('');
 
     // Resolve the "Assigned to" user's display name from the tenant
@@ -126,48 +128,19 @@ export default function AssetDetailPage() {
           }
         : {};
 
-    const fetchAsset = useCallback(async () => {
-        setLoading(true);
-        try {
-            const res = await fetch(apiUrl(`/assets/${assetId}`));
-            if (!res.ok) throw new Error(`Failed to load (${res.status})`);
-            const data = await res.json();
-            setAsset(data);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : String(err));
-        } finally {
-            setLoading(false);
-        }
-    }, [apiUrl, assetId]);
-
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    useEffect(() => { fetchAsset(); }, [fetchAsset]);
-
     // B5 — ordered asset-id list for the prev/next nav beside the name.
-    // Fetched once (the default list order) so the up/down buttons walk the
-    // same sequence the list page shows. Best-effort: failures just hide
-    // the affordance.
-    const [assetIds, setAssetIds] = useState<string[]>([]);
-    useEffect(() => {
-        let cancelled = false;
-        (async () => {
-            try {
-                const res = await fetch(apiUrl('/assets'));
-                if (!res.ok) return;
-                const rows = await res.json();
-                const ids = Array.isArray(rows)
-                    ? rows.map((r: { id?: string }) => r?.id).filter((id): id is string => Boolean(id))
-                    : [];
-                // eslint-disable-next-line react-hooks/set-state-in-effect
-                if (!cancelled) setAssetIds(ids);
-            } catch {
-                /* best-effort — nav just doesn't render */
-            }
-        })();
-        return () => {
-            cancelled = true;
-        };
-    }, [apiUrl]);
+    // The default list order so the up/down buttons walk the same sequence
+    // the list page shows. Best-effort: failures just hide the affordance.
+    const assetListQuery = useTenantSWR<Array<{ id?: string }>>('/assets');
+    const assetIds = useMemo(
+        () =>
+            Array.isArray(assetListQuery.data)
+                ? assetListQuery.data
+                      .map((r) => r?.id)
+                      .filter((id): id is string => Boolean(id))
+                : [],
+        [assetListQuery.data],
+    );
 
     // Item 29 — brand-color status action on the asset detail header.
     // AssetStatus is a two-state lifecycle (ACTIVE / RETIRED).
@@ -189,7 +162,7 @@ export default function AssetDetailPage() {
                 const data = await res.json().catch(() => ({}));
                 throw new Error(data.message || `Failed to change status (${res.status})`);
             }
-            await fetchAsset();
+            await assetQuery.mutate();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to change status');
         } finally {
@@ -211,9 +184,9 @@ export default function AssetDetailPage() {
             </EntityDetailLayout>
         );
     }
-    if (error && !asset) {
+    if (loadError && !asset) {
         return (
-            <EntityDetailLayout error={error} title="" breadcrumbs={breadcrumbs}>
+            <EntityDetailLayout error={loadError} title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
@@ -304,7 +277,7 @@ export default function AssetDetailPage() {
                     setOpen={setEditing}
                     assetId={assetId}
                     initial={editInitial}
-                    onSaved={(updated) => setAsset(updated)}
+                    onSaved={(updated) => assetQuery.mutate(updated, { revalidate: false })}
                 />
             )}
 

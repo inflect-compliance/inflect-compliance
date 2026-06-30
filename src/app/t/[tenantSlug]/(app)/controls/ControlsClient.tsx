@@ -22,7 +22,7 @@ import { ControlTaskRows, type ControlTask } from './ControlTaskRows';
 // quick-views AND the separate quick-edit Sheet (so no table blur, no edit btn).
 import { ControlEditPanel } from './ControlEditPanel';
 import { TaskEditPanel } from './TaskEditPanel';
-import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
+import { useTenantSWR, usePrefetchTenant } from '@/lib/hooks/use-tenant-swr';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import { ownerDisplayName } from '@/lib/owner-display';
 import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
@@ -210,6 +210,7 @@ function ControlsPageInner({
         [tenantSlug],
     );
     const router = useRouter();
+    const prefetchData = usePrefetchTenant();
 
     const filterCtx = useFilters();
     const { state, search, clearAll, hasActive } = filterCtx;
@@ -1353,7 +1354,7 @@ function ControlsPageInner({
                 // old "Load more controls" button.
                 onReachEnd: hasMoreControls ? loadMoreControls : undefined,
                 onRowClick: handleRowClick,
-                onRowPrefetch: (row) => router.prefetch(tenantHref(`/controls/${row.original.id}`)),
+                onRowPrefetch: (row) => { router.prefetch(tenantHref(`/controls/${row.original.id}`)); prefetchData(CACHE_KEYS.controls.pageData(row.original.id)); },
                 emptyState: hasActive ? (
                     <EmptyState
                         size="sm"
