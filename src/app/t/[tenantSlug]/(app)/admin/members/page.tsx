@@ -112,6 +112,29 @@ function normalizeMember(m: Member): Member {
     };
 }
 
+/**
+ * Coerce an API error response body to a human string for setError().
+ *
+ * The API error envelope is `{ error: { code, message, requestId } }`
+ * (toApiErrorResponse). Passing the raw `err.error` OBJECT to setError() and
+ * rendering it as a React child throws "Minified React error #31 — objects are
+ * not valid as a React child", which trips the page error boundary. This is
+ * exactly what broke inviting: a 4xx invite response (e.g. "already a member")
+ * set the error state to the object and crashed the page. Always coerce.
+ */
+function apiErrorMessage(body: unknown, fallback: string): string {
+    if (body && typeof body === 'object') {
+        const b = body as { error?: unknown; message?: unknown };
+        if (typeof b.error === 'string') return b.error;
+        if (b.error && typeof b.error === 'object') {
+            const inner = b.error as { message?: unknown };
+            if (typeof inner.message === 'string') return inner.message;
+        }
+        if (typeof b.message === 'string') return b.message;
+    }
+    return fallback;
+}
+
 const ROLES = ['ADMIN', 'EDITOR', 'AUDITOR', 'READER'] as const;
 const ROLE_VARIANT: Record<string, 'error' | 'info' | 'warning' | 'neutral'> = {
     ADMIN: 'error',
@@ -215,7 +238,7 @@ export default function MembersAdminPage() {
 
             if (!res.ok) {
                 const err = await res.json().catch(() => ({ error: 'Invite failed' }));
-                setError(err.error || err.message || 'Invite failed');
+                setError(apiErrorMessage(err, 'Invite failed'));
                 return;
             }
 
@@ -266,7 +289,7 @@ export default function MembersAdminPage() {
 
             if (!res.ok) {
                 const err = await res.json().catch(() => ({ error: 'Role change failed' }));
-                setError(err.error || err.message || 'Role change failed');
+                setError(apiErrorMessage(err, 'Role change failed'));
                 return;
             }
 
@@ -294,7 +317,7 @@ export default function MembersAdminPage() {
 
             if (!res.ok) {
                 const err = await res.json().catch(() => ({ error: 'Deactivation failed' }));
-                setError(err.error || err.message || 'Deactivation failed');
+                setError(apiErrorMessage(err, 'Deactivation failed'));
                 return;
             }
 
@@ -343,7 +366,7 @@ export default function MembersAdminPage() {
             });
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
-                setError(err?.error?.message || 'Revocation failed');
+                setError(apiErrorMessage(err, 'Revocation failed'));
                 return;
             }
             setMemberSessions((sessions) => sessions.filter((s) => s.sessionId !== sessionId));
