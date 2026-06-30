@@ -27,18 +27,39 @@ export interface PromptPair {
 export const UNTRUSTED_DATA_OPEN = '[BEGIN UNTRUSTED TENANT DATA]';
 export const UNTRUSTED_DATA_CLOSE = '[END UNTRUSTED TENANT DATA]';
 
+// AISVS C2.1.7 — reserved chat-template / role-control tokens. These have no
+// legitimate meaning inside tenant data (an asset name, org context, …); a
+// tenant embedding them is trying to forge a turn boundary or system block in
+// whatever template the upstream model uses. We neutralize them to literal
+// text so they can't break the instruction hierarchy. Covers ChatML
+// (`<|im_start|>`/`<|endoftext|>`/any `<|…|>`), Llama/Mistral (`[INST]`,
+// `<<SYS>>`, `<s>`/`</s>`), and the Anthropic-style `\n\nHuman:` / `\n\nAssistant:`
+// turn markers.
+const RESERVED_TOKEN_PATTERNS: RegExp[] = [
+    /<\|[^|>]*\|>/g, // ChatML — any <|...|> sentinel
+    /\[\/?INST\]/gi, // Llama [INST] / [/INST]
+    /<<\/?SYS>>/gi, // Llama <<SYS>> / <</SYS>>
+    /<\/?s>/gi, // <s> / </s> sequence tokens
+    /(?:^|\n)\s*(?:Human|Assistant|System)\s*:/gi, // role turn markers
+];
+
 /**
- * Neutralize a tenant-supplied value before it enters the prompt: strip any
- * attempt to forge the trust-boundary markers (so a tenant can't "close" the
- * untrusted block and inject trusted instructions). Control-char/length
- * sanitization happens upstream in the privacy-sanitizer; this is the
- * injection-specific defense.
+ * Neutralize a tenant-supplied value before it enters the prompt:
+ *   1. strip any attempt to forge the trust-boundary markers (so a tenant
+ *      can't "close" the untrusted block and inject trusted instructions);
+ *   2. strip reserved chat-template / role-control tokens (AISVS C2.1.7).
+ * Control-char/length sanitization happens upstream in the privacy-sanitizer;
+ * this is the injection-specific defense.
  */
 export function neutralizeUntrustedText(value: string): string {
-    return value
+    let out = value
         .split(UNTRUSTED_DATA_OPEN).join('(removed)')
         .split(UNTRUSTED_DATA_CLOSE).join('(removed)')
         .replace(/\[\s*(?:begin|end)\s+untrusted[^\]]*\]/gi, '(removed)');
+    for (const re of RESERVED_TOKEN_PATTERNS) {
+        out = out.replace(re, '(removed)');
+    }
+    return out;
 }
 
 /**
