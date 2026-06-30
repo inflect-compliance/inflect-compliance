@@ -148,9 +148,15 @@ export interface IngestScannerRunResult {
 
 export async function ingestScannerRun(
     ctx: RequestContext,
-    input: IngestScannerRunInput,
+    rawInput: z.input<typeof IngestScannerRunSchema>,
 ): Promise<IngestScannerRunResult> {
     assertCanWrite(ctx);
+
+    // Apply schema defaults + validation HERE rather than trusting the
+    // caller — the API route parses too, but direct callers (other
+    // usecases, jobs, tests) must get `ingestedVia`/`materializeFindings`
+    // defaults and enum validation just the same.
+    const input = IngestScannerRunSchema.parse(rawInput);
 
     // Parse OUTSIDE the tenant transaction — pure CPU, and a malformed
     // upload should 400 before we open a DB transaction.
@@ -398,6 +404,7 @@ export async function listScannerFindings(
                 ...(opts?.status ? { status: opts.status } : {}),
                 ...(opts?.severity ? { severity: opts.severity } : {}),
             },
+            include: { scannerRun: { select: { source: true, scanType: true, ranAt: true } } },
             orderBy: [{ severity: 'desc' }, { createdAt: 'desc' }],
             take: Math.min(opts?.take ?? 200, 500),
         });
