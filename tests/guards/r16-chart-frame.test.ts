@@ -84,12 +84,13 @@ describe('Roadmap-16 PR-3 — ChartFrame wrapper', () => {
         });
 
         it('guards the zero-size first measurement pass', () => {
-            // `ParentSize` returns `{ width: 0, height: 0 }` during
-            // the first render. Without a guard, consumers paint
-            // a 0×0 SVG that the browser collapses to display:none.
-            expect(FRAME_SRC).toMatch(
-                /width\s*===\s*0\s*\|\|\s*height\s*===\s*0/,
-            );
+            // `ParentSize` returns `{ width: 0, height: 0 }` during the
+            // first render (and whenever the box is unmeasurable). The
+            // hardened frame never paints a 0×0 SVG: a 0 WIDTH falls back
+            // to the skeleton, and a 0 HEIGHT is floored to the frame's
+            // min-height so the chart still renders.
+            expect(FRAME_SRC).toMatch(/width\s*===\s*0/);
+            expect(FRAME_SRC).toMatch(/height\s*===\s*0\s*\?/);
         });
 
         it('renders the data inside the ready branch', () => {

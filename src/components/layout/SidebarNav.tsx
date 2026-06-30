@@ -104,7 +104,7 @@ export function useNavSections(): NavSectionDef[] {
                 { href: tenantHref('/tasks'), label: 'Plan', icon: ClipboardList },
                 {
                     href: tenantHref('/calendar'),
-                    label: 'Schedule',
+                    label: 'Time',
                     icon: CalendarIcon,
                     badge: calendarBadge,
                 },

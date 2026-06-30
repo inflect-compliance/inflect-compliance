@@ -1262,6 +1262,9 @@
     "docs/implementation-notes/2026-06-29-ai-gov-self-assessment-ui.md": {
       "class": "historical"
     },
+    "docs/implementation-notes/2026-06-30-dashboard-chart-rendering.md": {
+      "class": "historical"
+    },
     "docs/implementation-notes/2026-06-30-onboarding-dynamic-framework-catalog.md": {
       "class": "historical"
     }

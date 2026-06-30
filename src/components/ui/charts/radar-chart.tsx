@@ -43,7 +43,7 @@
  *
  * Wraps in `<ChartFrame>` for state-driven branch rendering.
  */
-import { useId, useState } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { Group } from '@visx/group';
 import { Line } from '@visx/shape';
 import { Text } from '@visx/text';
@@ -102,6 +102,8 @@ interface RadarChartProps {
     testId?: string;
     /** Optional aria-label override on the SVG. */
     ariaLabel?: string;
+    /** Override the empty-state body (forwarded to ChartFrame). */
+    emptyFallback?: ReactNode;
 }
 
 /**
@@ -127,9 +129,15 @@ export function RadarChart({
     className,
     testId,
     ariaLabel,
+    emptyFallback,
 }: RadarChartProps) {
     return (
-        <ChartFrame state={state} className={className} testId={testId}>
+        <ChartFrame
+            state={state}
+            className={className}
+            testId={testId}
+            emptyFallback={emptyFallback}
+        >
             {({ width, height, data }) => (
                 <RadarChartInner
                     width={width}
