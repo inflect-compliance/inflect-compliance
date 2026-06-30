@@ -181,10 +181,16 @@ function resolveDonutContent(
 ): ChartRendererProps {
     const cfg = widget.config as { showLegend?: boolean };
     if (widget.chartType === 'rag-distribution') {
+        // These are TENANT-HEALTH (RAG) bands, NOT risk counts. The labels
+        // are deliberately disambiguated from the risk vocabulary: a viewer
+        // must never read the donut's "Critical health" tenant band as the
+        // "Critical Risks" metric (which is a different number, sourced from
+        // summary.risks.critical and surfaced by the KPI + drill-down). The
+        // center reads "Tenants", not a bare "Active", for the same reason.
         const segments = [
             { label: 'Healthy', value: data.summary.rag.green, color: RAG_COLORS.GREEN },
             { label: 'At risk', value: data.summary.rag.amber, color: RAG_COLORS.AMBER },
-            { label: 'Critical', value: data.summary.rag.red, color: RAG_COLORS.RED },
+            { label: 'Critical health', value: data.summary.rag.red, color: RAG_COLORS.RED },
             { label: 'Pending snapshot', value: data.summary.rag.pending, color: RAG_COLORS.PENDING },
         ].filter((s) => s.value > 0);
         const totalCategorised = data.summary.rag.green + data.summary.rag.amber + data.summary.rag.red;
@@ -194,7 +200,7 @@ function resolveDonutContent(
                 segments,
                 centerLabel:
                     totalCategorised > 0 ? String(totalCategorised) : undefined,
-                centerSub: 'Active',
+                centerSub: 'Tenants',
                 showLegend: cfg.showLegend ?? true,
             },
         };
