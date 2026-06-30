@@ -26,9 +26,9 @@
  * which is only updated on a successful response.
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Pencil, Plus, RotateCcw, Trash2, X } from 'lucide-react';
+import { Building2, Pencil, Plus, RotateCcw, Trash2, X } from 'lucide-react';
 
 import {
     DashboardGrid,
@@ -38,6 +38,8 @@ import {
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { EmptyState } from '@/components/ui/empty-state';
+import { formatDateTimeLong, formatRelativeTime } from '@/lib/format-date';
 import type {
     CreateOrgDashboardWidgetInput,
     OrgDashboardWidgetDto,
@@ -117,6 +119,33 @@ async function resetWidgets(
     if (!res.ok) throw new Error(`reset_failed_${res.status}`);
     const json = (await res.json()) as { widgets: OrgDashboardWidgetDto[] };
     return json.widgets;
+}
+
+// ─── Dashboard-level "last refreshed" ──────────────────────────────
+//
+// Shown ONCE in the header, sourced from the summary's server-computed
+// `generatedAt`. Provider-free (no Radix tooltip) so it renders in any
+// tree; the relative form is computed AFTER mount to avoid a server/
+// client hydration mismatch, with the absolute timestamp as the
+// native `title`.
+function RefreshedAt({ iso }: { iso: string }) {
+    const [now, setNow] = useState<Date | null>(null);
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setNow(new Date());
+    }, []);
+    // Before mount (and on the server) `now` is null, so fall back to the
+    // absolute long form; after mount, show the relative "… ago".
+    const relative = formatRelativeTime(iso, now, {}, '');
+    const display = relative || formatDateTimeLong(iso, '');
+    return (
+        <span
+            data-testid="portfolio-refreshed-at"
+            className="text-xs text-content-muted"
+        >
+            Portfolio data refreshed{display ? ` ${display}` : ''}
+        </span>
+    );
 }
 
 // ─── Component ──────────────────────────────────────────────────────
@@ -248,6 +277,13 @@ export function PortfolioDashboard({
         </span>
     );
 
+    // Dashboard-level "last refreshed" — shown ONCE here, not repeated on
+    // every card. (Per-tenant cards still carry their own "Last activity"
+    // because that is per-tenant data — which tenant is stale — not a
+    // dashboard-wide refresh signal.) Sourced from the summary's
+    // server-computed `generatedAt`.
+    const headerMeta = <RefreshedAt iso={data.summary.generatedAt} />;
+
     const headerActions = (
         <div className="flex items-center gap-tight">
             {canEdit && !editMode && (
@@ -306,6 +342,7 @@ export function PortfolioDashboard({
             header={{
                 title: 'Portfolio Overview',
                 description: headerDescription,
+                meta: headerMeta,
                 actions: headerActions,
             }}
         >
@@ -341,8 +378,30 @@ export function PortfolioDashboard({
                 </div>
             )}
 
-            {/* Grid */}
-            {widgets.length > 0 && (
+            {/* No-data onboarding. A seeded org with ZERO tenants would
+             *  otherwise render a grid of zero-value cards — noise, not
+             *  signal. Show a purposeful onboarding state instead, until
+             *  the first tenant's snapshot rolls up. */}
+            {widgets.length > 0 && data.summary.tenants.total === 0 && (
+                <EmptyState
+                    variant="no-records"
+                    icon={Building2}
+                    title="Add tenants to populate your portfolio"
+                    description="This dashboard rolls up compliance posture — coverage, risks, evidence, and maturity — across every tenant in your organization. Link your first tenant and run a snapshot to bring it to life."
+                    primaryAction={
+                        canEdit
+                            ? {
+                                  label: 'Manage tenants',
+                                  href: `/org/${data.orgSlug}/tenants`,
+                              }
+                            : undefined
+                    }
+                    data-testid="dashboard-onboarding-empty-state"
+                />
+            )}
+
+            {/* Grid — only once there is portfolio data to show. */}
+            {widgets.length > 0 && data.summary.tenants.total > 0 && (
                 <DashboardGrid<OrgDashboardWidgetDto>
                     widgets={widgets}
                     editable={editMode}
