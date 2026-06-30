@@ -91,6 +91,27 @@ interface Invite {
     invitedBy: { id: string; name: string | null } | null;
 }
 
+/**
+ * Defensive normaliser for the members API response. The list cells render
+ * `m.user.name` / `m.user.email` / `m.user.image` directly, so a membership
+ * whose `user` relation failed to resolve (or any non-array payload) would
+ * throw during render and trip the page-level error boundary
+ * ("Something went wrong"). Guarantee a well-formed shape so the page can
+ * never crash on a single malformed row.
+ */
+function normalizeMember(m: Member): Member {
+    return {
+        ...m,
+        user: m.user ?? {
+            id: m.userId ?? '',
+            name: null,
+            email: '',
+            image: null,
+            createdAt: m.createdAt ?? '',
+        },
+    };
+}
+
 const ROLES = ['ADMIN', 'EDITOR', 'AUDITOR', 'READER'] as const;
 const ROLE_VARIANT: Record<string, 'error' | 'info' | 'warning' | 'neutral'> = {
     ADMIN: 'error',
@@ -152,11 +173,21 @@ export default function MembersAdminPage() {
                 fetch(apiUrl('/admin/members?view=invites')),
                 fetch(apiUrl('/admin/roles')),
             ]);
-            if (membersRes.ok) setMembers(await membersRes.json());
-            if (invitesRes.ok) setInvites(await invitesRes.json());
+            if (membersRes.ok) {
+                const raw = await membersRes.json();
+                setMembers(Array.isArray(raw) ? raw.map(normalizeMember) : []);
+            }
+            if (invitesRes.ok) {
+                const raw = await invitesRes.json();
+                setInvites(Array.isArray(raw) ? raw : []);
+            }
             if (rolesRes.ok) {
                 const allRoles = await rolesRes.json();
-                setCustomRoles(allRoles.filter((r: CustomRoleOption & { isActive: boolean }) => r.isActive));
+                setCustomRoles(
+                    Array.isArray(allRoles)
+                        ? allRoles.filter((r: CustomRoleOption & { isActive: boolean }) => r.isActive)
+                        : [],
+                );
             }
         } catch {
             setError('Failed to load members');
