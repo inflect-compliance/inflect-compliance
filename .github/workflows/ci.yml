@@ -930,14 +930,28 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
+      # The GHA buildx cache backend (type=gha) intermittently 404s on
+      # IMPORT — Azure GC's a layer blob the cache manifest still
+      # references, so buildkit aborts with "failed to compute cache key:
+      # failed to copy: GET .../actions-cache/... BlobNotFound" and the
+      # whole build fails even though nothing is wrong with the image.
+      # Two-layer hardening:
+      #   - `cache-to: …,ignore-error=true` — a failed cache EXPORT never
+      #     fails the build (symmetric flake).
+      #   - this step is `continue-on-error` + the cacheless retry below —
+      #     if the cache IMPORT 404s, we rebuild without cache-from so a
+      #     stale cache reference can't abort an otherwise-fine build. A
+      #     genuine build error still fails (the cacheless retry fails too).
       - name: Build Docker image (no push)
+        id: docker_build
         uses: docker/build-push-action@v7
+        continue-on-error: true
         with:
           context: .
           push: false
           tags: inflect-compliance:ci-${{ github.sha }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to: type=gha,mode=max,ignore-error=true
           # Export the built image as a docker-format tarball so the
           # `trivy` job can `docker load` it instead of rebuilding from
           # scratch. `load:` is removed — each job runs on a fresh runner
@@ -950,6 +964,20 @@ jobs:
           # speed-up (the ~1.1 GB tar barely shrank and the docker-load
           # decompression offset the smaller download) while adding a
           # docker-load zstd-support dependency. Not worth it.
+          outputs: type=docker,dest=/tmp/image-${{ github.sha }}.tar
+
+      # Cache-flake fallback — only runs when the cached build above failed
+      # (BlobNotFound on import, or any other error). Rebuilds WITHOUT
+      # cache-from so a stale GHA-cache reference can't abort it; if THIS
+      # fails too, it's a real build error and the job fails as it should.
+      - name: Build Docker image (cacheless retry on cache flake)
+        if: steps.docker_build.outcome == 'failure'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          tags: inflect-compliance:ci-${{ github.sha }}
+          cache-to: type=gha,mode=max,ignore-error=true
           outputs: type=docker,dest=/tmp/image-${{ github.sha }}.tar
 
       - name: Upload image tarball
