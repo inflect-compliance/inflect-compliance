@@ -2,7 +2,6 @@
 /* eslint-disable react-hooks/exhaustive-deps -- Various useEffect/useMemo dep arrays in this file deliberately omit identity-unstable callbacks (handlers recreated each render) or use selector functions whose change-detection happens elsewhere. Adding the deps would either trigger unnecessary re-runs OR cause infinite render loops; the proper structural fix is to wrap parent-level callbacks in useCallback. Tracked as follow-up. */
 import { TimestampTooltip } from '@/components/ui/timestamp-tooltip';
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { NewPolicyModal } from './NewPolicyModal';
 import { Button } from '@/components/ui/button';
@@ -33,7 +32,6 @@ import { EntityListPage } from '@/components/layout/EntityListPage';
 import { useThresholdLoadMore } from '@/components/ui/hooks';
 import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
 import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
-import { buttonVariants } from '@/components/ui/button-variants';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
 import { toApiSearchParams } from '@/lib/filters/url-sync';
@@ -643,17 +641,11 @@ function PoliciesPageInner({
                         Policy
                     </Button>
                 ) : undefined,
+                // "From template" now lives in the new-policy modal's
+                // "Start with" selector, so the separate toolbar button is
+                // gone — the toolbar carries just the columns / kpi gears.
                 toolbarActions: (
                     <>
-                        {permissions.canWrite && (
-                            <Link
-                                href={tenantHref('/policies/templates')}
-                                className={buttonVariants({ variant: 'secondary' })}
-                                id="policy-from-template-btn"
-                            >
-                                From Template
-                            </Link>
-                        )}
                         {columnsDropdown}
                         {filtersDropdown}
                     </>

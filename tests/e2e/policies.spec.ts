@@ -47,7 +47,10 @@ test.describe('Policy Center', () => {
         await expect(authedPage.locator('#new-policy-btn')).toBeVisible({
             timeout: 10000,
         });
-        await expect(authedPage.locator('#policy-from-template-btn')).toBeVisible();
+        // "From template" now lives inside the new-policy modal's "Start
+        // with" selector (the standalone toolbar button was removed).
+        await authedPage.locator('#new-policy-btn').click();
+        await expect(authedPage.locator('#new-policy-mode')).toBeVisible();
     });
 
     test('template library page loads', async ({ authedPage, isolatedTenant }) => {
