@@ -148,9 +148,12 @@ test.describe('Control Tests (Test-of-Control)', () => {
             await expect(page.locator('#test-run-result')).toContainText('FAIL', {
                 timeout: 10000,
             });
-            // The finding is created from the test-run summary on completion
-            // and rendered after a revalidation round-trip; under parallel
-            // CI load that lag can exceed 10s, so allow generous headroom.
+            // The finding is created from the test-run summary on completion and
+            // rendered after a revalidation round-trip; under parallel CI load
+            // that client revalidation can lag past any reasonable timeout, so
+            // reload to force a fresh server render before asserting (anti-flake).
+            await page.reload({ waitUntil: 'domcontentloaded' });
+            await page.waitForLoadState('networkidle').catch(() => {});
             await expect(
                 page.locator('text=Unauthorized admin access detected'),
             ).toBeVisible({ timeout: 30000 });

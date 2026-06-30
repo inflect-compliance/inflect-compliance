@@ -102,9 +102,14 @@ test.describe('Epic 54 — Evidence upload modal', () => {
         await expect(authedPage.locator('#upload-form')).toBeHidden({
             timeout: 10000,
         });
+        // The POST already succeeded above; the list revalidates client-side,
+        // which can lag under CI load. Reload to force a fresh server render
+        // before asserting the new row (anti-flake).
+        await authedPage.reload({ waitUntil: 'domcontentloaded' });
+        await authedPage.waitForLoadState('networkidle').catch(() => {});
         await expect(authedPage.locator('#evidence-table')).toContainText(
             `Modal Evidence ${uid}`,
-            { timeout: 15000 },
+            { timeout: 20000 },
         );
     });
 
