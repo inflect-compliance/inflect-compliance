@@ -1,0 +1,105 @@
+# Cross-Framework Mapping Set: NIST Privacy Framework v1.0 → NIST CSF 2.0
+# Data-driven mapping file for the RequirementMapping ingestion pipeline.
+#
+# The NIST Privacy Framework was DESIGNED as the companion to the NIST
+# Cybersecurity Framework — they share the Function/Category/Subcategory
+# structure and NIST publishes a PF↔CSF crosswalk. The Privacy Framework's
+# PROTECT-P Function in particular maps onto CSF's PROTECT outcomes (the
+# security-of-data overlap), while IDENTIFY-P/GOVERN-P/COMMUNICATE-P touch
+# CSF IDENTIFY/GOVERN/DETECT/RESPOND/RECOVER.
+#
+# Provenance: entries marked [NIST-crosswalk] reflect the relationships in
+# NIST's published Privacy Framework ↔ CSF crosswalk; because IC's CSF library
+# is a condensed representative subset, the specific target outcome is adapted
+# to the nearest available CSF node. Mappings are structural guidance, not a
+# compliance guarantee.
+#
+# Refs use the YAML library ref_ids: NIST PF subcategory (source) and the NIST
+# CSF outcome ids (target). Only targets present in nist-csf-2.0.yaml are used.
+
+urn: urn:inflect:mappingset:nist-privacy-framework-to-nist-csf
+name: "NIST Privacy Framework v1.0 → NIST CSF 2.0"
+description: >
+  Cross-framework traceability between NIST Privacy Framework v1.0 privacy
+  outcomes and NIST CSF 2.0 cybersecurity outcomes. Based on NIST's published
+  PF↔CSF crosswalk, adapted to IC's CSF representation.
+version: 1
+source_framework_ref: NIST-PF-1.0
+target_framework_ref: NIST-CSF-2.0
+
+mapping_entries:
+  # ─── IDENTIFY-P ↔ CSF IDENTIFY ───────────────────────────────────
+  - source_ref: ID.IM-P1
+    target_ref: ID.AM-01
+    strength: INTERSECT
+    rationale: "[NIST-crosswalk] Inventorying systems/products/services that process data is an asset-management outcome (ID.AM-01)."
+  - source_ref: ID.IM-P2
+    target_ref: ID.AM-02
+    strength: INTERSECT
+    rationale: "[NIST-crosswalk] Inventorying owners/operators and roles for data processing extends asset/role inventory (ID.AM-02)."
+  - source_ref: ID.RA-P3
+    target_ref: ID.RA-01
+    strength: RELATED
+    rationale: "[NIST-crosswalk] Identifying problematic data actions is risk identification (ID.RA-01), applied to privacy risk."
+  - source_ref: ID.RA-P4
+    target_ref: ID.RA-01
+    strength: RELATED
+    rationale: "[NIST-crosswalk] Prioritizing privacy risk by likelihood/impact parallels CSF risk assessment (ID.RA-01)."
+
+  # ─── GOVERN-P ↔ CSF GOVERN ───────────────────────────────────────
+  - source_ref: GV.PO-P1
+    target_ref: GV.OC-01
+    strength: RELATED
+    rationale: "[NIST-crosswalk] Establishing organizational privacy values/policies aligns with the organizational-context governance outcome (GV.OC-01)."
+  - source_ref: GV.PO-P5
+    target_ref: GV.OC-02
+    strength: RELATED
+    rationale: "[NIST-crosswalk] Understanding legal/regulatory/contractual privacy requirements maps to stakeholder/legal context (GV.OC-02)."
+  - source_ref: GV.RM-P1
+    target_ref: GV.RM-01
+    strength: INTERSECT
+    rationale: "[NIST-crosswalk] Establishing privacy risk-management processes is the risk-management-strategy outcome (GV.RM-01)."
+  - source_ref: GV.RM-P2
+    target_ref: GV.RM-01
+    strength: INTERSECT
+    rationale: "[NIST-crosswalk] Determining and expressing risk tolerance aligns with CSF risk-management strategy (GV.RM-01)."
+  - source_ref: GV.MT-P1
+    target_ref: DE.CM-01
+    strength: RELATED
+    rationale: "[NIST-crosswalk] Ongoing re-evaluation of privacy risk parallels continuous monitoring (DE.CM-01)."
+
+  # ─── PROTECT-P ↔ CSF PROTECT / DETECT (the security-of-data overlap) ─
+  - source_ref: PR.AC-P1
+    target_ref: PR.AA-01
+    strength: INTERSECT
+    rationale: "[NIST-crosswalk] Issuing/managing identities and credentials is identity management + access control (PR.AA-01)."
+  - source_ref: PR.AC-P4
+    target_ref: PR.AA-01
+    strength: INTERSECT
+    rationale: "[NIST-crosswalk] Managing access permissions with least privilege maps to authentication/authorization (PR.AA-01)."
+  - source_ref: PR.DS-P1
+    target_ref: PR.DS-01
+    strength: EQUAL
+    rationale: "[NIST-crosswalk] Protecting data-at-rest is the same outcome in both frameworks (PR.DS-01)."
+  - source_ref: PR.DS-P2
+    target_ref: PR.DS-01
+    strength: INTERSECT
+    rationale: "[NIST-crosswalk] Protecting data-in-transit is a data-security outcome (PR.DS-01)."
+  - source_ref: PR.DS-P5
+    target_ref: DE.CM-01
+    strength: RELATED
+    rationale: "[NIST-crosswalk] Implementing protections against data leaks supports monitoring/detection of exfiltration (DE.CM-01)."
+
+  # ─── COMMUNICATE-P / PROTECT-P ↔ CSF RESPOND / RECOVER ───────────
+  - source_ref: PR.PO-P7
+    target_ref: RS.MA-01
+    strength: RELATED
+    rationale: "[NIST-crosswalk] Establishing incident-response plans aligns with response management (RS.MA-01)."
+  - source_ref: CM.AW-P7
+    target_ref: RS.MA-01
+    strength: RELATED
+    rationale: "[NIST-crosswalk] Notifying impacted individuals about a privacy breach is part of incident response (RS.MA-01)."
+  - source_ref: CM.AW-P8
+    target_ref: RC.RP-01
+    strength: RELATED
+    rationale: "[NIST-crosswalk] Providing mitigation mechanisms after problematic data actions parallels recovery planning (RC.RP-01)."

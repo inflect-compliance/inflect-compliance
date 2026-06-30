@@ -1,0 +1,91 @@
+# Cross-Framework Mapping Set: NIST Privacy Framework v1.0 → ISO/IEC 27001:2022
+# Data-driven mapping file for the RequirementMapping ingestion pipeline.
+#
+# Privacy outcomes frequently rely on the same organizational + technical
+# controls an ISMS already runs (ISO 27001 Annex A.5 organizational and A.8
+# technological controls) — most directly A.5.34 "Privacy and protection of
+# PII". This crosswalk links NIST Privacy Framework subcategories to the
+# Annex A controls a tenant likely already implements.
+#
+# Provenance: every entry is [curated] — Inflect's own judgement of conceptual
+# alignment, NOT part of either published standard. Mappings are structural
+# guidance, not a compliance guarantee.
+#
+# Refs use the YAML library ref_ids: NIST PF subcategory (source) and ISO 27001
+# Annex A control ids (target). Only targets present in iso27001-2022.yaml.
+
+urn: urn:inflect:mappingset:nist-privacy-framework-to-iso27001
+name: "NIST Privacy Framework v1.0 → ISO/IEC 27001:2022"
+description: >
+  Cross-framework traceability between NIST Privacy Framework v1.0 privacy
+  outcomes and ISO/IEC 27001:2022 Annex A controls. Curated alignment, not a
+  compliance guarantee.
+version: 1
+source_framework_ref: NIST-PF-1.0
+target_framework_ref: ISO27001-2022
+
+mapping_entries:
+  - source_ref: GV.PO-P1
+    target_ref: A.5.1
+    strength: RELATED
+    rationale: "[curated] Establishing organizational privacy values/policies parallels the information security policy control (A.5.1)."
+  - source_ref: GV.PO-P3
+    target_ref: A.5.2
+    strength: INTERSECT
+    rationale: "[curated] Establishing privacy roles/responsibilities maps to information security roles and responsibilities (A.5.2)."
+  - source_ref: GV.PO-P5
+    target_ref: A.5.34
+    strength: INTERSECT
+    rationale: "[curated] Managing legal/regulatory/contractual privacy requirements aligns with privacy and protection of PII (A.5.34)."
+  - source_ref: GV.MT-P3
+    target_ref: A.5.34
+    strength: RELATED
+    rationale: "[curated] Assessing compliance with privacy requirements relies on the PII-protection control (A.5.34)."
+  - source_ref: ID.IM-P1
+    target_ref: A.5.9
+    strength: INTERSECT
+    rationale: "[curated] Inventorying systems/services that process data extends the inventory of information and associated assets (A.5.9)."
+  - source_ref: ID.IM-P6
+    target_ref: A.5.12
+    strength: RELATED
+    rationale: "[curated] Inventorying data elements supports information classification (A.5.12)."
+  - source_ref: ID.DE-P2
+    target_ref: A.5.19
+    strength: RELATED
+    rationale: "[curated] Assessing data-processing ecosystem parties parallels information security in supplier relationships (A.5.19)."
+  - source_ref: ID.DE-P3
+    target_ref: A.5.20
+    strength: INTERSECT
+    rationale: "[curated] Using contracts to bind ecosystem parties maps to addressing security within supplier agreements (A.5.20)."
+  - source_ref: PR.AC-P1
+    target_ref: A.5.15
+    strength: INTERSECT
+    rationale: "[curated] Issuing/managing identities and credentials aligns with the access control policy (A.5.15)."
+  - source_ref: PR.AC-P4
+    target_ref: A.8.2
+    strength: INTERSECT
+    rationale: "[curated] Managing permissions with least privilege maps to privileged access rights (A.8.2)."
+  - source_ref: PR.DS-P1
+    target_ref: A.8.24
+    strength: RELATED
+    rationale: "[curated] Protecting data-at-rest commonly relies on the use of cryptography (A.8.24)."
+  - source_ref: PR.DS-P2
+    target_ref: A.8.24
+    strength: RELATED
+    rationale: "[curated] Protecting data-in-transit commonly relies on the use of cryptography (A.8.24)."
+  - source_ref: CT.DP-P2
+    target_ref: A.5.34
+    strength: RELATED
+    rationale: "[curated] De-identification/tokenization to limit identification of individuals supports PII protection (A.5.34)."
+  - source_ref: CT.PO-P2
+    target_ref: A.5.34
+    strength: RELATED
+    rationale: "[curated] Data deletion/retention policies support privacy and protection of PII (A.5.34)."
+  - source_ref: PR.PO-P7
+    target_ref: A.5.24
+    strength: INTERSECT
+    rationale: "[curated] Establishing incident-response plans maps to information security incident management planning (A.5.24)."
+  - source_ref: CM.AW-P7
+    target_ref: A.5.26
+    strength: RELATED
+    rationale: "[curated] Notifying individuals of a privacy breach is part of responding to information security incidents (A.5.26)."
