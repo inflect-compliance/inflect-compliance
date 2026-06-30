@@ -5,6 +5,7 @@
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
 import { useState, useEffect, useCallback } from 'react';
+import { apiErrorMessage } from '@/lib/api-error';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -127,7 +128,7 @@ export default function InstallWizardPage() {
             });
             if (!res.ok) {
                 const err = await res.json().catch(() => ({ error: 'Install failed' }));
-                setError(err.error || err.message || 'Install failed');
+                setError(apiErrorMessage(err, 'Install failed'));
                 return;
             }
             const data = await res.json();

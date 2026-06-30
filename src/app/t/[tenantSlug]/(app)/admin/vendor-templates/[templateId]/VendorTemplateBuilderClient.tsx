@@ -19,6 +19,7 @@
  * "clone first" banner and disables the forms.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { apiErrorMessage } from '@/lib/api-error';
 import { useRouter } from 'next/navigation';
 import {
     useTenantApiUrl,
@@ -246,7 +247,7 @@ export function VendorTemplateBuilderClient({
             );
             if (!res.ok) {
                 const b = await res.json().catch(() => ({}));
-                setError(b.error ?? `Save failed (${res.status})`);
+                setError(apiErrorMessage(b, `Save failed (${res.status})`));
                 return;
             }
             setDirty(false);
@@ -296,7 +297,7 @@ export function VendorTemplateBuilderClient({
         if (res.ok) await refresh();
         else {
             const b = await res.json().catch(() => ({}));
-            setError(b.error ?? `Add question failed (${res.status})`);
+            setError(apiErrorMessage(b, `Add question failed (${res.status})`));
         }
     }
 

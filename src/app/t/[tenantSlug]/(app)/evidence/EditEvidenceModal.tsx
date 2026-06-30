@@ -14,6 +14,7 @@
  * on close.
  */
 import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from 'react';
+import { apiErrorMessage } from '@/lib/api-error';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { FormField } from '@/components/ui/form-field';
@@ -115,7 +116,7 @@ export function EditEvidenceModal({
             });
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
-                setError(err.error?.message || 'Failed to update evidence');
+                setError(apiErrorMessage(err, 'Failed to update evidence'));
                 return;
             }
             // Retention moved into this modal — persist via the dedicated
@@ -133,7 +134,7 @@ export function EditEvidenceModal({
                 });
                 if (!rr.ok) {
                     const err = await rr.json().catch(() => ({}));
-                    setError(err.error?.message || 'Saved details, but failed to update retention');
+                    setError(apiErrorMessage(err, 'Saved details, but failed to update retention'));
                     return;
                 }
             }
