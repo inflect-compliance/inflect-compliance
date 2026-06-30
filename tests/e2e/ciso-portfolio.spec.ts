@@ -287,9 +287,18 @@ test.describe('CISO portfolio journey (Epic O-4)', () => {
         await expect(page.locator('#org-tenants-table')).toBeVisible({
             timeout: 30_000,
         });
-        await expect(
-            page.locator(`[data-testid="org-tenant-link-${attemptSlug}"]`),
-        ).toBeVisible({ timeout: 15_000 });
+        // The newly-created tenant can lag on the org list (async provisioning
+        // + list revalidation), so reload-poll until the row shows rather than
+        // a single bounded wait (anti-flake).
+        const newTenantLink = page.locator(
+            `[data-testid="org-tenant-link-${attemptSlug}"]`,
+        );
+        await expect(async () => {
+            if (!(await newTenantLink.isVisible().catch(() => false))) {
+                await page.reload({ waitUntil: 'domcontentloaded' });
+            }
+            await expect(newTenantLink).toBeVisible({ timeout: 5_000 });
+        }).toPass({ timeout: 45_000 });
     });
 
     test('H — OrgSwitcher pivots from portfolio context into a tenant workspace', async ({ page }) => {

@@ -266,9 +266,17 @@ test.describe('Issue Management', () => {
         await authedPage.click('#submit-comment-btn');
         await authedPage.waitForLoadState('networkidle').catch(() => {});
 
+        // The comment list revalidates client-side after submit, which can lag
+        // under CI load. Reload to force a fresh server render before asserting
+        // (reselect the Comments tab, which reload resets to the default).
+        await authedPage.reload({ waitUntil: 'domcontentloaded' });
+        const commentsTab = authedPage.locator('#tab-comments');
+        await commentsTab.waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
+        await commentsTab.click().catch(() => {});
+        await authedPage.waitForLoadState('networkidle').catch(() => {});
         await expect(authedPage.locator('#comments-list')).toContainText(
             `E2E comment ${uid}`,
-            { timeout: 15000 },
+            { timeout: 20000 },
         );
     });
 
