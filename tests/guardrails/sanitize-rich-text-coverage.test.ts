@@ -69,6 +69,10 @@ const RICH_TEXT_COVERAGE: Readonly<
     // linkCveToAsset / updateVulnerabilityStatus write seams (sanitizeOptional
     // wraps sanitizePlainText for the three-state contract).
     AssetVulnerability: { usecases: ['src/app-layer/usecases/vulnerability.ts'], sanitizer: 'sanitizePlainText' },
+    // Scanner ingestion — ScannerFinding.description (scanner message; can
+    // quote source/secrets), sanitised in ingestScannerRun at the upsert
+    // seam before the Epic B middleware encrypts it.
+    ScannerFinding: { usecases: ['src/app-layer/usecases/scanner-ingestion.ts'], sanitizer: 'sanitizePlainText' },
     // RQ3-6 — loss-event narrative + reviewer justification; sanitised
     // at the single createLossEvent write seam before the Epic B
     // middleware persists them.
