@@ -67,35 +67,43 @@ describe('Epic 41 — default org dashboard preset', () => {
         }
     });
 
-    it('places the donut + trend side-by-side on row y=4', () => {
-        const donut = DEFAULT_ORG_DASHBOARD_PRESET.find(
-            (w) => w.type === 'DONUT',
+    it('Band 2 — POSTURE: maturity radar + open-risks trend side-by-side at y=4, equal height', () => {
+        const maturity = DEFAULT_ORG_DASHBOARD_PRESET.find(
+            (w) => w.type === 'ORG_MATURITY',
         );
         const trend = DEFAULT_ORG_DASHBOARD_PRESET.find(
             (w) => w.type === 'TREND',
         );
-        expect(donut).toBeDefined();
+        expect(maturity).toBeDefined();
         expect(trend).toBeDefined();
-        expect(donut?.position).toEqual({ x: 0, y: 4 });
-        expect(donut?.size).toEqual({ w: 6, h: 4 });
+        // Posture band: "where we stand" (maturity) + "where we're
+        // trending" (open risks), grouped, no orphaned half-row.
+        expect(maturity?.position).toEqual({ x: 0, y: 4 });
+        expect(maturity?.size).toEqual({ w: 6, h: 4 });
         expect(trend?.position).toEqual({ x: 6, y: 4 });
         expect(trend?.size).toEqual({ w: 6, h: 4 });
     });
 
-    it('places the tenant list full-width on row y=12', () => {
-        const list = DEFAULT_ORG_DASHBOARD_PRESET.find(
-            (w) => w.type === 'TENANT_LIST',
-        );
-        expect(list?.position).toEqual({ x: 0, y: 12 });
-        expect(list?.size).toEqual({ w: 12, h: 6 });
-    });
-
-    it('places the drilldown CTAs full-width on row y=18', () => {
+    it('Band 3 — INVESTIGATE: drilldown CTAs full-width at y=8 (above the per-tenant detail)', () => {
         const ctas = DEFAULT_ORG_DASHBOARD_PRESET.find(
             (w) => w.type === 'DRILLDOWN_CTAS',
         );
-        expect(ctas?.position).toEqual({ x: 0, y: 18 });
+        expect(ctas?.position).toEqual({ x: 0, y: 8 });
         expect(ctas?.size).toEqual({ w: 12, h: 2 });
+    });
+
+    it('Band 4 — PER-TENANT: health donut + coverage list side-by-side at y=10, equal height', () => {
+        const donut = DEFAULT_ORG_DASHBOARD_PRESET.find(
+            (w) => w.type === 'DONUT',
+        );
+        const list = DEFAULT_ORG_DASHBOARD_PRESET.find(
+            (w) => w.type === 'TENANT_LIST',
+        );
+        // Tenant-health distribution paired with the per-tenant breakdown.
+        expect(donut?.position).toEqual({ x: 0, y: 10 });
+        expect(donut?.size).toEqual({ w: 4, h: 6 });
+        expect(list?.position).toEqual({ x: 4, y: 10 });
+        expect(list?.size).toEqual({ w: 8, h: 6 });
     });
 
     it('includes the ORG_MATURITY radar (half-width)', () => {

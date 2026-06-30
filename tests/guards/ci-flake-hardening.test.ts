@@ -74,6 +74,17 @@ describe('CI flake hardening', () => {
         expect(jobTimeout('Docker Build')).toBeGreaterThanOrEqual(40);
     });
 
+    it('the Docker Build is resilient to the GHA-cache BlobNotFound flake', () => {
+        // cache EXPORT failures must never fail the build.
+        expect(CI).toMatch(/cache-to:\s*type=gha,mode=max,ignore-error=true/);
+        // The cached build is continue-on-error + has a cacheless retry
+        // gated on its failure, so a cache IMPORT 404 (BlobNotFound) can't
+        // abort an otherwise-fine build. A real build error still fails the
+        // retry (it has no continue-on-error).
+        expect(CI).toMatch(/id:\s*docker_build/);
+        expect(CI).toMatch(/steps\.docker_build\.outcome\s*==\s*'failure'/);
+    });
+
     it('npm ci is retried (no bare `run: npm ci`) so a transient registry ECONNRESET does not fail the job', () => {
         // The shared setup action installs deps for most jobs; its npm ci
         // must retry like prisma generate already does (2026-06: a registry

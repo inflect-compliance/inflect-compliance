@@ -24,24 +24,38 @@
  * Idempotent: a re-run on an org that already has widgets is a no-op,
  * never a duplicate.
  *
- * Layout is sized to match the prior visual grid. The page used a
- * 2-column responsive layout for sections 3+4 and full-width sections
- * for 5+6; the preset translates that to a 12-column react-grid-layout
- * sketch:
+ * ─── Information architecture (the default layout) ─────────────────
  *
- *   y=0   ┌── KPI ──┬── KPI ──┬── KPI ──┬── KPI ──┐
- *         │ cov 3×2 │ cri 3×2 │ ovd 3×2 │ ten 3×2 │
- *   y=2   ├──────── DONUT ─────┬──── TREND ───────┤
- *         │     rag 6×4        │  risks-open 6×4  │
- *   y=6   ├────────── TENANT_LIST 12×6 ───────────┤
- *         │                                       │
- *   y=12  ├────────── DRILLDOWN_CTAS 12×2 ────────┤
+ * The preset encodes a deliberate top-to-bottom narrative —
+ * glance → posture → investigate → per-tenant → programme — so the
+ * dashboard reads as an enterprise portfolio view, not a widget dump.
+ * Each band groups widgets that answer the SAME question, at a
+ * consistent height, with no orphaned half-rows. (See
+ * `docs/implementation-notes/2026-06-30-org-dashboard-composition.md`.)
+ *
+ *   y=0   ┌────────── ORG_THREAT_LEVEL 12×2 ──────┐  context banner
+ *         ├── KPI ──┬── KPI ──┬── KPI ──┬── KPI ──┤  Band 1 — GLANCE
+ *   y=2   │ cov 3×2 │ cri 3×2 │ ovd 3×2 │ ten 3×2 │  (4 equal tiles)
+ *   y=4   ├──── MATURITY 6×4 ──┬──── TREND 6×4 ───┤  Band 2 — POSTURE
+ *         │   radar (stand)    │ risks-open (trend)│  (equal height)
+ *   y=8   ├────────── DRILLDOWN_CTAS 12×2 ────────┤  Band 3 — INVESTIGATE
+ *   y=10  ├── DONUT 4×6 ──┬──── TENANT_LIST 8×6 ──┤  Band 4 — PER-TENANT
+ *         │ rag (health)  │  coverage-by-tenant   │  (health + breakdown)
+ *   y=16  ├────────── ORG_INITIATIVES 12×4 ───────┤  Band 5 — PROGRAMME
+ *         └───────────────────────────────────────┘  (the coda)
+ *
+ * Equal-height tiles WITHIN each band (Band 1 all h=2, Band 2 both
+ * h=4, Band 4 both h=6) give the page a consistent visual rhythm;
+ * the `org-dashboard-composition` guard locks the band structure +
+ * no-overlap invariant so a future edit can't drift it back into a
+ * scattered grid.
  *
  * Adding / removing widgets later: edit `DEFAULT_ORG_DASHBOARD_PRESET`
  * and ship a backfill that targets only the affected positions
  * (don't re-run the full seed; it short-circuits on any existing
- * widget). The backfill script's `--diff` mode (future work) is the
- * planned tool for that.
+ * widget). Existing orgs adopt a changed IA via the "Reset to
+ * recommended layout" action or `npm run db:reconcile-org-widgets`,
+ * which reflow to these preset positions.
  */
 
 import type { Prisma, OrgDashboardWidgetType } from '@prisma/client';
@@ -104,12 +118,13 @@ export const DEFAULT_ORG_DASHBOARD_PRESET: ReadonlyArray<CreateOrgDashboardWidge
         enabled: true,
     },
 
-    // ─── Row 2: donut + trend side-by-side ──────────────────────────
+    // ─── Band 2 — POSTURE: where we stand (maturity) + where we're
+    //     trending (open-risks), grouped side-by-side at equal height ──
     {
-        type: 'DONUT',
-        chartType: 'rag-distribution',
-        title: 'Tenant Health Distribution',
-        config: { showLegend: true },
+        type: 'ORG_MATURITY',
+        chartType: 'radar',
+        title: 'Security Maturity',
+        config: { view: 'radar', showCoverageHint: true },
         position: { x: 0, y: 4 },
         size: { w: 6, h: 4 },
         enabled: true,
@@ -124,45 +139,47 @@ export const DEFAULT_ORG_DASHBOARD_PRESET: ReadonlyArray<CreateOrgDashboardWidge
         enabled: true,
     },
 
-    // ─── Row 3: security-maturity radar (half-width, self-assessed) ──
-    {
-        type: 'ORG_MATURITY',
-        chartType: 'radar',
-        title: 'Security Maturity',
-        config: { view: 'radar', showCoverageHint: true },
-        position: { x: 0, y: 8 },
-        size: { w: 6, h: 4 },
-        enabled: true,
-    },
-
-    // ─── Row 3: tenant coverage list (full width) ───────────────────
-    {
-        type: 'TENANT_LIST',
-        chartType: 'coverage',
-        title: 'Coverage by Tenant',
-        config: { sortBy: 'rag' },
-        position: { x: 0, y: 12 },
-        size: { w: 12, h: 6 },
-        enabled: true,
-    },
-
-    // ─── Row 4: drill-down navigation cards (full width) ────────────
+    // ─── Band 3 — INVESTIGATE: drill-down navigation cards (full width,
+    //     above the per-tenant detail — investigate, then drill in) ────
     {
         type: 'DRILLDOWN_CTAS',
         chartType: 'default',
         title: 'Drill-down',
         config: {},
-        position: { x: 0, y: 18 },
+        position: { x: 0, y: 8 },
         size: { w: 12, h: 2 },
         enabled: true,
     },
-    // ─── Row 5: portfolio security-initiatives (wide, bottom) ───────
+
+    // ─── Band 4 — PER-TENANT: tenant-health distribution (donut) +
+    //     the per-tenant coverage breakdown, grouped at equal height ──
+    {
+        type: 'DONUT',
+        chartType: 'rag-distribution',
+        title: 'Tenant Health Distribution',
+        config: { showLegend: true },
+        position: { x: 0, y: 10 },
+        size: { w: 4, h: 6 },
+        enabled: true,
+    },
+    {
+        type: 'TENANT_LIST',
+        chartType: 'coverage',
+        title: 'Coverage by Tenant',
+        config: { sortBy: 'rag' },
+        position: { x: 4, y: 10 },
+        size: { w: 8, h: 6 },
+        enabled: true,
+    },
+
+    // ─── Band 5 — PROGRAMME: portfolio security-initiatives (the coda —
+    //     "what we're doing about it", full width, bottom) ────────────
     {
         type: 'ORG_INITIATIVES',
         chartType: 'list',
         title: 'Security Initiatives',
         config: { topN: 5 },
-        position: { x: 0, y: 20 },
+        position: { x: 0, y: 16 },
         size: { w: 12, h: 4 },
         enabled: true,
     },
