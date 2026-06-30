@@ -19,6 +19,7 @@ import type { ApplySessionInput, RiskAssessmentApiInput } from '@/app-layer/ai/r
 import { forbidden, notFound } from '@/lib/errors/types';
 import { sanitizeProviderInput, describePayload } from '@/app-layer/ai/risk-assessment/privacy-sanitizer';
 import { detectInputAnomalies } from '@/app-layer/ai/risk-assessment/input-anomaly';
+import { buildInferenceLog } from '@/app-layer/ai/risk-assessment/inference-log';
 import { applyOutputGuard } from '@/app-layer/ai/risk-assessment/output-guard';
 import { checkRateLimit, recordGeneration } from '@/app-layer/ai/risk-assessment/rate-limiter';
 import { enforceFeatureGate } from '@/app-layer/ai/risk-assessment/feature-gate';
@@ -154,13 +155,33 @@ export async function generateRiskSuggestions(
                 },
             });
 
-            // Audit log the failure
+            // Audit log the failure — with a structured inference log so a
+            // failed inference is as parseable as a successful one (C12.1.3).
             await logEvent(db, ctx, {
                 action: 'AI_RISK_SUGGESTIONS_GENERATED',
                 entityType: 'RiskSuggestionSession',
                 entityId: session.id,
                 details: `AI generation FAILED: ${err instanceof Error ? err.message : 'Unknown error'}`,
-                detailsJson: { category: 'entity_lifecycle', entityName: 'RiskSuggestionSession', operation: 'created', summary: 'AI_RISK_SUGGESTIONS_GENERATED' },
+                detailsJson: {
+                    category: 'entity_lifecycle',
+                    entityName: 'RiskSuggestionSession',
+                    operation: 'created',
+                    summary: 'AI_RISK_SUGGESTIONS_GENERATED',
+                    inferenceLog: buildInferenceLog({
+                        provider: provider.providerName,
+                        model: 'unknown',
+                        outcome: 'failure',
+                        durationMs: Date.now() - aiStart,
+                        suggestionCount: 0,
+                        safety: {
+                            outputRedactions: 0,
+                            droppedLowConfidence: 0,
+                            inputAnomalyCount: anomalyReport.anomalies.length,
+                            reviewRecommended: anomalyReport.flagged,
+                            fallback: true,
+                        },
+                    }),
+                },
                 metadata: {
                     success: false,
                     provider: provider.providerName,
@@ -178,6 +199,25 @@ export async function generateRiskSuggestions(
         const guard = applyOutputGuard(output);
         const guardedSuggestions = guard.suggestions;
 
+        // AISVS C12.1.3 — one structured inference record per call (carries the
+        // C12.1.2 safety-decision block + C12.2.5 token counts). Attached to the
+        // generation audit event below.
+        const inferenceLog = buildInferenceLog({
+            provider: output.provider,
+            model: output.modelName,
+            outcome: 'success',
+            durationMs: Date.now() - aiStart,
+            usage: output.usage,
+            suggestionCount: guardedSuggestions.length,
+            safety: {
+                outputRedactions: guard.redactions,
+                droppedLowConfidence: guard.droppedLowConfidence,
+                inputAnomalyCount: anomalyReport.anomalies.length,
+                reviewRecommended: anomalyReport.flagged,
+                fallback: output.isFallback ?? false,
+            },
+        });
+
         // AISVS C12 — record the successful AI generation (fallback=true when the
         // provider degraded to the deterministic stub but still returned output).
         recordAiRiskAssessment({
@@ -186,6 +226,8 @@ export async function generateRiskSuggestions(
             durationMs: Date.now() - aiStart,
             fallback: output.isFallback ?? false,
             suggestionCount: guardedSuggestions.length,
+            promptTokens: output.usage?.promptTokens,
+            completionTokens: output.usage?.completionTokens,
         });
 
         // 11. Store suggestion items
@@ -235,7 +277,16 @@ export async function generateRiskSuggestions(
             entityType: 'RiskSuggestionSession',
             entityId: session.id,
             details: `Generated ${items.length} risk suggestions using ${output.provider}/${output.modelName}. ${output.isFallback ? 'FALLBACK mode (baseline templates).' : 'AI model used.'}`,
-            detailsJson: { category: 'entity_lifecycle', entityName: 'RiskSuggestionSession', operation: 'created', summary: 'AI_RISK_SUGGESTIONS_GENERATED' },
+            // AISVS C12.1.3 — the structured inference log (provider/model/
+            // tokens/latency/outcome + the C12.1.2 safetyDecisions block) ships
+            // as structured detailsJson, parseable uniformly by a SIEM.
+            detailsJson: {
+                category: 'entity_lifecycle',
+                entityName: 'RiskSuggestionSession',
+                operation: 'created',
+                summary: 'AI_RISK_SUGGESTIONS_GENERATED',
+                inferenceLog,
+            },
             metadata: {
                 success: true,
                 provider: output.provider,
@@ -250,6 +301,10 @@ export async function generateRiskSuggestions(
                 // generation record so the draft's provenance shows it.
                 inputAnomalyCount: anomalyReport.anomalies.length,
                 reviewRecommended: anomalyReport.flagged,
+                // AISVS C12.2.5 — token counts for per-tenant attribution.
+                promptTokens: output.usage?.promptTokens ?? null,
+                completionTokens: output.usage?.completionTokens ?? null,
+                totalTokens: output.usage?.totalTokens ?? null,
                 frameworks: apiInput.frameworks,
                 assetCount: assets.length,
                 payloadSummary: payloadDescription,

@@ -75,12 +75,22 @@ export interface RiskSuggestion {
     isFallback?: boolean;
 }
 
+/** Token usage for one inference (AISVS C12.1.3 / C12.2.5). */
+export interface TokenUsage {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+}
+
 export interface RiskSuggestionOutput {
     suggestions: RiskSuggestion[];
     modelName: string;
     provider: string;
     /** True if output was generated from fallback templates (AI unavailable or not configured) */
     isFallback?: boolean;
+    /** Token usage reported by the provider, when available (absent for the
+     *  deterministic stub, which consumes no tokens). */
+    usage?: TokenUsage;
 }
 
 // ─── Provider Interface ───

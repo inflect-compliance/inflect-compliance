@@ -187,6 +187,38 @@ describe('C12 — AI observability + audit', () => {
     });
 });
 
+describe('C12.1.3 / C12.1.2 / C12.2.5 — structured inference log + token attribution (L2)', () => {
+    const log = read(`${AI}/inference-log.ts`);
+    const provider = read(`${AI}/openrouter-provider.ts`);
+    const metrics = read('src/lib/observability/metrics.ts');
+    const uc = read('src/app-layer/usecases/risk-suggestions.ts');
+
+    it('a versioned structured inference-log schema exists (C12.1.3)', () => {
+        expect(log).toMatch(/export function buildInferenceLog/);
+        expect(log).toMatch(/schema:\s*'ai\.inference\.v1'/);
+        expect(log).toMatch(/safetyDecisions/);
+    });
+
+    it('the provider captures token usage from the response (C12.2.5)', () => {
+        expect(provider).toMatch(/usage\?:/);
+        expect(provider).toMatch(/prompt_tokens/);
+        expect(provider).toMatch(/completion_tokens/);
+    });
+
+    it('a per-provider token metric exists (C12.2.5)', () => {
+        expect(metrics).toContain('ai.risk_assessment.tokens');
+        expect(metrics).toMatch(/promptTokens/);
+        expect(metrics).toMatch(/completionTokens/);
+    });
+
+    it('the usecase emits the inference log on the audit event (C12.1.3 / C12.1.2)', () => {
+        expect(uc).toMatch(/buildInferenceLog\(/);
+        expect(uc).toMatch(/inferenceLog/);
+        // token counts threaded to the metric.
+        expect(uc).toMatch(/promptTokens:\s*output\.usage\?\.promptTokens/);
+    });
+});
+
 // ── C11 ADVERSARIAL PROOF (behavioral) ──
 describe('C11 — adversarial: tenant-data injection does not alter instructions', () => {
     const INJECTION =

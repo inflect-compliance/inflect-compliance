@@ -885,6 +885,7 @@ let _aiRiskCalls: ReturnType<ReturnType<typeof getMeter>['createCounter']> | nul
 let _aiRiskDuration: ReturnType<ReturnType<typeof getMeter>['createHistogram']> | null = null;
 let _aiRiskFallbacks: ReturnType<ReturnType<typeof getMeter>['createCounter']> | null = null;
 let _aiRiskSuggestions: ReturnType<ReturnType<typeof getMeter>['createHistogram']> | null = null;
+let _aiRiskTokens: ReturnType<ReturnType<typeof getMeter>['createCounter']> | null = null;
 
 function getAiRiskCalls() {
     if (!_aiRiskCalls) {
@@ -922,6 +923,16 @@ function getAiRiskSuggestions() {
     }
     return _aiRiskSuggestions;
 }
+function getAiRiskTokens() {
+    if (!_aiRiskTokens) {
+        _aiRiskTokens = getMeter().createCounter('ai.risk_assessment.tokens', {
+            description:
+                'Tokens consumed by AI risk-assessment inferences, labelled by provider + kind (prompt/completion). Per-tenant attribution lives in the audit trail; this metric stays low-cardinality for capacity planning.',
+            unit: '1',
+        });
+    }
+    return _aiRiskTokens;
+}
 
 /**
  * Record one AI risk-assessment generation — called once at the usecase
@@ -931,6 +942,7 @@ function getAiRiskSuggestions() {
  *   - `ai.risk_assessment.duration`    histogram(provider, outcome)
  *   - `ai.risk_assessment.fallbacks`   counter  (provider) — when fallback=true
  *   - `ai.risk_assessment.suggestions` histogram(provider) — on success
+ *   - `ai.risk_assessment.tokens`      counter  (provider, kind) — when reported
  */
 export function recordAiRiskAssessment(attrs: {
     provider: string;
@@ -938,6 +950,9 @@ export function recordAiRiskAssessment(attrs: {
     durationMs: number;
     fallback: boolean;
     suggestionCount?: number;
+    /** Token usage when the provider reported it (AISVS C12.2.5). */
+    promptTokens?: number;
+    completionTokens?: number;
 }): void {
     const labels = { provider: attrs.provider, outcome: attrs.outcome };
     getAiRiskCalls().add(1, labels);
@@ -945,5 +960,13 @@ export function recordAiRiskAssessment(attrs: {
     if (attrs.fallback) getAiRiskFallbacks().add(1, { provider: attrs.provider });
     if (attrs.outcome === 'success' && typeof attrs.suggestionCount === 'number') {
         getAiRiskSuggestions().record(attrs.suggestionCount, { provider: attrs.provider });
+    }
+    // AISVS C12.2.5 — token volume by provider + kind (low cardinality; the
+    // per-tenant attribution lives in the audit inference-log).
+    if (typeof attrs.promptTokens === 'number') {
+        getAiRiskTokens().add(attrs.promptTokens, { provider: attrs.provider, kind: 'prompt' });
+    }
+    if (typeof attrs.completionTokens === 'number') {
+        getAiRiskTokens().add(attrs.completionTokens, { provider: attrs.provider, kind: 'completion' });
     }
 }
