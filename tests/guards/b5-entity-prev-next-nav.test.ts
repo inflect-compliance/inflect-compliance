@@ -47,7 +47,9 @@ describe('B5 — entity prev/next nav', () => {
         expect(ASSET).toMatch(/ids=\{assetIds\}/);
         expect(ASSET).toMatch(/currentId=\{assetId\}/);
         expect(ASSET).toMatch(/labelSingular="asset"/);
-        // the ordered id list is fetched from the list endpoint
-        expect(ASSET).toMatch(/setAssetIds/);
+        // the ordered id list is still fetched from the list endpoint —
+        // now via the client-cached useTenantSWR('/assets') read (Epic 69).
+        expect(ASSET).toMatch(/useTenantSWR<[\s\S]*?>\('\/assets'\)/);
+        expect(ASSET).toMatch(/assetIds = useMemo/);
     });
 });
