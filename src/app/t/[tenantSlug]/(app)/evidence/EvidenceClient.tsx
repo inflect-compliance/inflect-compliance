@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useSWRConfig } from 'swr';
-import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
+import { useTenantSWR, usePrefetchTenant } from '@/lib/hooks/use-tenant-swr';
 import { useKpiTrends, buildKpiSparklines, buildKpiSparklineNullable, centeredSparklineDomain, assignSparklineVariants } from '@/lib/charts/kpi-trends';
 import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
 import { UserCombobox } from '@/components/ui/user-combobox';
@@ -210,6 +210,13 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     // `rows` for the table and `truncated` for the banner. SSR
     // initial wraps with `truncated: false` (cap is 5000, SSR cap is
     // 100, so the SSR slice never trips truncation by itself).
+    // PR-5 — warm the detail-sheet data on row hover. Unlike the route-based
+    // lists (controls/risks/…) the evidence "drill-in" is a client-side Sheet,
+    // not a navigation — so there is no RSC route to prefetch, only the
+    // `EvidenceDetailSheet`'s `useTenantSWR(CACHE_KEYS.evidence.detail(id))`
+    // read to pre-populate. Warming it on hover means the sheet opens with the
+    // record already in cache instead of flashing its loading state.
+    const prefetchData = usePrefetchTenant();
     const evidenceQuery = useTenantSWR<CappedList<EvidenceRow>>(evidenceKey, {
         fallbackData: anyFilterActive
             ? undefined
@@ -1304,6 +1311,9 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                             setDetailEvidenceId(row.original.id);
                             setDetailSheetOpen(true);
                         }}
+                        onRowPrefetch={(row) =>
+                            prefetchData(CACHE_KEYS.evidence.detail(row.original.id))
+                        }
                         selectionEnabled
                         selectedRows={Object.fromEntries(
                             Array.from(selected).map((id) => [id, true]),
