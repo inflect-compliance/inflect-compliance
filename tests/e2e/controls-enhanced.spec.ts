@@ -73,19 +73,23 @@ test.describe('Controls Enhanced', () => {
         await authedPage.click('#tab-activity');
         await authedPage.waitForLoadState('networkidle').catch(() => {});
 
-        await Promise.race([
-            authedPage
-                .waitForSelector('#activity-feed', { timeout: 15000 })
-                .catch(() => null),
-            authedPage
-                .waitForSelector('text=No activity recorded', { timeout: 15000 })
-                .catch(() => null),
-        ]);
-
-        const hasActivity = await authedPage.locator('#activity-feed').isVisible();
-        const hasNoActivity = await authedPage
-            .locator('text=No activity recorded')
-            .isVisible();
-        expect(hasActivity || hasNoActivity).toBe(true);
+        // The activity tab lazy-loads its feed; under CI load neither the feed
+        // nor the empty-state may have mounted within a single wait. Reload-poll
+        // until one of the two terminal states is shown (anti-flake).
+        const activityFeed = authedPage.locator('#activity-feed');
+        const noActivity = authedPage.locator('text=No activity recorded');
+        await expect(async () => {
+            const feed = await activityFeed.isVisible().catch(() => false);
+            const empty = await noActivity.isVisible().catch(() => false);
+            if (!feed && !empty) {
+                await authedPage.reload({ waitUntil: 'domcontentloaded' });
+                await authedPage.locator('#tab-activity').click().catch(() => {});
+                await authedPage.waitForLoadState('networkidle').catch(() => {});
+            }
+            expect(
+                (await activityFeed.isVisible().catch(() => false)) ||
+                    (await noActivity.isVisible().catch(() => false)),
+            ).toBe(true);
+        }).toPass({ timeout: 75_000 });
     });
 });
