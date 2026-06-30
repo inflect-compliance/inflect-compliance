@@ -22,6 +22,7 @@ import {
     type ChartRendererProps,
 } from '@/components/ui/dashboard-widgets';
 import type { OrgDashboardWidgetDto } from '@/app-layer/schemas/org-dashboard-widget.schemas';
+import { resolveWidgetTitle } from '@/app-layer/usecases/org-dashboard-widget-titles';
 import type { OrgThreatLevelDto } from '@/app-layer/usecases/org-threat-level';
 import { OrgThreatLevelWidget } from './OrgThreatLevelWidget';
 import type { OrgMaturityDto } from '@/app-layer/usecases/org-maturity';
@@ -156,7 +157,12 @@ function resolveKpiContent(
     }
     return {
         chartType: 'kpi',
-        config: { label: widget.title ?? widget.chartType, value: null, format },
+        config: {
+            // Never the raw chartType slug — resolve a guaranteed human title.
+            label: resolveWidgetTitle(widget.type, widget.chartType, widget.title),
+            value: null,
+            format,
+        },
     };
 }
 
@@ -230,7 +236,11 @@ function resolveTrendContent(
             points,
             seriesId: widget.chartType,
             seriesColorClassName: colorMap[widget.chartType] ?? 'text-brand-default',
-            seriesLabel: widget.title ?? widget.chartType,
+            seriesLabel: resolveWidgetTitle(
+                widget.type,
+                widget.chartType,
+                widget.title,
+            ),
         },
     };
 }
@@ -266,7 +276,14 @@ export function DispatchedWidget({
     actionsSlot,
 }: DispatcherProps) {
     let body: React.ReactNode = null;
-    let title: string | undefined = widget.title ?? undefined;
+    // Guaranteed human title — never undefined / a raw slug. The DONUT /
+    // TREND arms (and any future chart widget) rely on this so a null-title
+    // widget renders titled, not as an untitled chart.
+    let title: string = resolveWidgetTitle(
+        widget.type,
+        widget.chartType,
+        widget.title,
+    );
     const domId = widgetDomId(widget);
 
     switch (widget.type) {

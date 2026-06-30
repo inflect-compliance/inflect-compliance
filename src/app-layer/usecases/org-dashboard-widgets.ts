@@ -45,6 +45,8 @@ import {
     type WidgetPosition,
     type WidgetSize,
 } from '@/app-layer/schemas/org-dashboard-widget.schemas';
+import { resolveWidgetTitle } from './org-dashboard-widget-titles';
+import { seedDefaultOrgDashboard } from './org-dashboard-presets';
 
 // ─── Permission helpers ────────────────────────────────────────────────
 
@@ -133,7 +135,11 @@ export async function createOrgDashboardWidget(
             organizationId: ctx.organizationId,
             type: input.type,
             chartType: input.chartType,
-            title: input.title ?? null,
+            // Guarantee a human title at persist time — a widget must
+            // NEVER land with a null/empty title (the dispatcher + null-
+            // title backfill share this resolver). Falls back to the
+            // canonical map, then a sentence-cased slug.
+            title: resolveWidgetTitle(input.type, input.chartType, input.title),
             // Cast through Prisma's accepted Json input shape. Zod
             // already verified `config` matches the per-type schema
             // at the route layer.
@@ -226,4 +232,40 @@ export async function deleteOrgDashboardWidget(
     }
     await bumpEntityCacheVersionForScope(ctx.organizationId, 'orgWidget');
     return { deleted: true, id: widgetId };
+}
+
+// ─── Reset ─────────────────────────────────────────────────────────────
+
+/**
+ * Reconcile a drifted org dashboard back to the recommended default
+ * layout. Org dashboards accumulate drift over time (duplicated tiles,
+ * null-title widgets from older code paths); this is the operator
+ * escape hatch.
+ *
+ * Deliberately destructive — preserves nothing. Every widget the org
+ * owns is deleted, then the full `DEFAULT_ORG_DASHBOARD_PRESET` is
+ * re-seeded. The delete + seed run inside one transaction so a reader
+ * never observes an empty dashboard mid-flight, and so a seed failure
+ * rolls the delete back. The seeder short-circuits when the org
+ * already has widgets, so it MUST run after the delete (count === 0).
+ *
+ * Gated by `canConfigureDashboard` (ORG_ADMIN) — the same write gate
+ * as create / update / delete.
+ */
+export async function resetOrgDashboardToPreset(
+    ctx: OrgContext,
+): Promise<OrgDashboardWidgetDto[]> {
+    assertCanWrite(ctx);
+
+    await prisma.$transaction(async (tx) => {
+        await tx.orgDashboardWidget.deleteMany({
+            where: { organizationId: ctx.organizationId },
+        });
+        // Count is 0 after the delete, so the seeder inserts the full
+        // preset rather than short-circuiting.
+        await seedDefaultOrgDashboard(tx, ctx.organizationId);
+    });
+
+    await bumpEntityCacheVersionForScope(ctx.organizationId, 'orgWidget');
+    return listOrgDashboardWidgets(ctx);
 }

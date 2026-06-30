@@ -32,6 +32,9 @@
  *                      verb in the same surface (file detach,
  *                      vendor document detach).
  *   - **Reject**     — refuse a request (approval, finding).
+ *   - **Reset**      — discard the current customised state and
+ *                      restore a recommended/default baseline
+ *                      (reset a drifted dashboard to its preset).
  *
  * What this ratchet locks
  *
@@ -71,6 +74,7 @@ const CANONICAL_VERBS = [
     'Unlink',
     'Detach',
     'Reject',
+    'Reset',
 ];
 
 // Match `confirmLabel="<verb> …"` (or `'<verb> …'`). Case-

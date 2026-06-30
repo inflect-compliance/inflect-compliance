@@ -136,7 +136,11 @@ describe('createOrgDashboardWidget', () => {
         ).rejects.toThrow(/do not have permission to configure/i);
     });
 
-    it('defaults title=null when omitted', async () => {
+    it('defaults a human title when omitted (never null / a raw slug)', async () => {
+        // A widget can no longer be persisted untitled — the create usecase
+        // resolves a guaranteed human title via resolveWidgetTitle. For an
+        // unmapped (type, chartType) that sentence-cases the slug
+        // ("count" → "Count"): never null, never the raw slug.
         mockPrisma.orgDashboardWidget.create.mockResolvedValueOnce(widgetRow);
 
         await createOrgDashboardWidget(writeCtx, {
@@ -148,7 +152,8 @@ describe('createOrgDashboardWidget', () => {
         } as any);
 
         const data = mockPrisma.orgDashboardWidget.create.mock.calls[0][0].data;
-        expect(data.title).toBeNull();
+        expect(data.title).toBe('Count');
+        expect(data.title).not.toBe('count');
     });
 
     it('defaults enabled=true when omitted', async () => {
