@@ -408,6 +408,13 @@ model Risk {
   mtpdHours         Int?
   /// Impact scores — financial / operational / regulatory / reputational, each 1-5.
   biaImpactJson     Json?
+  /// Optional LINDDUN privacy-threat classification — a JSON array of
+  /// category codes (e.g. ["DD","L"]) tagging this risk with the privacy
+  /// threats it embodies, ALONGSIDE the existing `category`. A LENS over the
+  /// existing risk machinery, not a parallel engine. See
+  /// `src/lib/privacy/linddun.ts` for the 7-category taxonomy (LINDDUN,
+  /// KU Leuven) + the advisory PET treatment hints.
+  linddunCategories Json?
   /// Business process(es) this risk could disrupt (comma-separated).
   affectedProcesses String?
   /// Estimated annual revenue at risk if this risk materialises.
@@ -506,6 +513,11 @@ model RiskTemplate {
   defaultLikelihood Int      @default(3)
   defaultImpact     Int      @default(3)
   frameworkTag      String?
+  /// Optional LINDDUN privacy-threat classification — a JSON array of
+  /// category codes (e.g. ["DD","L"]). A privacy LENS alongside `category`;
+  /// copied to the created Risk by `createRiskFromTemplate`. See
+  /// `src/lib/privacy/linddun.ts` for the taxonomy + advisory PET hints.
+  linddunCategories Json?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }

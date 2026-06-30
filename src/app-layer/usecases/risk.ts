@@ -8,6 +8,7 @@ import { notFound, badRequest } from '@/lib/errors/types';
 import { calculateRiskScore } from '@/lib/risk-scoring';
 import { runInTenantContext, type PrismaTx } from '@/lib/db-context';
 import { sanitizePlainText } from '@/lib/security/sanitize';
+import { normalizeLinddunCodes, petHintsForCodes, type LinddunCode } from '@/lib/privacy/linddun';
 import { cachedListRead, bumpEntityCacheVersion } from '@/lib/cache/list-cache';
 import { createAssignmentNotification } from '../notifications/assignment';
 import { recordRiskCreated } from '@/lib/observability/business-metrics';
@@ -240,6 +241,9 @@ interface RiskCreateInput {
     status?: string;
     targetDate?: string | null;
     nextReviewAt?: string | null;
+    /** LINDDUN privacy-threat classification (category codes) — a lens
+     *  alongside `category`; see src/lib/privacy/linddun.ts. */
+    linddunCategories?: string[] | null;
 }
 
 export async function createRiskFromTemplate(ctx: RequestContext, templateId: string, overrides: Partial<RiskCreateInput> = {}) {
@@ -277,6 +281,16 @@ export async function createRiskFromTemplate(ctx: RequestContext, templateId: st
             createdByUserId: ctx.userId,
             targetDate: overrides.targetDate ? new Date(overrides.targetDate) : null,
             nextReviewAt: overrides.nextReviewAt ? new Date(overrides.nextReviewAt) : null,
+            // P2 — the LINDDUN privacy lens rides along: a privacy risk
+            // template carries its LINDDUN classification, copied to the
+            // created risk (override wins). Normalized to valid codes only;
+            // omitted (column stays NULL) when there are none.
+            linddunCategories: ((): string[] | undefined => {
+                const codes = normalizeLinddunCodes(
+                    overrides.linddunCategories ?? template.linddunCategories,
+                );
+                return codes.length > 0 ? codes : undefined;
+            })(),
         });
 
         // RQ2-1 — opening INHERENT ledger entry (template-accepted
@@ -306,6 +320,30 @@ export async function createRiskFromTemplate(ctx: RequestContext, templateId: st
     return created;
 }
 
+/**
+ * P2 — the LINDDUN privacy LENS for a risk: its privacy-threat classification
+ * plus the ADVISORY PET treatment hints those categories suggest. Read-only —
+ * the hints are surfaced for the risk owner to consider, NEVER auto-applied as
+ * treatments (IC suggests PETs; the tenant decides).
+ */
+export async function getRiskPrivacyLens(ctx: RequestContext, riskId: string) {
+    assertCanRead(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const risk = await db.risk.findFirst({
+            where: { tenantId: ctx.tenantId, id: riskId },
+            select: { id: true, linddunCategories: true },
+        });
+        if (!risk) throw notFound('Risk not found');
+        const codes = normalizeLinddunCodes(risk.linddunCategories) as LinddunCode[];
+        return {
+            riskId: risk.id,
+            linddunCategories: codes,
+            // ADVISORY suggestions only — not auto-applied.
+            petTreatmentHints: petHintsForCodes(codes),
+        };
+    });
+}
+
 export async function updateRisk(ctx: RequestContext, id: string, data: {
     title?: string;
     description?: string | null;
@@ -329,6 +367,9 @@ export async function updateRisk(ctx: RequestContext, id: string, data: {
     status?: string;
     targetDate?: string | null;
     nextReviewAt?: string | null;
+    /// P2 — LINDDUN privacy classification. undefined leaves it untouched;
+    /// an array (possibly empty) replaces it (normalized to valid codes).
+    linddunCategories?: string[] | null;
 }) {
     assertCanWrite(ctx);
 
@@ -381,6 +422,12 @@ export async function updateRisk(ctx: RequestContext, id: string, data: {
                     : data.ownerUserId || null,
             targetDate: data.targetDate ? new Date(data.targetDate) : undefined,
             nextReviewAt: data.nextReviewAt ? new Date(data.nextReviewAt) : undefined,
+            // P2 — undefined leaves the LINDDUN classification untouched; an
+            // array (incl. empty) replaces it with the normalized valid codes.
+            linddunCategories:
+                data.linddunCategories === undefined
+                    ? undefined
+                    : normalizeLinddunCodes(data.linddunCategories),
             inherentScore,
             score: inherentScore,
             residualLikelihood: data.residualLikelihood,

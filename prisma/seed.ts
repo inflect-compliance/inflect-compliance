@@ -271,6 +271,45 @@ async function main() {
     }
     console.log('✅ Risk templates seeded (15 templates)');
 
+    // ─── Privacy risk templates (LINDDUN lens + OWASP Top 10 Privacy Risks) ───
+    // P2: IC's risk register had only one privacy template ("GDPR Non-Compliance").
+    // These add a privacy set, each carrying a LINDDUN privacy-threat
+    // classification (src/lib/privacy/linddun.ts — LINDDUN © KU Leuven) and a
+    // frameworkTag onto a NIST Privacy Framework subcategory. They ride the
+    // SAME RiskTemplate → createRiskFromTemplate path as every other template.
+    //
+    // P3: the OWASP Top 10 Privacy Risks (© OWASP, CC-BY-SA) entries are
+    // PARAPHRASED + attributed via the "[OWASP Top 10 Privacy Risks]" marker —
+    // never the verbatim OWASP text.
+    const privacyRiskTemplates: Array<{ id: string; title: string; description: string; category: string; defaultLikelihood: number; defaultImpact: number; frameworkTag: string; linddunCategories: string[] }> = [
+        // P2 — LINDDUN-categorized privacy risks
+        { id: 'priv-reidentification', title: 'Re-identification of De-identified Data', description: 'Individuals are singled out or re-identified from data that was meant to be anonymous or pseudonymous.', category: 'Privacy', defaultLikelihood: 2, defaultImpact: 5, frameworkTag: 'NIST-PF:CT.DP-P2', linddunCategories: ['I'] },
+        { id: 'priv-excessive-linking', title: 'Excessive Data Linking', description: 'Records meant to stay separate are correlated, building a fuller profile of an individual than any single source intended.', category: 'Privacy', defaultLikelihood: 3, defaultImpact: 3, frameworkTag: 'NIST-PF:CT.DP-P1', linddunCategories: ['L'] },
+        { id: 'priv-unlawful-processing', title: 'Unlawful or Non-compliant Processing', description: 'Personal data is processed without a valid legal basis or outside the bounds of applicable privacy regulation.', category: 'Privacy', defaultLikelihood: 2, defaultImpact: 5, frameworkTag: 'NIST-PF:GV.PO-P5', linddunCategories: ['NC'] },
+        { id: 'priv-excessive-disclosure', title: 'Excessive Data Collection and Disclosure', description: 'More personal data is collected, stored, or shared than necessary for the stated purpose.', category: 'Privacy', defaultLikelihood: 3, defaultImpact: 4, frameworkTag: 'NIST-PF:CT.PO-P2', linddunCategories: ['DD'] },
+        { id: 'priv-transparency-control', title: 'Lack of Transparency and Data-Subject Control', description: 'Individuals are unaware of how their data is processed and cannot exercise access, correction, deletion, or consent-withdrawal rights.', category: 'Privacy', defaultLikelihood: 3, defaultImpact: 3, frameworkTag: 'NIST-PF:CM.AW-P1', linddunCategories: ['U'] },
+        { id: 'priv-covert-tracking', title: 'Covert Tracking and Behavioral Detection', description: 'An individual\'s presence or activity is inferred from observable side effects without their awareness.', category: 'Privacy', defaultLikelihood: 2, defaultImpact: 3, frameworkTag: 'NIST-PF:CT.DP-P3', linddunCategories: ['D'] },
+        // P3 — OWASP Top 10 Privacy Risks (paraphrased + attributed)
+        { id: 'owasp-priv-webapp-breach', title: 'Web Application Vulnerability Leading to Data Breach', description: 'A web-application security flaw is exploited to expose personal data. [OWASP Top 10 Privacy Risks]', category: 'Privacy', defaultLikelihood: 3, defaultImpact: 5, frameworkTag: 'NIST-PF:PR.PO-P10', linddunCategories: ['DD'] },
+        { id: 'owasp-priv-operator-leak', title: 'Operator-Sided Data Leakage', description: 'Personal data leaks through the operator\'s own systems, staff, or processes rather than an external attack. [OWASP Top 10 Privacy Risks]', category: 'Privacy', defaultLikelihood: 3, defaultImpact: 5, frameworkTag: 'NIST-PF:PR.DS-P5', linddunCategories: ['DD'] },
+        { id: 'owasp-priv-breach-response', title: 'Insufficient Data Breach Response', description: 'The organization detects, handles, or notifies individuals of a privacy breach too slowly or incompletely. [OWASP Top 10 Privacy Risks]', category: 'Privacy', defaultLikelihood: 2, defaultImpact: 4, frameworkTag: 'NIST-PF:CM.AW-P7', linddunCategories: ['NC'] },
+        { id: 'owasp-priv-overbroad-consent', title: 'Overbroad or Bundled Consent', description: 'Consent is requested for everything at once rather than granular, purpose-specific choices. [OWASP Top 10 Privacy Risks]', category: 'Privacy', defaultLikelihood: 3, defaultImpact: 3, frameworkTag: 'NIST-PF:CT.PO-P1', linddunCategories: ['U'] },
+        { id: 'owasp-priv-nontransparent', title: 'Non-Transparent Policies and Terms', description: 'Privacy policies and terms are unclear, hard to find, or do not reflect actual data practices. [OWASP Top 10 Privacy Risks]', category: 'Privacy', defaultLikelihood: 3, defaultImpact: 3, frameworkTag: 'NIST-PF:CM.PO-P1', linddunCategories: ['U'] },
+        { id: 'owasp-priv-insufficient-deletion', title: 'Insufficient Deletion of Personal Data', description: 'Personal data is retained beyond its purpose or not fully deleted on request or expiry. [OWASP Top 10 Privacy Risks]', category: 'Privacy', defaultLikelihood: 3, defaultImpact: 4, frameworkTag: 'NIST-PF:CT.DM-P4', linddunCategories: ['DD'] },
+        { id: 'owasp-priv-data-quality', title: 'Insufficient Data Quality', description: 'Outdated or inaccurate personal data leads to wrong decisions about individuals. [OWASP Top 10 Privacy Risks]', category: 'Privacy', defaultLikelihood: 2, defaultImpact: 3, frameworkTag: 'NIST-PF:CT.DM-P1', linddunCategories: ['NC'] },
+        { id: 'owasp-priv-session-expiry', title: 'Missing or Insufficient Session Expiration', description: 'Sessions exposing personal data are not expired, leaving data accessible on shared or lost devices. [OWASP Top 10 Privacy Risks]', category: 'Privacy', defaultLikelihood: 2, defaultImpact: 3, frameworkTag: 'NIST-PF:PR.AC-P1', linddunCategories: ['DD'] },
+        { id: 'owasp-priv-access-modify', title: 'Inability of Users to Access and Modify Data', description: 'Individuals cannot view, correct, or export the personal data held about them. [OWASP Top 10 Privacy Risks]', category: 'Privacy', defaultLikelihood: 2, defaultImpact: 3, frameworkTag: 'NIST-PF:CT.PO-P3', linddunCategories: ['U'] },
+        { id: 'owasp-priv-unnecessary-collection', title: 'Collection of Data Not Required for the Primary Purpose', description: 'Personal data unrelated to the service\'s primary purpose is collected and retained. [OWASP Top 10 Privacy Risks]', category: 'Privacy', defaultLikelihood: 3, defaultImpact: 4, frameworkTag: 'NIST-PF:ID.IM-P6', linddunCategories: ['DD'] },
+    ];
+    for (const t of privacyRiskTemplates) {
+        await prisma.riskTemplate.upsert({
+            where: { id: t.id },
+            create: t,
+            update: { description: t.description, category: t.category, defaultLikelihood: t.defaultLikelihood, defaultImpact: t.defaultImpact, frameworkTag: t.frameworkTag, linddunCategories: t.linddunCategories },
+        });
+    }
+    console.log(`✅ Privacy risk templates seeded (${privacyRiskTemplates.length} LINDDUN + OWASP templates)`);
+
     // ─── Seed risks (tenant-wide) ───
     const riskCount = await prisma.risk.count({ where: { tenantId: tenant.id } });
     if (riskCount === 0) {
