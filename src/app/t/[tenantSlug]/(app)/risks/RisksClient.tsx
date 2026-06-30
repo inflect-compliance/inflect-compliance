@@ -1060,9 +1060,41 @@ function RisksPageInner({
                     }
                     navActions={
                         <>
+                            {/* Item 30 — Register and Matrix collapse to a
+                                single two-state toggle (table ⇄ heatmap of the
+                                same register). It leads the row — the view
+                                layout is the primary control; the icon buttons
+                                that follow are secondary navigation. The
+                                histogram is no longer a third peer in this
+                                toggle — it is its own standalone icon button,
+                                so the distribution view reads as a distinct
+                                analytical mode rather than a register layout.
+                                The choice persists (polish #13 pattern). */}
+                            <ToggleGroup
+                                size="sm"
+                                ariaLabel="Risks view"
+                                options={[
+                                    { value: 'register', label: t.register, id: 'risks-view-register' },
+                                    { value: 'heatmap', label: t.heatmap, id: 'risks-view-heatmap' },
+                                ]}
+                                selected={view === 'histogram' ? null : view}
+                                selectAction={(v) => setView(v as 'register' | 'heatmap')}
+                            />
+                            <Tooltip content={t.histogram}>
+                                <Button
+                                    variant={view === 'histogram' ? 'primary' : 'secondary'}
+                                    size="icon"
+                                    id="risks-view-histogram"
+                                    aria-label={t.histogram}
+                                    aria-pressed={view === 'histogram'}
+                                    onClick={() => setView('histogram')}
+                                >
+                                    <AppIcon name="dashboard" size={16} />
+                                </Button>
+                            </Tooltip>
                             {/* Vulnerabilities is a subpage of the Risk
-                                Register — reached via this leading icon button
-                                (the sidebar entry was retired). */}
+                                Register — reached via this icon button (the
+                                sidebar entry was retired). */}
                             <Tooltip content="Vulnerabilities">
                                 <Link
                                     href={tenantHref('/vulnerabilities')}
@@ -1084,33 +1116,6 @@ function RisksPageInner({
                                     </Link>
                                 </Tooltip>
                             ))}
-                            {/* Item 30 — Register and Matrix collapse to a
-                                single two-state toggle (table ⇄ heatmap of the
-                                same register). The histogram is no longer a
-                                third peer in this toggle — it is its own
-                                standalone button, so the distribution view
-                                reads as a distinct analytical mode rather than
-                                a register layout. The choice persists
-                                (polish #13 pattern). */}
-                            <ToggleGroup
-                                size="sm"
-                                ariaLabel="Risks view"
-                                options={[
-                                    { value: 'register', label: t.register, id: 'risks-view-register' },
-                                    { value: 'heatmap', label: t.heatmap, id: 'risks-view-heatmap' },
-                                ]}
-                                selected={view === 'histogram' ? null : view}
-                                selectAction={(v) => setView(v as 'register' | 'heatmap')}
-                            />
-                            <Button
-                                variant={view === 'histogram' ? 'primary' : 'secondary'}
-                                size="sm"
-                                id="risks-view-histogram"
-                                aria-pressed={view === 'histogram'}
-                                onClick={() => setView('histogram')}
-                            >
-                                {t.histogram}
-                            </Button>
                             {permissions.canWrite && (
                                 <Tooltip content="Import risks">
                                     <Link href={tenantHref('/risks/import')} aria-label="Import risks" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="risk-import-btn">
