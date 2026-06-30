@@ -520,7 +520,7 @@ export default function RiskDetailPage() {
                         fairAle: risk.fairAle,
                     }}
                     canWrite={canWrite}
-                    onRiskUpdated={fetchRisk}
+                    onRiskUpdated={() => riskQuery.mutate()}
                     onQuantify={() => setActiveTab('quantification')}
                     onLinkControls={() => setActiveTab('traceability')}
                 />
