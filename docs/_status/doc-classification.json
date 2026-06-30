@@ -3,7 +3,7 @@
   "description": "Classification of every docs/**/*.md. authoritative = true today; living = partially-shipped design direction; historical = moment-in-time record (incl. all of docs/implementation-notes/); deprecated = superseded redirect. Enforced by tests/guardrails/docs-accuracy.test.ts. See CLAUDE.md \"Doc classifications\".",
   "counts": {
     "authoritative": 105,
-    "historical": 311,
+    "historical": 312,
     "living": 5,
     "deprecated": 1
   },
@@ -1272,6 +1272,9 @@
       "class": "historical"
     },
     "docs/implementation-notes/2026-06-30-org-maturity-widget.md": {
+      "class": "historical"
+    },
+    "docs/implementation-notes/2026-06-30-evidence-title-css-truncation.md": {
       "class": "historical"
     }
   }

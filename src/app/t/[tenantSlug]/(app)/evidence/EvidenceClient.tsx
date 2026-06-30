@@ -23,7 +23,6 @@ import { EditEvidenceModal } from './EditEvidenceModal';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TableTitleCell } from '@/components/ui/table-title-cell';
-import { truncateGlyph } from '@/lib/text-utils';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import {
     DataTable,
@@ -680,18 +679,25 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
             // dedicated Type column.
 
             cell: ({ row }) => {
-                // Evidence has no dedicated detail page yet — the
-                // record opens via the master/detail pattern from
-                // this list page. Title is truncated to 20 chars (ending
-                // with a single … glyph); the full value shows on hover.
+                // Evidence has no dedicated detail page yet — the record opens
+                // via the master/detail pattern from this list page. The title
+                // is truncated VISUALLY with a CSS ellipsis (the semantic
+                // max-w-trunc-default token) — the FULL text stays in the DOM,
+                // so accessibility, search, copy-paste,
+                // and list assertions keep working; the full value also shows
+                // on hover. (A prior JS substring truncated the DOM text itself,
+                // which silently broke the evidence-list E2E specs that assert
+                // the new row's full title appears.)
                 const title = row.original.title;
                 const truncated = !!title && title.length > 20;
                 const inner = (
-                    <TableTitleCell>{truncateGlyph(title, 20)}</TableTitleCell>
+                    <TableTitleCell className="block max-w-trunc-default truncate">
+                        {title}
+                    </TableTitleCell>
                 );
                 return truncated ? (
                     <Tooltip content={title}>
-                        <span className="inline-flex">{inner}</span>
+                        <span className="inline-flex max-w-full min-w-0">{inner}</span>
                     </Tooltip>
                 ) : (
                     inner
