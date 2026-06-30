@@ -5,6 +5,7 @@
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
 import { formatDate } from '@/lib/format-date';
+import { apiErrorMessage } from '@/lib/api-error';
 import { Card, cardVariants } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { cn } from '@/lib/cn';
@@ -106,7 +107,7 @@ export default function UserMfaPage() {
                 setCode('');
                 await fetchStatus();
             } else {
-                setError(data.error || 'Invalid code. Please try again.');
+                setError(apiErrorMessage(data, 'Invalid code. Please try again.'));
             }
         } catch {
             setError('Verification failed');

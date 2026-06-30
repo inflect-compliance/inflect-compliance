@@ -6,6 +6,7 @@
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
 import { useState, useEffect, useCallback } from 'react';
+import { apiErrorMessage } from '@/lib/api-error';
 import { Card, cardVariants } from '@/components/ui/card';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import { Shield, ExternalLink, Trash2, Save, Eye, EyeOff } from 'lucide-react';
@@ -192,7 +193,7 @@ export default function SsoAdminPage() {
 
             if (!res.ok) {
                 const err = await res.json().catch(() => ({ error: 'Unknown error' }));
-                setError(err.error || err.message || 'Save failed');
+                setError(apiErrorMessage(err, 'Save failed'));
                 return;
             }
 

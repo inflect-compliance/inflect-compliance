@@ -19,6 +19,7 @@
  *   • DRAFT / SENT / IN_PROGRESS   — "not yet submitted" placeholder
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { apiErrorMessage } from '@/lib/api-error';
 import {
     useTenantApiUrl,
     useTenantContext,
@@ -235,7 +236,7 @@ export function VendorAssessmentReviewClient({
             );
             if (!res.ok) {
                 const b = await res.json().catch(() => ({}));
-                setError(b.error ?? `Save failed (${res.status})`);
+                setError(apiErrorMessage(b, `Save failed (${res.status})`));
                 return;
             }
             await refresh();
@@ -258,7 +259,7 @@ export function VendorAssessmentReviewClient({
             );
             if (!res.ok) {
                 const b = await res.json().catch(() => ({}));
-                setError(b.error ?? `Close failed (${res.status})`);
+                setError(apiErrorMessage(b, `Close failed (${res.status})`));
                 return;
             }
             await refresh();

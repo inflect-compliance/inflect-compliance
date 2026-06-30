@@ -6,6 +6,7 @@
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { apiErrorMessage } from '@/lib/api-error';
 import { Card, cardVariants } from '@/components/ui/card';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
@@ -287,7 +288,7 @@ export default function ApiKeysPage() {
 
             if (!res.ok) {
                 const err = await res.json().catch(() => ({ error: 'Create failed' }));
-                setError(err.error?.message || err.error || err.message || 'Create failed');
+                setError(apiErrorMessage(err, 'Create failed'));
                 return;
             }
 
@@ -320,7 +321,7 @@ export default function ApiKeysPage() {
             const res = await fetch(apiUrl(`/admin/api-keys/${key.id}`), { method: 'DELETE' });
             if (!res.ok) {
                 const err = await res.json().catch(() => ({ error: 'Revoke failed' }));
-                setError(err.error?.message || err.error || 'Revoke failed');
+                setError(apiErrorMessage(err, 'Revoke failed'));
                 throw new Error(err.error?.message || err.error || 'Revoke failed');
             }
             setSuccess(`API key "${key.name}" revoked successfully.`);

@@ -91,6 +91,39 @@ describe('C7 — output value validation (not just shape)', () => {
     });
 });
 
+describe('C7.2.2 / C7.3.2 / C7.3.3 / C5.2.4 — output safety gate (L2)', () => {
+    const guard = read(`${AI}/output-guard.ts`);
+    const uc = read('src/app-layer/usecases/risk-suggestions.ts');
+
+    it('an output-guard module exists exporting applyOutputGuard', () => {
+        expect(guard).toMatch(/export function applyOutputGuard/);
+    });
+
+    it('redacts system-prompt / instruction leaks (C7.3.2 / C5.2.4)', () => {
+        expect(guard).toMatch(/SYSTEM_LEAK_PATTERNS/);
+        expect(guard.toLowerCase()).toContain('untrusted');
+        expect(guard.toLowerCase()).toMatch(/ignore .*instructions/);
+    });
+
+    it('strips outbound content — URLs / images / HTML (C7.3.3)', () => {
+        expect(guard).toMatch(/export function stripOutboundContent/);
+        expect(guard).toContain('https?'); // bare-URL strip
+        expect(guard).toContain('[^>]+'); // HTML-tag strip
+    });
+
+    it('blocks below-floor confidence (C7.2.2)', () => {
+        expect(guard).toMatch(/MIN_CONFIDENCE/);
+        expect(guard).toMatch(/droppedLowConfidence/);
+    });
+
+    it('the gate runs at the usecase boundary BEFORE persistence', () => {
+        expect(uc).toMatch(/applyOutputGuard\(output\)/);
+        // The guarded set — not the raw output — is what gets stored.
+        expect(uc).toMatch(/guardedSuggestions\.map\(/);
+        expect(uc).toMatch(/outputRedactions/);
+    });
+});
+
 describe('C6 — model supply chain (pinned model)', () => {
     const provider = read(`${AI}/openrouter-provider.ts`);
 
