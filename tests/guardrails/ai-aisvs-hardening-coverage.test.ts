@@ -55,8 +55,8 @@ describe('AISVS self-assessment doc', () => {
         expect(doc).toMatch(/no vector DB|embeddings|RAG/i);
     });
 
-    it('states the honest L1-applicable-chapters badge, not an L3 claim', () => {
-        expect(doc).toMatch(/L1-verified for the applicable\s+chapters/i);
+    it('states the honest L2-applicable-chapters badge, not an L3 claim', () => {
+        expect(doc).toMatch(/L2-verified for the applicable\s+chapters/i);
         expect(doc).not.toMatch(/L3[- ]verified/i);
     });
 });
@@ -162,6 +162,34 @@ describe('C6 — model supply chain (pinned model)', () => {
         expect(model).not.toMatch(/latest|auto/i);
         // Dated snapshot suffix (YYYYMMDD) — the pin that prevents silent drift.
         expect(model).toMatch(/-\d{8}$/);
+    });
+});
+
+describe('C6.1.3 / C6.1.4 / C12.4.3 / C5.2.1 — supply-chain integrity + config audit + allow-list (L2)', () => {
+    const provider = read(`${AI}/openrouter-provider.ts`);
+    const gate = read(`${AI}/feature-gate.ts`);
+
+    it('validates the served model against the requested model (C6.1.3)', () => {
+        expect(provider).toMatch(/modelMismatch/);
+        expect(provider).toMatch(/actualModel/);
+        // The response `model` field is read for the comparison.
+        expect(provider).toMatch(/data\.model/);
+    });
+
+    it('surfaces a model/config override in the trail (C12.4.3 / C12.5.3)', () => {
+        expect(provider).toMatch(/this\.model !== DEFAULT_MODEL/);
+        expect(provider).toMatch(/overridden|override/i);
+    });
+
+    it('a deterministic golden-prompt eval exists (C6.1.4)', () => {
+        const evalTest = read('tests/unit/ai-golden-prompt-eval.test.ts');
+        expect(evalTest).toMatch(/StubRiskSuggestionProvider/);
+        expect(evalTest).toMatch(/RiskSuggestionOutputSchema/);
+    });
+
+    it('the feature gate is an explicit default-deny allow-list (C5.2.1 L2)', () => {
+        expect(gate).toMatch(/AI_ACCESS_ALLOWLIST/);
+        expect(gate).toMatch(/default-deny/i);
     });
 });
 

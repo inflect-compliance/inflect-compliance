@@ -43,6 +43,9 @@ export interface AiInferenceLog {
     totalTokens: number | null;
     /** Suggestions surfaced after the output gate (0 on failure). */
     suggestionCount: number;
+    /** AISVS C6.1.3 — true when the provider served a different model than
+     *  requested (silent-swap detection); null when unknown (stub/fallback). */
+    modelMismatch: boolean | null;
     safetyDecisions: InferenceSafetyDecisions;
 }
 
@@ -53,6 +56,7 @@ export function buildInferenceLog(input: {
     durationMs: number;
     usage?: TokenUsage;
     suggestionCount: number;
+    modelMismatch?: boolean | null;
     safety: InferenceSafetyDecisions;
 }): AiInferenceLog {
     return {
@@ -65,6 +69,7 @@ export function buildInferenceLog(input: {
         completionTokens: input.usage?.completionTokens ?? null,
         totalTokens: input.usage?.totalTokens ?? null,
         suggestionCount: input.suggestionCount,
+        modelMismatch: input.modelMismatch ?? null,
         safetyDecisions: input.safety,
     };
 }

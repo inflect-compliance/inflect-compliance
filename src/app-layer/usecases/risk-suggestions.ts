@@ -209,6 +209,7 @@ export async function generateRiskSuggestions(
             durationMs: Date.now() - aiStart,
             usage: output.usage,
             suggestionCount: guardedSuggestions.length,
+            modelMismatch: output.modelMismatch ?? null,
             safety: {
                 outputRedactions: guard.redactions,
                 droppedLowConfidence: guard.droppedLowConfidence,
