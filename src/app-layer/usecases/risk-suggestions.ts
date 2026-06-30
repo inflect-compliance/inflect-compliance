@@ -18,6 +18,7 @@ import type { RiskAssessmentInput, RiskAssessmentAsset } from '@/app-layer/ai/ri
 import type { ApplySessionInput, RiskAssessmentApiInput } from '@/app-layer/ai/risk-assessment/schemas';
 import { forbidden, notFound } from '@/lib/errors/types';
 import { sanitizeProviderInput, describePayload } from '@/app-layer/ai/risk-assessment/privacy-sanitizer';
+import { applyOutputGuard } from '@/app-layer/ai/risk-assessment/output-guard';
 import { checkRateLimit, recordGeneration } from '@/app-layer/ai/risk-assessment/rate-limiter';
 import { enforceFeatureGate } from '@/app-layer/ai/risk-assessment/feature-gate';
 import { bumpEntityCacheVersion } from '@/lib/cache/list-cache';
@@ -135,6 +136,13 @@ export async function generateRiskSuggestions(
             throw err;
         }
 
+        // AISVS C7.2.2 / C7.3.2 / C7.3.3 / C5.2.4 — output safety gate. Runs
+        // here (uniformly over every provider) so the PERSISTED text is already
+        // cleaned: system-prompt/instruction leaks redacted, outbound content
+        // (URLs / images / HTML) stripped, and below-floor confidence dropped.
+        const guard = applyOutputGuard(output);
+        const guardedSuggestions = guard.suggestions;
+
         // AISVS C12 — record the successful AI generation (fallback=true when the
         // provider degraded to the deterministic stub but still returned output).
         recordAiRiskAssessment({
@@ -142,12 +150,12 @@ export async function generateRiskSuggestions(
             outcome: 'success',
             durationMs: Date.now() - aiStart,
             fallback: output.isFallback ?? false,
-            suggestionCount: output.suggestions.length,
+            suggestionCount: guardedSuggestions.length,
         });
 
         // 11. Store suggestion items
         const items = await Promise.all(
-            output.suggestions.map(async (s) => {
+            guardedSuggestions.map(async (s) => {
                 // Try to find matching asset by name (use original assets for ID lookup)
                 const matchedAsset = s.relatedAssetName
                     ? assets.find(a => a.name.toLowerCase() === s.relatedAssetName?.toLowerCase())
@@ -199,6 +207,10 @@ export async function generateRiskSuggestions(
                 modelName: output.modelName,
                 isFallback: output.isFallback ?? false,
                 itemCount: items.length,
+                // AISVS C7 output-gate signals — how much the model output was
+                // scrubbed before it was persisted.
+                outputRedactions: guard.redactions,
+                droppedLowConfidence: guard.droppedLowConfidence,
                 frameworks: apiInput.frameworks,
                 assetCount: assets.length,
                 payloadSummary: payloadDescription,
