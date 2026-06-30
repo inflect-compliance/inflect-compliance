@@ -118,7 +118,7 @@ function SecurityTestingInner({ initialFindings, runs, tenantSlug }: Props) {
                     header: 'Finding',
                     accessorFn: (r) => r.title,
                     cell: ({ row }) => (
-                        <div className="min-w-0">
+                        <div className="min-w-0" data-testid={`scanner-finding-${row.original.id}`}>
                             <div className="truncate font-medium text-content-default">{row.original.title}</div>
                             <code className="text-xs text-content-subtle font-mono">{row.original.ruleId}</code>
                         </div>
