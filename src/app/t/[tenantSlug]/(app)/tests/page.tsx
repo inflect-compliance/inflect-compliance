@@ -412,23 +412,10 @@ function TestsRollupContent() {
                         <Heading level={1} id="tests-page-title">Tests</Heading>
                         <p className="text-sm text-content-muted mt-1">Test plans and recent results across all controls</p>
                     </div>
-                    <div className="flex gap-tight">
-                        <Tooltip content="Due queue">
-                            <Link href={tenantHref('/tests/due')} aria-label="Due queue" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="tests-due-btn">
-                                <AppIcon name="clock" size={16} />
-                            </Link>
-                        </Tooltip>
-                        <Tooltip content="Dashboard">
-                            <Link href={tenantHref('/tests/dashboard')} aria-label="Dashboard" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="tests-dashboard-btn">
-                                <AppIcon name="dashboard" size={16} />
-                            </Link>
-                        </Tooltip>
-                        <Tooltip content="Access reviews">
-                            <Link href={tenantHref('/access-reviews')} aria-label="Access reviews" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="tests-uar-btn">
-                                <AppIcon name="userCheck" size={16} />
-                            </Link>
-                        </Tooltip>
-                    </div>
+                    {/* Nav icon buttons moved into the FilterToolbar's actions
+                        slot (left of the column/filter gears), so the header
+                        action cluster is now empty — matches the other entity
+                        list pages (UI batch items 4-6). */}
                 </div>
             </ListPageShell.Header>
 
@@ -482,7 +469,26 @@ function TestsRollupContent() {
                     filters={visibleFilterDefs}
                     searchId="tests-search"
                     searchPlaceholder="Search test plans…"
-                    actions={<>{columnsDropdown}{filtersDropdown}</>}
+                    actions={
+                        <>
+                            <Tooltip content="Due queue">
+                                <Link href={tenantHref('/tests/due')} aria-label="Due queue" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="tests-due-btn">
+                                    <AppIcon name="clock" size={16} />
+                                </Link>
+                            </Tooltip>
+                            <Tooltip content="Dashboard">
+                                <Link href={tenantHref('/tests/dashboard')} aria-label="Dashboard" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="tests-dashboard-btn">
+                                    <AppIcon name="dashboard" size={16} />
+                                </Link>
+                            </Tooltip>
+                            <Tooltip content="Access reviews">
+                                <Link href={tenantHref('/access-reviews')} aria-label="Access reviews" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="tests-uar-btn">
+                                    <AppIcon name="userCheck" size={16} />
+                                </Link>
+                            </Tooltip>
+                            {columnsDropdown}{filtersDropdown}
+                        </>
+                    }
                 />
             </ListPageShell.Filters>
 
