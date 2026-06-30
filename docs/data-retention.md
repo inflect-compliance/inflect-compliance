@@ -52,6 +52,8 @@ a `userId` but stores no contact PII).
 | `AssetKeySequence` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
 | `AssetRiskLink` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
 | `AssetVulnerability` | Business record | No | Cascade on asset/CVE/tenant delete; status lifecycle (OPEN→MITIGATED/…) | Indefinite while tenant active — vuln-remediation record |
+| `ScannerRun` | Business record | No | Cascade on tenant delete | Indefinite while tenant active — the run is the provenance for any control evidence it produced |
+| `ScannerFinding` | Business record | Yes (`description`) | Cascade on run/tenant delete; deduped + status lifecycle (OPEN→FIXED/FALSE_POSITIVE/ACCEPTED) | Indefinite while tenant active — security-testing remediation record |
 | `Audit` | Business record | No | Soft-delete (`deletedAt`); 90-day purge via `data-lifecycle` | Active: indefinite. Soft-deleted: 90-day purge |
 | `AuditChecklistItem` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
 | `AuditCycle` | Business record | No | Soft-delete (`deletedAt`); 90-day purge via `data-lifecycle` | Active: indefinite. Soft-deleted: 90-day purge |

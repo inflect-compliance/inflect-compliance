@@ -383,6 +383,18 @@ const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
     // cross-table cvssScore sort is a small in-page sort. Bounded take ≤500.
     AssetVulnerability:
         'listVulnerabilities filters by tenantId (+status/assetId) — covered by @@index([tenantId, status]) / @@index([tenantId, assetId]); cvssScore sort is cross-table, bounded take ≤500.',
+    // Scanner ingestion — listScannerRuns filters by tenantId (+optional
+    // source), orders by ranAt; covered by @@index([tenantId, source, ranAt])
+    // (+ [tenantId, scanType, ranAt]); the unfiltered case is a small in-page
+    // sort on a per-tenant-bounded table. Bounded take ≤200.
+    ScannerRun:
+        'listScannerRuns filters by tenantId (+source), orders by ranAt — covered by @@index([tenantId, source, ranAt]) / @@index([tenantId, scanType, ranAt]); bounded take ≤200.',
+    // Scanner ingestion — listScannerFindings filters by tenantId (+status/
+    // severity), and the reconcile read filters by (tenantId, scannerRunId,
+    // status); covered by @@index([tenantId, status, severity]) +
+    // @@index([tenantId, scannerRunId, status]). Bounded take ≤500.
+    ScannerFinding:
+        'listScannerFindings filters by tenantId (+status/severity) — covered by @@index([tenantId, status, severity]) + @@index([tenantId, scannerRunId, status]); bounded take ≤500.',
     // Policy-template mapping — linkPolicyControls reads existing links by
     // policyId (+ controlId in-filter) to dedupe before createMany; covered
     // by @@index([tenantId, policyId]) (policyId is the leading filter under

@@ -3,7 +3,7 @@
   "description": "Classification of every docs/**/*.md. authoritative = true today; living = partially-shipped design direction; historical = moment-in-time record (incl. all of docs/implementation-notes/); deprecated = superseded redirect. Enforced by tests/guardrails/docs-accuracy.test.ts. See CLAUDE.md \"Doc classifications\".",
   "counts": {
     "authoritative": 105,
-    "historical": 318,
+    "historical": 319,
     "living": 5,
     "deprecated": 1
   },
@@ -1293,6 +1293,9 @@
       "class": "historical"
     },
     "docs/implementation-notes/2026-06-30-instant-nav-router-cache.md": {
+      "class": "historical"
+    },
+    "docs/implementation-notes/2026-07-01-scanner-ingestion.md": {
       "class": "historical"
     }
   }
