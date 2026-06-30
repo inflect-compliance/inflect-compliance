@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
+import { useTenantSWR, usePrefetchTenant } from '@/lib/hooks/use-tenant-swr';
 import { ownerDisplayName } from '@/lib/owner-display';
 import { BulkActionBar, type BulkActionDef } from '@/components/ui/bulk-action-bar';
 import { UserCombobox } from '@/components/ui/user-combobox';
@@ -236,6 +236,7 @@ function RisksPageInner({
     const apiUrl = (path: string) => `/api/t/${tenantSlug}${path}`;
     const tenantHref = (path: string) => `/t/${tenantSlug}${path}`;
     const router = useRouter();
+    const prefetchData = usePrefetchTenant();
     // RQ3-4 — per-risk tail percentiles (RQ3-1 cache); failure-soft:
     // without a run the chips render the mean register.
     // RQ3-4/5 — per-risk tail percentiles + appetite cap. Failure-soft via
@@ -1221,7 +1222,7 @@ function RisksPageInner({
                             setSortOrder(nextOrder);
                         }}
                         onRowClick={(row) => router.push(tenantHref(`/risks/${row.original.id}`))}
-                        onRowPrefetch={(row) => router.prefetch(tenantHref(`/risks/${row.original.id}`))}
+                        onRowPrefetch={(row) => { router.prefetch(tenantHref(`/risks/${row.original.id}`)); prefetchData(`/risks/${row.original.id}`); }}
                         selectionEnabled
                         selectedRows={Object.fromEntries(
                             Array.from(selected).map((id) => [id, true]),

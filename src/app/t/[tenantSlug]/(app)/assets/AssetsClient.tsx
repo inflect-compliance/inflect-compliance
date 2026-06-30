@@ -2,7 +2,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
+import { useTenantSWR, usePrefetchTenant } from '@/lib/hooks/use-tenant-swr';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import { DataTable, createColumns, useColumnsDropdown, sortRowsByDisplay, type SortAccessors } from '@/components/ui/table';
 import {
@@ -122,6 +122,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
     const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
     const searchParams = useSearchParams();
     const router = useRouter();
+    const prefetchData = usePrefetchTenant();
     useEffect(() => {
         if (searchParams?.get('create') === '1') {
             // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -717,7 +718,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                     onRowClick={(row) =>
                         router.push(tenantHref(`/assets/${row.original.id}`))
                     }
-                    onRowPrefetch={(row) => router.prefetch(tenantHref(`/assets/${row.original.id}`))}
+                    onRowPrefetch={(row) => { router.prefetch(tenantHref(`/assets/${row.original.id}`)); prefetchData(`/assets/${row.original.id}`); }}
                     emptyState={
                         hasActive ? (
                             <EmptyState
