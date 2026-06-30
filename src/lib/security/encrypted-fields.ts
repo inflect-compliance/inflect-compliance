@@ -118,6 +118,14 @@ export const ENCRYPTED_FIELDS: Readonly<Record<string, readonly string[]>> = {
     //  reference data (Cve table), so only the per-tenant note encrypts.
     AssetVulnerability: ['note'],
 
+    // ─── Scanner finding (DevSecOps ingestion) ─────────
+    //  A scanner message can quote the offending source line, a leaked
+    //  secret (gitleaks), or an exploit payload (ZAP) — confidential and
+    //  high attacker value. The run metadata (source/repoRef) is not
+    //  content, so only the per-finding description encrypts. Mirrors the
+    //  AssetVulnerability.note rationale in the same subsystem.
+    ScannerFinding: ['description'],
+
     // ─── Loss-event register (RQ3-6) ───────────────────
     //  Loss narratives are confidential business content (customer
     //  data exposed, settlement amounts, vendor reputation): the
