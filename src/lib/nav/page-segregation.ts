@@ -120,6 +120,7 @@ export const MAIN_PAGES: readonly string[] = [
     '/processes',
     '/reports',
     '/risks',
+    '/security-testing',
     '/tasks',
     '/tests',
     '/vendors',

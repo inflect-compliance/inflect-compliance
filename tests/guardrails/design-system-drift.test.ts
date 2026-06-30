@@ -272,10 +272,16 @@ describe('New page token discipline', () => {
         //     BackAffordance + ConfirmDialog primitives) in the unmigrated
         //     tally only because they aren't yet promoted to
         //     MIGRATED_PAGES; a trust-center follow-up.
+        //   - 112 (+2): security-testing — security-testing/page.tsx +
+        //     security-testing/SecurityTestingClient.tsx. New SARIF
+        //     scanner-findings surfaces (built on EntityListPage +
+        //     FilterToolbar + DataTable, semantic tokens only; sibling of
+        //     the vulnerabilities page) in the unmigrated tally only
+        //     because they aren't yet promoted to MIGRATED_PAGES.
         // Each increment names the epic + page + reason; promotion
         // to MIGRATED_PAGES is the path forward, never silent
         // floor-bumping.
-        expect(unmigrated.length).toBeLessThanOrEqual(110);
+        expect(unmigrated.length).toBeLessThanOrEqual(112);
     });
 
     it('migrated page count is at least 4', () => {
