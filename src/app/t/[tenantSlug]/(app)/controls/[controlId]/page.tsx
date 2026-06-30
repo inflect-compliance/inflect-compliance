@@ -219,9 +219,14 @@ export default function ControlDetailPage() {
     const [fileUploadError, setFileUploadError] = useState('');
     const fileUploadRef = useRef<HTMLInputElement>(null);
 
-    // Activity trail
-    const [activity, setActivity] = useState<AuditLogEntry[]>([]);
-    const [activityLoading, setActivityLoading] = useState(false);
+    // Activity trail — lazily loaded only while the Activity tab is open
+    // (conditional SWR key = null when closed), cached so re-opening the
+    // tab renders instantly instead of re-fetching every time.
+    const activityQuery = useTenantSWR<AuditLogEntry[]>(
+        tab === 'activity' ? `/controls/${controlId}/activity` : null,
+    );
+    const activity = activityQuery.data ?? [];
+    const activityLoading = activityQuery.isLoading;
 
     // Sync status — drives the header conflict/synced badges (the
     // overview Automation section + manual "Sync Now" were removed).
@@ -374,13 +379,8 @@ export default function ControlDetailPage() {
         setEditError('');
     };
 
-    // Fetch activity when activity tab opens
-    useEffect(() => {
-        if (tab !== 'activity') return;
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setActivityLoading(true);
-        fetch(apiUrl(`/controls/${controlId}/activity`)).then(r => r.ok ? r.json() : []).then(setActivity).catch(() => { }).finally(() => setActivityLoading(false));
-    }, [tab, apiUrl, controlId]);
+    // (Activity is now loaded via the conditional `activityQuery`
+    // useTenantSWR above — no imperative fetch-on-tab-open effect.)
 
     // Hydrate sync status from the page-data response (one round-trip
     // instead of the previous control-then-sync waterfall). The
