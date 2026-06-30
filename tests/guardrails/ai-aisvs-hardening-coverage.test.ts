@@ -124,6 +124,34 @@ describe('C7.2.2 / C7.3.2 / C7.3.3 / C5.2.4 — output safety gate (L2)', () => 
     });
 });
 
+describe('C2.1.7 / C11.4.1 / C12.2.2-4 — input anomaly detection + reserved tokens (L2)', () => {
+    const pb = read(`${AI}/prompt-builder.ts`);
+    const anomaly = read(`${AI}/input-anomaly.ts`);
+    const uc = read('src/app-layer/usecases/risk-suggestions.ts');
+
+    it('neutralizes reserved chat-template tokens (C2.1.7)', () => {
+        expect(pb).toMatch(/RESERVED_TOKEN_PATTERNS/);
+        expect(pb).toContain('<\\|'); // ChatML sentinel pattern
+        expect(pb).toMatch(/INST/);
+    });
+
+    it('exports a pure input-anomaly detector (C11.4.1)', () => {
+        expect(anomaly).toMatch(/export function detectInputAnomalies/);
+        expect(anomaly).toMatch(/injection_phrase|reserved_token|role_override/);
+    });
+
+    it('the usecase screens input + emits an AI_RISK_INPUT_ANOMALY event (C12.2.3/.2.4)', () => {
+        expect(uc).toMatch(/detectInputAnomalies\(sanitizedInput\)/);
+        expect(uc).toContain('AI_RISK_INPUT_ANOMALY');
+        // Offending field + kind ship as structured metadata.
+        expect(uc).toMatch(/anomalies\.map/);
+    });
+
+    it('flags the draft for human review when input is anomalous (C11.4.2)', () => {
+        expect(uc).toMatch(/reviewRecommended:\s*anomalyReport\.flagged/);
+    });
+});
+
 describe('C6 — model supply chain (pinned model)', () => {
     const provider = read(`${AI}/openrouter-provider.ts`);
 

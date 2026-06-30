@@ -18,6 +18,7 @@ import type { RiskAssessmentInput, RiskAssessmentAsset } from '@/app-layer/ai/ri
 import type { ApplySessionInput, RiskAssessmentApiInput } from '@/app-layer/ai/risk-assessment/schemas';
 import { forbidden, notFound } from '@/lib/errors/types';
 import { sanitizeProviderInput, describePayload } from '@/app-layer/ai/risk-assessment/privacy-sanitizer';
+import { detectInputAnomalies } from '@/app-layer/ai/risk-assessment/input-anomaly';
 import { applyOutputGuard } from '@/app-layer/ai/risk-assessment/output-guard';
 import { checkRateLimit, recordGeneration } from '@/app-layer/ai/risk-assessment/rate-limiter';
 import { enforceFeatureGate } from '@/app-layer/ai/risk-assessment/feature-gate';
@@ -85,6 +86,13 @@ export async function generateRiskSuggestions(
         const sanitizedInput = sanitizeProviderInput(providerInput);
         const payloadDescription = describePayload(sanitizedInput);
 
+        // 8b. AISVS C11.4.1 / C12.2.2-4 — screen the sanitized input for
+        // prompt-injection / probing signals. Non-blocking (the C2 trust
+        // boundary already contains the attack); we record it for monitoring
+        // and flag the resulting draft for careful human review (C11.4.2 —
+        // the human is the action gate, since AI output is advisory).
+        const anomalyReport = detectInputAnomalies(sanitizedInput);
+
         // 9. Create session record (DRAFT → will be GENERATED on success)
         const session = await db.riskSuggestionSession.create({
             data: {
@@ -95,6 +103,33 @@ export async function generateRiskSuggestions(
                 provider: 'pending',
             },
         });
+
+        // 9b. AISVS C12.2.3 / C12.2.4 — if the input screen flagged anything,
+        // emit a dedicated, AI-specific threat event carrying the offending
+        // field + kind + a short snippet (structured detailsJson only — no raw
+        // free-text shipped to the SIEM). Separate from the generation event so
+        // it alerts even if generation later succeeds normally.
+        if (anomalyReport.flagged) {
+            await logEvent(db, ctx, {
+                action: 'AI_RISK_INPUT_ANOMALY',
+                entityType: 'RiskSuggestionSession',
+                entityId: session.id,
+                details: `AI risk-assessment input flagged ${anomalyReport.anomalies.length} anomaly signal(s)`,
+                detailsJson: {
+                    category: 'custom',
+                    event: 'ai_risk_input_anomaly',
+                    anomalies: anomalyReport.anomalies.map((a) => ({
+                        field: a.field,
+                        kind: a.kind,
+                        snippet: a.snippet,
+                    })),
+                },
+                metadata: {
+                    anomalyCount: anomalyReport.anomalies.length,
+                    kinds: [...new Set(anomalyReport.anomalies.map((a) => a.kind))],
+                },
+            });
+        }
 
         // 10. Call provider with sanitized input
         const provider = getProvider();
@@ -211,13 +246,24 @@ export async function generateRiskSuggestions(
                 // scrubbed before it was persisted.
                 outputRedactions: guard.redactions,
                 droppedLowConfidence: guard.droppedLowConfidence,
+                // AISVS C11.4.2 — input anomaly screen result rides the
+                // generation record so the draft's provenance shows it.
+                inputAnomalyCount: anomalyReport.anomalies.length,
+                reviewRecommended: anomalyReport.flagged,
                 frameworks: apiInput.frameworks,
                 assetCount: assets.length,
                 payloadSummary: payloadDescription,
             },
         });
 
-        return { session: updatedSession, items };
+        // AISVS C11.4.2 — surface the review flag to the caller (API/UI) so a
+        // draft generated from anomalous input is presented "review carefully",
+        // the human acting as the action gate.
+        return {
+            session: updatedSession,
+            items,
+            reviewRecommended: anomalyReport.flagged,
+        };
     });
 }
 
