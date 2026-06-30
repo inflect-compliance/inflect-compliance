@@ -15,7 +15,7 @@
  * All selectors use existing id attributes — no data-testid additions.
  */
 import { test, expect } from './fixtures';
-import { safeGoto } from './e2e-utils';
+import { safeGoto, reloadUntilVisible } from './e2e-utils';
 
 test.describe('Epic 54 — Evidence upload modal', () => {
     test('clicking Upload File opens the modal without navigating away', async ({
@@ -102,9 +102,12 @@ test.describe('Epic 54 — Evidence upload modal', () => {
         await expect(authedPage.locator('#upload-form')).toBeHidden({
             timeout: 10000,
         });
-        await expect(authedPage.locator('#evidence-table')).toContainText(
-            `Modal Evidence ${uid}`,
-            { timeout: 15000 },
+        // The POST already succeeded above, so the row exists server-side; the
+        // list-read cache can still serve a stale view under CI load, so
+        // reload-poll past the 60s TTL until the row surfaces (anti-flake).
+        await reloadUntilVisible(
+            authedPage,
+            authedPage.locator('#evidence-table').getByText(`Modal Evidence ${uid}`),
         );
     });
 

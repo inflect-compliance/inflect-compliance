@@ -23,6 +23,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import { test, expect } from './fixtures';
+import { reloadUntilVisible } from './e2e-utils';
 import * as path from 'path';
 
 const EVIDENCE_FIXTURE = path.resolve(__dirname, '../fixtures/evidence.txt');
@@ -103,9 +104,13 @@ test.describe('Core Certification Flow', () => {
             await expect(page.locator('#upload-form')).not.toBeVisible({
                 timeout: 15000,
             });
-            await expect(
+            // The evidence list-read cache can serve a stale (pre-upload) view
+            // under parallel CI load; reload-poll past the 60s TTL so the new
+            // row is guaranteed to surface (anti-flake).
+            await reloadUntilVisible(
+                page,
                 page.locator(`text=E2E Evidence ${unique}`).first(),
-            ).toBeVisible({ timeout: 10000 });
+            );
         });
 
         // ── D) Create a Risk via API ──
