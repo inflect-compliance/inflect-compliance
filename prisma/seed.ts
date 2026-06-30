@@ -1421,6 +1421,75 @@ Reviewed at least annually.` },
     }
     console.log(`✅ EU AI Act framework + ${euAiActData.length} obligations + ${euAiActTiers.size} risk-tier packs seeded`);
 
+    // ─── NIST Privacy Framework v1.0 ───
+    // PUBLIC DOMAIN (NIST): "Information presented on NIST sites is considered
+    // public information and may be distributed or copied." The privacy
+    // companion to NIST CSF 2.0 (same Function/Category/Subcategory structure).
+    // Rides the generic framework/pack machinery — no special-casing.
+    const nistPrivacyData = require('./fixtures/nist_privacy_framework_requirements.json') as Array<{ key: string; section: string; sortOrder: number; title: string }>;
+    const nistPrivacyMeta = JSON.stringify({
+        locale: 'en',
+        provider: 'NIST',
+        packager: 'inflect',
+        publicationDate: '2020-01-16',
+        license: 'public-domain',
+        sourceUrl: 'https://www.nist.gov/privacy-framework',
+        copyright:
+            'Information presented on NIST sites is considered public ' +
+            'information and may be distributed or copied.',
+    });
+    const nistPrivacy = await prisma.framework.upsert({
+        where: { key_version: { key: 'NIST-PRIVACY', version: '1.0' } },
+        update: { name: 'NIST Privacy Framework v1.0', kind: 'NIST_FRAMEWORK', description: 'Privacy outcomes (Functions/Categories/Subcategories) for managing privacy risk — the privacy companion to NIST CSF.', metadataJson: nistPrivacyMeta, sourceUrn: 'urn:inflect:library:nist-privacy-framework-1.0' },
+        create: { key: 'NIST-PRIVACY', name: 'NIST Privacy Framework v1.0', version: '1.0', kind: 'NIST_FRAMEWORK', description: 'Privacy outcomes (Functions/Categories/Subcategories) for managing privacy risk — the privacy companion to NIST CSF.', metadataJson: nistPrivacyMeta, sourceUrn: 'urn:inflect:library:nist-privacy-framework-1.0' },
+    });
+    const nistPrivacyReqMap: Record<string, string> = {};
+    for (const req of nistPrivacyData) {
+        const r = await prisma.frameworkRequirement.upsert({
+            where: { frameworkId_code: { frameworkId: nistPrivacy.id, code: req.key } },
+            update: { title: req.title, section: req.section, sortOrder: req.sortOrder },
+            create: { frameworkId: nistPrivacy.id, code: req.key, title: req.title, section: req.section, category: req.section, sortOrder: req.sortOrder },
+        });
+        nistPrivacyReqMap[req.key] = r.id;
+    }
+    // One control template per Category (the 18 privacy Categories).
+    const nistPrivacyGroups = new Map<string, { title: string; reqs: string[] }>();
+    for (const req of nistPrivacyData) {
+        if (!nistPrivacyGroups.has(req.section)) nistPrivacyGroups.set(req.section, { title: req.section, reqs: [] });
+        nistPrivacyGroups.get(req.section)!.reqs.push(req.key);
+    }
+    let nistPrivacyGroupIdx = 0;
+    for (const [, info] of nistPrivacyGroups) {
+        const code = `PRIV-${String(nistPrivacyGroupIdx++).padStart(2, '0')}`;
+        const existing = await prisma.controlTemplate.findUnique({ where: { code } });
+        if (!existing) {
+            const tmpl = await prisma.controlTemplate.create({
+                data: { code, title: info.title, category: 'NIST Privacy', defaultFrequency: 'ANNUALLY' },
+            });
+            for (const task of defaultTasks) {
+                await prisma.controlTemplateTask.create({ data: { templateId: tmpl.id, title: task.title, description: task.description } });
+            }
+            for (const rk of info.reqs) {
+                if (nistPrivacyReqMap[rk]) {
+                    await prisma.controlTemplateRequirementLink.create({ data: { templateId: tmpl.id, requirementId: nistPrivacyReqMap[rk] } }).catch(() => { });
+                }
+            }
+        }
+    }
+    const nistPrivacyTmpls = await prisma.controlTemplate.findMany({ where: { code: { startsWith: 'PRIV-' } } });
+    const nistPrivacyPack = await prisma.frameworkPack.upsert({
+        where: { key: 'NIST_PRIVACY_BASELINE' },
+        update: { name: 'NIST Privacy Framework Baseline Pack', frameworkId: nistPrivacy.id, version: '1.0' },
+        create: { key: 'NIST_PRIVACY_BASELINE', name: 'NIST Privacy Framework Baseline Pack', frameworkId: nistPrivacy.id, version: '1.0', description: 'NIST Privacy Framework v1.0 privacy Functions, Categories, and Subcategories.' },
+    });
+    for (const tmpl of nistPrivacyTmpls) {
+        await prisma.packTemplateLink.upsert({
+            where: { packId_templateId: { packId: nistPrivacyPack.id, templateId: tmpl.id } },
+            create: { packId: nistPrivacyPack.id, templateId: tmpl.id }, update: {},
+        });
+    }
+    console.log(`✅ NIST Privacy Framework + ${nistPrivacyData.length} subcategories + ${nistPrivacyGroups.size} category packs seeded`);
+
     // ISO 9001 Pack
     const iso9001Tmpls = await prisma.controlTemplate.findMany({ where: { code: { startsWith: 'QMS-' } } });
     const iso9001Pack = await prisma.frameworkPack.upsert({
