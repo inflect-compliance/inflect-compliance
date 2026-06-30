@@ -71,12 +71,28 @@ export class OpenRouterRiskSuggestionProvider implements RiskSuggestionProvider 
             throw new Error(`OpenRouter API error ${response.status}: ${errorText}`);
         }
 
-        const data: { choices?: { message?: { content?: string } }[] } = await response.json();
+        const data: {
+            choices?: { message?: { content?: string } }[];
+            usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+        } = await response.json();
         const content = data?.choices?.[0]?.message?.content;
 
         if (!content) {
             throw new Error('OpenRouter returned empty content');
         }
+
+        // AISVS C12.1.3 / C12.2.5 — capture token usage when the provider
+        // reports it (OpenRouter echoes OpenAI's `usage` object). Maps to
+        // camelCase TokenUsage; omitted entirely when absent.
+        const u = data.usage;
+        const usage =
+            u && (u.prompt_tokens != null || u.completion_tokens != null)
+                ? {
+                      promptTokens: u.prompt_tokens ?? 0,
+                      completionTokens: u.completion_tokens ?? 0,
+                      totalTokens: u.total_tokens ?? (u.prompt_tokens ?? 0) + (u.completion_tokens ?? 0),
+                  }
+                : undefined;
 
         // Parse and validate the JSON response
         let parsed: unknown;
@@ -102,6 +118,7 @@ export class OpenRouterRiskSuggestionProvider implements RiskSuggestionProvider 
             modelName: this.model,
             provider: 'openrouter',
             isFallback: false,
+            usage,
         };
     }
 }

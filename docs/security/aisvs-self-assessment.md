@@ -75,7 +75,10 @@ Legend: **Met** / **Partial** / **Gap (fixed in this PR)** / **Accepted risk**.
 ### C12 — Monitoring, Logging & Anomaly Detection
 - **C12.1.1** (log AI interactions) — **Met.** Every generate/apply/dismiss writes a hash-chained audit event (`AI_RISK_SUGGESTIONS_GENERATED` / `_APPLIED` / `_DISMISSED`) with provider, model, item count, and a payload summary (`risk-suggestions.ts`).
 - **C12 (operational metrics)** — **Met (fixed in this PR).** `recordAiRiskAssessment` (`metrics.ts`) emits OTel `ai.risk_assessment.calls` / `.duration` / `.fallbacks` / `.suggestions`, recorded once per generation at the usecase boundary (success and failure).
+- **C12.1.3** (structured schema for inference logs) — **Met (L2).** `inference-log.ts::buildInferenceLog` emits one versioned record (`schema: 'ai.inference.v1'`) per inference — provider, model, token counts, latency, outcome — on the generation audit event's structured `detailsJson` (success AND failure), so a SIEM parses every AI call uniformly.
+- **C12.1.2** (log safety-filtering / policy decisions) — **Met (L2).** The inference log carries a `safetyDecisions` block recording what the gates did: output redactions (C7.3.2), low-confidence drops (C7.2.2), input-anomaly count (C11.4.1), the resulting review recommendation (C11.4.2), and fallback.
 - **C12.2.2 / C12.2.3 / C12.2.4** (identify unusual/probing patterns; AI-specific detection rules; offending metadata in alerts) — **Met (L2).** When `detectInputAnomalies` flags input, the usecase emits a dedicated `AI_RISK_INPUT_ANOMALY` audit event carrying the offending **field + kind + a short snippet** as structured `detailsJson` (no raw free-text shipped to the SIEM), separate from the generation event so it alerts independently.
+- **C12.2.5** (track token usage at granular attribution) — **Met (L2).** The provider captures the response `usage` (prompt/completion tokens); per-tenant granular attribution rides the inference log on the audit event, and an aggregate `ai.risk_assessment.tokens` OTel counter (labelled `provider` + `kind`) tracks volume for capacity planning without a high-cardinality tenant label.
 
 ## Verification badge
 
