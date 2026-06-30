@@ -297,6 +297,79 @@ model AssetVulnerability {
   @@index([assetId])
 }
 
+/// Tenant-scoped: one DevSecOps scanner execution (SAST/SCA/DAST/SECRETS/
+/// IAC) ingested into IC. The FIRST connector of the "external security
+/// signal → compliance graph" subsystem — a sibling to Cve /
+/// AssetVulnerability, NOT a parallel path. A PASSING run is materialised
+/// as automated control evidence (ControlEvidenceLink, kind
+/// INTEGRATION_RESULT); FAILING findings reconcile into `Finding` rows
+/// (sourceKind='SCANNER'). Full RLS + index coverage (tenantId present).
+model ScannerRun {
+  id           String           @id @default(cuid())
+  tenantId     String
+  /// 'SEMGREP'|'TRIVY'|'ZAP'|'GITLEAKS'|'CHECKOV'|'CODEQL'|'OTHER'.
+  source       String
+  /// 'SAST'|'SCA'|'DAST'|'SECRETS'|'IAC'.
+  scanType     String
+  ranAt        DateTime
+  /// 'PASS'|'FAIL'|'ERROR' — the gate outcome (reported by CI or derived
+  /// from the max finding severity vs the configured threshold).
+  outcome      String
+  /// Repo / project the scan ran against (free-text ref, e.g.
+  /// `owner/repo@<sha>`). NOT encrypted — a project identifier, not content.
+  repoRef      String?
+  findingCount Int              @default(0)
+  /// 'API'|'WEBHOOK'|'UPLOAD' — how the SARIF reached IC.
+  ingestedVia  String
+  createdAt    DateTime         @default(now())
+
+  tenant   Tenant           @relation(fields: [tenantId], references: [id])
+  findings ScannerFinding[]
+
+  @@index([tenantId, source, ranAt])
+  @@index([tenantId, scanType, ranAt])
+  @@index([tenantId])
+}
+
+/// Tenant-scoped normalised finding from a ScannerRun. Deduped across
+/// re-scans by `fingerprint` (SHA-256 of ruleId+location+message), so a
+/// recurring finding stays one row (the unique constraint makes ingest
+/// idempotent). `description` is Epic B-encrypted + Epic D-sanitised —
+/// scanner messages can quote source snippets / secrets.
+model ScannerFinding {
+  id           String     @id @default(cuid())
+  scannerRunId String
+  tenantId     String
+  /// SHA-256 fingerprint of (ruleId, location, message). Re-scans upsert
+  /// on (tenantId, fingerprint) — one row per distinct finding per tenant.
+  fingerprint  String
+  ruleId       String
+  /// 'LOW'|'MEDIUM'|'HIGH'|'CRITICAL' — mapped from SARIF `level` + the
+  /// tool's own severity via the documented matrix (sarif.ts).
+  severity     String
+  title        String
+  /// Encrypted at rest (Epic B manifest) + sanitised on write (Epic D).
+  description  String?
+  /// 'file:line' the finding points at.
+  location     String?
+  /// CWE refs (e.g. 'CWE-79') from the SARIF rule metadata — drive the
+  /// CWE → OWASP/SSDF framework cross-walk.
+  cweIds       String[]   @default([])
+  /// OPEN|TRIAGED|FIXED|FALSE_POSITIVE|ACCEPTED — triage lifecycle.
+  status       String     @default("OPEN")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id])
+  scannerRun ScannerRun @relation(fields: [scannerRunId], references: [id], onDelete: Cascade)
+
+  /// Idempotent ingest: re-scanning the same issue updates this one row.
+  @@unique([tenantId, fingerprint])
+  @@index([tenantId, scannerRunId, status])
+  @@index([tenantId, status, severity])
+  @@index([scannerRunId])
+}
+
 model Risk {
   id                 String    @id @default(cuid())
   tenantId           String
