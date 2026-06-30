@@ -15,7 +15,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Gauge } from 'lucide-react';
 
-import { RadarChart, TimeSeriesChart, Bars, XAxis, YAxis, chartReady } from '@/components/ui/charts';
+import { RadarChart, TimeSeriesChart, Bars, XAxis, YAxis, chartReady, chartEmpty } from '@/components/ui/charts';
+import { EmptyState } from '@/components/ui/empty-state';
 import { KPIStat } from '@/components/ui/metric';
 import { Button } from '@/components/ui/button';
 import { Sheet } from '@/components/ui/sheet';
@@ -90,16 +91,35 @@ export function OrgMaturityWidget({
                 )}
             </div>
 
-            <div className="min-h-0 flex-1">
+            {/* Guaranteed-height chart slot. NEVER `min-h-0` here — a
+                collapsible flex child gives the chart's auto-sizer a
+                0-height box and it renders blank. The explicit min-height
+                (≥ the chart's own 240px floor) keeps the radar visible
+                regardless of how the dashboard grid flexes. */}
+            <div className="min-h-[260px] flex-1">
                 {view === 'trend' ? (
                     <MaturityTrend orgSlug={orgSlug} />
                 ) : (
                     <RadarChart
-                        state={chartReady(radarAxes)}
+                        // Empty (not blank) until the org has real ratings —
+                        // the default DTO carries placeholder domains, so gate
+                        // on `isDefault` / an empty axis set.
+                        state={
+                            data.isDefault || radarAxes.length === 0
+                                ? chartEmpty()
+                                : chartReady(radarAxes)
+                        }
                         seriesIndex={2}
                         maxValue={5}
                         testId="org-maturity-radar"
                         ariaLabel="Security maturity by CSF function"
+                        emptyFallback={
+                            <EmptyState
+                                size="sm"
+                                title="No maturity ratings yet"
+                                description="Rate your maturity to populate this radar."
+                            />
+                        }
                     />
                 )}
             </div>
