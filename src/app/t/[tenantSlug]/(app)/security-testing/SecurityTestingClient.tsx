@@ -197,11 +197,8 @@ function SecurityTestingInner({ initialFindings, runs, tenantSlug }: Props) {
     return (
         <EntityListPage<ScannerFindingRow>
             header={{
-                back: { smart: true },
-                breadcrumbs: [
-                    { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
-                    { label: 'Security Testing' },
-                ],
+                // MAIN page (sidebar destination) — no back affordance /
+                // breadcrumbs (forbidden on roots; see page-segregation.ts).
                 title: (
                     <>
                         <ShieldAlert className="inline-block mr-2 h-5 w-5 align-text-bottom" />
