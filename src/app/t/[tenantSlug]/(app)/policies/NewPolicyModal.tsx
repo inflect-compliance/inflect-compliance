@@ -17,8 +17,19 @@ import { useRouter } from 'next/navigation';
 import { useTenantHref } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
+import { FormField } from '@/components/ui/form-field';
 import { useNewPolicyForm } from './_form/useNewPolicyForm';
 import { NewPolicyFields } from './_form/NewPolicyFields';
+
+// The "Start with" selector at the top of the modal. "New" keeps the blank
+// policy form below; "From template" navigates to the templates page (which
+// is the richer template-picker surface), making a separate toolbar button
+// unnecessary.
+const CREATE_MODE_OPTIONS: ComboboxOption[] = [
+    { value: 'new', label: 'New' },
+    { value: 'from-template', label: 'From template' },
+];
 
 export interface NewPolicyModalProps {
     open: boolean;
@@ -96,6 +107,32 @@ export function NewPolicyModal({
             />
             <Modal.Form id="new-policy-form" onSubmit={handleSubmit}>
                 <Modal.Body>
+                    <div className="mb-default">
+                        <FormField label="Start with">
+                            <Combobox
+                                id="new-policy-mode"
+                                name="newPolicyMode"
+                                options={CREATE_MODE_OPTIONS}
+                                selected={CREATE_MODE_OPTIONS[0]}
+                                setSelected={(o) => {
+                                    if (o?.value === 'from-template') {
+                                        // Jump to the templates page — the
+                                        // dedicated from-template surface.
+                                        setOpen(false);
+                                        router.push(
+                                            tenantHref('/policies/templates'),
+                                        );
+                                    }
+                                }}
+                                placeholder="New"
+                                hideSearch
+                                matchTriggerWidth
+                                forceDropdown
+                                buttonProps={{ className: 'w-full' }}
+                                caret
+                            />
+                        </FormField>
+                    </div>
                     {form.error && (
                         <div
                             className="mb-4 rounded-lg border border-border-error bg-bg-error px-3 py-2 text-sm text-content-error"
