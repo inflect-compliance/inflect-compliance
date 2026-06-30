@@ -36,25 +36,39 @@ export interface FeatureGateResult {
  * Check whether AI risk assessment is available for this context.
  * Returns { allowed: true } if all gates pass, or { allowed: false, reason } if blocked.
  */
+
+/**
+ * AISVS C5.2.1 (L2) — DEFAULT-DENY ALLOW-LIST.
+ *
+ * Access to the AI resource is denied by default and granted ONLY when EVERY
+ * allow-list predicate below passes (logical AND). Adding a capability requires
+ * adding a predicate here — there is no implicit-allow path. Each predicate
+ * returns a deny `reason` when it fails; reaching the end of the list is the
+ * only way to `allowed: true`.
+ */
+const AI_ACCESS_ALLOWLIST: ReadonlyArray<(ctx: RequestContext) => FeatureGateResult> = [
+    // 1. Global feature flag must be on (kill switch; off by default in prod).
+    () =>
+        AI_RISK_ENABLED
+            ? { allowed: true }
+            : { allowed: false, reason: 'AI risk assessment is currently disabled' },
+    // 2. Caller must hold the write capability (Editor / Admin / Owner).
+    (ctx) =>
+        ctx.permissions.canWrite
+            ? { allowed: true }
+            : { allowed: false, reason: 'AI risk assessment requires Editor or Admin role' },
+    // 3. Plan entitlement, when a required plan is configured.
+    (ctx) =>
+        AI_RISK_PLAN_REQUIRED ? checkPlanEntitlement(ctx, AI_RISK_PLAN_REQUIRED) : { allowed: true },
+];
+
 export function checkFeatureGate(ctx: RequestContext): FeatureGateResult {
-    // 1. Global feature flag
-    if (!AI_RISK_ENABLED) {
-        return { allowed: false, reason: 'AI risk assessment is currently disabled' };
+    // Default-deny: return the FIRST failing predicate's reason; reaching the
+    // end (every predicate passed) is the only allow path.
+    for (const predicate of AI_ACCESS_ALLOWLIST) {
+        const result = predicate(ctx);
+        if (!result.allowed) return result;
     }
-
-    // 2. Role check: admin or editor required
-    if (!ctx.permissions.canWrite) {
-        return { allowed: false, reason: 'AI risk assessment requires Editor or Admin role' };
-    }
-
-    // 3. Plan gating (stub — extend when billing is implemented)
-    if (AI_RISK_PLAN_REQUIRED) {
-        const planCheck = checkPlanEntitlement(ctx, AI_RISK_PLAN_REQUIRED);
-        if (!planCheck.allowed) {
-            return planCheck;
-        }
-    }
-
     return { allowed: true };
 }
 

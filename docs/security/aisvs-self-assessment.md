@@ -3,7 +3,8 @@
 **Scope:** Inflect Compliance's only AI-enabled subsystem — the AI risk-assessment
 feature at `src/app-layer/ai/risk-assessment/`. **Standard:** OWASP AISVS v1.0
 (github.com/OWASP/AISVS, CC-BY-SA-4.0 — requirements are referenced by ID, not
-quoted). **Target:** L1 (and L2 where noted) for the **applicable** chapters.
+quoted). **Target:** L2 for the **applicable** chapters (every applicable L1 requirement
+met, plus the applicable L2 requirements; L3 / non-applicable items excluded).
 
 ## What IC's AI actually is (scope honesty)
 
@@ -51,12 +52,14 @@ Legend: **Met** / **Partial** / **Gap (fixed in this PR)** / **Accepted risk**.
 - GPU sandboxing / TEE / edge items (C4.1.3–4, C4.2.x, C4.3.x) — **N/A**, the model is not self-hosted.
 
 ### C5 — Access Control & Identity for AI
-- **C5.2.1** (default-deny authorization on AI resources) — **Met (L1).** `feature-gate.ts::enforceFeatureGate` (global flag + role + optional plan) **and** an explicit `ctx.permissions.canWrite` check gate every generate/apply/dismiss; the feature is **off by default**. Sessions + results are tenant-scoped via `runInTenantContext`.
+- **C5.2.1** (default-deny allow-list authorization on AI resources) — **Met (L2).** `feature-gate.ts` encodes an explicit `AI_ACCESS_ALLOWLIST` — access is denied by default and granted ONLY when every predicate passes (global flag AND write capability AND optional plan); there is no implicit-allow path. Sessions + results are tenant-scoped via `runInTenantContext`; the feature is **off by default**.
 
 ### C6 — Model Supply Chain
 - **C6.1.2** (use approved sources) — **Met.** Models are pulled only from OpenRouter; the provider is selected by `env.AI_RISK_PROVIDER` and defaults to the in-repo stub.
 - **C6 (model pinning)** — **Met (fixed in this PR).** `DEFAULT_MODEL` is pinned to a **dated snapshot** (`anthropic/claude-3.5-sonnet-20241022`) instead of the floating `anthropic/claude-3.5-sonnet` alias, so an upstream model swap can't silently change behaviour. Updating the model is a deliberate edit to that constant or the `OPENROUTER_MODEL` override.
-- **Response integrity** — **Accepted risk.** IC cannot cryptographically verify the OpenRouter response; the mitigation is strict output validation (C7) + fallback, not transport integrity.
+- **C6.1.3** (third-party artifact integrity-verifiable) — **Met (L2).** IC can't sign the hosted model, but `openrouter-provider.ts` reads the response's `model` field and compares it to the requested/pinned model; a mismatch is logged (warn) and recorded as `modelMismatch` on the inference log — silent upstream model-swap detection.
+- **C6.1.4** (behaviourally test models before non-dev deployment) — **Met (L2).** A deterministic golden-prompt eval (`tests/unit/ai-golden-prompt-eval.test.ts`) runs the stub provider against a fixed input and asserts the output shape + value bounds — a regression guard on the prompt+schema contract, offline (no network).
+- **Response integrity** — **Accepted risk (transport).** IC cannot cryptographically verify transport; the mitigation is strict output validation (C7) + fallback + the C6.1.3 model-id check, not a signed channel.
 
 ### C7 — Model Behavior, Output Control & Safety
 - **C7.1.1** (validate output against schema) — **Met.** `RiskSuggestionOutputSchema.parse` rejects any output that doesn't match the schema; on parse failure the provider falls back to the deterministic stub (`openrouter-provider.ts`).
@@ -79,14 +82,19 @@ Legend: **Met** / **Partial** / **Gap (fixed in this PR)** / **Accepted risk**.
 - **C12.1.2** (log safety-filtering / policy decisions) — **Met (L2).** The inference log carries a `safetyDecisions` block recording what the gates did: output redactions (C7.3.2), low-confidence drops (C7.2.2), input-anomaly count (C11.4.1), the resulting review recommendation (C11.4.2), and fallback.
 - **C12.2.2 / C12.2.3 / C12.2.4** (identify unusual/probing patterns; AI-specific detection rules; offending metadata in alerts) — **Met (L2).** When `detectInputAnomalies` flags input, the usecase emits a dedicated `AI_RISK_INPUT_ANOMALY` audit event carrying the offending **field + kind + a short snippet** as structured `detailsJson` (no raw free-text shipped to the SIEM), separate from the generation event so it alerts independently.
 - **C12.2.5** (track token usage at granular attribution) — **Met (L2).** The provider captures the response `usage` (prompt/completion tokens); per-tenant granular attribution rides the inference log on the audit event, and an aggregate `ai.risk_assessment.tokens` OTel counter (labelled `provider` + `kind`) tracks volume for capacity planning without a high-cardinality tenant label.
+- **C12.4.3 / C12.5.3** (log config/override changes) — **Met (L2).** A non-default model (an `OPENROUTER_MODEL` override of the pinned `DEFAULT_MODEL`) is logged once at provider construction, so a runtime model/config change is never silent.
 
 ## Verification badge
 
-**Inflect's risk-assessment AI is AISVS v1.0 L1-verified for the applicable
+**Inflect's risk-assessment AI is AISVS v1.0 L2-verified for the applicable
 chapters (C2, C4, C5, C6, C7, C11, C12).** Chapters C1, C3, C8, C9, C10 are
 **not applicable** (no model training/hosting, embeddings, agents, or MCP). This
 is a precise, defensible claim — **not** an L3 / high-assurance claim, and not a
-claim about chapters IC's AI doesn't touch.
+claim about chapters IC's AI doesn't touch. The L2 uplift landed across four
+PRs: output safety gate (C7) → input anomaly detection (C2.1.7 / C11.4 / C12.2)
+→ structured inference log + token attribution (C12.1 / C12.2.5) →
+supply-chain integrity + config audit + allow-list (C6.1.3/.1.4 / C12.4 /
+C5.2.1).
 
 _This document is the evidence; every "Met" points at a named file/function and
 is locked by `tests/guardrails/ai-aisvs-hardening-coverage.test.ts`._

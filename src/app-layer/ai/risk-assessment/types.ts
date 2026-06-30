@@ -91,6 +91,11 @@ export interface RiskSuggestionOutput {
     /** Token usage reported by the provider, when available (absent for the
      *  deterministic stub, which consumes no tokens). */
     usage?: TokenUsage;
+    /** The model the provider reports actually served the request (AISVS
+     *  C6.1.3) — used to detect a silent upstream model swap. */
+    actualModel?: string;
+    /** True when `actualModel` differs from the requested/pinned model. */
+    modelMismatch?: boolean;
 }
 
 // ─── Provider Interface ───
