@@ -49,6 +49,22 @@ const defaultOptions = {
         '@aws-sdk/s3-request-presigner',
     ],
     experimental: {
+        // Client Router Cache stale times (Next 15+). The hot app routes are
+        // `force-dynamic` (per-tenant auth + URL filters), so their default
+        // client-cache stale time is 0 — every back/forward or re-navigation
+        // re-runs the full server render (~276 ms TTFB measured on prod),
+        // which is the ~0.5 s "not instant" feel. Holding the prefetched /
+        // visited dynamic RSC in the client router cache for 30 s lets a
+        // re-navigation render from cache (instant), while the Epic-69 SWR
+        // layer still revalidates the DATA on mount/focus so the list is
+        // never more than one fetch stale. 30 s mirrors the `cachedSsrPayload`
+        // TTL so the two cache layers expire in lockstep. Paired with
+        // `prefetch` on the sidebar nav links (nav-item.tsx) so the first
+        // click is served from cache too, not just repeat visits.
+        staleTimes: {
+            dynamic: 30,
+            static: 180,
+        },
         // optimizePackageImports remains experimental in Next 15.
         // Barrel/submodule packages — let Next rewrite imports to the
         // specific entry points so unused code tree-shakes out of the
