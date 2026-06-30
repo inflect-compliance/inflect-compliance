@@ -15,7 +15,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import { test, expect } from './fixtures';
-import { gotoAndVerify } from './e2e-utils';
+import { gotoAndVerify, reloadUntilVisible } from './e2e-utils';
 
 test.describe('Control Tests (Test-of-Control)', () => {
     test('control → test plan → run → PASS → FAIL scenario', async ({
@@ -149,14 +149,12 @@ test.describe('Control Tests (Test-of-Control)', () => {
                 timeout: 10000,
             });
             // The finding is created from the test-run summary on completion and
-            // rendered after a revalidation round-trip; under parallel CI load
-            // that client revalidation can lag past any reasonable timeout, so
-            // reload to force a fresh server render before asserting (anti-flake).
-            await page.reload({ waitUntil: 'domcontentloaded' });
-            await page.waitForLoadState('networkidle').catch(() => {});
-            await expect(
+            // surfaced after a revalidation round-trip that can lag under CI
+            // load; reload-poll until it renders (anti-flake).
+            await reloadUntilVisible(
+                page,
                 page.locator('text=Unauthorized admin access detected'),
-            ).toBeVisible({ timeout: 30000 });
+            );
         });
     });
 

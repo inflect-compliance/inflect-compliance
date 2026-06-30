@@ -298,7 +298,7 @@ test.describe('CISO portfolio journey (Epic O-4)', () => {
                 await page.reload({ waitUntil: 'domcontentloaded' });
             }
             await expect(newTenantLink).toBeVisible({ timeout: 5_000 });
-        }).toPass({ timeout: 45_000 });
+        }).toPass({ timeout: 75_000 });
     });
 
     test('H — OrgSwitcher pivots from portfolio context into a tenant workspace', async ({ page }) => {

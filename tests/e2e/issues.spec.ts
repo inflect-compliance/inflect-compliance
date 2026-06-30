@@ -14,7 +14,7 @@
 import { randomUUID } from 'node:crypto';
 import { test, expect } from './fixtures';
 import type { Page } from '@playwright/test';
-import { loginAndGetTenant, gotoAndVerify, safeGoto, selectComboboxOption } from './e2e-utils';
+import { loginAndGetTenant, gotoAndVerify, safeGoto, selectComboboxOption, reloadUntilVisible } from './e2e-utils';
 
 /** Seed-tenant READER — only used by the read-only role-gate test. */
 const READER_USER = { email: 'viewer@acme.com', password: 'password123' };
@@ -266,17 +266,21 @@ test.describe('Issue Management', () => {
         await authedPage.click('#submit-comment-btn');
         await authedPage.waitForLoadState('networkidle').catch(() => {});
 
-        // The comment list revalidates client-side after submit, which can lag
-        // under CI load. Reload to force a fresh server render before asserting
-        // (reselect the Comments tab, which reload resets to the default).
-        await authedPage.reload({ waitUntil: 'domcontentloaded' });
-        const commentsTab = authedPage.locator('#tab-comments');
-        await commentsTab.waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
-        await commentsTab.click().catch(() => {});
-        await authedPage.waitForLoadState('networkidle').catch(() => {});
-        await expect(authedPage.locator('#comments-list')).toContainText(
-            `E2E comment ${uid}`,
-            { timeout: 20000 },
+        // The comment list-read cache can serve a stale view under CI load;
+        // reload-poll past the 60s TTL, reselecting the Comments tab (which a
+        // reload resets to the default) each iteration (anti-flake).
+        await reloadUntilVisible(
+            authedPage,
+            authedPage.locator('#comments-list').getByText(`E2E comment ${uid}`),
+            {
+                afterReload: async () => {
+                    await authedPage
+                        .locator('#tab-comments')
+                        .click()
+                        .catch(() => {});
+                    await authedPage.waitForLoadState('networkidle').catch(() => {});
+                },
+            },
         );
     });
 

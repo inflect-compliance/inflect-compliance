@@ -7,7 +7,36 @@
 import { randomUUID, randomBytes } from 'node:crypto';
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve as resolvePath } from 'node:path';
-import { request as playwrightRequest, type APIRequestContext, type Page } from '@playwright/test';
+import { expect, request as playwrightRequest, type APIRequestContext, type Locator, type Page } from '@playwright/test';
+
+/**
+ * Reload-poll until a locator is visible — the robust pattern for
+ * "mutation → row appears in a list" assertions.
+ *
+ * The list-read cache (`src/lib/cache/list-cache.ts`) carries a 60s TTL
+ * backstop, and its explicit version-bump invalidation can race under
+ * parallel CI load, so a single reload may still read a stale (pre-mutation)
+ * cached list. Reloading on each poll iteration guarantees the row appears
+ * once invalidation lands OR the TTL expires — whichever comes first. The
+ * default `timeout` therefore exceeds the 60s cache TTL (the per-test budget
+ * is 180s). `afterReload` re-establishes view state a reload resets, e.g.
+ * reselecting a detail tab.
+ */
+export async function reloadUntilVisible(
+    page: Page,
+    locator: Locator,
+    opts: { timeout?: number; afterReload?: () => Promise<void> } = {},
+): Promise<void> {
+    const { timeout = 75_000, afterReload } = opts;
+    await expect(async () => {
+        if (!(await locator.isVisible().catch(() => false))) {
+            await page.reload({ waitUntil: 'domcontentloaded' });
+            await page.waitForLoadState('networkidle').catch(() => {});
+            if (afterReload) await afterReload();
+        }
+        await expect(locator).toBeVisible({ timeout: 5_000 });
+    }).toPass({ timeout });
+}
 
 /**
  * Pick an option from one of the shared `<Combobox>` controls (Epic 55

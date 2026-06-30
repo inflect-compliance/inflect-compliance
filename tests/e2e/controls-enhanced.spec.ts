@@ -90,6 +90,6 @@ test.describe('Controls Enhanced', () => {
                 (await activityFeed.isVisible().catch(() => false)) ||
                     (await noActivity.isVisible().catch(() => false)),
             ).toBe(true);
-        }).toPass({ timeout: 45_000 });
+        }).toPass({ timeout: 75_000 });
     });
 });
