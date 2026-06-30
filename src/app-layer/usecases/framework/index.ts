@@ -9,6 +9,7 @@
 export {
     listFrameworks,
     listInstallableFrameworks,
+    resolveFrameworkPackKeys,
     getFramework,
     getFrameworkRequirements,
     listFrameworkPacks,

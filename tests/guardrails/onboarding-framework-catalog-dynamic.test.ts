@@ -36,6 +36,13 @@ describe('onboarding framework catalog — usecase + route', () => {
         expect(src).toContain('templateLinks');
     });
 
+    it('the catalog usecase resolves packs per framework, case-insensitively', () => {
+        const src = read('src/app-layer/usecases/framework/catalog.ts');
+        expect(src).toContain('export async function resolveFrameworkPackKeys');
+        expect(src).toMatch(/frameworkPack\.findMany/);
+        expect(src).toMatch(/p\.framework\.key\.toLowerCase\(\)/);
+    });
+
     it('the onboarding/frameworks route is wired to the usecase', () => {
         const src = read('src/app/api/t/[tenantSlug]/onboarding/frameworks/route.ts');
         expect(src).toContain('withApiErrorHandling');
@@ -72,10 +79,10 @@ describe('onboarding framework catalog — installer is dynamic', () => {
         expect(src).not.toContain('FRAMEWORK_PACK_KEYS');
     });
 
-    it('resolves a framework\'s packs from the catalog at install time', () => {
-        expect(src).toMatch(/frameworkPack\.findMany/);
-        // Grouped case-insensitively so legacy lowercase states still resolve.
-        expect(src).toMatch(/p\.framework\.key\.toLowerCase\(\)/);
+    it('resolves a framework\'s packs via the catalog usecase (no direct prisma)', () => {
+        expect(src).toMatch(/resolveFrameworkPackKeys\(ctx, selectedFrameworks\)/);
+        // Layering: the installer never reaches for the global prisma client.
+        expect(src).not.toContain("from '@/lib/prisma'");
     });
 
     it('matches starter-risk framework tags case-insensitively', () => {

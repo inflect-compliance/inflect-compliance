@@ -27,13 +27,7 @@ jest.mock('@/lib/db-context', () => ({
 
 jest.mock('@/app-layer/usecases/framework', () => ({
     installPack: jest.fn(),
-}));
-
-// The installer resolves each selected framework's packs dynamically from
-// the catalog (one frameworkPack.findMany, grouped case-insensitively).
-const mockFrameworkPackFindMany = jest.fn();
-jest.mock('@/lib/prisma', () => ({
-    prisma: { frameworkPack: { findMany: (...args: unknown[]) => mockFrameworkPackFindMany(...args) } },
+    resolveFrameworkPackKeys: jest.fn(),
 }));
 
 jest.mock('@/app-layer/events/audit', () => ({
@@ -48,7 +42,7 @@ jest.mock('@/app-layer/repositories/OnboardingRepository', () => ({
 }));
 
 import { AssetType } from '@prisma/client';
-import { installPack } from '@/app-layer/usecases/framework';
+import { installPack, resolveFrameworkPackKeys } from '@/app-layer/usecases/framework';
 import { logEvent } from '@/app-layer/events/audit';
 import { OnboardingRepository } from '@/app-layer/repositories/OnboardingRepository';
 import {
@@ -222,12 +216,20 @@ beforeEach(() => {
     jest.clearAllMocks();
     mockDbHolder.db = freshDb();
     (installPack as jest.Mock).mockResolvedValue({ controlsCreated: 3, tasksCreated: 2 });
-    // Default catalog: the two seeded baseline packs. Framework keys are the
-    // canonical DB form (uppercase); the installer matches case-insensitively.
-    mockFrameworkPackFindMany.mockResolvedValue([
-        { key: 'ISO27001_2022_BASE', framework: { key: 'ISO27001' } },
-        { key: 'NIS2_BASELINE', framework: { key: 'NIS2' } },
-    ]);
+    // Default catalog: the two seeded baseline packs, resolved case-insensitively
+    // and keyed by the lowercased framework key (mirrors resolveFrameworkPackKeys).
+    (resolveFrameworkPackKeys as jest.Mock).mockImplementation(async (_ctx: unknown, keys: string[]) => {
+        const catalog: Record<string, string[]> = {
+            iso27001: ['ISO27001_2022_BASE'],
+            nis2: ['NIS2_BASELINE'],
+        };
+        const grouped = new Map<string, string[]>();
+        for (const k of keys) {
+            const lk = k.toLowerCase();
+            if (catalog[lk]) grouped.set(lk, catalog[lk]);
+        }
+        return grouped;
+    });
 });
 
 describe('runStepAction routing', () => {

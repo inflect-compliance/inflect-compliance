@@ -50,6 +50,34 @@ export async function listInstallableFrameworks(ctx: RequestContext) {
     }));
 }
 
+/**
+ * Resolve the installable pack keys for a set of framework keys, grouped by
+ * the (lowercased) framework key. One catalog query; case-insensitive so
+ * callers may pass canonical DB keys ('ISO27001') or legacy lowercase values
+ * ('iso27001'). Used by onboarding to install whatever a tenant selected
+ * without a hand-maintained framework→pack map.
+ */
+export async function resolveFrameworkPackKeys(
+    ctx: RequestContext,
+    frameworkKeys: string[],
+): Promise<Map<string, string[]>> {
+    assertCanViewFrameworks(ctx);
+    const grouped = new Map<string, string[]>();
+    if (frameworkKeys.length === 0) return grouped;
+    const wanted = new Set(frameworkKeys.map((k) => k.toLowerCase()));
+    const packs = await prisma.frameworkPack.findMany({
+        select: { key: true, framework: { select: { key: true } } },
+    });
+    for (const p of packs) {
+        const fwKey = p.framework.key.toLowerCase();
+        if (!wanted.has(fwKey)) continue;
+        const list = grouped.get(fwKey) ?? [];
+        list.push(p.key);
+        grouped.set(fwKey, list);
+    }
+    return grouped;
+}
+
 export async function getFramework(ctx: RequestContext, frameworkKey: string, version?: string) {
     assertCanViewFrameworks(ctx);
     const db = prisma;

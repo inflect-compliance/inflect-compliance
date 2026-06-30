@@ -11,11 +11,10 @@
  * - Task/team setup → creates starter tasks only if none exist for onboarding
  */
 import { RequestContext } from '../types';
-import { installPack } from './framework';
+import { installPack, resolveFrameworkPackKeys } from './framework';
 import { runInTenantContext } from '@/lib/db-context';
 import { logEvent } from '../events/audit';
 import { OnboardingRepository } from '../repositories/OnboardingRepository';
-import { prisma } from '@/lib/prisma';
 import type { AssetType, WorkItemType } from '@prisma/client';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -152,22 +151,11 @@ async function executeFrameworkInstall(ctx: RequestContext, allData: StepData): 
     }
 
     // Resolve every selected framework's installable packs dynamically from
-    // the catalog — no hand-maintained framework→pack map. One query for the
-    // whole (small, global) pack table, grouped case-insensitively so legacy
+    // the catalog — no hand-maintained framework→pack map. The framework
+    // usecase does one query and groups case-insensitively so legacy
     // in-progress states that stored lowercase keys ('iso27001', 'nis2')
     // still resolve after the picker switched to canonical DB keys.
-    const wanted = new Set(selectedFrameworks.map(f => f.toLowerCase()));
-    const allPacks = await prisma.frameworkPack.findMany({
-        select: { key: true, framework: { select: { key: true } } },
-    });
-    const packsByFramework = new Map<string, string[]>();
-    for (const p of allPacks) {
-        const fwKey = p.framework.key.toLowerCase();
-        if (!wanted.has(fwKey)) continue;
-        const list = packsByFramework.get(fwKey) ?? [];
-        list.push(p.key);
-        packsByFramework.set(fwKey, list);
-    }
+    const packsByFramework = await resolveFrameworkPackKeys(ctx, selectedFrameworks);
 
     for (const fw of selectedFrameworks) {
         const packKeys = packsByFramework.get(fw.toLowerCase()) ?? [];
