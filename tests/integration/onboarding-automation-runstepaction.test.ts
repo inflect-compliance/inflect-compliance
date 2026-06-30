@@ -38,7 +38,9 @@ const SUITE = `onb-${randomUUID().slice(0, 8)}`;
 const TENANT_ID = `t-${SUITE}`;
 
 let userId = '';
-// The pack key we wire into FRAMEWORK_PACK_KEYS['iso27001'] in the source.
+// The installer resolves packs by FRAMEWORK key (case-insensitive), so the
+// selection must name this framework, not a hardcoded pack key.
+const FW_KEY = `ISO27001-${SUITE}`;
 const ISO_PACK_KEY = 'iso27001-2022-baseline';
 let frameworkId = '';
 let requirementId = '';
@@ -50,7 +52,7 @@ async function seedFrameworkCatalog() {
     // FRAMEWORK_PACK_KEYS['iso27001'] mapping.
     const fw = await globalPrisma.framework.create({
         data: {
-            key: `ISO27001-${SUITE}`,
+            key: FW_KEY,
             name: 'ISO 27001 (test)',
             version: '2022',
         },
@@ -151,20 +153,21 @@ describeFn('onboarding-automation — runStepAction & storeActionResult (integra
         expect(res).toEqual({ action: 'FRAMEWORK_INSTALL', created: 0, skipped: 0, details: '' });
     });
 
-    it('FRAMEWORK_SELECTION with an unknown framework hits the !packKey skip branch', async () => {
-        const allData = { FRAMEWORK_SELECTION: { selectedFrameworks: ['soc2'] } };
+    it('FRAMEWORK_SELECTION with an unknown framework hits the no-pack skip branch', async () => {
+        const allData = { FRAMEWORK_SELECTION: { selectedFrameworks: [`NOPACK-${SUITE}`] } };
         const res = await runStepAction(ctx(), 'FRAMEWORK_SELECTION', {}, allData);
         expect(res).toMatchObject({ action: 'FRAMEWORK_INSTALL', created: 0, skipped: 1 });
-        expect(res!.details).toContain('No pack found for framework: soc2');
+        expect(res!.details).toContain('no installable pack in catalog');
     });
 
-    it('FRAMEWORK_SELECTION installs a known pack (happy path) then is idempotent on re-run', async () => {
-        const allData = { FRAMEWORK_SELECTION: { selectedFrameworks: ['iso27001'] } };
+    it('FRAMEWORK_SELECTION installs a framework\'s pack (happy path, case-insensitive key) then is idempotent', async () => {
+        // Lowercased selection still resolves to the FW_KEY framework.
+        const allData = { FRAMEWORK_SELECTION: { selectedFrameworks: [FW_KEY.toLowerCase()] } };
 
         const first = await runStepAction(ctx(), 'FRAMEWORK_SELECTION', {}, allData);
         // 2 templates in the pack → 2 controls created on first install.
         expect(first).toMatchObject({ action: 'FRAMEWORK_INSTALL', created: 2, skipped: 0 });
-        expect(first!.details).toContain('iso27001: 2 controls');
+        expect(first!.details).toContain(`${FW_KEY.toLowerCase()}: 2 controls`);
 
         const controls = await globalPrisma.control.findMany({ where: { tenantId: TENANT_ID } });
         expect(controls).toHaveLength(2);
@@ -175,15 +178,15 @@ describeFn('onboarding-automation — runStepAction & storeActionResult (integra
         expect(await globalPrisma.control.count({ where: { tenantId: TENANT_ID } })).toBe(2);
     });
 
-    it('FRAMEWORK_SELECTION hits the catch branch when the mapped pack is absent from the catalog', async () => {
-        // Temporarily delete the pack so installPack throws notFound → caught.
+    it('FRAMEWORK_SELECTION skips a framework whose pack is absent from the catalog', async () => {
+        // Delete the pack so the framework resolves to zero installable packs.
         await globalPrisma.packTemplateLink.deleteMany({ where: { pack: { key: ISO_PACK_KEY } } });
         await globalPrisma.frameworkPack.deleteMany({ where: { key: ISO_PACK_KEY } });
         try {
-            const allData = { FRAMEWORK_SELECTION: { selectedFrameworks: ['iso27001'] } };
+            const allData = { FRAMEWORK_SELECTION: { selectedFrameworks: [FW_KEY] } };
             const res = await runStepAction(ctx(), 'FRAMEWORK_SELECTION', {}, allData);
             expect(res).toMatchObject({ action: 'FRAMEWORK_INSTALL', created: 0, skipped: 1 });
-            expect(res!.details).toContain('not found in catalog');
+            expect(res!.details).toContain('no installable pack in catalog');
         } finally {
             // Recreate the pack for the rest of the suite.
             const pack = await globalPrisma.frameworkPack.create({
@@ -259,7 +262,7 @@ describeFn('onboarding-automation — runStepAction & storeActionResult (integra
     it('CONTROL_BASELINE_INSTALL when confirmed re-runs the framework install', async () => {
         const allData = {
             CONTROL_BASELINE_INSTALL: { confirmed: true },
-            FRAMEWORK_SELECTION: { selectedFrameworks: ['iso27001'] },
+            FRAMEWORK_SELECTION: { selectedFrameworks: [FW_KEY] },
         };
         const res = await runStepAction(ctx(), 'CONTROL_BASELINE_INSTALL', {}, allData);
         // Delegates to executeFrameworkInstall → installs the 2-template pack.

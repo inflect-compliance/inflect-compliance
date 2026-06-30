@@ -27,6 +27,7 @@ jest.mock('@/lib/db-context', () => ({
 
 jest.mock('@/app-layer/usecases/framework', () => ({
     installPack: jest.fn(),
+    resolveFrameworkPackKeys: jest.fn(),
 }));
 
 jest.mock('@/app-layer/events/audit', () => ({
@@ -41,7 +42,7 @@ jest.mock('@/app-layer/repositories/OnboardingRepository', () => ({
 }));
 
 import { AssetType } from '@prisma/client';
-import { installPack } from '@/app-layer/usecases/framework';
+import { installPack, resolveFrameworkPackKeys } from '@/app-layer/usecases/framework';
 import { logEvent } from '@/app-layer/events/audit';
 import { OnboardingRepository } from '@/app-layer/repositories/OnboardingRepository';
 import {
@@ -215,6 +216,20 @@ beforeEach(() => {
     jest.clearAllMocks();
     mockDbHolder.db = freshDb();
     (installPack as jest.Mock).mockResolvedValue({ controlsCreated: 3, tasksCreated: 2 });
+    // Default catalog: the two seeded baseline packs, resolved case-insensitively
+    // and keyed by the lowercased framework key (mirrors resolveFrameworkPackKeys).
+    (resolveFrameworkPackKeys as jest.Mock).mockImplementation(async (_ctx: unknown, keys: string[]) => {
+        const catalog: Record<string, string[]> = {
+            iso27001: ['ISO27001_2022_BASE'],
+            nis2: ['NIS2_BASELINE'],
+        };
+        const grouped = new Map<string, string[]>();
+        for (const k of keys) {
+            const lk = k.toLowerCase();
+            if (catalog[lk]) grouped.set(lk, catalog[lk]);
+        }
+        return grouped;
+    });
 });
 
 describe('runStepAction routing', () => {
@@ -230,41 +245,51 @@ describe('runStepAction routing', () => {
             FRAMEWORK_SELECTION: { selectedFrameworks: ['iso27001'] },
         });
         expect(r?.action).toBe('FRAMEWORK_INSTALL');
-        expect(installPack).toHaveBeenCalledWith(ctx, 'iso27001-2022-baseline');
+        // Resolved from the catalog (case-insensitive) to the real pack key.
+        expect(installPack).toHaveBeenCalledWith(ctx, 'ISO27001_2022_BASE');
     });
 });
 
 describe('executeFrameworkInstall', () => {
-    it('installs each mapped framework and aggregates controls created', async () => {
+    it('installs each selected framework\'s packs and aggregates controls created', async () => {
         const r = await runStepAction(ctx, 'FRAMEWORK_SELECTION', {}, {
             FRAMEWORK_SELECTION: { selectedFrameworks: ['iso27001', 'nis2'] },
         });
-        // Branch: known packKey → installPack succeeds, created accumulates.
+        // Both packs resolve from the catalog → installPack succeeds twice.
         expect(r?.created).toBe(6); // 3 + 3
         expect(r?.skipped).toBe(0);
         expect(installPack).toHaveBeenCalledTimes(2);
     });
 
-    it('skips frameworks with no pack mapping', async () => {
+    it('matches canonical DB keys too (picker now stores uppercase)', async () => {
+        const r = await runStepAction(ctx, 'FRAMEWORK_SELECTION', {}, {
+            FRAMEWORK_SELECTION: { selectedFrameworks: ['ISO27001', 'NIS2'] },
+        });
+        expect(r?.created).toBe(6);
+        expect(r?.skipped).toBe(0);
+        expect(installPack).toHaveBeenCalledTimes(2);
+    });
+
+    it('skips frameworks with no pack in the catalog', async () => {
         const r = await runStepAction(ctx, 'FRAMEWORK_SELECTION', {}, {
             FRAMEWORK_SELECTION: { selectedFrameworks: ['unknown-fw'] },
         });
-        // Branch: packKey falsy → details push + skipped++.
+        // Branch: no pack grouped for this framework → details push + skipped++.
         expect(r?.created).toBe(0);
         expect(r?.skipped).toBe(1);
-        expect(r?.details).toContain('No pack found');
+        expect(r?.details).toContain('no installable pack in catalog');
         expect(installPack).not.toHaveBeenCalled();
     });
 
-    it('counts a framework as skipped when installPack throws (pack missing in catalog)', async () => {
-        (installPack as jest.Mock).mockRejectedValueOnce(new Error('not in catalog'));
+    it('counts a framework as skipped when installPack throws', async () => {
+        (installPack as jest.Mock).mockRejectedValueOnce(new Error('boom'));
         const r = await runStepAction(ctx, 'FRAMEWORK_SELECTION', {}, {
             FRAMEWORK_SELECTION: { selectedFrameworks: ['iso27001'] },
         });
         // Branch: try/catch around installPack.
         expect(r?.created).toBe(0);
         expect(r?.skipped).toBe(1);
-        expect(r?.details).toContain('not found in catalog');
+        expect(r?.details).toContain('install failed');
     });
 
     it('handles a missing FRAMEWORK_SELECTION payload (defaults to empty list)', async () => {
