@@ -11,7 +11,7 @@
  * - Task/team setup → creates starter tasks only if none exist for onboarding
  */
 import { RequestContext } from '../types';
-import { installPack } from './framework';
+import { installPack, resolveFrameworkPackKeys } from './framework';
 import { runInTenantContext } from '@/lib/db-context';
 import { logEvent } from '../events/audit';
 import { OnboardingRepository } from '../repositories/OnboardingRepository';
@@ -19,13 +19,6 @@ import type { AssetType, WorkItemType } from '@prisma/client';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type StepData = Record<string, any>;
-
-// ─── Pack key mapping ───
-
-const FRAMEWORK_PACK_KEYS: Record<string, string> = {
-    iso27001: 'iso27001-2022-baseline',
-    nis2: 'nis2-baseline',
-};
 
 // ─── Asset type inference ───
 
@@ -98,9 +91,12 @@ export const STARTER_RISKS: StarterRisk[] = [
  * matching logic rather than a drift-prone shadow copy.
  */
 export function selectApplicableRisks(selectedFrameworks: string[], assetTypes: Set<AssetType>): StarterRisk[] {
+    // Case-insensitive set — the picker now stores canonical DB keys
+    // ('ISO27001', 'NIS2') while the STARTER_RISKS tags are lowercase.
+    const selectedLower = new Set(selectedFrameworks.map(f => f.toLowerCase()));
     return STARTER_RISKS.filter(risk => {
         // Framework match: if risk specifies frameworks, at least one must be selected
-        const fwMatch = risk.frameworks.length === 0 || risk.frameworks.some(fw => selectedFrameworks.includes(fw));
+        const fwMatch = risk.frameworks.length === 0 || risk.frameworks.some(fw => selectedLower.has(fw.toLowerCase()));
         // Asset type match: if risk specifies asset types, at least one must exist
         const typeMatch = risk.assetTypes.length === 0 || risk.assetTypes.some(at => assetTypes.has(at));
         return fwMatch && typeMatch;
@@ -150,23 +146,35 @@ async function executeFrameworkInstall(ctx: RequestContext, allData: StepData): 
     let skipped = 0;
     const details: string[] = [];
 
+    if (selectedFrameworks.length === 0) {
+        return { action: 'FRAMEWORK_INSTALL', created, skipped, details: '' };
+    }
+
+    // Resolve every selected framework's installable packs dynamically from
+    // the catalog — no hand-maintained framework→pack map. The framework
+    // usecase does one query and groups case-insensitively so legacy
+    // in-progress states that stored lowercase keys ('iso27001', 'nis2')
+    // still resolve after the picker switched to canonical DB keys.
+    const packsByFramework = await resolveFrameworkPackKeys(ctx, selectedFrameworks);
+
     for (const fw of selectedFrameworks) {
-        const packKey = FRAMEWORK_PACK_KEYS[fw];
-        if (!packKey) {
-            details.push(`No pack found for framework: ${fw}`);
+        const packKeys = packsByFramework.get(fw.toLowerCase()) ?? [];
+        if (packKeys.length === 0) {
+            details.push(`${fw}: no installable pack in catalog`);
             skipped++;
             continue;
         }
 
-        try {
-            // installPack is already idempotent — skips existing controls
-            const result = await installPack(ctx, packKey);
-            created += result.controlsCreated;
-            details.push(`${fw}: ${result.controlsCreated} controls, ${result.tasksCreated} tasks`);
-        } catch (e) {
-            // Pack may not exist in catalog yet — that's OK
-            details.push(`${fw}: pack "${packKey}" not found in catalog`);
-            skipped++;
+        for (const packKey of packKeys) {
+            try {
+                // installPack is already idempotent — skips existing controls
+                const result = await installPack(ctx, packKey);
+                created += result.controlsCreated;
+                details.push(`${fw}: ${result.controlsCreated} controls, ${result.tasksCreated} tasks`);
+            } catch (e) {
+                details.push(`${fw}: pack "${packKey}" install failed`);
+                skipped++;
+            }
         }
     }
 

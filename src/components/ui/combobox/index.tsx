@@ -495,15 +495,23 @@ export function Combobox<
                 popoverContentClassName={cn(
                     // Mobile overflow guard — clamp the dropdown to the viewport
                     // so a long-option list never forces horizontal scroll on a
-                    // phone. sm+ keeps matching the trigger width as before.
+                    // phone.
                     "max-w-[calc(100vw-1rem)]",
+                    // `matchTriggerWidth` is a FLOOR, not an exact width: the
+                    // dropdown is AT LEAST the trigger width but grows to fit
+                    // long options (capped to the viewport above). A tiny
+                    // trigger like "Select…" must never clip its option text —
+                    // this is the universal fix for narrow-dropdown truncation.
                     matchTriggerWidth &&
-                        "sm:w-[var(--radix-popover-trigger-width)]",
+                        "sm:min-w-[var(--radix-popover-trigger-width)]",
                     popoverProps?.contentClassName,
                 )}
                 content={
                     <AnimatedSizeContainer
-                        width={!isMobile && !matchTriggerWidth}
+                        // Always measure width on desktop so the dropdown sizes
+                        // to its content (with the trigger-width floor above),
+                        // instead of being pinned to a too-narrow trigger.
+                        width={!isMobile}
                         height
                         style={{ transform: "translateZ(0)" }}
                         transition={{ ease: "easeInOut", duration: 0.1 }}
