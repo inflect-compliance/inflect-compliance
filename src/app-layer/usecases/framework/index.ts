@@ -8,6 +8,7 @@
 // Catalog (read-only framework queries)
 export {
     listFrameworks,
+    listInstallableFrameworks,
     getFramework,
     getFrameworkRequirements,
     listFrameworkPacks,

@@ -630,41 +630,105 @@ function CompanyProfileStep({ data, onUpdate }: { data: StepData; onUpdate: (d: 
 
 // ─── FRAMEWORK_SELECTION ───
 
+interface InstallableFramework {
+    key: string;
+    name: string;
+    version: string | null;
+    description: string | null;
+    kind: string;
+    requirementCount: number;
+    controlCount: number;
+}
+
+/**
+ * Pick the card badge for a framework. Curation lives client-side so the
+ * catalog usecase stays pure data: ISO 27001 is the popular default; EU
+ * directives/regulations carry an "EU" badge.
+ */
+function frameworkBadge(fw: InstallableFramework): string | null {
+    if (fw.key === 'ISO27001') return 'Most Popular';
+    if (fw.kind === 'EU_DIRECTIVE' || fw.kind === 'REGULATION') return 'EU';
+    if (['NIS2', 'DORA', 'EU_AI_ACT'].includes(fw.key)) return 'EU';
+    return null;
+}
+
 function FrameworkSelectionStep({ data, onUpdate }: { data: StepData; onUpdate: (d: StepData) => void }) {
-    const frameworks = [
-        { key: 'iso27001', name: 'ISO 27001:2022', desc: 'International information security management standard. Installs 93 controls across 4 domains.', badge: 'Most Popular' },
-        { key: 'nis2', name: 'NIS2 Directive', desc: 'EU cybersecurity directive for essential and important entities. Installs sector-specific requirements.', badge: 'EU Required' },
-    ];
+    const { tenantSlug } = useTenantContext();
+    const [frameworks, setFrameworks] = useState<InstallableFramework[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const list = await apiFetch<InstallableFramework[]>(apiUrl(tenantSlug, 'frameworks'));
+                if (!cancelled) setFrameworks(list);
+            } catch (e) {
+                if (!cancelled) setLoadError(e instanceof Error ? e.message : 'Failed to load frameworks');
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [tenantSlug]);
+
     const selected: string[] = data.selectedFrameworks || [];
 
-    const toggle = (key: string) => {
-        const next = selected.includes(key) ? selected.filter(s => s !== key) : [...selected, key];
-        onUpdate({ selectedFrameworks: next });
+    const toggle = (fw: InstallableFramework) => {
+        const has = selected.includes(fw.key);
+        const next = has ? selected.filter(s => s !== fw.key) : [...selected, fw.key];
+        // Keep a key→display-name map alongside the selection so downstream
+        // steps (Controls, Review) can label frameworks without re-fetching.
+        const labels: Record<string, string> = { ...(data.frameworkLabels || {}) };
+        if (has) delete labels[fw.key]; else labels[fw.key] = fw.name;
+        onUpdate({ selectedFrameworks: next, frameworkLabels: labels });
     };
 
     return (
         <div className="space-y-default animate-fadeIn">
             <p className="text-sm text-content-muted mb-4">Select the compliance frameworks you want to implement. You can add more later.</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-default">
-                {frameworks.map(fw => {
-                    const active = selected.includes(fw.key);
-                    return (
-                        <button key={fw.key} onClick={() => toggle(fw.key)} data-testid={`fw-${fw.key}`}
-                            className={`text-left p-4 rounded-lg border-2 transition-colors duration-150 ease-out ${
-                                active ? 'border-[var(--brand-default)] bg-brand-subtle' : 'border-border-subtle bg-bg-default/30 hover:border-border-default'
-                            }`}
-                        >
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="font-semibold text-content-emphasis text-sm">{fw.name}</span>
-                                {fw.badge && <StatusBadge variant="info" size="sm">{fw.badge}</StatusBadge>}
-                            </div>
-                            <p className="text-xs text-content-muted leading-relaxed">{fw.desc}</p>
-                            {active && <div className="mt-2 flex items-center gap-1 text-brand-400 text-xs font-medium"><CheckCircle2 className="w-3.5 h-3.5" /> Selected</div>}
-                        </button>
-                    );
-                })}
-            </div>
-            {selected.length === 0 && <p className="text-xs text-content-warning">Select at least one framework to continue.</p>}
+
+            {loading ? (
+                <div className="flex items-center gap-tight text-sm text-content-muted py-6" data-testid="fw-loading">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Loading frameworks…
+                </div>
+            ) : loadError ? (
+                <InlineNotice variant="error" icon={null}>{loadError}</InlineNotice>
+            ) : frameworks.length === 0 ? (
+                <InlineNotice variant="warning" icon={null}>
+                    No installable frameworks are available in the catalog.
+                </InlineNotice>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-default">
+                    {frameworks.map(fw => {
+                        const active = selected.includes(fw.key);
+                        const badge = frameworkBadge(fw);
+                        return (
+                            <button key={fw.key} onClick={() => toggle(fw)} data-testid={`fw-${fw.key.toLowerCase()}`}
+                                className={`text-left p-4 rounded-lg border-2 transition-colors duration-150 ease-out ${
+                                    active ? 'border-[var(--brand-default)] bg-brand-subtle' : 'border-border-subtle bg-bg-default/30 hover:border-border-default'
+                                }`}
+                            >
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="font-semibold text-content-emphasis text-sm">{fw.name}</span>
+                                    {badge && <StatusBadge variant="info" size="sm">{badge}</StatusBadge>}
+                                </div>
+                                {fw.description && <p className="text-xs text-content-muted leading-relaxed">{fw.description}</p>}
+                                <p className="mt-2 text-xs text-content-subtle">
+                                    {fw.controlCount > 0 && <>Installs {fw.controlCount} baseline control{fw.controlCount === 1 ? '' : 's'} · </>}
+                                    {fw.requirementCount} requirement{fw.requirementCount === 1 ? '' : 's'}
+                                </p>
+                                {active && <div className="mt-2 flex items-center gap-1 text-brand-400 text-xs font-medium"><CheckCircle2 className="w-3.5 h-3.5" /> Selected</div>}
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+
+            {!loading && !loadError && frameworks.length > 0 && selected.length === 0 && (
+                <p className="text-xs text-content-warning">Select at least one framework to continue.</p>
+            )}
         </div>
     );
 }
@@ -723,7 +787,7 @@ function AssetSetupStep({ data, onUpdate }: { data: StepData; onUpdate: (d: Step
 
 function ControlInstallStep({ data, onUpdate, allData }: { data: StepData; onUpdate: (d: StepData) => void; allData: StepData }) {
     const selectedFrameworks: string[] = allData['FRAMEWORK_SELECTION']?.selectedFrameworks || [];
-    const fwLabels: Record<string, string> = { iso27001: 'ISO 27001:2022', nis2: 'NIS2 Directive' };
+    const fwLabels: Record<string, string> = allData['FRAMEWORK_SELECTION']?.frameworkLabels || {};
 
     return (
         <div className="space-y-default max-w-lg animate-fadeIn">
@@ -829,7 +893,11 @@ function TeamSetupStep({ data, onUpdate }: { data: StepData; onUpdate: (d: StepD
 function ReviewStep({ completedSteps, allData }: { completedSteps: string[]; allData: StepData }) {
     const summaryItems = [
         { key: 'COMPANY_PROFILE', label: 'Company Profile', detail: allData['COMPANY_PROFILE']?.name || 'Not configured' },
-        { key: 'FRAMEWORK_SELECTION', label: 'Frameworks', detail: (allData['FRAMEWORK_SELECTION']?.selectedFrameworks || []).join(', ') || 'None selected' },
+        { key: 'FRAMEWORK_SELECTION', label: 'Frameworks', detail: (() => {
+            const keys: string[] = allData['FRAMEWORK_SELECTION']?.selectedFrameworks || [];
+            const labels: Record<string, string> = allData['FRAMEWORK_SELECTION']?.frameworkLabels || {};
+            return keys.map(k => labels[k] || k).join(', ') || 'None selected';
+        })() },
         { key: 'ASSET_SETUP', label: 'Assets', detail: `${(allData['ASSET_SETUP']?.assets || []).length} assets added` },
         { key: 'CONTROL_BASELINE_INSTALL', label: 'Controls', detail: allData['CONTROL_BASELINE_INSTALL']?.confirmed ? 'Baseline install confirmed' : 'Pending confirmation' },
         { key: 'INITIAL_RISK_REGISTER', label: 'Risk Register', detail: allData['INITIAL_RISK_REGISTER']?.generate !== false ? 'Starter risks will be generated' : 'Skipped' },

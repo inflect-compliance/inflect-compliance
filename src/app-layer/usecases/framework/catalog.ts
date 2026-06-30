@@ -15,6 +15,41 @@ export async function listFrameworks(ctx: RequestContext) {
     });
 }
 
+/**
+ * Installable-framework catalog for the onboarding wizard.
+ *
+ * Returns every framework that carries at least one control pack — i.e.
+ * the frameworks a tenant can actually "set up" (a pack is what install
+ * turns into a baseline control register). Frameworks that exist as
+ * requirement-only reference data (no pack) are intentionally excluded:
+ * selecting one in onboarding would install nothing.
+ *
+ * The shape is the minimal projection the picker cards need. As packs are
+ * authored for more frameworks they appear here automatically — the
+ * onboarding picker is data-driven, never a hand-maintained list.
+ */
+export async function listInstallableFrameworks(ctx: RequestContext) {
+    assertCanViewFrameworks(ctx);
+    const db = prisma;
+    const frameworks = await db.framework.findMany({
+        where: { packs: { some: {} } },
+        include: {
+            _count: { select: { requirements: true } },
+            packs: { select: { _count: { select: { templateLinks: true } } } },
+        },
+        orderBy: { key: 'asc' },
+    });
+    return frameworks.map((f) => ({
+        key: f.key,
+        name: f.name,
+        version: f.version,
+        description: f.description,
+        kind: f.kind,
+        requirementCount: f._count.requirements,
+        controlCount: f.packs.reduce((sum, p) => sum + p._count.templateLinks, 0),
+    }));
+}
+
 export async function getFramework(ctx: RequestContext, frameworkKey: string, version?: string) {
     assertCanViewFrameworks(ctx);
     const db = prisma;
