@@ -123,14 +123,22 @@ test.describe('CISO portfolio journey (Epic O-4)', () => {
         ).toBeVisible({ timeout: 30_000 });
 
         // Four stat cards are present and rendered.
-        await expect(page.locator('#org-stat-coverage')).toBeVisible();
-        await expect(page.locator('#org-stat-critical-risks')).toBeVisible();
-        await expect(page.locator('#org-stat-overdue-evidence')).toBeVisible();
-        await expect(page.locator('#org-stat-tenants')).toBeVisible();
+        //
+        // All `#org-*` id locators in this spec are scoped to
+        // `getByRole('main')`. Next's streaming render can briefly leave a
+        // hidden duplicate of the page subtree in the DOM, so a BARE
+        // `page.locator('#org-…')` intermittently matches 2 elements and trips
+        // Playwright's strict-mode "resolved to N elements" — the
+        // `#org-risks-table` / `#org-controls-table` flake. The real node lives
+        // inside `<main>`; scoping there is unambiguous.
+        await expect(page.getByRole('main').locator('#org-stat-coverage')).toBeVisible();
+        await expect(page.getByRole('main').locator('#org-stat-critical-risks')).toBeVisible();
+        await expect(page.getByRole('main').locator('#org-stat-overdue-evidence')).toBeVisible();
+        await expect(page.getByRole('main').locator('#org-stat-tenants')).toBeVisible();
 
         // Drill-down + tenant coverage sections are present.
-        await expect(page.locator('#org-drilldown-ctas')).toBeVisible();
-        await expect(page.locator('#org-tenant-coverage')).toBeVisible();
+        await expect(page.getByRole('main').locator('#org-drilldown-ctas')).toBeVisible();
+        await expect(page.getByRole('main').locator('#org-tenant-coverage')).toBeVisible();
 
         // The seeded acme-corp tenant is rendered as a clickable row.
         await expect(
@@ -144,7 +152,7 @@ test.describe('CISO portfolio journey (Epic O-4)', () => {
 
         // Either rows or the empty state — both prove the page rendered
         // through getNonPerformingControls without an error.
-        await expect(page.locator('#org-controls-table')).toBeVisible({
+        await expect(page.getByRole('main').locator('#org-controls-table')).toBeVisible({
             timeout: 30_000,
         });
 
@@ -164,7 +172,7 @@ test.describe('CISO portfolio journey (Epic O-4)', () => {
     test('D — risks drill-down → click row → land on /t/acme-corp/risks/{id}', async ({ page }) => {
         await loginAsCiso(page);
         await safeGoto(page, `/org/${ORG_SLUG}/risks`);
-        await expect(page.locator('#org-risks-table')).toBeVisible({
+        await expect(page.getByRole('main').locator('#org-risks-table')).toBeVisible({
             timeout: 30_000,
         });
 
@@ -201,7 +209,7 @@ test.describe('CISO portfolio journey (Epic O-4)', () => {
     test('E — overdue evidence list renders with tenant attribution or empty state', async ({ page }) => {
         await loginAsCiso(page);
         await safeGoto(page, `/org/${ORG_SLUG}/evidence`);
-        await expect(page.locator('#org-evidence-table')).toBeVisible({
+        await expect(page.getByRole('main').locator('#org-evidence-table')).toBeVisible({
             timeout: 30_000,
         });
 
@@ -284,7 +292,7 @@ test.describe('CISO portfolio journey (Epic O-4)', () => {
         });
 
         await safeGoto(page, `/org/${ORG_SLUG}/tenants`);
-        await expect(page.locator('#org-tenants-table')).toBeVisible({
+        await expect(page.getByRole('main').locator('#org-tenants-table')).toBeVisible({
             timeout: 30_000,
         });
         // The newly-created tenant can lag on the org list (async provisioning
