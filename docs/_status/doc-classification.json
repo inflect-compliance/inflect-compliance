@@ -1261,6 +1261,9 @@
     },
     "docs/implementation-notes/2026-06-29-ai-gov-self-assessment-ui.md": {
       "class": "historical"
+    },
+    "docs/implementation-notes/2026-06-30-org-widget-integrity.md": {
+      "class": "historical"
     }
   }
 }

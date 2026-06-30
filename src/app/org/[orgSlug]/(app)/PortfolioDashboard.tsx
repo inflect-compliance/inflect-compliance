@@ -27,7 +27,8 @@
  */
 
 import { useCallback, useState } from 'react';
-import { Pencil, Plus, Trash2, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Pencil, Plus, RotateCcw, Trash2, X } from 'lucide-react';
 
 import {
     DashboardGrid,
@@ -36,6 +37,7 @@ import {
 } from '@/components/ui/dashboard-widgets';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import type {
     CreateOrgDashboardWidgetInput,
     OrgDashboardWidgetDto,
@@ -105,6 +107,18 @@ async function deleteWidget(orgSlug: string, id: string): Promise<void> {
     if (!res.ok) throw new Error(`delete_failed_${res.status}`);
 }
 
+async function resetWidgets(
+    orgSlug: string,
+): Promise<OrgDashboardWidgetDto[]> {
+    const res = await fetch(`/api/org/${orgSlug}/dashboard/widgets/reset`, {
+        method: 'POST',
+        credentials: 'same-origin',
+    });
+    if (!res.ok) throw new Error(`reset_failed_${res.status}`);
+    const json = (await res.json()) as { widgets: OrgDashboardWidgetDto[] };
+    return json.widgets;
+}
+
 // ─── Component ──────────────────────────────────────────────────────
 
 export function PortfolioDashboard({
@@ -112,11 +126,13 @@ export function PortfolioDashboard({
     data,
     canEdit,
 }: PortfolioDashboardProps) {
+    const router = useRouter();
     const [widgets, setWidgets] = useState<OrgDashboardWidgetDto[]>(
         () => [...initialWidgets],
     );
     const [editMode, setEditMode] = useState(false);
     const [pickerOpen, setPickerOpen] = useState(false);
+    const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -184,6 +200,29 @@ export function PortfolioDashboard({
         [data.orgSlug, busy],
     );
 
+    // ── Reset-to-preset handler ──
+    //
+    // Discards the current (possibly drifted) layout and re-seeds the
+    // recommended default preset. Destructive — guarded by a danger
+    // ConfirmDialog. On success, reflect the new widget list locally
+    // AND router.refresh() so the server-rendered shell re-reads the
+    // freshly-seeded rows.
+    const handleReset = useCallback(async () => {
+        setError(null);
+        try {
+            const next = await resetWidgets(data.orgSlug);
+            setWidgets(next);
+            setEditMode(false);
+            router.refresh();
+        } catch (e) {
+            setError(
+                e instanceof Error
+                    ? `Failed to reset layout (${e.message})`
+                    : 'Failed to reset layout',
+            );
+        }
+    }, [data.orgSlug, router]);
+
     // PR-3 — DashboardLayout PageHeader description preserves the
     // pre-PR-3 stats line (tenant count + pending snapshot count)
     // but threads it through the shared header trio so an external
@@ -234,6 +273,16 @@ export function PortfolioDashboard({
                     >
                         <Plus className="size-3.5" aria-hidden="true" />
                         Add widget
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setResetConfirmOpen(true)}
+                        data-testid="dashboard-reset-layout"
+                    >
+                        <RotateCcw className="size-3.5" aria-hidden="true" />
+                        Reset to recommended layout
                     </Button>
                     <Button
                         type="button"
@@ -328,6 +377,18 @@ export function PortfolioDashboard({
                 open={pickerOpen}
                 onOpenChange={setPickerOpen}
                 onSubmit={handleCreate}
+            />
+
+            {/* Reset-to-preset confirmation — destructive: the current
+             *  layout (positions, added widgets, edits) is discarded. */}
+            <ConfirmDialog
+                showModal={resetConfirmOpen}
+                setShowModal={setResetConfirmOpen}
+                tone="danger"
+                title="Reset to recommended layout?"
+                description="This discards the current dashboard layout — including any widgets you added, removed, or rearranged — and restores the recommended default. This cannot be undone."
+                confirmLabel="Reset to recommended layout"
+                onConfirm={handleReset}
             />
         </DashboardLayout>
     );
