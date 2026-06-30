@@ -220,7 +220,9 @@ describe('Epic 41 — DispatchedWidget per (type, chartType)', () => {
         // pass the filter — green=6, amber=3, red=1, pending=2 → 4)
         expect(screen.getByText('Healthy')).toBeInTheDocument();
         expect(screen.getByText('At risk')).toBeInTheDocument();
-        expect(screen.getByText('Critical')).toBeInTheDocument();
+        // Disambiguated from the "Critical Risks" metric — this is a
+        // tenant-health band, not a risk count.
+        expect(screen.getByText('Critical health')).toBeInTheDocument();
         expect(screen.getByText('Pending snapshot')).toBeInTheDocument();
     });
 
@@ -286,5 +288,50 @@ describe('Epic 41 — DispatchedWidget per (type, chartType)', () => {
         expect(
             screen.queryByTestId('org-drilldown-evidence'),
         ).toBeNull();
+    });
+
+    // ─── Metric consistency ──────────────────────────────────────
+    //
+    // "Critical risks" is ONE number, sourced from summary.risks.critical,
+    // and must read identically wherever it appears (the KPI tile + the
+    // drill-down card). The donut's "Critical health" band is a DIFFERENT
+    // metric (summary.rag.red — tenant health), which is exactly why it is
+    // labelled distinctly and must never be conflated with the risk count.
+    it('"critical risks" is the same number in the KPI and the drill-down (single source)', () => {
+        const data = makeData(); // summary.risks.critical = 3, rag.red = 1
+        const critical = data.summary.risks.critical;
+
+        const kpi = render(
+            <DispatchedWidget
+                widget={makeWidget({
+                    type: 'KPI',
+                    chartType: 'critical-risks',
+                    config: { format: 'number' },
+                    title: 'Critical Risks',
+                })}
+                data={data}
+            />,
+        );
+        expect(kpi.getByText(String(critical))).toBeInTheDocument();
+        kpi.unmount();
+
+        const drill = render(
+            <DispatchedWidget
+                widget={makeWidget({
+                    type: 'DRILLDOWN_CTAS',
+                    chartType: 'default',
+                    config: {},
+                    title: 'Drill-down',
+                })}
+                data={data}
+            />,
+        );
+        expect(
+            drill.getByTestId('org-drilldown-risks').textContent,
+        ).toContain(String(critical));
+
+        // The tenant-health "Critical health" band is a genuinely different
+        // number — proving the two must stay labelled apart.
+        expect(data.summary.rag.red).not.toBe(critical);
     });
 });
