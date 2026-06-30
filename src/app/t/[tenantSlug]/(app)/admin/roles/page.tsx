@@ -27,6 +27,7 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { apiErrorMessage } from '@/lib/api-error';
 import { Card, cardVariants } from '@/components/ui/card';
 import { useTenantApiUrl, useTenantHref } from '@/lib/tenant-context-provider';
 import { getPermissionsForRole, type PermissionSet } from '@/lib/permissions';
@@ -370,7 +371,7 @@ export default function CustomRolesPage() {
             });
             if (!res.ok) {
                 const err = await res.json().catch(() => ({ error: 'Create failed' }));
-                setError(err.error?.message || err.error || err.message || 'Create failed');
+                setError(apiErrorMessage(err, 'Create failed'));
                 return;
             }
             setSuccess(`Custom role "${data.name}" created successfully.`);
@@ -395,7 +396,7 @@ export default function CustomRolesPage() {
             });
             if (!res.ok) {
                 const err = await res.json().catch(() => ({ error: 'Update failed' }));
-                setError(err.error?.message || err.error || err.message || 'Update failed');
+                setError(apiErrorMessage(err, 'Update failed'));
                 return;
             }
             setSuccess(`Custom role "${data.name}" updated successfully.`);
@@ -420,7 +421,7 @@ export default function CustomRolesPage() {
             const res = await fetch(apiUrl(`/admin/roles/${role.id}`), { method: 'DELETE' });
             if (!res.ok) {
                 const err = await res.json().catch(() => ({ error: 'Delete failed' }));
-                setError(err.error?.message || err.error || err.message || 'Delete failed');
+                setError(apiErrorMessage(err, 'Delete failed'));
                 return;
             }
             const result = await res.json();
