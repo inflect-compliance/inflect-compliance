@@ -674,14 +674,27 @@ function FrameworkSelectionStep({ data, onUpdate }: { data: StepData; onUpdate: 
     }, [tenantSlug]);
 
     const selected: string[] = data.selectedFrameworks || [];
+    // Case-insensitive membership: a legacy onboarding state may hold lowercase
+    // keys ('nis2') written by the pre-catalog picker, while cards now carry
+    // canonical DB keys ('NIS2'). Without this the legacy card reads as
+    // unselected AND can't be cleared, yet the (case-insensitive) step gate
+    // still shows the conditional step — see the NIS2-step bug.
+    const isSelected = (key: string) => selected.some(s => s.toLowerCase() === key.toLowerCase());
 
     const toggle = (fw: InstallableFramework) => {
-        const has = selected.includes(fw.key);
-        const next = has ? selected.filter(s => s !== fw.key) : [...selected, fw.key];
+        const has = isSelected(fw.key);
+        // Remove every case-variant on deselect (clears a legacy 'nis2'); on
+        // select, drop variants then add the canonical key so the stored list
+        // stays deduped and canonical.
+        const withoutFw = selected.filter(s => s.toLowerCase() !== fw.key.toLowerCase());
+        const next = has ? withoutFw : [...withoutFw, fw.key];
         // Keep a key→display-name map alongside the selection so downstream
         // steps (Controls, Review) can label frameworks without re-fetching.
         const labels: Record<string, string> = { ...(data.frameworkLabels || {}) };
-        if (has) delete labels[fw.key]; else labels[fw.key] = fw.name;
+        for (const k of Object.keys(labels)) {
+            if (k.toLowerCase() === fw.key.toLowerCase()) delete labels[k];
+        }
+        if (!has) labels[fw.key] = fw.name;
         onUpdate({ selectedFrameworks: next, frameworkLabels: labels });
     };
 
@@ -702,7 +715,7 @@ function FrameworkSelectionStep({ data, onUpdate }: { data: StepData; onUpdate: 
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-default">
                     {frameworks.map(fw => {
-                        const active = selected.includes(fw.key);
+                        const active = isSelected(fw.key);
                         const badge = frameworkBadge(fw);
                         return (
                             <button key={fw.key} onClick={() => toggle(fw)} data-testid={`fw-${fw.key.toLowerCase()}`}

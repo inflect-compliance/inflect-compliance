@@ -64,6 +64,15 @@ describe('onboarding framework catalog — wizard picker is data-driven', () => 
         expect(src).not.toContain('EU cybersecurity directive for essential and important entities');
     });
 
+    it('matches selection case-insensitively so legacy lowercase keys clear', () => {
+        // A pre-catalog onboarding state holds lowercase keys ('nis2'); the
+        // card carries the canonical 'NIS2'. The picker must compare
+        // case-insensitively (else the legacy selection can't be cleared and
+        // the conditional NIS2 step is stuck on).
+        expect(src).toMatch(/s\.toLowerCase\(\)\s*===\s*key\.toLowerCase\(\)/);
+        expect(src).not.toMatch(/const active = selected\.includes\(fw\.key\)/);
+    });
+
     it('does not relabel frameworks from a hardcoded {iso27001,nis2} map', () => {
         // ControlInstallStep + ReviewStep read frameworkLabels captured at
         // selection time, not a literal map.
