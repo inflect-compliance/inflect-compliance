@@ -1190,6 +1190,56 @@ model WorkflowStep {
   @@index([tenantId, runId])
 }
 
+/// Epic Regwatch 2A — the computed diff between two versions of a framework's
+/// requirement set (ADDED / CHANGED / REMOVED requirement codes + a
+/// human-readable changelog). GLOBAL (framework structure is the same for every
+/// tenant — no tenantId, no RLS). Computed from the existing version-history
+/// (Framework.metadataJson) via `computeRequirementDiff`; the per-tenant impact
+/// is `TenantFrameworkDelta`.
+model FrameworkVersionDiff {
+  id             String                @id @default(cuid())
+  frameworkKey   String
+  fromVersion    String
+  toVersion      String
+  addedCodesJson String                @default("[]")
+  changedCodesJson String              @default("[]")
+  removedCodesJson String              @default("[]")
+  changelog      String?
+  createdAt      DateTime              @default(now())
+  tenantDeltas   TenantFrameworkDelta[]
+
+  @@unique([frameworkKey, fromVersion, toVersion])
+  @@index([frameworkKey, createdAt])
+}
+
+/// Epic Regwatch 2A — what a framework-version update means for ONE tenant: the
+/// new uncovered gaps (added requirements the tenant has no control for) and the
+/// tenant's controls flagged for re-review (mapped to a changed requirement).
+/// Tenant-scoped (RLS). References the global `FrameworkVersionDiff`.
+model TenantFrameworkDelta {
+  id                   String               @id @default(cuid())
+  tenantId             String
+  diffId               String
+  frameworkKey         String
+  fromVersion          String
+  toVersion            String
+  newGapCodesJson      String               @default("[]")
+  flaggedControlIdsJson String              @default("[]")
+  newGapCount          Int                  @default(0)
+  flaggedControlCount  Int                  @default(0)
+  status               FrameworkDeltaStatus @default(NEW)
+  reviewedByUserId     String?
+  reviewedAt           DateTime?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  tenant               Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  diff                 FrameworkVersionDiff @relation(fields: [diffId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, diffId])
+  @@index([tenantId, status, createdAt])
+  @@index([diffId])
+}
+
 model Control {
   id                           String                   @id @default(cuid())
   tenantId                     String?

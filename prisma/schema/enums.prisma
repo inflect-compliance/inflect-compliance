@@ -641,6 +641,13 @@ enum WorkflowStepStatus {
   SKIPPED
 }
 
+/// Per-tenant framework-update delta review state (Epic Regwatch 2A).
+enum FrameworkDeltaStatus {
+  NEW
+  REVIEWED
+  DISMISSED
+}
+
 enum IdentityProviderType {
   SAML
   OIDC
