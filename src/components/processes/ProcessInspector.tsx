@@ -35,6 +35,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Edge, Node } from "@xyflow/react";
 import { ToggleGroup } from "@/components/ui/toggle-group";
 import { AsidePanel } from "@/components/ui/aside-panel";
+import { NodeBiaAffordance } from "@/components/bia/NodeBiaAffordance";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import {
     findTenantControl,
@@ -165,6 +166,8 @@ export interface ProcessInspectorProps {
             controls?: EdgeControlRef[];
         },
     ) => void;
+    /** Active process map id — enables the node's Business Continuity (BIA) cross-link. */
+    mapId?: string;
 }
 
 export function ProcessInspector({
@@ -173,6 +176,7 @@ export function ProcessInspector({
     tenantSlug,
     onUpdate,
     onEdgeUpdate,
+    mapId,
 }: ProcessInspectorProps) {
     // Local state mirrors the node's data so the user can type
     // without every keystroke flushing to the canvas state. The
@@ -346,6 +350,11 @@ export function ProcessInspector({
                     onUpdate(node.id, { linkedEntityId })
                 }
             />
+                {/* Business Continuity cross-link — View/Add a BIA for this
+                    process node (resolves nodeKey → DB id server-side). */}
+                {tenantSlug && mapId && (
+                    <NodeBiaAffordance tenantSlug={tenantSlug} mapId={mapId} nodeKey={node.id} />
+                )}
                 <p className="text-[10px] text-content-subtle">
                     Click off the field or press Enter to save the edit.
                 </p>

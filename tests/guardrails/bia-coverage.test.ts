@@ -162,3 +162,22 @@ describe('BIA — deep wiring into control + incident pages (the no-dead-tab UI)
         expect(INCIDENT_DETAIL).toMatch(/IncidentBiaContext/);
     });
 });
+
+describe('BIA — process-canvas cross-link (link out, not live in the canvas)', () => {
+    const AFFORDANCE = read('src/components/bia/NodeBiaAffordance.tsx');
+    const INSPECTOR = read('src/components/processes/ProcessInspector.tsx');
+    const BIA_USECASE = read('src/app-layer/usecases/business-impact-analysis.ts');
+
+    it('the node affordance resolves nodeKey→id via (processMapId, nodeKey) and links out to the audit area', () => {
+        expect(AFFORDANCE).toMatch(/processMapId=/);
+        expect(AFFORDANCE).toMatch(/nodeKey=/);
+        // links OUT to the BIA under /audits/business-continuity (NOT a canvas tab).
+        expect(AFFORDANCE).toMatch(/\/audits\/business-continuity/);
+        // the resolver usecase exists.
+        expect(BIA_USECASE).toMatch(/export async function getBiasForProcessNodeKey/);
+    });
+
+    it('the process inspector mounts the node BIA affordance', () => {
+        expect(INSPECTOR).toMatch(/NodeBiaAffordance/);
+    });
+});

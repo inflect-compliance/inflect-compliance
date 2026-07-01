@@ -2408,7 +2408,7 @@ function Inner({
                     tenantSlug={tenantSlug}
                     onUpdate={handleInspectorUpdate}
                     onEdgeUpdate={handleEdgeUpdate}
-                />
+                    mapId={activeId ?? undefined} />
                 {/* Epic P5-PR-A — Version-history sidebar. Mounts
                     alongside the inspector; the AsidePanel primitive
                     handles collapse-to-spine + the `?aside` deep-

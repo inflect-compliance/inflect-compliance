@@ -6,8 +6,8 @@
  * Internal Audit area (reached via the "Business Continuity" pill beside
  * Incidents). Built on EntityListPage + FilterToolbar + DataTable.
  */
-import { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Plus } from '@/components/ui/icons/nucleo/plus';
 import { LifeRing } from '@/components/ui/icons/nucleo/life-ring';
 import { EntityListPage } from '@/components/layout/EntityListPage';
@@ -66,8 +66,26 @@ export function BusinessContinuityClient(props: Props) {
 
 function BusinessContinuityInner({ initialRows, tenantSlug, canWrite }: Props) {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { state, hasActive } = useFilters();
     const [showNew, setShowNew] = useState(false);
+    // Canvas "Add BIA" deep-link — ?newProcessNodeId=<id> auto-opens the
+    // create modal prefilled with the process node.
+    const [prefillNode, setPrefillNode] = useState<string | undefined>(undefined);
+    useEffect(() => {
+        const p = searchParams?.get('newProcessNodeId');
+        if (p) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setPrefillNode(p);
+            setShowNew(true);
+            const next = new URLSearchParams(searchParams.toString());
+            next.delete('newProcessNodeId');
+            const qs = next.toString();
+            router.replace(`/t/${tenantSlug}/audits/business-continuity${qs ? `?${qs}` : ''}`, { scroll: false });
+        }
+        // First-mount only.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const rows = useMemo(() => {
         const crits = (state.criticality ?? []) as string[];
@@ -162,7 +180,7 @@ function BusinessContinuityInner({ initialRows, tenantSlug, canWrite }: Props) {
                     ),
                     description: `${summary.total} process${summary.total === 1 ? '' : 'es'} analysed · ${summary.critical} critical · ${summary.overdue} review${summary.overdue === 1 ? '' : 's'} overdue. Ordered by recovery priority — what comes back first.`,
                     actions: canWrite ? (
-                        <Button variant="primary" icon={<Plus />} onClick={() => setShowNew(true)}>
+                        <Button variant="primary" icon={<Plus />} onClick={() => { setPrefillNode(undefined); setShowNew(true); }}>
                             BIA
                         </Button>
                     ) : undefined,
@@ -190,9 +208,14 @@ function BusinessContinuityInner({ initialRows, tenantSlug, canWrite }: Props) {
             {showNew && (
                 <NewBiaModal
                     tenantSlug={tenantSlug}
-                    onClose={() => setShowNew(false)}
+                    processNodeId={prefillNode}
+                    onClose={() => {
+                        setShowNew(false);
+                        setPrefillNode(undefined);
+                    }}
                     onCreated={(id) => {
                         setShowNew(false);
+                        setPrefillNode(undefined);
                         router.push(`/t/${tenantSlug}/audits/business-continuity/${id}`);
                     }}
                 />
