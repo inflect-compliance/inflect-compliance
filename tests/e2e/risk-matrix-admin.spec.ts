@@ -92,35 +92,60 @@ test.describe('Risk matrix admin → live rendering loop', () => {
             { timeout: 15_000 },
         );
 
-        // ── 4-5. Navigate to /risks, open the Matrix view, and confirm
-        // the custom axis title propagated. The whole flow is wrapped in
-        // expect.toPass so a TRANSIENT config fetch failure on a loaded CI
-        // runner — observed as a "TypeError: Failed to fetch" console error,
-        // after which the matrix falls back to the DEFAULT axis labels and
-        // the custom label never appears — is retried with a FRESH page load
-        // (which re-fetches the config) rather than failing the whole test.
+        // ── 4-5. Confirm the custom axis title propagated to the /risks
+        // matrix view.
         //
-        // Within each attempt: the Register/Matrix/Histogram ToggleGroup
-        // renders options as role="radio" (legacy button as a fallback for
-        // portability). WAIT for whichever shape renders, then click — the
-        // old instant isVisible()-then-skip raced hydration and left the
-        // Matrix view closed.
+        // Root cause of the historical flake (captured in the failing run's
+        // page-snapshot): the Register⇄Matrix toggle click could be swallowed
+        // by a transiently-open overlay (the tenant switcher dialog) or a Next
+        // streaming duplicate, leaving the view stuck on Register — where the
+        // matrix (and its axis titles) never render, so the custom label was
+        // never found. Instead of racing the toggle, seed the view's persisted
+        // localStorage key so /risks renders the matrix DIRECTLY on load. The
+        // view state is
+        // `useLocalStorage<'register'|'heatmap'|'histogram'>('inflect:risks-view:<slug>')`
+        // (default-serialised via JSON.stringify), and the "Matrix" toggle maps
+        // to the 'heatmap' value. addInitScript applies it to every subsequent
+        // navigation, so each toPass retry re-enters the matrix view.
+        await page.addInitScript((slug) => {
+            try {
+                window.localStorage.setItem(
+                    `inflect:risks-view:${slug}`,
+                    JSON.stringify('heatmap'),
+                );
+            } catch {
+                /* localStorage unavailable — the toggle fallback below covers it */
+            }
+        }, tenantSlug);
+
+        // Wrapped in expect.toPass so the short-TTL /risks SSR payload cache
+        // (invalidated on config save, re-read on a fresh navigation) is
+        // retried with a FRESH page load until the recomputed matrix carries
+        // the new axis title, rather than failing on a single stale read.
+        // `toBeVisible` on the label itself does NOT do a covered-by-overlay
+        // check, so the assertion holds even if a transient overlay is present.
         await expect(async () => {
             await safeGoto(page, `/t/${tenantSlug}/risks`, {
                 waitUntil: 'domcontentloaded',
             });
             await page.waitForLoadState('networkidle').catch(() => {});
 
-            const heatmapToggle = page
-                .getByRole('radio', { name: /Matrix/i })
-                .or(page.getByRole('button', { name: /Matrix/i }))
+            const matrixLabel = page
+                .getByText(CUSTOM_LABEL, { exact: false })
                 .first();
-            await expect(heatmapToggle).toBeVisible({ timeout: 10_000 });
-            await heatmapToggle.click();
 
-            await expect(
-                page.getByText(CUSTOM_LABEL, { exact: false }).first(),
-            ).toBeVisible({ timeout: 10_000 });
+            // Fallback: if the localStorage seed didn't take (matrix not
+            // mounted), best-effort click the Matrix toggle to switch views.
+            if (!(await matrixLabel.isVisible().catch(() => false))) {
+                await page
+                    .getByRole('radio', { name: /Matrix/i })
+                    .or(page.getByRole('button', { name: /Matrix/i }))
+                    .first()
+                    .click({ timeout: 5_000 })
+                    .catch(() => {});
+            }
+
+            await expect(matrixLabel).toBeVisible({ timeout: 10_000 });
         }).toPass({ timeout: 60_000, intervals: [1_000, 2_000, 5_000] });
 
         // ── Cleanup — reset to default ────────────────────────────
