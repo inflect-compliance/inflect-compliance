@@ -70,6 +70,7 @@ const PARENT_MAP: Record<string, CanonicalParent> = {
         label: 'Audit cycle',
     },
     '/audits/nis2-gap': { href: '/audits', label: 'Internal Audit' },
+    '/audits/nis2-gap/respond/[assignmentId]': { href: '/audits/nis2-gap', label: 'NIS2 Gap Assessment' },
     '/audits/new': { href: '/audits', label: 'Audits' },
     '/audits/packs/[packId]': { href: '/audits', label: 'Audits' },
     '/audits/readiness': { href: '/audits', label: 'Audits' },

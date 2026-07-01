@@ -12,6 +12,7 @@ import { Heading } from '@/components/ui/typography';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { InlineNotice } from '@/components/ui/inline-notice';
 import { Checkbox } from '@/components/ui/checkbox';
+import { UserCombobox } from '@/components/ui/user-combobox';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { BackAffordance } from '@/components/nav/BackAffordance';
 import { cardVariants } from '@/components/ui/card';
@@ -262,6 +263,14 @@ export function Nis2GapLifecycleClient({ tenantSlug, canWrite }: { tenantSlug: s
                         <DataTable data={data.history} columns={historyColumns} getRowId={(r) => r.id} data-testid="nis2-gap-history-table" />
                     </div>
 
+                    {canWrite && data.history[0]?.source === 'STANDALONE' && data.history[0].status !== 'COMPLETED' && (
+                        <Nis2AssignmentsPanel
+                            tenantSlug={tenantSlug}
+                            assessmentId={data.history[0].id}
+                            onChanged={() => { void load(); }}
+                        />
+                    )}
+
                     <div className="space-y-tight">
                         <Heading level={3}>Prioritised gaps</Heading>
                         <DataTable data={data.latest.gaps} columns={gapColumns} getRowId={(r) => r.questionId} data-testid="nis2-gap-priority-table" />
@@ -321,6 +330,121 @@ export function Nis2GapLifecycleClient({ tenantSlug, canWrite }: { tenantSlug: s
                 confirmLabel="Create selected"
                 onConfirm={async () => { setConfirmOpen(false); await handleApply(); }}
             />
+        </div>
+    );
+}
+
+// ─── Owner delegation panel (multi-respondent async collection, Prompt 2) ───
+
+const RESPONDENT_ROLES: Array<{ role: string; label: string }> = [
+    { role: 'CEO', label: 'CEO — scoping & governance' },
+    { role: 'IT', label: 'IT — technical & cryptography' },
+    { role: 'HR', label: 'HR — training & awareness' },
+    { role: 'PROCUREMENT', label: 'Procurement — supply chain' },
+    { role: 'ANYONE', label: 'General' },
+];
+
+interface AssignmentRow {
+    id: string;
+    respondentRole: string;
+    assigneeUserId: string | null;
+    status: string;
+    questionIds: string[];
+}
+
+function Nis2AssignmentsPanel({
+    tenantSlug,
+    assessmentId,
+    onChanged,
+}: {
+    tenantSlug: string;
+    assessmentId: string;
+    onChanged: () => void;
+}) {
+    const base = `/api/t/${tenantSlug}/gap-assessments/${assessmentId}/assignments`;
+    const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
+    const [picks, setPicks] = useState<Record<string, string>>({});
+    const [busy, setBusy] = useState(false);
+    const [err, setErr] = useState<string | null>(null);
+
+    const loadAssignments = useCallback(async () => {
+        try {
+            const res = await fetch(base);
+            if (res.ok) {
+                const rows = (await res.json()) as AssignmentRow[];
+                setAssignments(rows);
+                setPicks(Object.fromEntries(rows.filter((r) => r.assigneeUserId).map((r) => [r.respondentRole, r.assigneeUserId as string])));
+            }
+        } catch { /* non-fatal */ }
+    }, [base]);
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    useEffect(() => { void loadAssignments(); }, [loadAssignments]);
+
+    const byRole = useMemo(() => new Map(assignments.map((a) => [a.respondentRole, a])), [assignments]);
+    const allSubmitted = assignments.length > 0 && assignments.every((a) => a.status === 'SUBMITTED');
+
+    async function act(url: string, body: unknown, ok: string) {
+        setBusy(true); setErr(null);
+        try {
+            const res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+            if (!res.ok) throw new Error(((await res.json().catch(() => null)) as { error?: { message?: string } })?.error?.message ?? ok);
+            await loadAssignments();
+            onChanged();
+        } catch (e) {
+            setErr(e instanceof Error ? e.message : 'Action failed');
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    return (
+        <div className="space-y-default">
+            <div className="flex items-center justify-between gap-compact flex-wrap">
+                <div>
+                    <Heading level={3}>Assignments</Heading>
+                    <p className="text-sm text-content-muted">
+                        Route each part of the assessment to the person who can answer it. Each member sees only their questions.
+                    </p>
+                </div>
+                <div className="flex items-center gap-tight">
+                    <Button variant="secondary" disabled={busy} id="nis2-gap-dispatch-btn"
+                        onClick={() => act(base, { roleToUserId: picks }, 'Dispatch failed')}>
+                        {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null} Dispatch
+                    </Button>
+                    <Button variant="secondary" disabled={busy || assignments.length === 0} id="nis2-gap-finalize-btn"
+                        onClick={() => act(`${base}/finalize`, { force: !allSubmitted }, 'Finalize failed')}>
+                        {allSubmitted ? 'Finalize' : 'Force-finalize'}
+                    </Button>
+                </div>
+            </div>
+            {err && <p className="text-sm text-content-error">{err}</p>}
+            <ul className="space-y-tight">
+                {RESPONDENT_ROLES.map(({ role, label }) => {
+                    const a = byRole.get(role);
+                    return (
+                        <li key={role} className={cn(cardVariants({ density: 'compact' }), 'flex items-center gap-default flex-wrap')}>
+                            <span className="text-sm font-medium text-content-emphasis w-full sm:w-56 sm:shrink-0">{label}</span>
+                            <div className="min-w-0 flex-1">
+                                <UserCombobox
+                                    tenantSlug={tenantSlug}
+                                    selectedId={picks[role] || null}
+                                    onChange={(id) => setPicks((prev) => ({ ...prev, [role]: id ?? '' }))}
+                                    forceDropdown
+                                    matchTriggerWidth
+                                    placeholder="Assign a member"
+                                    className="w-full sm:w-64"
+                                />
+                            </div>
+                            {a && (
+                                <StatusBadge variant={a.status === 'SUBMITTED' ? 'success' : a.status === 'IN_PROGRESS' ? 'info' : 'neutral'} size="sm">
+                                    {a.status} · {a.questionIds.length} Qs
+                                </StatusBadge>
+                            )}
+                        </li>
+                    );
+                })}
+            </ul>
         </div>
     );
 }

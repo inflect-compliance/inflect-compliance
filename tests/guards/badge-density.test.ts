@@ -93,7 +93,9 @@ const STATUS_BADGE_BUDGET: Record<string, number> = {
     // criticality + PERSONAL_LIABILITY + fine-exposure, and the propose
     // review's kind + criticality + liability + fine. The management-liability
     // lens (Prompt 1) deliberately surfaces liability/fine prominently.
-    "src/app/t/[tenantSlug]/(app)/audits/nis2-gap/Nis2GapLifecycleClient.tsx": 8,
+    "src/app/t/[tenantSlug]/(app)/audits/nis2-gap/Nis2GapLifecycleClient.tsx": 9,
+    // Prompt 2 — the owner Assignments panel adds a per-assignment status badge
+    // (PENDING/IN_PROGRESS/SUBMITTED). Delegation status is load-bearing here.
     // Files at exactly the default 4 are not listed (the test
     // forbids redundant entries). Migration target: bring the
     // 5+ entries above down via subtle-tone demotion or by

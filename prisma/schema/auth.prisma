@@ -245,6 +245,7 @@ model Tenant {
   // NIS2 gap-assessment (imported open-data question set).
   nis2SelfAssessments               Nis2SelfAssessment[]
   nis2SelfAssessmentAnswers         Nis2SelfAssessmentAnswer[]
+  nis2GapAssignments                Nis2GapAssignment[]
   aiGovSelfAssessments              AiGovSelfAssessment[]
   aiGovSelfAssessmentAnswers        AiGovSelfAssessmentAnswer[]
   // Hub-and-spoke (Epic O-1).

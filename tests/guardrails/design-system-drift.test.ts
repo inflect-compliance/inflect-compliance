@@ -308,10 +308,14 @@ describe('New page token discipline', () => {
         //     lifecycle surface (semantic tokens only; PageHeader + KPIStat +
         //     charts + StatusBadge primitives) in the unmigrated tally only
         //     because it isn't yet promoted to MIGRATED_PAGES.
+        //   - 126 (+2): NIS2 gap delegation (Prompt 2) — audits/nis2-gap/respond/
+        //     [assignmentId]/page.tsx + RespondClient.tsx. The assignee answer
+        //     surface (semantic tokens only; PageHeader + RadioGroup + StatusBadge
+        //     primitives) in the unmigrated tally until promoted to MIGRATED_PAGES.
         // Each increment names the epic + page + reason; promotion
         // to MIGRATED_PAGES is the path forward, never silent
         // floor-bumping.
-        expect(unmigrated.length).toBeLessThanOrEqual(124);
+        expect(unmigrated.length).toBeLessThanOrEqual(126);
     });
 
     it('migrated page count is at least 4', () => {

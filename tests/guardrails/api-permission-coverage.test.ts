@@ -75,6 +75,10 @@ const PRIVILEGED_ROOTS: ReadonlyArray<{
         relPath: 'src/app/api/t/[tenantSlug]/incidents',
         why: 'NIS2 Article 23 incident response — privileged security-team mutations (incidents.manage) + member-visibility reads (incidents.view).',
     },
+    {
+        relPath: 'src/app/api/t/[tenantSlug]/gap-assessments',
+        why: 'NIS2 gap-assessment delegation — dispatch/list/finalize are assessment-admin actions (admin.manage). Per-respondent answering is self-service under the separate /gap-assignments root (ctx-scoped in the usecase).',
+    },
 ];
 
 /**

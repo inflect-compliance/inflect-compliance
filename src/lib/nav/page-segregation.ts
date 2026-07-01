@@ -174,6 +174,7 @@ export const SUBPAGES: readonly string[] = [
     '/audits/cycles/[cycleId]',
     '/audits/cycles/[cycleId]/readiness',
     '/audits/nis2-gap',
+    '/audits/nis2-gap/respond/[assignmentId]',
 
     '/audits/new',
     '/audits/packs/[packId]',
