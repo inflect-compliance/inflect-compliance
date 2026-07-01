@@ -51,6 +51,8 @@ const APP_ROOT = path.resolve(
 const EXEMPTIONS: Record<string, string> = {
     'frameworks/[frameworkKey]/readiness/Nis2ReadinessClient.tsx':
         'multi-section readiness view (KPIs + trend chart + domain + gap tables) — not a single viewport-clamped list',
+    'audits/nis2-gap/Nis2GapLifecycleClient.tsx':
+        'multi-section NIS2 gap-lifecycle view (KPIs + trend + radar + run-history + gap + propose-review) — not a single viewport-clamped list',
     // Multi-section dashboard with KPI strip + summary bar + two
     // side-by-side gap tables. Viewport-clamping would compress the
     // whole grid awkwardly. Natural scroll is the right shape.

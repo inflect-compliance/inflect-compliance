@@ -94,14 +94,26 @@ export class Nis2GapAssessmentRepository {
     static async createAssessment(
         db: PrismaTx,
         ctx: RequestContext,
-        input: { title?: string | null; createdById?: string | null },
+        input: { title?: string | null; createdById?: string | null; source?: string; status?: string },
     ) {
         return db.nis2SelfAssessment.create({
             data: {
                 tenantId: ctx.tenantId,
                 title: input.title ?? null,
                 createdById: input.createdById ?? null,
+                // WIZARD_BASELINE for the one-time onboarding run, STANDALONE
+                // for later re-assessments (default). See gap-assessment lifecycle.
+                source: input.source ?? 'STANDALONE',
+                ...(input.status ? { status: input.status } : {}),
             },
+        });
+    }
+
+    /** Stamp the run's provenance (e.g. WIZARD_BASELINE on the onboarding run). */
+    static async setAssessmentSource(db: PrismaTx, ctx: RequestContext, id: string, source: string) {
+        return db.nis2SelfAssessment.updateMany({
+            where: { id, tenantId: ctx.tenantId },
+            data: { source },
         });
     }
 

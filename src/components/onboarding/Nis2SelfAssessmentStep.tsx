@@ -339,6 +339,16 @@ export function Nis2SelfAssessmentStep({
                 </Button>
             </div>
 
+            {/* Hand-off to the lifecycle home — this run becomes assessment #1 in
+                the NIS2 gap history on the Audits page, where you can re-run it,
+                track the trend, and turn priority gaps into remediation. */}
+            <a
+                href={`/t/${tenantSlug}/audits/nis2-gap`}
+                className="inline-block text-sm text-brand-default underline hover:text-content-emphasis"
+            >
+                View your NIS2 Gap Assessment →
+            </a>
+
             {/* CC BY 4.0 attribution — required wherever the questions render */}
             <p className="text-xs text-content-subtle">
                 {NIS2_ATTRIBUTION_TEXT}{' '}

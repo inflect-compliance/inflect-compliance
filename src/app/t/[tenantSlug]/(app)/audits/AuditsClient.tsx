@@ -37,6 +37,9 @@ interface AuditListRow {
 interface AuditsClientProps {
     initialAudits: AuditListRow[];
     tenantSlug: string;
+    /** True when NIS2 is an installed framework — gates the NIS2 Gap Assessment
+     *  entry button (absent, not disabled, when false). */
+    hasNis2: boolean;
     translations: {
         title: string;
         listDescription: string;
@@ -85,7 +88,7 @@ interface AuditDetail {
  * Client island for audits — handles master/detail, create form, checklist interactions.
  * Data is pre-fetched server-side and passed via props.
  */
-export function AuditsClient({ initialAudits, tenantSlug, translations: t }: AuditsClientProps) {
+export function AuditsClient({ initialAudits, tenantSlug, hasNis2, translations: t }: AuditsClientProps) {
     const [selected, setSelected] = useState<AuditDetail | null>(null);
 
     // Modal-form follow-up — create-audit modal mounted off the list,
@@ -209,6 +212,19 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
                         >
                             Incidents
                         </Link>
+                        {/* NIS2 Gap Assessment lifecycle — shown ONLY when NIS2
+                            is an installed framework (absent, not disabled,
+                            otherwise). Navigational entry to the lifecycle home;
+                            bare noun label, no Plus glyph. */}
+                        {hasNis2 && (
+                            <Link
+                                href={`/t/${tenantSlug}/audits/nis2-gap`}
+                                className={cn(buttonVariants({ variant: 'secondary' }))}
+                                id="audits-nis2-gap-link"
+                            >
+                                NIS2 Gap Assessment
+                            </Link>
+                        )}
                         {/* Business Continuity (BIA) sits beside Incidents — NIS2/DORA
                             pair incident handling with continuity as sibling
                             operational-resilience obligations. */}

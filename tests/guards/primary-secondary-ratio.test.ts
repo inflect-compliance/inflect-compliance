@@ -179,7 +179,11 @@ const MIN_SECONDARY_TO_PRIMARY_RATIO = 0.9;
 // 2026-07-01 — bumped 137 → 138 for the vendor-doc AssessmentPrefillPanel's
 // "Pre-fill" CTA — the AI-extraction feature entry point, paired with
 // secondary Approve + ghost Reject per proposal, so the ratio holds. +1.
-const MAX_PRIMARY_COUNT = 138;
+// 2026-07-02 — bumped 138 → 139 for the NIS2 gap-lifecycle surface
+// (audits/nis2-gap): the "Create these" apply CTA is the propose-not-commit
+// review's earned primary, paired with a secondary "Re-run assessment" +
+// per-item checkboxes, so the secondary:primary ratio still rises. +1.
+const MAX_PRIMARY_COUNT = 139;
 
 describe("primary:secondary ratio direction", () => {
     const counts = (() => {

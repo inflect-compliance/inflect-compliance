@@ -88,6 +88,12 @@ const STATUS_BADGE_BUDGET: Record<string, number> = {
     "src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx": 9,
     "src/app/t/[tenantSlug]/(app)/tasks/dashboard/page.tsx": 5,
     "src/app/t/[tenantSlug]/(app)/coverage/CoverageClient.tsx": 5,
+    // NIS2 gap-lifecycle surface: distinct badges across three sections —
+    // run-history source (Baseline/Re-assessment), the gap table's
+    // criticality + PERSONAL_LIABILITY + fine-exposure, and the propose
+    // review's kind + criticality + liability + fine. The management-liability
+    // lens (Prompt 1) deliberately surfaces liability/fine prominently.
+    "src/app/t/[tenantSlug]/(app)/audits/nis2-gap/Nis2GapLifecycleClient.tsx": 8,
     // Files at exactly the default 4 are not listed (the test
     // forbids redundant entries). Migration target: bring the
     // 5+ entries above down via subtle-tone demotion or by

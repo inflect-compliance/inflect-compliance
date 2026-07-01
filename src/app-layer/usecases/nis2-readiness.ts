@@ -197,18 +197,27 @@ export function scoreNis2Assessment(
     };
 }
 
-/** Load + score a tenant's current self-assessment. Pure derivation — no mutation. */
-export async function computeNis2Readiness(ctx: RequestContext): Promise<Nis2Readiness> {
+/** Load + score a tenant's self-assessment. Pure derivation — no mutation.
+ *  Scores the latest run by default, or a specific run when `assessmentId`
+ *  is given (used by the lifecycle history view). */
+export async function computeNis2Readiness(
+    ctx: RequestContext,
+    assessmentId?: string,
+): Promise<Nis2Readiness> {
     assertCanManageOnboarding(ctx);
     return runInTenantContext(ctx, async (db) => {
         const [domains, questions] = await Promise.all([
             Nis2GapAssessmentRepository.listDomains(db),
             Nis2GapAssessmentRepository.listQuestions(db),
         ]);
-        const assessments = await Nis2GapAssessmentRepository.listAssessments(db, ctx, { take: 1 });
         const answers: Record<string, Nis2Answer> = {};
-        if (assessments[0]) {
-            const rows = await Nis2GapAssessmentRepository.listAnswers(db, ctx, assessments[0].id);
+        let targetId = assessmentId;
+        if (!targetId) {
+            const assessments = await Nis2GapAssessmentRepository.listAssessments(db, ctx, { take: 1 });
+            targetId = assessments[0]?.id;
+        }
+        if (targetId) {
+            const rows = await Nis2GapAssessmentRepository.listAnswers(db, ctx, targetId);
             for (const r of rows) answers[r.questionId] = r.answer as Nis2Answer;
         }
         const sq: ScoringQuestion[] = questions.map((q) => ({
