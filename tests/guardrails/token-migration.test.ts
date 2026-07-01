@@ -91,7 +91,11 @@ describe('Vendors list page token migration', () => {
     });
 
     it('uses semantic tokens for table styling', () => {
-        expect(src).toContain('border-border-default');
+        // The bordered card is now owned by the <DataTable> primitive itself
+        // (it renders `border-border-subtle rounded-lg`); the vendors page no
+        // longer hand-rolls a `border-border-default` wrapper (removing that
+        // redundant wrapper fixed the broken full-height table bounds). The
+        // remaining semantic-token checks still lock the page's own styling.
         expect(src).toContain('text-content-muted');
         expect(src).toContain('hover:bg-bg-muted');
     });

@@ -564,11 +564,13 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
 
             <ListPageShell.Body>
                 <TruncationBanner truncated={truncated} />
-                {/* Outer card preserves the legacy bordered look while
-                    delegating internal scroll to DataTable's fillBody. */}
-                <div className="border border-border-default rounded-lg overflow-hidden md:flex md:flex-col md:flex-1 md:min-h-0">
-                    <DataTable
-                        fillBody
+                {/* DataTable owns its own bordered/rounded card + fillBody
+                    scroll (canonical EntityListPage pattern). A hand-rolled
+                    wrapper here added a redundant second border AND `flex-1`,
+                    which forced the card to fill the viewport height even with
+                    one row — the "broken bounds" giant empty box. */}
+                <DataTable
+                    fillBody
                         onReachEnd={hasMoreVendors ? loadMoreVendors : undefined}
                         data={visibleVendors}
                         columns={vendorColumns}
@@ -622,11 +624,10 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                                 />
                             )
                         }
-                        resourceName={(p) => p ? 'vendors' : 'vendor'}
-                        data-testid="vendors-table"
-                        className="hover:bg-bg-muted"
-                    />
-                </div>
+                    resourceName={(p) => p ? 'vendors' : 'vendor'}
+                    data-testid="vendors-table"
+                    className="hover:bg-bg-muted"
+                />
             </ListPageShell.Body>
 
             {permissions.canCreate && (
