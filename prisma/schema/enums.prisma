@@ -524,6 +524,12 @@ enum NotificationType {
   // incident owner + tenant OWNER/ADMINs, deduped per (deadline, day).
   INCIDENT_DEADLINE_DUE
   INCIDENT_DEADLINE_OVERDUE
+  // Continuous vendor monitoring (vendor-monitoring job). Fired when a
+  // monitored vendor's posture changes — a breach appears in a feed, a
+  // parsed SOC 2 / cert attestation expires, or a reassessment is
+  // triggered. Routed to the vendor's `ownerUserId`, deduped per
+  // (vendor, signal, day).
+  VENDOR_POSTURE_ALERT
   GENERAL
 }
 

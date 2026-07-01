@@ -196,6 +196,14 @@ export interface VendorRenewalCheckPayload {
     tenantId?: string;
 }
 
+/** Continuous vendor posture monitor (breach/attestation/TLS sweep). */
+export interface VendorMonitoringPayload {
+    /** Scope to one tenant; absent = sweep all tenants. */
+    tenantId?: string;
+    /** Scope to one vendor (ad-hoc re-run); absent = all enabled monitors. */
+    vendorId?: string;
+}
+
 /** Deadline monitor — controls, policies, tasks, risks, test plans */
 export interface DeadlineMonitorPayload {
     tenantId?: string;
@@ -544,6 +552,7 @@ export interface JobPayloadMap {
     'exception-expiry-monitor': ExceptionExpiryMonitorPayload;
     'retention-sweep': RetentionSweepPayload;
     'vendor-renewal-check': VendorRenewalCheckPayload;
+    'vendor-monitoring': VendorMonitoringPayload;
     'deadline-monitor': DeadlineMonitorPayload;
     'evidence-expiry-monitor': EvidenceExpiryMonitorPayload;
     'notification-dispatch': NotificationDispatchPayload;
@@ -755,6 +764,16 @@ export const JOB_DEFAULTS: Record<JobName, {
         backoff: { type: 'exponential', delay: 10000 },
         removeOnComplete: 200,
         removeOnFail: 500,
+    },
+    'vendor-monitoring': {
+        // One attempt — the sweep is idempotent (posture events dedupe by
+        // fingerprint, findings by sourceRef) and re-runs daily, so a
+        // transient failure self-heals on the next cycle without a retry storm
+        // against the public breach / TLS feeds.
+        attempts: 1,
+        backoff: { type: 'fixed', delay: 0 },
+        removeOnComplete: 50,
+        removeOnFail: 200,
     },
     'deadline-monitor': {
         attempts: 2,

@@ -58,6 +58,8 @@ a `userId` but stores no contact PII).
 | `BiaDependency` | Business record | No | Cascade on BIA/tenant delete | Indefinite while tenant active — part of the BIA record |
 | `VendorDocExtraction` | Business record | No | Cascade on vendor/document/tenant delete | Indefinite while tenant active — the AI extraction + provenance for a vendor doc's pre-filled answers |
 | `VendorAnswerProposal` | Business record | No | Cascade on extraction/tenant delete; status lifecycle (PENDING→ACCEPTED/REJECTED) | Indefinite while tenant active — the propose-not-commit review record |
+| `VendorMonitor` | Configuration | No | Cascade on vendor/tenant delete | Indefinite while tenant active — the per-vendor continuous-monitoring config + rolling posture state (last run, breach date, TLS grade, attestation expiry) |
+| `VendorPostureEvent` | Business record | No | Cascade on vendor/tenant delete | Indefinite while tenant active — the append-only continuous-assurance timeline (breaches, cert expiries, TLS grades, triggered reassessments) |
 | `Audit` | Business record | No | Soft-delete (`deletedAt`); 90-day purge via `data-lifecycle` | Active: indefinite. Soft-deleted: 90-day purge |
 | `AuditChecklistItem` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
 | `AuditCycle` | Business record | No | Soft-delete (`deletedAt`); 90-day purge via `data-lifecycle` | Active: indefinite. Soft-deleted: 90-day purge |

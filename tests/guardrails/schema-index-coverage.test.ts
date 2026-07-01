@@ -420,6 +420,16 @@ const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
     // (+status); covered by @@index([tenantId, extractionId]) + @@index([tenantId, status]).
     VendorAnswerProposal:
         'listProposals filters by (tenantId, extractionId) (+status) — covered by @@index([tenantId, extractionId]) + @@index([tenantId, status]); bounded by one extraction.',
+    // Vendor monitor — the sweep + getVendorMetrics filter by (tenantId, enabled)
+    // / (tenantId, vendorId); covered by @@unique([tenantId, vendorId]) +
+    // @@index([tenantId, enabled]). Bounded take.
+    VendorMonitor:
+        'vendor-monitoring sweep filters by (tenantId, enabled); getVendorPosture by (tenantId, vendorId) — covered by @@unique([tenantId, vendorId]) + @@index([tenantId, enabled]); bounded take.',
+    // Vendor posture events — the timeline reads by (tenantId, vendorId) ordered
+    // by occurredAt; getVendorMetrics filters by (tenantId, eventType, occurredAt).
+    // Covered by @@index([tenantId, vendorId, occurredAt]) + @@index([tenantId, eventType]).
+    VendorPostureEvent:
+        'getVendorPosture filters by (tenantId, vendorId) ordered occurredAt; metrics by (tenantId, eventType, occurredAt) — covered by @@index([tenantId, vendorId, occurredAt]) + @@index([tenantId, eventType]); bounded take.',
     // Policy-template mapping — linkPolicyControls reads existing links by
     // policyId (+ controlId in-filter) to dedupe before createMany; covered
     // by @@index([tenantId, policyId]) (policyId is the leading filter under

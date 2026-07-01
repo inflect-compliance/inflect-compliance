@@ -77,6 +77,9 @@
     "docs/data-retention.md": {
       "class": "authoritative"
     },
+    "docs/vendor-monitoring.md": {
+      "class": "authoritative"
+    },
     "docs/database-routing.md": {
       "class": "authoritative"
     },
@@ -1335,6 +1338,9 @@
       "class": "historical"
     },
     "docs/implementation-notes/2026-07-01-framework-version-delta.md": {
+      "class": "historical"
+    },
+    "docs/implementation-notes/2026-07-01-vendor-monitoring.md": {
       "class": "historical"
     }
   }
