@@ -1,0 +1,234 @@
+[
+  {
+    "code": "SDLC-PO1",
+    "title": "Secure-SDLC security requirements",
+    "description": "Define, document, and maintain security requirements for both the software development infrastructure and the software being built, and communicate third-party component requirements. Implements SSDF PO.1.",
+    "defaultFrequency": "ANNUALLY",
+    "defaultOwnerHint": "Head of Engineering / AppSec Lead",
+    "requirements": ["PO.1.1", "PO.1.2", "PO.1.3"],
+    "tasks": [
+      { "title": "Document infrastructure & software security requirements", "description": "Capture security requirements for the development infrastructure and for the software, and store them where the team can reference them." },
+      { "title": "Track third-party component requirements", "description": "Record provenance and security expectations for reused commercial/open-source components." },
+      { "title": "Review requirements at least annually", "description": "Revisit and update the requirements as regulations, threats, and the tech stack change." }
+    ]
+  },
+  {
+    "code": "SDLC-PO2",
+    "title": "Secure development roles, responsibilities, and training",
+    "description": "Assign SDLC security roles, provide role-based secure-development training, and obtain leadership commitment to secure development. Implements SSDF PO.2.",
+    "defaultFrequency": "ANNUALLY",
+    "defaultOwnerHint": "Engineering Management / People Ops",
+    "requirements": ["PO.2.1", "PO.2.2", "PO.2.3"],
+    "tasks": [
+      { "title": "Define SDLC security roles", "description": "Document who is responsible for each security-relevant activity across the SDLC." },
+      { "title": "Deliver role-based secure-development training", "description": "Train developers, reviewers, and operators on the practices relevant to their role; refresh periodically." },
+      { "title": "Secure leadership commitment", "description": "Obtain and communicate management sponsorship for the secure-development program." }
+    ]
+  },
+  {
+    "code": "SDLC-PO3",
+    "title": "Security toolchain (SAST / DAST / SCA)",
+    "description": "Specify, integrate, and securely operate the security tooling in the toolchain, and configure it to produce evidence artifacts. Implements SSDF PO.3.",
+    "defaultFrequency": "QUARTERLY",
+    "defaultOwnerHint": "DevSecOps / Platform Engineering",
+    "requirements": ["PO.3.1", "PO.3.2", "PO.3.3"],
+    "tasks": [
+      { "title": "Select mandatory security tools", "description": "Decide which SAST, DAST, SCA, and secrets-scanning tools are required and how they integrate into CI." },
+      { "title": "Operate the toolchain securely", "description": "Deploy, patch, and access-control the tooling following recommended practices." },
+      { "title": "Configure evidence artifact generation", "description": "Ensure tools emit machine-readable results that can be retained as compliance evidence." }
+    ]
+  },
+  {
+    "code": "SDLC-PO4",
+    "title": "Software security check criteria and release gates",
+    "description": "Define the criteria that software must meet before release and gather the information needed to make informed go/no-go decisions. Implements SSDF PO.4.",
+    "defaultFrequency": "QUARTERLY",
+    "defaultOwnerHint": "AppSec Lead / Release Manager",
+    "requirements": ["PO.4.1", "PO.4.2"],
+    "tasks": [
+      { "title": "Define security check / release gate criteria", "description": "Set the pass/fail criteria (e.g. no unresolved criticals) for each stage of the SDLC." },
+      { "title": "Gather and safeguard decision evidence", "description": "Collect scan results, review sign-offs, and test evidence and provide them to release approvers." }
+    ]
+  },
+  {
+    "code": "SDLC-PO5",
+    "title": "Hardened, separated development environments",
+    "description": "Separate and protect each development environment and harden development, build, and test endpoints using a risk-based approach. Implements SSDF PO.5.",
+    "defaultFrequency": "QUARTERLY",
+    "defaultOwnerHint": "Platform / IT Security",
+    "requirements": ["PO.5.1", "PO.5.2"],
+    "tasks": [
+      { "title": "Separate development, build, and production environments", "description": "Isolate environments with distinct credentials and network boundaries to limit blast radius." },
+      { "title": "Harden development endpoints", "description": "Apply baseline hardening, endpoint protection, and least-privilege access to developer and build systems." }
+    ]
+  },
+  {
+    "code": "SDLC-PS1",
+    "title": "Source-code integrity and access control",
+    "description": "Store all forms of code under least privilege with branch protection and signed commits to prevent unauthorized access and tampering. Implements SSDF PS.1.",
+    "defaultFrequency": "QUARTERLY",
+    "defaultOwnerHint": "Engineering / SCM Admin",
+    "requirements": ["PS.1.1"],
+    "tasks": [
+      { "title": "Enforce least-privilege repository access", "description": "Grant repository and pipeline access only to those who need it; review membership regularly." },
+      { "title": "Enable branch protection and signed commits", "description": "Require protected branches, mandatory reviews, and commit signing to prevent tampering." }
+    ]
+  },
+  {
+    "code": "SDLC-PS2",
+    "title": "Release-artifact signing and integrity verification",
+    "description": "Provide cryptographic integrity-verification information (hashes, digital signatures) for each software release so acquirers can verify authenticity. Implements SSDF PS.2.",
+    "defaultFrequency": "QUARTERLY",
+    "defaultOwnerHint": "Release Engineering",
+    "requirements": ["PS.2.1"],
+    "tasks": [
+      { "title": "Sign release artifacts", "description": "Digitally sign build artifacts and publish the signing certificate/public key." },
+      { "title": "Publish integrity verification information", "description": "Make hashes and signatures available to acquirers alongside each release." }
+    ]
+  },
+  {
+    "code": "SDLC-PS3",
+    "title": "Release provenance and archival (SBOM)",
+    "description": "Securely archive each release and its supporting data, and collect and share provenance data such as a software bill of materials. Implements SSDF PS.3.",
+    "defaultFrequency": "QUARTERLY",
+    "defaultOwnerHint": "Release Engineering / Supply-Chain Security",
+    "requirements": ["PS.3.1", "PS.3.2"],
+    "tasks": [
+      { "title": "Archive each release with supporting data", "description": "Retain release files, integrity information, and provenance for the required retention period." },
+      { "title": "Generate and maintain an SBOM", "description": "Produce a software bill of materials per release and keep it available for vulnerability response." }
+    ]
+  },
+  {
+    "code": "SDLC-PW1",
+    "title": "Threat modeling and secure design",
+    "description": "Use threat modeling and attack-surface analysis to inform design, prefer standardized security features, and record security-relevant design decisions. Implements SSDF PW.1.",
+    "defaultFrequency": "ANNUALLY",
+    "defaultOwnerHint": "AppSec / Engineering Leads",
+    "requirements": ["PW.1.1", "PW.1.2", "PW.1.3"],
+    "tasks": [
+      { "title": "Threat model significant features", "description": "Run threat modeling or attack-surface mapping for new services and material design changes." },
+      { "title": "Prefer standardized security services", "description": "Reuse vetted auth, logging, and crypto services instead of building proprietary equivalents." },
+      { "title": "Record design decisions and risk responses", "description": "Document the security-relevant design choices and how identified risks are addressed." }
+    ]
+  },
+  {
+    "code": "SDLC-PW2",
+    "title": "Independent secure design review",
+    "description": "Have a qualified reviewer or automated process independently confirm the design meets security requirements and addresses identified risks. Implements SSDF PW.2.",
+    "defaultFrequency": "ANNUALLY",
+    "defaultOwnerHint": "Security Architect",
+    "requirements": ["PW.2.1"],
+    "tasks": [
+      { "title": "Conduct independent design review", "description": "Have someone not involved in the design (or tooling) verify it satisfies the security requirements before build." }
+    ]
+  },
+  {
+    "code": "SDLC-PW4",
+    "title": "Approved-component allowlist and SCA gate",
+    "description": "Acquire and maintain well-secured components, reuse vetted internal modules, and verify all third-party components against requirements throughout their life. Implements SSDF PW.4.",
+    "defaultFrequency": "MONTHLY",
+    "defaultOwnerHint": "AppSec / DevSecOps",
+    "requirements": ["PW.4.1", "PW.4.2", "PW.4.4"],
+    "tasks": [
+      { "title": "Maintain an approved-component allowlist", "description": "Curate the components teams may use and the source they must come from." },
+      { "title": "Gate builds on software composition analysis", "description": "Run SCA in CI and fail builds that introduce disallowed or vulnerable dependencies." },
+      { "title": "Continuously verify acquired components", "description": "Re-check third-party components against requirements over their lifecycle, not just at adoption." }
+    ]
+  },
+  {
+    "code": "SDLC-PW5",
+    "title": "Secure coding standards",
+    "description": "Adopt and follow secure coding practices appropriate to the languages and environments in use. Implements SSDF PW.5.",
+    "defaultFrequency": "ANNUALLY",
+    "defaultOwnerHint": "Engineering / AppSec",
+    "requirements": ["PW.5.1"],
+    "tasks": [
+      { "title": "Publish language-appropriate secure coding standards", "description": "Document secure coding guidance for each primary language/framework used." },
+      { "title": "Enforce standards via linters and review", "description": "Wire the standards into linters and the code-review checklist so they are applied consistently." }
+    ]
+  },
+  {
+    "code": "SDLC-PW6",
+    "title": "Build hardening flags",
+    "description": "Use compiler, interpreter, and build-tool features that improve executable security, and configure the approved hardening settings. Implements SSDF PW.6.",
+    "defaultFrequency": "ANNUALLY",
+    "defaultOwnerHint": "Build / Platform Engineering",
+    "requirements": ["PW.6.1", "PW.6.2"],
+    "tasks": [
+      { "title": "Select build tools with hardening features", "description": "Prefer toolchains offering stack protection, ASLR, fortified functions, and similar mitigations." },
+      { "title": "Enable and verify hardening flags", "description": "Turn on the approved hardening settings and verify builds actually carry them." }
+    ]
+  },
+  {
+    "code": "SDLC-PW7",
+    "title": "Mandatory peer code review",
+    "description": "Determine where code review and/or analysis apply, then perform them against the secure coding standard and triage findings. Implements SSDF PW.7.",
+    "defaultFrequency": "WEEKLY",
+    "defaultOwnerHint": "Engineering Teams",
+    "requirements": ["PW.7.1", "PW.7.2"],
+    "tasks": [
+      { "title": "Require peer review before merge", "description": "Mandate at least one qualified reviewer per change on protected branches." },
+      { "title": "Triage review and analysis findings", "description": "Record and prioritize issues from review/analysis in the team's issue tracker and drive them to closure." }
+    ]
+  },
+  {
+    "code": "SDLC-PW8",
+    "title": "SAST and DAST in CI",
+    "description": "Determine and perform executable-code testing (SAST/DAST, fuzzing, pen testing) and triage the results. Implements SSDF PW.8.",
+    "defaultFrequency": "WEEKLY",
+    "defaultOwnerHint": "DevSecOps / QA",
+    "requirements": ["PW.8.1", "PW.8.2"],
+    "tasks": [
+      { "title": "Run SAST and DAST in the pipeline", "description": "Integrate static and dynamic analysis into CI with defined failure thresholds." },
+      { "title": "Scope and triage test results", "description": "Design the tests, run them, and record/triage discovered issues with recommended remediations." }
+    ]
+  },
+  {
+    "code": "SDLC-PW9",
+    "title": "Secure-by-default configuration",
+    "description": "Define a secure configuration baseline and ship the software with those defaults, documented for administrators. Implements SSDF PW.9.",
+    "defaultFrequency": "ANNUALLY",
+    "defaultOwnerHint": "Product / Engineering",
+    "requirements": ["PW.9.1", "PW.9.2"],
+    "tasks": [
+      { "title": "Define the secure default baseline", "description": "Determine the secure value for every security-relevant setting." },
+      { "title": "Ship and document secure defaults", "description": "Implement the defaults and document each setting for administrators." }
+    ]
+  },
+  {
+    "code": "SDLC-RV1",
+    "title": "Vulnerability monitoring and disclosure policy",
+    "description": "Continuously gather vulnerability information, confirm vulnerabilities, and maintain a vulnerability-disclosure and remediation policy. Implements SSDF RV.1.",
+    "defaultFrequency": "MONTHLY",
+    "defaultOwnerHint": "Security Operations / PSIRT",
+    "requirements": ["RV.1.1", "RV.1.2", "RV.1.3"],
+    "tasks": [
+      { "title": "Monitor internal and external vulnerability sources", "description": "Track advisories, SCA alerts, and reports for the software and its third-party components." },
+      { "title": "Maintain a coordinated disclosure policy", "description": "Publish how to report vulnerabilities and define the roles and process to handle them." }
+    ]
+  },
+  {
+    "code": "SDLC-RV2",
+    "title": "Vulnerability response and patch SLA",
+    "description": "Assess and prioritize each vulnerability by risk and plan and implement remediations within defined SLAs. Implements SSDF RV.2.",
+    "defaultFrequency": "MONTHLY",
+    "defaultOwnerHint": "Security Operations / Engineering",
+    "requirements": ["RV.2.1", "RV.2.2"],
+    "tasks": [
+      { "title": "Assess and prioritize vulnerabilities", "description": "Analyze each vulnerability's risk to plan its remediation or other response." },
+      { "title": "Remediate within SLA and notify", "description": "Patch or mitigate within severity-based SLAs and notify affected parties per the disclosure process." }
+    ]
+  },
+  {
+    "code": "SDLC-RV3",
+    "title": "Root-cause analysis and SDLC improvement",
+    "description": "Analyze vulnerability root causes, look for patterns and similar defects, and update the SDLC to prevent recurrence. Implements SSDF RV.3.",
+    "defaultFrequency": "QUARTERLY",
+    "defaultOwnerHint": "AppSec / Engineering Leads",
+    "requirements": ["RV.3.1", "RV.3.2", "RV.3.3", "RV.3.4"],
+    "tasks": [
+      { "title": "Perform root-cause analysis", "description": "Determine the underlying cause of each significant vulnerability and look for the same class elsewhere." },
+      { "title": "Feed lessons back into the SDLC", "description": "Update secure-development practices and processes to prevent the root cause from recurring." }
+    ]
+  }
+]
