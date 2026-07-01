@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { getTenantCtx } from '@/app-layer/context';
-import { listBias, createBia, getBiasForProcessNode, CreateBiaSchema } from '@/app-layer/usecases/business-impact-analysis';
+import { listBias, createBia, getBiasForProcessNode, getBiasForProcessNodeKey, CreateBiaSchema } from '@/app-layer/usecases/business-impact-analysis';
 import { withValidatedBody } from '@/lib/validation/route';
 import { withApiErrorHandling } from '@/lib/errors/api';
 import { jsonResponse } from '@/lib/api-response';
@@ -15,6 +15,12 @@ export const GET = withApiErrorHandling(
         const params = await paramsPromise;
         const ctx = await getTenantCtx(params, req);
         const sp = req.nextUrl.searchParams;
+        // Canvas cross-link: resolve (processMapId, nodeKey) → BIAs + node id.
+        const processMapId = sp.get('processMapId');
+        const nodeKey = sp.get('nodeKey');
+        if (processMapId && nodeKey) {
+            return jsonResponse(await getBiasForProcessNodeKey(ctx, processMapId, nodeKey));
+        }
         const processNodeId = sp.get('processNodeId');
         if (processNodeId) {
             return jsonResponse({ rows: await getBiasForProcessNode(ctx, processNodeId) });
