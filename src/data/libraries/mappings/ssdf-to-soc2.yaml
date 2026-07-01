@@ -1,0 +1,77 @@
+# Cross-Framework Mapping Set: NIST SSDF (SP 800-218) v1.1 → SOC 2 (2017 TSC)
+# Data-driven mapping file for the RequirementMapping ingestion pipeline.
+#
+# SSDF secure development and change practices map primarily onto SOC 2's
+# CC8.1 (change management) common criterion — the SDLC, secure coding,
+# review, and testing tasks are all realized through a controlled change
+# process. Vulnerability response (RV) maps onto CC7.1 (system monitoring and
+# incident detection/response). Organizational preparation touches CC1.2
+# (board/management oversight) and CC3.1 (risk assessment).
+#
+# Provenance: all entries are [curated] — IC's own structural guidance.
+# Mappings are traceability guidance, not a compliance guarantee. Refs use the
+# YAML library ref_ids; only targets present in soc2-2017.yaml are used.
+
+urn: urn:inflect:mappingset:ssdf-to-soc2
+name: "NIST SSDF (SP 800-218) v1.1 → SOC 2 (2017 TSC)"
+description: >
+  Cross-framework traceability between NIST SSDF secure software development
+  tasks and SOC 2 2017 Trust Services Criteria, centered on change management
+  (CC8.1) and system monitoring (CC7.1).
+version: 1
+source_framework_ref: NIST-SSDF-800-218
+target_framework_ref: SOC2-2017
+
+mapping_entries:
+  - source_ref: PO.1.1
+    target_ref: CC8.1
+    strength: RELATED
+    rationale: "[curated] Maintaining development-infrastructure security requirements is exercised through the change-management process (CC8.1)."
+  - source_ref: PO.1.2
+    target_ref: CC8.1
+    strength: RELATED
+    rationale: "[curated] Maintaining software security requirements is exercised through the change-management process (CC8.1)."
+  - source_ref: PO.2.1
+    target_ref: CC1.2
+    strength: RELATED
+    rationale: "[curated] Defining SDLC roles and responsibilities maps to board/management oversight of controls (CC1.2)."
+  - source_ref: PO.3.1
+    target_ref: CC8.1
+    strength: RELATED
+    rationale: "[curated] Integrating a supporting security toolchain supports the controlled change process (CC8.1)."
+  - source_ref: PS.1.1
+    target_ref: CC6.1
+    strength: INTERSECT
+    rationale: "[curated] Storing code under least privilege maps to logical access security controls (CC6.1)."
+  - source_ref: PS.2.1
+    target_ref: CC8.1
+    strength: RELATED
+    rationale: "[curated] Verifying software release integrity is part of the controlled release/change process (CC8.1)."
+  - source_ref: PW.1.1
+    target_ref: CC3.1
+    strength: INTERSECT
+    rationale: "[curated] Threat modeling to assess software security risk maps to risk assessment (CC3.1)."
+  - source_ref: PW.5.1
+    target_ref: CC8.1
+    strength: RELATED
+    rationale: "[curated] Secure coding practices are enforced within the change-management process (CC8.1)."
+  - source_ref: PW.7.2
+    target_ref: CC8.1
+    strength: INTERSECT
+    rationale: "[curated] Code review and analysis are gates within the change-management process (CC8.1)."
+  - source_ref: PW.8.2
+    target_ref: CC8.1
+    strength: INTERSECT
+    rationale: "[curated] Security testing before release is a gate within the change-management process (CC8.1)."
+  - source_ref: RV.1.1
+    target_ref: CC7.1
+    strength: INTERSECT
+    rationale: "[curated] Continuously monitoring for vulnerabilities maps to system monitoring and anomaly detection (CC7.1)."
+  - source_ref: RV.2.2
+    target_ref: CC7.1
+    strength: RELATED
+    rationale: "[curated] Responding to and remediating vulnerabilities maps to incident detection and response (CC7.1)."
+  - source_ref: RV.3.4
+    target_ref: CC8.1
+    strength: RELATED
+    rationale: "[curated] Updating the SDLC after root-cause analysis maps to change management (CC8.1)."

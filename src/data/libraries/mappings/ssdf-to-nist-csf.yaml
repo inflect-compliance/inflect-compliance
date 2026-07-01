@@ -1,0 +1,96 @@
+# Cross-Framework Mapping Set: NIST SSDF (SP 800-218) v1.1 → NIST CSF 2.0
+# Data-driven mapping file for the RequirementMapping ingestion pipeline.
+#
+# NIST authored both frameworks; SP 800-218 Appendix A cross-references the
+# SSDF tasks against related NIST publications, and the software-protection
+# and vulnerability-response practices align with CSF outcomes: the PS/PW
+# "protect the software / produce well-secured software" groups map onto CSF
+# PROTECT (PR.*) and IDENTIFY-RISK (ID.RA) outcomes, while the RV "respond to
+# vulnerabilities" group maps onto CSF DETECT (DE.CM) and RESPOND (RS.MA).
+#
+# Provenance: entries marked [NIST-crosswalk] reflect the relationships NIST
+# describes between the SSDF practices and cybersecurity outcomes; because IC's
+# CSF library is a condensed representative subset, the specific target outcome
+# is adapted to the nearest available CSF node. Entries marked [curated] are
+# IC's own structural guidance. Mappings are traceability guidance, not a
+# compliance guarantee.
+#
+# Refs use the YAML library ref_ids: SSDF task (source) and the NIST CSF
+# outcome ids (target). Only targets present in nist-csf-2.0.yaml are used.
+
+urn: urn:inflect:mappingset:ssdf-to-nist-csf
+name: "NIST SSDF (SP 800-218) v1.1 → NIST CSF 2.0"
+description: >
+  Cross-framework traceability between NIST SSDF secure software development
+  tasks and NIST CSF 2.0 cybersecurity outcomes, adapted to IC's CSF
+  representation.
+version: 1
+source_framework_ref: NIST-SSDF-800-218
+target_framework_ref: NIST-CSF-2.0
+
+mapping_entries:
+  # ─── PO Prepare the Organization ↔ CSF GOVERN ───────────────────
+  - source_ref: PO.1.1
+    target_ref: GV.RM-01
+    strength: INTERSECT
+    rationale: "[NIST-crosswalk] Defining and maintaining security requirements for the development infrastructure is a risk-management-strategy outcome (GV.RM-01)."
+  - source_ref: PO.1.2
+    target_ref: GV.RM-01
+    strength: INTERSECT
+    rationale: "[NIST-crosswalk] Defining and maintaining security requirements for the software is a risk-management-strategy outcome (GV.RM-01)."
+  - source_ref: PO.2.3
+    target_ref: GV.OC-01
+    strength: RELATED
+    rationale: "[curated] Obtaining upper-management commitment to secure development reflects the organizational-context/mission outcome (GV.OC-01)."
+  # ─── PO.5 secure environments ↔ CSF PROTECT ─────────────────────
+  - source_ref: PO.5.1
+    target_ref: PR.AA-01
+    strength: RELATED
+    rationale: "[curated] Separating and protecting each development environment relies on identity/access management (PR.AA-01)."
+  # ─── PS Protect the Software ↔ CSF PROTECT ──────────────────────
+  - source_ref: PS.1.1
+    target_ref: PR.DS-01
+    strength: INTERSECT
+    rationale: "[NIST-crosswalk] Storing all forms of code under least privilege to prevent tampering is a data-integrity/at-rest protection outcome (PR.DS-01)."
+  - source_ref: PS.2.1
+    target_ref: PR.DS-01
+    strength: INTERSECT
+    rationale: "[NIST-crosswalk] Providing release integrity-verification information (hashes, signatures) protects the integrity of released data (PR.DS-01)."
+  - source_ref: PS.3.2
+    target_ref: ID.AM-01
+    strength: INTERSECT
+    rationale: "[NIST-crosswalk] Collecting and sharing component provenance (SBOM) is an asset/component-inventory outcome (ID.AM-01)."
+  # ─── PW Produce Well-Secured Software ↔ CSF IDENTIFY-RISK ────────
+  - source_ref: PW.1.1
+    target_ref: ID.RA-01
+    strength: INTERSECT
+    rationale: "[NIST-crosswalk] Threat/attack modeling to assess software security risk is a vulnerability/risk-identification outcome (ID.RA-01)."
+  - source_ref: PW.7.2
+    target_ref: ID.RA-01
+    strength: INTERSECT
+    rationale: "[NIST-crosswalk] Performing code review/analysis to find vulnerabilities is a vulnerability-identification outcome (ID.RA-01)."
+  - source_ref: PW.8.2
+    target_ref: ID.RA-01
+    strength: INTERSECT
+    rationale: "[NIST-crosswalk] Security testing (SAST/DAST, fuzzing, pen test) to find vulnerabilities is a vulnerability-identification outcome (ID.RA-01)."
+  - source_ref: PW.9.1
+    target_ref: PR.DS-01
+    strength: RELATED
+    rationale: "[curated] Defining a secure default configuration baseline supports data-protection outcomes (PR.DS-01)."
+  # ─── RV Respond to Vulnerabilities ↔ CSF DETECT/RESPOND/RECOVER ──
+  - source_ref: RV.1.1
+    target_ref: DE.CM-01
+    strength: INTERSECT
+    rationale: "[NIST-crosswalk] Continuously gathering information on potential vulnerabilities is a continuous-monitoring outcome (DE.CM-01)."
+  - source_ref: RV.1.2
+    target_ref: ID.RA-01
+    strength: INTERSECT
+    rationale: "[NIST-crosswalk] Reviewing/testing code to confirm previously undetected vulnerabilities is a vulnerability-identification outcome (ID.RA-01)."
+  - source_ref: RV.2.2
+    target_ref: RS.MA-01
+    strength: INTERSECT
+    rationale: "[NIST-crosswalk] Planning and implementing vulnerability risk responses maps to incident/response management (RS.MA-01)."
+  - source_ref: RV.3.4
+    target_ref: RC.RP-01
+    strength: RELATED
+    rationale: "[curated] Updating the SDLC after root-cause analysis to prevent recurrence supports recovery/improvement outcomes (RC.RP-01)."

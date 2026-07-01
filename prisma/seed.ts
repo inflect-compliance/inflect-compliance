@@ -1529,6 +1529,78 @@ Reviewed at least annually.` },
     }
     console.log(`✅ NIST Privacy Framework + ${nistPrivacyData.length} subcategories + ${nistPrivacyGroups.size} category packs seeded`);
 
+    // ─── NIST SSDF (SP 800-218) v1.1 ───
+    // PUBLIC DOMAIN (NIST): "Information presented on NIST sites is considered
+    // public information and may be distributed or copied." The Secure Software
+    // Development Framework — four practice groups (PO/PS/PW/RV) → practices →
+    // tasks. Underpins US federal secure-software self-attestation (EO 14028 /
+    // OMB M-22-18). Rides the generic framework/pack machinery — no special-casing.
+    const nistSsdfData = require('./fixtures/nist_ssdf_requirements.json') as Array<{ key: string; section: string; sortOrder: number; title: string }>;
+    const nistSsdfMeta = JSON.stringify({
+        locale: 'en',
+        provider: 'NIST',
+        packager: 'inflect',
+        publicationDate: '2022-02-03',
+        license: 'public-domain',
+        sourceUrl: 'https://csrc.nist.gov/Projects/ssdf',
+        selfAttestation: 'US federal secure-software self-attestation (EO 14028 / OMB M-22-18)',
+        copyright:
+            'Information presented on NIST sites is considered public ' +
+            'information and may be distributed or copied.',
+    });
+    const nistSsdf = await prisma.framework.upsert({
+        where: { key_version: { key: 'NIST-SSDF', version: '1.1' } },
+        update: { name: 'NIST SSDF (SP 800-218) v1.1', kind: 'NIST_FRAMEWORK', description: 'Secure software development practices (Prepare / Protect / Produce / Respond) — the SSDF underpins US federal secure-software self-attestation.', metadataJson: nistSsdfMeta, sourceUrn: 'urn:inflect:library:nist-ssdf-800-218' },
+        create: { key: 'NIST-SSDF', name: 'NIST SSDF (SP 800-218) v1.1', version: '1.1', kind: 'NIST_FRAMEWORK', description: 'Secure software development practices (Prepare / Protect / Produce / Respond) — the SSDF underpins US federal secure-software self-attestation.', metadataJson: nistSsdfMeta, sourceUrn: 'urn:inflect:library:nist-ssdf-800-218' },
+    });
+    const nistSsdfReqMap: Record<string, string> = {};
+    for (const req of nistSsdfData) {
+        const r = await prisma.frameworkRequirement.upsert({
+            where: { frameworkId_code: { frameworkId: nistSsdf.id, code: req.key } },
+            update: { title: req.title, section: req.section, sortOrder: req.sortOrder },
+            create: { frameworkId: nistSsdf.id, code: req.key, title: req.title, section: req.section, category: req.section, sortOrder: req.sortOrder },
+        });
+        nistSsdfReqMap[req.key] = r.id;
+    }
+    // One control template per practice (the 19 SSDF practices). Curated,
+    // higher-quality control templates land with the SSDF Starter Pack.
+    const nistSsdfGroups = new Map<string, { title: string; reqs: string[] }>();
+    for (const req of nistSsdfData) {
+        if (!nistSsdfGroups.has(req.section)) nistSsdfGroups.set(req.section, { title: req.section, reqs: [] });
+        nistSsdfGroups.get(req.section)!.reqs.push(req.key);
+    }
+    let nistSsdfGroupIdx = 0;
+    for (const [, info] of nistSsdfGroups) {
+        const code = `SSDF-${String(nistSsdfGroupIdx++).padStart(2, '0')}`;
+        const existing = await prisma.controlTemplate.findUnique({ where: { code } });
+        if (!existing) {
+            const tmpl = await prisma.controlTemplate.create({
+                data: { code, title: info.title, category: 'Secure Development', defaultFrequency: 'ANNUALLY' },
+            });
+            for (const task of defaultTasks) {
+                await prisma.controlTemplateTask.create({ data: { templateId: tmpl.id, title: task.title, description: task.description } });
+            }
+            for (const rk of info.reqs) {
+                if (nistSsdfReqMap[rk]) {
+                    await prisma.controlTemplateRequirementLink.create({ data: { templateId: tmpl.id, requirementId: nistSsdfReqMap[rk] } }).catch(() => { });
+                }
+            }
+        }
+    }
+    const nistSsdfTmpls = await prisma.controlTemplate.findMany({ where: { code: { startsWith: 'SSDF-' } } });
+    const nistSsdfPack = await prisma.frameworkPack.upsert({
+        where: { key: 'NIST_SSDF_BASELINE' },
+        update: { name: 'NIST SSDF Baseline Pack', frameworkId: nistSsdf.id, version: '1.1' },
+        create: { key: 'NIST_SSDF_BASELINE', name: 'NIST SSDF Baseline Pack', frameworkId: nistSsdf.id, version: '1.1', description: 'NIST SSDF (SP 800-218) v1.1 practice groups, practices, and tasks.' },
+    });
+    for (const tmpl of nistSsdfTmpls) {
+        await prisma.packTemplateLink.upsert({
+            where: { packId_templateId: { packId: nistSsdfPack.id, templateId: tmpl.id } },
+            create: { packId: nistSsdfPack.id, templateId: tmpl.id }, update: {},
+        });
+    }
+    console.log(`✅ NIST SSDF + ${nistSsdfData.length} tasks + ${nistSsdfGroups.size} practice packs seeded`);
+
     // ISO 9001 Pack
     const iso9001Tmpls = await prisma.controlTemplate.findMany({ where: { code: { startsWith: 'QMS-' } } });
     const iso9001Pack = await prisma.frameworkPack.upsert({

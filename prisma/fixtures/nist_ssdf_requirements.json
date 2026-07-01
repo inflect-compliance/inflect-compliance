@@ -1,0 +1,254 @@
+[
+  {
+    "key": "PO.1.1",
+    "section": "PO.1 Define Security Requirements for Software Development",
+    "sortOrder": 0,
+    "title": "Identify and document all security requirements for the organization’s software development infrastructure and processes, and maintain the requirements over time."
+  },
+  {
+    "key": "PO.1.2",
+    "section": "PO.1 Define Security Requirements for Software Development",
+    "sortOrder": 1,
+    "title": "Identify and document all security requirements for organization-developed software, and maintain the requirements over time."
+  },
+  {
+    "key": "PO.1.3",
+    "section": "PO.1 Define Security Requirements for Software Development",
+    "sortOrder": 2,
+    "title": "Communicate requirements to all third parties who provide commercial software components for reuse, and collect and maintain provenance data for those components."
+  },
+  {
+    "key": "PO.2.1",
+    "section": "PO.2 Implement Roles and Responsibilities",
+    "sortOrder": 3,
+    "title": "Create new roles and alter responsibilities for existing roles as needed to encompass all parts of the SDLC, and periodically review and maintain the defined roles and responsibilities."
+  },
+  {
+    "key": "PO.2.2",
+    "section": "PO.2 Implement Roles and Responsibilities",
+    "sortOrder": 4,
+    "title": "Provide role-based training for all personnel with responsibilities that contribute to secure development, and periodically review and update the training."
+  },
+  {
+    "key": "PO.2.3",
+    "section": "PO.2 Implement Roles and Responsibilities",
+    "sortOrder": 5,
+    "title": "Obtain upper management or authorizing official commitment to secure development, and convey that commitment to all with development-related roles and responsibilities."
+  },
+  {
+    "key": "PO.3.1",
+    "section": "PO.3 Implement Supporting Toolchains",
+    "sortOrder": 6,
+    "title": "Specify which tools or tool types must or should be included in each toolchain to mitigate identified risks, as well as how the toolchain components are to be integrated."
+  },
+  {
+    "key": "PO.3.2",
+    "section": "PO.3 Implement Supporting Toolchains",
+    "sortOrder": 7,
+    "title": "Follow recommended security practices to deploy, operate, and maintain tools and toolchains."
+  },
+  {
+    "key": "PO.3.3",
+    "section": "PO.3 Implement Supporting Toolchains",
+    "sortOrder": 8,
+    "title": "Configure tools to generate artifacts of their support of secure software development practices as defined by the organization."
+  },
+  {
+    "key": "PO.4.1",
+    "section": "PO.4 Define and Use Criteria for Software Security Checks",
+    "sortOrder": 9,
+    "title": "Define criteria for software security checks and track throughout the SDLC."
+  },
+  {
+    "key": "PO.4.2",
+    "section": "PO.4 Define and Use Criteria for Software Security Checks",
+    "sortOrder": 10,
+    "title": "Implement processes, mechanisms, etc. to gather and safeguard the necessary information and provide it to the personnel who need it to make informed decisions."
+  },
+  {
+    "key": "PO.5.1",
+    "section": "PO.5 Implement and Maintain Secure Environments for Software Development",
+    "sortOrder": 11,
+    "title": "Separate and protect each environment involved in software development."
+  },
+  {
+    "key": "PO.5.2",
+    "section": "PO.5 Implement and Maintain Secure Environments for Software Development",
+    "sortOrder": 12,
+    "title": "Secure and harden development endpoints, including software development, build, and test systems, to perform development-related tasks using a risk-based approach."
+  },
+  {
+    "key": "PS.1.1",
+    "section": "PS.1 Protect All Forms of Code from Unauthorized Access and Tampering",
+    "sortOrder": 13,
+    "title": "Store all forms of code — including source code, executable code, and configuration-as-code — based on the principle of least privilege so that only authorized personnel, tools, services, etc. have access."
+  },
+  {
+    "key": "PS.2.1",
+    "section": "PS.2 Provide a Mechanism for Verifying Software Release Integrity",
+    "sortOrder": 14,
+    "title": "Make software integrity verification information available to software acquirers, such as cryptographic hashes and digital signatures for release files."
+  },
+  {
+    "key": "PS.3.1",
+    "section": "PS.3 Archive and Protect Each Software Release",
+    "sortOrder": 15,
+    "title": "Securely archive the necessary files and supporting data (e.g., integrity verification information, provenance data) to be retained for each software release."
+  },
+  {
+    "key": "PS.3.2",
+    "section": "PS.3 Archive and Protect Each Software Release",
+    "sortOrder": 16,
+    "title": "Collect, safeguard, maintain, and share provenance data for all components of each software release (e.g., in a software bill of materials)."
+  },
+  {
+    "key": "PW.1.1",
+    "section": "PW.1 Design Software to Meet Security Requirements and Mitigate Security Risks",
+    "sortOrder": 17,
+    "title": "Use forms of risk modeling — such as threat modeling, attack modeling, or attack surface mapping — to help assess the security risk for the software."
+  },
+  {
+    "key": "PW.1.2",
+    "section": "PW.1 Design Software to Meet Security Requirements and Mitigate Security Risks",
+    "sortOrder": 18,
+    "title": "Track and maintain the software’s security requirements, risks, and design decisions."
+  },
+  {
+    "key": "PW.1.3",
+    "section": "PW.1 Design Software to Meet Security Requirements and Mitigate Security Risks",
+    "sortOrder": 19,
+    "title": "Where appropriate, build in support for using standardized security features and services (e.g., enabling log integration and single sign-on) rather than creating proprietary implementations of security features and services."
+  },
+  {
+    "key": "PW.2.1",
+    "section": "PW.2 Review the Software Design to Verify Compliance with Security Requirements and Risk Information",
+    "sortOrder": 20,
+    "title": "Have a qualified person (or people) who were not involved with the design and/or a set of automated processes review the software design to confirm and enforce that it meets all of the security requirements and satisfactorily addresses the identified risk information."
+  },
+  {
+    "key": "PW.4.1",
+    "section": "PW.4 Reuse Existing, Well-Secured Software When Feasible Instead of Duplicating Functionality",
+    "sortOrder": 21,
+    "title": "Acquire and maintain well-secured software components (e.g., software libraries, modules, middleware, frameworks) from commercial, open-source, and other third-party developers for use by the organization’s software."
+  },
+  {
+    "key": "PW.4.2",
+    "section": "PW.4 Reuse Existing, Well-Secured Software When Feasible Instead of Duplicating Functionality",
+    "sortOrder": 22,
+    "title": "Create and maintain well-secured software components in-house following SDLC processes to meet common internal software development needs that cannot be better met by third-party software components."
+  },
+  {
+    "key": "PW.4.4",
+    "section": "PW.4 Reuse Existing, Well-Secured Software When Feasible Instead of Duplicating Functionality",
+    "sortOrder": 23,
+    "title": "Verify that acquired commercial, open-source, and all other third-party software components comply with the requirements, as defined by the organization, throughout their life cycles."
+  },
+  {
+    "key": "PW.5.1",
+    "section": "PW.5 Create Source Code by Adhering to Secure Coding Practices",
+    "sortOrder": 24,
+    "title": "Follow all secure coding practices that are appropriate to the development languages and environment to meet the organization’s requirements."
+  },
+  {
+    "key": "PW.6.1",
+    "section": "PW.6 Configure the Compilation, Interpreter, and Build Processes to Improve Executable Security",
+    "sortOrder": 25,
+    "title": "Use compiler, interpreter, and build tools that offer features to improve executable security."
+  },
+  {
+    "key": "PW.6.2",
+    "section": "PW.6 Configure the Compilation, Interpreter, and Build Processes to Improve Executable Security",
+    "sortOrder": 26,
+    "title": "Determine which compiler, interpreter, and build tool features should be used and how each should be configured, then implement and use the approved configurations."
+  },
+  {
+    "key": "PW.7.1",
+    "section": "PW.7 Review and/or Analyze Human-Readable Code to Identify Vulnerabilities and Verify Compliance with Security Requirements",
+    "sortOrder": 27,
+    "title": "Determine whether code review (a person directly looks at the code to find issues) and/or code analysis (tools are used to find issues in code, either in a fully automated way or in conjunction with a person) should be used, as defined by the organization."
+  },
+  {
+    "key": "PW.7.2",
+    "section": "PW.7 Review and/or Analyze Human-Readable Code to Identify Vulnerabilities and Verify Compliance with Security Requirements",
+    "sortOrder": 28,
+    "title": "Perform the code review and/or code analysis based on the organization’s secure coding standards, and record and triage all discovered issues and recommended remediations in the development team’s workflow or issue tracking system."
+  },
+  {
+    "key": "PW.8.1",
+    "section": "PW.8 Test Executable Code to Identify Vulnerabilities and Verify Compliance with Security Requirements",
+    "sortOrder": 29,
+    "title": "Determine whether executable code testing should be performed to find vulnerabilities not identified by previous reviews, analysis, or testing and, if so, which types of testing should be used."
+  },
+  {
+    "key": "PW.8.2",
+    "section": "PW.8 Test Executable Code to Identify Vulnerabilities and Verify Compliance with Security Requirements",
+    "sortOrder": 30,
+    "title": "Scope the testing, design the tests, perform the testing, and document the results, including recording and triaging all discovered issues and recommended remediations in the development team’s workflow or issue tracking system."
+  },
+  {
+    "key": "PW.9.1",
+    "section": "PW.9 Configure Software to Have Secure Settings by Default",
+    "sortOrder": 31,
+    "title": "Define a secure baseline by determining how to configure each setting that has an effect on security or a security-related setting so that the default settings are secure and do not weaken the security functions provided by the platform, network infrastructure, or services."
+  },
+  {
+    "key": "PW.9.2",
+    "section": "PW.9 Configure Software to Have Secure Settings by Default",
+    "sortOrder": 32,
+    "title": "Implement the default settings (or groups of default settings, if applicable), and document each setting for software administrators."
+  },
+  {
+    "key": "RV.1.1",
+    "section": "RV.1 Identify and Confirm Vulnerabilities on an Ongoing Basis",
+    "sortOrder": 33,
+    "title": "Gather information from software acquirers, users, and public sources on potential vulnerabilities in the software and third-party components that the software uses, and investigate all credible reports."
+  },
+  {
+    "key": "RV.1.2",
+    "section": "RV.1 Identify and Confirm Vulnerabilities on an Ongoing Basis",
+    "sortOrder": 34,
+    "title": "Review, analyze, and/or test the software’s code to identify or confirm the presence of previously undetected vulnerabilities."
+  },
+  {
+    "key": "RV.1.3",
+    "section": "RV.1 Identify and Confirm Vulnerabilities on an Ongoing Basis",
+    "sortOrder": 35,
+    "title": "Have a policy that addresses vulnerability disclosure and remediation, and implement the roles, responsibilities, and processes needed to support that policy."
+  },
+  {
+    "key": "RV.2.1",
+    "section": "RV.2 Assess, Prioritize, and Remediate Vulnerabilities",
+    "sortOrder": 36,
+    "title": "Analyze each vulnerability to gather sufficient information about risk to plan its remediation or other risk response."
+  },
+  {
+    "key": "RV.2.2",
+    "section": "RV.2 Assess, Prioritize, and Remediate Vulnerabilities",
+    "sortOrder": 37,
+    "title": "Plan and implement risk responses for vulnerabilities."
+  },
+  {
+    "key": "RV.3.1",
+    "section": "RV.3 Analyze Vulnerabilities to Identify Their Root Causes",
+    "sortOrder": 38,
+    "title": "Analyze identified vulnerabilities to determine their root causes."
+  },
+  {
+    "key": "RV.3.2",
+    "section": "RV.3 Analyze Vulnerabilities to Identify Their Root Causes",
+    "sortOrder": 39,
+    "title": "Analyze the root causes over time to identify patterns, such as a particular secure coding practice not being followed consistently."
+  },
+  {
+    "key": "RV.3.3",
+    "section": "RV.3 Analyze Vulnerabilities to Identify Their Root Causes",
+    "sortOrder": 40,
+    "title": "Review the software for similar vulnerabilities to eradicate a class of vulnerabilities, and proactively fix them rather than waiting for external reports."
+  },
+  {
+    "key": "RV.3.4",
+    "section": "RV.3 Analyze Vulnerabilities to Identify Their Root Causes",
+    "sortOrder": 41,
+    "title": "Review the SDLC process, and update it if appropriate to prevent (or reduce the likelihood of) the root cause recurring in updates to the software or in new software that is created."
+  }
+]
