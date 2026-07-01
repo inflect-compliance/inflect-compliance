@@ -41,6 +41,7 @@ const PARENT_MAP: Record<string, CanonicalParent> = {
     '/admin/entra': { href: '/admin', label: 'Admin' },
     '/admin/integrations': { href: '/admin', label: 'Admin' },
     '/admin/integrations/sharepoint-health': { href: '/admin/integrations', label: 'Integrations' },
+    '/admin/mcp': { href: '/admin', label: 'Admin' },
     '/admin/members': { href: '/admin', label: 'Admin' },
     '/admin/notifications': { href: '/admin', label: 'Admin' },
     '/admin/rbac': { href: '/admin', label: 'Admin' },
