@@ -73,6 +73,13 @@ async function seedTenant(tenantId: string, slug: string, riskCount: number): Pr
     return userId;
 }
 
+// A suite-unique GLOBAL framework + pack so `listInstallableFrameworks` (which
+// backs the per-framework requirement resources) returns at least one entry —
+// the CI integration DB is migrated but NOT globally seeded, so we can't rely on
+// seeded frameworks existing.
+const FW_KEY = `mcprs-fw-${SUITE}`;
+let frameworkId = '';
+
 describeFn('MCP read suite (real route, real key, real RLS)', () => {
     beforeAll(async () => {
         await prisma.$connect();
@@ -81,6 +88,17 @@ describeFn('MCP read suite (real route, real key, real RLS)', () => {
         keyRisksA = await mintKey(TENANT_A, userA, ['mcp:read', 'risks:read']);
         keyRisksB = await mintKey(TENANT_B, userB, ['mcp:read', 'risks:read']);
         keyControlsOnly = await mintKey(TENANT_A, userA, ['mcp:read', 'controls:read']);
+
+        const fw = await prisma.framework.create({
+            data: { key: FW_KEY, version: '1', name: 'MCP RS Test Framework', kind: 'NIST_FRAMEWORK', description: 'x' },
+        });
+        frameworkId = fw.id;
+        await prisma.frameworkRequirement.create({
+            data: { frameworkId: fw.id, code: 'R1', title: 'req 1', section: 'S1', sortOrder: 0 },
+        });
+        await prisma.frameworkPack.create({
+            data: { key: `${FW_KEY}_PACK`, name: 'MCP RS Pack', frameworkId: fw.id, version: '1' },
+        });
     });
 
     afterAll(async () => {
@@ -88,6 +106,11 @@ describeFn('MCP read suite (real route, real key, real RLS)', () => {
             await prisma.tenantApiKey.deleteMany({ where: { tenantId: t } }).catch(() => {});
             await prisma.risk.deleteMany({ where: { tenantId: t } }).catch(() => {});
             await prisma.user.deleteMany({ where: { id: `u-${t}` } }).catch(() => {});
+        }
+        if (frameworkId) {
+            await prisma.frameworkPack.deleteMany({ where: { frameworkId } }).catch(() => {});
+            await prisma.frameworkRequirement.deleteMany({ where: { frameworkId } }).catch(() => {});
+            await prisma.framework.delete({ where: { id: frameworkId } }).catch(() => {});
         }
         await prisma.$disconnect();
     });
@@ -143,6 +166,7 @@ describeFn('MCP read suite (real route, real key, real RLS)', () => {
         const { json } = await rpc(keyRisksA, { jsonrpc: '2.0', id: 6, method: 'resources/list' });
         const uris = (json as { result: { resources: Array<{ uri: string }> } }).result.resources.map((r) => r.uri);
         expect(uris).toContain('inflect://frameworks');
-        expect(uris.some((u) => u.startsWith('inflect://frameworks/') && u.endsWith('/requirements'))).toBe(true);
+        // The seeded installable framework produces a per-framework requirement resource.
+        expect(uris).toContain(`inflect://frameworks/${FW_KEY}/requirements`);
     });
 });
