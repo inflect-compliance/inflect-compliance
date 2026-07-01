@@ -41,6 +41,7 @@ import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 
 import { ControlRoiCard } from './_components/ControlRoiCard';
+import { ControlBiaSurface } from '@/components/bia/ControlBiaSurface';
 
 const TraceabilityPanel = dynamic(() => import('@/components/TraceabilityPanel'), {
     loading: () => <SkeletonCard lines={3} />,
@@ -841,6 +842,10 @@ export default function ControlDetailPage() {
 
             {/* Tab content — tab bar is rendered by EntityDetailLayout */}
             {tab === 'overview' && <ControlRoiCard controlId={controlId} />}
+
+            {/* Conditional BIA surface (continuity section / process-impact chip /
+                nothing) — the no-dead-tab contract lives inside the component. */}
+            {tab === 'overview' && <ControlBiaSurface controlId={controlId} />}
 
             {tab === 'overview' && (
                 <div className={cn(cardVariants(), 'space-y-default')}>

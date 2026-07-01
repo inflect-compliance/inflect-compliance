@@ -137,3 +137,28 @@ describe('BIA — UI placement (beside Incidents in the Internal Audit page)', (
         expect(client).toMatch(/recovery/);
     });
 });
+
+describe('BIA — deep wiring into control + incident pages (the no-dead-tab UI)', () => {
+    const CONTROL_SURFACE = read('src/components/bia/ControlBiaSurface.tsx');
+    const CONTROL_DETAIL = read('src/app/t/[tenantSlug]/(app)/controls/[controlId]/page.tsx');
+    const INCIDENT_CTX = read('src/components/bia/IncidentBiaContext.tsx');
+    const INCIDENT_DETAIL = read('src/app/t/[tenantSlug]/(app)/incidents/[incidentId]/page.tsx');
+
+    it('the control BIA surface renders continuity / process / nothing — and returns null for none', () => {
+        // The component itself enforces the no-dead-tab contract.
+        expect(CONTROL_SURFACE).toMatch(/kind === 'none'\)\s*return null/);
+        expect(CONTROL_SURFACE).toMatch(/kind === 'process'/);
+        expect(CONTROL_SURFACE).toMatch(/control-bia-continuity/);
+        expect(CONTROL_SURFACE).toMatch(/bia-surface/); // fetches the server-resolved surface
+    });
+
+    it('the control detail page mounts the conditional surface', () => {
+        expect(CONTROL_DETAIL).toMatch(/ControlBiaSurface/);
+    });
+
+    it('the incident detail page surfaces the BIA recovery-deadline context', () => {
+        expect(INCIDENT_CTX).toMatch(/bia-context/);
+        expect(INCIDENT_CTX).toMatch(/rows\.length === 0\)\s*return null/); // no dead surface
+        expect(INCIDENT_DETAIL).toMatch(/IncidentBiaContext/);
+    });
+});

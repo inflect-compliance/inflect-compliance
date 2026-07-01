@@ -7,6 +7,7 @@ import { CACHE_KEYS } from '@/lib/swr-keys';
 import { EntityDetailLayout, type EntityDetailTab } from '@/components/layout/EntityDetailLayout';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { MetaStrip, type MetaItem } from '@/components/ui/meta-strip';
+import { IncidentBiaContext } from '@/components/bia/IncidentBiaContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
@@ -252,6 +253,9 @@ export default function IncidentDetailPage() {
 
             {activeTab === 'overview' && (
                 <div className="space-y-section">
+                    {/* BIA recovery-deadline context — MTPD of any process this
+                        incident's linked controls protect (renders nothing if none). */}
+                    <IncidentBiaContext incidentId={incidentId} />
                     {/* Not-legal-advice disclaimer — prominent. */}
                     <Card elevation="inset" className="px-4 py-3 text-sm text-content-muted">
                         <strong className="text-content-default">Not legal advice.</strong>{' '}
