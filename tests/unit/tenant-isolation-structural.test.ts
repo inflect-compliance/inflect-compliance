@@ -155,6 +155,12 @@ describe('Structural Guard: Tenant Isolation Conventions', () => {
             'admin', 'auth', 't', 'risk-templates', 'audit', 'staging',
             'health', 'livez', 'readyz', 'stripe', 'security', 'csp-report',
             'storage', 'integrations', 'scim',
+            // Epic MCP — the MCP server endpoint. Authenticated by a scoped
+            // TenantApiKey that CARRIES the tenant (no slug in the URL, like the
+            // other API-key public routes). Every tool/resource call resolves a
+            // RequestContext via `verifyApiKey` and runs in `runInTenantContext`
+            // (RLS) — the tenant chain is enforced per call, not via the path.
+            'mcp',
             // SP-4 — external webhook receivers (MS Graph change notifications).
             // Caller is Graph, not a tenant member; the receiver verifies
             // clientState + resolves the tenant itself.
