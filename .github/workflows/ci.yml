@@ -1031,7 +1031,7 @@ jobs:
       # load it into this runner's daemon under the SAME tag Trivy
       # scans (`inflect-compliance:ci-<sha>`).
       - name: Download image tarball
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: docker-image-${{ github.sha }}
           path: /tmp
