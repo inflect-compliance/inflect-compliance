@@ -214,6 +214,16 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
                         >
                             Incidents
                         </Link>
+                        {/* Business Continuity (BIA) sits beside Incidents — NIS2/DORA
+                            pair incident handling with continuity as sibling
+                            operational-resilience obligations. */}
+                        <Link
+                            href={`/t/${tenantSlug}/audits/business-continuity`}
+                            className={cn(buttonVariants({ variant: 'secondary' }))}
+                            id="audits-business-continuity-link"
+                        >
+                            Business Continuity
+                        </Link>
                         <Button variant="primary" icon={<Plus className="-ml-0.5 -mr-2.5" />} onClick={() => setIsCreateOpen(true)} id="new-audit-btn">{t.newAudit}</Button>
                     </div>
                 }

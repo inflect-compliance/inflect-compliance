@@ -278,10 +278,17 @@ describe('New page token discipline', () => {
         //     FilterToolbar + DataTable, semantic tokens only; sibling of
         //     the vulnerabilities page) in the unmigrated tally only
         //     because they aren't yet promoted to MIGRATED_PAGES.
+        //   - 116 (+4): business-continuity (BIA) — business-continuity/
+        //     page.tsx + BusinessContinuityClient.tsx + [id]/page.tsx +
+        //     [id]/BiaDetailClient.tsx. New continuity surfaces (built on
+        //     EntityListPage + EntityDetailLayout + FilterToolbar + DataTable,
+        //     semantic tokens only; sibling of the vulnerabilities page) in
+        //     the unmigrated tally only because they aren't yet promoted to
+        //     MIGRATED_PAGES.
         // Each increment names the epic + page + reason; promotion
         // to MIGRATED_PAGES is the path forward, never silent
         // floor-bumping.
-        expect(unmigrated.length).toBeLessThanOrEqual(112);
+        expect(unmigrated.length).toBeLessThanOrEqual(116);
     });
 
     it('migrated page count is at least 4', () => {

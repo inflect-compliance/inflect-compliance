@@ -90,6 +90,9 @@ const LEGACY_LUCIDE_USERS = new Set<string>([
     // until the filter platform migrates. Same precedent as every other
     // *filter-defs.ts entry here.
     'src/app/t/[tenantSlug]/(app)/security-testing/filter-defs.ts',
+    // Business Continuity (BIA register) — filter defs. Same LucideIcon-typed
+    // precedent as every other *filter-defs.ts entry here.
+    'src/app/t/[tenantSlug]/(app)/audits/business-continuity/filter-defs.ts',
     'src/app/t/[tenantSlug]/(app)/frameworks/FrameworksClient.tsx',
     // NIS2 Article 23 incidents — filter defs. `FilterDefInput.icon` is
     // typed `LucideIcon`, so a new filter-defs file has no Nucleo option
