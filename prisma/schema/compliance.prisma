@@ -1142,6 +1142,54 @@ model AgentProposal {
   @@index([tenantId, status, createdAt])
 }
 
+/// Epic Agentic 1A — a durable, audited, human-gated agentic workflow run. The
+/// engine composes the existing MCP read/propose tools under this run model; it
+/// adds orchestration + checkpoints, NOT new authority. Every write a workflow
+/// makes routes through the propose-not-commit approval queue (AgentProposal) —
+/// the engine can commit nothing a single MCP tool couldn't. `contextJson`
+/// (accumulated state) and `summary` (the output artifact) are encrypted at rest
+/// (Epic B — see encrypted-fields.ts).
+model WorkflowRun {
+  id                String            @id @default(cuid())
+  tenantId          String
+  workflowKey       String
+  status            WorkflowRunStatus @default(RUNNING)
+  startedByUserId   String?
+  triggeredViaKeyId String?
+  startedAt         DateTime          @default(now())
+  completedAt       DateTime?
+  contextJson       String?
+  summary           String?
+  stepCount         Int               @default(0)
+  costTokens        Int               @default(0)
+  errorMessage      String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  tenant            Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  steps             WorkflowStep[]
+
+  @@index([tenantId, status, startedAt])
+}
+
+/// An append-only record of one workflow step — the run's audit narrative.
+model WorkflowStep {
+  id          String             @id @default(cuid())
+  runId       String
+  tenantId    String
+  seq         Int
+  kind        WorkflowStepKind
+  toolCalled  String?
+  inputJson   String?
+  outputJson  String?
+  status      WorkflowStepStatus @default(PENDING)
+  at          DateTime           @default(now())
+  actorUserId String?
+  run         WorkflowRun        @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId, seq])
+  @@index([tenantId, runId])
+}
+
 model Control {
   id                           String                   @id @default(cuid())
   tenantId                     String?
