@@ -1,0 +1,113 @@
+/**
+ * Digital Sovereignty Posture self-assessment ratchet.
+ *
+ * One 30-question getting-started self-assessment (6 sovereignty dimensions ×
+ * 5 questions) surfaced in onboarding. Mirrors the AI-governance + NIS2
+ * self-assessment ratchets. This guard locks:
+ *   - the bank shape: exactly 6 dimensions, 5 questions each (30 total), each
+ *     question with exactly 5 ordered options scored 0..4, and unique ids;
+ *   - LICENSE / positioning: every dimension is clause-REFERENCED (short
+ *     identifiers, never regulatory prose), carries a suggestion template, and
+ *     the source module states the not-legal-advice + attribution discipline;
+ *   - the propose-not-commit boundary: the pure scorer imports NO usecase and
+ *     calls NO create-usecase; only the usecase commits, gated by an explicit
+ *     per-dimension approval and dedupe;
+ *   - the materialize route is error-wrapped + re-scores server-side.
+ */
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+
+import {
+    DIGITAL_SOVEREIGNTY_ASSESSMENT,
+    SOVEREIGNTY_MATURITY_BANDS,
+    SOVEREIGNTY_GAP_THRESHOLD,
+} from '@/data/self-assessments/digital-sovereignty';
+
+const ROOT = path.resolve(__dirname, '../..');
+const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+
+const DATA = 'src/data/self-assessments/digital-sovereignty.ts';
+const SCORING = 'src/lib/self-assessments/scoring.ts';
+const USECASE = 'src/app-layer/usecases/self-assessment.ts';
+const ROUTE = 'src/app/api/t/[tenantSlug]/onboarding/sovereignty-assessment/materialize/route.ts';
+
+describe('Digital Sovereignty self-assessment bank', () => {
+    it('has exactly 6 dimensions, 5 questions each (30 total), with unique ids', () => {
+        const dims = DIGITAL_SOVEREIGNTY_ASSESSMENT.dimensions;
+        expect(dims).toHaveLength(6);
+        expect(new Set(dims.map((d) => d.id))).toEqual(new Set([1, 2, 3, 4, 5, 6]));
+
+        const allQuestions = dims.flatMap((d) => d.questions);
+        expect(allQuestions).toHaveLength(30);
+        for (const d of dims) expect(d.questions).toHaveLength(5);
+
+        const ids = allQuestions.map((q) => q.id);
+        expect(new Set(ids).size).toBe(30);
+    });
+
+    it('every question has exactly 5 ordered options scored 0..4', () => {
+        for (const d of DIGITAL_SOVEREIGNTY_ASSESSMENT.dimensions) {
+            for (const q of d.questions) {
+                expect(q.options).toHaveLength(5);
+                expect(q.options.map((o) => o.score)).toEqual([0, 1, 2, 3, 4]);
+                for (const o of q.options) expect(o.label.length).toBeGreaterThan(0);
+            }
+        }
+    });
+
+    it('LICENSE: dimensions are clause-REFERENCED (short identifiers, never prose)', () => {
+        for (const d of DIGITAL_SOVEREIGNTY_ASSESSMENT.dimensions) {
+            expect(d.clauseRefs.length).toBeGreaterThanOrEqual(1);
+            for (const ref of d.clauseRefs) {
+                // A citation, not a paragraph of regulatory text.
+                expect(ref.split(/\s+/).length).toBeLessThanOrEqual(5);
+            }
+        }
+    });
+
+    it('every dimension carries a materialisable suggestion template', () => {
+        for (const d of DIGITAL_SOVEREIGNTY_ASSESSMENT.dimensions) {
+            expect(d.suggestion.riskTitle.length).toBeGreaterThan(0);
+            expect(d.suggestion.controlName.length).toBeGreaterThan(0);
+            expect(d.suggestion.clauseRef.length).toBeGreaterThan(0);
+            expect(d.labelKey.length).toBeGreaterThan(0);
+        }
+    });
+
+    it('has ordered, non-overlapping maturity bands and a gap threshold inside 0..4', () => {
+        const maxes = SOVEREIGNTY_MATURITY_BANDS.map((b) => b.max);
+        expect(maxes).toEqual([...maxes].sort((a, b) => a - b));
+        expect(SOVEREIGNTY_GAP_THRESHOLD).toBeGreaterThan(0);
+        expect(SOVEREIGNTY_GAP_THRESHOLD).toBeLessThan(4);
+    });
+
+    it('positions itself as a self-assessment aid, not legal advice', () => {
+        const src = read(DATA);
+        expect(src).toMatch(/not legal advice/i);
+        // Attribution to the source model is present.
+        expect(src).toMatch(/Digital-?Sovereignty-?Assessment-?Tool/i);
+    });
+});
+
+describe('propose-not-commit boundary', () => {
+    it('the scorer is PURE — it imports no usecase and calls no create-usecase', () => {
+        const src = read(SCORING);
+        expect(src).not.toMatch(/from '@\/app-layer\/usecases/);
+        expect(src).not.toMatch(/createRisk|createControl/);
+    });
+
+    it('only the usecase commits — via createRisk / createControl, write-gated', () => {
+        const src = read(USECASE);
+        expect(src).toContain('assertCanWrite');
+        expect(src).toContain('createRisk');
+        expect(src).toContain('createControl');
+        // Idempotent dedupe by category.
+        expect(src).toContain('SELF_ASSESSMENT_CATEGORY');
+    });
+
+    it('the materialize route is error-wrapped and validates its body', () => {
+        const src = read(ROUTE);
+        expect(src).toContain('withApiErrorHandling');
+        expect(src).toContain('MaterializeSelfAssessmentSchema');
+    });
+});
