@@ -30,6 +30,7 @@ import { runInTenantContext } from '@/lib/db/rls-middleware';
 import { assertCanRead } from '@/app-layer/policies/common';
 import { forbidden, badRequest } from '@/lib/errors/types';
 import { logEvent } from '@/app-layer/events/audit';
+import { bumpEntityCacheVersion } from '@/lib/cache/list-cache';
 import {
     DEFAULT_RISK_MATRIX_CONFIG,
 } from '@/lib/risk-matrix/defaults';
@@ -178,6 +179,16 @@ export async function updateRiskMatrixConfig(
         }).catch(() => undefined);
         return row;
     });
+
+    // The /risks page SSR-caches its payload (risks + matrixConfig) per
+    // tenant for a short TTL (`cachedSsrPayload`, route 'risks'). Saving the
+    // matrix config here MUST invalidate it, or the live matrix keeps
+    // rendering the STALE axis labels / bands until the TTL lapses — the
+    // "custom axis title doesn't propagate to /risks" bug the E2E caught.
+    // `bumpEntityCacheVersion` bumps the tenant-wide SSR version, orphaning
+    // the cached payload so the next /risks render recomputes with the new
+    // config. (Uses the 'risk' entity — any entity bumps the tenant version.)
+    await bumpEntityCacheVersion(ctx, 'risk');
 
     return rowToShape(saved);
 }
