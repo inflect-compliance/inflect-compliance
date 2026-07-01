@@ -55,6 +55,9 @@ const ADOPTED_PAGES: ReadonlyArray<Adopter> = [
   { page: "src/app/t/[tenantSlug]/(app)/tests/runs/[runId]/page.tsx", entity: "Test run" },
   // NIS2 Article 23 incident response
   { page: "src/app/t/[tenantSlug]/(app)/incidents/[incidentId]/page.tsx", entity: "Incident" },
+  // Business Continuity (BIA) — server page delegates to BiaDetailClient
+  // which mounts <EntityDetailLayout> (same pattern as access-reviews).
+  { page: "src/app/t/[tenantSlug]/(app)/audits/business-continuity/[id]/BiaDetailClient.tsx", entity: "Business impact analysis" },
 ];
 
 /**
