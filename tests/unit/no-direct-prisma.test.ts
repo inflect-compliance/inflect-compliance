@@ -186,6 +186,15 @@ describe('CI Guard: No direct prisma in tenant-scoped code', () => {
         // a Notification row per overdue vendor + bumps the vendor's
         // nextReviewAt to silence the reminder until next cycle.
         'vendor-reassessment-reminder.ts',
+        // Regwatch 2A — the framework-version delta engine. Two of its
+        // functions run WITHOUT a tenant RequestContext: `recordFrameworkVersionDiff`
+        // / `recordDiffFromVersionHistory` write the GLOBAL `FrameworkVersionDiff`
+        // table (no `tenantId`, not in TENANT_SCOPED_MODELS), and
+        // `propagateFrameworkDelta` is a cross-tenant fan-out invoked by the
+        // library importer (post-import, no caller ctx). The tenant-scoped
+        // read/review paths (list/get/review/materialize) all use
+        // `runInTenantContext`. Same shape as portfolio.ts / org-security-initiative.ts.
+        'framework-delta.ts',
     ];
 
     const usecases = readFilesInDir(path.join(SRC_ROOT, 'app-layer/usecases'));
@@ -217,6 +226,11 @@ describe('CI Guard: No direct prisma in tenant-scoped code', () => {
         // ORG_INITIATIVES progress rollup resolves linked work per tenant via
         // withTenantDb(tid) — the sanctioned cross-tenant read (RLS enforced).
         'org-security-initiative.ts',
+        // Regwatch 2A — `propagateFrameworkDelta` fans a framework-version diff
+        // out to every INSTALLED tenant, running each tenant's flag/upsert/notify
+        // inside `withTenantDb(tid, ...)`. Cross-tenant fan-out can't fit
+        // `runInTenantContext`'s single-tenant shape (same as portfolio.ts).
+        'framework-delta.ts',
     ];
 
     for (const file of usecases) {
