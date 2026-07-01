@@ -259,12 +259,12 @@ export function Nis2GapLifecycleClient({ tenantSlug, canWrite }: { tenantSlug: s
 
                     <div className="space-y-tight">
                         <Heading level={3}>Assessment history</Heading>
-                        <DataTable data={data.history} columns={historyColumns} getRowId={(r) => r.id} />
+                        <DataTable data={data.history} columns={historyColumns} getRowId={(r) => r.id} data-testid="nis2-gap-history-table" />
                     </div>
 
                     <div className="space-y-tight">
                         <Heading level={3}>Prioritised gaps</Heading>
-                        <DataTable data={data.latest.gaps} columns={gapColumns} getRowId={(r) => r.questionId} />
+                        <DataTable data={data.latest.gaps} columns={gapColumns} getRowId={(r) => r.questionId} data-testid="nis2-gap-priority-table" />
                     </div>
 
                     {canWrite && suggestions.length > 0 && (
