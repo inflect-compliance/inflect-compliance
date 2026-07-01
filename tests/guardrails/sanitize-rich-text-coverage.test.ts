@@ -73,6 +73,9 @@ const RICH_TEXT_COVERAGE: Readonly<
     // quote source/secrets), sanitised in ingestScannerRun at the upsert
     // seam before the Epic B middleware encrypts it.
     ScannerFinding: { usecases: ['src/app-layer/usecases/scanner-ingestion.ts'], sanitizer: 'sanitizePlainText' },
+    // BIA — analyst `notes` (SPOFs / recovery gaps), sanitised in
+    // createBia/updateBia before the Epic B middleware encrypts them.
+    BusinessImpactAnalysis: { usecases: ['src/app-layer/usecases/business-impact-analysis.ts'], sanitizer: 'sanitizePlainText' },
     // RQ3-6 — loss-event narrative + reviewer justification; sanitised
     // at the single createLossEvent write seam before the Epic B
     // middleware persists them.

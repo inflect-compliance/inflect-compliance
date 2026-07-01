@@ -1308,18 +1308,25 @@ model ControlEvidenceLink {
   fileId              String?
   url                 String?
   integrationResultId String?
+  /// BIA-as-evidence (kind BIA) — the continuity control (NIS2
+  /// Art.21(2)(c)) links a Business Impact Analysis as the operational
+  /// artifact that satisfies the requirement.
+  biaId               String?
   note                String?
   createdByUserId     String?
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
   control             Control          @relation(fields: [controlId], references: [id], onDelete: Cascade)
   createdBy           User?            @relation("ControlEvidenceCreator", fields: [createdByUserId], references: [id])
+  bia                 BusinessImpactAnalysis? @relation(fields: [biaId], references: [id], onDelete: Cascade)
   tenant              Tenant           @relation(fields: [tenantId], references: [id])
 
   @@unique([controlId, kind, fileId])
   @@unique([controlId, kind, url])
+  @@unique([controlId, kind, biaId])
   @@index([tenantId])
   @@index([controlId])
+  @@index([tenantId, biaId])
 }
 
 model ControlTemplate {
@@ -1899,6 +1906,72 @@ model IncidentTimelineEntry {
 
   @@index([tenantId])
   @@index([tenantId, incidentId, at])
+}
+
+/// Business Impact Analysis (ISO 22301 / NIS2 Art.21(2)(c) / DORA
+/// operational resilience). Clean-room from the recognised BIA
+/// methodology — the operational artifact that satisfies the NIS2
+/// business-continuity requirement IC previously only seeded. Attaches
+/// to a modeled ProcessNode (preferred) or stands free. Sits beside
+/// Incidents as a sibling operational-resilience obligation. Tenant-
+/// scoped: RLS + Epic B (`notes`) + Epic D + indexes.
+model BusinessImpactAnalysis {
+  id            String  @id @default(cuid())
+  tenantId      String
+  /// Attach to a modeled process node (preferred). Null = free-standing
+  /// service not yet on a process map.
+  processNodeId String?
+  name          String
+  /// CRITICAL | HIGH | MEDIUM | LOW.
+  criticality   String
+  /// Recovery Time Objective — hours to restore after disruption.
+  rtoHours      Int?
+  /// Recovery Point Objective — tolerable data-loss window (hours).
+  rpoHours      Int?
+  /// Max Tolerable Period of Disruption — hours before the impact is
+  /// existential. The primary driver of recovery-priority ranking.
+  mtpdHours     Int?
+  /// Structured impact ramp: [{ atHours, financial, operational,
+  /// reputational, legal }] — powers the impact-over-time surface.
+  impactProfile Json?
+  /// Free-text analyst notes — encrypted at rest (Epic B) + sanitized
+  /// on write (Epic D).
+  notes         String?
+  ownerUserId   String?
+  reviewedAt    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant        Tenant                @relation(fields: [tenantId], references: [id])
+  processNode   ProcessNode?          @relation(fields: [processNodeId], references: [id])
+  ownerUser     User?                 @relation("BiaOwner", fields: [ownerUserId], references: [id])
+  dependencies  BiaDependency[]
+  /// BIA-as-evidence: the continuity control (NIS2 Art.21(2)(c)) links
+  /// this BIA via a ControlEvidenceLink (kind BIA).
+  evidenceLinks ControlEvidenceLink[]
+
+  @@index([tenantId, criticality])
+  @@index([tenantId, processNodeId])
+  @@index([tenantId, ownerUserId])
+}
+
+/// A dependency a BIA'd process relies on — a polymorphic pointer
+/// (process/asset/vendor) so the recovery sequence can account for what
+/// must be up first. Polymorphic by design (dependsOnType + dependsOnId),
+/// so no FK to the three target tables.
+model BiaDependency {
+  id            String   @id @default(cuid())
+  biaId         String
+  tenantId      String
+  /// 'PROCESS' | 'ASSET' | 'VENDOR'.
+  dependsOnType String
+  dependsOnId   String
+  createdAt     DateTime @default(now())
+
+  bia    BusinessImpactAnalysis @relation(fields: [biaId], references: [id], onDelete: Cascade)
+  tenant Tenant                 @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, biaId])
 }
 
 model Framework {

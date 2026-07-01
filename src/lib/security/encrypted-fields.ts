@@ -126,6 +126,14 @@ export const ENCRYPTED_FIELDS: Readonly<Record<string, readonly string[]>> = {
     //  AssetVulnerability.note rationale in the same subsystem.
     ScannerFinding: ['description'],
 
+    // ─── Business Impact Analysis (ISO 22301 / NIS2 continuity) ─
+    //  Analyst notes can describe single points of failure, recovery
+    //  gaps, and dependency weaknesses — a roadmap for an attacker who
+    //  wants maximum disruption. Encrypt the free-text notes; the
+    //  structured RTO/RPO/MTPD + impact profile are operational metrics,
+    //  not secrets.
+    BusinessImpactAnalysis: ['notes'],
+
     // ─── Loss-event register (RQ3-6) ───────────────────
     //  Loss narratives are confidential business content (customer
     //  data exposed, settlement amounts, vendor reputation): the

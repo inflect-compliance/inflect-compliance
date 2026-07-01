@@ -286,6 +286,7 @@ enum EvidenceLinkKind {
   FILE
   LINK
   INTEGRATION_RESULT
+  BIA
 }
 
 enum ControlTaskStatus {

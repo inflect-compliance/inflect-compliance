@@ -153,6 +153,9 @@ model ProcessNode {
 
   tenant     Tenant     @relation(fields: [tenantId], references: [id])
   processMap ProcessMap @relation(fields: [processMapId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  /// Business Impact Analyses attached to this node — the BIA lives in
+  /// the Internal Audit area (not the canvas); this is the link back.
+  businessImpactAnalyses BusinessImpactAnalysis[]
 
   @@unique([processMapId, nodeKey])
   @@index([tenantId, processMapId])

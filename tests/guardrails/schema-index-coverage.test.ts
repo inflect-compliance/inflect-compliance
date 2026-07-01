@@ -395,6 +395,12 @@ const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
     // @@index([tenantId, scannerRunId, status]). Bounded take ≤500.
     ScannerFinding:
         'listScannerFindings filters by tenantId (+status/severity) — covered by @@index([tenantId, status, severity]) + @@index([tenantId, scannerRunId, status]); bounded take ≤500.',
+    // BIA register — listBias filters by tenantId (+optional criticality/
+    // processNodeId), ordered by criticality/MTPD for the recovery-priority
+    // view; covered by @@index([tenantId, criticality]) +
+    // @@index([tenantId, processNodeId]). Bounded take ≤500.
+    BusinessImpactAnalysis:
+        'listBias filters by tenantId (+criticality/processNodeId) — covered by @@index([tenantId, criticality]) + @@index([tenantId, processNodeId]); recovery-priority sort is in-page on a bounded per-tenant set (take ≤500).',
     // Policy-template mapping — linkPolicyControls reads existing links by
     // policyId (+ controlId in-filter) to dedupe before createMany; covered
     // by @@index([tenantId, policyId]) (policyId is the leading filter under
