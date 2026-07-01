@@ -24,10 +24,16 @@ import type { RequestContext } from '@/app-layer/types';
 import { RpcErrorCode, type McpToolDescriptor, type McpToolResult } from '../protocol';
 import type { McpReadTool } from './types';
 import { getCompliancePostureTool } from './get-compliance-posture';
+import { listRisksTool } from './risk-tools';
+import { listControlsTool, searchControlsTool } from './control-tools';
+import { findCoverageGapsTool, getFrameworkStatusTool } from './framework-tools';
+import { listEvidenceExpiringTool } from './evidence-tools';
+import { listFindingsTool, listTasksTool } from './work-tools';
+import { getTenantContextTool } from './context-tools';
 
 /**
- * The registered read tools. Phase 1 ships one (the proof tool); Phase 2 adds
- * the full tenant-inspection suite to this array.
+ * The registered read tools — the full tenant-inspection suite. Each is a thin
+ * wrapper over an existing read usecase, scope-gated + audited by the funnel.
  */
 // Tools are generic in their arg type; the registry stores them with the arg
 // type erased to `unknown` (validation happens per-call via each tool's Zod
@@ -35,6 +41,15 @@ import { getCompliancePostureTool } from './get-compliance-posture';
 // generic parameter without `any`.
 export const READ_TOOLS = [
     getCompliancePostureTool,
+    getTenantContextTool,
+    listRisksTool,
+    listControlsTool,
+    searchControlsTool,
+    findCoverageGapsTool,
+    getFrameworkStatusTool,
+    listEvidenceExpiringTool,
+    listFindingsTool,
+    listTasksTool,
 ] as unknown as ReadonlyArray<McpReadTool<unknown>>;
 
 /** MCP `tools/list` descriptors. */

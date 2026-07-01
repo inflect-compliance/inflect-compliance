@@ -60,7 +60,7 @@ export const POST = withApiErrorHandling(async (req: NextRequest) => {
     const handlers: McpHandlers = {
         listTools: () => listReadToolDescriptors(),
         callTool: (name, args) => runReadTool(ctx, name, args),
-        listResources: () => listMcpResources(),
+        listResources: () => listMcpResources(ctx),
         readResource: (uri) => readMcpResource(ctx, uri),
     };
 
