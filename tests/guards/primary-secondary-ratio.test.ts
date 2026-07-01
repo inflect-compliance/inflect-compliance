@@ -176,7 +176,10 @@ const MIN_SECONDARY_TO_PRIMARY_RATIO = 0.9;
 // the register's "BIA" create CTA + the NewBiaModal's "Create BIA" confirm.
 // Both are genuine primary actions paired with secondary/Cancel affordances,
 // so the secondary:primary ratio holds. +2 primary.
-const MAX_PRIMARY_COUNT = 137;
+// 2026-07-01 — bumped 137 → 138 for the vendor-doc AssessmentPrefillPanel's
+// "Pre-fill" CTA — the AI-extraction feature entry point, paired with
+// secondary Approve + ghost Reject per proposal, so the ratio holds. +1.
+const MAX_PRIMARY_COUNT = 138;
 
 describe("primary:secondary ratio direction", () => {
     const counts = (() => {

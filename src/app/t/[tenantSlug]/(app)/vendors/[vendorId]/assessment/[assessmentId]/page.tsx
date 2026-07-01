@@ -14,6 +14,7 @@ import { Combobox } from '@/components/ui/combobox';
 import { Tooltip } from '@/components/ui/tooltip';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
+import { AssessmentPrefillPanel } from './_components/AssessmentPrefillPanel';
 import { RequiredMarker } from '@/components/ui/required-marker';
 import { cardVariants } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
@@ -207,6 +208,15 @@ export default function AssessmentPage(
 
             {/* Saved message */}
             {savedMessage && <div className="bg-bg-success text-content-success p-2 rounded text-sm" id="save-success">{savedMessage}</div>}
+
+            {/* AI pre-fill — propose cited answers from a vendor document; a
+                human approves before anything is scored (propose-not-commit). */}
+            <AssessmentPrefillPanel
+                tenantSlug={params.tenantSlug}
+                vendorId={params.vendorId}
+                assessmentId={params.assessmentId}
+                onApplied={fetchAssessment}
+            />
 
             {/* Questions by section */}
             {Object.entries(sections).map(([section, sQuestions]) => (
