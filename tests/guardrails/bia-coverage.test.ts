@@ -108,3 +108,32 @@ describe('BIA — transparent recovery priority + evidence link', () => {
         expect(USECASE).toMatch(/export async function getIncidentBiaContext/);
     });
 });
+
+describe('BIA — UI placement (beside Incidents in the Internal Audit page)', () => {
+    const AUDITS = read('src/app/t/[tenantSlug]/(app)/audits/AuditsClient.tsx');
+    const SIDEBAR = read('src/components/layout/SidebarNav.tsx');
+    const PAGE_SEG = read('src/lib/nav/page-segregation.ts');
+
+    it('the Business Continuity pill sits in the Internal Audit header beside Incidents', () => {
+        expect(AUDITS).toMatch(/audits-business-continuity-link/);
+        expect(AUDITS).toMatch(/\/audits\/business-continuity/);
+        // beside Incidents — both are secondary pills in the same header.
+        expect(AUDITS).toMatch(/audits-incidents-link/);
+    });
+
+    it('is NOT a standalone nav item and NOT a canvas tab (routed under /audits)', () => {
+        expect(SIDEBAR).not.toMatch(/business-continuity|\/bia\b/);
+        // registered as a SUBPAGE of the audit area, not a MAIN nav destination.
+        expect(PAGE_SEG).toMatch(/'\/audits\/business-continuity'/);
+        expect(PAGE_SEG).toMatch(/'\/audits\/business-continuity\/\[id\]'/);
+    });
+
+    it('ships the register + detail surfaces on the platform primitives', () => {
+        const client = read('src/app/t/[tenantSlug]/(app)/audits/business-continuity/BusinessContinuityClient.tsx');
+        const detail = read('src/app/t/[tenantSlug]/(app)/audits/business-continuity/[id]/BiaDetailClient.tsx');
+        expect(client).toMatch(/EntityListPage/);
+        expect(detail).toMatch(/EntityDetailLayout/);
+        // recovery-priority rank surfaced in the register.
+        expect(client).toMatch(/recovery/);
+    });
+});

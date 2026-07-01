@@ -61,6 +61,8 @@ const PARENT_MAP: Record<string, CanonicalParent> = {
 
     // Audits
     '/audits/auditor': { href: '/audits', label: 'Audits' },
+    '/audits/business-continuity': { href: '/audits', label: 'Internal Audit' },
+    '/audits/business-continuity/[id]': { href: '/audits/business-continuity', label: 'Business Continuity' },
     '/audits/cycles': { href: '/audits', label: 'Audits' },
     '/audits/cycles/[cycleId]': { href: '/audits/cycles', label: 'Audit cycles' },
     '/audits/cycles/[cycleId]/readiness': {
