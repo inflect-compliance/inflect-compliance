@@ -1316,6 +1316,9 @@
     "docs/implementation-notes/2026-07-01-agentic-workflow-engine.md": {
       "class": "historical"
     },
+    "docs/implementation-notes/2026-07-01-canned-workflows.md": {
+      "class": "historical"
+    },
     "docs/implementation-notes/2026-07-01-ssdf-starter-pack.md": {
       "class": "historical"
     },

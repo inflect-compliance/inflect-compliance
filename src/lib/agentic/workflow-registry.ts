@@ -8,6 +8,8 @@
  * orchestration.
  */
 import type { WorkflowDefinition } from './workflow-types';
+import { frameworkOnboardingWorkflow } from './workflows/framework-onboarding';
+import { auditPrepWorkflow } from './workflows/audit-prep';
 
 /**
  * "Diagnostic" — read the tenant's compliance posture, then synthesise a
@@ -41,6 +43,9 @@ const diagnosticWorkflow: WorkflowDefinition = {
 
 const REGISTRY: Record<string, WorkflowDefinition> = {
     [diagnosticWorkflow.key]: diagnosticWorkflow,
+    // Epic Agentic 1B — the real canned workflows (declarative defs the engine runs).
+    [frameworkOnboardingWorkflow.key]: frameworkOnboardingWorkflow,
+    [auditPrepWorkflow.key]: auditPrepWorkflow,
 };
 
 /**
