@@ -1,0 +1,91 @@
+# Cross-Framework Mapping Set: NIST SSDF (SP 800-218) v1.1 → ISO/IEC 27001:2022
+# Data-driven mapping file for the RequirementMapping ingestion pipeline.
+#
+# The SSDF produce-well-secured-software (PW) and protect-the-software (PS)
+# practices map primarily onto ISO/IEC 27001:2022 Annex A.8 technological
+# controls — in particular A.8.25 (secure development life cycle), A.8.8
+# (management of technical vulnerabilities), A.8.24 (use of cryptography), and
+# A.8.32 (change management). Organizational preparation (PO) touches A.5
+# organizational controls.
+#
+# Provenance: all entries are [curated] — IC's own structural guidance mapping
+# the SSDF tasks to the nearest available Annex A control in IC's condensed
+# ISO 27001 library. Mappings are traceability guidance, not a compliance
+# guarantee. Refs use the YAML library ref_ids; only targets present in
+# iso27001-2022.yaml are used.
+
+urn: urn:inflect:mappingset:ssdf-to-iso27001
+name: "NIST SSDF (SP 800-218) v1.1 → ISO/IEC 27001:2022"
+description: >
+  Cross-framework traceability between NIST SSDF secure software development
+  tasks and ISO/IEC 27001:2022 Annex A controls, adapted to IC's condensed
+  ISO 27001 representation.
+version: 1
+source_framework_ref: NIST-SSDF-800-218
+target_framework_ref: ISO27001-2022
+
+mapping_entries:
+  # ─── PO Prepare the Organization ───────────────────────────────
+  - source_ref: PO.1.1
+    target_ref: A.8.25
+    strength: INTERSECT
+    rationale: "[curated] Maintaining security requirements for the development infrastructure is part of the secure development life cycle (A.8.25)."
+  - source_ref: PO.1.2
+    target_ref: A.8.25
+    strength: INTERSECT
+    rationale: "[curated] Maintaining security requirements for the software is part of the secure development life cycle (A.8.25)."
+  - source_ref: PO.2.1
+    target_ref: A.5.2
+    strength: RELATED
+    rationale: "[curated] Defining SDLC roles and responsibilities maps to information-security roles and responsibilities (A.5.2)."
+  # ─── PS Protect the Software ───────────────────────────────────
+  - source_ref: PO.5.1
+    target_ref: A.8.2
+    strength: RELATED
+    rationale: "[curated] Separating and protecting development environments relies on privileged-access controls (A.8.2)."
+  - source_ref: PS.1.1
+    target_ref: A.8.2
+    strength: INTERSECT
+    rationale: "[curated] Storing code under least privilege to prevent tampering maps to privileged-access management (A.8.2)."
+  - source_ref: PS.2.1
+    target_ref: A.8.24
+    strength: INTERSECT
+    rationale: "[curated] Providing release integrity verification via hashes and signatures maps to the use of cryptography (A.8.24)."
+  - source_ref: PS.3.1
+    target_ref: A.8.13
+    strength: RELATED
+    rationale: "[curated] Securely archiving each software release maps to information backup (A.8.13)."
+  - source_ref: PS.3.2
+    target_ref: A.5.9
+    strength: RELATED
+    rationale: "[curated] Maintaining component provenance (SBOM) maps to inventory of information and other associated assets (A.5.9)."
+  # ─── PW Produce Well-Secured Software ↔ A.8.25 ─────────────────
+  - source_ref: PW.1.1
+    target_ref: A.8.25
+    strength: INTERSECT
+    rationale: "[curated] Threat modeling to inform secure design is part of the secure development life cycle (A.8.25)."
+  - source_ref: PW.5.1
+    target_ref: A.8.25
+    strength: INTERSECT
+    rationale: "[curated] Adhering to secure coding practices is part of the secure development life cycle (A.8.25)."
+  - source_ref: PW.7.2
+    target_ref: A.8.25
+    strength: INTERSECT
+    rationale: "[curated] Code review and analysis to find vulnerabilities is part of the secure development life cycle (A.8.25)."
+  - source_ref: PW.8.2
+    target_ref: A.8.25
+    strength: INTERSECT
+    rationale: "[curated] Security testing of executable code is part of the secure development life cycle (A.8.25)."
+  # ─── RV Respond to Vulnerabilities ↔ A.8.8 / A.8.32 ────────────
+  - source_ref: RV.1.1
+    target_ref: A.8.8
+    strength: INTERSECT
+    rationale: "[curated] Continuously gathering vulnerability information maps to management of technical vulnerabilities (A.8.8)."
+  - source_ref: RV.2.2
+    target_ref: A.8.8
+    strength: INTERSECT
+    rationale: "[curated] Planning and implementing vulnerability remediation maps to management of technical vulnerabilities (A.8.8)."
+  - source_ref: RV.3.4
+    target_ref: A.8.32
+    strength: RELATED
+    rationale: "[curated] Updating the SDLC after root-cause analysis maps to change management (A.8.32)."

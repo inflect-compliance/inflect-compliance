@@ -1,0 +1,607 @@
+# NIST SSDF (SP 800-218) v1.1 — Framework Library
+# Based on the public NIST Secure Software Development Framework (SSDF),
+# NIST Special Publication 800-218, Version 1.1 (NIST, 2022-02-03).
+# The SSDF is a core set of high-level secure software development practices
+# organized into four groups: Prepare the Organization (PO), Protect the
+# Software (PS), Produce Well-Secured Software (PW), and Respond to
+# Vulnerabilities (RV). Each group has practices, and each practice has tasks.
+# This file mirrors the nist-csf-2.0.yaml three-level structure (group →
+# practice → task). Task descriptions are paraphrased from the publicly
+# available NIST publication.
+
+urn: urn:inflect:library:nist-ssdf-800-218
+locale: en
+ref_id: NIST-SSDF-800-218
+name: NIST SSDF (SP 800-218) v1.1
+description: >
+  The NIST Secure Software Development Framework (SSDF), SP 800-218, is a set
+  of fundamental, sound secure software development practices grouped into four
+  practice groups (PO, PS, PW, RV). Organizations can integrate the SSDF into
+  their existing software development practices to reduce the number of
+  vulnerabilities in released software, mitigate the potential impact of
+  exploitation, and address the root causes of vulnerabilities to prevent
+  recurrences. The SSDF underpins US federal secure-software self-attestation
+  under Executive Order 14028 and OMB Memorandum M-22-18.
+copyright: >
+  Information presented on NIST sites is considered public information
+  and may be distributed or copied.
+version: 1
+publication_date: "2022-02-03"
+provider: NIST
+packager: inflect
+kind: NIST_FRAMEWORK
+
+objects:
+  framework:
+    urn: urn:inflect:framework:nist-ssdf-800-218
+    ref_id: NIST-SSDF-800-218
+    name: NIST SSDF (SP 800-218) v1.1
+    description: NIST Secure Software Development Framework version 1.1 (SP 800-218)
+    min_score: 1
+    max_score: 4
+    scores_definition:
+      - score: 1
+        name: Not Implemented
+        description: >
+          The practice task is not performed or is performed ad hoc with no
+          defined process.
+      - score: 2
+        name: Partially Implemented
+        description: >
+          The practice task is performed for some software or in some parts of
+          the organization but is not consistent or repeatable.
+      - score: 3
+        name: Largely Implemented
+        description: >
+          The practice task is performed consistently across the organization
+          and is supported by documented processes.
+      - score: 4
+        name: Fully Implemented
+        description: >
+          The practice task is performed consistently, is measured, and is
+          continuously improved based on lessons learned.
+
+    requirement_nodes:
+      # ─── Prepare the Organization (PO) ───
+      - urn: urn:inflect:req:nist-ssdf-800-218:po
+        ref_id: PO
+        name: Prepare the Organization
+        description: >
+          Ensure that the organization’s people, processes, and technology are prepared to perform secure software development at the organization level and, in some cases, for individual development groups or projects.
+        depth: 1
+        assessable: false
+        category: Prepare the Organization
+      - urn: urn:inflect:req:nist-ssdf-800-218:po.1
+        ref_id: PO.1
+        name: Define Security Requirements for Software Development
+        description: >
+          Ensure that security requirements for software development are known at all times so that they can be taken into account throughout the SDLC and duplication of effort can be minimized.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:po
+        depth: 2
+        assessable: false
+        category: Prepare the Organization
+      - urn: urn:inflect:req:nist-ssdf-800-218:po.1.1
+        ref_id: PO.1.1
+        description: >
+          Identify and document all security requirements for the organization’s software development infrastructure and processes, and maintain the requirements over time.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:po.1
+        depth: 3
+        assessable: true
+        category: Prepare the Organization
+      - urn: urn:inflect:req:nist-ssdf-800-218:po.1.2
+        ref_id: PO.1.2
+        description: >
+          Identify and document all security requirements for organization-developed software, and maintain the requirements over time.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:po.1
+        depth: 3
+        assessable: true
+        category: Prepare the Organization
+      - urn: urn:inflect:req:nist-ssdf-800-218:po.1.3
+        ref_id: PO.1.3
+        description: >
+          Communicate requirements to all third parties who provide commercial software components for reuse, and collect and maintain provenance data for those components.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:po.1
+        depth: 3
+        assessable: true
+        category: Prepare the Organization
+      - urn: urn:inflect:req:nist-ssdf-800-218:po.2
+        ref_id: PO.2
+        name: Implement Roles and Responsibilities
+        description: >
+          Ensure that everyone inside and outside of the organization involved in the SDLC is prepared to perform their SDLC-related roles and responsibilities throughout the SDLC.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:po
+        depth: 2
+        assessable: false
+        category: Prepare the Organization
+      - urn: urn:inflect:req:nist-ssdf-800-218:po.2.1
+        ref_id: PO.2.1
+        description: >
+          Create new roles and alter responsibilities for existing roles as needed to encompass all parts of the SDLC, and periodically review and maintain the defined roles and responsibilities.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:po.2
+        depth: 3
+        assessable: true
+        category: Prepare the Organization
+      - urn: urn:inflect:req:nist-ssdf-800-218:po.2.2
+        ref_id: PO.2.2
+        description: >
+          Provide role-based training for all personnel with responsibilities that contribute to secure development, and periodically review and update the training.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:po.2
+        depth: 3
+        assessable: true
+        category: Prepare the Organization
+      - urn: urn:inflect:req:nist-ssdf-800-218:po.2.3
+        ref_id: PO.2.3
+        description: >
+          Obtain upper management or authorizing official commitment to secure development, and convey that commitment to all with development-related roles and responsibilities.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:po.2
+        depth: 3
+        assessable: true
+        category: Prepare the Organization
+      - urn: urn:inflect:req:nist-ssdf-800-218:po.3
+        ref_id: PO.3
+        name: Implement Supporting Toolchains
+        description: >
+          Use automation to reduce human effort and improve the accuracy, reproducibility, usability, and comprehensiveness of security practices throughout the SDLC, and provide a way to document and demonstrate the use of these practices.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:po
+        depth: 2
+        assessable: false
+        category: Prepare the Organization
+      - urn: urn:inflect:req:nist-ssdf-800-218:po.3.1
+        ref_id: PO.3.1
+        description: >
+          Specify which tools or tool types must or should be included in each toolchain to mitigate identified risks, as well as how the toolchain components are to be integrated.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:po.3
+        depth: 3
+        assessable: true
+        category: Prepare the Organization
+      - urn: urn:inflect:req:nist-ssdf-800-218:po.3.2
+        ref_id: PO.3.2
+        description: >
+          Follow recommended security practices to deploy, operate, and maintain tools and toolchains.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:po.3
+        depth: 3
+        assessable: true
+        category: Prepare the Organization
+      - urn: urn:inflect:req:nist-ssdf-800-218:po.3.3
+        ref_id: PO.3.3
+        description: >
+          Configure tools to generate artifacts of their support of secure software development practices as defined by the organization.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:po.3
+        depth: 3
+        assessable: true
+        category: Prepare the Organization
+      - urn: urn:inflect:req:nist-ssdf-800-218:po.4
+        ref_id: PO.4
+        name: Define and Use Criteria for Software Security Checks
+        description: >
+          Help ensure that the software resulting from the SDLC meets the organization’s expectations by defining and using criteria for checking the software’s security during development.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:po
+        depth: 2
+        assessable: false
+        category: Prepare the Organization
+      - urn: urn:inflect:req:nist-ssdf-800-218:po.4.1
+        ref_id: PO.4.1
+        description: >
+          Define criteria for software security checks and track throughout the SDLC.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:po.4
+        depth: 3
+        assessable: true
+        category: Prepare the Organization
+      - urn: urn:inflect:req:nist-ssdf-800-218:po.4.2
+        ref_id: PO.4.2
+        description: >
+          Implement processes, mechanisms, etc. to gather and safeguard the necessary information and provide it to the personnel who need it to make informed decisions.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:po.4
+        depth: 3
+        assessable: true
+        category: Prepare the Organization
+      - urn: urn:inflect:req:nist-ssdf-800-218:po.5
+        ref_id: PO.5
+        name: Implement and Maintain Secure Environments for Software Development
+        description: >
+          Ensure that all components of the environments for software development are strongly protected from internal and external threats to prevent compromises of the environments or the software being developed.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:po
+        depth: 2
+        assessable: false
+        category: Prepare the Organization
+      - urn: urn:inflect:req:nist-ssdf-800-218:po.5.1
+        ref_id: PO.5.1
+        description: >
+          Separate and protect each environment involved in software development.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:po.5
+        depth: 3
+        assessable: true
+        category: Prepare the Organization
+      - urn: urn:inflect:req:nist-ssdf-800-218:po.5.2
+        ref_id: PO.5.2
+        description: >
+          Secure and harden development endpoints, including software development, build, and test systems, to perform development-related tasks using a risk-based approach.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:po.5
+        depth: 3
+        assessable: true
+        category: Prepare the Organization
+      # ─── Protect the Software (PS) ───
+      - urn: urn:inflect:req:nist-ssdf-800-218:ps
+        ref_id: PS
+        name: Protect the Software
+        description: >
+          Protect all components of the software from tampering and unauthorized access.
+        depth: 1
+        assessable: false
+        category: Protect the Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:ps.1
+        ref_id: PS.1
+        name: Protect All Forms of Code from Unauthorized Access and Tampering
+        description: >
+          Help prevent unauthorized changes to code, both inadvertent and intentional, which could circumvent or negate the intended security characteristics of the software.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:ps
+        depth: 2
+        assessable: false
+        category: Protect the Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:ps.1.1
+        ref_id: PS.1.1
+        description: >
+          Store all forms of code — including source code, executable code, and configuration-as-code — based on the principle of least privilege so that only authorized personnel, tools, services, etc. have access.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:ps.1
+        depth: 3
+        assessable: true
+        category: Protect the Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:ps.2
+        ref_id: PS.2
+        name: Provide a Mechanism for Verifying Software Release Integrity
+        description: >
+          Help software acquirers ensure that the software they acquire is legitimate and has not been tampered with.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:ps
+        depth: 2
+        assessable: false
+        category: Protect the Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:ps.2.1
+        ref_id: PS.2.1
+        description: >
+          Make software integrity verification information available to software acquirers, such as cryptographic hashes and digital signatures for release files.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:ps.2
+        depth: 3
+        assessable: true
+        category: Protect the Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:ps.3
+        ref_id: PS.3
+        name: Archive and Protect Each Software Release
+        description: >
+          Preserve software releases in order to help identify, analyze, and eliminate vulnerabilities discovered in the software after release.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:ps
+        depth: 2
+        assessable: false
+        category: Protect the Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:ps.3.1
+        ref_id: PS.3.1
+        description: >
+          Securely archive the necessary files and supporting data (e.g., integrity verification information, provenance data) to be retained for each software release.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:ps.3
+        depth: 3
+        assessable: true
+        category: Protect the Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:ps.3.2
+        ref_id: PS.3.2
+        description: >
+          Collect, safeguard, maintain, and share provenance data for all components of each software release (e.g., in a software bill of materials).
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:ps.3
+        depth: 3
+        assessable: true
+        category: Protect the Software
+      # ─── Produce Well-Secured Software (PW) ───
+      - urn: urn:inflect:req:nist-ssdf-800-218:pw
+        ref_id: PW
+        name: Produce Well-Secured Software
+        description: >
+          Produce well-secured software with minimal security vulnerabilities in its releases.
+        depth: 1
+        assessable: false
+        category: Produce Well-Secured Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:pw.1
+        ref_id: PW.1
+        name: Design Software to Meet Security Requirements and Mitigate Security Risks
+        description: >
+          Identify and evaluate the security requirements for the software; determine what security risks the software is likely to face during operation and how the software’s design and architecture should mitigate those risks; and justify any cases where risk-based analysis indicates that security requirements should be relaxed or waived.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:pw
+        depth: 2
+        assessable: false
+        category: Produce Well-Secured Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:pw.1.1
+        ref_id: PW.1.1
+        description: >
+          Use forms of risk modeling — such as threat modeling, attack modeling, or attack surface mapping — to help assess the security risk for the software.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:pw.1
+        depth: 3
+        assessable: true
+        category: Produce Well-Secured Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:pw.1.2
+        ref_id: PW.1.2
+        description: >
+          Track and maintain the software’s security requirements, risks, and design decisions.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:pw.1
+        depth: 3
+        assessable: true
+        category: Produce Well-Secured Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:pw.1.3
+        ref_id: PW.1.3
+        description: >
+          Where appropriate, build in support for using standardized security features and services (e.g., enabling log integration and single sign-on) rather than creating proprietary implementations of security features and services.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:pw.1
+        depth: 3
+        assessable: true
+        category: Produce Well-Secured Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:pw.2
+        ref_id: PW.2
+        name: Review the Software Design to Verify Compliance with Security Requirements and Risk Information
+        description: >
+          Help ensure that the software will meet the security requirements and satisfactorily address the identified risk information.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:pw
+        depth: 2
+        assessable: false
+        category: Produce Well-Secured Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:pw.2.1
+        ref_id: PW.2.1
+        description: >
+          Have a qualified person (or people) who were not involved with the design and/or a set of automated processes review the software design to confirm and enforce that it meets all of the security requirements and satisfactorily addresses the identified risk information.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:pw.2
+        depth: 3
+        assessable: true
+        category: Produce Well-Secured Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:pw.4
+        ref_id: PW.4
+        name: Reuse Existing, Well-Secured Software When Feasible Instead of Duplicating Functionality
+        description: >
+          Lower the costs of software development, expedite software development, and decrease the likelihood of introducing additional security vulnerabilities into the software by reusing software modules and services that have already had their security posture checked.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:pw
+        depth: 2
+        assessable: false
+        category: Produce Well-Secured Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:pw.4.1
+        ref_id: PW.4.1
+        description: >
+          Acquire and maintain well-secured software components (e.g., software libraries, modules, middleware, frameworks) from commercial, open-source, and other third-party developers for use by the organization’s software.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:pw.4
+        depth: 3
+        assessable: true
+        category: Produce Well-Secured Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:pw.4.2
+        ref_id: PW.4.2
+        description: >
+          Create and maintain well-secured software components in-house following SDLC processes to meet common internal software development needs that cannot be better met by third-party software components.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:pw.4
+        depth: 3
+        assessable: true
+        category: Produce Well-Secured Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:pw.4.4
+        ref_id: PW.4.4
+        description: >
+          Verify that acquired commercial, open-source, and all other third-party software components comply with the requirements, as defined by the organization, throughout their life cycles.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:pw.4
+        depth: 3
+        assessable: true
+        category: Produce Well-Secured Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:pw.5
+        ref_id: PW.5
+        name: Create Source Code by Adhering to Secure Coding Practices
+        description: >
+          Decrease the number of security vulnerabilities in the software and reduce costs by minimizing vulnerabilities introduced during source code creation that meet or exceed organization-defined vulnerability severity criteria.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:pw
+        depth: 2
+        assessable: false
+        category: Produce Well-Secured Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:pw.5.1
+        ref_id: PW.5.1
+        description: >
+          Follow all secure coding practices that are appropriate to the development languages and environment to meet the organization’s requirements.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:pw.5
+        depth: 3
+        assessable: true
+        category: Produce Well-Secured Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:pw.6
+        ref_id: PW.6
+        name: Configure the Compilation, Interpreter, and Build Processes to Improve Executable Security
+        description: >
+          Decrease the number of security vulnerabilities in the software and reduce costs by eliminating vulnerabilities before testing occurs.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:pw
+        depth: 2
+        assessable: false
+        category: Produce Well-Secured Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:pw.6.1
+        ref_id: PW.6.1
+        description: >
+          Use compiler, interpreter, and build tools that offer features to improve executable security.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:pw.6
+        depth: 3
+        assessable: true
+        category: Produce Well-Secured Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:pw.6.2
+        ref_id: PW.6.2
+        description: >
+          Determine which compiler, interpreter, and build tool features should be used and how each should be configured, then implement and use the approved configurations.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:pw.6
+        depth: 3
+        assessable: true
+        category: Produce Well-Secured Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:pw.7
+        ref_id: PW.7
+        name: Review and/or Analyze Human-Readable Code to Identify Vulnerabilities and Verify Compliance with Security Requirements
+        description: >
+          Help identify vulnerabilities so that they can be corrected before the software is released to prevent exploitation.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:pw
+        depth: 2
+        assessable: false
+        category: Produce Well-Secured Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:pw.7.1
+        ref_id: PW.7.1
+        description: >
+          Determine whether code review (a person directly looks at the code to find issues) and/or code analysis (tools are used to find issues in code, either in a fully automated way or in conjunction with a person) should be used, as defined by the organization.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:pw.7
+        depth: 3
+        assessable: true
+        category: Produce Well-Secured Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:pw.7.2
+        ref_id: PW.7.2
+        description: >
+          Perform the code review and/or code analysis based on the organization’s secure coding standards, and record and triage all discovered issues and recommended remediations in the development team’s workflow or issue tracking system.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:pw.7
+        depth: 3
+        assessable: true
+        category: Produce Well-Secured Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:pw.8
+        ref_id: PW.8
+        name: Test Executable Code to Identify Vulnerabilities and Verify Compliance with Security Requirements
+        description: >
+          Help identify vulnerabilities so that they can be corrected before the software is released in order to prevent exploitation.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:pw
+        depth: 2
+        assessable: false
+        category: Produce Well-Secured Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:pw.8.1
+        ref_id: PW.8.1
+        description: >
+          Determine whether executable code testing should be performed to find vulnerabilities not identified by previous reviews, analysis, or testing and, if so, which types of testing should be used.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:pw.8
+        depth: 3
+        assessable: true
+        category: Produce Well-Secured Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:pw.8.2
+        ref_id: PW.8.2
+        description: >
+          Scope the testing, design the tests, perform the testing, and document the results, including recording and triaging all discovered issues and recommended remediations in the development team’s workflow or issue tracking system.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:pw.8
+        depth: 3
+        assessable: true
+        category: Produce Well-Secured Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:pw.9
+        ref_id: PW.9
+        name: Configure Software to Have Secure Settings by Default
+        description: >
+          Help improve the security of the software at the time of installation to reduce the likelihood of the software being deployed with weak security settings, putting it at greater risk of compromise.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:pw
+        depth: 2
+        assessable: false
+        category: Produce Well-Secured Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:pw.9.1
+        ref_id: PW.9.1
+        description: >
+          Define a secure baseline by determining how to configure each setting that has an effect on security or a security-related setting so that the default settings are secure and do not weaken the security functions provided by the platform, network infrastructure, or services.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:pw.9
+        depth: 3
+        assessable: true
+        category: Produce Well-Secured Software
+      - urn: urn:inflect:req:nist-ssdf-800-218:pw.9.2
+        ref_id: PW.9.2
+        description: >
+          Implement the default settings (or groups of default settings, if applicable), and document each setting for software administrators.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:pw.9
+        depth: 3
+        assessable: true
+        category: Produce Well-Secured Software
+      # ─── Respond to Vulnerabilities (RV) ───
+      - urn: urn:inflect:req:nist-ssdf-800-218:rv
+        ref_id: RV
+        name: Respond to Vulnerabilities
+        description: >
+          Identify residual vulnerabilities in software releases and respond appropriately to address those vulnerabilities and prevent similar ones from occurring in the future.
+        depth: 1
+        assessable: false
+        category: Respond to Vulnerabilities
+      - urn: urn:inflect:req:nist-ssdf-800-218:rv.1
+        ref_id: RV.1
+        name: Identify and Confirm Vulnerabilities on an Ongoing Basis
+        description: >
+          Help ensure that vulnerabilities are identified more quickly so that they can be remediated more quickly in accordance with risk, reducing the window of opportunity for attackers.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:rv
+        depth: 2
+        assessable: false
+        category: Respond to Vulnerabilities
+      - urn: urn:inflect:req:nist-ssdf-800-218:rv.1.1
+        ref_id: RV.1.1
+        description: >
+          Gather information from software acquirers, users, and public sources on potential vulnerabilities in the software and third-party components that the software uses, and investigate all credible reports.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:rv.1
+        depth: 3
+        assessable: true
+        category: Respond to Vulnerabilities
+      - urn: urn:inflect:req:nist-ssdf-800-218:rv.1.2
+        ref_id: RV.1.2
+        description: >
+          Review, analyze, and/or test the software’s code to identify or confirm the presence of previously undetected vulnerabilities.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:rv.1
+        depth: 3
+        assessable: true
+        category: Respond to Vulnerabilities
+      - urn: urn:inflect:req:nist-ssdf-800-218:rv.1.3
+        ref_id: RV.1.3
+        description: >
+          Have a policy that addresses vulnerability disclosure and remediation, and implement the roles, responsibilities, and processes needed to support that policy.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:rv.1
+        depth: 3
+        assessable: true
+        category: Respond to Vulnerabilities
+      - urn: urn:inflect:req:nist-ssdf-800-218:rv.2
+        ref_id: RV.2
+        name: Assess, Prioritize, and Remediate Vulnerabilities
+        description: >
+          Help ensure that vulnerabilities are remediated in accordance with risk to reduce the window of opportunity for attackers.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:rv
+        depth: 2
+        assessable: false
+        category: Respond to Vulnerabilities
+      - urn: urn:inflect:req:nist-ssdf-800-218:rv.2.1
+        ref_id: RV.2.1
+        description: >
+          Analyze each vulnerability to gather sufficient information about risk to plan its remediation or other risk response.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:rv.2
+        depth: 3
+        assessable: true
+        category: Respond to Vulnerabilities
+      - urn: urn:inflect:req:nist-ssdf-800-218:rv.2.2
+        ref_id: RV.2.2
+        description: >
+          Plan and implement risk responses for vulnerabilities.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:rv.2
+        depth: 3
+        assessable: true
+        category: Respond to Vulnerabilities
+      - urn: urn:inflect:req:nist-ssdf-800-218:rv.3
+        ref_id: RV.3
+        name: Analyze Vulnerabilities to Identify Their Root Causes
+        description: >
+          Help reduce the frequency of vulnerabilities in the future.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:rv
+        depth: 2
+        assessable: false
+        category: Respond to Vulnerabilities
+      - urn: urn:inflect:req:nist-ssdf-800-218:rv.3.1
+        ref_id: RV.3.1
+        description: >
+          Analyze identified vulnerabilities to determine their root causes.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:rv.3
+        depth: 3
+        assessable: true
+        category: Respond to Vulnerabilities
+      - urn: urn:inflect:req:nist-ssdf-800-218:rv.3.2
+        ref_id: RV.3.2
+        description: >
+          Analyze the root causes over time to identify patterns, such as a particular secure coding practice not being followed consistently.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:rv.3
+        depth: 3
+        assessable: true
+        category: Respond to Vulnerabilities
+      - urn: urn:inflect:req:nist-ssdf-800-218:rv.3.3
+        ref_id: RV.3.3
+        description: >
+          Review the software for similar vulnerabilities to eradicate a class of vulnerabilities, and proactively fix them rather than waiting for external reports.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:rv.3
+        depth: 3
+        assessable: true
+        category: Respond to Vulnerabilities
+      - urn: urn:inflect:req:nist-ssdf-800-218:rv.3.4
+        ref_id: RV.3.4
+        description: >
+          Review the SDLC process, and update it if appropriate to prevent (or reduce the likelihood of) the root cause recurring in updates to the software or in new software that is created.
+        parent_urn: urn:inflect:req:nist-ssdf-800-218:rv.3
+        depth: 3
+        assessable: true
+        category: Respond to Vulnerabilities
