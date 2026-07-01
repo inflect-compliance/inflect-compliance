@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, type ControlFrequency } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
@@ -309,6 +309,28 @@ async function main() {
         });
     }
     console.log(`✅ Privacy risk templates seeded (${privacyRiskTemplates.length} LINDDUN + OWASP templates)`);
+
+    // ─── SSDF secure-development risk templates ───
+    // Companion to the SSDF Starter Pack: the failure modes the SSDF practices
+    // exist to prevent. frameworkTag 'SSDF', category 'Secure Development'. Ride
+    // the SAME RiskTemplate → createRiskFromTemplate path as every other template.
+    const ssdfRiskTemplates: Array<{ id: string; title: string; description: string; category: string; defaultLikelihood: number; defaultImpact: number; frameworkTag: string }> = [
+        { id: 'ssdf-vulnerable-dependency', title: 'Vulnerable Dependency Shipped', description: 'A third-party component with a known vulnerability is included in a release because it was not caught by software composition analysis.', category: 'Secure Development', defaultLikelihood: 4, defaultImpact: 4, frameworkTag: 'SSDF' },
+        { id: 'ssdf-unreviewed-merge', title: 'Unreviewed Code Merged to Production', description: 'Code reaches production without mandatory peer review, allowing defects or malicious changes to slip through.', category: 'Secure Development', defaultLikelihood: 3, defaultImpact: 4, frameworkTag: 'SSDF' },
+        { id: 'ssdf-secrets-committed', title: 'Secrets Committed to Source Control', description: 'Credentials, tokens, or keys are committed to a repository and exposed to anyone with read access or in history.', category: 'Secure Development', defaultLikelihood: 3, defaultImpact: 5, frameworkTag: 'SSDF' },
+        { id: 'ssdf-exploitable-vuln-released', title: 'Exploitable Vulnerability Released', description: 'A security defect reaches production because SAST/DAST and security testing were not performed or not gated in CI.', category: 'Secure Development', defaultLikelihood: 3, defaultImpact: 5, frameworkTag: 'SSDF' },
+        { id: 'ssdf-compromised-pipeline', title: 'Compromised Build Pipeline', description: 'An attacker gains control of the CI/CD pipeline or build environment and injects malicious code into artifacts.', category: 'Secure Development', defaultLikelihood: 2, defaultImpact: 5, frameworkTag: 'SSDF' },
+        { id: 'ssdf-tampered-artifact', title: 'Tampered or Unsigned Release Artifact', description: 'A release artifact is altered after build, or ships without integrity verification information, so acquirers cannot detect tampering.', category: 'Secure Development', defaultLikelihood: 2, defaultImpact: 5, frameworkTag: 'SSDF' },
+        { id: 'ssdf-unpatched-disclosed-vuln', title: 'Unpatched Disclosed Vulnerability', description: 'A publicly disclosed vulnerability in the software is not remediated within its SLA because there is no coordinated vulnerability-disclosure and response process.', category: 'Secure Development', defaultLikelihood: 3, defaultImpact: 4, frameworkTag: 'SSDF' },
+    ];
+    for (const t of ssdfRiskTemplates) {
+        await prisma.riskTemplate.upsert({
+            where: { id: t.id },
+            create: t,
+            update: { description: t.description, category: t.category, defaultLikelihood: t.defaultLikelihood, defaultImpact: t.defaultImpact, frameworkTag: t.frameworkTag },
+        });
+    }
+    console.log(`✅ SSDF risk templates seeded (${ssdfRiskTemplates.length} secure-development templates)`);
 
     // ─── Seed risks (tenant-wide) ───
     const riskCount = await prisma.risk.count({ where: { tenantId: tenant.id } });
@@ -1600,6 +1622,54 @@ Reviewed at least annually.` },
         });
     }
     console.log(`✅ NIST SSDF + ${nistSsdfData.length} tasks + ${nistSsdfGroups.size} practice packs seeded`);
+
+    // ─── SSDF Starter Pack (curated secure-development controls) ───
+    // Curated, higher-quality control templates (one per SSDF practice) that
+    // give an SSDF adopter a real coverage baseline on day one — quality over
+    // count. Distinct 'SDLC-' code prefix so they do not collide with the
+    // auto-generated NIST_SSDF_BASELINE 'SSDF-NN' templates. Each control links
+    // to the specific SSDF task requirement(s) it satisfies (via nistSsdfReqMap
+    // from the framework block above), so installing the pack produces mapped
+    // coverage, not bare 0%.
+    const ssdfStarterControls = require('./fixtures/ssdf-control-templates.json') as Array<{
+        code: string; title: string; description: string; defaultFrequency: string; defaultOwnerHint: string; requirements: string[]; tasks: Array<{ title: string; description: string }>;
+    }>;
+    for (const c of ssdfStarterControls) {
+        const existing = await prisma.controlTemplate.findUnique({ where: { code: c.code } });
+        if (!existing) {
+            const tmpl = await prisma.controlTemplate.create({
+                data: {
+                    code: c.code,
+                    title: c.title,
+                    description: c.description,
+                    category: 'Secure Development',
+                    defaultFrequency: c.defaultFrequency as ControlFrequency,
+                    defaultOwnerHint: c.defaultOwnerHint,
+                },
+            });
+            for (const task of c.tasks) {
+                await prisma.controlTemplateTask.create({ data: { templateId: tmpl.id, title: task.title, description: task.description } });
+            }
+            for (const rk of c.requirements) {
+                if (nistSsdfReqMap[rk]) {
+                    await prisma.controlTemplateRequirementLink.create({ data: { templateId: tmpl.id, requirementId: nistSsdfReqMap[rk] } }).catch(() => { });
+                }
+            }
+        }
+    }
+    const ssdfStarterTmpls = await prisma.controlTemplate.findMany({ where: { code: { startsWith: 'SDLC-' } } });
+    const ssdfStarterPack = await prisma.frameworkPack.upsert({
+        where: { key: 'SSDF_STARTER_PACK' },
+        update: { name: 'SSDF Starter Pack', frameworkId: nistSsdf.id, version: '1.1' },
+        create: { key: 'SSDF_STARTER_PACK', name: 'SSDF Starter Pack', frameworkId: nistSsdf.id, version: '1.1', description: 'Curated secure-development controls (one per SSDF practice) with default tasks, mapped to SSDF requirements.' },
+    });
+    for (const tmpl of ssdfStarterTmpls) {
+        await prisma.packTemplateLink.upsert({
+            where: { packId_templateId: { packId: ssdfStarterPack.id, templateId: tmpl.id } },
+            create: { packId: ssdfStarterPack.id, templateId: tmpl.id }, update: {},
+        });
+    }
+    console.log(`✅ SSDF Starter Pack + ${ssdfStarterControls.length} curated controls seeded`);
 
     // ISO 9001 Pack
     const iso9001Tmpls = await prisma.controlTemplate.findMany({ where: { code: { startsWith: 'QMS-' } } });
