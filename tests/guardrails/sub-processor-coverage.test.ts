@@ -37,6 +37,13 @@ const NON_SUBPROCESSOR_ALLOWLIST: Record<string, string> = {
     // NVD_SYNC_ENABLED is an operator feature flag (not an endpoint).
     NVD_API_KEY: 'optional rate-limit key for NIST NVD public CVE feed — pull-only, no data sent, not a sub-processor',
     NVD_SYNC_ENABLED: 'operator feature flag toggling the NVD CVE sync job — not an external endpoint',
+    // Continuous vendor monitoring — the real providers PULL from public
+    // signals (the keyless HIBP breach catalog filtered by a vendor DOMAIN
+    // string; the vendor's OWN homepage security headers). No customer/personal
+    // data is ever sent, so none is a sub-processor. Defaults are network-free stubs.
+    VENDOR_MONITOR_ENABLED: 'operator feature flag toggling the vendor-monitoring sweep — not an external endpoint',
+    VENDOR_MONITOR_BREACH_PROVIDER: 'selects the breach signal source; real value (hibp-domain) sends only a vendor domain string to the public keyless HIBP breach catalog — pull-only, no personal data, not a sub-processor',
+    VENDOR_MONITOR_TLS_PROVIDER: "selects the TLS-grade source; real value (header-grade) reads the vendor's OWN public homepage security headers — no third-party processor, not a sub-processor",
     // Internal secrets (env-provided; stored in AWS Secrets Manager, itself listed).
     AUTH_SECRET: 'internal JWT/session signing secret',
     JWT_SECRET: 'internal JWT signing secret',

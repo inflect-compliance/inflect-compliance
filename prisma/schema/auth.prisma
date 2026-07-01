@@ -117,6 +117,8 @@ model Tenant {
   biaDependencies                   BiaDependency[]
   vendorDocExtractions              VendorDocExtraction[]
   vendorAnswerProposals             VendorAnswerProposal[]
+  vendorMonitors                    VendorMonitor[]
+  vendorPostureEvents               VendorPostureEvent[]
   trustCenter                       TrustCenter?
   assetRiskLinks                    AssetRiskLink[]
   audits                            Audit[]

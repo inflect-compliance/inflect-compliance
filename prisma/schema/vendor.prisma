@@ -53,6 +53,8 @@ model Vendor {
   contacts            VendorContact[]
   documents           VendorDocument[]
   docExtractions      VendorDocExtraction[]
+  monitors            VendorMonitor[]
+  postureEvents       VendorPostureEvent[]
   evidenceBundles     VendorEvidenceBundle[]
   links               VendorLink[]
   primaryOf           VendorRelationship[]   @relation("PrimaryRelation")
@@ -449,6 +451,87 @@ model VendorAnswerProposal {
 
   @@index([tenantId, extractionId])
   @@index([tenantId, status])
+}
+
+/// Continuous-monitoring configuration + rolling posture state for a vendor.
+/// One row per vendor (the "monitor"). A point-in-time assessment goes stale
+/// the moment it's signed; this row is the always-on companion — which checks
+/// are enabled, when the monitor last ran, and the latest cached signal state
+/// (breach date, TLS/security-header grade, attestation expiry). The
+/// per-signal history lives in VendorPostureEvent; this is the current-state
+/// summary the dashboard + vendor detail read.
+model VendorMonitor {
+  id        String  @id @default(cuid())
+  tenantId  String
+  vendorId  String
+  /// Master switch — a disabled monitor is skipped by the sweep.
+  enabled   Boolean @default(true)
+  /// Which signal families this vendor opts into.
+  checkAttestation Boolean @default(true)
+  checkBreach      Boolean @default(true)
+  checkTls         Boolean @default(true)
+  /// Opt-in: a breach / expired attestation materialises a vendor Finding.
+  /// Off by default — posture events + owner notifications always fire, but a
+  /// scored Finding is a deliberate escalation the tenant turns on.
+  materializeFindings Boolean @default(false)
+  /// Rolling state — refreshed on every monitor run.
+  lastRunAt        DateTime?
+  lastRunStatus    String?   // OK | ERROR
+  lastError        String?
+  /// Latest breach observation (null = never seen in a breach feed).
+  breachLastSeenAt DateTime?
+  breachCount      Int       @default(0)
+  /// Latest public TLS / security-header grade (A..F) + when graded.
+  tlsGrade         String?
+  tlsCheckedAt     DateTime?
+  /// Cached earliest attestation expiry across the vendor's parsed reports.
+  attestationExpiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, vendorId])
+  @@index([tenantId, enabled])
+  @@index([tenantId, lastRunAt])
+}
+
+/// Append-only posture timeline — the continuous-assurance record for a
+/// vendor, not just the latest questionnaire. Each monitored signal (breach
+/// hit, attestation expiry, TLS grade change, triggered reassessment, status
+/// change) lands one row. `fingerprint` makes the recurring signals
+/// idempotent — the monitor re-running on the same breach / same expired
+/// report never double-writes. `createdFindingId` links the event to the
+/// Finding it materialised (when materializeFindings is on).
+model VendorPostureEvent {
+  id        String  @id @default(cuid())
+  tenantId  String
+  vendorId  String
+  /// BREACH_DETECTED | ATTESTATION_EXPIRED | ATTESTATION_EXPIRING |
+  /// TLS_GRADE | REASSESSMENT_TRIGGERED | MONITOR_RUN | STATUS_CHANGED.
+  eventType String
+  /// INFO | LOW | MEDIUM | HIGH | CRITICAL.
+  severity  String  @default("INFO")
+  /// Provider / origin of the signal: 'stub' | 'hibp-domain' | 'header-grade'
+  /// | 'internal'.
+  source    String  @default("internal")
+  /// Human-readable one-line summary rendered on the timeline.
+  summary   String
+  /// Idempotency key — `${eventType}:${vendorId}:${stableSignalKey}`.
+  fingerprint String
+  detailsJson Json?
+  /// The Finding materialised from this event, if any.
+  createdFindingId String?
+  occurredAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, fingerprint])
+  @@index([tenantId, vendorId, occurredAt])
+  @@index([tenantId, eventType])
 }
 
 model VendorLink {

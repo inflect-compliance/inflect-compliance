@@ -539,6 +539,14 @@ executorRegistry.register('vendor-renewal-check', async (payload) => {
     return result;
 });
 
+// ── vendor-monitoring ────────────────────────────────────────────────
+
+executorRegistry.register('vendor-monitoring', async (payload) => {
+    const { runVendorMonitoringJob } = await import('./vendor-monitoring');
+    const { result } = await runVendorMonitoringJob({ tenantId: payload.tenantId, vendorId: payload.vendorId });
+    return result;
+});
+
 // ── deadline-monitor ─────────────────────────────────────────────────
 
 executorRegistry.register('deadline-monitor', async (payload) => {

@@ -223,6 +223,15 @@ export const env = createEnv({
         // Kill-switch for debugging a misbehaving SIEM without redeploy.
         AUDIT_STREAM_RETRY_ENABLED: z.string().optional(),
 
+        // Continuous vendor monitoring (vendor-monitoring job).
+        // VENDOR_MONITOR_ENABLED='0' disables the daily sweep. The provider
+        // vars pick the signal source — default 'stub' is deterministic +
+        // network-free (CI-safe); 'hibp-domain' / 'header-grade' hit the real
+        // free public feeds. Anything else falls back to the stub.
+        VENDOR_MONITOR_ENABLED: z.enum(['0', '1']).optional(),
+        VENDOR_MONITOR_BREACH_PROVIDER: z.string().default('stub'),
+        VENDOR_MONITOR_TLS_PROVIDER: z.string().default('stub'),
+
         // NVD CVE ingestion (vuln integration).
         // NVD_SYNC_ENABLED='0' disables the daily nvd-cve-sync job — for
         // air-gapped deployments that cannot reach services.nvd.nist.gov.
@@ -351,6 +360,9 @@ export const env = createEnv({
         AI_RISK_PLAN_REQUIRED: process.env.AI_RISK_PLAN_REQUIRED,
 
         AUDIT_STREAM_RETRY_ENABLED: process.env.AUDIT_STREAM_RETRY_ENABLED,
+        VENDOR_MONITOR_ENABLED: process.env.VENDOR_MONITOR_ENABLED,
+        VENDOR_MONITOR_BREACH_PROVIDER: process.env.VENDOR_MONITOR_BREACH_PROVIDER,
+        VENDOR_MONITOR_TLS_PROVIDER: process.env.VENDOR_MONITOR_TLS_PROVIDER,
         NVD_SYNC_ENABLED: process.env.NVD_SYNC_ENABLED,
         NVD_API_KEY: process.env.NVD_API_KEY,
         PLATFORM_ADMIN_API_KEY: process.env.PLATFORM_ADMIN_API_KEY,

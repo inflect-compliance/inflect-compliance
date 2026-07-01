@@ -24,6 +24,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
 import { Heading } from '@/components/ui/typography';
 import { MetaStrip } from '@/components/ui/meta-strip';
+import { VendorMonitoringPanel } from './_components/VendorMonitoringPanel';
 import {
     VENDOR_STATUS_VARIANT,
     VENDOR_CRITICALITY_VARIANT,
@@ -60,7 +61,7 @@ const VENDOR_LINK_RELATION_OPTIONS: ComboboxOption[] = [
     { value: 'MITIGATES', label: 'Mitigates' }, { value: 'STORES_DATA_FOR', label: 'Stores Data' },
 ];
 
-type Tab = 'overview' | 'documents' | 'assessments' | 'links' | 'bundles' | 'subprocessors';
+type Tab = 'overview' | 'documents' | 'assessments' | 'monitoring' | 'links' | 'bundles' | 'subprocessors';
 
 // vendor → getVendor → VendorRepository.getById (vendor scalars + owner + _count).
 // owner/_count optional: absent on the scalar-only PATCH/enrich responses that
@@ -328,6 +329,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
         { key: 'overview', label: 'Overview' },
         { key: 'documents', label: 'Documents', count: vendor._count?.documents || 0 },
         { key: 'assessments', label: 'Assessments', count: vendor._count?.assessments || 0 },
+        { key: 'monitoring', label: 'Monitoring' },
         { key: 'links', label: 'Links' },
         { key: 'bundles', label: 'Bundles' },
         { key: 'subprocessors', label: 'Subprocessors' },
@@ -655,6 +657,16 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                         tenantHref={tenantHref}
                     />
                 </div>
+            )}
+
+            {/* MONITORING — continuous posture (breach / attestation / TLS) */}
+            {tab === 'monitoring' && (
+                <VendorMonitoringPanel
+                    tenantSlug={params.tenantSlug}
+                    vendorId={params.vendorId}
+                    canWrite={!!canWrite}
+                    onChange={fetchVendor}
+                />
             )}
 
             {/* LINKS / TRACEABILITY */}

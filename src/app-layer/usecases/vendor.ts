@@ -503,6 +503,24 @@ export async function getVendorMetrics(ctx: RequestContext) {
             where: { tenantId: ctx.tenantId, validTo: { gte: now, lte: in30 } },
         });
 
+        // ── Continuous-monitoring signals ──
+        // Vendors whose parsed SOC 2 / cert attestation has already expired
+        // (distinct vendors with a dated report period in the past).
+        const expiredAttestationRows = await db.vendorDocExtraction.findMany({
+            where: { tenantId: ctx.tenantId, auditPeriodEnd: { lt: now } },
+            select: { vendorId: true },
+            distinct: ['vendorId'],
+            take: 5000,
+        });
+        // Vendors with a breach detected by the monitor in the last 90 days.
+        const in90ago = new Date(now.getTime() - 90 * 86400000);
+        const recentBreachRows = await db.vendorPostureEvent.findMany({
+            where: { tenantId: ctx.tenantId, eventType: 'BREACH_DETECTED', occurredAt: { gte: in90ago } },
+            select: { vendorId: true },
+            distinct: ['vendorId'],
+            take: 5000,
+        });
+
         return {
             totalVendors: vendors.length,
             byCriticality,
@@ -514,6 +532,10 @@ export async function getVendorMetrics(ctx: RequestContext) {
             upcomingRenewal,
             highRiskNoAssessment,
             expiringDocuments: expiringDocs,
+            // Continuous-monitoring dashboard signals.
+            expiredAttestations: expiredAttestationRows.length,
+            recentBreachActivity: recentBreachRows.length,
+            overdueReassessment: overdueReview,
         };
     });
 }

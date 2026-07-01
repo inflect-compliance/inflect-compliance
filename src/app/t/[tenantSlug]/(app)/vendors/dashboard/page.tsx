@@ -67,6 +67,10 @@ interface VendorMetrics {
     upcomingRenewal: number;
     highRiskNoAssessment: number;
     expiringDocuments: number;
+    // Continuous-monitoring signals.
+    expiredAttestations: number;
+    recentBreachActivity: number;
+    overdueReassessment: number;
 }
 
 export default function VendorDashboardPage() {
@@ -113,6 +117,20 @@ export default function VendorDashboardPage() {
                 <MetricCard label="Overdue Renewals" value={metrics.overdueRenewal} tone={metrics.overdueRenewal > 0 ? 'critical' : 'success'} />
                 <MetricCard label="Upcoming Renewals" value={metrics.upcomingRenewal} tone="attention" />
                 <MetricCard label="High Risk (No Assessment)" value={metrics.highRiskNoAssessment} tone={metrics.highRiskNoAssessment > 0 ? 'critical' : 'success'} />
+            </div>
+
+            {/* Continuous assurance — posture signals from the monitoring sweep */}
+            <div className={cn(cardVariants(), 'space-y-default')}>
+                <Heading level={3}>Continuous assurance</Heading>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-default">
+                    <MetricCard label="Expired Attestations" value={metrics.expiredAttestations}
+                        tone={metrics.expiredAttestations > 0 ? 'critical' : 'success'} />
+                    <MetricCard label="Recent Breach Activity" value={metrics.recentBreachActivity}
+                        tone={metrics.recentBreachActivity > 0 ? 'critical' : 'success'} />
+                    <MetricCard label="Overdue Reassessment" value={metrics.overdueReassessment}
+                        tone={metrics.overdueReassessment > 0 ? 'critical' : 'success'}
+                        href={tenantHref('/vendors?reviewDue=overdue')} />
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-section">

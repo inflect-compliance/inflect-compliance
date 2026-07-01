@@ -128,6 +128,13 @@ export const SCHEDULED_JOBS: ScheduleDefinition[] = [
         defaultPayload: { dryRun: false },
     },
     {
+        name: 'vendor-monitoring',
+        pattern: '0 2 * * *',     // daily at 02:00 UTC (after NVD sync, before the morning digest)
+        description:
+            'Continuous vendor posture sweep — re-check breach feeds, SOC 2 / cert attestation expiry, and public TLS grade for every enabled monitor; flip stale assessments into reassessment-due, record the posture timeline, and (opt-in) materialise vendor findings + notify owners. No-op when VENDOR_MONITOR_ENABLED=0.',
+        defaultPayload: {},
+    },
+    {
         name: 'nvd-cve-sync',
         pattern: '0 1 * * *',     // daily at 01:00 UTC (before the morning monitors)
         description: 'Ingest recent CVEs from the NIST NVD 2.0 API into the global catalog, then match against tenant asset CPE data. No-op when NVD_SYNC_ENABLED=0.',
