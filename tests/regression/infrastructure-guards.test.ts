@@ -74,8 +74,8 @@ describe('Infrastructure Regression Guards', () => {
             }
         });
 
-        test('exactly 24 scheduled jobs exist', () => {
-            expect(SCHEDULED_JOBS).toHaveLength(24);
+        test('exactly 25 scheduled jobs exist', () => {
+            expect(SCHEDULED_JOBS).toHaveLength(25);
         });
 
         test('scheduled job names match expected set', () => {
@@ -134,6 +134,9 @@ describe('Infrastructure Regression Guards', () => {
                 // In-app TASK_DUE notifications fired one week, one
                 // day, and on the day a task's dueAt falls.
                 'task-due-notification',
+                // Continuous vendor monitoring — daily posture sweep
+                // (breach / attestation-expiry / TLS) + reassessment reminder.
+                'vendor-monitoring',
             ]);
         });
     });
