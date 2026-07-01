@@ -278,10 +278,16 @@ describe('New page token discipline', () => {
         //     FilterToolbar + DataTable, semantic tokens only; sibling of
         //     the vulnerabilities page) in the unmigrated tally only
         //     because they aren't yet promoted to MIGRATED_PAGES.
+        //   - 114 (+2): Epic MCP Phase 3 — agent-proposals/page.tsx +
+        //     agent-proposals/AgentProposalsClient.tsx. The MCP
+        //     propose-not-commit review queue (semantic tokens only;
+        //     PageHeader + cardVariants + StatusBadge + formatDateTime
+        //     primitives) in the unmigrated tally only because it isn't
+        //     yet promoted to MIGRATED_PAGES.
         // Each increment names the epic + page + reason; promotion
         // to MIGRATED_PAGES is the path forward, never silent
         // floor-bumping.
-        expect(unmigrated.length).toBeLessThanOrEqual(112);
+        expect(unmigrated.length).toBeLessThanOrEqual(114);
     });
 
     it('migrated page count is at least 4', () => {

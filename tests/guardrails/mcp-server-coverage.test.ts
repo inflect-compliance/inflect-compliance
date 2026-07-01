@@ -83,8 +83,13 @@ describe('MCP server — authentication inherits the TenantApiKey chain', () => 
         expect(auth).not.toMatch(/createHash|findUnique|tenantApiKey/);
     });
 
-    it('gates the whole surface behind the mcp:read capability scope', () => {
-        expect(auth).toMatch(/enforceApiKeyScope\(\s*result\.ctx\s*,\s*['"]mcp['"]\s*,\s*['"]read['"]\s*\)/);
+    it('gates the whole surface behind an MCP capability scope (mcp:read / mcp:propose)', () => {
+        // The endpoint requires an MCP capability; read tools further require
+        // mcp:read, propose tools mcp:propose. A REST key without any MCP scope
+        // is refused.
+        expect(auth).toMatch(/mcp:read/);
+        expect(auth).toMatch(/mcp:propose/);
+        expect(auth).toMatch(/throw forbidden\(/);
     });
 
     it('the route authenticates every request before dispatch', () => {
@@ -124,17 +129,22 @@ describe('MCP server — every read tool is usecase-backed, scope-gated, audited
     });
 });
 
-describe('MCP server — Phase 1 read-only lock', () => {
-    it('NO MCP source imports a create/update/delete usecase (writes are Phase 3 proposals)', () => {
-        const mutating = /\b(create|update|delete|remove|apply|install|generate|propose|draft)[A-Z]\w*/;
+describe('MCP server — propose-not-commit lock (no direct entity mutation)', () => {
+    it('NO MCP source imports an ENTITY create/update/delete usecase', () => {
+        // The load-bearing safety property: an MCP tool may NEVER create a real
+        // record directly. Propose tools call `createAgentProposal` (the
+        // human-approval QUEUE, allowed) — imports from the `agent-proposals`
+        // usecase module are exempt; imports of entity create/update/delete
+        // usecases (createRisk, createControl, …) are forbidden.
+        const mutating = /\b(create|update|delete|remove|apply|install|generate|draft)[A-Z]\w*/;
         const offenders: string[] = [];
         for (const file of mcpSourceFiles()) {
             const src = fs.readFileSync(file, 'utf8');
-            // only inspect import specifiers, not prose/comments
-            for (const m of src.matchAll(/import\s+\{([^}]*)\}\s+from\s+['"]@\/app-layer\/usecases[^'"]*['"]/g)) {
-                const names = m[1].split(',').map((s) => s.trim());
-                for (const n of names) {
-                    if (mutating.test(n)) offenders.push(`${path.relative(ROOT, file)}: imports mutating usecase ${n}`);
+            for (const m of src.matchAll(/import\s+\{([^}]*)\}\s+from\s+['"](@\/app-layer\/usecases[^'"]*)['"]/g)) {
+                const modulePath = m[2];
+                if (modulePath.includes('agent-proposals')) continue; // the proposal queue is allowed
+                for (const n of m[1].split(',').map((s) => s.trim())) {
+                    if (mutating.test(n)) offenders.push(`${path.relative(ROOT, file)}: imports entity-mutating usecase ${n}`);
                 }
             }
         }

@@ -33,6 +33,12 @@ import {
     type McpHandlers,
 } from '@/lib/mcp/protocol';
 import { listReadToolDescriptors, runReadTool, McpToolNotFoundError } from '@/lib/mcp/tools/registry';
+import {
+    listProposeToolDescriptors,
+    runProposeTool,
+    isProposeTool,
+    McpProposeToolNotFoundError,
+} from '@/lib/mcp/tools/propose-tools';
 import { listMcpResources, readMcpResource } from '@/lib/mcp/resources';
 
 export const runtime = 'nodejs';
@@ -58,8 +64,13 @@ export const POST = withApiErrorHandling(async (req: NextRequest) => {
     }
 
     const handlers: McpHandlers = {
-        listTools: () => listReadToolDescriptors(),
-        callTool: (name, args) => runReadTool(ctx, name, args),
+        listTools: () => [...listReadToolDescriptors(), ...listProposeToolDescriptors()],
+        // Read tools and propose (write-proposal) tools share the endpoint. Read
+        // tools require the resource scope; propose tools additionally require
+        // the mcp:propose capability. A propose tool NEVER creates a record — it
+        // queues a human-approved proposal.
+        callTool: (name, args) =>
+            isProposeTool(name) ? runProposeTool(ctx, name, args) : runReadTool(ctx, name, args),
         listResources: () => listMcpResources(ctx),
         readResource: (uri) => readMcpResource(ctx, uri),
     };
@@ -106,7 +117,7 @@ export function GET() {
  * safe public message; anything else collapses to a generic InternalError.
  */
 function toRpcError(id: JsonRpcRequest['id'], err: unknown): JsonRpcResponse {
-    if (err instanceof McpToolNotFoundError) {
+    if (err instanceof McpToolNotFoundError || err instanceof McpProposeToolNotFoundError) {
         return rpcError(id ?? null, RpcErrorCode.MethodNotFound, err.message);
     }
     if (isAppError(err)) {

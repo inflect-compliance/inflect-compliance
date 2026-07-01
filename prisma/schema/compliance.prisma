@@ -1117,6 +1117,31 @@ model RiskSuggestionItem {
   @@index([tenantId, sessionId])
 }
 
+/// Epic MCP Phase 3 — the propose-not-commit queue. An external agent (via the
+/// MCP server, `mcp:propose` scope) can PROPOSE a risk/control/policy/finding;
+/// the proposal lands here as PENDING and a human approves it before the REAL
+/// create-usecase runs. An agent never mutates a record directly. `payloadJson`
+/// (the proposed content, validated + Epic-D sanitised at the propose boundary)
+/// and `rationale` are encrypted at rest (Epic B — see encrypted-fields.ts).
+model AgentProposal {
+  id                   String               @id @default(cuid())
+  tenantId             String
+  kind                 AgentProposalKind
+  status               SuggestionItemStatus @default(PENDING)
+  payloadJson          String
+  rationale            String?
+  proposedViaKeyId     String?
+  proposedBySessionRef String?
+  reviewedByUserId     String?
+  reviewedAt           DateTime?
+  createdEntityId      String?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  tenant               Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status, createdAt])
+}
+
 model Control {
   id                           String                   @id @default(cuid())
   tenantId                     String?

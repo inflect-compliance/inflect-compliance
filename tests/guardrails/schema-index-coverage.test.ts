@@ -376,6 +376,11 @@ const LIST_QUERY_INDEXES: readonly CompositeIndex[] = [
 // curated composite index is needed."
 
 const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
+    // MCP agent proposals — listAgentProposals filters by tenantId (+ optional
+    // status), orders by createdAt desc; fully covered by
+    // @@index([tenantId, status, createdAt]). Bounded take ≤100.
+    AgentProposal:
+        'listAgentProposals filters by tenantId (+status), orders by createdAt — covered by @@index([tenantId, status, createdAt]); bounded take ≤100.',
     // Vuln integration — listVulnerabilities filters by tenantId (+ optional
     // status / assetId), ordered by the related Cve.cvssScore. Covered by
     // @@index([tenantId, status]) + @@index([tenantId, assetId]) (status /
