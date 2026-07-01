@@ -72,6 +72,16 @@ const SCOPE_ACTION_MAP: Record<string, Record<string, string[]>> = {
     audits:     { read: ['view'], write: ['manage', 'freeze', 'share'] },
     reports:    { read: ['view'], write: ['export'] },
     admin:      { read: ['view'], write: ['manage', 'members', 'sso', 'scim'] },
+    // MCP capability gate (Epic MCP). These are CAPABILITY scopes, not
+    // resource permissions — they deliberately map to NO PermissionSet flags
+    // (empty action arrays). `mcp:read` gates access to the read-only MCP tool
+    // surface (Phase 1); `mcp:propose` gates the strictly-more-privileged
+    // propose-not-commit write tools (Phase 3). There is intentionally NO
+    // `mcp:write` / write-direct scope — every MCP write is a human-approved
+    // proposal, never a direct mutation. A key still needs the underlying
+    // RESOURCE scope (e.g. `risks:read`) for a given tool: `mcp:read` is the
+    // "may talk to MCP at all" gate, resource scopes gate individual tools.
+    mcp:        { read: [], propose: [] },
 };
 
 /**

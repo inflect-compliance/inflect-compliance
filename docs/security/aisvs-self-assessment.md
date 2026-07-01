@@ -15,9 +15,18 @@ fallback. It builds a system+user prompt from **sanitized** tenant data
 Zod-validates the structured JSON output, and is plan-gated + rate-limited +
 off by default.
 
-**No vector DB / embeddings, no agents, no tool-use, no MCP, no RAG, no
-model training or hosting.** IC does not host or fine-tune the model — OpenRouter
-does. This bounds which AISVS chapters apply.
+**No vector DB / embeddings, no RAG, no model training or hosting.** IC does not
+host or fine-tune the model — OpenRouter does. This bounds which AISVS chapters
+apply to the risk-suggestion feature.
+
+IC also exposes a remote **MCP (Model Context Protocol) server** at `/api/mcp`
+(see [the implementation note](../implementation-notes/2026-07-01-mcp-server.md))
+so external agents can inspect a tenant read-only over a scoped `TenantApiKey`.
+This is a distinct AI surface — it makes **C9 (Orchestration & Agentic)** and
+**C10 (MCP Security)** applicable (assessed below). It is a thin adapter over
+IC's existing auth/RLS/permission/audit chain: agents read only what the key's
+scopes + permissions + tenant RLS allow, and write actions are human-approved
+proposals (propose-not-commit), never direct mutations.
 
 ## Chapter applicability
 
@@ -31,8 +40,8 @@ does. This bounds which AISVS chapters apply.
 | C6 | Model Supply Chain | **Yes** | The OpenRouter dependency + model pinning + fallback |
 | C7 | Model Behavior/Output | **Yes** | Zod output validation + fallback on bad output |
 | C8 | Memory/Embeddings/Vector | **N/A** | No vector DB / embeddings / RAG surface |
-| C9 | Orchestration/Agentic | **N/A** | Single completion call; no agents / tool-use |
-| C10 | MCP Security | **N/A** | No Model Context Protocol surface |
+| C9 | Orchestration/Agentic | **Yes** | The MCP server lets external agents drive IC operations; write actions are human-approved proposals (propose-not-commit) |
+| C10 | MCP Security | **Yes** | IC exposes an MCP server at `/api/mcp` — scoped TenantApiKey auth, per-tool authorization, RLS output scoping, per-call audit |
 | C11 | Adversarial Robustness | **Yes** | Prompt-injection via tenant data in the prompt |
 | C12 | Monitoring/Logging | **Yes** | AI-call observability + audit trail |
 
@@ -84,11 +93,25 @@ Legend: **Met** / **Partial** / **Gap (fixed in this PR)** / **Accepted risk**.
 - **C12.2.5** (track token usage at granular attribution) — **Met (L2).** The provider captures the response `usage` (prompt/completion tokens); per-tenant granular attribution rides the inference log on the audit event, and an aggregate `ai.risk_assessment.tokens` OTel counter (labelled `provider` + `kind`) tracks volume for capacity planning without a high-cardinality tenant label.
 - **C12.4.3 / C12.5.3** (log config/override changes) — **Met (L2).** A non-default model (an `OPENROUTER_MODEL` override of the pinned `DEFAULT_MODEL`) is logged once at provider construction, so a runtime model/config change is never silent.
 
+### C9 — Orchestration & Agentic Security (MCP surface)
+- **Applicability** — the MCP server at `/api/mcp` lets external agents orchestrate IC tools, so C9 applies. See [the MCP implementation note](../implementation-notes/2026-07-01-mcp-server.md).
+- **C9.1 (tool-call governance)** — **Met.** Every MCP tool call is authenticated (scoped `TenantApiKey`), authorized (per-tool `enforceApiKeyScope` + the usecase's own permission check), rate-limited (the mutation-tier limiter on the POST endpoint via `withApiErrorHandling`), and audited (`appendAuditEntry`, `actorType: 'API_KEY'`).
+- **C9.2.1 (block privileged actions until human approval)** — **Met.** The MCP surface exposes only read/inspection tools — there is no state-changing agent tool, so no agent can perform a privileged action. The `mcp-server-coverage` ratchet enforces this: no MCP source imports a create/update/delete usecase. (Any write capability is designed as a human-approved proposal, never a direct mutation.)
+- **C9.3 (tenant isolation of agent context)** — **Met.** Each tool runs in `runInTenantContext`, binding `app.tenant_id` from the key's tenant; RLS makes cross-tenant reads architecturally impossible, so one tenant's agent can never reach another tenant's data.
+
+### C10 — MCP Security
+- **Applicability** — IC exposes an MCP server, so C10 applies.
+- **C10.1 (tool authorization)** — **Met.** The `mcp:read` capability scope gates access to the whole surface; each tool additionally requires its resource scope (`risks:read`, …). A REST key without `mcp:read` cannot reach MCP; a controls-only key cannot call a risks tool.
+- **C10.2 (output validation / scoping)** — **Met.** Tool output is the REST read contract, scoped by RLS — no cross-tenant rows, no internal-only fields beyond what the REST API already exposes. The server never queries Prisma directly (locked by `tests/guardrails/mcp-server-coverage.test.ts`).
+- **C10.3 (prompt-injection at the agent→IC boundary)** — **Met (read surface).** The read tools accept only structured, Zod-validated arguments (filters, ids, limits) and take no agent free-text that re-enters IC's data, so there is no injection sink on this surface. The agent-*proposed* write path (structured content validated against the target create-schema + Epic-D sanitised at the boundary) is the higher-risk surface and is assessed with the propose tools.
+
 ## Verification badge
 
 **Inflect's risk-assessment AI is AISVS v1.0 L2-verified for the applicable
-chapters (C2, C4, C5, C6, C7, C11, C12).** Chapters C1, C3, C8, C9, C10 are
-**not applicable** (no model training/hosting, embeddings, agents, or MCP). This
+chapters (C2, C4, C5, C6, C7, C11, C12).** Chapters C1, C3, C8 are
+**not applicable** (no model training/hosting, embeddings, or RAG). **C9
+(agentic) and C10 (MCP security)** became applicable with the MCP server and are
+assessed above against IC's inherited auth/RLS/permission/audit chain. This
 is a precise, defensible claim — **not** an L3 / high-assurance claim, and not a
 claim about chapters IC's AI doesn't touch. The L2 uplift landed across four
 PRs: output safety gate (C7) → input anomaly detection (C2.1.7 / C11.4 / C12.2)

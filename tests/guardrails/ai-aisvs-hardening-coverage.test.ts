@@ -45,14 +45,28 @@ describe('AISVS self-assessment doc', () => {
         }
     });
 
-    it('marks C8 / C9 / C10 (and C1 / C3) as N/A with reasons', () => {
+    it('marks C8 (and C1 / C3) as N/A with reasons', () => {
         // Each non-applicable chapter row carries an N/A marker.
-        for (const ch of ['C1', 'C3', 'C8', 'C9', 'C10']) {
+        for (const ch of ['C1', 'C3', 'C8']) {
             const row = doc.split('\n').find((l) => l.includes(`| ${ch} `));
             expect(row).toBeDefined();
             expect(row).toMatch(/N\/A/);
         }
         expect(doc).toMatch(/no vector DB|embeddings|RAG/i);
+    });
+
+    it('marks C9 / C10 as APPLICABLE now the MCP server surface exists', () => {
+        // The MCP server (docs/implementation-notes/2026-07-01-mcp-server.md)
+        // makes agentic orchestration (C9) + MCP security (C10) applicable.
+        // A regression to N/A here would mean the MCP surface shipped without
+        // its AISVS assessment.
+        for (const ch of ['C9', 'C10']) {
+            const row = doc.split('\n').find((l) => l.includes(`| ${ch} `));
+            expect(row).toBeDefined();
+            expect(row).toMatch(/\*\*Yes\*\*/);
+            expect(row).not.toMatch(/N\/A/);
+        }
+        expect(doc).toMatch(/MCP server/i);
     });
 
     it('states the honest L2-applicable-chapters badge, not an L3 claim', () => {
