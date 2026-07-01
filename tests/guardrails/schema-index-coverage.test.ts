@@ -174,6 +174,7 @@ const FK_INDEX_EXEMPT: Record<string, string> = {
     'TaskWatcher.userId': R_ACTOR,
     'Asset.ownerUserId': R_ACTOR,
     'RiskSuggestionSession.createdByUserId': R_ACTOR,
+    'VendorDocExtraction.createdByUserId': R_ACTOR,
     'RiskSuggestionItem.assetId': R_ONE_TO_ONE,
     'Control.applicabilityDecidedByUserId': R_ACTOR,
     'Control.createdByUserId': R_ACTOR,
@@ -401,6 +402,15 @@ const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
     // @@index([tenantId, processNodeId]). Bounded take ≤500.
     BusinessImpactAnalysis:
         'listBias filters by tenantId (+criticality/processNodeId) — covered by @@index([tenantId, criticality]) + @@index([tenantId, processNodeId]); recovery-priority sort is in-page on a bounded per-tenant set (take ≤500).',
+    // Vendor-doc extraction — listVendorDocExtractions filters by tenantId
+    // (+vendorId/status), ordered by createdAt; covered by
+    // @@index([tenantId, vendorId]) + @@index([tenantId, status]). Bounded take.
+    VendorDocExtraction:
+        'listVendorDocExtractions filters by tenantId (+vendorId/status) — covered by @@index([tenantId, vendorId]) + @@index([tenantId, status]); bounded take.',
+    // Vendor answer proposals — listProposals filters by (tenantId, extractionId)
+    // (+status); covered by @@index([tenantId, extractionId]) + @@index([tenantId, status]).
+    VendorAnswerProposal:
+        'listProposals filters by (tenantId, extractionId) (+status) — covered by @@index([tenantId, extractionId]) + @@index([tenantId, status]); bounded by one extraction.',
     // Policy-template mapping — linkPolicyControls reads existing links by
     // policyId (+ controlId in-filter) to dedupe before createMany; covered
     // by @@index([tenantId, policyId]) (policyId is the leading filter under
