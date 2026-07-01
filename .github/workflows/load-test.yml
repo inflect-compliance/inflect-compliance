@@ -77,7 +77,7 @@ jobs:
       SKIP_ENV_VALIDATION: '1'
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # Node + npm ci + `prisma generate` (all with retry). The seed
       # step (`tsx prisma/seed.ts`) needs the generated client — a bare
