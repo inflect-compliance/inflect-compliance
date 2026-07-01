@@ -52,6 +52,7 @@ model Vendor {
   assessments         VendorAssessment[]
   contacts            VendorContact[]
   documents           VendorDocument[]
+  docExtractions      VendorDocExtraction[]
   evidenceBundles     VendorEvidenceBundle[]
   links               VendorLink[]
   primaryOf           VendorRelationship[]   @relation("PrimaryRelation")
@@ -110,6 +111,7 @@ model VendorDocument {
   tenant           Tenant             @relation(fields: [tenantId], references: [id])
   uploadedBy       User               @relation("VendorDocUploader", fields: [uploadedByUserId], references: [id])
   vendor           Vendor             @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  extractions      VendorDocExtraction[]
 
   @@index([tenantId, vendorId])
   @@index([tenantId, vendorId, type])
@@ -372,6 +374,81 @@ model VendorAssessmentAnswer {
   @@unique([assessmentId, questionId])
   @@index([tenantId, assessmentId])
   @@index([tenantId, templateQuestionId])
+}
+
+/// AI-assisted vendor-document extraction (SOC 2 / ISO cert / pen-test).
+/// The propose-not-commit SESSION: a VendorDocument is parsed to text,
+/// sanitised, AI-extracted into structured fields, and each mapped question
+/// becomes a VendorAnswerProposal a human reviews before it lands as a real
+/// VendorAssessmentAnswer. Mirrors RiskSuggestionSession/Item. Tenant-scoped
+/// (RLS + indexes). The raw document text is sanitised before the AI call
+/// and NOT persisted — only the structured, Zod-validated extraction.
+model VendorDocExtraction {
+  id               String    @id @default(cuid())
+  tenantId         String
+  vendorId         String
+  documentId       String
+  /// Optional target assessment being pre-filled.
+  assessmentId     String?
+  /// PENDING | EXTRACTED | FAILED.
+  status           String    @default("PENDING")
+  provider         String    @default("stub")
+  modelName        String?
+  /// SOC2_TYPE2 | SOC2_TYPE1 | ISO27001 | PENTEST | OTHER (from the AI).
+  reportType       String?
+  auditPeriodStart DateTime?
+  auditPeriodEnd   DateTime?
+  scope            String?
+  auditor          String?
+  /// The full Zod-validated AI extraction (controls + results + exceptions).
+  /// Every proposal's citation traces back into this payload.
+  extractionJson   Json?
+  errorMessage     String?
+  createdByUserId  String
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  tenant    Tenant                 @relation(fields: [tenantId], references: [id])
+  vendor    Vendor                 @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  document  VendorDocument         @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  createdBy User                   @relation("VendorDocExtractionCreator", fields: [createdByUserId], references: [id])
+  proposals VendorAnswerProposal[]
+
+  @@index([tenantId, vendorId])
+  @@index([tenantId, status])
+  @@index([tenantId, documentId])
+}
+
+/// A PROPOSED vendor-assessment answer derived from a document extraction.
+/// PENDING until a human approves (→ ACCEPTED, materialises a
+/// VendorAssessmentAnswer via `createdAnswerId`) or rejects. NEVER scored
+/// until approved — the propose-not-commit contract. Carries the source
+/// citation so a reviewer verifies the AI did not hallucinate.
+model VendorAnswerProposal {
+  id                 String   @id @default(cuid())
+  tenantId           String
+  extractionId       String
+  assessmentId       String?
+  questionId         String?
+  templateQuestionId String?
+  /// Proposed payload — same shape a VendorAssessmentAnswer.answerJson takes.
+  proposedAnswerJson Json
+  /// high | medium | low — AI confidence in the document→question mapping.
+  confidence         String   @default("medium")
+  /// e.g. "SOC 2 CC6.1, no exceptions, period 2025-06..2026-05".
+  sourceCitation     String
+  /// PENDING | ACCEPTED | REJECTED.
+  status             String   @default("PENDING")
+  /// The VendorAssessmentAnswer created when this proposal is approved.
+  createdAnswerId    String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  tenant     Tenant              @relation(fields: [tenantId], references: [id])
+  extraction VendorDocExtraction @relation(fields: [extractionId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, extractionId])
+  @@index([tenantId, status])
 }
 
 model VendorLink {

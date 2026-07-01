@@ -115,6 +115,8 @@ model Tenant {
   scannerFindings                   ScannerFinding[]
   businessImpactAnalyses            BusinessImpactAnalysis[]
   biaDependencies                   BiaDependency[]
+  vendorDocExtractions              VendorDocExtraction[]
+  vendorAnswerProposals             VendorAnswerProposal[]
   trustCenter                       TrustCenter?
   assetRiskLinks                    AssetRiskLink[]
   audits                            Audit[]
@@ -813,6 +815,7 @@ model User {
   evidenceReviews               EvidenceReview[]
   ownedEvidence                 Evidence[]                   @relation("EvidenceOwner")
   ownedBias                     BusinessImpactAnalysis[]     @relation("BiaOwner")
+  vendorDocExtractionsCreated   VendorDocExtraction[]        @relation("VendorDocExtractionCreator")
   uploadedFiles                 FileRecord[]                 @relation("FileUploader")
   notifications                 Notification[]
   ownedPolicies                 Policy[]                     @relation("PolicyOwner")

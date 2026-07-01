@@ -56,6 +56,8 @@ a `userId` but stores no contact PII).
 | `ScannerFinding` | Business record | Yes (`description`) | Cascade on run/tenant delete; deduped + status lifecycle (OPEN→FIXED/FALSE_POSITIVE/ACCEPTED) | Indefinite while tenant active — security-testing remediation record |
 | `BusinessImpactAnalysis` | Business record | Yes (`notes`) | Cascade on tenant delete; processNode/owner set-null on delete | Indefinite while tenant active — the operational-continuity artifact satisfying NIS2 Art.21(2)(c) |
 | `BiaDependency` | Business record | No | Cascade on BIA/tenant delete | Indefinite while tenant active — part of the BIA record |
+| `VendorDocExtraction` | Business record | No | Cascade on vendor/document/tenant delete | Indefinite while tenant active — the AI extraction + provenance for a vendor doc's pre-filled answers |
+| `VendorAnswerProposal` | Business record | No | Cascade on extraction/tenant delete; status lifecycle (PENDING→ACCEPTED/REJECTED) | Indefinite while tenant active — the propose-not-commit review record |
 | `Audit` | Business record | No | Soft-delete (`deletedAt`); 90-day purge via `data-lifecycle` | Active: indefinite. Soft-deleted: 90-day purge |
 | `AuditChecklistItem` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
 | `AuditCycle` | Business record | No | Soft-delete (`deletedAt`); 90-day purge via `data-lifecycle` | Active: indefinite. Soft-deleted: 90-day purge |
