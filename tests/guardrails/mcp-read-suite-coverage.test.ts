@@ -20,11 +20,11 @@ import { READ_TOOLS } from '@/lib/mcp/tools/registry';
 const ROOT = path.resolve(__dirname, '../..');
 const TOOLS_DIR = path.join(ROOT, 'src/lib/mcp/tools');
 
-/** Tool implementation files (exclude the plumbing). */
+/** READ-tool implementation files (exclude plumbing + the propose write surface). */
 function toolImplFiles(): string[] {
     return fs
         .readdirSync(TOOLS_DIR)
-        .filter((n) => n.endsWith('.ts') && n !== 'types.ts' && n !== 'registry.ts')
+        .filter((n) => n.endsWith('.ts') && n !== 'types.ts' && n !== 'registry.ts' && n !== 'propose-tools.ts')
         .map((n) => path.join(TOOLS_DIR, n));
 }
 

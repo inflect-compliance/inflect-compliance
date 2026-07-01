@@ -17,13 +17,23 @@
  */
 import type { NextRequest } from 'next/server';
 
-import {
-    extractBearerToken,
-    verifyApiKey,
-    enforceApiKeyScope,
-} from '@/lib/auth/api-key-auth';
-import { unauthorized } from '@/lib/errors/types';
+import { extractBearerToken, verifyApiKey } from '@/lib/auth/api-key-auth';
+import { unauthorized, forbidden } from '@/lib/errors/types';
 import type { RequestContext } from '@/app-layer/types';
+
+/**
+ * Enforce an MCP capability scope (`mcp:read` or `mcp:propose`). Mirrors
+ * `enforceApiKeyScope`'s grant logic (`*` / `mcp:*` / `mcp:<cap>`). `mcp:read`
+ * is the endpoint gate; `mcp:propose` gates the propose-not-commit write tools
+ * and is strictly more privileged. Throws `forbidden` when the key lacks it.
+ */
+export function enforceMcpCapability(ctx: RequestContext, capability: 'read' | 'propose'): void {
+    const scopes = ctx.apiKeyScopes;
+    // Session-auth (no api key) — MCP is API-key only, but be defensive.
+    if (!scopes) return;
+    if (scopes.includes('*') || scopes.includes('mcp:*') || scopes.includes(`mcp:${capability}`)) return;
+    throw forbidden(`API key does not have the "mcp:${capability}" capability scope.`);
+}
 
 export interface McpAuthResult {
     ctx: RequestContext;
@@ -53,9 +63,14 @@ export async function authenticateMcpRequest(
         throw unauthorized(`API key authentication failed: ${result.reason}`);
     }
 
-    // Capability gate: the key must carry `mcp:read` (or `mcp:*` / `*`).
-    // Reuses the exact scope-grant logic the REST API uses.
-    enforceApiKeyScope(result.ctx, 'mcp', 'read');
+    // Capability gate: the key must carry an MCP capability — `mcp:read`
+    // (read tools) or `mcp:propose` (propose tools), or `mcp:*` / `*`. Individual
+    // read tools still require `mcp:read`; propose tools require `mcp:propose`.
+    const scopes = result.ctx.apiKeyScopes ?? [];
+    const hasMcp = scopes.includes('*') || scopes.includes('mcp:*') || scopes.includes('mcp:read') || scopes.includes('mcp:propose');
+    if (!hasMcp) {
+        throw forbidden('API key does not have an MCP capability scope (mcp:read / mcp:propose).');
+    }
 
     return { ctx: result.ctx };
 }

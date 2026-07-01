@@ -222,6 +222,14 @@ export const ENCRYPTED_FIELDS: Readonly<Record<string, readonly string[]>> = {
     //  would be incidental rather than declared.
     RiskScoreEvent: ['justification'],
 
+    // ─── Epic MCP Phase 3 — agent proposal queue ───────
+    // `payloadJson` is the agent-proposed business content (risk/control/policy/
+    // finding fields), `rationale` the agent's reasoning. Both are free-text
+    // business content that lands before a human approves it into a real record
+    // — encrypt at rest. Neither is used in a WHERE/orderBy (queries filter on
+    // tenantId/status/createdAt), so encryption is safe.
+    AgentProposal: ['payloadJson', 'rationale'],
+
     // ─── Epic G-7 risk treatment plans ─────────────────
     //  Both columns can name internal systems / vendors / users:
     //    - RiskTreatmentPlan.closingRemark — narrative rationale
