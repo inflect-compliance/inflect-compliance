@@ -92,35 +92,36 @@ test.describe('Risk matrix admin → live rendering loop', () => {
             { timeout: 15_000 },
         );
 
-        // ── 4. Navigate to /risks → switch to heatmap view ────────
-        await safeGoto(page, `/t/${tenantSlug}/risks`, {
-            waitUntil: 'domcontentloaded',
-        });
-        await page.waitForLoadState('networkidle').catch(() => {});
-
-        // RQ3-5 — the page header carries a three-option ToggleGroup
-        // (Register / Matrix / Histogram); options render with
-        // role="radio", with a legacy button shape as a fallback so the
-        // spec stays portable across a future toggle redesign.
+        // ── 4-5. Navigate to /risks, open the Matrix view, and confirm
+        // the custom axis title propagated. The whole flow is wrapped in
+        // expect.toPass so a TRANSIENT config fetch failure on a loaded CI
+        // runner — observed as a "TypeError: Failed to fetch" console error,
+        // after which the matrix falls back to the DEFAULT axis labels and
+        // the custom label never appears — is retried with a FRESH page load
+        // (which re-fetches the config) rather than failing the whole test.
         //
-        // FLAKE FIX: the previous shape did an INSTANT `isVisible()` check
-        // and skipped the click when it returned false. On a slow/loaded CI
-        // runner the toggle hadn't hydrated yet right after `networkidle`,
-        // so the click was silently skipped, the Matrix view never opened,
-        // and the custom axis label assertion below timed out
-        // (risk-matrix-admin:118). WAIT for whichever toggle shape renders,
-        // then click — no instant-check-then-skip race.
-        const heatmapToggle = page
-            .getByRole('radio', { name: /Matrix/i })
-            .or(page.getByRole('button', { name: /Matrix/i }))
-            .first();
-        await expect(heatmapToggle).toBeVisible({ timeout: 15_000 });
-        await heatmapToggle.click();
+        // Within each attempt: the Register/Matrix/Histogram ToggleGroup
+        // renders options as role="radio" (legacy button as a fallback for
+        // portability). WAIT for whichever shape renders, then click — the
+        // old instant isVisible()-then-skip raced hydration and left the
+        // Matrix view closed.
+        await expect(async () => {
+            await safeGoto(page, `/t/${tenantSlug}/risks`, {
+                waitUntil: 'domcontentloaded',
+            });
+            await page.waitForLoadState('networkidle').catch(() => {});
 
-        // ── 5. The custom axis title surfaces in the matrix ───────
-        await expect(
-            page.getByText(CUSTOM_LABEL, { exact: false }).first(),
-        ).toBeVisible({ timeout: 15_000 });
+            const heatmapToggle = page
+                .getByRole('radio', { name: /Matrix/i })
+                .or(page.getByRole('button', { name: /Matrix/i }))
+                .first();
+            await expect(heatmapToggle).toBeVisible({ timeout: 10_000 });
+            await heatmapToggle.click();
+
+            await expect(
+                page.getByText(CUSTOM_LABEL, { exact: false }).first(),
+            ).toBeVisible({ timeout: 10_000 });
+        }).toPass({ timeout: 60_000, intervals: [1_000, 2_000, 5_000] });
 
         // ── Cleanup — reset to default ────────────────────────────
         await safeGoto(page, `/t/${tenantSlug}/admin/risk-matrix`, {
