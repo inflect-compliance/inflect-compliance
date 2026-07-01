@@ -178,21 +178,16 @@ export function AuditsClient({ initialAudits, tenantSlug, translations: t }: Aud
                         >
                             Frameworks
                         </Link>
-                        {/* B4 — Clauses moved off the primary nav
-                            and into the Audit page as a secondary
-                            entry-point next to Frameworks. The two
-                            destinations are closely related (a
-                            framework lists its requirements;
-                            clauses are the per-tenant progress
-                            tracker against those requirements) so
-                            grouping them under the audit surface
-                            keeps the related concepts together. */}
+                        {/* Scans (security-testing / scanner ingestion) moved off
+                            the primary nav onto the Audit surface — scan findings
+                            are audit evidence, so the entry-point belongs beside
+                            Frameworks/Findings here. */}
                         <Link
-                            href={`/t/${tenantSlug}/clauses`}
+                            href={`/t/${tenantSlug}/security-testing`}
                             className={cn(buttonVariants({ variant: 'secondary' }))}
-                            id="audits-clauses-link"
+                            id="audits-scans-link"
                         >
-                            Clauses
+                            Scans
                         </Link>
                         {/* Findings moved off the Tests page header onto
                             the Audit surface — findings are raised and

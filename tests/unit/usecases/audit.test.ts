@@ -21,7 +21,8 @@
  *   2. Sanitisation of title (always) + scope/criteria/auditors/
  *      auditees/departments (when supplied) on create AND update.
  *   3. status='PLANNED' default on create.
- *   4. generateChecklist=true creates 10 standard items + up to 10
+ *   4. generateChecklist=true derives items from the audit's selected
+ *      framework's requirements; with no framework it falls back to
  *      control-derived items.
  *   5. updateAudit: notFound on missing audit; checklistUpdates
  *      sanitises notes per element (encrypted column).
@@ -82,6 +83,16 @@ function fakeDbWithControls(controls: { id: string; name: string; annexId?: stri
     };
 }
 
+// For the framework-derived checklist path: the audit has a frameworkKey, so
+// createAudit resolves the Framework then reads its FrameworkRequirement rows.
+function fakeDbWithFramework(requirements: { code: string; title: string | null }[]) {
+    return {
+        framework: { findFirst: jest.fn().mockResolvedValue({ id: 'fw1' }) },
+        frameworkRequirement: { findMany: jest.fn().mockResolvedValue(requirements) },
+        control: { findMany: jest.fn().mockResolvedValue([]) },
+    };
+}
+
 describe('createAudit', () => {
     it('rejects READER (canWrite gate)', async () => {
         await expect(
@@ -129,7 +140,30 @@ describe('createAudit', () => {
         expect(mockCreate.mock.calls[0][2].status).toBe('PLANNED');
     });
 
-    it('generateChecklist=true creates 10 standard items + control-derived items', async () => {
+    it('generateChecklist=true with a framework derives items from that framework\'s requirements', async () => {
+        const requirements = Array.from({ length: 8 }, (_, i) => ({
+            code: `R.${i}`, title: `Req ${i}`,
+        }));
+        // The created audit carries the selected frameworkKey.
+        mockCreate.mockResolvedValueOnce({ id: 'a1', title: 'SANITISED(Q4)', frameworkKey: 'OWASP' } as never);
+        const db = fakeDbWithFramework(requirements);
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) => fn(db as never));
+
+        await createAudit(makeRequestContext('EDITOR'), {
+            title: 'Q4',
+            frameworkKey: 'OWASP',
+            generateChecklist: true,
+        });
+
+        // One checklist item per framework requirement — NOT a hardcoded
+        // ISO 27001 list. The control fallback is not used when the framework
+        // yields requirements.
+        expect(mockCreateItem).toHaveBeenCalledTimes(8);
+        expect(db.frameworkRequirement.findMany).toHaveBeenCalled();
+        expect(db.control.findMany).not.toHaveBeenCalled();
+    });
+
+    it('generateChecklist=true with NO framework falls back to control-derived items', async () => {
         const controls = Array.from({ length: 5 }, (_, i) => ({
             id: `c${i}`, name: `Control ${i}`, annexId: `A.${i}`,
         }));
@@ -142,8 +176,9 @@ describe('createAudit', () => {
             generateChecklist: true,
         });
 
-        // 10 baseline + 5 control-derived = 15
-        expect(mockCreateItem).toHaveBeenCalledTimes(15);
+        // No framework → fallback seeds up to 15 items from the tenant's
+        // controls (5 here).
+        expect(mockCreateItem).toHaveBeenCalledTimes(5);
     });
 
     it('generateChecklist=false (default) creates NO checklist items', async () => {

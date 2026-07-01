@@ -145,7 +145,7 @@ export function ProcessesClient({
                     Governance graph →
                 </a>
             </nav>
-            <div className="min-h-0 flex-1 pt-3">
+            <div className="flex min-h-0 flex-1 flex-col pt-3">
                 {tab === "rules" ? (
                     <RulesTab tenantSlug={tenantSlug} />
                 ) : tab === "analytics" ? (

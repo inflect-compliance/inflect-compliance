@@ -24,6 +24,19 @@ echo "→ Applying database migrations..."
 npx --yes prisma@7.8.0 migrate deploy --schema=./prisma/schema
 echo "✓ Migrations applied"
 
+# ── 1b. Seed self-assessment library content (idempotent) ──
+#
+# The NIS2 gap-assessment + AI-governance question sets live in global
+# reference tables populated from fixtures, NOT by migrations. Migrations
+# create the empty tables; without this step a fresh (or pre-existing, since
+# these sets were added after the initial seed) production DB serves ZERO
+# questions and the onboarding wizard's self-assessment steps render blank.
+# The seeder is upsert-only + confined to those global tables, so it is safe
+# to re-run on every start. Non-fatal: a seed hiccup must never block the app.
+echo ""
+echo "→ Seeding self-assessment library content..."
+node dist/seed-self-assessments.mjs || echo "⚠ self-assessment seed skipped (non-fatal)"
+
 # ── 2. Create upload directory if missing ──
 FILE_DIR="${FILE_STORAGE_ROOT:-/data/uploads}"
 mkdir -p "$FILE_DIR" 2>/dev/null || true

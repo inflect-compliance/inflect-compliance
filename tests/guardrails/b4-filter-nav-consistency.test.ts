@@ -69,29 +69,32 @@ describe('B4 — filter + nav consistency', () => {
         });
     });
 
-    describe('Clauses entry-point lives on the Audits page', () => {
+    describe('Audits page nav entry-points', () => {
         const audits = read(
             'src/app/t/[tenantSlug]/(app)/audits/AuditsClient.tsx',
         );
 
-        it('Audits header carries a Clauses link', () => {
-            expect(audits).toMatch(/id="audits-clauses-link"/);
+        // The Clauses button was removed from the Audits header per user
+        // request — it added little over the Frameworks link. The clauses
+        // ROUTE stays; only the header button is gone.
+        it('Audits header no longer carries a Clauses link', () => {
+            expect(audits).not.toMatch(/id="audits-clauses-link"/);
+        });
+
+        // Scans (security-testing) moved OFF the sidebar onto the Audits page
+        // header — scan findings are audit evidence.
+        it('Audits header carries a Scans link to security-testing', () => {
+            expect(audits).toMatch(/id="audits-scans-link"/);
             expect(audits).toMatch(
-                /href=\{`\/t\/\$\{tenantSlug\}\/clauses`\}/,
+                /href=\{`\/t\/\$\{tenantSlug\}\/security-testing`\}/,
             );
         });
 
-        it('Clauses link sits adjacent to the Frameworks link', () => {
+        it('Scans link sits after the Frameworks link', () => {
             const fwIdx = audits.indexOf('id="audits-frameworks-link"');
-            const clIdx = audits.indexOf('id="audits-clauses-link"');
+            const scIdx = audits.indexOf('id="audits-scans-link"');
             expect(fwIdx).toBeGreaterThan(0);
-            expect(clIdx).toBeGreaterThan(0);
-            // Sibling ordering: Frameworks first, Clauses next —
-            // matches the user's "Clauses next to Frameworks" intent.
-            expect(clIdx).toBeGreaterThan(fwIdx);
-            // The two should be within the same actions array
-            // (~800 chars apart in practice).
-            expect(clIdx - fwIdx).toBeLessThan(2000);
+            expect(scIdx).toBeGreaterThan(fwIdx);
         });
     });
 

@@ -71,31 +71,46 @@ export async function createAudit(ctx: RequestContext, data: {
         });
 
         if (data.generateChecklist) {
-            const controls = await db.control.findMany({
-                where: { OR: [{ tenantId: ctx.tenantId }, { tenantId: null }] },
-                take: 20,
-            });
+            // The checklist must reflect the audit's SELECTED framework — an
+            // OWASP audit gets OWASP clauses, an ISO 27001 audit gets ISO
+            // clauses, etc. Derive the items from that framework's requirement
+            // set (global catalogue, keyed by `Framework.key`). Only when the
+            // audit has no framework (ad-hoc / multi-framework) do we fall
+            // back to the tenant's controls so the checklist is never empty.
+            let order = 0;
 
-            const items = [
-                'Verify information security policy is current and approved',
-                'Confirm roles and responsibilities are documented',
-                'Review risk assessment methodology and results',
-                'Check that risk treatment plan is being executed',
-                'Verify security awareness training records',
-                'Review access control procedures and logs',
-                'Check incident response procedures',
-                'Verify backup and recovery procedures',
-                'Review change management records',
-                'Check monitoring and logging configuration',
-            ];
-
-            for (let i = 0; i < items.length; i++) {
-                await AuditRepository.createChecklistItem(db, ctx, audit.id, items[i], i);
+            if (audit.frameworkKey) {
+                const framework = await db.framework.findFirst({
+                    where: { key: audit.frameworkKey },
+                    select: { id: true },
+                });
+                if (framework) {
+                    const requirements = await db.frameworkRequirement.findMany({
+                        where: { frameworkId: framework.id, deprecatedAt: null },
+                        orderBy: { sortOrder: 'asc' },
+                        take: 100,
+                        select: { code: true, title: true },
+                    });
+                    for (const req of requirements) {
+                        const label = req.title
+                            ? `Verify ${req.code} — ${req.title}: confirm implementation and evidence`
+                            : `Verify ${req.code}: confirm implementation and evidence`;
+                        await AuditRepository.createChecklistItem(db, ctx, audit.id, label, order++);
+                    }
+                }
             }
 
-            for (const ctrl of controls.slice(0, 10)) {
-                const prompt = `Verify control "${ctrl.name}" (${ctrl.annexId || 'Custom'}): Check implementation status and evidence`;
-                await AuditRepository.createChecklistItem(db, ctx, audit.id, prompt, items.length + controls.indexOf(ctrl));
+            // Fallback: no framework selected, or the framework had no
+            // requirements — seed from the tenant's controls instead.
+            if (order === 0) {
+                const controls = await db.control.findMany({
+                    where: { OR: [{ tenantId: ctx.tenantId }, { tenantId: null }] },
+                    take: 20,
+                });
+                for (const ctrl of controls.slice(0, 15)) {
+                    const prompt = `Verify control "${ctrl.name}" (${ctrl.annexId || 'Custom'}): check implementation status and evidence`;
+                    await AuditRepository.createChecklistItem(db, ctx, audit.id, prompt, order++);
+                }
             }
         }
 

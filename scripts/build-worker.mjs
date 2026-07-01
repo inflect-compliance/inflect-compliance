@@ -46,5 +46,14 @@ await build({
     entryPoints: ['scripts/scheduler.ts'],
     outfile: 'dist/scheduler.mjs',
 });
+// Self-assessment library seeder — run from the container entrypoint after
+// `prisma migrate deploy` so the NIS2 gap + AI-gov question sets (global
+// reference tables, not carried by migrations) self-heal on every deploy.
+// The fixture JSON is inlined into the bundle at build time.
+await build({
+    ...common,
+    entryPoints: ['scripts/seed-self-assessments.ts'],
+    outfile: 'dist/seed-self-assessments.mjs',
+});
 
-console.log('✓ built dist/worker.mjs + dist/scheduler.mjs');
+console.log('✓ built dist/worker.mjs + dist/scheduler.mjs + dist/seed-self-assessments.mjs');

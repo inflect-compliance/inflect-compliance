@@ -20,7 +20,6 @@ import {
     ClipboardList,
     ClipboardCheck,
     FlaskConical,
-    ScanLine,
     Truck,
     BarChart3,
     Settings,
@@ -110,7 +109,8 @@ export function useNavSections(): NavSectionDef[] {
                     badge: calendarBadge,
                 },
                 { href: tenantHref('/tests'), label: 'Review', icon: FlaskConical },
-                { href: tenantHref('/security-testing'), label: 'Scans', icon: ScanLine },
+                // Scans (security-testing) moved off the sidebar onto the
+                // Internal Audit page — scan findings are audit evidence.
                 { href: tenantHref('/evidence'), label: 'Docs', icon: Paperclip },
             ],
         },
