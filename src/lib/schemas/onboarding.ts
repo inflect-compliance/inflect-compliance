@@ -15,6 +15,11 @@ export const ONBOARDING_STEPS = [
     // EU_AI_ACT) is selected OR the tenant builds/uses AI systems (see
     // `isStepApplicable`). Unified AISVS / ISO 42001 / EU AI Act self-assessment.
     'AI_GOVERNANCE_SELF_ASSESSMENT',
+    // Conditional step: applicable when an EU digital-regulation framework
+    // (NIS2 / DORA / EU AI Act) is selected (see `isStepApplicable`). Digital
+    // Sovereignty Posture self-assessment — stateless, materialises approved
+    // gaps into risks + controls.
+    'SOVEREIGNTY_SELF_ASSESSMENT',
     'ASSET_SETUP',
     'CONTROL_BASELINE_INSTALL',
     'INITIAL_RISK_REGISTER',
@@ -42,6 +47,9 @@ export const SKIPPABLE_STEPS: OnboardingStep[] = [
     // Skippable: skipped entirely when no AI framework / AI-systems flag, and
     // skippable on demand ("complete later") when applicable.
     'AI_GOVERNANCE_SELF_ASSESSMENT',
+    // Skippable: skipped entirely when no EU digital-regulation framework, and
+    // skippable on demand ("complete later") when applicable.
+    'SOVEREIGNTY_SELF_ASSESSMENT',
     'ASSET_SETUP',
     'CONTROL_BASELINE_INSTALL',
     'INITIAL_RISK_REGISTER',
