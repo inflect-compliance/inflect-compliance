@@ -115,13 +115,17 @@ test.describe('Risk matrix admin → live rendering loop', () => {
                 .getByRole('radio', { name: /Matrix/i })
                 .or(page.getByRole('button', { name: /Matrix/i }))
                 .first();
-            await expect(heatmapToggle).toBeVisible({ timeout: 10_000 });
+            await expect(heatmapToggle).toBeVisible({ timeout: 15_000 });
             await heatmapToggle.click();
 
+            // The matrix engine is an ssr:false lazy chunk (now wrapped in
+            // retryImport, so a transient chunk-fetch failure self-heals in
+            // place). Give the render a generous window — the custom axis
+            // title only paints once the chunk mounts with the SSR config.
             await expect(
                 page.getByText(CUSTOM_LABEL, { exact: false }).first(),
-            ).toBeVisible({ timeout: 10_000 });
-        }).toPass({ timeout: 60_000, intervals: [1_000, 2_000, 5_000] });
+            ).toBeVisible({ timeout: 20_000 });
+        }).toPass({ timeout: 90_000, intervals: [1_000, 2_000, 5_000] });
 
         // ── Cleanup — reset to default ────────────────────────────
         await safeGoto(page, `/t/${tenantSlug}/admin/risk-matrix`, {

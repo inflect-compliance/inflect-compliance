@@ -60,6 +60,7 @@ import {
 } from './filter-defs';
 import { useHydratedNow } from '@/lib/hooks/use-hydrated-now';
 import dynamic from 'next/dynamic';
+import { retryImport } from '@/lib/retry-import';
 import { Skeleton } from '@/components/ui/skeleton';
 import { resolveBandForScore } from '@/lib/risk-matrix/scoring';
 import type { RiskMatrixConfigShape } from '@/lib/risk-matrix/types';
@@ -191,7 +192,11 @@ interface RisksClientProps {
 // BY DESIGN — see the import note; this is a view-toggle panel, not a
 // Playwright-first modal, so it doesn't hit the dev JIT race.)
 const RiskMatrix = dynamic(
-    () => import('@/components/ui/RiskMatrix').then((m) => m.RiskMatrix),
+    // retryImport — a transient chunk-fetch failure on a loaded runner
+    // otherwise leaves this ssr:false view permanently blank until reload
+    // (a real fragility + the risk-matrix-admin E2E flake). Retries the
+    // import a few times with backoff so a hiccup self-heals in place.
+    retryImport(() => import('@/components/ui/RiskMatrix').then((m) => m.RiskMatrix)),
     { ssr: false, loading: () => <Skeleton className="h-64 w-full" /> },
 );
 
