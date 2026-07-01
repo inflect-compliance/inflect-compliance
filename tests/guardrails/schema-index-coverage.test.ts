@@ -382,6 +382,8 @@ const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
     // @@index([tenantId, status, createdAt]). Bounded take ≤100.
     AgentProposal:
         'listAgentProposals filters by tenantId (+status), orders by createdAt — covered by @@index([tenantId, status, createdAt]); bounded take ≤100.',
+    WorkflowRun:
+        'listWorkflowRuns filters by tenantId (+status), orders by startedAt — covered by @@index([tenantId, status, startedAt]); bounded take ≤50.',
     // Vuln integration — listVulnerabilities filters by tenantId (+ optional
     // status / assetId), ordered by the related Cve.cvssScore. Covered by
     // @@index([tenantId, status]) + @@index([tenantId, assetId]) (status /

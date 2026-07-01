@@ -27,7 +27,7 @@ import type { RequestContext } from '@/app-layer/types';
  * is the endpoint gate; `mcp:propose` gates the propose-not-commit write tools
  * and is strictly more privileged. Throws `forbidden` when the key lacks it.
  */
-export function enforceMcpCapability(ctx: RequestContext, capability: 'read' | 'propose'): void {
+export function enforceMcpCapability(ctx: RequestContext, capability: 'read' | 'propose' | 'orchestrate'): void {
     const scopes = ctx.apiKeyScopes;
     // Session-auth (no api key) — MCP is API-key only, but be defensive.
     if (!scopes) return;

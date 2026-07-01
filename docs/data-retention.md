@@ -173,6 +173,8 @@ a `userId` but stores no contact PII).
 | `RiskSuggestionItem` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
 | `RiskSuggestionSession` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
 | `AgentProposal` | Operational | No | None today — cascade on tenant delete only | No TTL today — pending/rejected proposals are candidates for time-boxed prune |
+| `WorkflowRun` | Operational | maybe | None today — cascade on tenant delete only | No TTL today — completed/failed runs are candidates for time-boxed prune |
+| `WorkflowStep` | Operational | maybe | None today — cascade on run/tenant delete only | No TTL today — the run's append-only step narrative |
 | `RiskTemplate` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
 | `RiskTreatmentPlan` | Business record | No | Soft-delete (`deletedAt`) — **NOT** auto-purged | Soft-deleted rows **not auto-purged** — gap |
 | `ScimGroup` | Configuration | maybe | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |

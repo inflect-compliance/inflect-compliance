@@ -162,6 +162,7 @@ model Tenant {
   riskSuggestionItems               RiskSuggestionItem[]
   riskSuggestionSessions            RiskSuggestionSession[]
   agentProposals                    AgentProposal[]
+  workflowRuns                      WorkflowRun[]
   riskMatrixConfig                  RiskMatrixConfig?
   riskAppetiteConfig                RiskAppetiteConfig?
   riskAppetiteBreaches              RiskAppetiteBreach[]

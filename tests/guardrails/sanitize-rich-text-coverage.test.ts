@@ -120,6 +120,16 @@ const NON_RICH_TEXT_MODELS: Readonly<Record<string, string>> = {
     TenantSecuritySettings:
         'auditStreamSecretEncrypted is a system-generated HMAC secret, ' +
         'never user-supplied free text — there is nothing to sanitise.',
+    WorkflowRun:
+        'contextJson/summary are engine-internal accumulated state — a JSON ' +
+        'snapshot of read-tool outputs (tenant data already sanitised at its own ' +
+        'write path) plus engine-generated synthesis text. Not a new user-supplied ' +
+        'rich-text input; any PROPOSED content is sanitised by createAgentProposal ' +
+        'before it enters the AgentProposal queue.',
+    WorkflowStep:
+        'inputJson/outputJson are per-step tool payloads (engine-internal), same ' +
+        'reasoning as WorkflowRun — derived from already-sanitised reads + engine ' +
+        'synthesis, never rendered as HTML; proposed content is sanitised downstream.',
 };
 
 /**

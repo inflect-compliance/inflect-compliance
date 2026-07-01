@@ -230,6 +230,15 @@ export const ENCRYPTED_FIELDS: Readonly<Record<string, readonly string[]>> = {
     // tenantId/status/createdAt), so encryption is safe.
     AgentProposal: ['payloadJson', 'rationale'],
 
+    // ─── Epic Agentic 1A — workflow engine ─────────────
+    // WorkflowRun.contextJson (accumulated run state — carries tenant business
+    // content gathered by read steps) + .summary (the output readiness report).
+    // WorkflowStep.inputJson/outputJson (per-step tool payloads). All free-text
+    // business content that lands as the workflow runs — encrypt at rest. None
+    // is used in a WHERE/orderBy (queries filter on tenantId/status/runId/seq).
+    WorkflowRun: ['contextJson', 'summary'],
+    WorkflowStep: ['inputJson', 'outputJson'],
+
     // ─── Epic G-7 risk treatment plans ─────────────────
     //  Both columns can name internal systems / vendors / users:
     //    - RiskTreatmentPlan.closingRemark — narrative rationale

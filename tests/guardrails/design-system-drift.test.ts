@@ -291,10 +291,16 @@ describe('New page token discipline', () => {
         //     PageHeader + cardVariants + StatusBadge + formatDateTime
         //     primitives) in the unmigrated tally only because it isn't
         //     yet promoted to MIGRATED_PAGES.
+        //   - 120 (+2): Epic Agentic 1A — agent-runs/page.tsx +
+        //     agent-runs/AgentRunsClient.tsx. The agentic workflow-run
+        //     observability queue (semantic tokens only; PageHeader +
+        //     cardVariants + StatusBadge + formatDateTime primitives) in
+        //     the unmigrated tally only because it isn't yet promoted to
+        //     MIGRATED_PAGES.
         // Each increment names the epic + page + reason; promotion
         // to MIGRATED_PAGES is the path forward, never silent
         // floor-bumping.
-        expect(unmigrated.length).toBeLessThanOrEqual(118);
+        expect(unmigrated.length).toBeLessThanOrEqual(120);
     });
 
     it('migrated page count is at least 4', () => {

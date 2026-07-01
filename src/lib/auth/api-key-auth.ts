@@ -81,7 +81,7 @@ const SCOPE_ACTION_MAP: Record<string, Record<string, string[]>> = {
     // proposal, never a direct mutation. A key still needs the underlying
     // RESOURCE scope (e.g. `risks:read`) for a given tool: `mcp:read` is the
     // "may talk to MCP at all" gate, resource scopes gate individual tools.
-    mcp:        { read: [], propose: [] },
+    mcp:        { read: [], propose: [], orchestrate: [] },
 };
 
 /**

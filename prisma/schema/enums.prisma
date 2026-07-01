@@ -611,6 +611,36 @@ enum AgentProposalKind {
   FINDING
 }
 
+/// Agentic workflow-engine run lifecycle (Epic Agentic 1A). A run PAUSES to
+/// AWAITING_APPROVAL at a HUMAN_CHECKPOINT (or after a PROPOSE step queues
+/// proposals) and resumes only after a human acts. It never commits a write.
+enum WorkflowRunStatus {
+  RUNNING
+  AWAITING_APPROVAL
+  PAUSED
+  COMPLETED
+  ABORTED
+  FAILED
+}
+
+/// A workflow step's kind. READ = call an MCP read tool; PROPOSE = call an MCP
+/// propose tool (queues a proposal, never commits); HUMAN_CHECKPOINT = pause for
+/// a human; SYNTHESIS = reason over accumulated context to produce a summary.
+enum WorkflowStepKind {
+  READ
+  PROPOSE
+  HUMAN_CHECKPOINT
+  SYNTHESIS
+}
+
+enum WorkflowStepStatus {
+  PENDING
+  RUNNING
+  DONE
+  FAILED
+  SKIPPED
+}
+
 enum IdentityProviderType {
   SAML
   OIDC
