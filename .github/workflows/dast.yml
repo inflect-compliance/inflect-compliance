@@ -198,7 +198,7 @@ jobs:
         # Security tab + the auto-issue for triage. On 2026-07-24, REMOVE
         # this line AND set fail_action: true to make HIGH+ blocking.
         continue-on-error: true
-        uses: zaproxy/action-baseline@v0.13.0
+        uses: zaproxy/action-baseline@v0.15.0
         with:
           target: 'http://localhost:3006'
           rules_file_name: '.zap/rules.tsv'
