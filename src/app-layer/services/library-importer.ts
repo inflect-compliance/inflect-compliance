@@ -32,6 +32,10 @@ import {
     type MigrationStrategy,
     applyMigrationStrategy,
 } from './library-updater';
+import {
+    recordDiffFromVersionHistory,
+    propagateFrameworkDelta,
+} from '@/app-layer/usecases/framework-delta';
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -55,6 +59,12 @@ export interface ImportResult {
     contentHash: string;
     /** Duration of the import in ms */
     durationMs: number;
+    /** Requirement codes added in this import (drives the version-history entry + delta). */
+    addedCodes: string[];
+    /** Requirement codes whose content changed in this import. */
+    changedCodes: string[];
+    /** Requirement codes removed (deprecated) in this import. */
+    removedCodes: string[];
 }
 
 /** Options for the import pipeline. */
@@ -76,12 +86,21 @@ export interface ImportOptions {
      * Default: false
      */
     force?: boolean;
+    /**
+     * If true, an UPDATE that changes the requirement set records a
+     * FrameworkVersionDiff and fans a per-tenant TenantFrameworkDelta out to
+     * every installed tenant (Epic Regwatch 2A). Never fires on first create
+     * (no prior version). Propagation failure never fails the import.
+     * Default: true.
+     */
+    propagateDelta?: boolean;
 }
 
 const DEFAULT_OPTIONS: Required<ImportOptions> = {
     strategy: 'preserve',
     deprecateMissing: true,
     force: false,
+    propagateDelta: true,
 };
 
 // ─── Framework Kind Mapping ──────────────────────────────────────────
@@ -146,6 +165,9 @@ export async function importLibrary(
                 requirementsDeprecated: 0,
                 contentHash: library.contentHash,
                 durationMs,
+                addedCodes: [],
+                changedCodes: [],
+                removedCodes: [],
             };
         }
     }
@@ -223,11 +245,9 @@ export async function importLibrary(
         version: library.version,
         contentHash: library.contentHash,
         requirementCodes: allCodes,
-        addedCodes: result.action === 'created'
-            ? allCodes
-            : [], // Filled below for updates
-        removedCodes: [],
-        changedCodes: [],
+        addedCodes: result.addedCodes,
+        removedCodes: result.removedCodes,
+        changedCodes: result.changedCodes,
     });
 
     const updatedHistory = appendHistoryEntry(history, historyEntry);
@@ -253,6 +273,30 @@ export async function importLibrary(
         durationMs: result.durationMs,
         historyEntries: updatedHistory.entries.length,
     });
+
+    // 6. Regwatch 2A — a version UPDATE that changed the requirement set records
+    //    a global FrameworkVersionDiff and fans a per-tenant delta out to every
+    //    installed tenant. Never on first create (no prior version to diff).
+    //    Fail-safe: the import already committed, so propagation errors are
+    //    logged, never rethrown.
+    const hasRequirementChange =
+        result.addedCodes.length > 0 || result.changedCodes.length > 0 || result.removedCodes.length > 0;
+    if (opts.propagateDelta && result.action === 'updated' && hasRequirementChange) {
+        try {
+            const recorded = await recordDiffFromVersionHistory(frameworkKey);
+            if (recorded) {
+                const { tenantsAffected } = await propagateFrameworkDelta(recorded.diffId);
+                logger.info('Framework delta propagated', {
+                    component, key: frameworkKey, diffId: recorded.diffId, tenantsAffected,
+                });
+            }
+        } catch (err) {
+            logger.error('Framework delta propagation failed (import already committed)', {
+                component, key: frameworkKey,
+                error: err instanceof Error ? err.message : String(err),
+            });
+        }
+    }
 
     return result;
 }
@@ -323,6 +367,7 @@ async function createAllRequirements(
     startTime: number,
 ): Promise<ImportResult> {
     const assessableNodes = library.framework.nodes.filter(n => n.assessable);
+    const addedCodes = assessableNodes.map(n => n.refId);
     let created = 0;
 
     for (let i = 0; i < assessableNodes.length; i++) {
@@ -351,6 +396,9 @@ async function createAllRequirements(
         requirementsDeprecated: 0,
         contentHash: library.contentHash,
         durationMs: Math.round(performance.now() - startTime),
+        addedCodes,
+        changedCodes: [],
+        removedCodes: [],
     };
 }
 
@@ -447,5 +495,9 @@ async function updateRequirements(
         requirementsDeprecated: deprecated,
         contentHash: library.contentHash,
         durationMs: Math.round(performance.now() - startTime),
+        addedCodes: resolvedDiff.added.map(r => r.code),
+        changedCodes: resolvedDiff.changed.map(c => c.code),
+        // Only codes actually deprecated (gated by deprecateMissing) count as removed.
+        removedCodes: opts.deprecateMissing ? resolvedDiff.removed.map(r => r.code) : [],
     };
 }

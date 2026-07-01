@@ -175,6 +175,8 @@ a `userId` but stores no contact PII).
 | `AgentProposal` | Operational | No | None today — cascade on tenant delete only | No TTL today — pending/rejected proposals are candidates for time-boxed prune |
 | `WorkflowRun` | Operational | maybe | None today — cascade on tenant delete only | No TTL today — completed/failed runs are candidates for time-boxed prune |
 | `WorkflowStep` | Operational | maybe | None today — cascade on run/tenant delete only | No TTL today — the run's append-only step narrative |
+| `FrameworkVersionDiff` | Configuration | No | Global reference (no tenantId) — never per-tenant deleted | Lives with the framework library; a version-diff record |
+| `TenantFrameworkDelta` | Operational | No | Cascade on tenant/diff delete | No TTL today — reviewed/dismissed deltas are candidates for time-boxed prune |
 | `RiskTemplate` | Configuration | No | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |
 | `RiskTreatmentPlan` | Business record | No | Soft-delete (`deletedAt`) — **NOT** auto-purged | Soft-deleted rows **not auto-purged** — gap |
 | `ScimGroup` | Configuration | maybe | None today — cascade on parent/tenant delete only | Lives with tenant; purged on tenant deletion |

@@ -297,10 +297,16 @@ describe('New page token discipline', () => {
         //     cardVariants + StatusBadge + formatDateTime primitives) in
         //     the unmigrated tally only because it isn't yet promoted to
         //     MIGRATED_PAGES.
+        //   - 122 (+2): Epic Regwatch 2A — framework-updates/page.tsx +
+        //     framework-updates/FrameworkUpdatesClient.tsx. The
+        //     framework-version delta-gap review queue (semantic tokens
+        //     only; PageHeader + cardVariants + StatusBadge + formatDateTime
+        //     primitives) in the unmigrated tally only because it isn't yet
+        //     promoted to MIGRATED_PAGES.
         // Each increment names the epic + page + reason; promotion
         // to MIGRATED_PAGES is the path forward, never silent
         // floor-bumping.
-        expect(unmigrated.length).toBeLessThanOrEqual(120);
+        expect(unmigrated.length).toBeLessThanOrEqual(122);
     });
 
     it('migrated page count is at least 4', () => {
