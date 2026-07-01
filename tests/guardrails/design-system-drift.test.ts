@@ -303,10 +303,15 @@ describe('New page token discipline', () => {
         //     only; PageHeader + cardVariants + StatusBadge + formatDateTime
         //     primitives) in the unmigrated tally only because it isn't yet
         //     promoted to MIGRATED_PAGES.
+        //   - 124 (+2): NIS2 gap-lifecycle — audits/nis2-gap/page.tsx +
+        //     audits/nis2-gap/Nis2GapLifecycleClient.tsx. The gap-assessment
+        //     lifecycle surface (semantic tokens only; PageHeader + KPIStat +
+        //     charts + StatusBadge primitives) in the unmigrated tally only
+        //     because it isn't yet promoted to MIGRATED_PAGES.
         // Each increment names the epic + page + reason; promotion
         // to MIGRATED_PAGES is the path forward, never silent
         // floor-bumping.
-        expect(unmigrated.length).toBeLessThanOrEqual(122);
+        expect(unmigrated.length).toBeLessThanOrEqual(124);
     });
 
     it('migrated page count is at least 4', () => {

@@ -24,12 +24,43 @@ import { getOnboardingState, completeOnboardingStep } from './onboarding';
 import { snapshotNis2Readiness } from './nis2-readiness';
 import { logger } from '@/lib/observability/logger';
 
-/** Resolve the tenant's single self-assessment, creating it on first touch. */
+/**
+ * Resolve the tenant's ACTIVE self-assessment (latest run), creating it on
+ * first touch. The first-ever run is the wizard BASELINE (assessment #1 in the
+ * lifecycle history); later re-assessments are started explicitly via
+ * `startStandaloneNis2Assessment` and become the latest, so subsequent answer
+ * saves + completion target the standalone run.
+ */
 async function resolveAssessment(db: PrismaTx, ctx: RequestContext) {
     const existing = await Nis2GapAssessmentRepository.listAssessments(db, ctx, { take: 1 });
     if (existing[0]) return existing[0];
     return Nis2GapAssessmentRepository.createAssessment(db, ctx, {
         createdById: ctx.userId ?? null,
+        source: 'WIZARD_BASELINE',
+    });
+}
+
+/**
+ * Start a fresh STANDALONE re-assessment (Audits lifecycle "Re-run"). Creates a
+ * new IN_PROGRESS run against the same shared bank; it becomes the latest run,
+ * so the existing answer/complete usecases operate on it. Never overwrites the
+ * baseline or prior runs — history is append-only.
+ */
+export async function startStandaloneNis2Assessment(ctx: RequestContext) {
+    assertCanManageOnboarding(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const created = await Nis2GapAssessmentRepository.createAssessment(db, ctx, {
+            createdById: ctx.userId ?? null,
+            source: 'STANDALONE',
+            status: 'IN_PROGRESS',
+        });
+        await logEvent(db, ctx, {
+            action: 'NIS2_ASSESSMENT_STARTED',
+            entityType: 'Nis2SelfAssessment',
+            entityId: created.id,
+            detailsJson: { category: 'custom', event: 'nis2_assessment_restarted', source: 'STANDALONE' },
+        });
+        return created;
     });
 }
 

@@ -2738,6 +2738,11 @@ model Nis2SelfAssessment {
   /// Lifecycle: DRAFT | IN_PROGRESS | COMPLETED | ARCHIVED (String, not a
   /// Prisma enum, to mirror the source's string-enum convention).
   status      String    @default("DRAFT")
+  /// Provenance of the run — WIZARD_BASELINE (the one-time onboarding-wizard
+  /// gap run, assessment #1) or STANDALONE (a later re-assessment started from
+  /// the Audits lifecycle surface). String enum, same convention as `status`.
+  /// Never delegated when WIZARD_BASELINE (see gap-assessment-assignment).
+  source      String    @default("STANDALONE")
   /// Opaque actor ids — plain String (no User FK) so the assessment is
   /// independent of user-lifecycle cascades.
   createdById String?
@@ -2750,6 +2755,7 @@ model Nis2SelfAssessment {
   answers Nis2SelfAssessmentAnswer[]
 
   @@index([tenantId, updatedAt])
+  @@index([tenantId, createdAt])
 }
 
 /// Tenant-scoped: one answer within a self-assessment.

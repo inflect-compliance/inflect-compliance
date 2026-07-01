@@ -351,6 +351,14 @@ export default function OnboardingWizard() {
                     </div>
                     <Heading level={2} className="text-content-emphasis mb-2">Onboarding Complete!</Heading>
                     <p className="text-content-muted text-sm">Your workspace is ready. Redirecting to dashboard...</p>
+                    {/* NIS2 hand-off — the wizard's gap run is now run #1 in the
+                        lifecycle history on the Audits page. Shown only when NIS2
+                        was selected. */}
+                    {stepApplicable('NIS2_SELF_ASSESSMENT', localData) && (
+                        <a href={tenantHref('/audits/nis2-gap')} className="mt-4 inline-block text-sm text-brand-default underline hover:text-content-emphasis">
+                            View your NIS2 Gap Assessment →
+                        </a>
+                    )}
                     <div className="mt-4">
                         <Loader2 className="w-5 h-5 mx-auto text-brand-400 animate-spin" />
                     </div>

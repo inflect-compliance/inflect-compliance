@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import { getTenantCtx } from '@/app-layer/context';
 import { listAudits } from '@/app-layer/usecases/audit';
+import { tenantHasNis2 } from '@/app-layer/usecases/nis2-gap-lifecycle';
 import { AuditsClient } from './AuditsClient';
 
 export const dynamic = 'force-dynamic';
@@ -29,13 +30,19 @@ export default async function AuditsPage({
         getTranslations('common'),
         getTenantCtx({ tenantSlug }),
     ]);
-    const audits = await listAudits(ctx, { take: SSR_PAGE_LIMIT });
+    // hasNis2 gates the "NIS2 Gap Assessment" entry button — installed = the
+    // tenant has run the NIS2 gap self-assessment or has NIS2-mapped controls.
+    const [audits, hasNis2] = await Promise.all([
+        listAudits(ctx, { take: SSR_PAGE_LIMIT }),
+        tenantHasNis2(ctx),
+    ]);
 
     return (
         <div className="space-y-section animate-fadeIn">
             <AuditsClient
                 initialAudits={JSON.parse(JSON.stringify(audits))}
                 tenantSlug={tenantSlug}
+                hasNis2={hasNis2}
                 translations={{
                     title: t('title'),
                 listDescription: t('listDescription'),
