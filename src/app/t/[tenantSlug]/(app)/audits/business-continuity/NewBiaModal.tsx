@@ -31,11 +31,13 @@ const numberSetValueAs = (v: unknown) => (v === '' || v == null ? undefined : Nu
 
 interface Props {
     tenantSlug: string;
+    /** Prefill the analysed process node (from the canvas "Add BIA" cross-link). */
+    processNodeId?: string;
     onClose: () => void;
     onCreated: (id: string) => void | Promise<void>;
 }
 
-export function NewBiaModal({ tenantSlug, onClose, onCreated }: Props) {
+export function NewBiaModal({ tenantSlug, processNodeId, onClose, onCreated }: Props) {
     const [apiError, setApiError] = useState<string | null>(null);
     const {
         register,
@@ -61,6 +63,7 @@ export function NewBiaModal({ tenantSlug, onClose, onCreated }: Props) {
                     rpoHours: values.rpoHours,
                     mtpdHours: values.mtpdHours,
                     notes: values.notes || undefined,
+                    processNodeId: processNodeId || undefined,
                 }),
             });
             if (!res.ok) throw new Error('Failed to create BIA');

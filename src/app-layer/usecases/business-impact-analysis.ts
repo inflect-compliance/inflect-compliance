@@ -344,6 +344,29 @@ export async function getBiasForProcessNode(ctx: RequestContext, processNodeId: 
 }
 
 /**
+ * Canvas cross-link resolver: the process canvas works in client-stable
+ * `nodeKey`s, but a BIA attaches to the DB ProcessNode.id. Resolve
+ * (processMapId, nodeKey) → id, then return the node's BIAs plus the
+ * resolved id (so the "Add BIA" affordance can prefill the create form).
+ */
+export async function getBiasForProcessNodeKey(ctx: RequestContext, processMapId: string, nodeKey: string) {
+    assertCanRead(ctx);
+    return runInTenantContext(ctx, async (db) => {
+        const node = await db.processNode.findFirst({
+            where: { tenantId: ctx.tenantId, processMapId, nodeKey },
+            select: { id: true },
+        });
+        if (!node) return { processNodeId: null, rows: [] };
+        const rows = await db.businessImpactAnalysis.findMany({
+            where: { tenantId: ctx.tenantId, processNodeId: node.id },
+            select: { id: true, name: true, criticality: true, mtpdHours: true, rtoHours: true },
+            take: 50,
+        });
+        return { processNodeId: node.id, rows };
+    });
+}
+
+/**
  * Recovery-deadline context for a live incident: the BIAs reachable from
  * the incident's linked controls (control → process → BIA). Derived — no
  * direct incident→process FK exists, so we resolve via the controls the
