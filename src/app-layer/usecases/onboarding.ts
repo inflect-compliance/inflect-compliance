@@ -27,6 +27,9 @@ const STEP_ORDER = [
     // Conditional — only when an AI framework is selected OR the tenant builds/
     // uses AI systems (see isStepApplicable).
     'AI_GOVERNANCE_SELF_ASSESSMENT',
+    // Conditional — only when an EU digital-regulation framework (NIS2, DORA,
+    // EU AI Act) is selected (see isStepApplicable).
+    'SOVEREIGNTY_SELF_ASSESSMENT',
     'ASSET_SETUP',
     'CONTROL_BASELINE_INSTALL',
     'INITIAL_RISK_REGISTER',
@@ -65,6 +68,20 @@ export function isStepApplicable(
             Array.isArray(fws) && fws.some((f) => AI_FWS.has(String(f).toUpperCase().replace(/\s+/g, '')));
         const buildsAi = stepData?.COMPANY_PROFILE?.usesAiSystems === true;
         return hasAiFramework || buildsAi;
+    }
+    if (step === 'SOVEREIGNTY_SELF_ASSESSMENT') {
+        // Applicable when an EU digital-regulation framework is selected. Uses
+        // the same EU keys the framework picker badges 'EU' (NIS2, DORA,
+        // EU AI Act). Case/format-insensitive so a legacy lowercase 'nis2' or
+        // an 'EU-AI-ACT' variant still matches. Otherwise the step is never
+        // shown and is excluded from the progress denominator.
+        const fws: string[] =
+            stepData?.FRAMEWORK_SELECTION?.selectedFrameworks ?? [];
+        const EU_FWS = new Set(['NIS2', 'DORA', 'EU_AI_ACT', 'EU-AI-ACT', 'EUAIACT']);
+        return (
+            Array.isArray(fws) &&
+            fws.some((f) => EU_FWS.has(String(f).toUpperCase().replace(/\s+/g, '')))
+        );
     }
     return true;
 }

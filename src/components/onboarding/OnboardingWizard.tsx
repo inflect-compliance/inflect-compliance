@@ -25,6 +25,7 @@ import {
     Save,
     Sparkles,
     ClipboardCheck,
+    Landmark,
 } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Heading } from '@/components/ui/typography';
@@ -33,6 +34,7 @@ import { InlineNotice } from '@/components/ui/inline-notice';
 import { cn } from '@/lib/cn';
 import { Nis2SelfAssessmentStep } from './Nis2SelfAssessmentStep';
 import { AiGovSelfAssessmentStep } from './AiGovSelfAssessmentStep';
+import { SovereigntySelfAssessmentStep } from './SovereigntySelfAssessmentStep';
 
 // ─── Step Definitions ───
 //
@@ -48,6 +50,9 @@ const STEPS = [
     // Conditional — rendered only when an AI framework is selected (or the
     // AI-systems flag). See stepApplicable / visibleSteps below.
     { key: 'AI_GOVERNANCE_SELF_ASSESSMENT', label: 'AI Governance', icon: Sparkles },
+    // Conditional — rendered only when an EU digital-regulation framework
+    // (NIS2 / DORA / EU AI Act) is selected. See stepApplicable / visibleSteps.
+    { key: 'SOVEREIGNTY_SELF_ASSESSMENT', label: 'Digital Sovereignty', icon: Landmark },
     { key: 'ASSET_SETUP', label: 'Assets', icon: Server },
     { key: 'CONTROL_BASELINE_INSTALL', label: 'Controls', icon: ShieldCheck },
     { key: 'INITIAL_RISK_REGISTER', label: 'Risks', icon: AlertTriangle },
@@ -76,6 +81,12 @@ function stepApplicable(key: string, data: StepData): boolean {
         const AI_FWS = new Set(['AISVS', 'ISO42001', 'EU_AI_ACT', 'EU-AI-ACT', 'OWASP-AISVS']);
         const hasAi = Array.isArray(fws) && fws.some((f) => AI_FWS.has(String(f).toUpperCase().replace(/\s+/g, '')));
         return hasAi || data?.COMPANY_PROFILE?.usesAiSystems === true;
+    }
+    if (key === 'SOVEREIGNTY_SELF_ASSESSMENT') {
+        // EU digital-regulation frameworks — mirrors the server-side gate.
+        const fws: string[] = data?.FRAMEWORK_SELECTION?.selectedFrameworks ?? [];
+        const EU_FWS = new Set(['NIS2', 'DORA', 'EU_AI_ACT', 'EU-AI-ACT', 'EUAIACT']);
+        return Array.isArray(fws) && fws.some((f) => EU_FWS.has(String(f).toUpperCase().replace(/\s+/g, '')));
     }
     return true;
 }
@@ -235,6 +246,27 @@ export default function OnboardingWizard() {
             setSaving(true);
             await apiFetch(apiUrl(tenantSlug, 'step'), 'POST', {
                 step: 'AI_GOVERNANCE_SELF_ASSESSMENT',
+                action: 'skip',
+            });
+            await loadState();
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'Failed to skip step');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    // ─── Digital Sovereignty step (DS-2). Stateless — the component scores
+    // client-side and materialises via its own endpoint; the onboarding step
+    // itself is advanced here, like the AI-governance step. ───
+    const handleSovereigntyCompleted = async () => {
+        await handleCompleteStep('SOVEREIGNTY_SELF_ASSESSMENT');
+    };
+    const handleSovereigntySkip = async () => {
+        try {
+            setSaving(true);
+            await apiFetch(apiUrl(tenantSlug, 'step'), 'POST', {
+                step: 'SOVEREIGNTY_SELF_ASSESSMENT',
                 action: 'skip',
             });
             await loadState();
@@ -464,6 +496,8 @@ export default function OnboardingWizard() {
                                 onNis2Skip={handleNis2Skip}
                                 onAiGovCompleted={handleAiGovCompleted}
                                 onAiGovSkip={handleAiGovSkip}
+                                onSovereigntyCompleted={handleSovereigntyCompleted}
+                                onSovereigntySkip={handleSovereigntySkip}
                             />
                         </div>
                         {/* Navigation footer */}
@@ -480,7 +514,7 @@ export default function OnboardingWizard() {
                                 {/* NIS2 step drives its own Complete/Skip inside
                                     the step component, so suppress the generic
                                     Continue button there. */}
-                                {!isLast && currentStep.key !== 'NIS2_SELF_ASSESSMENT' && currentStep.key !== 'AI_GOVERNANCE_SELF_ASSESSMENT' && (
+                                {!isLast && currentStep.key !== 'NIS2_SELF_ASSESSMENT' && currentStep.key !== 'AI_GOVERNANCE_SELF_ASSESSMENT' && currentStep.key !== 'SOVEREIGNTY_SELF_ASSESSMENT' && (
                                     <Button
                                         variant="primary"
                                         onClick={() => handleCompleteStep(currentStep.key)}
@@ -512,7 +546,7 @@ export default function OnboardingWizard() {
 
 // ─── Step Content Components ───
 
-function StepContent({ step, data, onUpdate, completedSteps, allData, tenantSlug, onNis2Completed, onNis2Skip, onAiGovCompleted, onAiGovSkip }: {
+function StepContent({ step, data, onUpdate, completedSteps, allData, tenantSlug, onNis2Completed, onNis2Skip, onAiGovCompleted, onAiGovSkip, onSovereigntyCompleted, onSovereigntySkip }: {
     step: StepKey;
     data: StepData;
     onUpdate: (d: StepData) => void;
@@ -523,12 +557,15 @@ function StepContent({ step, data, onUpdate, completedSteps, allData, tenantSlug
     onNis2Skip: () => void;
     onAiGovCompleted: () => void;
     onAiGovSkip: () => void;
+    onSovereigntyCompleted: () => void;
+    onSovereigntySkip: () => void;
 }) {
     switch (step) {
         case 'COMPANY_PROFILE': return <CompanyProfileStep data={data} onUpdate={onUpdate} />;
         case 'FRAMEWORK_SELECTION': return <FrameworkSelectionStep data={data} onUpdate={onUpdate} />;
         case 'NIS2_SELF_ASSESSMENT': return <Nis2SelfAssessmentStep tenantSlug={tenantSlug} onCompleted={onNis2Completed} onSkip={onNis2Skip} />;
         case 'AI_GOVERNANCE_SELF_ASSESSMENT': return <AiGovSelfAssessmentStep tenantSlug={tenantSlug} onCompleted={onAiGovCompleted} onSkip={onAiGovSkip} />;
+        case 'SOVEREIGNTY_SELF_ASSESSMENT': return <SovereigntySelfAssessmentStep tenantSlug={tenantSlug} onCompleted={onSovereigntyCompleted} onSkip={onSovereigntySkip} />;
         case 'ASSET_SETUP': return <AssetSetupStep data={data} onUpdate={onUpdate} />;
         case 'CONTROL_BASELINE_INSTALL': return <ControlInstallStep data={data} onUpdate={onUpdate} allData={allData} />;
         case 'INITIAL_RISK_REGISTER': return <RiskRegisterStep data={data} onUpdate={onUpdate} />;

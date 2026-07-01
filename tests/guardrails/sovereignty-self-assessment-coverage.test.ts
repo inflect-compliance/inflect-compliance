@@ -22,6 +22,8 @@ import {
     SOVEREIGNTY_MATURITY_BANDS,
     SOVEREIGNTY_GAP_THRESHOLD,
 } from '@/data/self-assessments/digital-sovereignty';
+import { isStepApplicable } from '@/app-layer/usecases/onboarding';
+import { ONBOARDING_STEPS, SKIPPABLE_STEPS } from '@/lib/schemas/onboarding';
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -30,6 +32,7 @@ const DATA = 'src/data/self-assessments/digital-sovereignty.ts';
 const SCORING = 'src/lib/self-assessments/scoring.ts';
 const USECASE = 'src/app-layer/usecases/self-assessment.ts';
 const ROUTE = 'src/app/api/t/[tenantSlug]/onboarding/sovereignty-assessment/materialize/route.ts';
+const STEP = 'SOVEREIGNTY_SELF_ASSESSMENT';
 
 describe('Digital Sovereignty self-assessment bank', () => {
     it('has exactly 6 dimensions, 5 questions each (30 total), with unique ids', () => {
@@ -109,5 +112,49 @@ describe('propose-not-commit boundary', () => {
         const src = read(ROUTE);
         expect(src).toContain('withApiErrorHandling');
         expect(src).toContain('MaterializeSelfAssessmentSchema');
+    });
+});
+
+describe('Sovereignty onboarding step (DS-2)', () => {
+    it('is registered after AI_GOVERNANCE_SELF_ASSESSMENT and before ASSET_SETUP', () => {
+        const i = ONBOARDING_STEPS.indexOf(STEP as never);
+        expect(i).toBeGreaterThan(-1);
+        expect(ONBOARDING_STEPS[i - 1]).toBe('AI_GOVERNANCE_SELF_ASSESSMENT');
+        expect(ONBOARDING_STEPS.indexOf('ASSET_SETUP' as never)).toBe(i + 1);
+        // Mirrored in the usecase STEP_ORDER.
+        expect(read('src/app-layer/usecases/onboarding.ts')).toContain(`'${STEP}'`);
+    });
+
+    it('is skippable', () => {
+        expect(SKIPPABLE_STEPS).toContain(STEP);
+    });
+
+    it('is applicable ONLY when an EU digital-regulation framework is selected', () => {
+        const eu = (fw: string) => ({ FRAMEWORK_SELECTION: { selectedFrameworks: [fw] } });
+        for (const fw of ['NIS2', 'nis2', 'DORA', 'EU_AI_ACT', 'EU-AI-ACT']) {
+            expect(isStepApplicable(STEP as never, eu(fw))).toBe(true);
+        }
+        // Non-EU frameworks and an empty selection exclude the step (denominator).
+        expect(isStepApplicable(STEP as never, eu('SOC2'))).toBe(false);
+        expect(isStepApplicable(STEP as never, eu('ISO27001'))).toBe(false);
+        expect(isStepApplicable(STEP as never, {})).toBe(false);
+    });
+
+    it('the wizard mirrors the same gate + renders the step component', () => {
+        const wiz = read('src/components/onboarding/OnboardingWizard.tsx');
+        expect(wiz).toContain('SovereigntySelfAssessmentStep');
+        expect(wiz).toMatch(/key === 'SOVEREIGNTY_SELF_ASSESSMENT'/);
+        // The generic Continue button is suppressed (the step drives its own).
+        expect(wiz).toMatch(/currentStep\.key !== 'SOVEREIGNTY_SELF_ASSESSMENT'/);
+    });
+
+    it('the step component uses platform primitives + carries the not-legal-advice disclaimer', () => {
+        const src = read('src/components/onboarding/SovereigntySelfAssessmentStep.tsx');
+        expect(src).toContain('@/components/ui/accordion');
+        expect(src).toContain('@/components/ui/radio-group');
+        expect(src).toMatch(/not legal advice/i);
+        // Imports the pure bank + scorer directly (stateless, client-scored).
+        expect(src).toContain("@/data/self-assessments/digital-sovereignty");
+        expect(src).toContain("@/lib/self-assessments/scoring");
     });
 });
