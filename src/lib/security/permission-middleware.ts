@@ -207,7 +207,14 @@ export function requirePermission<
         // required", 404-ing every privileged route. `await` on a plain
         // sync object (the unit-test call shape) resolves to itself, so
         // both call shapes stay correct.
-        const ctx = await getTenantCtx(await routeArgs.params, req);
+        //
+        // Resolve ONCE and forward the RESOLVED params to the handler too —
+        // otherwise a handler reading a dynamic segment other than
+        // `tenantSlug` (e.g. `params.id` on `/gap-assessments/[id]/…`) reads
+        // it off the still-unawaited Promise and gets `undefined` (silent for
+        // a tolerant `findMany`, a 500 for a required composite-key lookup).
+        const resolvedParams = await routeArgs.params;
+        const ctx = await getTenantCtx(resolvedParams, req);
 
         const granted = checkPermissions(ctx.appPermissions, keys, mode);
         if (!granted) {
@@ -218,7 +225,7 @@ export function requirePermission<
             throw forbidden('Permission denied');
         }
 
-        return handler(req, routeArgs, ctx) as Promise<TResponse>;
+        return handler(req, { ...routeArgs, params: resolvedParams }, ctx) as Promise<TResponse>;
     };
 }
 

@@ -230,32 +230,51 @@ export function Nis2GapLifecycleClient({ tenantSlug, canWrite }: { tenantSlug: s
             ) : !data ? null : (
                 <>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-default">
-                        <KPIStat value={`${data.latest.score.overall}`} label="Readiness score" description="weighted maturity (0–100)" />
-                        <KPIStat value={`${data.latest.fineExposureGaps}`} label="Gaps with fine exposure" tone={data.latest.fineExposureGaps > 0 ? 'critical' : 'default'} description="regulatory fine / liability risk" />
-                        <KPIStat value={`${data.latest.gaps.length}`} label="Open gaps" description={`${data.latest.answeredTotal}/${data.latest.questionTotal} answered`} />
+                        <div className={cardVariants({ density: 'comfortable' })}>
+                            <KPIStat value={`${data.latest.score.overall}`} label="Readiness score" description="weighted maturity (0–100)" />
+                        </div>
+                        <div className={cardVariants({ density: 'comfortable' })}>
+                            <KPIStat value={`${data.latest.fineExposureGaps}`} label="Gaps with fine exposure" tone={data.latest.fineExposureGaps > 0 ? 'critical' : 'default'} description="regulatory fine / liability risk" />
+                        </div>
+                        <div className={cardVariants({ density: 'comfortable' })}>
+                            <KPIStat value={`${data.latest.gaps.length}`} label="Open gaps" description={`${data.latest.answeredTotal}/${data.latest.questionTotal} answered`} />
+                        </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-section">
-                        {trend.length >= 2 && (
-                            <div className="space-y-tight">
-                                <Heading level={3}>Readiness over time</Heading>
-                                <div className="h-56">
-                                    <TimeSeriesChart
-                                        data={trend}
-                                        series={[{ id: 'score', isActive: true, valueAccessor: (d: { values: { value: number } }) => d.values.value, colorClassName: 'text-brand-default' }]}
-                                        type="bar"
-                                    >
-                                        <YAxis showGridLines />
-                                        <Bars />
-                                        <XAxis tickFormat={(d: Date) => formatDate(d)} />
-                                    </TimeSeriesChart>
-                                </div>
+                    {trend.length >= 2 && (
+                        <div className={cn(cardVariants({ density: 'comfortable' }), 'space-y-tight')}>
+                            <Heading level={3}>Readiness over time</Heading>
+                            <div className="h-56">
+                                <TimeSeriesChart
+                                    data={trend}
+                                    series={[{ id: 'score', isActive: true, valueAccessor: (d: { values: { value: number } }) => d.values.value, colorClassName: 'text-brand-default' }]}
+                                    type="bar"
+                                >
+                                    <YAxis showGridLines />
+                                    <Bars />
+                                    <XAxis tickFormat={(d: Date) => formatDate(d)} />
+                                </TimeSeriesChart>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Radar spans the full width with a tall, roughly-square plot so
+                        all 15 domain axis labels have room to breathe (a half-width,
+                        default-height radar crushed them into overlap). */}
+                    <div className={cn(cardVariants({ density: 'comfortable' }), 'space-y-tight')}>
+                        <Heading level={3}>Maturity by domain</Heading>
+                        {data.latest.answeredTotal === 0 ? (
+                            // A just-started run has no answers yet, so every domain
+                            // scores 0 and the radar would render as a bare dot. Show
+                            // why instead — it fills in as answers arrive.
+                            <p className="py-10 text-center text-sm text-content-muted">
+                                No answers yet. Answer the assessment from the NIS2 step (or dispatch it to your team below) — the maturity radar populates as answers come in.
+                            </p>
+                        ) : (
+                            <div className="mx-auto h-[520px] w-full max-w-3xl">
+                                <RadarChart state={radarState} seriesIndex={2} maxValue={100} testId="nis2-gap-radar" ariaLabel="NIS2 maturity by domain" />
                             </div>
                         )}
-                        <div className="space-y-tight">
-                            <Heading level={3}>Maturity by domain</Heading>
-                            <RadarChart state={radarState} seriesIndex={2} maxValue={100} testId="nis2-gap-radar" ariaLabel="NIS2 maturity by domain" />
-                        </div>
                     </div>
 
                     <div className="space-y-tight">
