@@ -113,7 +113,6 @@ export const MAIN_PAGES: readonly string[] = [
     '/evidence',
     '/findings',
     '/framework-updates',
-    '/frameworks',
     '/issues',
     '/mapping',
     '/notifications',
@@ -121,7 +120,6 @@ export const MAIN_PAGES: readonly string[] = [
     '/processes',
     '/reports',
     '/risks',
-    '/security-testing',
     '/tasks',
     '/tests',
     '/vendors',
@@ -198,13 +196,17 @@ export const SUBPAGES: readonly string[] = [
     '/incidents',
     '/incidents/[incidentId]',
 
-    // Frameworks
+    // Frameworks — subpages of Internal Audit
+    '/frameworks',
     '/frameworks/[frameworkKey]',
     '/frameworks/[frameworkKey]/diff',
     '/frameworks/[frameworkKey]/readiness',
     '/frameworks/[frameworkKey]/self-assessment',
     '/frameworks/[frameworkKey]/install',
     '/frameworks/[frameworkKey]/templates',
+
+    // Security testing (scans) — subpage of Internal Audit
+    '/security-testing',
 
     // Issues
     '/issues/[issueId]',

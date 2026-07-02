@@ -84,6 +84,13 @@ const EXEMPT_FILES = new Set<string>([
     "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/readiness/Nis2ReadinessClient.tsx",
     "src/app/t/[tenantSlug]/(app)/frameworks/[frameworkKey]/self-assessment/Nis2SelfAssessmentResume.tsx",
 
+    // ── Internal Audit subpages ─────────────────────────────────
+    // Frameworks is now a subpage of Internal Audit (frameworks are the
+    // standards an audit runs against). It carries the canonical
+    // <BackAffordance> ("Back to Internal Audit") + a visible H1 instead
+    // of a breadcrumbs strip — the RQ4 subpage pattern.
+    "src/app/t/[tenantSlug]/(app)/frameworks/FrameworksClient.tsx",
+
     // ── Auth / personal settings ────────────────────────────────
     // User-scoped, sit outside the main app navigation hierarchy.
     "src/app/t/[tenantSlug]/(app)/auth/mfa/page.tsx",

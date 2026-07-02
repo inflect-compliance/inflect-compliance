@@ -197,8 +197,10 @@ function SecurityTestingInner({ initialFindings, runs, tenantSlug }: Props) {
     return (
         <EntityListPage<ScannerFindingRow>
             header={{
-                // MAIN page (sidebar destination) — no back affordance /
-                // breadcrumbs (forbidden on roots; see page-segregation.ts).
+                // Subpage of Internal Audit — scans are audit evidence, reached
+                // from the Audits surface. Smart back resolves "Back to Internal
+                // Audit" (referrer → canonical parent).
+                back: { smart: true },
                 title: (
                     <>
                         <ShieldAlert className="inline-block mr-2 h-5 w-5 align-text-bottom" />
