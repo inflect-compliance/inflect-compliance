@@ -1,6 +1,7 @@
 import { getTenantCtx } from '@/app-layer/context';
 import { listWorkflowRuns } from '@/app-layer/usecases/workflow-runs';
 import { listWorkflowDefinitions } from '@/lib/agentic/workflow-registry';
+import { ForbiddenPage } from '@/components/ForbiddenPage';
 
 import { AgentRunsClient, type RunRow } from './AgentRunsClient';
 
@@ -17,6 +18,17 @@ export default async function AgentRunsPage({
 }) {
     const { tenantSlug } = await params;
     const ctx = await getTenantCtx({ tenantSlug });
+    // Admin-gated — reached from the /admin/mcp hub; only workspace admins
+    // operate the orchestrator. Server-side gate (before the data load) so a
+    // non-admin never triggers the fetch.
+    if (!ctx.appPermissions.admin.view) {
+        return (
+            <ForbiddenPage
+                title="MCP Access Required"
+                message="You do not have permission to view agent runs. Contact your workspace administrator to request access."
+            />
+        );
+    }
     const runs = await listWorkflowRuns(ctx, {});
 
     const rows: RunRow[] = runs.map((r) => ({

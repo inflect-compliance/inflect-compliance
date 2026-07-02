@@ -103,8 +103,6 @@ export const BACK_AFFORDANCE_COHORT_TODO: readonly string[] = [
 export const MAIN_PAGES: readonly string[] = [
     '/access-reviews',
     '/admin',
-    '/agent-proposals',
-    '/agent-runs',
     '/assets',
     '/audits',
     '/calendar',
@@ -162,6 +160,10 @@ export const SUBPAGES: readonly string[] = [
     '/admin/vendor-assessment-reviews/[assessmentId]',
     '/admin/vendor-templates',
     '/admin/vendor-templates/[templateId]',
+
+    // Agent (MCP) — reached from the /admin/mcp hub, not the sidebar.
+    '/agent-proposals',
+    '/agent-runs',
 
     // Assets
     '/assets/[id]',
