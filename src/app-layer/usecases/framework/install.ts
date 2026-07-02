@@ -73,6 +73,25 @@ export async function installPack(ctx: RequestContext, packKey: string) {
     });
     if (!pack) throw notFound('Pack not found');
 
+    // Internal controls are NOT a standalone pack: they are global
+    // ControlTemplates mapped (policy-mediated) to framework requirements.
+    // Installing a framework pack ALSO populates the internal controls whose
+    // requirement mappings reference THIS framework (and that aren't already the
+    // pack's own templates), plus their policy links. `installedTemplates` is the
+    // pack's own controls + those mapped internal controls.
+    const packTemplateIds = pack.templateLinks.map((l) => l.template.id);
+    const mappedInternalTemplates = await db.controlTemplate.findMany({
+        where: {
+            id: { notIn: packTemplateIds },
+            requirementLinks: { some: { requirement: { frameworkId: pack.frameworkId } } },
+        },
+        include: { tasks: true, requirementLinks: true },
+    });
+    const installedTemplates = [
+        ...pack.templateLinks.map((l) => l.template),
+        ...mappedInternalTemplates,
+    ];
+
     // ISO27001 has 93 controls × (lookup + create + 5 default tasks +
     // requirement-link upserts), which is too much work for the default
     // 5 s Prisma interactive-transaction timeout. Bump it to 60 s so the
@@ -81,9 +100,30 @@ export async function installPack(ctx: RequestContext, packKey: string) {
         let controlsCreated = 0;
         let tasksCreated = 0;
         let mappingsCreated = 0;
+        let policyLinksCreated = 0;
 
-        for (const link of pack.templateLinks) {
-            const tmpl = link.template;
+        // Tenant policies by normalised title — the internal controls carry
+        // their related-policy NAMES; link each to the tenant's matching policy
+        // where one exists (never create a policy here).
+        const tenantPolicies = await tdb.policy.findMany({
+            where: { tenantId: ctx.tenantId },
+            select: { id: true, title: true },
+        });
+        const policyByTitle = new Map(tenantPolicies.map((p) => [p.title.trim().toLowerCase(), p.id]));
+        const linkPolicies = async (controlId: string, relatedPolicies: string | null) => {
+            if (!relatedPolicies) return;
+            const policyIds = relatedPolicies.split('|')
+                .map((n) => policyByTitle.get(n.trim().toLowerCase()))
+                .filter((id): id is string => Boolean(id));
+            if (!policyIds.length) return;
+            const res = await tdb.policyControlLink.createMany({
+                data: [...new Set(policyIds)].map((policyId) => ({ tenantId: ctx.tenantId, policyId, controlId })),
+                skipDuplicates: true,
+            });
+            policyLinksCreated += res.count;
+        };
+
+        for (const tmpl of installedTemplates) {
 
             // Idempotent: skip if control with this code already exists
             const existing = await tdb.control.findFirst({
@@ -98,6 +138,7 @@ export async function installPack(ctx: RequestContext, packKey: string) {
                         update: {},
                     });
                 }
+                await linkPolicies(existing.id, tmpl.relatedPolicies);
                 continue;
             }
 
@@ -145,15 +186,17 @@ export async function installPack(ctx: RequestContext, packKey: string) {
                 });
                 mappingsCreated++;
             }
+
+            await linkPolicies(control.id, tmpl.relatedPolicies);
         }
 
         await logEvent(tdb, ctx, {
             action: 'FRAMEWORK_PACK_INSTALLED',
             entityType: 'Framework',
             entityId: pack.frameworkId,
-            details: `Pack "${pack.name}" installed: ${controlsCreated} controls, ${tasksCreated} tasks, ${mappingsCreated} mappings`,
-            detailsJson: { category: 'entity_lifecycle', entityName: 'FrameworkPack', operation: 'created', after: { packKey, controlsCreated, tasksCreated, mappingsCreated }, summary: `Pack "${pack.name}" installed` },
-            metadata: { packKey, controlsCreated, tasksCreated, mappingsCreated },
+            details: `Pack "${pack.name}" installed: ${controlsCreated} controls, ${tasksCreated} tasks, ${mappingsCreated} mappings, ${policyLinksCreated} policy links`,
+            detailsJson: { category: 'entity_lifecycle', entityName: 'FrameworkPack', operation: 'created', after: { packKey, controlsCreated, tasksCreated, mappingsCreated, policyLinksCreated }, summary: `Pack "${pack.name}" installed` },
+            metadata: { packKey, controlsCreated, tasksCreated, mappingsCreated, policyLinksCreated },
         });
 
         return {
@@ -163,6 +206,7 @@ export async function installPack(ctx: RequestContext, packKey: string) {
             controlsCreated,
             tasksCreated,
             mappingsCreated,
+            policyLinksCreated,
         };
     }, { timeout: 60_000, maxWait: 10_000 });
 

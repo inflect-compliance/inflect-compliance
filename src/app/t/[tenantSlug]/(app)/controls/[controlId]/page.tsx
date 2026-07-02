@@ -237,7 +237,7 @@ export default function ControlDetailPage() {
 
     // Edit modal state
     const [showEditModal, setShowEditModal] = useState(false);
-    const [editForm, setEditForm] = useState({ name: '', description: '', intent: '', category: '', frequency: '', owner: '', automationType: '', mitigationType: '', annualCost: '' });
+    const [editForm, setEditForm] = useState({ name: '', description: '', intent: '', objective: '', successCriteria: '', testingMethodology: '', category: '', frequency: '', owner: '', automationType: '', mitigationType: '', annualCost: '' });
     const [savingEdit, setSavingEdit] = useState(false);
     const [editError, setEditError] = useState('');
     const [editSuccess, setEditSuccess] = useState(false);
@@ -252,6 +252,9 @@ export default function ControlDetailPage() {
             name: control.name || '',
             description: control.description || '',
             intent: control.intent || '',
+            objective: control.objective || '',
+            successCriteria: control.successCriteria || '',
+            testingMethodology: control.testingMethodology || '',
             category: control.category || '',
             frequency: control.frequency || '',
             owner: control.ownerUserId || '',
@@ -291,6 +294,9 @@ export default function ControlDetailPage() {
                     name: form.name.trim(),
                     description: form.description.trim() || null,
                     intent: form.intent.trim() || null,
+                    objective: form.objective.trim() || null,
+                    successCriteria: form.successCriteria.trim() || null,
+                    testingMethodology: form.testingMethodology.trim() || null,
                     category: form.category.trim() || null,
                     frequency: form.frequency || null,
                     // RQ3-8 — empty string clears the price (honest
@@ -345,6 +351,9 @@ export default function ControlDetailPage() {
                           name: form.name.trim(),
                           description: form.description.trim() || null,
                           intent: form.intent.trim() || null,
+                          objective: form.objective.trim() || null,
+                          successCriteria: form.successCriteria.trim() || null,
+                          testingMethodology: form.testingMethodology.trim() || null,
                           category: form.category.trim() || null,
                           frequency: form.frequency || null,
                       },

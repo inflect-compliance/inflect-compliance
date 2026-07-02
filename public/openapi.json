@@ -1910,6 +1910,24 @@
               "null"
             ]
           },
+          "objective": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "successCriteria": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "testingMethodology": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "category": {
             "type": [
               "string",

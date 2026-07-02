@@ -1,0 +1,32 @@
+{
+  "_meta": {
+    "purpose": "Curated policy -> framework requirement map for the internal-controls library. A control's framework coverage is derived (policy-mediated): control --(exact, from source Related Policies)--> policy --(this map)--> ISO 27001:2022 Annex A + NIS2 Art 21(2) requirements. The seed resolves each control's policies into ControlTemplateRequirementLinks so installing a framework pack pulls in the controls whose policies map to that framework.",
+    "iso27001Format": "ISO 27001:2022 Annex A control key as seeded in iso27001_2022_annexA.json (e.g. '5.8', '8.24').",
+    "nis2Format": "NIS2 Art 21(2) sub-point key as seeded in nis2_requirements.json (e.g. 'Art.21(2)(a)').",
+    "note": "Only frameworks a policy genuinely applies to are listed. Suggestions a tenant reviews, not an authoritative attestation."
+  },
+  "policies": {
+    "Information Security Policy": { "iso27001": ["5.1", "5.2", "5.4", "5.36"], "nis2": ["Art.21(2)(a)"] },
+    "IT Security Policy": { "iso27001": ["5.1", "8.1", "8.7", "8.8", "8.20", "8.23"], "nis2": ["Art.21(2)(a)", "Art.21(2)(g)"] },
+    "Access Management Policy": { "iso27001": ["5.15", "5.16", "5.17", "5.18", "8.2", "8.3", "8.5"], "nis2": ["Art.21(2)(i)", "Art.21(2)(j)"] },
+    "Asset Management Policy": { "iso27001": ["5.9", "5.10", "5.11", "5.12", "5.13", "7.10", "7.14", "8.1"], "nis2": ["Art.21(2)(i)"] },
+    "Physical Security Policy": { "iso27001": ["7.1", "7.2", "7.3", "7.4", "7.7", "7.8", "7.10", "7.12", "7.14"], "nis2": ["Art.21(2)(a)"] },
+    "Human Resources Security Policy": { "iso27001": ["6.1", "6.2", "6.3", "6.4", "6.5", "6.6"], "nis2": ["Art.21(2)(g)", "Art.21(2)(i)"] },
+    "Awareness Management Policy": { "iso27001": ["5.10", "6.3"], "nis2": ["Art.21(2)(g)"] },
+    "Risk Management Policy": { "iso27001": ["5.7", "5.36"], "nis2": ["Art.21(2)(a)", "Art.21(2)(f)"] },
+    "Compliance Management Policy": { "iso27001": ["5.31", "5.32", "5.33", "5.34", "5.35", "5.36", "5.37"], "nis2": ["Art.21(2)(f)"] },
+    "Documents and Records Policy": { "iso27001": ["5.33", "5.37"], "nis2": ["Art.21(2)(f)"] },
+    "Supplier Management Policy": { "iso27001": ["5.19", "5.20", "5.21", "5.22", "5.23"], "nis2": ["Art.21(2)(d)"] },
+    "Cloud Services Policy": { "iso27001": ["5.23"], "nis2": ["Art.21(2)(d)"] },
+    "Incident Management Policy": { "iso27001": ["5.24", "5.25", "5.26", "5.27", "5.28", "6.8"], "nis2": ["Art.21(2)(b)"] },
+    "Business Continuity Policy": { "iso27001": ["5.29", "5.30", "8.14"], "nis2": ["Art.21(2)(c)"] },
+    "Backup Policy": { "iso27001": ["8.13", "8.14"], "nis2": ["Art.21(2)(c)"] },
+    "Logging and Monitoring Policy": { "iso27001": ["8.15", "8.16", "8.17"], "nis2": ["Art.21(2)(a)"] },
+    "Communication Security Policy": { "iso27001": ["5.14", "8.20", "8.21", "8.24"], "nis2": ["Art.21(2)(h)", "Art.21(2)(j)"] },
+    "Hardening Policy": { "iso27001": ["8.8", "8.9", "8.19", "8.20", "8.22", "8.31"], "nis2": ["Art.21(2)(a)", "Art.21(2)(e)"] },
+    "Change and Configuration Management Policy": { "iso27001": ["8.9", "8.32"], "nis2": ["Art.21(2)(e)"] },
+    "Secure Development Policy": { "iso27001": ["8.25", "8.26", "8.27", "8.28", "8.29", "8.30", "8.31", "8.32"], "nis2": ["Art.21(2)(e)"] },
+    "Privacy Policy": { "iso27001": ["5.34", "5.12", "8.10", "8.11", "8.12"], "nis2": ["Art.21(2)(a)"] },
+    "ICS/OT Security Policy": { "iso27001": ["7.8", "8.20", "8.22"], "nis2": ["Art.21(2)(a)"] }
+  }
+}

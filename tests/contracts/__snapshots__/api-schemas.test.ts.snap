@@ -1970,6 +1970,24 @@ exports[`API contract — per-schema snapshots schema: ControlUpdateRequest 1`] 
         "null"
       ]
     },
+    "objective": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "successCriteria": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "testingMethodology": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "category": {
       "type": [
         "string",

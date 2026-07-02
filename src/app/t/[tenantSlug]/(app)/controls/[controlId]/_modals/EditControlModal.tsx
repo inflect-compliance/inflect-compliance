@@ -28,6 +28,9 @@ export interface EditControlForm {
     name: string;
     description: string;
     intent: string;
+    objective: string;
+    successCriteria: string;
+    testingMethodology: string;
     category: string;
     frequency: string;
     owner: string;
@@ -176,6 +179,39 @@ export function EditControlModal({
                                     }))
                                 }
                                 data-testid="edit-intent-input"
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="edit-objective" className="mb-1 block text-sm text-content-default">Objective</label>
+                            <textarea
+                                id="edit-objective"
+                                className="input w-full"
+                                rows={2}
+                                value={form.objective}
+                                onChange={(e) => setForm((f) => ({ ...f, objective: e.target.value }))}
+                                data-testid="edit-objective-input"
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="edit-success-criteria" className="mb-1 block text-sm text-content-default">Success Criteria</label>
+                            <textarea
+                                id="edit-success-criteria"
+                                className="input w-full"
+                                rows={2}
+                                value={form.successCriteria}
+                                onChange={(e) => setForm((f) => ({ ...f, successCriteria: e.target.value }))}
+                                data-testid="edit-success-criteria-input"
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="edit-testing-methodology" className="mb-1 block text-sm text-content-default">Testing Methodology</label>
+                            <textarea
+                                id="edit-testing-methodology"
+                                className="input w-full"
+                                rows={3}
+                                value={form.testingMethodology}
+                                onChange={(e) => setForm((f) => ({ ...f, testingMethodology: e.target.value }))}
+                                data-testid="edit-testing-methodology-input"
                             />
                         </div>
                         <div className="grid grid-cols-1 gap-default sm:grid-cols-2">

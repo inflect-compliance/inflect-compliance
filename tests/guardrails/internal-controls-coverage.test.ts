@@ -2,17 +2,23 @@
  * Internal Controls library import ratchet.
  *
  * A deduped set of internal controls imported from a customer GRC export, seeded
- * as global ControlTemplates under a CUSTOM 'Internal Controls' container
- * framework + an installable pack. Each control carries an objective, success
- * criteria, and testing/audit methodology (surfaced on the control-detail
- * Overview + Tests tabs post-install) and its related-policy names. This guard
- * locks:
+ * as plain global ControlTemplates (NOT a dedicated pack/framework). Each control
+ * carries an objective, success criteria, testing/audit methodology (surfaced on
+ * the control-detail Overview + Tests tabs post-install) and its related-policy
+ * names. Framework mapping is policy-mediated: a curated policy→ISO27001/NIS2 map
+ * (`internal-controls-policy-framework-map.json`) drives ControlTemplateRequirementLink
+ * seeding, and installing ANY framework pack also populates the internal controls
+ * mapped to that framework + resolves their related policies to PolicyControlLinks.
+ * This guard locks:
  *   - the fixture parses, is deduped (unique codes + titles), and every control
  *     has an objective + testing methodology;
  *   - the Control + ControlTemplate models carry the new fields (migration);
- *   - the seed wires the framework key + pack key + ICN- template codes;
- *   - install copies the new fields onto the Control;
- *   - the detail DTO exposes them so the UI can render them.
+ *   - the seed loads the controls + policy-framework map and creates requirement
+ *     links (and is NOT wired as a pack/framework);
+ *   - install copies the new fields, populates framework-mapped internal controls,
+ *     and resolves related policies to PolicyControlLinks;
+ *   - the policy→framework map has no dangling codes and covers the control set;
+ *   - the detail DTO exposes the new fields so the UI can render them.
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -79,21 +85,61 @@ describe('Internal Controls wiring', () => {
         expect(sql).toMatch(/ADD COLUMN.+"testingMethodology"/);
     });
 
-    it('seed wires the framework + pack + ICN- templates', () => {
-        expect(seed).toContain("'INTERNAL-CONTROLS'");
-        expect(seed).toContain("'INTERNAL_CONTROLS'");
+    it('seed loads the controls + policy-framework map and creates requirement links (NOT a pack)', () => {
         expect(seed).toContain('internal-controls.json');
-        expect(seed).toContain("startsWith: 'ICN-'");
+        expect(seed).toContain('internal-controls-policy-framework-map.json');
+        expect(seed).toContain('controlTemplateRequirementLink');
+        // The standalone Internal Controls framework/pack was removed — mapping
+        // is policy-mediated, not a dedicated pack.
+        expect(seed).not.toContain("'INTERNAL_CONTROLS'");
+        expect(seed).not.toContain("'INTERNAL-CONTROLS'");
     });
 
-    it('install copies the new fields onto the Control', () => {
+    it('install copies the new fields + populates framework-mapped internal controls + policy links', () => {
         expect(install).toContain('objective: tmpl.objective');
         expect(install).toContain('testingMethodology: tmpl.testingMethodology');
+        // Installing a framework pack pulls in internal controls mapped to it.
+        expect(install).toContain('mappedInternalTemplates');
+        expect(install).toMatch(/requirement:\s*\{\s*frameworkId:\s*pack\.frameworkId\s*\}/);
+        // …and resolves their related policies to PolicyControlLinks.
+        expect(install).toContain('policyControlLink.createMany');
+        expect(install).toContain('linkPolicies');
     });
 
     it('the detail DTO exposes the new fields', () => {
         for (const f of ['objective', 'successCriteria', 'testingMethodology']) {
             expect(dto).toContain(f);
         }
+    });
+});
+
+describe('Internal Controls policy→framework map', () => {
+    const map = (readJson('prisma/fixtures/internal-controls-policy-framework-map.json') as {
+        policies: Record<string, { iso27001?: string[]; nis2?: string[] }>;
+    }).policies;
+    const isoCodes = new Set((readJson('prisma/fixtures/iso27001_2022_annexA.json') as { key: string }[]).map((r) => r.key));
+    const nis2Codes = new Set((readJson('prisma/fixtures/nis2_requirements.json') as { key: string }[]).map((r) => r.key));
+
+    it('every related policy in the control set is mapped', () => {
+        const used = new Set<string>();
+        for (const c of fixture.controls) for (const p of c.relatedPolicies ?? []) used.add(p);
+        const missing = [...used].filter((p) => !map[p]);
+        expect(missing).toEqual([]);
+    });
+
+    it('every mapped requirement code resolves to a real seeded requirement (no dangling)', () => {
+        const dangling: string[] = [];
+        for (const [p, m] of Object.entries(map)) {
+            for (const code of m.iso27001 ?? []) if (!isoCodes.has(code)) dangling.push(`${p} iso:${code}`);
+            for (const code of m.nis2 ?? []) if (!nis2Codes.has(code)) dangling.push(`${p} nis2:${code}`);
+        }
+        expect(dangling).toEqual([]);
+    });
+
+    it('most controls resolve to >= 1 framework requirement via their policies', () => {
+        const covered = fixture.controls.filter((c) =>
+            (c.relatedPolicies ?? []).some((p) => (map[p]?.iso27001?.length ?? 0) + (map[p]?.nis2?.length ?? 0) > 0),
+        ).length;
+        expect(covered).toBeGreaterThanOrEqual(Math.floor(fixture.controls.length * 0.85));
     });
 });
