@@ -1,14 +1,14 @@
 /**
  * Epic 49 — `GET /api/t/[tenantSlug]/calendar/upcoming-count`.
  *
- * Lightweight count of FUTURE outstanding deadlines for the sidebar
- * Calendar nav badge (overdue/past-due excluded — the badge signals
- * "coming up", not "already late"). Capped at 99 (the UI renders `99+` past the cap)
- * so the badge stays scannable. Uses Prisma `count()` + `take` to
- * short-circuit large tenants.
+ * Lightweight count of the logged-in user's FUTURE tasks for the sidebar
+ * "Time" nav badge (tasks assigned to the caller, due after now; overdue and
+ * other users' work excluded — the badge signals "my upcoming tasks"). Capped
+ * at 99 (the UI renders `99+` past the cap) so the badge stays scannable. Uses
+ * Prisma `count()` + `take` to short-circuit heavy users.
  *
  * Query params:
- *   - `days` (optional, default 7) — forward window in days.
+ *   - `days` (optional) — cap the forward window to N days. Omitted = all future.
  */
 
 import { NextRequest } from 'next/server';

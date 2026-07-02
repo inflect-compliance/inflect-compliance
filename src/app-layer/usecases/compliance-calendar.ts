@@ -694,12 +694,19 @@ async function loadFindingEvents(
 // ─── Lightweight badge query ─────────────────────────────────────────
 
 /**
- * Cheap count of FUTURE outstanding deadlines used by the sidebar Calendar
- * nav badge. Bounded to a forward window `(now, now + horizonDays]` — overdue
- * / past-due items are deliberately EXCLUDED (the badge signals "coming up",
- * not "already late", which the individual list pages surface). Caps at
- * `MAX_BADGE_COUNT` so the badge never renders a huge number that's
- * effectively noise (we render `99+` past the cap on the UI side).
+ * Cheap count of the logged-in user's FUTURE tasks, used by the sidebar
+ * "Time" nav badge. Scope is deliberately narrow and personal:
+ *   - Tasks ONLY — not controls / evidence / policies / vendors. The badge
+ *     answers "how much is on *my* plate", not "how many tenant deadlines
+ *     exist" (those live on the Calendar page + per-entity lists).
+ *   - Assigned to the caller (`assigneeUserId = ctx.userId`).
+ *   - Due in the FUTURE (`dueAt > now`) — overdue items are excluded (they're
+ *     surfaced, in red, on the Plan/Tasks list). All-future by default; an
+ *     optional `horizonDays` caps the window for a narrower "coming up" view.
+ *   - Non-terminal status (open work only).
+ * Caps at `MAX_BADGE_COUNT` so the badge never renders a huge number that's
+ * effectively noise (we render `99+` past the cap on the UI side). Returns 0
+ * when the user has no upcoming tasks — the sidebar hook then hides the badge.
  */
 const MAX_BADGE_COUNT = 99;
 
@@ -709,79 +716,41 @@ export async function getUpcomingDeadlineCount(
 ): Promise<number> {
     assertCanRead(ctx);
     const now = options.now ?? new Date();
-    const horizon = new Date(
-        now.getTime() + (options.horizonDays ?? 7) * 86_400_000,
-    );
+    // All-future by default; an optional horizon caps the upper bound for a
+    // narrower "coming up" view when a caller passes `horizonDays`.
+    const dueAt =
+        options.horizonDays != null
+            ? {
+                  gt: now,
+                  lte: new Date(now.getTime() + options.horizonDays * 86_400_000),
+              }
+            : { gt: now };
 
     // Count, don't fetch — we only need a number for the badge. The
     // `take: MAX_BADGE_COUNT + 1` pattern lets us know if the real
     // number exceeds the cap without doing a full COUNT. Wrapped in
     // `runInTenantContext` so the read goes through RLS-bound `app_user`.
-    const [tasks, controls, evidence, policies, vendors] =
-        await runInTenantContext(ctx, (db) =>
-            Promise.all([
-                db.task.count({
-                    where: {
-                        tenantId: ctx.tenantId,
-                        dueAt: { gt: now, lte: horizon },
-                        status: {
-                            // Cast through readonly → mutable WorkItemStatus[]
-                            // because Prisma's `notIn` rejects the
-                            // `as const` literal type, and the shared
-                            // ACTIVE_STATUS_FILTER constant types its
-                            // payload as `string[]` which Prisma's
-                            // newer generated client also rejects.
-                            notIn: [
-                                ...TERMINAL_WORK_ITEM_STATUSES,
-                            ] as WorkItemStatus[],
-                        },
-                    },
-                    take: MAX_BADGE_COUNT + 1,
-                }),
-                db.control.count({
-                    where: {
-                        tenantId: ctx.tenantId,
-                        deletedAt: null,
-                        applicability: 'APPLICABLE',
-                        nextDueAt: { gt: now, lte: horizon },
-                        status: { notIn: ['IMPLEMENTED', 'NOT_APPLICABLE'] },
-                    },
-                    take: MAX_BADGE_COUNT + 1,
-                }),
-                db.evidence.count({
-                    where: {
-                        tenantId: ctx.tenantId,
-                        nextReviewDate: { gt: now, lte: horizon },
-                        status: { not: 'APPROVED' },
-                    },
-                    take: MAX_BADGE_COUNT + 1,
-                }),
-                db.policy.count({
-                    where: {
-                        tenantId: ctx.tenantId,
-                        nextReviewAt: { gt: now, lte: horizon },
-                        status: { not: 'ARCHIVED' },
-                    },
-                    take: MAX_BADGE_COUNT + 1,
-                }),
-                db.vendor.count({
-                    where: {
-                        tenantId: ctx.tenantId,
-                        status: { not: 'OFFBOARDED' },
-                        OR: [
-                            { nextReviewAt: { gt: now, lte: horizon } },
-                            { contractRenewalAt: { gt: now, lte: horizon } },
-                        ],
-                    },
-                    take: MAX_BADGE_COUNT + 1,
-                }),
-            ]),
-        );
-
-    return Math.min(
-        MAX_BADGE_COUNT + 1,
-        tasks + controls + evidence + policies + vendors,
+    const tasks = await runInTenantContext(ctx, (db) =>
+        db.task.count({
+            where: {
+                tenantId: ctx.tenantId,
+                // Personal badge: only the caller's own tasks.
+                assigneeUserId: ctx.userId,
+                dueAt,
+                status: {
+                    // Cast through readonly → mutable WorkItemStatus[]
+                    // because Prisma's `notIn` rejects the `as const`
+                    // literal type, and the shared ACTIVE_STATUS_FILTER
+                    // constant types its payload as `string[]` which
+                    // Prisma's newer generated client also rejects.
+                    notIn: [...TERMINAL_WORK_ITEM_STATUSES] as WorkItemStatus[],
+                },
+            },
+            take: MAX_BADGE_COUNT + 1,
+        }),
     );
+
+    return Math.min(MAX_BADGE_COUNT + 1, tasks);
 }
 
 // ─── Epic G-7 — treatment plan + milestone calendar loaders ─────────

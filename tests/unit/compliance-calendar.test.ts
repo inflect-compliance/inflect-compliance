@@ -398,29 +398,65 @@ describe('getComplianceCalendarEvents — aggregation', () => {
     });
 });
 
-describe('getUpcomingDeadlineCount — sidebar badge', () => {
-    it('sums per-source counts and caps at 99+', async () => {
-        mockTaskCount.mockResolvedValue(50);
+describe('getUpcomingDeadlineCount — sidebar "Time" badge', () => {
+    it('counts only the caller\'s future tasks and caps at 99+', async () => {
+        // Non-task sources must NOT contribute — the badge is tasks-only now.
+        mockTaskCount.mockResolvedValue(120);
         mockControlCount.mockResolvedValue(40);
         mockEvidenceCount.mockResolvedValue(20);
-        mockPolicyCount.mockResolvedValue(0);
-        mockVendorCount.mockResolvedValue(0);
         const { getUpcomingDeadlineCount } = await import(
             '@/app-layer/usecases/compliance-calendar'
         );
         const count = await getUpcomingDeadlineCount(makeCtx() as never);
-        // 50 + 40 + 20 = 110 → capped at 100 (MAX_BADGE_COUNT + 1).
+        // 120 tasks → capped at 100 (MAX_BADGE_COUNT + 1); controls/evidence ignored.
         expect(count).toBe(100);
     });
 
-    it('returns the real total when below the cap', async () => {
+    it('returns the real task total when below the cap', async () => {
         mockTaskCount.mockResolvedValue(3);
-        mockControlCount.mockResolvedValue(2);
-        mockEvidenceCount.mockResolvedValue(1);
+        mockControlCount.mockResolvedValue(2); // ignored
+        mockEvidenceCount.mockResolvedValue(1); // ignored
         const { getUpcomingDeadlineCount } = await import(
             '@/app-layer/usecases/compliance-calendar'
         );
         const count = await getUpcomingDeadlineCount(makeCtx() as never);
-        expect(count).toBe(6);
+        expect(count).toBe(3);
+    });
+
+    it('filters to the caller and to future (dueAt > now), assignee-scoped', async () => {
+        mockTaskCount.mockResolvedValue(5);
+        const { getUpcomingDeadlineCount } = await import(
+            '@/app-layer/usecases/compliance-calendar'
+        );
+        await getUpcomingDeadlineCount(makeCtx() as never, { now: NOW });
+        expect(mockTaskCount).toHaveBeenCalledWith(
+            expect.objectContaining({
+                where: expect.objectContaining({
+                    assigneeUserId: 'user-1',
+                    dueAt: { gt: NOW },
+                }),
+            }),
+        );
+        // Non-task sources are never queried for the badge.
+        expect(mockControlCount).not.toHaveBeenCalled();
+        expect(mockEvidenceCount).not.toHaveBeenCalled();
+        expect(mockPolicyCount).not.toHaveBeenCalled();
+        expect(mockVendorCount).not.toHaveBeenCalled();
+    });
+
+    it('caps the window to horizonDays when provided', async () => {
+        mockTaskCount.mockResolvedValue(2);
+        const { getUpcomingDeadlineCount } = await import(
+            '@/app-layer/usecases/compliance-calendar'
+        );
+        await getUpcomingDeadlineCount(makeCtx() as never, { now: NOW, horizonDays: 7 });
+        const horizon = new Date(NOW.getTime() + 7 * 86_400_000);
+        expect(mockTaskCount).toHaveBeenCalledWith(
+            expect.objectContaining({
+                where: expect.objectContaining({
+                    dueAt: { gt: NOW, lte: horizon },
+                }),
+            }),
+        );
     });
 });
