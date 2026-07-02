@@ -34,6 +34,8 @@ jest.mock('@/lib/tenant-context-provider', () => ({
         () => (path: string) =>
             `/api/t/acme${path.startsWith('/') ? path : `/${path}`}`,
     useTenantHref: () => (path: string) => `/t/acme${path}`,
+    // Posture hero reads `perms.reports.export` to gate the Regenerate button.
+    usePermissions: () => ({ reports: { export: true } }),
 }));
 
 jest.mock('next-intl', () => ({

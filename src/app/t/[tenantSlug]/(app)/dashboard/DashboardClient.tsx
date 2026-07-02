@@ -99,11 +99,14 @@ const ExpiryCalendar = dynamic(() => import('@/components/ui/ExpiryCalendar'), {
 import { cn } from '@/lib/cn';
 
 import { useTenantSWR } from '@/lib/hooks/use-tenant-swr';
-import { useTenantHref } from '@/lib/tenant-context-provider';
+import { useTenantHref, usePermissions, useTenantApiUrl } from '@/lib/tenant-context-provider';
+import { apiPost } from '@/lib/api-client';
 import { CACHE_KEYS } from '@/lib/swr-keys';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { HeroMetric } from '@/components/ui/HeroMetric';
 import { NextBestActionCard } from '@/components/ui/NextBestActionCard';
+import { PostureHeroCard } from './PostureHeroCard';
+import type { PostureSummaryDto } from '@/app-layer/usecases/compliance-posture';
 import {
     DashboardChartProvider,
     useDashboardChartFilter,
@@ -162,6 +165,14 @@ interface DashboardClientProps {
     initialTrends: TrendPayload | null;
     matrixConfig: RiskMatrixConfigShape;
     /**
+     * Server-fetched cached AI compliance-posture summary (or null when the
+     * daily cron has not yet produced one). Feeds the masthead hero; the
+     * client revalidates it via SWR + on-demand regenerate. Optional so
+     * pre-existing render tests that predate the posture hero still compile —
+     * absent behaves like null (the coverage-% fallback hero renders).
+     */
+    initialPostureSummary?: PostureSummaryDto | null;
+    /**
      * RecentActivityCard remains a Server Component (no API route
      * yet) and is rendered into the dashboard tree by the parent
      * server page. Passing it through `children` preserves the
@@ -174,10 +185,13 @@ export default function DashboardClient({
     initialExec,
     initialTrends,
     matrixConfig,
+    initialPostureSummary,
     children,
 }: DashboardClientProps) {
     const t = useTranslations('dashboard');
     const href = useTenantHref();
+    const apiUrl = useTenantApiUrl();
+    const perms = usePermissions();
 
     // Primary KPI / coverage / risk-distribution payload. The
     // `fallbackData` makes `data` defined synchronously on mount —
@@ -208,6 +222,28 @@ export default function DashboardClient({
     // `items={exec.X}`).
     const exec = execFromCache ?? initialExec;
     const trendBundle = deriveTrendBundle(trends ?? initialTrends ?? undefined);
+
+    // Cached AI compliance-posture summary. Same hybrid SSR+SWR pattern: the
+    // server-fetched row is the fallback so the hero renders synchronously on
+    // first paint. The LLM is NEVER called here — only the cached row is read.
+    const { data: postureSummary, mutate: mutatePosture } =
+        useTenantSWR<PostureSummaryDto | null>(CACHE_KEYS.dashboard.postureSummary(), {
+            fallbackData: initialPostureSummary,
+        });
+
+    const [regenerating, setRegenerating] = React.useState(false);
+    const handleRegeneratePosture = React.useCallback(async () => {
+        setRegenerating(true);
+        try {
+            await apiPost(apiUrl('/dashboard/posture-summary/regenerate'), {});
+            // Revalidate the cached GET so the hero picks up the fresh row.
+            await mutatePosture();
+        } catch {
+            // Non-fatal — the hero keeps showing the prior summary.
+        } finally {
+            setRegenerating(false);
+        }
+    }, [apiUrl, mutatePosture]);
 
     // UI-15: the dashboard no longer surfaces a notifications button on a new
     // notification — the top-bar notifications bell is the single canonical
@@ -245,17 +281,34 @@ export default function DashboardClient({
         >
             <OnboardingBanner />
 
-            {/* ─── Masthead — Hero readiness metric (v2-PR-10) ─── */}
-            <HeroMetric
-                eyebrow={t('controls')}
-                value={exec.controlCoverage.coveragePercent}
-                format="percent"
-                description={`${exec.controlCoverage.implemented} of ${exec.controlCoverage.applicable} controls implemented`}
-                delta={coverageDelta}
-                deltaPolarity="up-good"
-                deltaLabel="vs prev"
-                data-testid="dashboard-hero"
-            />
+            {/* ─── Masthead — AI compliance-posture summary (cached daily) ───
+                 postureLabel + maturityScore headline, narrative, and top
+                 next-steps, with control coverage kept as a secondary stat.
+                 Falls back to the classic 72px coverage <HeroMetric> when no
+                 cached summary exists yet (fresh tenant / cron not yet run /
+                 LLM disabled) so the masthead is never blank. */}
+            {(postureSummary ?? initialPostureSummary) ? (
+                <PostureHeroCard
+                    summary={(postureSummary ?? initialPostureSummary)!}
+                    coveragePercent={exec.controlCoverage.coveragePercent}
+                    coverageImplemented={exec.controlCoverage.implemented}
+                    coverageApplicable={exec.controlCoverage.applicable}
+                    canRegenerate={perms.reports.export}
+                    onRegenerate={handleRegeneratePosture}
+                    regenerating={regenerating}
+                />
+            ) : (
+                <HeroMetric
+                    eyebrow={t('controls')}
+                    value={exec.controlCoverage.coveragePercent}
+                    format="percent"
+                    description={`${exec.controlCoverage.implemented} of ${exec.controlCoverage.applicable} controls implemented`}
+                    delta={coverageDelta}
+                    deltaPolarity="up-good"
+                    deltaLabel="vs prev"
+                    data-testid="dashboard-hero"
+                />
+            )}
 
             {/* ─── KPI Grid (6 cards) — R17-PR7: each tile is now a
                  keyboard-accessible button wired into the dashboard

@@ -3,6 +3,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 import { getTenantCtx } from '@/app-layer/context';
 import { getExecutiveDashboard } from '@/app-layer/usecases/dashboard';
+import {
+    getLatestPostureSummary,
+    toPostureDto,
+} from '@/app-layer/usecases/compliance-posture';
 import { getRiskMatrixConfig } from '@/app-layer/usecases/risk-matrix-config';
 import {
     getComplianceTrends,
@@ -69,17 +73,20 @@ export default async function DashboardPage({
     // list-cached, so this is the real win. Tenant-pure (no per-user data),
     // so a tenant-scoped key is safe. Any entity write bumps the tenant
     // version → next load recomputes. See docs/response-caching.md.
-    const { exec, matrixConfig, trends } = await cachedSsrPayload({
+    const { exec, matrixConfig, trends, postureSummary } = await cachedSsrPayload({
         tenantId: ctx.tenantId,
         route: 'dashboard',
         ttlSeconds: 60,
         compute: async () => {
-            const [exec, matrixConfig, trends] = await Promise.all([
+            const [exec, matrixConfig, trends, postureRow] = await Promise.all([
                 getExecutiveDashboard(ctx),
                 getRiskMatrixConfig(ctx),
                 getComplianceTrends(ctx, 30).catch((): TrendPayload | null => null),
+                // Cheap cached-row read; never invokes an LLM. best-effort so a
+                // missing row (fresh tenant) doesn't fail the page.
+                getLatestPostureSummary(ctx).catch(() => null),
             ]);
-            return { exec, matrixConfig, trends };
+            return { exec, matrixConfig, trends, postureSummary: toPostureDto(postureRow) };
         },
     });
 
@@ -88,6 +95,7 @@ export default async function DashboardPage({
             initialExec={exec}
             initialTrends={trends}
             matrixConfig={matrixConfig}
+            initialPostureSummary={postureSummary}
         >
             <Suspense
                 fallback={

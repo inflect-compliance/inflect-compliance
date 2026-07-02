@@ -76,6 +76,7 @@ a `userId` but stores no contact PII).
 | `BillingEvent` | Financial | No | None today — cascade on parent/tenant delete only | Regulatory min (typ. 7y) — **needs finance input** |
 | `Clause` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
 | `ClauseProgress` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
+| `CompliancePostureSummary` | Operational | No | Cascade on tenant delete; overwritten daily (upsert, one row/tenant) | Derived — regenerated daily by the `compliance-posture-summary` cron; no historical retention |
 | `ComplianceSnapshot` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
 | `Control` | Business record | No | retentionUntil sweep (data-lifecycle `runRetentionSweep`) + soft-delete | DEFINED (retentionUntil) where set; else indefinite |
 | `ControlAsset` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |

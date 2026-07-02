@@ -296,7 +296,10 @@ describe('Executor Registry — structural tenant-scope guards', () => {
     // nvd-cve-sync is a global cross-tenant system job: it ingests the global
     // CVE catalog and matches across ALL tenants' assets (same class as
     // risk-snapshot / data-lifecycle), so it takes no tenantId.
-    const EXEMPT_JOBS = ['health-check', 'sync-pull', 'schedule-trigger-sweep', 'sharepoint-delta-sync-dispatch', 'sharepoint-subscription-renew', 'risk-appetite-monitor', 'risk-snapshot', 'report-delivery', 'dau-mau-aggregator', 'onboarding-abandonment-sweep', 'nvd-cve-sync'];
+    // compliance-posture-summary-dispatch is the daily cross-tenant fan-out —
+    // it enqueues per-tenant, tenant-scoped compliance-posture-summary jobs
+    // (same class as sharepoint-delta-sync-dispatch / risk-snapshot).
+    const EXEMPT_JOBS = ['health-check', 'sync-pull', 'schedule-trigger-sweep', 'sharepoint-delta-sync-dispatch', 'sharepoint-subscription-renew', 'risk-appetite-monitor', 'risk-snapshot', 'report-delivery', 'dau-mau-aggregator', 'onboarding-abandonment-sweep', 'nvd-cve-sync', 'compliance-posture-summary-dispatch'];
 
     test('no executor uses _payload (unused parameter = ignored tenantId)', () => {
         const pattern = /executorRegistry\.register\('[^']+',\s*async\s*\(_payload\)/g;
@@ -366,7 +369,9 @@ describe('Payload Type Contract — tenantId field audit', () => {
     // Jobs that legitimately don't need tenantId
     // SharePointDeltaSyncDispatchPayload (SP-3) is the global fan-out cron — no
     // single tenantId; it enqueues per-tenant SharePointDeltaSyncPayload jobs.
-    const EXEMPT_PAYLOADS = ['HealthCheckPayload', 'SyncPullPayload', 'ScheduleTriggerSweepPayload', 'SharePointDeltaSyncDispatchPayload', 'SharePointSubscriptionRenewPayload', 'RiskAppetiteMonitorPayload', 'RiskSnapshotPayload', 'ReportDeliveryPayload', 'DauMauAggregatorPayload', 'OnboardingAbandonmentPayload', 'NvdCveSyncPayload'];
+    // CompliancePostureDispatchPayload (daily fan-out cron) has no single
+    // tenantId — it enqueues per-tenant CompliancePostureSummaryPayload jobs.
+    const EXEMPT_PAYLOADS = ['HealthCheckPayload', 'SyncPullPayload', 'ScheduleTriggerSweepPayload', 'SharePointDeltaSyncDispatchPayload', 'SharePointSubscriptionRenewPayload', 'RiskAppetiteMonitorPayload', 'RiskSnapshotPayload', 'ReportDeliveryPayload', 'DauMauAggregatorPayload', 'OnboardingAbandonmentPayload', 'NvdCveSyncPayload', 'CompliancePostureDispatchPayload'];
 
     test('every non-exempt payload interface has tenantId field', () => {
         // Extract all payload interfaces

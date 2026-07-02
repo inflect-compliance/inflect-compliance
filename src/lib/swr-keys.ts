@@ -181,6 +181,7 @@ export const CACHE_KEYS = {
         home: () => '/dashboard' as const,
         executive: () => '/dashboard/executive' as const,
         trends: () => '/dashboard/trends' as const,
+        postureSummary: () => '/dashboard/posture-summary' as const,
     },
     coverage: {
         home: () => '/coverage' as const,

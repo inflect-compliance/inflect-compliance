@@ -218,6 +218,14 @@ export const env = createEnv({
         AI_RISK_ENABLED: z.string().default('true'),
         AI_RISK_PLAN_REQUIRED: z.string().default(''),
 
+        // AI Compliance-Posture Summary (dashboard hero, daily cron).
+        // 'stub' (default) is fully functional with zero config; 'anthropic'
+        // / 'openrouter' opt in to a real LLM narrative (keys below).
+        AI_POSTURE_PROVIDER: z.string().default('stub'),
+        // Direct Claude API — used when AI_POSTURE_PROVIDER=anthropic.
+        ANTHROPIC_API_KEY: z.string().optional(),
+        ANTHROPIC_MODEL: z.string().default('claude-haiku-4-5'),
+
         // Audit stream delivery retry (Epic E.2)
         // '0' disables retry (single POST); anything else (or unset) keeps retry on.
         // Kill-switch for debugging a misbehaving SIEM without redeploy.
@@ -358,6 +366,9 @@ export const env = createEnv({
         AI_RISK_USER_RPM: process.env.AI_RISK_USER_RPM,
         AI_RISK_ENABLED: process.env.AI_RISK_ENABLED,
         AI_RISK_PLAN_REQUIRED: process.env.AI_RISK_PLAN_REQUIRED,
+        AI_POSTURE_PROVIDER: process.env.AI_POSTURE_PROVIDER,
+        ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+        ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL,
 
         AUDIT_STREAM_RETRY_ENABLED: process.env.AUDIT_STREAM_RETRY_ENABLED,
         VENDOR_MONITOR_ENABLED: process.env.VENDOR_MONITOR_ENABLED,

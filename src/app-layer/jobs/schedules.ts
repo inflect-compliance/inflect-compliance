@@ -218,6 +218,12 @@ export const SCHEDULED_JOBS: ScheduleDefinition[] = [
         defaultPayload: {},
     },
     {
+        name: 'compliance-posture-summary-dispatch',
+        pattern: '30 5 * * *',    // daily at 05:30 UTC (after the compliance snapshot, before dashboard traffic)
+        description: 'Fan out the AI compliance-posture summary per active tenant (dashboard hero). Idempotent — upserts one cached row per tenant.',
+        defaultPayload: {},
+    },
+    {
         name: 'compliance-digest',
         pattern: '0 8 * * 1',     // weekly Monday at 08:00 UTC
         description: 'Send weekly compliance digest email to tenant admins. Reuses snapshot data — no live aggregation.',
