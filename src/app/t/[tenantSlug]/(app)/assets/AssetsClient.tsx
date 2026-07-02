@@ -35,7 +35,8 @@ import { ownerDisplayName } from '@/lib/owner-display';
 import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
 import { Plus } from '@/components/ui/icons/nucleo';
 import { NewAssetModal } from './NewAssetModal';
-import { AssetDetailSheet } from './AssetDetailSheet';
+import { AssetDetailPanel } from './AssetDetailPanel';
+import { AsidePanel } from '@/components/ui/aside-panel';
 import { getAssetCriticality } from './_form/asset-criticality';
 import { useKeyboardShortcut } from '@/lib/hooks/use-keyboard-shortcut';
 import type { StatusBadgeVariant } from '@/components/ui/status-badge';
@@ -319,6 +320,23 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
         selectedAssetId != null
             ? assets.find((a: { id: string }) => a.id === selectedAssetId) ?? null
             : null;
+
+    // Quick-look right-rail — the same docked `<AsidePanel>` the Controls +
+    // Tasks lists use (co-resident with the table on ≥xl, Sheet below xl), NOT
+    // a blocking overlay. Keyed by asset id so switching rows forces a fresh
+    // mount → openOnMount re-fires and the panel re-seeds from the new row.
+    const assetQuickViewAside = selectedAsset ? (
+        <AsidePanel
+            key={`qv-asset-${selectedAsset.id}`}
+            title={selectedAsset.name}
+            surfaceKey="assets-quickview"
+            defaultWidth={360}
+            openOnMount
+            onClose={() => setSelectedAssetId(null)}
+        >
+            <AssetDetailPanel asset={selectedAsset} tenantHref={tenantHref} />
+        </AsidePanel>
+    ) : null;
 
     // Item 27 — ↑/↓ move the panel selection to the previous/next asset
     // in the current (filtered, sorted) list while the panel stays open,
@@ -674,7 +692,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                 />
             </ListPageShell.Filters>
 
-            <ListPageShell.Body>
+            <ListPageShell.Body aside={assetQuickViewAside}>
                 <DataTable
                     fillBody
                     onReachEnd={hasMoreAssets ? loadMoreAssets : undefined}
@@ -753,13 +771,6 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                     className="hover:bg-bg-muted"
                 />
             </ListPageShell.Body>
-
-            <AssetDetailSheet
-                asset={selectedAsset}
-                open={selectedAssetId != null}
-                onOpenChange={(o) => { if (!o) setSelectedAssetId(null); }}
-                tenantHref={tenantHref}
-            />
 
             <NewAssetModal
                 open={isCreateOpen}
