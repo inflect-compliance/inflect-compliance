@@ -43,6 +43,7 @@ const STARTER_PACKS: Record<string, { frameworkKey: string; packKey: string }> =
     'AISVS-1.0': { frameworkKey: 'OWASP-AISVS', packKey: 'AISVS_BASELINE' },
     'ISO27701-2019': { frameworkKey: 'ISO27701', packKey: 'ISO27701_BASELINE' },
     'CIS-CONTROLS-V8': { frameworkKey: 'CIS-V8', packKey: 'CIS_V8_IG1_PACK' },
+    'OWASP-ASVS-4.0.3': { frameworkKey: 'OWASP-ASVS', packKey: 'ASVS_L1_PACK' },
 };
 
 /** Library frameworks intentionally shipped WITHOUT a starter pack. */

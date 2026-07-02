@@ -355,6 +355,29 @@ async function main() {
     }
     console.log(`✅ CIS risk templates seeded (${cisRiskTemplates.length} cyber-hygiene templates)`);
 
+    // ─── OWASP ASVS application-security risk templates ───
+    // Companion to the ASVS 4.0.3 L1 Starter Pack: the failure modes the Level 1
+    // verification requirements exist to prevent. frameworkTag 'ASVS', category
+    // 'Application Security'. Shared RiskTemplate path.
+    const asvsRiskTemplates: Array<{ id: string; title: string; description: string; category: string; defaultLikelihood: number; defaultImpact: number; frameworkTag: string }> = [
+        { id: 'asvs-injection', title: 'Injection Vulnerability Exploited', description: 'Untrusted input reaches an interpreter (SQL, OS command, LDAP, template) because it was not parameterized or validated, letting an attacker execute unintended commands.', category: 'Application Security', defaultLikelihood: 4, defaultImpact: 5, frameworkTag: 'ASVS' },
+        { id: 'asvs-broken-authentication', title: 'Broken Authentication', description: 'Weak password handling, missing anti-automation, or poor recovery flows let an attacker take over user accounts.', category: 'Application Security', defaultLikelihood: 3, defaultImpact: 5, frameworkTag: 'ASVS' },
+        { id: 'asvs-broken-access-control', title: 'Broken Access Control', description: 'Authorization is enforced only client-side or object references are not checked, so a user can reach data or actions outside their permission.', category: 'Application Security', defaultLikelihood: 4, defaultImpact: 5, frameworkTag: 'ASVS' },
+        { id: 'asvs-xss', title: 'Cross-Site Scripting', description: 'User-supplied content is rendered without context-aware output encoding, allowing script execution in the browser of another user.', category: 'Application Security', defaultLikelihood: 4, defaultImpact: 4, frameworkTag: 'ASVS' },
+        { id: 'asvs-sensitive-data-exposure', title: 'Sensitive Data Exposure', description: 'Sensitive data is transmitted or stored without adequate encryption, or leaks through caching, logs, or client-side storage.', category: 'Application Security', defaultLikelihood: 3, defaultImpact: 5, frameworkTag: 'ASVS' },
+        { id: 'asvs-security-misconfiguration', title: 'Security Misconfiguration', description: 'Missing security headers, verbose errors, debug modes, or permissive CORS leave the application exposed in production.', category: 'Application Security', defaultLikelihood: 4, defaultImpact: 4, frameworkTag: 'ASVS' },
+        { id: 'asvs-vulnerable-components', title: 'Vulnerable and Outdated Components', description: 'A known-vulnerable dependency is exploited because components were not kept current or their integrity was not verified.', category: 'Application Security', defaultLikelihood: 4, defaultImpact: 5, frameworkTag: 'ASVS' },
+        { id: 'asvs-business-logic-abuse', title: 'Business Logic Abuse', description: 'Workflow steps, timing, or quantity limits are not enforced server-side, letting an attacker automate or bypass business rules.', category: 'Application Security', defaultLikelihood: 3, defaultImpact: 4, frameworkTag: 'ASVS' },
+    ];
+    for (const t of asvsRiskTemplates) {
+        await prisma.riskTemplate.upsert({
+            where: { id: t.id },
+            create: t,
+            update: { description: t.description, category: t.category, defaultLikelihood: t.defaultLikelihood, defaultImpact: t.defaultImpact, frameworkTag: t.frameworkTag },
+        });
+    }
+    console.log(`✅ ASVS risk templates seeded (${asvsRiskTemplates.length} application-security templates)`);
+
     // ─── Seed risks (tenant-wide) ───
     const riskCount = await prisma.risk.count({ where: { tenantId: tenant.id } });
     if (riskCount === 0) {
@@ -1807,6 +1830,87 @@ Reviewed at least annually.` },
         });
     }
     console.log(`✅ CIS Controls v8 + ${cisData.length} safeguards + IG1 Starter Pack (${cisIg1Controls.length} controls) seeded`);
+
+    // ─── OWASP Application Security Verification Standard (ASVS) 4.0.3 ───
+    // STRUCTURAL OUTLINE ONLY. OWASP ASVS is (c) the OWASP Foundation, licensed
+    // CC BY-SA 4.0 (ShareAlike). Because ShareAlike would force us to relicense
+    // derivative content — incompatible with Inflect Compliance as a proprietary
+    // product — we ship ONLY the factual identifiers (chapters V1-V14, requirement
+    // numbers such as V2.1.1), the short factual titles, and the L1/L2/L3
+    // verification-level structure. All descriptive text is our own paraphrase.
+    // Full standard: https://owasp.org/www-project-application-security-verification-standard/
+    // Rides the generic framework/pack machinery — no special-casing.
+    const asvsData = require('./fixtures/asvs-requirements.json') as Array<{ key: string; section: string; category: string; sortOrder: number; title: string }>;
+    const asvsMeta = JSON.stringify({
+        locale: 'en',
+        provider: 'OWASP Foundation',
+        packager: 'inflect',
+        publicationDate: '2021-10-01',
+        license: 'CC-BY-SA-4.0',
+        sourceUrl: 'https://owasp.org/www-project-application-security-verification-standard/',
+        note: 'Structural outline only — identifiers, titles, and L1/L2/L3 structure reused under CC BY-SA 4.0; all descriptions are original paraphrases because the share-alike term is incompatible with embedding the text in a proprietary product.',
+        copyright:
+            'OWASP Application Security Verification Standard 4.0.3 is (c) the ' +
+            'OWASP Foundation and licensed CC BY-SA 4.0.',
+    });
+    const asvsFramework = await prisma.framework.upsert({
+        where: { key_version: { key: 'OWASP-ASVS', version: '4.0.3' } },
+        update: { name: 'OWASP Application Security Verification Standard 4.0.3', kind: 'INDUSTRY_STANDARD', description: 'Application security requirements organized into 14 chapters across three cumulative verification levels (L1, L2, L3).', metadataJson: asvsMeta, sourceUrn: 'urn:inflect:library:owasp-asvs-4.0.3' },
+        create: { key: 'OWASP-ASVS', name: 'OWASP Application Security Verification Standard 4.0.3', version: '4.0.3', kind: 'INDUSTRY_STANDARD', description: 'Application security requirements organized into 14 chapters across three cumulative verification levels (L1, L2, L3).', metadataJson: asvsMeta, sourceUrn: 'urn:inflect:library:owasp-asvs-4.0.3' },
+    });
+    const asvsReqMap: Record<string, string> = {};
+    for (const req of asvsData) {
+        const r = await prisma.frameworkRequirement.upsert({
+            where: { frameworkId_code: { frameworkId: asvsFramework.id, code: req.key } },
+            update: { title: req.title, section: req.section, category: req.category, sortOrder: req.sortOrder },
+            create: { frameworkId: asvsFramework.id, code: req.key, title: req.title, section: req.section, category: req.category, sortOrder: req.sortOrder },
+        });
+        asvsReqMap[req.key] = r.id;
+    }
+    // ─── ASVS L1 Starter Pack (curated Level 1 application-security controls) ───
+    // Curated control templates — one per ASVS chapter that carries L1 requirements
+    // (the Level 1 verification baseline) — so an ASVS adopter gets mapped coverage
+    // on day one, not a bare 0%. Distinct 'ASVS-' code prefix. Each control links to
+    // the specific L1 requirement(s) it satisfies.
+    const asvsL1Controls = require('./fixtures/asvs-l1-control-templates.json') as Array<{
+        code: string; title: string; description: string; defaultFrequency: string; defaultOwnerHint: string; requirements: string[]; tasks: Array<{ title: string; description: string }>;
+    }>;
+    for (const c of asvsL1Controls) {
+        const existing = await prisma.controlTemplate.findUnique({ where: { code: c.code } });
+        if (!existing) {
+            const tmpl = await prisma.controlTemplate.create({
+                data: {
+                    code: c.code,
+                    title: c.title,
+                    description: c.description,
+                    category: 'Application Security',
+                    defaultFrequency: c.defaultFrequency as ControlFrequency,
+                    defaultOwnerHint: c.defaultOwnerHint,
+                },
+            });
+            for (const task of c.tasks) {
+                await prisma.controlTemplateTask.create({ data: { templateId: tmpl.id, title: task.title, description: task.description } });
+            }
+            for (const rk of c.requirements) {
+                if (asvsReqMap[rk]) {
+                    await prisma.controlTemplateRequirementLink.create({ data: { templateId: tmpl.id, requirementId: asvsReqMap[rk] } }).catch(() => { });
+                }
+            }
+        }
+    }
+    const asvsL1Tmpls = await prisma.controlTemplate.findMany({ where: { code: { startsWith: 'ASVS-' } } });
+    const asvsL1Pack = await prisma.frameworkPack.upsert({
+        where: { key: 'ASVS_L1_PACK' },
+        update: { name: 'OWASP ASVS 4.0.3 — L1 Starter Pack', frameworkId: asvsFramework.id, version: '4.0.3' },
+        create: { key: 'ASVS_L1_PACK', name: 'OWASP ASVS 4.0.3 — L1 Starter Pack', frameworkId: asvsFramework.id, version: '4.0.3', description: 'Curated Level 1 application-security controls covering the L1 verification requirements of OWASP ASVS 4.0.3, each mapped to its requirements.' },
+    });
+    for (const tmpl of asvsL1Tmpls) {
+        await prisma.packTemplateLink.upsert({
+            where: { packId_templateId: { packId: asvsL1Pack.id, templateId: tmpl.id } },
+            create: { packId: asvsL1Pack.id, templateId: tmpl.id }, update: {},
+        });
+    }
+    console.log(`✅ OWASP ASVS 4.0.3 + ${asvsData.length} requirements + L1 Starter Pack (${asvsL1Controls.length} controls) seeded`);
 
     // ─── ISO/IEC 27701:2019 — Privacy Information Management System (PIMS) ───
     // ISO 27701 is the privacy extension of ISO 27001/27002 (controller Annex A +
