@@ -409,7 +409,7 @@ function TestsRollupContent() {
                             ]}
                             className="mb-1"
                         />
-                        <Heading level={1} id="tests-page-title">Tests</Heading>
+                        <Heading level={1} id="tests-page-title" className="sr-only">Tests</Heading>
                         <p className="text-sm text-content-muted mt-1">Test plans and recent results across all controls</p>
                     </div>
                     {/* Nav icon buttons moved into the FilterToolbar's actions

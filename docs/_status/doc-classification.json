@@ -1369,6 +1369,9 @@
     },
     "docs/implementation-notes/2026-07-02-aws-posture-connector.md": {
       "class": "historical"
+    },
+    "docs/implementation-notes/2026-07-02-subtitle-led-main-pages-only.md": {
+      "class": "historical"
     }
   }
 }
