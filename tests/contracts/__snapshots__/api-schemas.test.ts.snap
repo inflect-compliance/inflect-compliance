@@ -1207,6 +1207,24 @@ exports[`API contract — per-schema snapshots schema: ControlDetail 1`] = `
     {
       "type": "object",
       "properties": {
+        "objective": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "successCriteria": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "testingMethodology": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "createdBy": {
           "allOf": [
             {

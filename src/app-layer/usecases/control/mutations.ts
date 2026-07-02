@@ -33,6 +33,9 @@ export async function createControl(ctx: RequestContext, data: {
     mitigationType?: string | null;
     annexId?: string | null;
     intent?: string | null;
+    objective?: string | null;
+    successCriteria?: string | null;
+    testingMethodology?: string | null;
     isCustom?: boolean;
 }) {
     assertCanCreateControl(ctx);
@@ -67,6 +70,9 @@ export async function createControl(ctx: RequestContext, data: {
             name: data.name,
             description: data.description || null,
             intent: data.intent || null,
+            objective: data.objective || null,
+            successCriteria: data.successCriteria || null,
+            testingMethodology: data.testingMethodology || null,
             category: data.category || null,
             status: (data.status as 'NOT_STARTED') || 'NOT_STARTED',
             frequency: (data.frequency as 'MONTHLY') || null,

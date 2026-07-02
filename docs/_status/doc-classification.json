@@ -1381,6 +1381,9 @@
     },
     "docs/implementation-notes/2026-07-02-policy-template-gaps-followup.md": {
       "class": "historical"
+    },
+    "docs/implementation-notes/2026-07-02-internal-controls-import.md": {
+      "class": "historical"
     }
   }
 }

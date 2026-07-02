@@ -109,6 +109,11 @@ export async function installPack(ctx: RequestContext, packKey: string) {
                     name: tmpl.title,
                     description: tmpl.description,
                     category: tmpl.category,
+                    // Internal-controls import fields carry through to the Control
+                    // so the detail Overview/Tests tabs render them post-install.
+                    objective: tmpl.objective,
+                    successCriteria: tmpl.successCriteria,
+                    testingMethodology: tmpl.testingMethodology,
                     frequency: tmpl.defaultFrequency,
                     status: 'NOT_STARTED',
                     createdByUserId: ctx.userId,

@@ -869,12 +869,12 @@ export default function ControlDetailPage() {
                     )}
                     <div className="grid grid-cols-2 gap-section">
                         <div>
-                            <span className="text-xs text-content-subtle uppercase">Description</span>
-                            <p className="text-sm text-content-default mt-1">{control.description || 'No description.'}</p>
+                            <span className="text-xs text-content-subtle uppercase">Objective</span>
+                            <p className="text-sm text-content-default mt-1 whitespace-pre-line">{control.objective || control.description || 'No objective.'}</p>
                         </div>
                         <div>
-                            <span className="text-xs text-content-subtle uppercase">Intent</span>
-                            <p className="text-sm text-content-default mt-1">{control.intent || '—'}</p>
+                            <span className="text-xs text-content-subtle uppercase">Success Criteria</span>
+                            <p className="text-sm text-content-default mt-1 whitespace-pre-line">{control.successCriteria || control.intent || '—'}</p>
                         </div>
                         <div>
                             <span className="text-xs text-content-subtle uppercase">Category</span>
@@ -1073,8 +1073,16 @@ export default function ControlDetailPage() {
             )}
 
             {tab === 'tests' && (
-                <div className={cardVariants({ density: 'compact' })}>
-                    <TestPlansPanel controlId={controlId} />
+                <div className="space-y-default">
+                    {control.testingMethodology && (
+                        <div className={cardVariants({ density: 'compact' })}>
+                            <span className="text-xs text-content-subtle uppercase">Testing Methodology</span>
+                            <p className="text-sm text-content-default mt-1 whitespace-pre-line">{control.testingMethodology}</p>
+                        </div>
+                    )}
+                    <div className={cardVariants({ density: 'compact' })}>
+                        <TestPlansPanel controlId={controlId} />
+                    </div>
                 </div>
             )}
 

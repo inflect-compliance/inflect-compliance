@@ -127,6 +127,11 @@ export type ContributorDTO = z.infer<typeof ContributorDTOSchema>;
 // Returned by ControlRepository.getById() — full entity with relations
 
 export const ControlDetailDTOSchema = ControlListItemDTOSchema.extend({
+    // Internal-controls import — surfaced on the detail Overview (objective,
+    // successCriteria) + Tests (testingMethodology) tabs.
+    objective: z.string().nullable().optional(),
+    successCriteria: z.string().nullable().optional(),
+    testingMethodology: z.string().nullable().optional(),
     createdBy: UserRefSchema.nullable().optional(),
     applicabilityDecidedBy: UserRefSchema.nullable().optional(),
     contributors: z.array(ContributorDTOSchema).optional(),
