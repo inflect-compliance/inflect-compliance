@@ -978,3 +978,18 @@ executorRegistry.register('incident-notification-deadlines', async (payload) => 
         },
     );
 });
+
+// ── aws-posture-collect ──────────────────────────────────────────────
+
+executorRegistry.register('aws-posture-collect', async (payload) => {
+    const startedAt = new Date().toISOString();
+    const startMs = performance.now();
+    const { runAwsPostureCollectJob } = await import('./aws-posture-collect');
+    // Forward the tenant-scoped fields explicitly (the job scopes its reads +
+    // writes to payload.tenantId via runInTenantContext one frame down).
+    const r = await runAwsPostureCollectJob({ tenantId: payload.tenantId, connectionId: payload.connectionId });
+    return makeResult('aws-posture-collect', startedAt, startMs, 1, r.evidenceCreated, 0, {
+        executionId: r.executionId,
+        status: r.status,
+    });
+});
