@@ -20,6 +20,9 @@
     "docs/app-layer.md": {
       "class": "authoritative"
     },
+    "docs/attributions.md": {
+      "class": "authoritative"
+    },
     "docs/auth.md": {
       "class": "authoritative"
     },
@@ -1302,6 +1305,9 @@
       "class": "historical"
     },
     "docs/implementation-notes/2026-07-01-ds1-sovereignty-self-assessment.md": {
+      "class": "historical"
+    },
+    "docs/implementation-notes/2026-07-01-privacy-crosswalk.md": {
       "class": "historical"
     },
     "docs/implementation-notes/2026-07-01-ds2-sovereignty-assessment-ui.md": {

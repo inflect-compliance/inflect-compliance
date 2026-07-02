@@ -1671,6 +1671,87 @@ Reviewed at least annually.` },
     }
     console.log(`✅ SSDF Starter Pack + ${ssdfStarterControls.length} curated controls seeded`);
 
+    // ─── ISO/IEC 27701:2019 — Privacy Information Management System (PIMS) ───
+    // ISO 27701 is the privacy extension of ISO 27001/27002 (controller Annex A +
+    // processor Annex B). Requirement descriptions are OURS (clause-ref only — ISO
+    // text is copyrighted). Ships a curated privacy starter pack so an adopter gets
+    // mapped coverage on day one, not a bare 0%. Rides the generic pack machinery.
+    const iso27701Data = require('./fixtures/iso27701_requirements.json') as Array<{ key: string; section: string; sortOrder: number; title: string }>;
+    const iso27701Meta = JSON.stringify({
+        locale: 'en',
+        provider: 'ISO/IEC',
+        packager: 'inflect',
+        publicationDate: '2019-08-06',
+        license: 'iso-copyright',
+        sourceUrl: 'https://www.iso.org/standard/71670.html',
+        copyright: 'Structural clause-reference outline; ISO/IEC 27701:2019 normative text is ISO-copyrighted.',
+    });
+    const iso27701 = await prisma.framework.upsert({
+        where: { key_version: { key: 'ISO27701', version: '2019' } },
+        update: { name: 'ISO/IEC 27701:2019', kind: 'ISO_STANDARD', description: 'Privacy Information Management System (PIMS) — the privacy extension of ISO/IEC 27001/27002.', metadataJson: iso27701Meta, sourceUrn: 'urn:inflect:library:iso27701-2019' },
+        create: { key: 'ISO27701', name: 'ISO/IEC 27701:2019', version: '2019', kind: 'ISO_STANDARD', description: 'Privacy Information Management System (PIMS) — the privacy extension of ISO/IEC 27001/27002.', metadataJson: iso27701Meta, sourceUrn: 'urn:inflect:library:iso27701-2019' },
+    });
+    const iso27701ReqMap: Record<string, string> = {};
+    for (const req of iso27701Data) {
+        const r = await prisma.frameworkRequirement.upsert({
+            where: { frameworkId_code: { frameworkId: iso27701.id, code: req.key } },
+            update: { title: req.title, section: req.section, sortOrder: req.sortOrder },
+            create: { frameworkId: iso27701.id, code: req.key, title: req.title, section: req.section, category: req.section, sortOrder: req.sortOrder },
+        });
+        iso27701ReqMap[req.key] = r.id;
+    }
+    // Curated privacy starter-pack controls (PIMS-NN) with tasks + requirement links.
+    const iso27701Controls = require('./fixtures/iso27701-control-templates.json') as Array<{
+        code: string; title: string; description: string; defaultFrequency: string; defaultOwnerHint: string; requirements: string[]; tasks: Array<{ title: string; description: string }>;
+    }>;
+    for (const c of iso27701Controls) {
+        const existing = await prisma.controlTemplate.findUnique({ where: { code: c.code } });
+        if (!existing) {
+            const tmpl = await prisma.controlTemplate.create({
+                data: { code: c.code, title: c.title, description: c.description, category: 'Privacy', defaultFrequency: c.defaultFrequency as ControlFrequency, defaultOwnerHint: c.defaultOwnerHint },
+            });
+            for (const task of c.tasks) {
+                await prisma.controlTemplateTask.create({ data: { templateId: tmpl.id, title: task.title, description: task.description } });
+            }
+            for (const rk of c.requirements) {
+                if (iso27701ReqMap[rk]) {
+                    await prisma.controlTemplateRequirementLink.create({ data: { templateId: tmpl.id, requirementId: iso27701ReqMap[rk] } }).catch(() => { });
+                }
+            }
+        }
+    }
+    const iso27701Tmpls = await prisma.controlTemplate.findMany({ where: { code: { startsWith: 'PIMS-' } } });
+    const iso27701Pack = await prisma.frameworkPack.upsert({
+        where: { key: 'ISO27701_BASELINE' },
+        update: { name: 'ISO 27701 Privacy Baseline Pack', frameworkId: iso27701.id, version: '2019' },
+        create: { key: 'ISO27701_BASELINE', name: 'ISO 27701 Privacy Baseline Pack', frameworkId: iso27701.id, version: '2019', description: 'Curated ISO/IEC 27701 privacy controls (purpose, consent, PIA, RoPA, rights, transfers) with tasks, mapped to PIMS clauses.' },
+    });
+    for (const tmpl of iso27701Tmpls) {
+        await prisma.packTemplateLink.upsert({
+            where: { packId_templateId: { packId: iso27701Pack.id, templateId: tmpl.id } },
+            create: { packId: iso27701Pack.id, templateId: tmpl.id }, update: {},
+        });
+    }
+    console.log(`✅ ISO 27701 PIMS + ${iso27701Data.length} requirements + ${iso27701Controls.length} privacy controls seeded`);
+
+    // ─── ISO 27701 privacy risk templates ───
+    // The failure modes the PIMS controls exist to prevent. frameworkTag 'ISO27701'.
+    const iso27701RiskTemplates: Array<{ id: string; title: string; description: string; category: string; defaultLikelihood: number; defaultImpact: number; frameworkTag: string; linddunCategories: string[] }> = [
+        { id: 'pims-no-lawful-basis', title: 'Processing Without a Valid Lawful Basis', description: 'PII is processed for a purpose that has no documented lawful basis, breaching the PIMS conditions for processing.', category: 'Privacy', defaultLikelihood: 2, defaultImpact: 5, frameworkTag: 'ISO27701', linddunCategories: ['NC'] },
+        { id: 'pims-unfulfilled-rights', title: 'Unfulfilled Data-Subject Rights Request', description: 'An access, correction or erasure request is missed or answered late because no rights-handling process is in place.', category: 'Privacy', defaultLikelihood: 3, defaultImpact: 4, frameworkTag: 'ISO27701', linddunCategories: ['U'] },
+        { id: 'pims-unlawful-transfer', title: 'Unlawful Cross-Border Transfer', description: 'PII is transferred to another jurisdiction without an established transfer basis or safeguards.', category: 'Privacy', defaultLikelihood: 2, defaultImpact: 4, frameworkTag: 'ISO27701', linddunCategories: ['NC'] },
+        { id: 'pims-unmanaged-subprocessor', title: 'Unmanaged Sub-processor', description: 'A sub-processor handles PII without an agreement or disclosure to the customer, breaking the chain of accountability.', category: 'Privacy', defaultLikelihood: 3, defaultImpact: 4, frameworkTag: 'ISO27701', linddunCategories: ['NC'] },
+        { id: 'pims-retention-overrun', title: 'PII Retained Beyond Purpose', description: 'PII is kept past its retention period or not de-identified when the processing purpose ends.', category: 'Privacy', defaultLikelihood: 3, defaultImpact: 3, frameworkTag: 'ISO27701', linddunCategories: ['DD'] },
+    ];
+    for (const t of iso27701RiskTemplates) {
+        await prisma.riskTemplate.upsert({
+            where: { id: t.id },
+            create: t,
+            update: { description: t.description, category: t.category, defaultLikelihood: t.defaultLikelihood, defaultImpact: t.defaultImpact, frameworkTag: t.frameworkTag, linddunCategories: t.linddunCategories },
+        });
+    }
+    console.log(`✅ ISO 27701 privacy risk templates seeded (${iso27701RiskTemplates.length})`);
+
     // ISO 9001 Pack
     const iso9001Tmpls = await prisma.controlTemplate.findMany({ where: { code: { startsWith: 'QMS-' } } });
     const iso9001Pack = await prisma.frameworkPack.upsert({

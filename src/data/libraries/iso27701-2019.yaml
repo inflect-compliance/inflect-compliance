@@ -1,0 +1,473 @@
+# ISO/IEC 27701:2019 — Privacy Information Management System (PIMS)
+#
+# Requirement descriptions below are OUR OWN concise paraphrases written for
+# compliance-tracking navigation. They are NOT ISO text. ISO/IEC 27701 content
+# is ISO-copyrighted — only the clause IDENTIFIERS and structure are ported
+# here; purchase the standard from https://www.iso.org/standard/71670.html for
+# the normative text.
+#
+# ISO/IEC 27701 is the privacy EXTENSION of ISO/IEC 27001 / 27002: clause 5
+# extends the ISMS management clauses, clause 6 extends the Annex A controls,
+# clause 7 (Annex A) adds guidance for PII controllers, and clause 8 (Annex B)
+# adds guidance for PII processors.
+
+urn: urn:inflect:library:iso27701-2019
+locale: en
+ref_id: ISO27701-2019
+name: ISO/IEC 27701:2019
+description: >
+  Security techniques — Extension to ISO/IEC 27001 and ISO/IEC 27002 for
+  privacy information management — Requirements and guidelines. Establishes a
+  Privacy Information Management System (PIMS) for PII controllers and
+  processors. This library is a structural clause-reference outline, not the
+  normative ISO text.
+copyright: >
+  Structural clause-reference outline of ISO/IEC 27701:2019. Requirement
+  descriptions are original paraphrases; the normative standard is
+  ISO-copyrighted and can be purchased from
+  https://www.iso.org/standard/71670.html
+version: 1
+publication_date: "2019-08-06"
+provider: ISO/IEC
+packager: inflect
+kind: ISO_STANDARD
+
+objects:
+  framework:
+    urn: urn:inflect:framework:iso27701-2019
+    ref_id: ISO27701-2019
+    name: ISO/IEC 27701:2019
+    description: Privacy Information Management System (PIMS) — controller (Annex A) and processor (Annex B) guidance.
+
+    requirement_nodes:
+      # ─── Clause 5 — PIMS-specific requirements related to ISO/IEC 27001 ───
+      - urn: urn:inflect:req:iso27701-2019:clause-5
+        ref_id: "5"
+        name: PIMS-specific requirements (extends the ISMS)
+        description: >
+          Apply the ISO 27001 management clauses (context, leadership, planning,
+          support, operation, evaluation, improvement) with privacy added to the
+          scope and risk assessment. (Paraphrase)
+        depth: 1
+        assessable: false
+        category: PIMS Management
+        artifacts: "PIMS scope statement, Privacy risk assessment, Roles for PII protection"
+
+      # ─── Clause 6 — PIMS-specific guidance related to ISO/IEC 27002 ───
+      - urn: urn:inflect:req:iso27701-2019:clause-6
+        ref_id: "6"
+        name: PIMS-specific guidance (extends the controls)
+        description: >
+          Apply the ISO 27002 control themes with privacy-specific
+          implementation guidance across policies, HR, access, crypto, operations,
+          supplier and incident management. (Paraphrase)
+        depth: 1
+        assessable: false
+        category: PIMS Controls
+        artifacts: "Privacy-extended control set, Supplier privacy clauses"
+
+      # ═══ Clause 7 — Annex A: additional guidance for PII CONTROLLERS ═══
+      - urn: urn:inflect:req:iso27701-2019:clause-7
+        ref_id: "7"
+        name: PII controller guidance (Annex A)
+        description: Privacy controls that apply when the organization determines the purposes and means of processing PII. (Paraphrase)
+        depth: 1
+        assessable: false
+        category: PII Controller
+
+      # ── 7.2 Conditions for collection and processing ──
+      - urn: urn:inflect:req:iso27701-2019:7.2
+        ref_id: "7.2"
+        name: Conditions for collection and processing
+        description: Establish and document the purpose, lawful basis, consent and processing records for PII the organization controls. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:clause-7
+        depth: 2
+        assessable: false
+        category: PII Controller
+      - urn: urn:inflect:req:iso27701-2019:7.2.1
+        ref_id: "7.2.1"
+        name: Identify and document purpose
+        description: Document the specific purposes for which each category of PII is processed. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.2
+        depth: 3
+        category: PII Controller
+        artifacts: "Purpose register"
+      - urn: urn:inflect:req:iso27701-2019:7.2.2
+        ref_id: "7.2.2"
+        name: Identify lawful basis
+        description: Determine, document and keep current the lawful basis for each processing purpose. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.2
+        depth: 3
+        category: PII Controller
+        artifacts: "Lawful-basis record"
+      - urn: urn:inflect:req:iso27701-2019:7.2.3
+        ref_id: "7.2.3"
+        name: Determine when and how to obtain consent
+        description: Define the process for deciding when consent is required and how it will be obtained and evidenced. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.2
+        depth: 3
+        category: PII Controller
+      - urn: urn:inflect:req:iso27701-2019:7.2.4
+        ref_id: "7.2.4"
+        name: Obtain and record consent
+        description: Obtain consent in line with defined process and retain records demonstrating it was given. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.2
+        depth: 3
+        category: PII Controller
+        artifacts: "Consent records"
+      - urn: urn:inflect:req:iso27701-2019:7.2.5
+        ref_id: "7.2.5"
+        name: Privacy impact assessment
+        description: Assess the privacy impact of processing likely to be high risk before it begins. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.2
+        depth: 3
+        category: PII Controller
+        artifacts: "Privacy impact assessment"
+      - urn: urn:inflect:req:iso27701-2019:7.2.6
+        ref_id: "7.2.6"
+        name: Contracts with PII processors
+        description: Put written agreements in place with processors that bind them to the controller's privacy obligations. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.2
+        depth: 3
+        category: PII Controller
+        artifacts: "Processor agreements"
+      - urn: urn:inflect:req:iso27701-2019:7.2.8
+        ref_id: "7.2.8"
+        name: Records related to processing PII
+        description: Maintain records of the processing activities carried out as a controller. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.2
+        depth: 3
+        category: PII Controller
+        artifacts: "Records of processing"
+
+      # ── 7.3 Obligations to PII principals ──
+      - urn: urn:inflect:req:iso27701-2019:7.3
+        ref_id: "7.3"
+        name: Obligations to PII principals
+        description: Provide information to, and honour the rights of, the individuals whose PII is processed. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:clause-7
+        depth: 2
+        assessable: false
+        category: PII Controller
+      - urn: urn:inflect:req:iso27701-2019:7.3.1
+        ref_id: "7.3.1"
+        name: Determining and fulfilling obligations
+        description: Identify the obligations owed to PII principals and put a means in place to meet them. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.3
+        depth: 3
+        category: PII Controller
+      - urn: urn:inflect:req:iso27701-2019:7.3.2
+        ref_id: "7.3.2"
+        name: Determining information for PII principals
+        description: Decide what privacy information individuals should receive about the processing. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.3
+        depth: 3
+        category: PII Controller
+      - urn: urn:inflect:req:iso27701-2019:7.3.3
+        ref_id: "7.3.3"
+        name: Providing information to PII principals
+        description: Give individuals clear, accessible privacy information at the appropriate time. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.3
+        depth: 3
+        category: PII Controller
+        artifacts: "Privacy notice"
+      - urn: urn:inflect:req:iso27701-2019:7.3.4
+        ref_id: "7.3.4"
+        name: Mechanism to modify or withdraw consent
+        description: Offer individuals a means to change or withdraw their consent. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.3
+        depth: 3
+        category: PII Controller
+      - urn: urn:inflect:req:iso27701-2019:7.3.5
+        ref_id: "7.3.5"
+        name: Mechanism to object to processing
+        description: Provide a way for individuals to object to the processing of their PII. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.3
+        depth: 3
+        category: PII Controller
+      - urn: urn:inflect:req:iso27701-2019:7.3.6
+        ref_id: "7.3.6"
+        name: Access, correction and erasure
+        description: Enable individuals to access, correct and erase their PII where applicable. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.3
+        depth: 3
+        category: PII Controller
+        artifacts: "Data-subject request log"
+      - urn: urn:inflect:req:iso27701-2019:7.3.7
+        ref_id: "7.3.7"
+        name: Inform third parties of changes
+        description: Notify third parties who received PII of corrections, erasures or restrictions where required. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.3
+        depth: 3
+        category: PII Controller
+      - urn: urn:inflect:req:iso27701-2019:7.3.8
+        ref_id: "7.3.8"
+        name: Provide a copy of PII processed
+        description: On request, give the individual a copy of the PII being processed about them. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.3
+        depth: 3
+        category: PII Controller
+      - urn: urn:inflect:req:iso27701-2019:7.3.9
+        ref_id: "7.3.9"
+        name: Handle requests
+        description: Operate a process to receive, verify and respond to PII-principal requests within required timescales. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.3
+        depth: 3
+        category: PII Controller
+      - urn: urn:inflect:req:iso27701-2019:7.3.10
+        ref_id: "7.3.10"
+        name: Automated decision making
+        description: Identify and manage obligations where decisions are made solely by automated processing. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.3
+        depth: 3
+        category: PII Controller
+
+      # ── 7.4 Privacy by design and by default ──
+      - urn: urn:inflect:req:iso27701-2019:7.4
+        ref_id: "7.4"
+        name: Privacy by design and by default
+        description: Limit collection and processing to what is necessary and build privacy protections into systems by default. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:clause-7
+        depth: 2
+        assessable: false
+        category: PII Controller
+      - urn: urn:inflect:req:iso27701-2019:7.4.1
+        ref_id: "7.4.1"
+        name: Limit collection
+        description: Collect only the PII that is adequate, relevant and necessary for the identified purposes. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.4
+        depth: 3
+        category: PII Controller
+      - urn: urn:inflect:req:iso27701-2019:7.4.2
+        ref_id: "7.4.2"
+        name: Limit processing
+        description: Restrict processing to what is necessary for the stated purposes. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.4
+        depth: 3
+        category: PII Controller
+      - urn: urn:inflect:req:iso27701-2019:7.4.3
+        ref_id: "7.4.3"
+        name: Accuracy and quality
+        description: Keep PII accurate, complete and up to date for its purpose. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.4
+        depth: 3
+        category: PII Controller
+      - urn: urn:inflect:req:iso27701-2019:7.4.4
+        ref_id: "7.4.4"
+        name: PII minimization objectives
+        description: Set and pursue objectives to minimize the PII processed. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.4
+        depth: 3
+        category: PII Controller
+      - urn: urn:inflect:req:iso27701-2019:7.4.5
+        ref_id: "7.4.5"
+        name: De-identification and deletion at end of processing
+        description: De-identify or delete PII when the processing purpose ends. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.4
+        depth: 3
+        category: PII Controller
+      - urn: urn:inflect:req:iso27701-2019:7.4.7
+        ref_id: "7.4.7"
+        name: Retention
+        description: Retain PII no longer than necessary and enforce defined retention periods. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.4
+        depth: 3
+        category: PII Controller
+        artifacts: "Retention schedule"
+      - urn: urn:inflect:req:iso27701-2019:7.4.9
+        ref_id: "7.4.9"
+        name: PII transmission controls
+        description: Protect PII in transit with appropriate controls. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.4
+        depth: 3
+        category: PII Controller
+
+      # ── 7.5 PII sharing, transfer and disclosure ──
+      - urn: urn:inflect:req:iso27701-2019:7.5
+        ref_id: "7.5"
+        name: PII sharing, transfer and disclosure
+        description: Govern the cross-border transfer and third-party disclosure of PII with a documented basis and records. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:clause-7
+        depth: 2
+        assessable: false
+        category: PII Controller
+      - urn: urn:inflect:req:iso27701-2019:7.5.1
+        ref_id: "7.5.1"
+        name: Identify basis for cross-border transfer
+        description: Establish and document a lawful basis before transferring PII between jurisdictions. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.5
+        depth: 3
+        category: PII Controller
+      - urn: urn:inflect:req:iso27701-2019:7.5.2
+        ref_id: "7.5.2"
+        name: Countries and organizations PII may be transferred to
+        description: Document the jurisdictions and organizations to which PII may be transferred. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.5
+        depth: 3
+        category: PII Controller
+      - urn: urn:inflect:req:iso27701-2019:7.5.3
+        ref_id: "7.5.3"
+        name: Records of PII transfer
+        description: Keep records of transfers of PII to third parties. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.5
+        depth: 3
+        category: PII Controller
+      - urn: urn:inflect:req:iso27701-2019:7.5.4
+        ref_id: "7.5.4"
+        name: Records of disclosure to third parties
+        description: Record disclosures of PII to third parties, including what was disclosed and to whom. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:7.5
+        depth: 3
+        category: PII Controller
+
+      # ═══ Clause 8 — Annex B: additional guidance for PII PROCESSORS ═══
+      - urn: urn:inflect:req:iso27701-2019:clause-8
+        ref_id: "8"
+        name: PII processor guidance (Annex B)
+        description: Privacy controls that apply when the organization processes PII on behalf of, and under the instructions of, a controller. (Paraphrase)
+        depth: 1
+        assessable: false
+        category: PII Processor
+
+      - urn: urn:inflect:req:iso27701-2019:8.2
+        ref_id: "8.2"
+        name: Conditions for collection and processing
+        description: Process PII only under the customer's documented instructions and agreed purposes. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:clause-8
+        depth: 2
+        assessable: false
+        category: PII Processor
+      - urn: urn:inflect:req:iso27701-2019:8.2.1
+        ref_id: "8.2.1"
+        name: Customer agreement
+        description: Agree in writing the roles and processing obligations with the controller customer. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:8.2
+        depth: 3
+        category: PII Processor
+        artifacts: "Processing agreement"
+      - urn: urn:inflect:req:iso27701-2019:8.2.2
+        ref_id: "8.2.2"
+        name: Organization's purposes
+        description: Do not process PII for the processor's own purposes beyond the customer's instructions. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:8.2
+        depth: 3
+        category: PII Processor
+      - urn: urn:inflect:req:iso27701-2019:8.2.4
+        ref_id: "8.2.4"
+        name: Infringing instruction
+        description: Inform the customer if an instruction appears to infringe applicable privacy law. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:8.2
+        depth: 3
+        category: PII Processor
+      - urn: urn:inflect:req:iso27701-2019:8.2.6
+        ref_id: "8.2.6"
+        name: Records related to processing PII
+        description: Maintain records of processing carried out on behalf of customers. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:8.2
+        depth: 3
+        category: PII Processor
+        artifacts: "Records of processing (processor)"
+
+      - urn: urn:inflect:req:iso27701-2019:8.3
+        ref_id: "8.3"
+        name: Obligations to PII principals
+        description: Support the controller in meeting its obligations to individuals. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:clause-8
+        depth: 2
+        assessable: false
+        category: PII Processor
+      - urn: urn:inflect:req:iso27701-2019:8.3.1
+        ref_id: "8.3.1"
+        name: Obligations to PII principals
+        description: Provide the controller the means to fulfil PII-principal rights requests. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:8.3
+        depth: 3
+        category: PII Processor
+
+      - urn: urn:inflect:req:iso27701-2019:8.4
+        ref_id: "8.4"
+        name: Privacy by design and by default
+        description: Handle temporary files, return/disposal and transmission of customer PII securely. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:clause-8
+        depth: 2
+        assessable: false
+        category: PII Processor
+      - urn: urn:inflect:req:iso27701-2019:8.4.1
+        ref_id: "8.4.1"
+        name: Temporary files
+        description: Delete temporary files holding PII within a defined period. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:8.4
+        depth: 3
+        category: PII Processor
+      - urn: urn:inflect:req:iso27701-2019:8.4.2
+        ref_id: "8.4.2"
+        name: Return, transfer or disposal of PII
+        description: Return, transfer or securely dispose of PII at the end of the service as instructed. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:8.4
+        depth: 3
+        category: PII Processor
+      - urn: urn:inflect:req:iso27701-2019:8.4.3
+        ref_id: "8.4.3"
+        name: PII transmission controls
+        description: Protect customer PII in transit with appropriate controls. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:8.4
+        depth: 3
+        category: PII Processor
+
+      - urn: urn:inflect:req:iso27701-2019:8.5
+        ref_id: "8.5"
+        name: PII sharing, transfer and disclosure
+        description: Govern sub-processing, cross-border transfer and disclosure of customer PII with records and notifications. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:clause-8
+        depth: 2
+        assessable: false
+        category: PII Processor
+      - urn: urn:inflect:req:iso27701-2019:8.5.1
+        ref_id: "8.5.1"
+        name: Basis for transfer between jurisdictions
+        description: Only transfer PII across jurisdictions on a basis agreed with the customer. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:8.5
+        depth: 3
+        category: PII Processor
+      - urn: urn:inflect:req:iso27701-2019:8.5.2
+        ref_id: "8.5.2"
+        name: Countries and organizations PII may be transferred to
+        description: Disclose to the customer the jurisdictions where PII may be processed. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:8.5
+        depth: 3
+        category: PII Processor
+      - urn: urn:inflect:req:iso27701-2019:8.5.3
+        ref_id: "8.5.3"
+        name: Records of PII disclosure to third parties
+        description: Record disclosures of customer PII to third parties. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:8.5
+        depth: 3
+        category: PII Processor
+      - urn: urn:inflect:req:iso27701-2019:8.5.4
+        ref_id: "8.5.4"
+        name: Notification of disclosure requests
+        description: Notify the customer of legally binding requests to disclose their PII unless prohibited. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:8.5
+        depth: 3
+        category: PII Processor
+      - urn: urn:inflect:req:iso27701-2019:8.5.6
+        ref_id: "8.5.6"
+        name: Disclosure of subcontractors
+        description: Disclose the use of subcontractors that process PII to the customer. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:8.5
+        depth: 3
+        category: PII Processor
+      - urn: urn:inflect:req:iso27701-2019:8.5.7
+        ref_id: "8.5.7"
+        name: Engagement of a subcontractor
+        description: Only engage subcontractors under contract terms consistent with the customer agreement. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:8.5
+        depth: 3
+        category: PII Processor
+      - urn: urn:inflect:req:iso27701-2019:8.5.8
+        ref_id: "8.5.8"
+        name: Change of subcontractor
+        description: Inform the customer of intended changes to subcontractors so they can object. (Paraphrase)
+        parent_urn: urn:inflect:req:iso27701-2019:8.5
+        depth: 3
+        category: PII Processor

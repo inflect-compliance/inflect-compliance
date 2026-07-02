@@ -41,6 +41,7 @@ const STARTER_PACKS: Record<string, { frameworkKey: string; packKey: string }> =
     'NIST-PF-1.0': { frameworkKey: 'NIST-PRIVACY', packKey: 'NIST_PRIVACY_BASELINE' },
     'NIST-SSDF-800-218': { frameworkKey: 'NIST-SSDF', packKey: 'SSDF_STARTER_PACK' },
     'AISVS-1.0': { frameworkKey: 'OWASP-AISVS', packKey: 'AISVS_BASELINE' },
+    'ISO27701-2019': { frameworkKey: 'ISO27701', packKey: 'ISO27701_BASELINE' },
 };
 
 /** Library frameworks intentionally shipped WITHOUT a starter pack. */
@@ -55,6 +56,11 @@ const BARE_FRAMEWORKS: Record<string, string> = {
         'follow-up (a curated SOC 2 CC starter pack, mirroring the SSDF pack). ' +
         'Listed here so the gap is explicit rather than silent — remove this entry ' +
         'and add a STARTER_PACKS row when the SOC 2 pack lands.',
+    'GDPR':
+        'Regulatory-reference framework: mapping target, not a control catalogue. ' +
+        'GDPR articles are the obligations that ISO 27701 and other controls map ' +
+        'TO (via mappings/iso27701-to-gdpr.yaml); the framework carries no control ' +
+        'templates by design, so it ships without a starter pack.',
 };
 
 /** Every framework ref_id discovered in the library directory. */

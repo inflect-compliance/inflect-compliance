@@ -1,0 +1,332 @@
+[
+  {
+    "key": "5",
+    "section": "PIMS Management",
+    "sortOrder": 1,
+    "title": "PIMS-specific requirements (extends the ISMS)"
+  },
+  {
+    "key": "6",
+    "section": "PIMS Controls",
+    "sortOrder": 2,
+    "title": "PIMS-specific guidance (extends the controls)"
+  },
+  {
+    "key": "7",
+    "section": "PII Controller",
+    "sortOrder": 3,
+    "title": "PII controller guidance (Annex A)"
+  },
+  {
+    "key": "7.2",
+    "section": "PII Controller",
+    "sortOrder": 4,
+    "title": "Conditions for collection and processing"
+  },
+  {
+    "key": "7.2.1",
+    "section": "PII Controller",
+    "sortOrder": 5,
+    "title": "Identify and document purpose"
+  },
+  {
+    "key": "7.2.2",
+    "section": "PII Controller",
+    "sortOrder": 6,
+    "title": "Identify lawful basis"
+  },
+  {
+    "key": "7.2.3",
+    "section": "PII Controller",
+    "sortOrder": 7,
+    "title": "Determine when and how to obtain consent"
+  },
+  {
+    "key": "7.2.4",
+    "section": "PII Controller",
+    "sortOrder": 8,
+    "title": "Obtain and record consent"
+  },
+  {
+    "key": "7.2.5",
+    "section": "PII Controller",
+    "sortOrder": 9,
+    "title": "Privacy impact assessment"
+  },
+  {
+    "key": "7.2.6",
+    "section": "PII Controller",
+    "sortOrder": 10,
+    "title": "Contracts with PII processors"
+  },
+  {
+    "key": "7.2.8",
+    "section": "PII Controller",
+    "sortOrder": 11,
+    "title": "Records related to processing PII"
+  },
+  {
+    "key": "7.3",
+    "section": "PII Controller",
+    "sortOrder": 12,
+    "title": "Obligations to PII principals"
+  },
+  {
+    "key": "7.3.1",
+    "section": "PII Controller",
+    "sortOrder": 13,
+    "title": "Determining and fulfilling obligations"
+  },
+  {
+    "key": "7.3.2",
+    "section": "PII Controller",
+    "sortOrder": 14,
+    "title": "Determining information for PII principals"
+  },
+  {
+    "key": "7.3.3",
+    "section": "PII Controller",
+    "sortOrder": 15,
+    "title": "Providing information to PII principals"
+  },
+  {
+    "key": "7.3.4",
+    "section": "PII Controller",
+    "sortOrder": 16,
+    "title": "Mechanism to modify or withdraw consent"
+  },
+  {
+    "key": "7.3.5",
+    "section": "PII Controller",
+    "sortOrder": 17,
+    "title": "Mechanism to object to processing"
+  },
+  {
+    "key": "7.3.6",
+    "section": "PII Controller",
+    "sortOrder": 18,
+    "title": "Access, correction and erasure"
+  },
+  {
+    "key": "7.3.7",
+    "section": "PII Controller",
+    "sortOrder": 19,
+    "title": "Inform third parties of changes"
+  },
+  {
+    "key": "7.3.8",
+    "section": "PII Controller",
+    "sortOrder": 20,
+    "title": "Provide a copy of PII processed"
+  },
+  {
+    "key": "7.3.9",
+    "section": "PII Controller",
+    "sortOrder": 21,
+    "title": "Handle requests"
+  },
+  {
+    "key": "7.3.10",
+    "section": "PII Controller",
+    "sortOrder": 22,
+    "title": "Automated decision making"
+  },
+  {
+    "key": "7.4",
+    "section": "PII Controller",
+    "sortOrder": 23,
+    "title": "Privacy by design and by default"
+  },
+  {
+    "key": "7.4.1",
+    "section": "PII Controller",
+    "sortOrder": 24,
+    "title": "Limit collection"
+  },
+  {
+    "key": "7.4.2",
+    "section": "PII Controller",
+    "sortOrder": 25,
+    "title": "Limit processing"
+  },
+  {
+    "key": "7.4.3",
+    "section": "PII Controller",
+    "sortOrder": 26,
+    "title": "Accuracy and quality"
+  },
+  {
+    "key": "7.4.4",
+    "section": "PII Controller",
+    "sortOrder": 27,
+    "title": "PII minimization objectives"
+  },
+  {
+    "key": "7.4.5",
+    "section": "PII Controller",
+    "sortOrder": 28,
+    "title": "De-identification and deletion at end of processing"
+  },
+  {
+    "key": "7.4.7",
+    "section": "PII Controller",
+    "sortOrder": 29,
+    "title": "Retention"
+  },
+  {
+    "key": "7.4.9",
+    "section": "PII Controller",
+    "sortOrder": 30,
+    "title": "PII transmission controls"
+  },
+  {
+    "key": "7.5",
+    "section": "PII Controller",
+    "sortOrder": 31,
+    "title": "PII sharing, transfer and disclosure"
+  },
+  {
+    "key": "7.5.1",
+    "section": "PII Controller",
+    "sortOrder": 32,
+    "title": "Identify basis for cross-border transfer"
+  },
+  {
+    "key": "7.5.2",
+    "section": "PII Controller",
+    "sortOrder": 33,
+    "title": "Countries and organizations PII may be transferred to"
+  },
+  {
+    "key": "7.5.3",
+    "section": "PII Controller",
+    "sortOrder": 34,
+    "title": "Records of PII transfer"
+  },
+  {
+    "key": "7.5.4",
+    "section": "PII Controller",
+    "sortOrder": 35,
+    "title": "Records of disclosure to third parties"
+  },
+  {
+    "key": "8",
+    "section": "PII Processor",
+    "sortOrder": 36,
+    "title": "PII processor guidance (Annex B)"
+  },
+  {
+    "key": "8.2",
+    "section": "PII Processor",
+    "sortOrder": 37,
+    "title": "Conditions for collection and processing"
+  },
+  {
+    "key": "8.2.1",
+    "section": "PII Processor",
+    "sortOrder": 38,
+    "title": "Customer agreement"
+  },
+  {
+    "key": "8.2.2",
+    "section": "PII Processor",
+    "sortOrder": 39,
+    "title": "Organization's purposes"
+  },
+  {
+    "key": "8.2.4",
+    "section": "PII Processor",
+    "sortOrder": 40,
+    "title": "Infringing instruction"
+  },
+  {
+    "key": "8.2.6",
+    "section": "PII Processor",
+    "sortOrder": 41,
+    "title": "Records related to processing PII"
+  },
+  {
+    "key": "8.3",
+    "section": "PII Processor",
+    "sortOrder": 42,
+    "title": "Obligations to PII principals"
+  },
+  {
+    "key": "8.3.1",
+    "section": "PII Processor",
+    "sortOrder": 43,
+    "title": "Obligations to PII principals"
+  },
+  {
+    "key": "8.4",
+    "section": "PII Processor",
+    "sortOrder": 44,
+    "title": "Privacy by design and by default"
+  },
+  {
+    "key": "8.4.1",
+    "section": "PII Processor",
+    "sortOrder": 45,
+    "title": "Temporary files"
+  },
+  {
+    "key": "8.4.2",
+    "section": "PII Processor",
+    "sortOrder": 46,
+    "title": "Return, transfer or disposal of PII"
+  },
+  {
+    "key": "8.4.3",
+    "section": "PII Processor",
+    "sortOrder": 47,
+    "title": "PII transmission controls"
+  },
+  {
+    "key": "8.5",
+    "section": "PII Processor",
+    "sortOrder": 48,
+    "title": "PII sharing, transfer and disclosure"
+  },
+  {
+    "key": "8.5.1",
+    "section": "PII Processor",
+    "sortOrder": 49,
+    "title": "Basis for transfer between jurisdictions"
+  },
+  {
+    "key": "8.5.2",
+    "section": "PII Processor",
+    "sortOrder": 50,
+    "title": "Countries and organizations PII may be transferred to"
+  },
+  {
+    "key": "8.5.3",
+    "section": "PII Processor",
+    "sortOrder": 51,
+    "title": "Records of PII disclosure to third parties"
+  },
+  {
+    "key": "8.5.4",
+    "section": "PII Processor",
+    "sortOrder": 52,
+    "title": "Notification of disclosure requests"
+  },
+  {
+    "key": "8.5.6",
+    "section": "PII Processor",
+    "sortOrder": 53,
+    "title": "Disclosure of subcontractors"
+  },
+  {
+    "key": "8.5.7",
+    "section": "PII Processor",
+    "sortOrder": 54,
+    "title": "Engagement of a subcontractor"
+  },
+  {
+    "key": "8.5.8",
+    "section": "PII Processor",
+    "sortOrder": 55,
+    "title": "Change of subcontractor"
+  }
+]
