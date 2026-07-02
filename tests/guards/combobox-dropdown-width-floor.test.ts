@@ -42,4 +42,16 @@ describe('combobox dropdown width is a floor, not an exact trigger match', () =>
         // what stops the truncation.
         expect(SRC).toMatch(/width=\{!isMobile\}/);
     });
+
+    it('floors the MEASURED content (Command) to the trigger width so the row highlight spans the full dropdown', () => {
+        // AnimatedSizeContainer sizes to the natural CONTENT width. The popover
+        // wrapper carries the trigger-width floor, but the measured <Command>
+        // did not — so the option rows + selected/hover highlight rendered only
+        // as wide as the longest label, covering ~half of a wider
+        // matchTriggerWidth dropdown. The <Command> root must carry the same
+        // floor so the list (and its highlight) fills the full popover width.
+        const commandFloor =
+            /<Command\s+loop[\s\S]{0,1300}?min-w-\[var\(--radix-popover-trigger-width\)\]/;
+        expect(SRC).toMatch(commandFloor);
+    });
 });

@@ -517,7 +517,22 @@ export function Combobox<
                         transition={{ ease: "easeInOut", duration: 0.1 }}
                         className="pointer-events-auto"
                     >
-                        <Command loop shouldFilter={shouldFilter}>
+                        <Command
+                            loop
+                            shouldFilter={shouldFilter}
+                            className={cn(
+                                // Floor the MEASURED content to the trigger width
+                                // too. The popover wrapper already carries this
+                                // floor, but AnimatedSizeContainer sizes to the
+                                // natural CONTENT width — so without this the option
+                                // rows (and their selected/hover highlight) render
+                                // only as wide as the longest label, covering ~half
+                                // of a wider matchTriggerWidth dropdown. Flooring the
+                                // Command makes the list fill the full popover width.
+                                matchTriggerWidth &&
+                                    "sm:min-w-[var(--radix-popover-trigger-width)]",
+                            )}
+                        >
                             {!hideSearch && (
                                 <div className="border-border-subtle flex items-center overflow-hidden rounded-t-lg border-b">
                                     <Command.Input
