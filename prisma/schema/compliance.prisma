@@ -1248,6 +1248,12 @@ model Control {
   name                         String
   description                  String?
   intent                       String?
+  // Internal-controls import: objective (Overview shows this as "Objective"),
+  // success criteria (Overview "Success Criteria"), and testing/audit
+  // methodology (Tests tab, above Test plans).
+  objective                    String?
+  successCriteria              String?
+  testingMethodology           String?
   category                     String?
   status                       ControlStatus            @default(NOT_STARTED)
   effectiveness                Int?
@@ -1460,6 +1466,16 @@ model ControlTemplate {
   category         String?
   defaultFrequency ControlFrequency?
   defaultOwnerHint String?
+  // Internal-controls import (customer GRC export): the control's objective
+  // (what it achieves), success criteria (what "passing" looks like), and
+  // testing/audit methodology. Copied onto the Control on install.
+  objective          String?
+  successCriteria    String?
+  testingMethodology String?
+  // Pipe-separated policy names this control relates to (from the source
+  // export); resolved to PolicyControlLink per-tenant on install where a
+  // matching policy exists. Framework mapping deferred (source Tags empty).
+  relatedPolicies  String?
   isGlobal         Boolean                          @default(true)
   createdAt        DateTime                         @default(now())
   requirementLinks ControlTemplateRequirementLink[]
