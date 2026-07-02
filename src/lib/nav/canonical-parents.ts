@@ -34,6 +34,10 @@ const PARENT_MAP: Record<string, CanonicalParent> = {
     // Access reviews
     '/access-reviews/[reviewId]': { href: '/access-reviews', label: 'Access reviews' },
 
+    // Agent (MCP) — both hang off the /admin/mcp hub.
+    '/agent-proposals': { href: '/admin/mcp', label: 'MCP' },
+    '/agent-runs': { href: '/admin/mcp', label: 'MCP' },
+
     // Admin subpages
     '/admin/api-keys': { href: '/admin', label: 'Admin' },
     '/admin/audit-log': { href: '/admin', label: 'Admin' },

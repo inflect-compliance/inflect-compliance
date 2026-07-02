@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server';
-import { Shield, CreditCard, KeyRound, ShieldCheck, ShieldPlus, Users, UserCog, CloudCog, Plug, Palette, Grid3x3, Gauge, Bell, ScrollText, Globe, Bot } from 'lucide-react';
+import { Shield, CreditCard, KeyRound, ShieldCheck, ShieldPlus, Users, UserCog, CloudCog, Plug, Palette, Grid3x3, Gauge, Bell, ScrollText, Globe } from 'lucide-react';
+import { Robot } from '@/components/ui/icons/nucleo';
 import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
@@ -174,7 +175,7 @@ export default async function AdminPage({
                     className={buttonVariants({ variant: 'secondary' })}
                     id="mcp-pill-btn"
                 >
-                    <Bot className="w-3.5 h-3.5" />
+                    <Robot className="w-3.5 h-3.5" />
                     MCP
                 </Link>
             </div>

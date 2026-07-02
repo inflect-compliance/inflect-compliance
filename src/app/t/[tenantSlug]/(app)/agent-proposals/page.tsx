@@ -1,5 +1,6 @@
 import { getTenantCtx } from '@/app-layer/context';
 import { listAgentProposals } from '@/app-layer/usecases/agent-proposals';
+import { ForbiddenPage } from '@/components/ForbiddenPage';
 
 import { AgentProposalsClient, type ProposalRow } from './AgentProposalsClient';
 
@@ -16,6 +17,17 @@ export default async function AgentProposalsPage({
 }) {
     const { tenantSlug } = await params;
     const ctx = await getTenantCtx({ tenantSlug });
+    // Admin-gated — reached from the /admin/mcp hub; only workspace admins
+    // review the propose-not-commit queue. Server-side gate (before the data
+    // load) so a non-admin never triggers the fetch.
+    if (!ctx.appPermissions.admin.view) {
+        return (
+            <ForbiddenPage
+                title="MCP Access Required"
+                message="You do not have permission to review agent proposals. Contact your workspace administrator to request access."
+            />
+        );
+    }
     const proposals = await listAgentProposals(ctx, { status: 'PENDING' });
 
     const rows: ProposalRow[] = proposals.map((p) => ({

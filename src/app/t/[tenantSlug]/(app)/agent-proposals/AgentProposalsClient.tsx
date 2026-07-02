@@ -63,8 +63,11 @@ export function AgentProposalsClient({
     return (
         <div className="space-y-section animate-fadeIn">
             <PageHeader
+                back={{ smart: true }}
                 breadcrumbs={[
                     { label: 'Dashboard', href: tenantHref('/dashboard') },
+                    { label: 'Admin', href: tenantHref('/admin') },
+                    { label: 'MCP', href: tenantHref('/admin/mcp') },
                     { label: 'Agent proposals' },
                 ]}
                 title="Agent proposals"
