@@ -18,7 +18,12 @@ import {
     EntityPicker,
     type EntityPickerKind,
 } from '@/components/ui/entity-picker';
-import { useToastWithUndo } from '@/components/ui/hooks';
+import { useToastWithUndo, useToast } from '@/components/ui/hooks';
+import { Modal } from '@/components/ui/modal';
+import { FormField } from '@/components/ui/form-field';
+import { Input } from '@/components/ui/input';
+import { NumberStepper } from '@/components/ui/number-stepper';
+import { CopyText } from '@/components/ui/copy-text';
 import { normaliseHref } from '@/lib/security/safe-url';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { EntityDetailLayout } from '@/components/layout/EntityDetailLayout';
@@ -114,6 +119,17 @@ interface VendorTemplateRow {
     name: string;
     _count?: { questions: number };
 }
+// Epic G-3 — VendorAssessmentTemplate rows (the newer questionnaire
+// model authored in Admin → Vendor Templates + the globally-seeded
+// two). Sent to a vendor via the send flow. Distinct from the legacy
+// `VendorTemplateRow` above, which drives the in-app "Start" flow.
+interface SendTemplateRow {
+    id: string;
+    name: string;
+    isPublished: boolean;
+    isGlobal: boolean;
+    _count?: { sections: number; questions: number };
+}
 // Cross-entity links — GET /vendors/[id]/links.
 interface VendorLinkRow {
     id: string;
@@ -139,6 +155,7 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
     const { permissions } = useTenantContext();
     const canWrite = permissions?.canWrite;
     const triggerUndoToast = useToastWithUndo();
+    const toast = useToast();
 
     const [vendor, setVendor] = useState<VendorDetail | null>(null);
     const [loading, setLoading] = useState(true);
@@ -162,9 +179,21 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
     // value matches that label exactly; `__none__` matches docs with
     // a null/empty folder so legacy unfoldered docs stay findable.
     const [docFolderFilter, setDocFolderFilter] = useState('');
-    // Assessment start
+    // Assessment start (legacy in-app flow)
     const [showStartAssessment, setShowStartAssessment] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState('');
+    // Epic G-3 — send-to-vendor flow (published VendorAssessmentTemplate)
+    const [sendTemplates, setSendTemplates] = useState<SendTemplateRow[]>([]);
+    const [showSendModal, setShowSendModal] = useState(false);
+    const [sendForm, setSendForm] = useState({
+        templateVersionId: '',
+        respondentEmail: '',
+        respondentName: '',
+        expiresInDays: 14,
+    });
+    const [sending, setSending] = useState(false);
+    const [sendError, setSendError] = useState<string | null>(null);
+    const [sendLink, setSendLink] = useState<string | null>(null);
     // Enrichment
     const [enriching, setEnriching] = useState(false);
     // Links
@@ -197,6 +226,15 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
     const fetchAssessments = useCallback(async () => {
         const res = await fetch(apiUrl(`/vendors/questionnaires/templates`));
         if (res.ok) setTemplates(await res.json());
+        // Epic G-3 — the send-to-vendor picker draws from the newer
+        // VendorAssessmentTemplate model (a DIFFERENT endpoint from the
+        // legacy `questionnaires/templates` above). Only PUBLISHED
+        // templates can be sent, so filter here.
+        const gRes = await fetch(apiUrl(`/vendor-assessment-templates`));
+        if (gRes.ok) {
+            const rows = (await gRes.json()) as SendTemplateRow[];
+            setSendTemplates(rows.filter((t) => t.isPublished));
+        }
         // We get assessments from vendor detail, but need a separate list
         // For now, we'll use a simple approach
         const aRes = await fetch(apiUrl(`/vendors/${params.vendorId}`));
@@ -294,6 +332,49 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
         if (res.ok) {
             const assessment = await res.json();
             window.location.href = tenantHref(`/vendors/${params.vendorId}/assessment/${assessment.id}`);
+        }
+    };
+
+    // Epic G-3 — send a published VendorAssessmentTemplate to the
+    // vendor's external respondent. Distinct from `startAssessment`
+    // above (legacy in-app fill). On success we surface the raw access
+    // link so the admin can share it manually if the email bounces.
+    const sendAssessmentToVendor = async () => {
+        if (!sendForm.templateVersionId || !sendForm.respondentEmail) return;
+        setSending(true);
+        setSendError(null);
+        try {
+            const res = await fetch(
+                apiUrl(`/vendors/${params.vendorId}/assessments/send`),
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        templateVersionId: sendForm.templateVersionId,
+                        respondentEmail: sendForm.respondentEmail.trim(),
+                        respondentName: sendForm.respondentName.trim() || undefined,
+                        expiresInDays: sendForm.expiresInDays,
+                    }),
+                },
+            );
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                setSendError(err?.error?.message || err?.message || 'Failed to send assessment.');
+                return;
+            }
+            const result = (await res.json()) as {
+                assessmentId: string;
+                externalAccessToken: string;
+            };
+            const link = `${window.location.origin}/vendor-assessment/${result.assessmentId}?t=${result.externalAccessToken}`;
+            setSendLink(link);
+            setShowSendModal(false);
+            toast.success('Assessment sent to vendor');
+            fetchAssessments();
+        } catch {
+            setSendError('Failed to send assessment.');
+        } finally {
+            setSending(false);
         }
     };
 
@@ -630,9 +711,24 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                 <div className="space-y-default">
                     {canWrite && (
                         <div className="flex items-center gap-compact justify-end">
+                            {/* Epic G-3 — "Send to vendor" opens a modal
+                                that emails a published questionnaire
+                                template to an external respondent. Kept
+                                alongside the legacy "Start Assessment"
+                                in-app fill flow below. */}
+                            <Button
+                                variant="primary"
+                                onClick={() => {
+                                    setSendError(null);
+                                    setShowSendModal(true);
+                                }}
+                                id="send-assessment-btn"
+                            >
+                                Send to vendor
+                            </Button>
                             {!showStartAssessment ? (
-                                <Button variant="primary" onClick={() => setShowStartAssessment(true)} id="start-assessment-btn">
-                                    + Start Assessment
+                                <Button variant="secondary" onClick={() => setShowStartAssessment(true)} id="start-assessment-btn">
+                                    Start (in-app)
                                 </Button>
                             ) : (
                                 <div className="flex items-center gap-tight">
@@ -651,11 +747,132 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                             )}
                         </div>
                     )}
+                    {/* Epic G-3 — reveal the raw access link after a send
+                        so the admin can share it manually (e.g. the
+                        invite email bounced). Shown until dismissed. */}
+                    {sendLink && (
+                        <div className={cn(cardVariants({ density: 'compact' }), 'space-y-tight')} id="send-assessment-link">
+                            <div className="flex items-center justify-between gap-compact">
+                                <Heading level={3}>Assessment link</Heading>
+                                <button
+                                    className="text-content-muted text-xs hover:underline"
+                                    onClick={() => setSendLink(null)}
+                                >
+                                    Dismiss
+                                </button>
+                            </div>
+                            <p className="text-xs text-content-muted">
+                                The invitation was emailed to the respondent. Share this link manually if needed — it grants access to the questionnaire.
+                            </p>
+                            <CopyText value={sendLink} label="Copy assessment link" truncate className="text-xs">
+                                {sendLink}
+                            </CopyText>
+                        </div>
+                    )}
                     <VendorAssessmentsTable
                         assessments={assessments}
                         vendorId={params.vendorId}
                         tenantHref={tenantHref}
                     />
+                    {/* Epic G-3 — send modal */}
+                    <Modal
+                        showModal={showSendModal}
+                        setShowModal={setShowSendModal}
+                        title="Send assessment"
+                        description="Email a published questionnaire to this vendor's respondent."
+                    >
+                        <Modal.Header
+                            title="Send assessment"
+                            description="Email a published questionnaire to this vendor's respondent."
+                        />
+                        <Modal.Body>
+                            <div className="space-y-default">
+                                <FormField label="Template">
+                                    <Combobox
+                                        id="send-template-select"
+                                        selected={
+                                            sendTemplates
+                                                .map((t) => ({
+                                                    value: t.id,
+                                                    label: `${t.name} (${t._count?.questions || 0} Q)${t.isGlobal ? ' · Global' : ''}`,
+                                                }))
+                                                .find((o) => o.value === sendForm.templateVersionId) ?? null
+                                        }
+                                        setSelected={(opt) =>
+                                            setSendForm((p) => ({ ...p, templateVersionId: opt?.value ?? '' }))
+                                        }
+                                        options={sendTemplates.map((t) => ({
+                                            value: t.id,
+                                            label: `${t.name} (${t._count?.questions || 0} Q)${t.isGlobal ? ' · Global' : ''}`,
+                                        }))}
+                                        placeholder={
+                                            sendTemplates.length === 0
+                                                ? 'No published templates'
+                                                : 'Select template…'
+                                        }
+                                        matchTriggerWidth
+                                    />
+                                </FormField>
+                                <FormField label="Respondent email" required>
+                                    <Input
+                                        id="send-respondent-email"
+                                        type="email"
+                                        value={sendForm.respondentEmail}
+                                        onChange={(e) =>
+                                            setSendForm((p) => ({ ...p, respondentEmail: e.target.value }))
+                                        }
+                                        placeholder="security@vendor.com"
+                                    />
+                                </FormField>
+                                <FormField label="Respondent name">
+                                    <Input
+                                        id="send-respondent-name"
+                                        value={sendForm.respondentName}
+                                        onChange={(e) =>
+                                            setSendForm((p) => ({ ...p, respondentName: e.target.value }))
+                                        }
+                                        placeholder="Optional"
+                                    />
+                                </FormField>
+                                <FormField label="Expires in (days)">
+                                    <NumberStepper
+                                        id="send-expires-days"
+                                        value={sendForm.expiresInDays}
+                                        onChange={(v) => setSendForm((p) => ({ ...p, expiresInDays: v }))}
+                                        min={1}
+                                        max={90}
+                                    />
+                                </FormField>
+                                {sendError && (
+                                    <p className="text-sm text-content-error" id="send-assessment-error">
+                                        {sendError}
+                                    </p>
+                                )}
+                            </div>
+                        </Modal.Body>
+                        <Modal.Footer>
+                            <Modal.Actions>
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => setShowSendModal(false)}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    variant="primary"
+                                    onClick={sendAssessmentToVendor}
+                                    disabled={
+                                        sending ||
+                                        !sendForm.templateVersionId ||
+                                        !sendForm.respondentEmail.trim()
+                                    }
+                                    id="confirm-send-assessment"
+                                >
+                                    {sending ? 'Sending…' : 'Send assessment'}
+                                </Button>
+                            </Modal.Actions>
+                        </Modal.Footer>
+                    </Modal>
                 </div>
             )}
 

@@ -186,7 +186,9 @@ const MIN_SECONDARY_TO_PRIMARY_RATIO = 0.9;
 // 2026-07-02 — bumped 139 → 140 for the NIS2 gap respond page (Prompt 2): the
 // assignee's single "Submit answers" CTA is the earned primary on the answer
 // form (dispatch/finalize on the owner panel are secondary). +1.
-const MAX_PRIMARY_COUNT = 140;
+// +1 for the Epic G-3 vendor-assessment "Send assessment" modal confirm
+// (see the per-file bump in primary-action-budget.test.ts).
+const MAX_PRIMARY_COUNT = 141;
 
 describe("primary:secondary ratio direction", () => {
     const counts = (() => {

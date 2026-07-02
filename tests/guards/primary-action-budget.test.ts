@@ -69,7 +69,9 @@ const PRIMARY_BUDGET: Record<string, number> = {
     // Mappings tab component below.
     "src/app/t/[tenantSlug]/(app)/controls/[controlId]/page.tsx": 8,
     "src/app/t/[tenantSlug]/(app)/controls/[controlId]/_tabs/ControlMappingsTab.tsx": 2,
-    "src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx": 9,
+    // +1 for the Epic G-3 "Send assessment" modal confirm — its own
+    // dialog region, never on screen with the page-header CTAs.
+    "src/app/t/[tenantSlug]/(app)/vendors/[vendorId]/page.tsx": 10,
     // NIS2 incident detail — four modal confirms, each its own dialog,
     // never on screen together: submit-report, add-timeline-entry,
     // confirm-mark-reportable, and link-forensic-evidence. The page-level
