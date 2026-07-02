@@ -14,7 +14,7 @@ const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 
 const CLIENT = 'src/app/t/[tenantSlug]/(app)/assets/AssetsClient.tsx';
-const SHEET = 'src/app/t/[tenantSlug]/(app)/assets/AssetDetailSheet.tsx';
+const PANEL = 'src/app/t/[tenantSlug]/(app)/assets/AssetDetailPanel.tsx';
 
 describe('item 34 — asset Criticality column', () => {
     const src = read(CLIENT);
@@ -45,14 +45,23 @@ describe('item 32 — three-way asset interaction (title / row / double-click)',
         // The old single-click-opens-panel onRowClick is gone.
         expect(src).not.toContain('onRowClick={(row) => setSelectedAssetId(row.original.id)}');
     });
-    it('mounts the AssetDetailSheet', () => {
-        expect(src).toContain('<AssetDetailSheet');
+    it('opens the quick-look in a docked right-rail AsidePanel (like Controls/Tasks), not a modal Sheet', () => {
+        // The rail is the `<AsidePanel>` primitive fed into the
+        // ListPageShell.Body `aside` slot — a co-resident docked column
+        // (Sheet only below xl), NOT a blocking overlay. A regression back to
+        // the overlay `<Sheet>` would re-dim the page on a name click.
+        expect(src).toContain('<AsidePanel');
+        expect(src).toContain('<AssetDetailPanel');
+        expect(src).toMatch(/<ListPageShell\.Body aside=\{assetQuickViewAside\}>/);
+        expect(src).toMatch(/openOnMount/);
+        // The overlay Sheet mount is gone.
+        expect(src).not.toContain('<AssetDetailSheet');
     });
     it('the panel has a Full view button to the detail page', () => {
-        const sheet = read(SHEET);
-        expect(sheet).toContain('asset-sheet-full-view');
-        expect(sheet).toMatch(/Full view/);
-        expect(sheet).toMatch(/\/assets\/\$\{asset\.id\}/);
+        const panel = read(PANEL);
+        expect(panel).toContain('asset-panel-full-view');
+        expect(panel).toMatch(/Full view/);
+        expect(panel).toMatch(/\/assets\/\$\{asset\.id\}/);
     });
     it('asset name tints brand-color only on hover of the NAME (tintOn="self"), like controls', () => {
         // The asset name is its own <button>; tintOn="self" makes the brand-tone
