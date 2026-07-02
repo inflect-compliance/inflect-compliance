@@ -113,16 +113,10 @@ interface VendorEditForm {
     status: string;
 }
 
-// Questionnaire templates — QuestionnaireRepository.listTemplates.
-interface VendorTemplateRow {
-    key: string;
-    name: string;
-    _count?: { questions: number };
-}
-// Epic G-3 — VendorAssessmentTemplate rows (the newer questionnaire
-// model authored in Admin → Vendor Templates + the globally-seeded
-// two). Sent to a vendor via the send flow. Distinct from the legacy
-// `VendorTemplateRow` above, which drives the in-app "Start" flow.
+// Epic G-3 — VendorAssessmentTemplate rows (the questionnaire model
+// authored in Admin → Vendor Templates + the globally-seeded two).
+// Sent to a vendor's respondent via the send flow — the single
+// assessment-creation path.
 interface SendTemplateRow {
     id: string;
     name: string;
@@ -162,7 +156,6 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
     const [tab, setTab] = useState<Tab>('overview');
     const [docs, setDocs] = useState<VendorDocRow[]>([]);
     const [assessments, setAssessments] = useState<VendorAssessmentRow[]>([]);
-    const [templates, setTemplates] = useState<VendorTemplateRow[]>([]);
     const [editing, setEditing] = useState(false);
     const [editForm, setEditForm] = useState<VendorEditForm>({
         name: '', legalName: '', websiteUrl: '', domain: '',
@@ -180,8 +173,6 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
     // a null/empty folder so legacy unfoldered docs stay findable.
     const [docFolderFilter, setDocFolderFilter] = useState('');
     // Assessment start (legacy in-app flow)
-    const [showStartAssessment, setShowStartAssessment] = useState(false);
-    const [selectedTemplate, setSelectedTemplate] = useState('');
     // Epic G-3 — send-to-vendor flow (published VendorAssessmentTemplate)
     const [sendTemplates, setSendTemplates] = useState<SendTemplateRow[]>([]);
     const [showSendModal, setShowSendModal] = useState(false);
@@ -224,12 +215,9 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
     }, [apiUrl, params.vendorId]);
 
     const fetchAssessments = useCallback(async () => {
-        const res = await fetch(apiUrl(`/vendors/questionnaires/templates`));
-        if (res.ok) setTemplates(await res.json());
-        // Epic G-3 — the send-to-vendor picker draws from the newer
-        // VendorAssessmentTemplate model (a DIFFERENT endpoint from the
-        // legacy `questionnaires/templates` above). Only PUBLISHED
-        // templates can be sent, so filter here.
+        // Epic G-3 — the send picker draws from the VendorAssessmentTemplate
+        // model (Admin → Vendor Templates + the globally-seeded questionnaires).
+        // Only PUBLISHED templates can be sent, so filter here.
         const gRes = await fetch(apiUrl(`/vendor-assessment-templates`));
         if (gRes.ok) {
             const rows = (await gRes.json()) as SendTemplateRow[];
@@ -323,22 +311,10 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
         });
     };
 
-    const startAssessment = async () => {
-        if (!selectedTemplate) return;
-        const res = await fetch(apiUrl(`/vendors/${params.vendorId}/assessments/start`), {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ templateKey: selectedTemplate }),
-        });
-        if (res.ok) {
-            const assessment = await res.json();
-            window.location.href = tenantHref(`/vendors/${params.vendorId}/assessment/${assessment.id}`);
-        }
-    };
-
     // Epic G-3 — send a published VendorAssessmentTemplate to the
-    // vendor's external respondent. Distinct from `startAssessment`
-    // above (legacy in-app fill). On success we surface the raw access
-    // link so the admin can share it manually if the email bounces.
+    // vendor's external respondent (the single assessment-creation path).
+    // On success we surface the raw access link so the admin can share it
+    // manually if the invite email bounces.
     const sendAssessmentToVendor = async () => {
         if (!sendForm.templateVersionId || !sendForm.respondentEmail) return;
         setSending(true);
@@ -711,11 +687,13 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                 <div className="space-y-default">
                     {canWrite && (
                         <div className="flex items-center gap-compact justify-end">
-                            {/* Epic G-3 — "Send to vendor" opens a modal
-                                that emails a published questionnaire
-                                template to an external respondent. Kept
-                                alongside the legacy "Start Assessment"
-                                in-app fill flow below. */}
+                            {/* Epic G-3 — the single assessment-creation path:
+                                pick a published VendorAssessmentTemplate and
+                                email it to the vendor's respondent. The legacy
+                                in-app "Start" flow (a separate QuestionnaireTemplate
+                                model that never surfaced the tenant's own
+                                questionnaire templates) was retired in favour of
+                                this unified flow. */}
                             <Button
                                 variant="primary"
                                 onClick={() => {
@@ -724,27 +702,8 @@ export default function VendorDetailPage(props: { params: Promise<{ tenantSlug: 
                                 }}
                                 id="send-assessment-btn"
                             >
-                                Send to vendor
+                                Send assessment
                             </Button>
-                            {!showStartAssessment ? (
-                                <Button variant="secondary" onClick={() => setShowStartAssessment(true)} id="start-assessment-btn">
-                                    Start (in-app)
-                                </Button>
-                            ) : (
-                                <div className="flex items-center gap-tight">
-                                    <Combobox
-                                        id="template-select"
-                                        selected={templates.map((t) => ({ value: t.key, label: `${t.name} (${t._count?.questions || 0} Q)` })).find((o: ComboboxOption) => o.value === selectedTemplate) ?? null}
-                                        setSelected={(opt) => setSelectedTemplate(opt?.value ?? '')}
-                                        options={templates.map((t) => ({ value: t.key, label: `${t.name} (${t._count?.questions || 0} Q)` }))}
-                                        placeholder="Select template…"
-                                        matchTriggerWidth
-                                        buttonProps={{ className: 'w-48' }}
-                                    />
-                                    <Button variant="primary" onClick={startAssessment} disabled={!selectedTemplate} id="confirm-start-assessment">Start</Button>
-                                    <Button variant="secondary" onClick={() => setShowStartAssessment(false)}>Cancel</Button>
-                                </div>
-                            )}
                         </div>
                     )}
                     {/* Epic G-3 — reveal the raw access link after a send
