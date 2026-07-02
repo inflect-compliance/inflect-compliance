@@ -1,11 +1,9 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import Link from 'next/link';
-import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
+import { useTenantApiUrl, useTenantContext } from '@/lib/tenant-context-provider';
 import type { ControlDashboardDTO, ConsistencyCheckDTO } from '@/lib/dto';
 import { AppIcon } from '@/components/icons/AppIcon';
 import { IconAction } from '@/components/ui/icon-action';
-import { buttonVariants } from '@/components/ui/button-variants';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import {
     StatusBreakdown,
@@ -35,7 +33,6 @@ const STATUS_VARIANT: Record<string, StatusBreakdownVariant> = {
 
 export default function ControlsDashboard() {
     const apiUrl = useTenantApiUrl();
-    const tenantHref = useTenantHref();
     const { permissions } = useTenantContext();
 
     const [data, setData] = useState<ControlDashboardDTO | null>(null);
@@ -96,9 +93,6 @@ export default function ControlsDashboard() {
                         {permissions.canAdmin && (
                             <IconAction variant="secondary" onClick={fetchConsistency} id="consistency-check-btn" icon={<AppIcon name="search" size={16} />} label="Consistency check" />
                         )}
-                        <Link href={tenantHref('/controls')} className={buttonVariants({ variant: 'secondary' })}>
-                            Back to Controls
-                        </Link>
                     </>
                 ),
             }}

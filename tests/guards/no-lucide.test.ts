@@ -83,7 +83,6 @@ const LEGACY_LUCIDE_USERS = new Set<string>([
     'src/app/t/[tenantSlug]/(app)/calendar/CalendarClient.tsx',
     'src/app/t/[tenantSlug]/(app)/controls/ControlsClient.tsx',
     'src/app/t/[tenantSlug]/(app)/controls/filter-defs.ts',
-    'src/app/t/[tenantSlug]/(app)/controls/sankey/ControlsSankeyClient.tsx',
     'src/app/t/[tenantSlug]/(app)/coverage/CoverageClient.tsx',
     'src/app/t/[tenantSlug]/(app)/dashboard/DashboardClient.tsx',
     'src/app/t/[tenantSlug]/(app)/evidence/filter-defs.ts',

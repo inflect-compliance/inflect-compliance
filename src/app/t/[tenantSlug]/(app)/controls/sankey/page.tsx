@@ -32,7 +32,6 @@ export default async function ControlsSankeyPage({
             <BackAffordance />
             <ControlsSankeyClient
                 initialGraph={JSON.parse(JSON.stringify(graph))}
-                tenantSlug={tenantSlug}
             />
         </div>
     );

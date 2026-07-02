@@ -100,9 +100,12 @@ describe('Sankey page — composition', () => {
         expect(client).not.toMatch(/TraceabilityGraphTable/);
     });
 
-    it('keeps the back-to-controls link affordance', () => {
-        expect(client).toMatch(/controls-sankey-back/);
-        expect(client).toMatch(/\/controls['"`]/);
+    it('keeps the canonical back affordance (BackAffordance on the server page)', () => {
+        // The hand-rolled in-client "Back to Controls" link was removed as a
+        // duplicate — the page mounts the canonical <BackAffordance/> primitive,
+        // which resolves "Back to Controls" (referrer → canonical parent).
+        expect(page).toMatch(/<BackAffordance\b/);
+        expect(page).toMatch(/from\s*'@\/components\/nav\/BackAffordance'/);
     });
 });
 
