@@ -1,0 +1,414 @@
+{
+  "key": "SUPPLIER_DUE_DILIGENCE",
+  "name": "Supplier Due Diligence Questionnaire",
+  "description": "A due-diligence questionnaire covering supplier company details, the data to be exchanged, onward data sharing to third parties, and third-party certifications.",
+  "scoringConfig": {
+    "mode": "WEIGHTED_AVERAGE",
+    "ratingThresholds": [
+      {
+        "rating": "LOW",
+        "minScore": 0,
+        "maxScore": 25
+      },
+      {
+        "rating": "MEDIUM",
+        "minScore": 26,
+        "maxScore": 50
+      },
+      {
+        "rating": "HIGH",
+        "minScore": 51,
+        "maxScore": 75
+      },
+      {
+        "rating": "CRITICAL",
+        "minScore": 76,
+        "maxScore": 100
+      }
+    ]
+  },
+  "sections": [
+    {
+      "title": "Company Information",
+      "description": "Details of your company and the person answering this questionnaire",
+      "weight": 1,
+      "questions": [
+        {
+          "prompt": "Your name, surname, role at your company and email please",
+          "answerType": "TEXT",
+          "required": true,
+          "weight": 1
+        },
+        {
+          "prompt": "Company Name",
+          "answerType": "TEXT",
+          "required": true,
+          "weight": 1
+        },
+        {
+          "prompt": "Company Adress, Post Code, Country, Telephone",
+          "answerType": "TEXT",
+          "required": true,
+          "weight": 1
+        },
+        {
+          "prompt": "Company Website",
+          "answerType": "TEXT",
+          "required": true,
+          "weight": 1
+        },
+        {
+          "prompt": "Does your company have formal Information Security Role defined and appointed?",
+          "answerType": "YES_NO",
+          "required": true,
+          "weight": 1,
+          "options": [
+            {
+              "label": "Yes",
+              "value": "yes",
+              "points": 0
+            },
+            {
+              "label": "No",
+              "value": "no",
+              "points": 0
+            }
+          ],
+          "riskPoints": {
+            "YES": 0,
+            "NO": 0
+          }
+        },
+        {
+          "prompt": "Provide the contact email of the Information Security responsible group or person",
+          "answerType": "TEXT",
+          "required": false,
+          "weight": 1
+        },
+        {
+          "prompt": "Does your company have dedicated Information Data Protection Role defined and appointed?",
+          "answerType": "YES_NO",
+          "required": true,
+          "weight": 1,
+          "options": [
+            {
+              "label": "Yes",
+              "value": "yes",
+              "points": 0
+            },
+            {
+              "label": "No",
+              "value": "no",
+              "points": 0
+            }
+          ],
+          "riskPoints": {
+            "YES": 0,
+            "NO": 0
+          }
+        },
+        {
+          "prompt": "Provide the contact email of the Data Protection responsible group or person",
+          "answerType": "TEXT",
+          "required": false,
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "title": "Data to be Exchanged",
+      "description": "We need to understand what data will be exchanged",
+      "weight": 1,
+      "questions": [
+        {
+          "prompt": "What data our company and your company will exchange?",
+          "answerType": "TEXT",
+          "required": true,
+          "weight": 1
+        },
+        {
+          "prompt": "Does this data include individual's personal information such as their name, surname, sex, Etc?",
+          "answerType": "YES_NO",
+          "required": true,
+          "weight": 1,
+          "options": [
+            {
+              "label": "Yes",
+              "value": "yes",
+              "points": 10
+            },
+            {
+              "label": "No",
+              "value": "no",
+              "points": 0
+            }
+          ],
+          "riskPoints": {
+            "YES": 10,
+            "NO": 0
+          }
+        },
+        {
+          "prompt": "Does this data include any form of medical records?",
+          "answerType": "YES_NO",
+          "required": true,
+          "weight": 1,
+          "options": [
+            {
+              "label": "Yes",
+              "value": "yes",
+              "points": 10
+            },
+            {
+              "label": "No",
+              "value": "no",
+              "points": 0
+            }
+          ],
+          "riskPoints": {
+            "YES": 10,
+            "NO": 0
+          }
+        },
+        {
+          "prompt": "Does this data include any form of credit card / financial records?",
+          "answerType": "YES_NO",
+          "required": true,
+          "weight": 1,
+          "options": [
+            {
+              "label": "Yes",
+              "value": "yes",
+              "points": 10
+            },
+            {
+              "label": "No",
+              "value": "no",
+              "points": 0
+            }
+          ],
+          "riskPoints": {
+            "YES": 10,
+            "NO": 0
+          }
+        },
+        {
+          "prompt": "Do you think there is any chance for any of the data above to be exchanged in between the European Union and USA? For example the people or systems receiving or sending data are located at both ends.",
+          "answerType": "TEXT",
+          "required": true,
+          "weight": 1
+        },
+        {
+          "prompt": "Is this data subject to legal obligations? For example GDPR, SOX, FCA, Etc?",
+          "answerType": "TEXT",
+          "required": true,
+          "weight": 1
+        },
+        {
+          "prompt": "Is this data subject to contractual obligations? For example PCI-DSS, Contractual Agreements in between us and other third parties, Etc?",
+          "answerType": "TEXT",
+          "required": true,
+          "weight": 1
+        },
+        {
+          "prompt": "Who on your end will receive this data? This could be a person, a team, a department, system, Etc",
+          "answerType": "TEXT",
+          "required": true,
+          "weight": 1
+        },
+        {
+          "prompt": "Do you know, who on our end will send this data? This could be a person, a team, a department, system, Etc",
+          "answerType": "TEXT",
+          "required": true,
+          "weight": 1
+        },
+        {
+          "prompt": "Is the exchange of data done by humans manually or by software usign APIs, Etc?",
+          "answerType": "SINGLE_SELECT",
+          "required": true,
+          "weight": 1,
+          "options": [
+            {
+              "label": "Manual",
+              "value": "manual",
+              "points": 10
+            },
+            {
+              "label": "Programatically",
+              "value": "programatically",
+              "points": 0
+            }
+          ],
+          "riskPoints": {
+            "MANUAL": 10,
+            "PROGRAMATICALLY": 0
+          }
+        },
+        {
+          "prompt": "What volume of data will be exchanged per day? This could be the number of records for example.",
+          "answerType": "TEXT",
+          "required": true,
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "title": "Third Parties",
+      "description": "We need to understand if this data will be re-shared",
+      "weight": 1,
+      "questions": [
+        {
+          "prompt": "Will your organization share the data we send over to a third party?",
+          "answerType": "YES_NO",
+          "required": true,
+          "weight": 1,
+          "options": [
+            {
+              "label": "Yes",
+              "value": "yes",
+              "points": 10
+            },
+            {
+              "label": "No",
+              "value": "no",
+              "points": 0
+            }
+          ],
+          "riskPoints": {
+            "YES": 10,
+            "NO": 0
+          }
+        },
+        {
+          "prompt": "Which third party? We would need the company name and website",
+          "answerType": "TEXT",
+          "required": false,
+          "weight": 1
+        },
+        {
+          "prompt": "What this third party will do with the data?",
+          "answerType": "TEXT",
+          "required": false,
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "title": "Certifications",
+      "description": "Third-Party Certifications, Attestations, Etc",
+      "weight": 1,
+      "questions": [
+        {
+          "prompt": "Does your company have an updated SOC 1/2 Report?",
+          "answerType": "YES_NO",
+          "required": true,
+          "weight": 1,
+          "options": [
+            {
+              "label": "Yes",
+              "value": "yes",
+              "points": 0
+            },
+            {
+              "label": "No",
+              "value": "no",
+              "points": -10
+            }
+          ],
+          "riskPoints": {
+            "YES": 0,
+            "NO": -10
+          }
+        },
+        {
+          "prompt": "Does your company have a valid ISO 27001 Certificate?",
+          "answerType": "YES_NO",
+          "required": true,
+          "weight": 1,
+          "options": [
+            {
+              "label": "Yes",
+              "value": "yes",
+              "points": 0
+            },
+            {
+              "label": "No",
+              "value": "no",
+              "points": -10
+            }
+          ],
+          "riskPoints": {
+            "YES": 0,
+            "NO": -10
+          }
+        },
+        {
+          "prompt": "Does your company have a valid HITRUST Certificate?",
+          "answerType": "YES_NO",
+          "required": true,
+          "weight": 1,
+          "options": [
+            {
+              "label": "Yes",
+              "value": "yes",
+              "points": 0
+            },
+            {
+              "label": "No",
+              "value": "no",
+              "points": -10
+            }
+          ],
+          "riskPoints": {
+            "YES": 0,
+            "NO": -10
+          }
+        },
+        {
+          "prompt": "Does your company have Sarbanes Oxley Reports?",
+          "answerType": "YES_NO",
+          "required": true,
+          "weight": 1,
+          "options": [
+            {
+              "label": "Yes",
+              "value": "yes",
+              "points": 0
+            },
+            {
+              "label": "No",
+              "value": "no",
+              "points": -10
+            }
+          ],
+          "riskPoints": {
+            "YES": 0,
+            "NO": -10
+          }
+        },
+        {
+          "prompt": "Does your company have a valid PCI-DSS Certificate?",
+          "answerType": "YES_NO",
+          "required": true,
+          "weight": 1,
+          "options": [
+            {
+              "label": "Yes",
+              "value": "yes",
+              "points": 0
+            },
+            {
+              "label": "No",
+              "value": "no",
+              "points": -10
+            }
+          ],
+          "riskPoints": {
+            "YES": 0,
+            "NO": -10
+          }
+        }
+      ]
+    }
+  ]
+}
