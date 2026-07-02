@@ -183,7 +183,10 @@ const MIN_SECONDARY_TO_PRIMARY_RATIO = 0.9;
 // (audits/nis2-gap): the "Create these" apply CTA is the propose-not-commit
 // review's earned primary, paired with a secondary "Re-run assessment" +
 // per-item checkboxes, so the secondary:primary ratio still rises. +1.
-const MAX_PRIMARY_COUNT = 139;
+// 2026-07-02 — bumped 139 → 140 for the NIS2 gap respond page (Prompt 2): the
+// assignee's single "Submit answers" CTA is the earned primary on the answer
+// form (dispatch/finalize on the owner panel are secondary). +1.
+const MAX_PRIMARY_COUNT = 140;
 
 describe("primary:secondary ratio direction", () => {
     const counts = (() => {

@@ -386,6 +386,8 @@ const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
         'listWorkflowRuns filters by tenantId (+status), orders by startedAt — covered by @@index([tenantId, status, startedAt]); bounded take ≤50.',
     TenantFrameworkDelta:
         'listTenantFrameworkDeltas filters by tenantId (+status), orders by createdAt — covered by @@index([tenantId, status, createdAt]); bounded take ≤50.',
+    Nis2GapAssignment:
+        'listAssignments filters by tenantId + assessmentId — covered by @@index([tenantId, assessmentId]); at most 5 rows per run (one per respondent role).',
     // Vuln integration — listVulnerabilities filters by tenantId (+ optional
     // status / assetId), ordered by the related Cve.cvssScore. Covered by
     // @@index([tenantId, status]) + @@index([tenantId, assetId]) (status /

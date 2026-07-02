@@ -162,6 +162,21 @@ export const ROUTE_PERMISSIONS: readonly RoutePermissionRule[] = [
             'Operator-driven fleet operation; ADMIN tier suffices.',
     },
 
+    // ── NIS2 gap-assessment delegation (Prompt 2) ───────────────────
+    {
+        // Dispatch (POST) + owner list (GET) + finalize — assessment-admin
+        // actions. The assignee self-service routes at
+        // `/gap-assessments/<id>/assignments/my/**` are intentionally NOT
+        // matched here (excluded below): they are ctx-scoped in the usecase to
+        // the assignee, mirroring own-MFA / own-session self-service.
+        path: new RegExp(`^${T}\\/gap-assessments\\/[^/]+\\/assignments(\\/finalize)?$`),
+        permission: 'admin.manage',
+        note:
+            'Delegating a NIS2 gap re-assessment to respondents + finalising it ' +
+            'is an assessment-admin action; per-respondent answering is ' +
+            'self-service (ctx-scoped in the usecase).',
+    },
+
     // ── Admin plan change (business-KPI plan-change boundary) ───────
     {
         path: new RegExp(`^${T}\\/admin\\/billing\\/plan(\\/.*)?$`),

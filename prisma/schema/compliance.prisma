@@ -2751,8 +2751,9 @@ model Nis2SelfAssessment {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  tenant  Tenant                     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  answers Nis2SelfAssessmentAnswer[]
+  tenant      Tenant                     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  answers     Nis2SelfAssessmentAnswer[]
+  assignments Nis2GapAssignment[]
 
   @@index([tenantId, updatedAt])
   @@index([tenantId, createdAt])
@@ -2781,6 +2782,38 @@ model Nis2SelfAssessmentAnswer {
   @@unique([assessmentId, questionId])
   @@index([tenantId, assessmentId])
   @@index([questionId])
+}
+
+/// Multi-respondent delegation of a STANDALONE re-assessment: one row per
+/// respondent role, partitioning the 116 questions into DISJOINT buckets so
+/// each member answers only their own. Answers are NOT copied here — they live
+/// on the parent `Nis2SelfAssessmentAnswer` (single source, no merge); an
+/// assignment only records WHICH questionIds a member owns. Never dispatched
+/// for a WIZARD_BASELINE run (the admin answers the baseline once at onboarding).
+model Nis2GapAssignment {
+  id             String    @id @default(cuid())
+  tenantId       String
+  assessmentId   String
+  /// String enum: CEO | IT | HR | PROCUREMENT | ANYONE (the bank's respondent).
+  respondentRole String
+  /// Opaque user id (no FK — mirrors the assessment's actor-id convention);
+  /// null for an unclaimed ANYONE bucket.
+  assigneeUserId String?
+  /// String enum: PENDING | IN_PROGRESS | SUBMITTED.
+  status         String    @default("PENDING")
+  /// The disjoint subset of question ids this assignment owns.
+  questionIds    String[]
+  submittedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  tenant     Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assessment Nis2SelfAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  /// One assignment per role per run — makes dispatch idempotent (upsert).
+  @@unique([assessmentId, respondentRole])
+  @@index([tenantId, assessmentId])
+  @@index([tenantId, assigneeUserId])
 }
 
 // ─── AI-Governance Self-Assessment (unified AISVS / ISO 42001 / EU AI Act) ───
