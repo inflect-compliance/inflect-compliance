@@ -269,7 +269,7 @@ export async function applyNis2Remediations(
             await createControl(ctx, {
                 name: s.title,
                 category: NIS2_GAP_CATEGORY,
-                description: `Control to close NIS2 gap. Legal basis: ${s.legalBasis}.`,
+                objective: `Control to close NIS2 gap. Legal basis: ${s.legalBasis}.`,
                 isCustom: true,
             });
             controls.add(s.title);

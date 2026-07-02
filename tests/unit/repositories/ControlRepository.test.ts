@@ -106,7 +106,7 @@ describe('list / _buildWhere', () => {
                 OR: [
                     { name: { contains: 'firewall', mode: 'insensitive' } },
                     { code: { contains: 'firewall', mode: 'insensitive' } },
-                    { description: { contains: 'firewall', mode: 'insensitive' } },
+                    { objective: { contains: 'firewall', mode: 'insensitive' } },
                 ],
             },
         ]);

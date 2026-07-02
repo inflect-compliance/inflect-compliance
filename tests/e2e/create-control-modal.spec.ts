@@ -108,10 +108,6 @@ test.describe('Epic 54 — Create Control modal', () => {
         const name = `Modal E2E Control ${uid}`;
         await authedPage.fill('#control-name-input', name);
         await authedPage.fill('#control-code-input', `MOD-${uid}`);
-        await authedPage.fill(
-            '#control-description-input',
-            'Created via the Epic 54 modal.',
-        );
 
         const [response] = await Promise.all([
             authedPage.waitForResponse(

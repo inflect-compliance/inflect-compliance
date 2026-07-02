@@ -221,7 +221,7 @@ export async function generateReadinessReport(ctx: RequestContext, frameworkKey:
     const notApplicable = controls.filter((c) => c.status === 'NOT_APPLICABLE').map((c) => ({
         code: c.code,
         name: c.name,
-        justification: c.description || 'No justification provided',
+        justification: c.applicabilityJustification || 'No justification provided',
     }));
 
     // Controls missing evidence

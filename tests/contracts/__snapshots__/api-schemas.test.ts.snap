@@ -1013,18 +1013,6 @@ exports[`API contract — per-schema snapshots schema: ControlCreateRequest 1`] 
       "type": "string",
       "minLength": 1
     },
-    "description": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "intent": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
     "category": {
       "type": [
         "string",
@@ -1584,18 +1572,6 @@ exports[`API contract — per-schema snapshots schema: ControlListItem 1`] = `
     "name": {
       "type": "string"
     },
-    "description": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "intent": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
     "category": {
       "type": [
         "string",
@@ -1735,7 +1711,6 @@ exports[`API contract — per-schema snapshots schema: ControlListItem 1`] = `
     "code",
     "annexId",
     "name",
-    "description",
     "category",
     "status",
     "applicability",
@@ -1952,19 +1927,7 @@ exports[`API contract — per-schema snapshots schema: ControlUpdateRequest 1`] 
       "type": "string",
       "minLength": 1
     },
-    "description": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
     "code": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
-    "intent": {
       "type": [
         "string",
         "null"

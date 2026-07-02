@@ -56,10 +56,6 @@ test.describe('Core Certification Flow', () => {
 
             await page.fill('#control-name-input', CONTROL_NAME);
             await page.fill('#control-code-input', CONTROL_CODE);
-            await page.fill(
-                '#control-description-input',
-                'E2E test control for certification flow',
-            );
             await page.click('#create-control-btn');
 
             await page.waitForURL('**/controls/**', { timeout: 30000 });

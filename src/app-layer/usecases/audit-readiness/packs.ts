@@ -125,7 +125,7 @@ async function createControlSnapshot(tdb: PrismaTx, controlId: string, tenantId:
     if (!ctrl) return JSON.stringify({ error: 'Control not found', entityId: controlId });
     return JSON.stringify({
         code: ctrl.code, name: ctrl.name, status: ctrl.status,
-        description: ctrl.description,
+        objective: ctrl.objective,
         owner: ctrl.ownerUserId,
         taskCompletion: { total: ctrl.tasks.length, done: ctrl.tasks.filter((t) => t.status === WorkItemStatus.RESOLVED || t.status === WorkItemStatus.CLOSED).length },
         evidenceCount: ctrl.evidence.length,

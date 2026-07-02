@@ -13,8 +13,6 @@ export const ControlListItemDTOSchema = z.object({
     code: z.string().nullable(),
     annexId: z.string().nullable(),
     name: z.string(),
-    description: z.string().nullable(),
-    intent: z.string().nullable().optional(),
     category: z.string().nullable(),
     status: z.string(),
     applicability: z.string(),

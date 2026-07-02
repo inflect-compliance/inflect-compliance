@@ -141,8 +141,6 @@ export const CreateControlSchema = z.object({
     code: z.string().optional().nullable(),
     annexId: z.string().optional().nullable(),
     name: z.string().min(1, 'Name is required'),
-    description: z.string().optional().nullable(),
-    intent: z.string().optional().nullable(),
     category: z.string().optional().nullable(),
     status: z.enum(['NOT_STARTED', 'IN_PROGRESS', 'IMPLEMENTED', 'NEEDS_REVIEW']).optional().default('NOT_STARTED'),
     frequency: z.enum(['AD_HOC', 'DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'ANNUALLY']).optional().nullable(),
@@ -158,9 +156,7 @@ export const CreateControlSchema = z.object({
 
 export const UpdateControlSchema = z.object({
     name: z.string().min(1).optional(),
-    description: z.string().optional().nullable(),
     code: z.string().optional().nullable(),
-    intent: z.string().optional().nullable(),
     // Internal-controls fields — Overview (objective, successCriteria) + Tests
     // (testingMethodology).
     objective: z.string().optional().nullable(),

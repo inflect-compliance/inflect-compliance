@@ -49,7 +49,6 @@ export async function installControlsFromTemplate(ctx: RequestContext, templateI
                     tenantId: ctx.tenantId,
                     code: template.code,
                     name: template.title,
-                    description: template.description,
                     category: template.category,
                     frequency: template.defaultFrequency,
                     status: 'NOT_STARTED',

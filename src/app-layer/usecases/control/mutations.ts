@@ -22,7 +22,6 @@ import { recordControlCreated } from '@/lib/observability/business-metrics';
 export async function createControl(ctx: RequestContext, data: {
     code?: string | null;
     name: string;
-    description?: string | null;
     category?: string | null;
     status?: string;
     frequency?: string | null;
@@ -32,7 +31,6 @@ export async function createControl(ctx: RequestContext, data: {
     automationType?: string | null;
     mitigationType?: string | null;
     annexId?: string | null;
-    intent?: string | null;
     objective?: string | null;
     successCriteria?: string | null;
     testingMethodology?: string | null;
@@ -68,8 +66,6 @@ export async function createControl(ctx: RequestContext, data: {
             code,
             annexId: data.annexId || null,
             name: data.name,
-            description: data.description || null,
-            intent: data.intent || null,
             objective: data.objective || null,
             successCriteria: data.successCriteria || null,
             testingMethodology: data.testingMethodology || null,
@@ -102,7 +98,6 @@ export async function createControl(ctx: RequestContext, data: {
 
 export async function updateControl(ctx: RequestContext, id: string, data: {
     name?: string;
-    description?: string | null;
     category?: string | null;
     code?: string | null;
     frequency?: string | null;
@@ -110,7 +105,6 @@ export async function updateControl(ctx: RequestContext, id: string, data: {
     automationKey?: string | null;
     automationType?: string | null;
     mitigationType?: string | null;
-    intent?: string | null;
     objective?: string | null;
     successCriteria?: string | null;
     testingMethodology?: string | null;
@@ -121,7 +115,6 @@ export async function updateControl(ctx: RequestContext, id: string, data: {
     const updated = await runInTenantContext(ctx, async (db) => {
         const control = await ControlRepository.update(db, ctx, id, {
             ...(data.name !== undefined && { name: data.name }),
-            ...(data.description !== undefined && { description: data.description }),
             ...(data.category !== undefined && { category: data.category }),
             ...(data.code !== undefined && { code: data.code }),
             ...(data.frequency !== undefined && { frequency: data.frequency as 'MONTHLY' | null }),
@@ -129,7 +122,6 @@ export async function updateControl(ctx: RequestContext, id: string, data: {
             ...(data.automationKey !== undefined && { automationKey: data.automationKey }),
             ...(data.automationType !== undefined && { automationType: data.automationType as 'AUTOMATED' | null }),
             ...(data.mitigationType !== undefined && { mitigationType: data.mitigationType as 'PREVENTIVE' | null }),
-            ...(data.intent !== undefined && { intent: data.intent }),
             ...(data.objective !== undefined && { objective: data.objective }),
             ...(data.successCriteria !== undefined && { successCriteria: data.successCriteria }),
             ...(data.testingMethodology !== undefined && { testingMethodology: data.testingMethodology }),

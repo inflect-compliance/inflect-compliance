@@ -28,7 +28,6 @@ const controlListSelect = {
     code: true,
     annexId: true,
     name: true,
-    description: true,
     status: true,
     applicability: true,
     // Framework-native category (SOC 2 TSC, NIS2 / ISO section, …).
@@ -103,7 +102,7 @@ export class ControlRepository {
                 OR: [
                     { name: { contains: filters.q, mode: 'insensitive' } },
                     { code: { contains: filters.q, mode: 'insensitive' } },
-                    { description: { contains: filters.q, mode: 'insensitive' } },
+                    { objective: { contains: filters.q, mode: 'insensitive' } },
                 ],
             }];
         }

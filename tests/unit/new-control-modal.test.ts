@@ -72,7 +72,6 @@ describe('NewControlModal — preserved E2E IDs', () => {
     const REQUIRED_IDS = [
         'control-name-input',
         'control-code-input',
-        'control-description-input',
         'control-category-input',
         'control-frequency-input',
         'control-justification-input',

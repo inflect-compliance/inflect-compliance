@@ -4,7 +4,7 @@
  * Control side-panel — EDITABLE (replaces the old read-only ControlQuickView).
  *
  * Opened by a single click on a control name. Two tabs:
- *   - Details: edit the control (name / description / category / frequency /
+ *   - Details: edit the control (name / category / frequency /
  *     owner) inline + an EVIDENCE UPLOAD box (replaces the old "Intent" field).
  *   - Activity: the control's hash-chained audit feed.
  *
@@ -29,7 +29,6 @@ export interface PanelControl {
     code?: string | null;
     annexId?: string | null;
     name: string;
-    description?: string | null;
     status?: string | null;
     category?: string | null;
     frequency?: string | null;
@@ -76,7 +75,6 @@ export function ControlEditPanel({
     // flush on blur; dropdowns + the owner picker commit on change. A
     // single "Saving…/Saved" status replaces the old Cancel/Save buttons.
     const [name, setName] = useState(control.name ?? "");
-    const [description, setDescription] = useState(control.description ?? "");
     const [category, setCategory] = useState(control.category ?? "");
     const [frequency, setFrequency] = useState(control.frequency ?? "");
     const [ownerId, setOwnerId] = useState(control.owner?.id ?? control.ownerUserId ?? "");
@@ -87,7 +85,6 @@ export function ControlEditPanel({
     // current form, never a stale closure. `update()` is the sole writer.
     const fieldsRef = useRef({
         name: control.name ?? "",
-        description: control.description ?? "",
         category: control.category ?? "",
         frequency: control.frequency ?? "",
     });
@@ -111,7 +108,6 @@ export function ControlEditPanel({
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     name: f.name.trim(),
-                    description: f.description.trim() || null,
                     category: f.category.trim() || null,
                     frequency: f.frequency || null,
                 }),
@@ -140,7 +136,6 @@ export function ControlEditPanel({
         (partial: Partial<typeof fieldsRef.current>, immediate: boolean) => {
             fieldsRef.current = { ...fieldsRef.current, ...partial };
             if (partial.name !== undefined) setName(partial.name);
-            if (partial.description !== undefined) setDescription(partial.description);
             if (partial.category !== undefined) setCategory(partial.category);
             if (partial.frequency !== undefined) setFrequency(partial.frequency);
             if (immediate) commitNow();
@@ -217,19 +212,6 @@ export function ControlEditPanel({
                                     required
                                     minLength={3}
                                     aria-invalid={nameInvalid || undefined}
-                                />
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-sm text-content-default" htmlFor="panel-description-input">
-                                    Description
-                                </label>
-                                <textarea
-                                    id="panel-description-input"
-                                    className="input w-full"
-                                    rows={3}
-                                    value={description}
-                                    onChange={(e) => update({ description: e.target.value }, false)}
-                                    onBlur={commitNow}
                                 />
                             </div>
                             <div>

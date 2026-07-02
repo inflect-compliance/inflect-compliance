@@ -122,7 +122,7 @@ export async function materializeSelfAssessmentSuggestions(
             } else {
                 const control = await createControl(ctx, {
                     name: s.controlName,
-                    description: `Suggested from the Digital Sovereignty Posture self-assessment (${s.clauseRef}). Not legal advice.`,
+                    objective: `Suggested from the Digital Sovereignty Posture self-assessment (${s.clauseRef}). Not legal advice.`,
                     category: SELF_ASSESSMENT_CATEGORY,
                     isCustom: true,
                 });

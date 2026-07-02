@@ -148,7 +148,6 @@ export async function installPack(ctx: RequestContext, packKey: string) {
                     tenantId: ctx.tenantId,
                     code: tmpl.code,
                     name: tmpl.title,
-                    description: tmpl.description,
                     category: tmpl.category,
                     // Internal-controls import fields carry through to the Control
                     // so the detail Overview/Tests tabs render them post-install.
@@ -394,7 +393,6 @@ export async function installSingleTemplate(ctx: RequestContext, templateCode: s
                 tenantId: ctx.tenantId,
                 code: tmpl.code,
                 name: tmpl.title,
-                description: tmpl.description,
                 category: tmpl.category,
                 frequency: tmpl.defaultFrequency,
                 status: 'NOT_STARTED',
@@ -552,7 +550,6 @@ export async function bulkInstallTemplates(
                     tenantId: ctx.tenantId,
                     code: tmpl.code,
                     name: tmpl.title,
-                    description: tmpl.description,
                     category: tmpl.category,
                     frequency: tmpl.defaultFrequency,
                     status: 'NOT_STARTED',

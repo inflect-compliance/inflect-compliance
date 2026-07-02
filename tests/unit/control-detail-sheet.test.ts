@@ -70,10 +70,10 @@ describe('ControlDetailSheet — data flow', () => {
         expect(SHEET_SRC).toMatch(/controlId\s*\?\s*CACHE_KEYS\.controls\.detail\(controlId\)\s*:\s*null/);
     });
 
-    it('PATCHes /controls/:id with the legacy field set', () => {
+    it('PATCHes /controls/:id with the editable field set', () => {
         expect(SHEET_SRC).toMatch(/method:\s*['"]PATCH['"]/);
         expect(SHEET_SRC).toMatch(/apiUrl\(`\/controls\/\$\{controlId\}`\)/);
-        for (const field of ['name', 'description', 'intent', 'category', 'frequency']) {
+        for (const field of ['name', 'category', 'frequency']) {
             expect(SHEET_SRC).toContain(field);
         }
     });

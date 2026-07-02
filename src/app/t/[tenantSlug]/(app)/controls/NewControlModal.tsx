@@ -102,7 +102,6 @@ const formSchema = z
     .object({
         code: z.string().max(64).optional(),
         name: z.string().min(1, 'Name is required'),
-        description: z.string().optional(),
         category: z.string().optional(),
         frequency: z.string().optional(),
         ownerUserId: z.string().optional(),
@@ -129,7 +128,6 @@ type FormValues = z.infer<typeof formSchema>;
 const DEFAULT_VALUES: FormValues = {
     code: '',
     name: '',
-    description: '',
     category: '',
     frequency: '',
     ownerUserId: '',
@@ -212,7 +210,6 @@ export function NewControlModal({ open, setOpen, tenantSlug }: NewControlModalPr
             const body = {
                 name: values.name.trim(),
                 code: values.code?.trim() || undefined,
-                description: values.description?.trim() || undefined,
                 category: values.category || undefined,
                 frequency: values.frequency || undefined,
                 ownerUserId: values.ownerUserId || undefined,
@@ -325,17 +322,6 @@ export function NewControlModal({ open, setOpen, tenantSlug }: NewControlModalPr
                                 placeholder="e.g. Password Policy Enforcement"
                                 autoComplete="off"
                                 {...register('name')}
-                            />
-                        </FormField>
-                        <FormField
-                            label="Description"
-                            error={errors.description?.message}
-                        >
-                            <Textarea
-                                id="control-description-input"
-                                rows={3}
-                                placeholder="Brief description of this control"
-                                {...register('description')}
                             />
                         </FormField>
                         <div className="grid grid-cols-1 gap-default sm:grid-cols-2">

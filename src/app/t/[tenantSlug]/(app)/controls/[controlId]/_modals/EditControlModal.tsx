@@ -26,8 +26,6 @@ import { UserCombobox } from '@/components/ui/user-combobox';
 
 export interface EditControlForm {
     name: string;
-    description: string;
-    intent: string;
     objective: string;
     successCriteria: string;
     testingMethodology: string;
@@ -137,48 +135,6 @@ export function EditControlModal({
                                 required
                                 minLength={3}
                                 data-testid="edit-name-input"
-                            />
-                        </div>
-                        <div>
-                            <label
-                                htmlFor="edit-description"
-                                className="mb-1 block text-sm text-content-default"
-                            >
-                                Description
-                            </label>
-                            <textarea
-                                id="edit-description"
-                                className="input w-full"
-                                rows={3}
-                                value={form.description}
-                                onChange={(e) =>
-                                    setForm((f) => ({
-                                        ...f,
-                                        description: e.target.value,
-                                    }))
-                                }
-                                data-testid="edit-description-input"
-                            />
-                        </div>
-                        <div>
-                            <label
-                                htmlFor="edit-intent"
-                                className="mb-1 block text-sm text-content-default"
-                            >
-                                Intent
-                            </label>
-                            <textarea
-                                id="edit-intent"
-                                className="input w-full"
-                                rows={2}
-                                value={form.intent}
-                                onChange={(e) =>
-                                    setForm((f) => ({
-                                        ...f,
-                                        intent: e.target.value,
-                                    }))
-                                }
-                                data-testid="edit-intent-input"
                             />
                         </div>
                         <div>
