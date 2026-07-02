@@ -52,6 +52,13 @@ inflect.34-140-180-255.sslip.io {
     header @dynamic Cache-Control "no-store"
 
     reverse_proxy app:3000 {
+        # Ride out the brief unavailability window during a Watchtower image
+        # swap (the new container runs `prisma migrate deploy` + the
+        # self-assessment seed before `next start` listens on :3000). Without
+        # this, Caddy returns 502 "connection refused" for those few seconds;
+        # with it, Caddy retries the dial for up to 30s so deploys don't blip.
+        lb_try_duration 30s
+        lb_try_interval 250ms
         # Next.js sits behind the proxy — forward the original host so
         # NextAuth + server-side redirects resolve to the public URL.
         header_up Host {host}
