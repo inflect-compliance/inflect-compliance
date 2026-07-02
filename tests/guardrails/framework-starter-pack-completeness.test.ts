@@ -42,6 +42,7 @@ const STARTER_PACKS: Record<string, { frameworkKey: string; packKey: string }> =
     'NIST-SSDF-800-218': { frameworkKey: 'NIST-SSDF', packKey: 'SSDF_STARTER_PACK' },
     'AISVS-1.0': { frameworkKey: 'OWASP-AISVS', packKey: 'AISVS_BASELINE' },
     'ISO27701-2019': { frameworkKey: 'ISO27701', packKey: 'ISO27701_BASELINE' },
+    'CIS-CONTROLS-V8': { frameworkKey: 'CIS-V8', packKey: 'CIS_V8_IG1_PACK' },
 };
 
 /** Library frameworks intentionally shipped WITHOUT a starter pack. */

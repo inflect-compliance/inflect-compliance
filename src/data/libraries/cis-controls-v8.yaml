@@ -1,0 +1,1588 @@
+# CIS Critical Security Controls v8 — Framework Library
+#
+# ORIGINAL STRUCTURAL OUTLINE — NOT verbatim CIS text.
+# The CIS Critical Security Controls v8 are published by the Center for
+# Internet Security under Creative Commons Attribution-NonCommercial-ShareAlike
+# 4.0 (CC BY-NC-SA 4.0). Because Inflect Compliance is a commercial product,
+# this file does NOT reproduce CIS's descriptive prose. It uses ONLY the
+# factual identifiers (Control numbers 1-18 and Safeguard numbers such as
+# "1.1"), the short factual Safeguard titles, the IG1/IG2/IG3 Implementation
+# Group structure, and the overall taxonomy. Every "description:" field below
+# is our OWN ORIGINAL PARAPHRASE of the intent of the safeguard — no CIS
+# sentences are copied. The full, authoritative CIS Controls (with the
+# official guidance text) are available from the Center for Internet Security
+# at https://www.cisecurity.org/controls .
+#
+# Implementation Group is encoded in the "category" field (IG1/IG2/IG3); a
+# safeguard's IG is the LOWEST group it belongs to (IG1 safeguards also apply
+# to IG2 and IG3, and so on).
+
+urn: urn:inflect:library:cis-controls-v8
+locale: en
+ref_id: CIS-CONTROLS-V8
+name: CIS Critical Security Controls v8
+description: >
+  The CIS Critical Security Controls v8 are a prioritized set of safeguards to
+  mitigate the most common cyber attacks. They are organized into 18 controls
+  containing 153 safeguards, and grouped into three Implementation Groups
+  (IG1, IG2, IG3) that scale defensive expectations to an enterprise's
+  resources and risk. This library is an original structural outline for
+  compliance tracking; safeguard descriptions are our own paraphrases.
+copyright: >
+  Structural outline only. CIS Controls v8 are (c) Center for Internet
+  Security and licensed CC BY-NC-SA 4.0. This file reuses only the factual
+  identifiers, titles, and IG structure; all descriptive text is original.
+  The full CIS Controls are available at https://www.cisecurity.org/controls
+version: 1
+publication_date: "2021-05-18"
+provider: Center for Internet Security
+packager: inflect
+kind: INDUSTRY_STANDARD
+
+objects:
+  framework:
+    urn: urn:inflect:framework:cis-controls-v8
+    ref_id: CIS-CONTROLS-V8
+    name: CIS Critical Security Controls v8
+    description: CIS Critical Security Controls v8 — 18 controls, 153 safeguards, Implementation Groups IG1-IG3
+
+    requirement_nodes:
+      # ─── Control 1: Inventory and Control of Enterprise Assets ───
+      - urn: urn:inflect:req:cis-controls-v8:1
+        ref_id: "1"
+        name: Inventory and Control of Enterprise Assets
+        description: >
+          Actively account for every device connected to the enterprise environment so that only authorized assets receive access and rogue equipment is spotted quickly.
+        depth: 1
+        assessable: false
+        category: Inventory and Control of Enterprise Assets
+      - urn: urn:inflect:req:cis-controls-v8:1.1
+        ref_id: "1.1"
+        name: "Establish and Maintain Detailed Enterprise Asset Inventory"
+        description: >
+          Keep an accurate, regularly refreshed record of every enterprise asset with enough detail to identify and locate it.
+        parent_urn: urn:inflect:req:cis-controls-v8:1
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:1.2
+        ref_id: "1.2"
+        name: "Address Unauthorized Assets"
+        description: >
+          Define and follow a process to investigate and handle any asset discovered on the network that is not on the approved inventory.
+        parent_urn: urn:inflect:req:cis-controls-v8:1
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:1.3
+        ref_id: "1.3"
+        name: "Utilize an Active Discovery Tool"
+        description: >
+          Use tooling that actively probes the network to detect connected assets and keep the inventory current.
+        parent_urn: urn:inflect:req:cis-controls-v8:1
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:1.4
+        ref_id: "1.4"
+        name: "Use Dynamic Host Configuration Protocol (DHCP) Logging to Update Enterprise Asset Inventory"
+        description: >
+          Draw on DHCP server logs to help populate and reconcile the enterprise asset inventory.
+        parent_urn: urn:inflect:req:cis-controls-v8:1
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:1.5
+        ref_id: "1.5"
+        name: "Use a Passive Asset Discovery Tool"
+        description: >
+          Deploy passive monitoring that identifies assets from observed network traffic without active scanning.
+        parent_urn: urn:inflect:req:cis-controls-v8:1
+        depth: 2
+        assessable: true
+        category: IG3
+      # ─── Control 2: Inventory and Control of Software Assets ───
+      - urn: urn:inflect:req:cis-controls-v8:2
+        ref_id: "2"
+        name: Inventory and Control of Software Assets
+        description: >
+          Keep a governed record of all software running in the enterprise so unauthorized or unsupported programs can be found and removed.
+        depth: 1
+        assessable: false
+        category: Inventory and Control of Software Assets
+      - urn: urn:inflect:req:cis-controls-v8:2.1
+        ref_id: "2.1"
+        name: "Establish and Maintain a Software Inventory"
+        description: >
+          Maintain a current, detailed list of all software titles authorized to run on enterprise assets.
+        parent_urn: urn:inflect:req:cis-controls-v8:2
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:2.2
+        ref_id: "2.2"
+        name: "Ensure Authorized Software is Currently Supported"
+        description: >
+          Confirm that software in use is still supported by its vendor and remove or plan for anything past end of life.
+        parent_urn: urn:inflect:req:cis-controls-v8:2
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:2.3
+        ref_id: "2.3"
+        name: "Address Unauthorized Software"
+        description: >
+          Establish a process to detect software that is not authorized and remove or formally approve it.
+        parent_urn: urn:inflect:req:cis-controls-v8:2
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:2.4
+        ref_id: "2.4"
+        name: "Utilize Automated Software Inventory Tools"
+        description: >
+          Automate collection of software inventory data to keep the list accurate and reduce manual effort.
+        parent_urn: urn:inflect:req:cis-controls-v8:2
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:2.5
+        ref_id: "2.5"
+        name: "Allowlist Authorized Software"
+        description: >
+          Permit only explicitly approved software to execute on enterprise assets.
+        parent_urn: urn:inflect:req:cis-controls-v8:2
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:2.6
+        ref_id: "2.6"
+        name: "Allowlist Authorized Libraries"
+        description: >
+          Restrict the code libraries that may load to those on an approved list.
+        parent_urn: urn:inflect:req:cis-controls-v8:2
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:2.7
+        ref_id: "2.7"
+        name: "Allowlist Authorized Scripts"
+        description: >
+          Limit execution of scripts to those that have been explicitly authorized.
+        parent_urn: urn:inflect:req:cis-controls-v8:2
+        depth: 2
+        assessable: true
+        category: IG3
+      # ─── Control 3: Data Protection ───
+      - urn: urn:inflect:req:cis-controls-v8:3
+        ref_id: "3"
+        name: Data Protection
+        description: >
+          Identify, classify, and safeguard information across its life cycle so that sensitive data is handled, stored, and retired securely.
+        depth: 1
+        assessable: false
+        category: Data Protection
+      - urn: urn:inflect:req:cis-controls-v8:3.1
+        ref_id: "3.1"
+        name: "Establish and Maintain a Data Management Process"
+        description: >
+          Document how the enterprise handles data across its life cycle, covering sensitivity, ownership, retention, and disposal.
+        parent_urn: urn:inflect:req:cis-controls-v8:3
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:3.2
+        ref_id: "3.2"
+        name: "Establish and Maintain a Data Inventory"
+        description: >
+          Keep a record of the sensitive data the enterprise holds, including where it lives and who owns it.
+        parent_urn: urn:inflect:req:cis-controls-v8:3
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:3.3
+        ref_id: "3.3"
+        name: "Configure Data Access Control Lists"
+        description: >
+          Apply access controls so that only authorized users and services can reach specific data stores.
+        parent_urn: urn:inflect:req:cis-controls-v8:3
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:3.4
+        ref_id: "3.4"
+        name: "Enforce Data Retention"
+        description: >
+          Retain data only for the period defined by policy and remove it once that period ends.
+        parent_urn: urn:inflect:req:cis-controls-v8:3
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:3.5
+        ref_id: "3.5"
+        name: "Securely Dispose of Data"
+        description: >
+          Destroy or sanitize data and media so that discarded information cannot be recovered.
+        parent_urn: urn:inflect:req:cis-controls-v8:3
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:3.6
+        ref_id: "3.6"
+        name: "Encrypt Data on End-User Devices"
+        description: >
+          Apply encryption to information stored on laptops, phones, and other end-user devices.
+        parent_urn: urn:inflect:req:cis-controls-v8:3
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:3.7
+        ref_id: "3.7"
+        name: "Establish and Maintain a Data Classification Scheme"
+        description: >
+          Define sensitivity tiers and label data so that handling requirements follow its classification.
+        parent_urn: urn:inflect:req:cis-controls-v8:3
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:3.8
+        ref_id: "3.8"
+        name: "Document Data Flows"
+        description: >
+          Map how sensitive data moves through and beyond the enterprise, including third-party exchanges.
+        parent_urn: urn:inflect:req:cis-controls-v8:3
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:3.9
+        ref_id: "3.9"
+        name: "Encrypt Data on Removable Media"
+        description: >
+          Encrypt information written to USB drives and other removable storage.
+        parent_urn: urn:inflect:req:cis-controls-v8:3
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:3.10
+        ref_id: "3.10"
+        name: "Encrypt Sensitive Data in Transit"
+        description: >
+          Protect sensitive data with encryption whenever it traverses networks.
+        parent_urn: urn:inflect:req:cis-controls-v8:3
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:3.11
+        ref_id: "3.11"
+        name: "Encrypt Sensitive Data at Rest"
+        description: >
+          Encrypt sensitive information where it is stored on servers, databases, and applications.
+        parent_urn: urn:inflect:req:cis-controls-v8:3
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:3.12
+        ref_id: "3.12"
+        name: "Segment Data Processing and Storage Based on Sensitivity"
+        description: >
+          Separate systems that handle sensitive data from those that do not, using network or logical boundaries.
+        parent_urn: urn:inflect:req:cis-controls-v8:3
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:3.13
+        ref_id: "3.13"
+        name: "Deploy a Data Loss Prevention Solution"
+        description: >
+          Use tooling that identifies and blocks unauthorized movement of sensitive data.
+        parent_urn: urn:inflect:req:cis-controls-v8:3
+        depth: 2
+        assessable: true
+        category: IG3
+      - urn: urn:inflect:req:cis-controls-v8:3.14
+        ref_id: "3.14"
+        name: "Log Sensitive Data Access"
+        description: >
+          Record access to sensitive data so that unusual or unauthorized use can be reviewed.
+        parent_urn: urn:inflect:req:cis-controls-v8:3
+        depth: 2
+        assessable: true
+        category: IG3
+      # ─── Control 4: Secure Configuration of Enterprise Assets and Software ───
+      - urn: urn:inflect:req:cis-controls-v8:4
+        ref_id: "4"
+        name: Secure Configuration of Enterprise Assets and Software
+        description: >
+          Establish and sustain hardened, well-documented configuration baselines for devices, operating systems, and applications.
+        depth: 1
+        assessable: false
+        category: Secure Configuration of Enterprise Assets and Software
+      - urn: urn:inflect:req:cis-controls-v8:4.1
+        ref_id: "4.1"
+        name: "Establish and Maintain a Secure Configuration Process"
+        description: >
+          Document and keep current a process for applying secure baseline settings to assets and software.
+        parent_urn: urn:inflect:req:cis-controls-v8:4
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:4.2
+        ref_id: "4.2"
+        name: "Establish and Maintain a Secure Configuration Process for Network Infrastructure"
+        description: >
+          Maintain a defined process for securely configuring routers, switches, firewalls, and similar devices.
+        parent_urn: urn:inflect:req:cis-controls-v8:4
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:4.3
+        ref_id: "4.3"
+        name: "Configure Automatic Session Locking on Enterprise Assets"
+        description: >
+          Set devices to lock automatically after a period of inactivity to limit unattended access.
+        parent_urn: urn:inflect:req:cis-controls-v8:4
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:4.4
+        ref_id: "4.4"
+        name: "Implement and Manage a Firewall on Servers"
+        description: >
+          Run and maintain host-based or network firewalls that protect server assets.
+        parent_urn: urn:inflect:req:cis-controls-v8:4
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:4.5
+        ref_id: "4.5"
+        name: "Implement and Manage a Firewall on End-User Devices"
+        description: >
+          Enable and manage a firewall on laptops, desktops, and similar end-user devices.
+        parent_urn: urn:inflect:req:cis-controls-v8:4
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:4.6
+        ref_id: "4.6"
+        name: "Securely Manage Enterprise Assets and Software"
+        description: >
+          Administer assets and software through secure channels and vetted management tooling.
+        parent_urn: urn:inflect:req:cis-controls-v8:4
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:4.7
+        ref_id: "4.7"
+        name: "Manage Default Accounts on Enterprise Assets and Software"
+        description: >
+          Disable or change built-in default accounts and credentials before assets enter use.
+        parent_urn: urn:inflect:req:cis-controls-v8:4
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:4.8
+        ref_id: "4.8"
+        name: "Uninstall or Disable Unnecessary Services on Enterprise Assets and Software"
+        description: >
+          Remove or turn off features, services, and ports that are not needed for the asset to function.
+        parent_urn: urn:inflect:req:cis-controls-v8:4
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:4.9
+        ref_id: "4.9"
+        name: "Configure Trusted DNS Servers on Enterprise Assets"
+        description: >
+          Point assets at DNS resolvers the enterprise trusts and controls.
+        parent_urn: urn:inflect:req:cis-controls-v8:4
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:4.10
+        ref_id: "4.10"
+        name: "Enforce Automatic Device Lockout on Portable End-User Devices"
+        description: >
+          Configure portable devices to lock out after repeated failed authentication attempts.
+        parent_urn: urn:inflect:req:cis-controls-v8:4
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:4.11
+        ref_id: "4.11"
+        name: "Enforce Remote Wipe Capability on Portable End-User Devices"
+        description: >
+          Enable the ability to remotely erase enterprise data from lost or stolen portable devices.
+        parent_urn: urn:inflect:req:cis-controls-v8:4
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:4.12
+        ref_id: "4.12"
+        name: "Separate Enterprise Workspaces on Mobile End-User Devices"
+        description: >
+          Keep enterprise data isolated from personal data on mobile devices through separate managed workspaces.
+        parent_urn: urn:inflect:req:cis-controls-v8:4
+        depth: 2
+        assessable: true
+        category: IG3
+      # ─── Control 5: Account Management ───
+      - urn: urn:inflect:req:cis-controls-v8:5
+        ref_id: "5"
+        name: Account Management
+        description: >
+          Govern the full life cycle of user, administrator, and service credentials so that only intended identities exist and remain active.
+        depth: 1
+        assessable: false
+        category: Account Management
+      - urn: urn:inflect:req:cis-controls-v8:5.1
+        ref_id: "5.1"
+        name: "Establish and Maintain an Inventory of Accounts"
+        description: >
+          Maintain a record of all user and administrator accounts, including owner and status.
+        parent_urn: urn:inflect:req:cis-controls-v8:5
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:5.2
+        ref_id: "5.2"
+        name: "Use Unique Passwords"
+        description: >
+          Require a distinct, sufficiently strong password for every account.
+        parent_urn: urn:inflect:req:cis-controls-v8:5
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:5.3
+        ref_id: "5.3"
+        name: "Disable Dormant Accounts"
+        description: >
+          Identify and disable accounts that have gone unused beyond a defined period.
+        parent_urn: urn:inflect:req:cis-controls-v8:5
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:5.4
+        ref_id: "5.4"
+        name: "Restrict Administrator Privileges to Dedicated Administrator Accounts"
+        description: >
+          Perform privileged work only with separate administrator accounts, not everyday user accounts.
+        parent_urn: urn:inflect:req:cis-controls-v8:5
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:5.5
+        ref_id: "5.5"
+        name: "Establish and Maintain an Inventory of Service Accounts"
+        description: >
+          Track non-human service accounts, their purpose, and their owners.
+        parent_urn: urn:inflect:req:cis-controls-v8:5
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:5.6
+        ref_id: "5.6"
+        name: "Centralize Account Management"
+        description: >
+          Manage accounts through a central directory or identity service where feasible.
+        parent_urn: urn:inflect:req:cis-controls-v8:5
+        depth: 2
+        assessable: true
+        category: IG2
+      # ─── Control 6: Access Control Management ───
+      - urn: urn:inflect:req:cis-controls-v8:6
+        ref_id: "6"
+        name: Access Control Management
+        description: >
+          Grant, verify, and revoke access to enterprise resources using least-privilege and strong authentication practices.
+        depth: 1
+        assessable: false
+        category: Access Control Management
+      - urn: urn:inflect:req:cis-controls-v8:6.1
+        ref_id: "6.1"
+        name: "Establish an Access Granting Process"
+        description: >
+          Follow a defined procedure to provision access rights when someone joins or changes role.
+        parent_urn: urn:inflect:req:cis-controls-v8:6
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:6.2
+        ref_id: "6.2"
+        name: "Establish an Access Revoking Process"
+        description: >
+          Follow a defined procedure to remove access promptly when it is no longer needed.
+        parent_urn: urn:inflect:req:cis-controls-v8:6
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:6.3
+        ref_id: "6.3"
+        name: "Require MFA for Externally-Exposed Applications"
+        description: >
+          Require multi-factor authentication for applications reachable from outside the enterprise.
+        parent_urn: urn:inflect:req:cis-controls-v8:6
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:6.4
+        ref_id: "6.4"
+        name: "Require MFA for Remote Network Access"
+        description: >
+          Require multi-factor authentication for connections into the network from remote locations.
+        parent_urn: urn:inflect:req:cis-controls-v8:6
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:6.5
+        ref_id: "6.5"
+        name: "Require MFA for Administrative Access"
+        description: >
+          Require multi-factor authentication whenever administrative privileges are used.
+        parent_urn: urn:inflect:req:cis-controls-v8:6
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:6.6
+        ref_id: "6.6"
+        name: "Establish and Maintain an Inventory of Authentication and Authorization Systems"
+        description: >
+          Keep a record of the systems that perform authentication and authorization across the enterprise.
+        parent_urn: urn:inflect:req:cis-controls-v8:6
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:6.7
+        ref_id: "6.7"
+        name: "Centralize Access Control"
+        description: >
+          Route access decisions through a central directory or single sign-on service where possible.
+        parent_urn: urn:inflect:req:cis-controls-v8:6
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:6.8
+        ref_id: "6.8"
+        name: "Define and Maintain Role-Based Access Control"
+        description: >
+          Define access rights by role and review them so that permissions match job needs.
+        parent_urn: urn:inflect:req:cis-controls-v8:6
+        depth: 2
+        assessable: true
+        category: IG3
+      # ─── Control 7: Continuous Vulnerability Management ───
+      - urn: urn:inflect:req:cis-controls-v8:7
+        ref_id: "7"
+        name: Continuous Vulnerability Management
+        description: >
+          Continuously find, prioritize, and fix weaknesses in enterprise assets to shrink the window attackers can exploit.
+        depth: 1
+        assessable: false
+        category: Continuous Vulnerability Management
+      - urn: urn:inflect:req:cis-controls-v8:7.1
+        ref_id: "7.1"
+        name: "Establish and Maintain a Vulnerability Management Process"
+        description: >
+          Document a repeatable process for finding and tracking vulnerabilities in enterprise assets.
+        parent_urn: urn:inflect:req:cis-controls-v8:7
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:7.2
+        ref_id: "7.2"
+        name: "Establish and Maintain a Remediation Process"
+        description: >
+          Define how identified vulnerabilities are prioritized and driven to closure.
+        parent_urn: urn:inflect:req:cis-controls-v8:7
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:7.3
+        ref_id: "7.3"
+        name: "Perform Automated Operating System Patch Management"
+        description: >
+          Automate the delivery of operating-system security updates on a regular cadence.
+        parent_urn: urn:inflect:req:cis-controls-v8:7
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:7.4
+        ref_id: "7.4"
+        name: "Perform Automated Application Patch Management"
+        description: >
+          Automate the delivery of application security updates on a regular cadence.
+        parent_urn: urn:inflect:req:cis-controls-v8:7
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:7.5
+        ref_id: "7.5"
+        name: "Perform Automated Vulnerability Scans of Internal Enterprise Assets"
+        description: >
+          Regularly scan internal assets with an authenticated vulnerability scanner.
+        parent_urn: urn:inflect:req:cis-controls-v8:7
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:7.6
+        ref_id: "7.6"
+        name: "Perform Automated Vulnerability Scans of Externally-Exposed Enterprise Assets"
+        description: >
+          Regularly scan internet-facing assets for exploitable weaknesses.
+        parent_urn: urn:inflect:req:cis-controls-v8:7
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:7.7
+        ref_id: "7.7"
+        name: "Remediate Detected Vulnerabilities"
+        description: >
+          Fix vulnerabilities found by scans within timeframes set by the remediation process.
+        parent_urn: urn:inflect:req:cis-controls-v8:7
+        depth: 2
+        assessable: true
+        category: IG2
+      # ─── Control 8: Audit Log Management ───
+      - urn: urn:inflect:req:cis-controls-v8:8
+        ref_id: "8"
+        name: Audit Log Management
+        description: >
+          Generate, retain, and review activity logs so that security events can be detected, understood, and investigated.
+        depth: 1
+        assessable: false
+        category: Audit Log Management
+      - urn: urn:inflect:req:cis-controls-v8:8.1
+        ref_id: "8.1"
+        name: "Establish and Maintain an Audit Log Management Process"
+        description: >
+          Document what events are logged, how logs are handled, and how long they are kept.
+        parent_urn: urn:inflect:req:cis-controls-v8:8
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:8.2
+        ref_id: "8.2"
+        name: "Collect Audit Logs"
+        description: >
+          Ensure logging is enabled and events are collected across enterprise assets.
+        parent_urn: urn:inflect:req:cis-controls-v8:8
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:8.3
+        ref_id: "8.3"
+        name: "Ensure Adequate Audit Log Storage"
+        description: >
+          Provide enough storage so that logs are retained for the period the process requires.
+        parent_urn: urn:inflect:req:cis-controls-v8:8
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:8.4
+        ref_id: "8.4"
+        name: "Standardize Time Synchronization"
+        description: >
+          Synchronize clocks across assets so that log timestamps can be correlated.
+        parent_urn: urn:inflect:req:cis-controls-v8:8
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:8.5
+        ref_id: "8.5"
+        name: "Collect Detailed Audit Logs"
+        description: >
+          Capture richer event detail such as source, destination, and user context.
+        parent_urn: urn:inflect:req:cis-controls-v8:8
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:8.6
+        ref_id: "8.6"
+        name: "Collect DNS Query Audit Logs"
+        description: >
+          Log DNS queries to support detection and investigation.
+        parent_urn: urn:inflect:req:cis-controls-v8:8
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:8.7
+        ref_id: "8.7"
+        name: "Collect URL Request Audit Logs"
+        description: >
+          Log outbound URL requests to support detection and investigation.
+        parent_urn: urn:inflect:req:cis-controls-v8:8
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:8.8
+        ref_id: "8.8"
+        name: "Collect Command-Line Audit Logs"
+        description: >
+          Record command-line activity to help detect misuse and support forensics.
+        parent_urn: urn:inflect:req:cis-controls-v8:8
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:8.9
+        ref_id: "8.9"
+        name: "Centralize Audit Logs"
+        description: >
+          Aggregate logs from across assets into a central location for analysis.
+        parent_urn: urn:inflect:req:cis-controls-v8:8
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:8.10
+        ref_id: "8.10"
+        name: "Retain Audit Logs"
+        description: >
+          Keep collected logs for the retention period defined by policy.
+        parent_urn: urn:inflect:req:cis-controls-v8:8
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:8.11
+        ref_id: "8.11"
+        name: "Conduct Audit Log Reviews"
+        description: >
+          Review logs on a regular schedule to spot anomalies and potential incidents.
+        parent_urn: urn:inflect:req:cis-controls-v8:8
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:8.12
+        ref_id: "8.12"
+        name: "Collect Service Provider Logs"
+        description: >
+          Obtain and review relevant logs from service providers that host enterprise data.
+        parent_urn: urn:inflect:req:cis-controls-v8:8
+        depth: 2
+        assessable: true
+        category: IG3
+      # ─── Control 9: Email and Web Browser Protections ───
+      - urn: urn:inflect:req:cis-controls-v8:9
+        ref_id: "9"
+        name: Email and Web Browser Protections
+        description: >
+          Reduce the attack surface presented by email and web browsing, the most common paths for social-engineering and malicious content.
+        depth: 1
+        assessable: false
+        category: Email and Web Browser Protections
+      - urn: urn:inflect:req:cis-controls-v8:9.1
+        ref_id: "9.1"
+        name: "Ensure Use of Only Fully Supported Browsers and Email Clients"
+        description: >
+          Permit only vendor-supported, up-to-date browsers and email clients on enterprise assets.
+        parent_urn: urn:inflect:req:cis-controls-v8:9
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:9.2
+        ref_id: "9.2"
+        name: "Use DNS Filtering Services"
+        description: >
+          Use DNS filtering to block resolution of known malicious domains.
+        parent_urn: urn:inflect:req:cis-controls-v8:9
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:9.3
+        ref_id: "9.3"
+        name: "Maintain and Enforce Network-Based URL Filters"
+        description: >
+          Apply network URL filtering to restrict access to malicious or disallowed sites.
+        parent_urn: urn:inflect:req:cis-controls-v8:9
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:9.4
+        ref_id: "9.4"
+        name: "Restrict Unnecessary or Unauthorized Browser and Email Client Extensions"
+        description: >
+          Control which browser and email add-ons may be installed and used.
+        parent_urn: urn:inflect:req:cis-controls-v8:9
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:9.5
+        ref_id: "9.5"
+        name: "Implement DMARC"
+        description: >
+          Deploy DMARC along with SPF and DKIM to reduce spoofed email.
+        parent_urn: urn:inflect:req:cis-controls-v8:9
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:9.6
+        ref_id: "9.6"
+        name: "Block Unnecessary File Types"
+        description: >
+          Block risky file types from arriving through email or web downloads.
+        parent_urn: urn:inflect:req:cis-controls-v8:9
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:9.7
+        ref_id: "9.7"
+        name: "Deploy and Maintain Email Server Anti-Malware Protections"
+        description: >
+          Run anti-malware scanning on email servers or gateways.
+        parent_urn: urn:inflect:req:cis-controls-v8:9
+        depth: 2
+        assessable: true
+        category: IG3
+      # ─── Control 10: Malware Defenses ───
+      - urn: urn:inflect:req:cis-controls-v8:10
+        ref_id: "10"
+        name: Malware Defenses
+        description: >
+          Prevent, detect, and contain malicious code across enterprise assets through layered anti-malware measures.
+        depth: 1
+        assessable: false
+        category: Malware Defenses
+      - urn: urn:inflect:req:cis-controls-v8:10.1
+        ref_id: "10.1"
+        name: "Deploy and Maintain Anti-Malware Software"
+        description: >
+          Install and keep running anti-malware protection on enterprise assets.
+        parent_urn: urn:inflect:req:cis-controls-v8:10
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:10.2
+        ref_id: "10.2"
+        name: "Configure Automatic Anti-Malware Signature Updates"
+        description: >
+          Configure anti-malware tools to update their detection data automatically.
+        parent_urn: urn:inflect:req:cis-controls-v8:10
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:10.3
+        ref_id: "10.3"
+        name: "Disable Autorun and Autoplay for Removable Media"
+        description: >
+          Turn off automatic execution of content from removable media.
+        parent_urn: urn:inflect:req:cis-controls-v8:10
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:10.4
+        ref_id: "10.4"
+        name: "Configure Automatic Anti-Malware Scanning of Removable Media"
+        description: >
+          Automatically scan removable media for malware when it is connected.
+        parent_urn: urn:inflect:req:cis-controls-v8:10
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:10.5
+        ref_id: "10.5"
+        name: "Enable Anti-Exploitation Features"
+        description: >
+          Enable operating-system and application protections that hinder exploitation.
+        parent_urn: urn:inflect:req:cis-controls-v8:10
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:10.6
+        ref_id: "10.6"
+        name: "Centrally Manage Anti-Malware Software"
+        description: >
+          Administer anti-malware configuration and status from a central console.
+        parent_urn: urn:inflect:req:cis-controls-v8:10
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:10.7
+        ref_id: "10.7"
+        name: "Use Behavior-Based Anti-Malware Software"
+        description: >
+          Use anti-malware that detects threats by behavior rather than signatures alone.
+        parent_urn: urn:inflect:req:cis-controls-v8:10
+        depth: 2
+        assessable: true
+        category: IG2
+      # ─── Control 11: Data Recovery ───
+      - urn: urn:inflect:req:cis-controls-v8:11
+        ref_id: "11"
+        name: Data Recovery
+        description: >
+          Maintain reliable, protected backups and recovery procedures so the enterprise can restore data after an incident.
+        depth: 1
+        assessable: false
+        category: Data Recovery
+      - urn: urn:inflect:req:cis-controls-v8:11.1
+        ref_id: "11.1"
+        name: "Establish and Maintain a Data Recovery Process"
+        description: >
+          Document how the enterprise backs up and restores data after loss or compromise.
+        parent_urn: urn:inflect:req:cis-controls-v8:11
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:11.2
+        ref_id: "11.2"
+        name: "Perform Automated Backups"
+        description: >
+          Run backups automatically on a defined schedule for in-scope assets.
+        parent_urn: urn:inflect:req:cis-controls-v8:11
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:11.3
+        ref_id: "11.3"
+        name: "Protect Recovery Data"
+        description: >
+          Secure backup data against unauthorized access and tampering, including via encryption.
+        parent_urn: urn:inflect:req:cis-controls-v8:11
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:11.4
+        ref_id: "11.4"
+        name: "Establish and Maintain an Isolated Instance of Recovery Data"
+        description: >
+          Keep at least one backup copy isolated so it survives an attack on production systems.
+        parent_urn: urn:inflect:req:cis-controls-v8:11
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:11.5
+        ref_id: "11.5"
+        name: "Test Data Recovery"
+        description: >
+          Periodically test restoration to confirm backups are usable.
+        parent_urn: urn:inflect:req:cis-controls-v8:11
+        depth: 2
+        assessable: true
+        category: IG2
+      # ─── Control 12: Network Infrastructure Management ───
+      - urn: urn:inflect:req:cis-controls-v8:12
+        ref_id: "12"
+        name: Network Infrastructure Management
+        description: >
+          Design, operate, and maintain networking equipment securely to prevent exploitation of infrastructure weaknesses.
+        depth: 1
+        assessable: false
+        category: Network Infrastructure Management
+      - urn: urn:inflect:req:cis-controls-v8:12.1
+        ref_id: "12.1"
+        name: "Ensure Network Infrastructure is Up-to-Date"
+        description: >
+          Keep networking equipment firmware and software current with security updates.
+        parent_urn: urn:inflect:req:cis-controls-v8:12
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:12.2
+        ref_id: "12.2"
+        name: "Establish and Maintain a Secure Network Architecture"
+        description: >
+          Design the network with segmentation and defense in depth as guiding principles.
+        parent_urn: urn:inflect:req:cis-controls-v8:12
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:12.3
+        ref_id: "12.3"
+        name: "Securely Manage Network Infrastructure"
+        description: >
+          Administer network devices over secure protocols and controlled management paths.
+        parent_urn: urn:inflect:req:cis-controls-v8:12
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:12.4
+        ref_id: "12.4"
+        name: "Establish and Maintain Architecture Diagram(s)"
+        description: >
+          Maintain current diagrams that show the network and its trust boundaries.
+        parent_urn: urn:inflect:req:cis-controls-v8:12
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:12.5
+        ref_id: "12.5"
+        name: "Centralize Network Authentication, Authorization, and Auditing (AAA)"
+        description: >
+          Route network access decisions and logging through central AAA services.
+        parent_urn: urn:inflect:req:cis-controls-v8:12
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:12.6
+        ref_id: "12.6"
+        name: "Use of Secure Network Management and Communication Protocols"
+        description: >
+          Use encrypted, current protocols for managing and communicating with network devices.
+        parent_urn: urn:inflect:req:cis-controls-v8:12
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:12.7
+        ref_id: "12.7"
+        name: "Ensure Remote Devices Utilize a VPN and are Connecting to an Enterprise’s AAA Infrastructure"
+        description: >
+          Require remote devices to connect through a VPN tied to enterprise authentication services.
+        parent_urn: urn:inflect:req:cis-controls-v8:12
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:12.8
+        ref_id: "12.8"
+        name: "Establish and Maintain Dedicated Computing Resources for All Administrative Work"
+        description: >
+          Use dedicated, hardened systems for administrative tasks, separate from everyday computing.
+        parent_urn: urn:inflect:req:cis-controls-v8:12
+        depth: 2
+        assessable: true
+        category: IG3
+      # ─── Control 13: Network Monitoring and Defense ───
+      - urn: urn:inflect:req:cis-controls-v8:13
+        ref_id: "13"
+        name: Network Monitoring and Defense
+        description: >
+          Operate detection, monitoring, and response capabilities across the network to identify and stop threats in transit.
+        depth: 1
+        assessable: false
+        category: Network Monitoring and Defense
+      - urn: urn:inflect:req:cis-controls-v8:13.1
+        ref_id: "13.1"
+        name: "Centralize Security Event Alerting"
+        description: >
+          Aggregate security alerts into a central system such as a SIEM for correlation.
+        parent_urn: urn:inflect:req:cis-controls-v8:13
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:13.2
+        ref_id: "13.2"
+        name: "Deploy a Host-Based Intrusion Detection Solution"
+        description: >
+          Run host-based detection on in-scope assets to spot suspicious activity.
+        parent_urn: urn:inflect:req:cis-controls-v8:13
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:13.3
+        ref_id: "13.3"
+        name: "Deploy a Network Intrusion Detection Solution"
+        description: >
+          Monitor network traffic for signs of intrusion.
+        parent_urn: urn:inflect:req:cis-controls-v8:13
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:13.4
+        ref_id: "13.4"
+        name: "Perform Traffic Filtering Between Network Segments"
+        description: >
+          Filter and restrict traffic that crosses between network segments.
+        parent_urn: urn:inflect:req:cis-controls-v8:13
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:13.5
+        ref_id: "13.5"
+        name: "Manage Access Control for Remote Assets"
+        description: >
+          Apply access controls and posture checks to assets connecting from outside the enterprise.
+        parent_urn: urn:inflect:req:cis-controls-v8:13
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:13.6
+        ref_id: "13.6"
+        name: "Collect Network Traffic Flow Logs"
+        description: >
+          Capture network flow records to support detection and investigation.
+        parent_urn: urn:inflect:req:cis-controls-v8:13
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:13.7
+        ref_id: "13.7"
+        name: "Deploy a Host-Based Intrusion Prevention Solution"
+        description: >
+          Run host-based prevention that can block detected malicious activity.
+        parent_urn: urn:inflect:req:cis-controls-v8:13
+        depth: 2
+        assessable: true
+        category: IG3
+      - urn: urn:inflect:req:cis-controls-v8:13.8
+        ref_id: "13.8"
+        name: "Deploy a Network Intrusion Prevention Solution"
+        description: >
+          Deploy network prevention that can block malicious traffic inline.
+        parent_urn: urn:inflect:req:cis-controls-v8:13
+        depth: 2
+        assessable: true
+        category: IG3
+      - urn: urn:inflect:req:cis-controls-v8:13.9
+        ref_id: "13.9"
+        name: "Deploy Port-Level Access Control"
+        description: >
+          Control which devices may connect at the network port level, for example with 802.1X.
+        parent_urn: urn:inflect:req:cis-controls-v8:13
+        depth: 2
+        assessable: true
+        category: IG3
+      - urn: urn:inflect:req:cis-controls-v8:13.10
+        ref_id: "13.10"
+        name: "Perform Application Layer Filtering"
+        description: >
+          Inspect and filter traffic at the application layer to enforce policy.
+        parent_urn: urn:inflect:req:cis-controls-v8:13
+        depth: 2
+        assessable: true
+        category: IG3
+      - urn: urn:inflect:req:cis-controls-v8:13.11
+        ref_id: "13.11"
+        name: "Tune Security Event Alerting Thresholds"
+        description: >
+          Adjust alert thresholds regularly to reduce noise and surface real threats.
+        parent_urn: urn:inflect:req:cis-controls-v8:13
+        depth: 2
+        assessable: true
+        category: IG3
+      # ─── Control 14: Security Awareness and Skills Training ───
+      - urn: urn:inflect:req:cis-controls-v8:14
+        ref_id: "14"
+        name: Security Awareness and Skills Training
+        description: >
+          Build and sustain a workforce security-awareness program so that staff can recognize and appropriately handle risks.
+        depth: 1
+        assessable: false
+        category: Security Awareness and Skills Training
+      - urn: urn:inflect:req:cis-controls-v8:14.1
+        ref_id: "14.1"
+        name: "Establish and Maintain a Security Awareness Program"
+        description: >
+          Run an ongoing program that keeps the workforce aware of security responsibilities.
+        parent_urn: urn:inflect:req:cis-controls-v8:14
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:14.2
+        ref_id: "14.2"
+        name: "Train Workforce Members to Recognize Social Engineering Attacks"
+        description: >
+          Teach staff to spot phishing and other social-engineering attempts.
+        parent_urn: urn:inflect:req:cis-controls-v8:14
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:14.3
+        ref_id: "14.3"
+        name: "Train Workforce Members on Authentication Best Practices"
+        description: >
+          Train staff on strong password use and multi-factor authentication.
+        parent_urn: urn:inflect:req:cis-controls-v8:14
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:14.4
+        ref_id: "14.4"
+        name: "Train Workforce on Data Handling Best Practices"
+        description: >
+          Train staff to store, share, and dispose of data according to its sensitivity.
+        parent_urn: urn:inflect:req:cis-controls-v8:14
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:14.5
+        ref_id: "14.5"
+        name: "Train Workforce Members on Causes of Unintentional Data Exposure"
+        description: >
+          Help staff understand common mistakes that lead to accidental data exposure.
+        parent_urn: urn:inflect:req:cis-controls-v8:14
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:14.6
+        ref_id: "14.6"
+        name: "Train Workforce Members on Recognizing and Reporting Security Incidents"
+        description: >
+          Teach staff how to recognize and promptly report potential incidents.
+        parent_urn: urn:inflect:req:cis-controls-v8:14
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:14.7
+        ref_id: "14.7"
+        name: "Train Workforce on How to Identify and Report if Their Enterprise Assets are Missing Security Updates"
+        description: >
+          Show staff how to notice and report devices that are missing security updates.
+        parent_urn: urn:inflect:req:cis-controls-v8:14
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:14.8
+        ref_id: "14.8"
+        name: "Train Workforce on the Dangers of Connecting to and Transmitting Enterprise Data Over Insecure Networks"
+        description: >
+          Warn staff about the risks of untrusted networks and how to use enterprise data safely on them.
+        parent_urn: urn:inflect:req:cis-controls-v8:14
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:14.9
+        ref_id: "14.9"
+        name: "Conduct Role-Specific Security Awareness and Skills Training"
+        description: >
+          Provide additional targeted training for roles with elevated security responsibilities.
+        parent_urn: urn:inflect:req:cis-controls-v8:14
+        depth: 2
+        assessable: true
+        category: IG2
+      # ─── Control 15: Service Provider Management ───
+      - urn: urn:inflect:req:cis-controls-v8:15
+        ref_id: "15"
+        name: Service Provider Management
+        description: >
+          Evaluate and oversee third parties that hold enterprise data or run critical processes to ensure they meet security expectations.
+        depth: 1
+        assessable: false
+        category: Service Provider Management
+      - urn: urn:inflect:req:cis-controls-v8:15.1
+        ref_id: "15.1"
+        name: "Establish and Maintain an Inventory of Service Providers"
+        description: >
+          Maintain a record of third parties that hold enterprise data or run critical processes.
+        parent_urn: urn:inflect:req:cis-controls-v8:15
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:15.2
+        ref_id: "15.2"
+        name: "Establish and Maintain a Service Provider Management Policy"
+        description: >
+          Document how service providers are selected, managed, and held to security requirements.
+        parent_urn: urn:inflect:req:cis-controls-v8:15
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:15.3
+        ref_id: "15.3"
+        name: "Classify Service Providers"
+        description: >
+          Rank service providers by the sensitivity and criticality of what they handle.
+        parent_urn: urn:inflect:req:cis-controls-v8:15
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:15.4
+        ref_id: "15.4"
+        name: "Ensure Service Provider Contracts Include Security Requirements"
+        description: >
+          Embed security obligations in contracts with service providers.
+        parent_urn: urn:inflect:req:cis-controls-v8:15
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:15.5
+        ref_id: "15.5"
+        name: "Assess Service Providers"
+        description: >
+          Evaluate service providers against security requirements before and during engagement.
+        parent_urn: urn:inflect:req:cis-controls-v8:15
+        depth: 2
+        assessable: true
+        category: IG3
+      - urn: urn:inflect:req:cis-controls-v8:15.6
+        ref_id: "15.6"
+        name: "Monitor Service Providers"
+        description: >
+          Track service provider security posture and performance over the relationship.
+        parent_urn: urn:inflect:req:cis-controls-v8:15
+        depth: 2
+        assessable: true
+        category: IG3
+      - urn: urn:inflect:req:cis-controls-v8:15.7
+        ref_id: "15.7"
+        name: "Securely Decommission Service Providers"
+        description: >
+          Follow a process to retrieve or destroy data and revoke access when ending a provider relationship.
+        parent_urn: urn:inflect:req:cis-controls-v8:15
+        depth: 2
+        assessable: true
+        category: IG3
+      # ─── Control 16: Application Software Security ───
+      - urn: urn:inflect:req:cis-controls-v8:16
+        ref_id: "16"
+        name: Application Software Security
+        description: >
+          Manage the security of software the enterprise develops, acquires, or maintains throughout its development life cycle.
+        depth: 1
+        assessable: false
+        category: Application Software Security
+      - urn: urn:inflect:req:cis-controls-v8:16.1
+        ref_id: "16.1"
+        name: "Establish and Maintain a Secure Application Development Process"
+        description: >
+          Document a secure development process covering design, coding, and release.
+        parent_urn: urn:inflect:req:cis-controls-v8:16
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:16.2
+        ref_id: "16.2"
+        name: "Establish and Maintain a Process to Accept and Address Software Vulnerabilities"
+        description: >
+          Provide a way to receive and act on reported vulnerabilities in enterprise software.
+        parent_urn: urn:inflect:req:cis-controls-v8:16
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:16.3
+        ref_id: "16.3"
+        name: "Perform Root Cause Analysis on Security Vulnerabilities"
+        description: >
+          Analyze the underlying causes of vulnerabilities to prevent recurrence.
+        parent_urn: urn:inflect:req:cis-controls-v8:16
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:16.4
+        ref_id: "16.4"
+        name: "Establish and Manage an Inventory of Third-Party Software Components"
+        description: >
+          Track the third-party components and libraries used in enterprise software.
+        parent_urn: urn:inflect:req:cis-controls-v8:16
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:16.5
+        ref_id: "16.5"
+        name: "Use Up-to-Date and Trusted Third-Party Software Components"
+        description: >
+          Prefer current, reputable components and keep them patched.
+        parent_urn: urn:inflect:req:cis-controls-v8:16
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:16.6
+        ref_id: "16.6"
+        name: "Establish and Maintain a Severity Rating System and Process for Application Vulnerabilities"
+        description: >
+          Define how application vulnerabilities are rated and prioritized.
+        parent_urn: urn:inflect:req:cis-controls-v8:16
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:16.7
+        ref_id: "16.7"
+        name: "Use Standard Hardening Configuration Templates for Application Infrastructure"
+        description: >
+          Apply hardened configuration templates to the infrastructure that runs applications.
+        parent_urn: urn:inflect:req:cis-controls-v8:16
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:16.8
+        ref_id: "16.8"
+        name: "Separate Production and Non-Production Systems"
+        description: >
+          Keep development and test environments separate from production.
+        parent_urn: urn:inflect:req:cis-controls-v8:16
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:16.9
+        ref_id: "16.9"
+        name: "Train Developers in Application Security Concepts and Secure Coding"
+        description: >
+          Provide developers with training in secure design and coding.
+        parent_urn: urn:inflect:req:cis-controls-v8:16
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:16.10
+        ref_id: "16.10"
+        name: "Apply Secure Design Principles in Application Architectures"
+        description: >
+          Build applications on secure design principles such as least privilege and defense in depth.
+        parent_urn: urn:inflect:req:cis-controls-v8:16
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:16.11
+        ref_id: "16.11"
+        name: "Leverage Vetted Modules or Services for Application Security Components"
+        description: >
+          Use vetted, reusable components for sensitive functions like authentication and encryption.
+        parent_urn: urn:inflect:req:cis-controls-v8:16
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:16.12
+        ref_id: "16.12"
+        name: "Implement Code-Level Security Checks"
+        description: >
+          Use static and dynamic analysis to find security defects in code.
+        parent_urn: urn:inflect:req:cis-controls-v8:16
+        depth: 2
+        assessable: true
+        category: IG3
+      - urn: urn:inflect:req:cis-controls-v8:16.13
+        ref_id: "16.13"
+        name: "Conduct Application Penetration Testing"
+        description: >
+          Test applications with penetration testing to uncover exploitable flaws.
+        parent_urn: urn:inflect:req:cis-controls-v8:16
+        depth: 2
+        assessable: true
+        category: IG3
+      - urn: urn:inflect:req:cis-controls-v8:16.14
+        ref_id: "16.14"
+        name: "Conduct Threat Modeling"
+        description: >
+          Analyze application designs to anticipate and mitigate likely attacks.
+        parent_urn: urn:inflect:req:cis-controls-v8:16
+        depth: 2
+        assessable: true
+        category: IG3
+      # ─── Control 17: Incident Response Management ───
+      - urn: urn:inflect:req:cis-controls-v8:17
+        ref_id: "17"
+        name: Incident Response Management
+        description: >
+          Prepare people, processes, and tooling to detect, respond to, and recover from security incidents effectively.
+        depth: 1
+        assessable: false
+        category: Incident Response Management
+      - urn: urn:inflect:req:cis-controls-v8:17.1
+        ref_id: "17.1"
+        name: "Designate Personnel to Manage Incident Handling"
+        description: >
+          Assign responsibility for coordinating incident handling.
+        parent_urn: urn:inflect:req:cis-controls-v8:17
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:17.2
+        ref_id: "17.2"
+        name: "Establish and Maintain Contact Information for Reporting Security Incidents"
+        description: >
+          Maintain current contacts, internal and external, for reporting incidents.
+        parent_urn: urn:inflect:req:cis-controls-v8:17
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:17.3
+        ref_id: "17.3"
+        name: "Establish and Maintain an Enterprise Process for Reporting Incidents"
+        description: >
+          Provide staff with a clear process for reporting suspected incidents.
+        parent_urn: urn:inflect:req:cis-controls-v8:17
+        depth: 2
+        assessable: true
+        category: IG1
+      - urn: urn:inflect:req:cis-controls-v8:17.4
+        ref_id: "17.4"
+        name: "Establish and Maintain an Incident Response Process"
+        description: >
+          Document how the enterprise detects, responds to, and recovers from incidents.
+        parent_urn: urn:inflect:req:cis-controls-v8:17
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:17.5
+        ref_id: "17.5"
+        name: "Assign Key Roles and Responsibilities"
+        description: >
+          Define the roles and responsibilities that make up the incident response team.
+        parent_urn: urn:inflect:req:cis-controls-v8:17
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:17.6
+        ref_id: "17.6"
+        name: "Define Mechanisms for Communicating During Incident Response"
+        description: >
+          Establish reliable communication channels for use during incidents.
+        parent_urn: urn:inflect:req:cis-controls-v8:17
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:17.7
+        ref_id: "17.7"
+        name: "Conduct Routine Incident Response Exercises"
+        description: >
+          Run periodic exercises to rehearse and improve incident response.
+        parent_urn: urn:inflect:req:cis-controls-v8:17
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:17.8
+        ref_id: "17.8"
+        name: "Conduct Post-Incident Reviews"
+        description: >
+          Review incidents afterward to capture lessons and improve defenses.
+        parent_urn: urn:inflect:req:cis-controls-v8:17
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:17.9
+        ref_id: "17.9"
+        name: "Establish and Maintain Security Incident Thresholds"
+        description: >
+          Define thresholds that determine when an event is treated as a reportable incident.
+        parent_urn: urn:inflect:req:cis-controls-v8:17
+        depth: 2
+        assessable: true
+        category: IG3
+      # ─── Control 18: Penetration Testing ───
+      - urn: urn:inflect:req:cis-controls-v8:18
+        ref_id: "18"
+        name: Penetration Testing
+        description: >
+          Test the effectiveness of defenses by simulating attacker techniques to uncover exploitable weaknesses.
+        depth: 1
+        assessable: false
+        category: Penetration Testing
+      - urn: urn:inflect:req:cis-controls-v8:18.1
+        ref_id: "18.1"
+        name: "Establish and Maintain a Penetration Testing Program"
+        description: >
+          Document a program that governs how penetration testing is planned and run.
+        parent_urn: urn:inflect:req:cis-controls-v8:18
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:18.2
+        ref_id: "18.2"
+        name: "Perform Periodic External Penetration Tests"
+        description: >
+          Regularly test defenses from an external attacker perspective.
+        parent_urn: urn:inflect:req:cis-controls-v8:18
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:18.3
+        ref_id: "18.3"
+        name: "Remediate Penetration Test Findings"
+        description: >
+          Fix weaknesses uncovered by penetration testing according to their risk.
+        parent_urn: urn:inflect:req:cis-controls-v8:18
+        depth: 2
+        assessable: true
+        category: IG2
+      - urn: urn:inflect:req:cis-controls-v8:18.4
+        ref_id: "18.4"
+        name: "Validate Security Measures"
+        description: >
+          Confirm that defenses work as intended following remediation.
+        parent_urn: urn:inflect:req:cis-controls-v8:18
+        depth: 2
+        assessable: true
+        category: IG3
+      - urn: urn:inflect:req:cis-controls-v8:18.5
+        ref_id: "18.5"
+        name: "Perform Periodic Internal Penetration Tests"
+        description: >
+          Regularly test defenses from the perspective of an attacker already inside the network.
+        parent_urn: urn:inflect:req:cis-controls-v8:18
+        depth: 2
+        assessable: true
+        category: IG3
