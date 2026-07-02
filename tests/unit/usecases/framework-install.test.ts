@@ -63,6 +63,11 @@ const mockLog = logEvent as jest.MockedFunction<typeof logEvent>;
 
 beforeEach(() => {
     jest.clearAllMocks();
+    // installPack now also pulls in framework-mapped internal-control templates
+    // via a top-level `controlTemplate.findMany`. Default it to none so pack
+    // tests exercise only the pack's own templates; tests that assert on the
+    // template query override with `mockResolvedValueOnce`.
+    mockTemplateFindMany.mockResolvedValue([] as never);
 });
 
 describe('previewPackInstall', () => {
@@ -179,6 +184,8 @@ describe('installPack — RBAC + idempotency + audit', () => {
                     create: linkCreate,
                     upsert: linkUpsert,
                 },
+                policy: { findMany: jest.fn().mockResolvedValue([]) },
+                policyControlLink: { createMany: jest.fn().mockResolvedValue({ count: 0 }) },
             } as never),
         );
 
@@ -214,6 +221,8 @@ describe('installPack — RBAC + idempotency + audit', () => {
                 control: { findFirst: jest.fn(), create: jest.fn() },
                 task: { create: jest.fn() },
                 controlRequirementLink: { create: jest.fn(), upsert: jest.fn() },
+                policy: { findMany: jest.fn().mockResolvedValue([]) },
+                policyControlLink: { createMany: jest.fn().mockResolvedValue({ count: 0 }) },
             } as never),
         );
 
@@ -614,6 +623,8 @@ describe('installPack — stage-3c additions', () => {
                 control: { findFirst: jest.fn(), create: jest.fn() },
                 task: { create: jest.fn() },
                 controlRequirementLink: { create: jest.fn(), upsert: jest.fn() },
+                policy: { findMany: jest.fn().mockResolvedValue([]) },
+                policyControlLink: { createMany: jest.fn().mockResolvedValue({ count: 0 }) },
             } as never);
         });
 
@@ -645,6 +656,8 @@ describe('installPack — stage-3c additions', () => {
                 },
                 task: { create: jest.fn() },
                 controlRequirementLink: { create: jest.fn(), upsert: jest.fn() },
+                policy: { findMany: jest.fn().mockResolvedValue([]) },
+                policyControlLink: { createMany: jest.fn().mockResolvedValue({ count: 0 }) },
             } as never),
         );
 
@@ -653,6 +666,59 @@ describe('installPack — stage-3c additions', () => {
         expect(result.controlsCreated).toBe(1);
         expect(result.tasksCreated).toBe(2);
         expect(result.mappingsCreated).toBe(3);
+    });
+
+    it('also installs framework-mapped internal controls and links their related policies', async () => {
+        // Pack itself has no templates …
+        mockPackFind.mockResolvedValueOnce({
+            key: 'iso', name: 'ISO', frameworkId: 'fw-1',
+            framework: { key: 'ISO27001' },
+            templateLinks: [],
+        } as never);
+        // … but an internal-control ControlTemplate is mapped to this framework.
+        mockTemplateFindMany.mockResolvedValueOnce([
+            {
+                id: 'ic-1', code: 'ICN-001', title: 'Internal ctrl', description: 'd', category: 'GOV',
+                defaultFrequency: 'ANNUAL',
+                objective: 'obj', successCriteria: 'sc', testingMethodology: 'tm',
+                relatedPolicies: 'Access Management Policy',
+                tasks: [],
+                requirementLinks: [{ requirementId: 'r-1' }],
+            },
+        ] as never);
+
+        const controlCreate = jest.fn().mockResolvedValue({ id: 'c-ic' });
+        const policyCreateMany = jest.fn().mockResolvedValue({ count: 1 });
+        mockRunInTx.mockImplementationOnce(async (_ctx, fn) =>
+            fn({
+                control: { findFirst: jest.fn().mockResolvedValue(null), create: controlCreate },
+                task: { create: jest.fn() },
+                controlRequirementLink: { create: jest.fn(), upsert: jest.fn() },
+                // tenant has the policy the internal control references
+                policy: { findMany: jest.fn().mockResolvedValue([{ id: 'p-1', title: 'Access Management Policy' }]) },
+                policyControlLink: { createMany: policyCreateMany },
+            } as never),
+        );
+
+        const result = await installPack(makeRequestContext('ADMIN'), 'iso');
+
+        // The mapped internal control was created …
+        expect(controlCreate).toHaveBeenCalledWith(expect.objectContaining({
+            data: expect.objectContaining({ code: 'ICN-001', objective: 'obj', testingMethodology: 'tm' }),
+        }));
+        expect(result.controlsCreated).toBe(1);
+        // … and its related policy resolved to a PolicyControlLink.
+        expect(policyCreateMany).toHaveBeenCalledWith(expect.objectContaining({
+            data: [expect.objectContaining({ policyId: 'p-1', controlId: 'c-ic' })],
+            skipDuplicates: true,
+        }));
+        expect(result.policyLinksCreated).toBe(1);
+        // The template query is framework-scoped, excluding the pack's own templates.
+        expect(mockTemplateFindMany).toHaveBeenCalledWith(expect.objectContaining({
+            where: expect.objectContaining({
+                requirementLinks: { some: { requirement: { frameworkId: 'fw-1' } } },
+            }),
+        }));
     });
 });
 
