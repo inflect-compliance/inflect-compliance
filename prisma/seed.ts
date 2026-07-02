@@ -390,10 +390,10 @@ async function main() {
 
     // ─── Seed controls ───
     const sampleControls = [
-        { annexId: 'A.5.1', name: 'Information Security Policies', intent: 'Ensure management direction and support for information security.', status: 'IMPLEMENTED' },
-        { annexId: 'A.5.2', name: 'Information Security Roles', intent: 'Establish defined roles and responsibilities.', status: 'IMPLEMENTING' },
-        { annexId: 'A.8.1', name: 'User Endpoint Devices', intent: 'Protect information on user endpoint devices.', status: 'IMPLEMENTED' },
-        { annexId: 'A.8.9', name: 'Configuration Management', intent: 'Ensure correct and secure configuration of systems.', status: 'PLANNED' },
+        { annexId: 'A.5.1', name: 'Information Security Policies', objective: 'Ensure management direction and support for information security.', status: 'IMPLEMENTED' },
+        { annexId: 'A.5.2', name: 'Information Security Roles', objective: 'Establish defined roles and responsibilities.', status: 'IMPLEMENTING' },
+        { annexId: 'A.8.1', name: 'User Endpoint Devices', objective: 'Protect information on user endpoint devices.', status: 'IMPLEMENTED' },
+        { annexId: 'A.8.9', name: 'Configuration Management', objective: 'Ensure correct and secure configuration of systems.', status: 'PLANNED' },
     ];
     for (const c of sampleControls) {
         const existing = await prisma.control.findFirst({ where: { annexId: c.annexId, tenantId: tenant.id } });

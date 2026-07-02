@@ -29,7 +29,6 @@ async function createControl(page: Page, slug: string): Promise<string> {
     await page.waitForSelector('#control-name-input', { timeout: 15000 });
     await page.fill('#control-name-input', `E2E Control ${uid}`);
     await page.fill('#control-code-input', `CTRL-${uid}`);
-    await page.fill('#control-description-input', 'Test control from e2e');
     await page.click('#create-control-btn');
     await page.waitForSelector('#control-title', { timeout: 15000 });
     return new URL(page.url()).pathname;
@@ -63,7 +62,6 @@ test.describe('Controls Center', () => {
 
         await authedPage.fill('#control-name-input', `E2E Control ${uid}`);
         await authedPage.fill('#control-code-input', `CTRL-${uid}`);
-        await authedPage.fill('#control-description-input', 'Test control from e2e');
         await authedPage.click('#create-control-btn');
 
         await authedPage.waitForSelector('#control-title', { timeout: 15000 });

@@ -95,7 +95,6 @@ export class PrismaLocalStore implements GitHubLocalStore {
                             id: true,
                             name: true,
                             status: true,
-                            description: true,
                             automationKey: true,
                             updatedAt: true,
                         },

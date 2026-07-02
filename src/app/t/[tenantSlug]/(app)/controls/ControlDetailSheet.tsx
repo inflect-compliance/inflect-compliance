@@ -11,12 +11,12 @@
  * Controls list. The full control detail page (`/controls/[controlId]`)
  * keeps ownership of the deep tabs (evidence, tasks, related, applicability
  * workflows) — this Sheet is the *fast* contextual path that replaces
- * full-page navigation for routine edits: name, description, intent,
- * category, frequency, owner. The list stays visible behind the Sheet so
+ * full-page navigation for routine edits: name, category, frequency,
+ * owner. The list stays visible behind the Sheet so
  * filters, scroll position, and pagination survive the edit.
  *
  * Business behaviour is identical to the legacy modal on the detail page:
- *   - PATCH /controls/:id with name/description/intent/category/frequency.
+ *   - PATCH /controls/:id with name/category/frequency.
  *   - POST  /controls/:id/owner when the owner actually changed.
  *   - Success → invalidate controls.all(tenantSlug) so the list reflects
  *     the new name/owner immediately, then close the Sheet.
@@ -51,8 +51,6 @@ interface ControlDetailResponse {
     code: string | null;
     annexId: string | null;
     name: string;
-    description: string | null;
-    intent: string | null;
     category: string | null;
     frequency: string | null;
     status: string;
@@ -63,8 +61,6 @@ interface ControlDetailResponse {
 
 type EditForm = {
     name: string;
-    description: string;
-    intent: string;
     category: string;
     frequency: string;
     owner: string;
@@ -145,8 +141,6 @@ export function ControlDetailSheet({
     // ── Local edit state, seeded from server data on each (re)open ──
     const [form, setForm] = useState<EditForm>({
         name: '',
-        description: '',
-        intent: '',
         category: '',
         frequency: '',
         owner: '',
@@ -159,15 +153,13 @@ export function ControlDetailSheet({
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setForm({
             name: control.name || '',
-            description: control.description || '',
-            intent: control.intent || '',
             category: control.category || '',
             frequency: control.frequency || '',
             owner: control.ownerUserId || '',
         });
         setDirty(false);
         setError('');
-    }, [control?.id, control?.name, control?.description, control?.intent, control?.category, control?.frequency, control?.ownerUserId]);
+    }, [control?.id, control?.name, control?.category, control?.frequency, control?.ownerUserId]);
 
     // Focus the name input shortly after open so users can start typing.
     useEffect(() => {
@@ -193,8 +185,6 @@ export function ControlDetailSheet({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: draft.name.trim(),
-                    description: draft.description.trim() || null,
-                    intent: draft.intent.trim() || null,
                     category: draft.category.trim() || null,
                     frequency: draft.frequency || null,
                 }),
@@ -287,7 +277,7 @@ export function ControlDetailSheet({
             onOpenChange={handleOpenChange}
             size="md"
             title={control?.name ?? 'Control detail'}
-            description={control?.description ?? undefined}
+            description={control?.annexId ?? control?.code ?? undefined}
         >
             {detailQuery.isLoading || !control ? (
                 <>
@@ -376,36 +366,6 @@ export function ControlDetailSheet({
                                         onChange={(e) => update('name', e.target.value)}
                                         required
                                         minLength={3}
-                                    />
-                                </div>
-                                <div>
-                                    <label
-                                        className="mb-1 block text-sm text-content-default"
-                                        htmlFor="sheet-description-input"
-                                    >
-                                        Description
-                                    </label>
-                                    <textarea
-                                        id="sheet-description-input"
-                                        className="input w-full"
-                                        rows={3}
-                                        value={form.description}
-                                        onChange={(e) => update('description', e.target.value)}
-                                    />
-                                </div>
-                                <div>
-                                    <label
-                                        className="mb-1 block text-sm text-content-default"
-                                        htmlFor="sheet-intent-input"
-                                    >
-                                        Intent
-                                    </label>
-                                    <textarea
-                                        id="sheet-intent-input"
-                                        className="input w-full"
-                                        rows={2}
-                                        value={form.intent}
-                                        onChange={(e) => update('intent', e.target.value)}
                                     />
                                 </div>
                                 <div className="grid grid-cols-1 gap-default sm:grid-cols-2">

@@ -237,7 +237,7 @@ export default function ControlDetailPage() {
 
     // Edit modal state
     const [showEditModal, setShowEditModal] = useState(false);
-    const [editForm, setEditForm] = useState({ name: '', description: '', intent: '', objective: '', successCriteria: '', testingMethodology: '', category: '', frequency: '', owner: '', automationType: '', mitigationType: '', annualCost: '' });
+    const [editForm, setEditForm] = useState({ name: '', objective: '', successCriteria: '', testingMethodology: '', category: '', frequency: '', owner: '', automationType: '', mitigationType: '', annualCost: '' });
     const [savingEdit, setSavingEdit] = useState(false);
     const [editError, setEditError] = useState('');
     const [editSuccess, setEditSuccess] = useState(false);
@@ -250,8 +250,6 @@ export default function ControlDetailPage() {
         if (!control) return;
         setEditForm({
             name: control.name || '',
-            description: control.description || '',
-            intent: control.intent || '',
             objective: control.objective || '',
             successCriteria: control.successCriteria || '',
             testingMethodology: control.testingMethodology || '',
@@ -292,8 +290,6 @@ export default function ControlDetailPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: form.name.trim(),
-                    description: form.description.trim() || null,
-                    intent: form.intent.trim() || null,
                     objective: form.objective.trim() || null,
                     successCriteria: form.successCriteria.trim() || null,
                     testingMethodology: form.testingMethodology.trim() || null,
@@ -349,8 +345,6 @@ export default function ControlDetailPage() {
                       control: {
                           ...current.control,
                           name: form.name.trim(),
-                          description: form.description.trim() || null,
-                          intent: form.intent.trim() || null,
                           objective: form.objective.trim() || null,
                           successCriteria: form.successCriteria.trim() || null,
                           testingMethodology: form.testingMethodology.trim() || null,
@@ -879,11 +873,11 @@ export default function ControlDetailPage() {
                     <div className="grid grid-cols-2 gap-section">
                         <div>
                             <span className="text-xs text-content-subtle uppercase">Objective</span>
-                            <p className="text-sm text-content-default mt-1 whitespace-pre-line">{control.objective || control.description || 'No objective.'}</p>
+                            <p className="text-sm text-content-default mt-1 whitespace-pre-line">{control.objective || 'No objective.'}</p>
                         </div>
                         <div>
                             <span className="text-xs text-content-subtle uppercase">Success Criteria</span>
-                            <p className="text-sm text-content-default mt-1 whitespace-pre-line">{control.successCriteria || control.intent || '—'}</p>
+                            <p className="text-sm text-content-default mt-1 whitespace-pre-line">{control.successCriteria || '—'}</p>
                         </div>
                         <div>
                             <span className="text-xs text-content-subtle uppercase">Category</span>

@@ -69,7 +69,6 @@ describe('Epic 64 — react-hook-form reference form', () => {
         const ids = [
             'control-code-input',
             'control-name-input',
-            'control-description-input',
             'control-category-input',
             'control-frequency-input',
             'control-justification-input',

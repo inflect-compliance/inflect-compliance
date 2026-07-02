@@ -1246,8 +1246,6 @@ model Control {
   code                         String?
   annexId                      String?                  @unique
   name                         String
-  description                  String?
-  intent                       String?
   // Internal-controls import: objective (Overview shows this as "Objective"),
   // success criteria (Overview "Success Criteria"), and testing/audit
   // methodology (Tests tab, above Test plans).

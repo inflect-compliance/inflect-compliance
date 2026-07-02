@@ -124,7 +124,6 @@ interface ControlListItem {
     code: string | null;
     annexId: string | null;
     name: string;
-    description: string | null;
     status: string;
     applicability: string;
     category: string | null;
