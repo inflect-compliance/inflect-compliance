@@ -101,7 +101,9 @@ const PARENT_MAP: Record<string, CanonicalParent> = {
     '/controls/sankey': { href: '/controls', label: 'Controls' },
     '/controls/templates': { href: '/controls', label: 'Controls' },
 
-    // Frameworks
+    // Frameworks — a subpage of Internal Audit (frameworks are the
+    // standards an audit is conducted against; not a top-level section).
+    '/frameworks': { href: '/audits', label: 'Internal Audit' },
     '/frameworks/[frameworkKey]': { href: '/frameworks', label: 'Frameworks' },
     '/frameworks/[frameworkKey]/diff': {
         href: '/frameworks/[frameworkKey]',
@@ -115,6 +117,10 @@ const PARENT_MAP: Record<string, CanonicalParent> = {
         href: '/frameworks/[frameworkKey]',
         label: 'Framework',
     },
+
+    // Security testing (scans) — a subpage of Internal Audit; scanner
+    // findings are audit evidence, so the entry point lives under Audits.
+    '/security-testing': { href: '/audits', label: 'Internal Audit' },
 
     // Issues
     '/issues/[issueId]': { href: '/issues', label: 'Issues' },

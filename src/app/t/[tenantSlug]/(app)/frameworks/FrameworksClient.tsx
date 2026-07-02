@@ -39,7 +39,7 @@ import { DataTable, createColumns, useColumnsDropdown } from '@/components/ui/ta
 import { ViewToggle } from '@/components/ui/view-toggle';
 import { useViewMode } from '@/components/ui/hooks';
 import { Heading } from '@/components/ui/typography';
-import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { BackAffordance } from '@/components/nav/BackAffordance';
 
 const FW_META: Record<string, { icon: LucideIcon; color: string }> = {
     ISO27001: { icon: ShieldCheck, color: 'from-indigo-500 to-purple-600' },
@@ -203,14 +203,8 @@ export function FrameworksClient({
         <div className="space-y-section animate-fadeIn">
             <div className="flex items-end justify-between gap-default flex-wrap">
                 <div>
-                    <PageBreadcrumbs
-                        items={[
-                            { label: 'Dashboard', href: href('/dashboard') },
-                            { label: 'Frameworks' },
-                        ]}
-                        className="mb-1"
-                    />
-                    <Heading level={1} id="frameworks-heading" className="sr-only">
+                    <BackAffordance />
+                    <Heading level={1} id="frameworks-heading">
                         Compliance Frameworks
                     </Heading>
                     <p className="text-sm text-content-muted mt-1">
