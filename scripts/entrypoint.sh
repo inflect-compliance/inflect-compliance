@@ -37,6 +37,16 @@ echo ""
 echo "→ Seeding self-assessment library content..."
 node dist/seed-self-assessments.mjs || echo "⚠ self-assessment seed skipped (non-fatal)"
 
+# ── 1c. Seed the global policy-template library (idempotent) ──
+#
+# Same rationale as 1b: the global PolicyTemplate rows come from vendored
+# fixtures via prisma/seed.ts (not run on prod deploys), so templates added to a
+# fixture never reach an already-seeded env. Upsert-only over the global
+# template fixtures — safe to re-run. Non-fatal.
+echo ""
+echo "→ Seeding policy-template library..."
+node dist/seed-policy-templates.mjs || echo "⚠ policy-template seed skipped (non-fatal)"
+
 # ── 2. Create upload directory if missing ──
 FILE_DIR="${FILE_STORAGE_ROOT:-/data/uploads}"
 mkdir -p "$FILE_DIR" 2>/dev/null || true

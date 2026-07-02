@@ -55,5 +55,13 @@ await build({
     entryPoints: ['scripts/seed-self-assessments.ts'],
     outfile: 'dist/seed-self-assessments.mjs',
 });
+// Global policy-template library seeder — run from the entrypoint after
+// migrate deploy so the template library (ciso-toolkit + imported + IC-original
+// gap-fill) self-heals on every deploy. Fixture JSON inlined at build time.
+await build({
+    ...common,
+    entryPoints: ['scripts/seed-policy-templates.ts'],
+    outfile: 'dist/seed-policy-templates.mjs',
+});
 
-console.log('✓ built dist/worker.mjs + dist/scheduler.mjs + dist/seed-self-assessments.mjs');
+console.log('✓ built dist/worker.mjs + dist/scheduler.mjs + dist/seed-self-assessments.mjs + dist/seed-policy-templates.mjs');
