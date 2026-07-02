@@ -15,20 +15,16 @@
  * surface, not a long-running workspace.
  */
 
-import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
 import { SankeyChart } from '@/components/ui/SankeyChart';
 import type { TraceabilityGraph } from '@/lib/traceability-graph/types';
 import { Heading } from '@/components/ui/typography';
 
 export interface ControlsSankeyClientProps {
     initialGraph: TraceabilityGraph;
-    tenantSlug: string;
 }
 
 export function ControlsSankeyClient({
     initialGraph,
-    tenantSlug,
 }: ControlsSankeyClientProps) {
     // R14-PR7 — standalone search input retired (the user's
     // directive: per-page searchbars die; users search via the
@@ -44,15 +40,7 @@ export function ControlsSankeyClient({
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-compact">
                 <div>
-                    <Link
-                        href={`/t/${tenantSlug}/controls`}
-                        className="inline-flex items-center gap-1 text-content-muted hover:text-content-emphasis transition-colors text-sm"
-                        id="controls-sankey-back"
-                    >
-                        <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
-                        Back to Controls
-                    </Link>
-                    <Heading level={1} className="mt-2" id="controls-sankey-heading">
+                    <Heading level={1} id="controls-sankey-heading">
                         Controls flow
                     </Heading>
                     <p className="text-sm text-content-muted mt-1">

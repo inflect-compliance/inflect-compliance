@@ -6,11 +6,9 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { useTenantApiUrl, useTenantHref, useTenantContext } from '@/lib/tenant-context-provider';
 import { AppIcon } from '@/components/icons/AppIcon';
 import { Button } from '@/components/ui/button';
-import { buttonVariants } from '@/components/ui/button-variants';
 import { DataTable, createColumns, TableEmptyState } from '@/components/ui/table';
 import { InlineEmptyState } from '@/components/ui/inline-empty-state';
 import { InlineNotice } from '@/components/ui/inline-notice';
@@ -111,9 +109,6 @@ export default function ControlTemplatesPage() {
                     <Heading level={1} id="templates-heading"><AppIcon name="templates" className="inline-block mr-2 align-text-bottom" /> Control Templates</Heading>
                     <p className="text-content-muted text-sm">Select templates to install as controls in your register</p>
                 </div>
-                <Link href={tenantHref('/controls')} className={buttonVariants({ variant: 'secondary' })}>
-                    ← Back to Controls
-                </Link>
             </div>
 
             {error && (
