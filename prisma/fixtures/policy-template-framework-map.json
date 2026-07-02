@@ -1194,6 +1194,98 @@
           "provenance": "curated"
         }
       ]
+    },
+    "ORIG-VULN-MGMT": {
+      "iso27001": [
+        {
+          "code": "8.8",
+          "provenance": "curated"
+        },
+        {
+          "code": "8.9",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.21(2)(e)",
+          "provenance": "curated"
+        },
+        {
+          "code": "Art.21(2)(b)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "ORIG-GOVERNANCE": {
+      "iso27001": [
+        {
+          "code": "5.1",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.2",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.4",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.20(1)",
+          "provenance": "curated"
+        },
+        {
+          "code": "Art.21(2)(a)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "ORIG-DATA-CLASSIFICATION": {
+      "iso27001": [
+        {
+          "code": "5.12",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.13",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.9",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.21(2)(a)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "ORIG-MDM-BYOD": {
+      "iso27001": [
+        {
+          "code": "8.1",
+          "provenance": "curated"
+        },
+        {
+          "code": "6.7",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.21(2)(i)",
+          "provenance": "curated"
+        },
+        {
+          "code": "Art.21(2)(a)",
+          "provenance": "curated"
+        }
+      ]
     }
   }
 }
