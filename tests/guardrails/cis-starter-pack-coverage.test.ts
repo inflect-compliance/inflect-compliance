@@ -72,7 +72,7 @@ describe('CIS v8 — licensing discipline (no verbatim CIS text)', () => {
     it('declares the structural-outline / CC BY-NC-SA posture and links CIS', () => {
         expect(src).toMatch(/NOT verbatim CIS text/i);
         expect(src).toMatch(/CC BY-NC-SA/);
-        expect(src).toMatch(/cisecurity\.org\/controls/);
+        expect(src).toContain('cisecurity.org/controls');
     });
 
     it('no absurdly long single line (a pasted CIS passage would blow past this)', () => {
