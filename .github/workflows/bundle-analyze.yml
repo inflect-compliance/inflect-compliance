@@ -46,6 +46,13 @@ jobs:
           # needed to measure bundle size.
           SKIP_ENV_VALIDATION: '1'
           NEXT_TELEMETRY_DISABLED: '1'
+          # `npm run analyze` → `npm run build`, which runs
+          # `scripts/validate-env.ts` before `next build`. That script hard-
+          # checks `DATABASE_URL` (it predates SKIP_ENV_VALIDATION and does not
+          # honour it), so a dummy value is required or the analyze build fails
+          # before it starts — mirrors the dummy DSNs the CI test/build jobs use.
+          DATABASE_URL: postgresql://ci:ci_password@localhost:5432/ci_testdb?schema=public
+          DIRECT_DATABASE_URL: postgresql://ci:ci_password@localhost:5432/ci_testdb?schema=public
         run: npm run analyze
 
       - name: Enforce per-route First Load JS budgets
