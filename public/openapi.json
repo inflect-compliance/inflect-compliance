@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Inflect Compliance API",
-    "version": "1.673.0",
+    "version": "1.673.1",
     "description": "Multi-tenant compliance-management API. The schema layer in `src/lib/schemas/index.ts` (request bodies) and `src/lib/dto/*.dto.ts` (response shapes) is the single source of truth — this document is generated from those Zod schemas via `npm run openapi:generate`.\n\n**Authenticating.** To try an endpoint, click **Authorize**:\n- *BearerAuth* (recommended for integrations) — paste a tenant **API key** (`iflk_…`), minted under Admin → API Keys. Sent as `Authorization: Bearer iflk_…`.\n- *SessionCookie* — for the dev/staging \"Try it out\" flow, sign in first; the browser sends the `next-auth.session-token` cookie automatically (same-origin only).\n\n**Coverage.** Operations marked `x-stub: true` exist and are callable, but their request/response bodies are not yet published in this contract — only the critical-endpoint set carries full schemas. See `docs/api-consumer-guide.md` for the auth, rate-limit, versioning, and error-contract details.",
     "license": {
       "name": "Proprietary"
@@ -989,18 +989,6 @@
             "type": "string",
             "minLength": 1
           },
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "intent": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "category": {
             "type": [
               "string",
@@ -1551,18 +1539,6 @@
           "name": {
             "type": "string"
           },
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "intent": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "category": {
             "type": [
               "string",
@@ -1702,7 +1678,6 @@
           "code",
           "annexId",
           "name",
-          "description",
           "category",
           "status",
           "applicability",
@@ -1892,19 +1867,7 @@
             "type": "string",
             "minLength": 1
           },
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "code": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "intent": {
             "type": [
               "string",
               "null"
