@@ -1177,6 +1177,24 @@
           {
             "type": "object",
             "properties": {
+              "objective": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "successCriteria": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "testingMethodology": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
               "createdBy": {
                 "allOf": [
                   {

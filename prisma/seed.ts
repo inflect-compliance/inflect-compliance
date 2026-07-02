@@ -1889,6 +1889,52 @@ Reviewed at least annually.` },
     }
     console.log(`✅ ISO 27701 privacy risk templates seeded (${iso27701RiskTemplates.length})`);
 
+    // ─── Internal Controls library (imported from customer GRC export) ───
+    // 151 deduped internal controls. Each carries an objective, success criteria,
+    // and testing/audit methodology (surfaced on the control detail Overview +
+    // Tests tabs) plus its related policy names. Housed under a CUSTOM 'Internal
+    // Controls' container framework + an installable pack; framework requirement
+    // mapping is deferred (the source export's Tags were empty). Rides the generic
+    // FrameworkPack / ControlTemplate / installPack machinery — no special-casing.
+    const internalControls = require('./fixtures/internal-controls.json') as {
+        controls: Array<{ code: string; title: string; objective: string; successCriteria: string; testingMethodology: string; relatedPolicies: string[]; category: string }>;
+    };
+    const internalCtrlFramework = await prisma.framework.upsert({
+        where: { key_version: { key: 'INTERNAL-CONTROLS', version: '1' } },
+        update: { name: 'Internal Controls', kind: 'CUSTOM', description: 'Organization internal controls library (imported). Objective, success criteria, and testing methodology per control.' },
+        create: { key: 'INTERNAL-CONTROLS', name: 'Internal Controls', version: '1', kind: 'CUSTOM', description: 'Organization internal controls library (imported). Objective, success criteria, and testing methodology per control.' },
+    });
+    for (const c of internalControls.controls) {
+        const data = {
+            title: c.title,
+            description: c.objective || null,
+            category: c.category || null,
+            objective: c.objective || null,
+            successCriteria: c.successCriteria || null,
+            testingMethodology: c.testingMethodology || null,
+            relatedPolicies: c.relatedPolicies.join('|') || null,
+        };
+        const existing = await prisma.controlTemplate.findUnique({ where: { code: c.code } });
+        if (existing) {
+            await prisma.controlTemplate.update({ where: { id: existing.id }, data });
+        } else {
+            await prisma.controlTemplate.create({ data: { code: c.code, ...data } });
+        }
+    }
+    const internalCtrlTmpls = await prisma.controlTemplate.findMany({ where: { code: { startsWith: 'ICN-' } } });
+    const internalCtrlPack = await prisma.frameworkPack.upsert({
+        where: { key: 'INTERNAL_CONTROLS' },
+        update: { name: 'Internal Controls', frameworkId: internalCtrlFramework.id, version: '1' },
+        create: { key: 'INTERNAL_CONTROLS', name: 'Internal Controls', frameworkId: internalCtrlFramework.id, version: '1', description: 'Imported internal controls with objective, success criteria, and testing methodology.' },
+    });
+    for (const tmpl of internalCtrlTmpls) {
+        await prisma.packTemplateLink.upsert({
+            where: { packId_templateId: { packId: internalCtrlPack.id, templateId: tmpl.id } },
+            create: { packId: internalCtrlPack.id, templateId: tmpl.id }, update: {},
+        });
+    }
+    console.log(`✅ Internal Controls library + ${internalControls.controls.length} controls seeded`);
+
     // ISO 9001 Pack
     const iso9001Tmpls = await prisma.controlTemplate.findMany({ where: { code: { startsWith: 'QMS-' } } });
     const iso9001Pack = await prisma.frameworkPack.upsert({
