@@ -23,7 +23,7 @@ import { cn } from '@/lib/cn';
 
 function MetricCard({ label, value, tone, href }: { label: string; value: number | string; tone?: MetricTone; href?: string }) {
     const inner = (
-        <div className={`card p-4 ${href ? 'hover:bg-bg-muted/50 cursor-pointer' : ''}`}>
+        <div className={cn(cardVariants({ density: 'compact' }), href && 'hover:bg-bg-muted/50 cursor-pointer transition-colors')}>
             <KPIStat value={value} label={label} tone={tone} />
         </div>
     );
@@ -135,23 +135,29 @@ export default function VendorDashboardPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-section">
                 {/* By Criticality */}
-                <div className={cn(cardVariants(), 'space-y-compact')}>
+                <div className={cn(cardVariants(), 'flex flex-col space-y-compact')}>
                     <Heading level={3}>By Criticality</Heading>
-                    <BreakdownBar data={metrics.byCriticality} colors={CRIT_COLORS} />
+                    <div className="flex flex-1 flex-col justify-center">
+                        <BreakdownBar data={metrics.byCriticality} colors={CRIT_COLORS} />
+                    </div>
                 </div>
 
                 {/* By Status */}
-                <div className={cn(cardVariants(), 'space-y-compact')}>
+                <div className={cn(cardVariants(), 'flex flex-col space-y-compact')}>
                     <Heading level={3}>By Status</Heading>
-                    <BreakdownBar data={metrics.byStatus} colors={STATUS_COLORS} />
+                    <div className="flex flex-1 flex-col justify-center">
+                        <BreakdownBar data={metrics.byStatus} colors={STATUS_COLORS} />
+                    </div>
                 </div>
 
                 {/* By Risk Rating */}
-                <div className={cn(cardVariants(), 'space-y-compact')}>
+                <div className={cn(cardVariants(), 'flex flex-col space-y-compact')}>
                     <Heading level={3}>By Risk Rating</Heading>
-                    {Object.keys(metrics.byRiskRating).length > 0
-                        ? <BreakdownBar data={metrics.byRiskRating} colors={CRIT_COLORS} />
-                        : <InlineEmptyState title="No assessments completed yet" />}
+                    <div className="flex flex-1 flex-col justify-center">
+                        {Object.keys(metrics.byRiskRating).length > 0
+                            ? <BreakdownBar data={metrics.byRiskRating} colors={CRIT_COLORS} />
+                            : <InlineEmptyState title="No assessments completed yet" />}
+                    </div>
                 </div>
             </div>
 
