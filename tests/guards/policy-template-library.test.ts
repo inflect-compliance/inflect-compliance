@@ -5,7 +5,8 @@
  * sets (guarded elsewhere). This locks the small set of ORIGINAL, IC-authored
  * templates that fill the topics genuinely absent from those sets — threat &
  * vulnerability management, corporate governance, data classification &
- * handling, MDM/BYOD — and their framework mapping. It asserts:
+ * handling, MDM/BYOD, physical & environmental security, and a NIS2
+ * Art 21(2)(a) master policy — and their framework mapping. It asserts:
  *   - all four exist with the 5 canonical house-style sections + real content;
  *   - the ORIGINALITY/LICENSE header discipline (no CC-BY-SA source, no
  *     `{{variable}}` template tokens that would betray a verbatim paste);
@@ -27,6 +28,8 @@ const EXPECTED_REFS = [
     'ORIG-GOVERNANCE',
     'ORIG-DATA-CLASSIFICATION',
     'ORIG-MDM-BYOD',
+    'ORIG-PHYSICAL-SEC',
+    'ORIG-NIS2-MASTER',
 ] as const;
 
 const CANONICAL_SECTIONS = [

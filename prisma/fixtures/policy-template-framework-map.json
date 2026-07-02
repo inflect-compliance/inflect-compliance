@@ -1286,6 +1286,62 @@
           "provenance": "curated"
         }
       ]
+    },
+    "ORIG-PHYSICAL-SEC": {
+      "iso27001": [
+        {
+          "code": "7.1",
+          "provenance": "curated"
+        },
+        {
+          "code": "7.2",
+          "provenance": "curated"
+        },
+        {
+          "code": "7.3",
+          "provenance": "curated"
+        },
+        {
+          "code": "7.4",
+          "provenance": "curated"
+        },
+        {
+          "code": "7.8",
+          "provenance": "curated"
+        },
+        {
+          "code": "7.10",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.21(2)(a)",
+          "provenance": "curated"
+        }
+      ]
+    },
+    "ORIG-NIS2-MASTER": {
+      "iso27001": [
+        {
+          "code": "5.1",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.2",
+          "provenance": "curated"
+        },
+        {
+          "code": "5.4",
+          "provenance": "curated"
+        }
+      ],
+      "nis2": [
+        {
+          "code": "Art.21(2)(a)",
+          "provenance": "curated"
+        }
+      ]
     }
   }
 }
