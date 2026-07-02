@@ -24,10 +24,9 @@ import {
     type AwsPostureSecrets,
     type AwsPostureConfig,
 } from '../integrations/aws-posture-provider';
-import { soc2CodesForControl } from '@/data/integrations/aws-posture-control-map';
+import { frameworkCodesForControl } from '@/data/integrations/aws-posture-control-map';
 
 const AWS_POSTURE_PROVIDER = 'aws-posture';
-const SOC2_FRAMEWORK_KEY = 'SOC2';
 const EVIDENCE_FRESHNESS_DAYS = 30;
 
 function makeSystemCtx(tenantId: string): RequestContext {
@@ -118,32 +117,37 @@ export async function runAwsPostureCollection(input: {
             // it can't be collapsed into one query.
             for (const c of controls) { // guardrail-allow: n+1
                 if (c.status !== 'ok') continue; // pass-only evidence; alarms are a gap signal
-                const codes = soc2CodesForControl(c.id);
-                if (!codes.length) continue;
-                const link = await db.controlRequirementLink.findFirst({
-                    where: { tenantId: ctx.tenantId, requirement: { framework: { key: SOC2_FRAMEWORK_KEY }, code: { in: codes } } },
-                    select: { controlId: true },
-                });
-                if (!link?.controlId) continue; // tenant has no control covering this requirement — skip
-                const controlId = link.controlId;
-                const category = `aws-posture:${c.id}`;
-                const nextReviewDate = new Date(now.getTime() + EVIDENCE_FRESHNESS_DAYS * 86_400_000);
-                const content = `AWS posture check "${c.id}" PASSED (${automationKey}) on ${now.toISOString().slice(0, 10)}. Machine-collected via Powerpipe; execution ${execution.id}.`;
-                const existing = await db.evidence.findFirst({
-                    where: { tenantId: ctx.tenantId, controlId, category, type: 'TEXT', isArchived: false, deletedAt: null },
-                    select: { id: true },
-                });
-                if (existing) {
-                    const ev = await db.evidence.update({ where: { id: existing.id }, data: { title: `Automated evidence — AWS ${c.id}`, content, dateCollected: now, nextReviewDate, status: 'APPROVED' } });
-                    firstEvidenceId = firstEvidenceId ?? ev.id;
-                } else {
-                    const ev = await db.evidence.create({ data: { tenantId: ctx.tenantId, controlId, type: 'TEXT', title: `Automated evidence — AWS ${c.id}`, content, category, dateCollected: now, reviewCycle: 'MONTHLY', nextReviewDate, status: 'APPROVED' } });
-                    firstEvidenceId = firstEvidenceId ?? ev.id;
-                    try {
-                        await db.controlEvidenceLink.create({ data: { tenantId: ctx.tenantId, controlId, kind: 'INTEGRATION_RESULT', integrationResultId: execution.id, note: `AWS posture: ${c.id}` } });
-                    } catch { /* duplicate link acceptable */ }
+                const seenControlIds = new Set<string>();
+                // Attach evidence for EVERY framework this check crosswalks to
+                // (SOC 2 + NIST CSF), skipping frameworks the tenant hasn't
+                // installed. Same control covered under both frameworks → one row.
+                for (const { frameworkKey, codes } of frameworkCodesForControl(c.id)) { // guardrail-allow: n+1
+                    const link = await db.controlRequirementLink.findFirst({
+                        where: { tenantId: ctx.tenantId, requirement: { framework: { key: frameworkKey }, code: { in: codes } } },
+                        select: { controlId: true },
+                    });
+                    if (!link?.controlId || seenControlIds.has(link.controlId)) continue; // no covering control, or already evidenced
+                    const controlId = link.controlId;
+                    seenControlIds.add(controlId);
+                    const category = `aws-posture:${c.id}`;
+                    const nextReviewDate = new Date(now.getTime() + EVIDENCE_FRESHNESS_DAYS * 86_400_000);
+                    const content = `AWS posture check "${c.id}" PASSED (${automationKey}) on ${now.toISOString().slice(0, 10)}. Machine-collected via Powerpipe; execution ${execution.id}.`;
+                    const existing = await db.evidence.findFirst({
+                        where: { tenantId: ctx.tenantId, controlId, category, type: 'TEXT', isArchived: false, deletedAt: null },
+                        select: { id: true },
+                    });
+                    if (existing) {
+                        const ev = await db.evidence.update({ where: { id: existing.id }, data: { title: `Automated evidence — AWS ${c.id}`, content, dateCollected: now, nextReviewDate, status: 'APPROVED' } });
+                        firstEvidenceId = firstEvidenceId ?? ev.id;
+                    } else {
+                        const ev = await db.evidence.create({ data: { tenantId: ctx.tenantId, controlId, type: 'TEXT', title: `Automated evidence — AWS ${c.id}`, content, category, dateCollected: now, reviewCycle: 'MONTHLY', nextReviewDate, status: 'APPROVED' } });
+                        firstEvidenceId = firstEvidenceId ?? ev.id;
+                        try {
+                            await db.controlEvidenceLink.create({ data: { tenantId: ctx.tenantId, controlId, kind: 'INTEGRATION_RESULT', integrationResultId: execution.id, note: `AWS posture: ${c.id}` } });
+                        } catch { /* duplicate link acceptable */ }
+                    }
+                    evidenceCreated += 1;
                 }
-                evidenceCreated += 1;
             }
         }
 

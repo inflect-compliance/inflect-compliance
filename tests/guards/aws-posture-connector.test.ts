@@ -81,6 +81,22 @@ describe('aws-posture — mapping validity', () => {
         }
     });
 
+    it('every mapped NIST CSF code resolves to a real subcategory in the NIST CSF library', () => {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const { allMappedRequirementCodes } = require('@/data/integrations/aws-posture-control-map');
+        // NIST CSF 2.0 is an installable YAML library — resolve against its ref_ids.
+        const yaml = read('src/data/libraries/nist-csf-2.0.yaml');
+        const icCsf = new Set(
+            [...yaml.matchAll(/ref_id:\s*([A-Z]{2}\.[A-Z]{2}-\d+)/g)].map((m) => m[1]),
+        );
+        expect(icCsf.size).toBeGreaterThanOrEqual(5);
+        const mappedCsf = allMappedRequirementCodes().nistCsf;
+        expect(mappedCsf.length).toBeGreaterThan(0);
+        for (const code of mappedCsf) {
+            expect(icCsf.has(code)).toBe(true);
+        }
+    });
+
     it('the map module holds no Prisma import (pure data)', () => {
         const map = read(MAP);
         expect(map).not.toMatch(/@prisma\/client/);
