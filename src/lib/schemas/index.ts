@@ -756,6 +756,18 @@ export const StartAssessmentSchema = z.object({
     templateKey: z.string().min(1).max(100),
 }).strip();
 
+// Epic G-3 — outbound send of a published VendorAssessmentTemplate to
+// an external respondent. `templateVersionId` pins the concrete
+// published template version; the usecase enforces PUBLISHED state and
+// in-flight idempotency (see vendor-assessment-send.ts).
+export const SendVendorAssessmentSchema = z.object({
+    templateVersionId: z.string().min(1).max(100),
+    respondentEmail: z.string().email(),
+    respondentName: z.string().max(200).optional(),
+    expiresInDays: z.number().int().min(1).max(90).optional(),
+    force: z.boolean().optional(),
+}).strip();
+
 export const SaveAssessmentAnswersSchema = z.object({
     answers: z.array(z.object({
         questionId: z.string().min(1),
