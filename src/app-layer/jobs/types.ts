@@ -542,6 +542,16 @@ export interface NvdCveSyncPayload {
     backfillDays?: number;
 }
 
+/** Per-tenant AI compliance-posture summary regeneration (daily). */
+export interface CompliancePostureSummaryPayload {
+    tenantId: string;
+}
+
+/** Daily cross-tenant fan-out: enqueue a posture summary per active tenant. */
+export interface CompliancePostureDispatchPayload {
+    requestId?: string;
+}
+
 export interface JobPayloadMap {
     'health-check': HealthCheckPayload;
     'nvd-cve-sync': NvdCveSyncPayload;
@@ -583,6 +593,8 @@ export interface JobPayloadMap {
     'onboarding-abandonment-sweep': OnboardingAbandonmentPayload;
     'incident-notification-deadlines': IncidentNotificationDeadlinesPayload;
     'aws-posture-collect': AwsPostureCollectPayload;
+    'compliance-posture-summary': CompliancePostureSummaryPayload;
+    'compliance-posture-summary-dispatch': CompliancePostureDispatchPayload;
 }
 
 /** aws-posture connector — run one tenant connection's benchmark + collect evidence. */
@@ -892,6 +904,20 @@ export const JOB_DEFAULTS: Record<JobName, {
         backoff: { type: 'exponential', delay: 10000 },
         removeOnComplete: 500,
         removeOnFail: 1000,
+    },
+    'compliance-posture-summary': {
+        // Idempotent upsert of one cached row — a failed run self-heals on
+        // the next daily fan-out, so no retry storm against the (optional) LLM.
+        attempts: 1,
+        backoff: { type: 'fixed', delay: 0 },
+        removeOnComplete: 200,
+        removeOnFail: 500,
+    },
+    'compliance-posture-summary-dispatch': {
+        attempts: 1,
+        backoff: { type: 'fixed', delay: 0 },
+        removeOnComplete: 50,
+        removeOnFail: 200,
     },
 };
 

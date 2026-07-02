@@ -32,6 +32,7 @@ auditor can verify the inventory is accurate, not merely asserted.
 | Stripe | Tenant billing contact email; plan; payment method (held by Stripe — we do not store it) | Billing | US | Per Stripe agreement | Yes (self-hosted mode disables) |
 | SMTP relay (operator-chosen) | Recipient email; message body (verification tokens, notification text — may include names + tenant slug) | Email delivery | Per operator | Per operator | No (delivery surface) |
 | OpenRouter | Risk-assessment prompt text (risk titles/descriptions — business content) | AI risk suggestions | US/global | Per OpenRouter | Yes (default `stub`; off unless enabled) |
+| Anthropic (Claude API) | Aggregate compliance-posture metrics (counts + percentages only — no PII, no entity text) | AI posture summary | US/global | Per Anthropic | Yes (default `stub`; off unless enabled) |
 | HaveIBeenPwned | SHA-1 prefix of a chosen password (k-anonymity; no PII) | Password breach check | Global | Volatile (no log) | No (security primitive) |
 | GitHub | Repo metadata (per-tenant integration only) | Repo sync | Global | Token lifetime | Yes (per-tenant opt-in) |
 | Microsoft SharePoint | Document metadata (per-tenant integration only) | Document sync | Global | Token lifetime | Yes (per-tenant opt-in) |
@@ -127,6 +128,15 @@ auditor can verify the inventory is accurate, not merely asserted.
 - **Vendor pages:** https://openrouter.ai/privacy · https://openrouter.ai/terms
 - **Operator-optional:** default `AI_RISK_PROVIDER=stub` (a local template provider — no external call). Set `AI_RISK_PROVIDER=openrouter` + `OPENROUTER_API_KEY` to enable.
 - **Codebase:** `src/app-layer/ai/risk-assessment/openrouter-provider.ts:14` (`https://openrouter.ai/api/v1/chat/completions`); env `AI_RISK_PROVIDER`, `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` (`src/env.ts:213`).
+
+### Anthropic (Claude API) — AI compliance-posture summary (optional)
+- **PII shared:** **none** — only AGGREGATE metrics (control-coverage %, per-framework coverage counts, open-risk counts by severity, overdue evidence/task/policy counts). No entity names, free text, IDs, or account PII leave the process.
+- **Legal basis:** legitimate interest (Art. 6(1)(f)); only active when the operator opts in.
+- **Processing instructions:** generate a short compliance-posture summary; per Anthropic's terms.
+- **Transfer:** Anthropic US/global; per its terms.
+- **Vendor pages:** https://www.anthropic.com/legal/privacy · https://www.anthropic.com/legal/commercial-terms
+- **Operator-optional:** default `AI_POSTURE_PROVIDER=stub` (a deterministic local provider — no external call). Set `AI_POSTURE_PROVIDER=anthropic` + `ANTHROPIC_API_KEY` (model via `ANTHROPIC_MODEL`) to enable; `AI_POSTURE_PROVIDER=openrouter` routes the same aggregate payload through OpenRouter instead.
+- **Codebase:** `src/app-layer/ai/compliance-posture/anthropic-provider.ts` (`https://api.anthropic.com/v1/messages`); env `AI_POSTURE_PROVIDER`, `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` (`src/env.ts`).
 
 ### HaveIBeenPwned — password breach check
 - **PII shared:** **none** — only the first 5 hex chars of the SHA-1 of a candidate password (k-anonymity range query). The full hash/password never leaves the server.

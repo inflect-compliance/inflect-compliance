@@ -74,8 +74,8 @@ describe('Infrastructure Regression Guards', () => {
             }
         });
 
-        test('exactly 25 scheduled jobs exist', () => {
-            expect(SCHEDULED_JOBS).toHaveLength(25);
+        test('exactly 26 scheduled jobs exist', () => {
+            expect(SCHEDULED_JOBS).toHaveLength(26);
         });
 
         test('scheduled job names match expected set', () => {
@@ -90,6 +90,9 @@ describe('Infrastructure Regression Guards', () => {
                 'access-review-reminder',
                 'automation-runner',
                 'compliance-digest',
+                // AI compliance-posture hero — daily cross-tenant fan-out
+                // enqueuing a per-tenant posture-summary generation.
+                'compliance-posture-summary-dispatch',
                 'compliance-snapshot',
                 // Epic G-2 — every-5-min repeatable scanning
                 // ControlTestPlan and enqueuing runner jobs.

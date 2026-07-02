@@ -2956,3 +2956,40 @@ model TrustCenter {
 
   @@index([tenantId])
 }
+
+/// AI compliance-posture summary — a tenant-wide narrative + prioritized
+/// advice, generated once/day by the `compliance-posture-summary` cron and
+/// CACHED here so the dashboard hero reads it cheaply (never calls an LLM on
+/// the render path). Degrades to a deterministic stub summary when no LLM is
+/// configured, so the feature is fully functional with zero config.
+///
+/// Content is an AGGREGATE, non-sensitive narrative derived from already-
+/// visible KPIs (coverage %, overdue counts, risk severities) — it is NOT
+/// encrypted (see src/lib/security/encrypted-fields.ts) but IS sanitised on
+/// write. One row per tenant (upsert by tenantId); the daily regeneration
+/// makes it Operational/derived for retention. RLS-covered (carries tenantId).
+model CompliancePostureSummary {
+  id            String   @id @default(cuid())
+  tenantId      String   @unique
+  generatedAt   DateTime @default(now())
+  /// STRONG | ESTABLISHED | DEVELOPING | AT_RISK. Plain string (not an enum)
+  /// so an unforeseen provider label can't hard-fail the row — the output
+  /// guard clamps it into the known set before persist.
+  postureLabel  String
+  /// 0-100 derived maturity/health score; nullable when not computable.
+  maturityScore Int?
+  /// The narrative (1-3 sentences). Sanitised on write.
+  summaryText   String
+  /// Prioritized next actions: [{ title, detail, priority }]. Sanitised.
+  adviceJson    Json     @default("[]")
+  /// The aggregate metrics snapshot fed to the generator (provenance + audit).
+  signalsJson   Json     @default("{}")
+  /// Which provider produced this row: stub | anthropic | openrouter.
+  provider      String
+  /// The model id when an LLM produced it; null for the deterministic stub.
+  model         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([tenantId])
+}

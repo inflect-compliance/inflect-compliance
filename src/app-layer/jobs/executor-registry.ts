@@ -979,6 +979,37 @@ executorRegistry.register('incident-notification-deadlines', async (payload) => 
     );
 });
 
+// ── compliance-posture-summary (+ dispatch) ──────────────────────────
+//
+// Dispatch is the daily cross-tenant fan-out; the per-tenant job scopes all
+// reads + the cached-row upsert to payload.tenantId via runInTenantContext
+// one frame down (buildPostureCronContext → runInTenantContext).
+
+executorRegistry.register('compliance-posture-summary', async (payload) => {
+    const startedAt = new Date().toISOString();
+    const startMs = performance.now();
+    const { runCompliancePostureSummary } = await import('./compliance-posture-summary');
+    const r = await runCompliancePostureSummary({ tenantId: payload.tenantId });
+    return makeResult('compliance-posture-summary', startedAt, startMs, 1, r.generated ? 1 : 0, r.generated ? 0 : 1, {
+        tenantId: r.tenantId,
+        generated: r.generated,
+        provider: r.provider,
+        postureLabel: r.postureLabel,
+        isFallback: r.isFallback,
+    });
+});
+
+executorRegistry.register('compliance-posture-summary-dispatch', async (payload) => {
+    const startedAt = new Date().toISOString();
+    const startMs = performance.now();
+    const { runCompliancePostureDispatch } = await import('./compliance-posture-summary');
+    const r = await runCompliancePostureDispatch(payload);
+    return makeResult('compliance-posture-summary-dispatch', startedAt, startMs, r.tenants, r.dispatched, 0, {
+        tenants: r.tenants,
+        dispatched: r.dispatched,
+    });
+});
+
 // ── aws-posture-collect ──────────────────────────────────────────────
 
 executorRegistry.register('aws-posture-collect', async (payload) => {

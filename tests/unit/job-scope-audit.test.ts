@@ -68,7 +68,11 @@ describe('Executor Registry — tenantId propagation audit', () => {
             // nvd-cve-sync ingests the global NVD CVE feed (provider-wide,
             // not tenant-scoped) — the per-tenant asset matching runs
             // separately, so this executor legitimately has no tenantId.
-            if (['health-check', 'sync-pull', 'schedule-trigger-sweep', 'sharepoint-delta-sync-dispatch', 'sharepoint-subscription-renew', 'risk-appetite-monitor', 'risk-snapshot', 'report-delivery', 'dau-mau-aggregator', 'onboarding-abandonment-sweep', 'nvd-cve-sync'].includes(jobName)) continue;
+            // compliance-posture-summary-dispatch is a global fan-out: it scans
+            // all active tenants and enqueues a per-tenant `{tenantId}` job each
+            // (the per-tenant `compliance-posture-summary` executor scopes to
+            // payload.tenantId via runInTenantContext).
+            if (['health-check', 'sync-pull', 'schedule-trigger-sweep', 'sharepoint-delta-sync-dispatch', 'sharepoint-subscription-renew', 'risk-appetite-monitor', 'risk-snapshot', 'report-delivery', 'dau-mau-aggregator', 'onboarding-abandonment-sweep', 'nvd-cve-sync', 'compliance-posture-summary-dispatch'].includes(jobName)) continue;
 
             // If the parameter is named _payload, it means tenantId is being ignored
             if (paramName.startsWith('_')) {
