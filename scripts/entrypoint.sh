@@ -47,6 +47,17 @@ echo ""
 echo "→ Seeding policy-template library..."
 node dist/seed-policy-templates.mjs || echo "⚠ policy-template seed skipped (non-fatal)"
 
+# ── 1d. Seed built-in vendor-assessment questionnaires (idempotent) ──
+#
+# The Supplier Due Diligence + Supplier Security Assessment templates are
+# RLS-tenant-scoped VendorAssessmentTemplate rows, seeded per-tenant from
+# vendored fixtures. prisma/seed.ts (not run on prod) only seeds the demo
+# tenant, so existing tenants never receive them otherwise. Upsert-by-existence
+# over every tenant — safe to re-run. Non-fatal.
+echo ""
+echo "→ Seeding vendor-assessment questionnaires..."
+node dist/seed-vendor-questionnaires.mjs || echo "⚠ vendor-questionnaire seed skipped (non-fatal)"
+
 # ── 2. Create upload directory if missing ──
 FILE_DIR="${FILE_STORAGE_ROOT:-/data/uploads}"
 mkdir -p "$FILE_DIR" 2>/dev/null || true

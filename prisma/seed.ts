@@ -2368,6 +2368,80 @@ Reviewed at least annually.` },
         console.log(`✅ AISVS AI-vendor questionnaire seeded (${aisvsVendorQ.sections.length} sections, ${qCount} questions)`);
     }
 
+    // Built-in vendor-assessment questionnaire templates imported from the
+    // customer's prior GRC tool — the Supplier Due Diligence Questionnaire and
+    // the Supplier Security Assessment. Global, published, per-tenant (RLS-
+    // scoped), seeded here into the demo tenant for dev/test parity with the
+    // standalone scripts/seed-vendor-questionnaires.ts (which seeds all tenants
+    // on prod deploys). Idempotent via the same (tenantId,key,version) guard.
+    type VendorQFixture = {
+        key: string; name: string; description: string; scoringConfig: unknown;
+        sections: Array<{
+            title: string; description: string | null; weight: number;
+            questions: Array<{
+                prompt: string; answerType: string; required: boolean; weight: number;
+                options?: Array<{ label: string; value: string; points: number }>;
+                riskPoints?: Record<string, number>;
+            }>;
+        }>;
+    };
+    const vendorQFixtures: VendorQFixture[] = [
+        require('./fixtures/vendor-questionnaire-supplier-due-diligence.json') as VendorQFixture,
+        require('./fixtures/vendor-questionnaire-supplier-security-assessment.json') as VendorQFixture,
+    ];
+    for (const fixture of vendorQFixtures) {
+        const existingVq = await prisma.vendorAssessmentTemplate.findUnique({
+            where: { tenantId_key_version: { tenantId: tenant.id, key: fixture.key, version: 1 } },
+        });
+        if (existingVq) continue;
+        const vqTpl = await prisma.vendorAssessmentTemplate.create({
+            data: {
+                tenantId: tenant.id,
+                key: fixture.key,
+                version: 1,
+                isLatestVersion: true,
+                isPublished: true,
+                isGlobal: true,
+                name: fixture.name,
+                description: fixture.description,
+                scoringConfigJson: fixture.scoringConfig as object,
+                createdByUserId: admin.id,
+            },
+        });
+        let vqSOrder = 0;
+        for (const section of fixture.sections) {
+            const vqSec = await prisma.vendorAssessmentTemplateSection.create({
+                data: {
+                    tenantId: tenant.id,
+                    templateId: vqTpl.id,
+                    sortOrder: vqSOrder++,
+                    title: section.title,
+                    description: section.description,
+                    weight: section.weight,
+                },
+            });
+            let vqQOrder = 0;
+            for (const q of section.questions) {
+                await prisma.vendorAssessmentTemplateQuestion.create({
+                    data: {
+                        tenantId: tenant.id,
+                        templateId: vqTpl.id,
+                        sectionId: vqSec.id,
+                        sortOrder: vqQOrder++,
+                        prompt: q.prompt,
+                        answerType: q.answerType as never,
+                        required: q.required,
+                        weight: q.weight,
+                        optionsJson: q.options ?? undefined,
+                        riskPointsJson: q.riskPoints ?? undefined,
+                    },
+                });
+            }
+        }
+        const vqCount = fixture.sections.reduce((n, s) => n + s.questions.length, 0);
+        console.log(`✅ ${fixture.name} seeded (${fixture.sections.length} sections, ${vqCount} questions)`);
+    }
+
     // Silence unused-binding lint for the re-exported bcrypt alias above.
     void bcryptLib;
 
