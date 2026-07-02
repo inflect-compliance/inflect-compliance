@@ -1319,6 +1319,9 @@
     "docs/implementation-notes/2026-07-01-ssdf-framework.md": {
       "class": "historical"
     },
+    "docs/implementation-notes/2026-07-02-owasp-asvs-framework.md": {
+      "class": "historical"
+    },
     "docs/implementation-notes/2026-07-01-mcp-server.md": {
       "class": "historical"
     },

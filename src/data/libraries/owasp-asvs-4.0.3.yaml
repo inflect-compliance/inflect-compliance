@@ -1,0 +1,2532 @@
+# OWASP Application Security Verification Standard (ASVS) 4.0.3 — Framework Library
+#
+# ORIGINAL STRUCTURAL OUTLINE — NOT verbatim ASVS text.
+# The OWASP ASVS is published by the OWASP Foundation under the Creative
+# Commons Attribution-ShareAlike 4.0 (CC BY-SA 4.0) license. Because the
+# ShareAlike term would require relicensing derivative content and is
+# incompatible with Inflect Compliance being a proprietary product, this
+# file does NOT reproduce ASVS's requirement prose. It uses ONLY the factual
+# identifiers (chapters V1-V14 and requirement numbers such as "V2.1.1"), the
+# short factual chapter and requirement titles, and the L1/L2/L3 verification-
+# level structure. Every "description:" field below is our OWN ORIGINAL
+# PARAPHRASE of the intent of the requirement — no ASVS sentences are copied.
+# The full, authoritative standard is available from the OWASP Foundation at
+# https://owasp.org/www-project-application-security-verification-standard/ .
+#
+# Verification level is encoded in the "category" field (L1/L2/L3); a
+# requirement's level is the LOWEST level at which it applies (L1 requirements
+# also apply to L2 and L3, and L2 requirements also apply to L3).
+
+urn: urn:inflect:library:owasp-asvs-4.0.3
+locale: en
+ref_id: OWASP-ASVS-4.0.3
+name: OWASP Application Security Verification Standard 4.0.3
+description: >
+  The OWASP Application Security Verification Standard (ASVS) 4.0.3 is a catalogue of application security
+  requirements organized into 14 chapters and three cumulative verification levels (L1, L2, L3). This library is
+  an original structural outline for compliance tracking; requirement descriptions are our own paraphrases and
+  no ASVS text is reproduced.
+copyright: >
+  Structural outline only. OWASP ASVS is (c) the OWASP Foundation and licensed CC BY-SA 4.0. This file reuses
+  only the factual identifiers, titles, and L1/L2/L3 structure; all descriptive text is original because the CC
+  BY-SA share-alike term is incompatible with embedding the text in a proprietary product. The full standard is
+  at https://owasp.org/www-project-application-security-verification-standard/
+version: 1
+publication_date: "2021-10-01"
+provider: OWASP Foundation
+packager: inflect
+kind: INDUSTRY_STANDARD
+
+objects:
+  framework:
+    urn: urn:inflect:framework:owasp-asvs-4.0.3
+    ref_id: OWASP-ASVS-4.0.3
+    name: OWASP Application Security Verification Standard 4.0.3
+    description: OWASP ASVS 4.0.3 — 14 chapters of application security requirements across verification levels L1-L3
+
+    requirement_nodes:
+      # ─── V1: Architecture, Design and Threat Modeling ───
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        ref_id: "V1"
+        name: "Architecture, Design and Threat Modeling"
+        description: >
+          Requirements addressing architecture, design and threat modeling within the ASVS verification model.
+        depth: 1
+        assessable: false
+        category: "Architecture, Design and Threat Modeling"
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.1.1
+        ref_id: "V1.1.1"
+        name: "Secure Development Lifecycle"
+        description: >
+          Confirm that a secure software development lifecycle is used and that it treats security as a first-class
+          concern across every stage of the project.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.1.2
+        ref_id: "V1.1.2"
+        name: "Threat Modeling"
+        description: >
+          Perform threat modeling for significant design changes so that likely attacks are anticipated and mitigated
+          before code ships.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.1.3
+        ref_id: "V1.1.3"
+        name: "Security in User Stories"
+        description: >
+          Ensure user stories and features carry the functional security constraints they depend on, such as who may act
+          and what limits apply.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.1.4
+        ref_id: "V1.1.4"
+        name: "Trust Boundaries Documented"
+        description: >
+          Document the application's trust boundaries, components, and significant data flows so that where controls are
+          needed is explicit.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.1.5
+        ref_id: "V1.1.5"
+        name: "Security Analysis of Components"
+        description: >
+          Define and analyse the security controls each component and its data flow rely upon, rather than assuming they
+          are inherited.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.1.6
+        ref_id: "V1.1.6"
+        name: "Centralized Security Controls"
+        description: >
+          Implement security controls in a small number of vetted, reusable components so that protection is consistent
+          across the application.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.1.7
+        ref_id: "V1.1.7"
+        name: "Secure Coding Checklist"
+        description: >
+          Maintain a secure coding checklist and secure-by-default guidance tailored to the technologies the team
+          actually uses.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.2.1
+        ref_id: "V1.2.1"
+        name: "Low-Privilege Component Accounts"
+        description: >
+          Run application components under unique, least-privilege operating-system accounts instead of shared or over-
+          permissioned identities.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.2.2
+        ref_id: "V1.2.2"
+        name: "Authenticated Component Communication"
+        description: >
+          Require components to authenticate to one another so that internal calls cannot be forged by an attacker who
+          reaches the network.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.2.3
+        ref_id: "V1.2.3"
+        name: "Single Vetted Authentication Mechanism"
+        description: >
+          Use a single, well-tested authentication mechanism that is extensible and free of ad-hoc bypasses.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.2.4
+        ref_id: "V1.2.4"
+        name: "Uniform Authentication Strength"
+        description: >
+          Ensure all authentication paths and identity APIs enforce the same strength so no weaker route undermines the
+          strong one.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.4.1
+        ref_id: "V1.4.1"
+        name: "Trusted Enforcement Points"
+        description: >
+          Enforce access control at trusted service layers rather than relying on checks that a client could remove or
+          skip.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.4.4
+        ref_id: "V1.4.4"
+        name: "Single Access Control Mechanism"
+        description: >
+          Use one common, tested access-control mechanism across the application to avoid gaps from duplicated or
+          divergent logic.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.4.5
+        ref_id: "V1.4.5"
+        name: "Attribute or Feature Based Access Control"
+        description: >
+          Prefer attribute- or feature-based access control so permissions reflect real business rules rather than
+          brittle role hard-coding.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.5.1
+        ref_id: "V1.5.1"
+        name: "Input and Output Requirements"
+        description: >
+          Define input and output handling requirements, including how data is validated and encoded, so expectations
+          are explicit for developers.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.5.2
+        ref_id: "V1.5.2"
+        name: "Safe Serialization"
+        description: >
+          Avoid deserializing untrusted data, or strongly constrain it, so that serialization does not become a remote-
+          code path.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.5.3
+        ref_id: "V1.5.3"
+        name: "Server-Side Validation"
+        description: >
+          Treat input validation as an enforced server-side control, never as a convenience that a client can disable.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.5.4
+        ref_id: "V1.5.4"
+        name: "Context-Aware Output Encoding"
+        description: >
+          Encode output for the exact interpreter it flows into so that data cannot be misread as executable content.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.6.1
+        ref_id: "V1.6.1"
+        name: "Cryptographic Key Management"
+        description: >
+          Define a clear key-management policy covering how cryptographic keys are generated, stored, rotated, and
+          retired.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.6.2
+        ref_id: "V1.6.2"
+        name: "Protection of Key Material"
+        description: >
+          Protect secret key material with a key vault or equivalent so that keys are never exposed in plain form to
+          application code.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.6.3
+        ref_id: "V1.6.3"
+        name: "Key Rotation Without Redeploy"
+        description: >
+          Design so that keys and passwords can be replaced or rotated as part of a defined lifecycle without an
+          application rebuild.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.6.4
+        ref_id: "V1.6.4"
+        name: "No Client-Side Secrets"
+        description: >
+          Keep architectural secrets off the client, since anything delivered to a browser or app can be read by its
+          user.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.7.1
+        ref_id: "V1.7.1"
+        name: "Common Logging Format"
+        description: >
+          Adopt a common logging format and approach across the application so that events can be correlated and
+          analysed reliably.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.7.2
+        ref_id: "V1.7.2"
+        name: "Central Log Collection"
+        description: >
+          Transmit logs to a protected central service so that local tampering cannot erase the record of an incident.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.8.1
+        ref_id: "V1.8.1"
+        name: "Data Classification"
+        description: >
+          Identify and classify the data the application handles by sensitivity so that protection can be matched to
+          risk.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.8.2
+        ref_id: "V1.8.2"
+        name: "Protection Per Classification"
+        description: >
+          Define and apply protection requirements for each data classification level, covering encryption, retention,
+          and access.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.9.1
+        ref_id: "V1.9.1"
+        name: "Encrypted Component Links"
+        description: >
+          Encrypt communication between application components, including any internal service-to-service traffic.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.9.2
+        ref_id: "V1.9.2"
+        name: "Authenticated Component Links"
+        description: >
+          Authenticate the endpoints of component-to-component links and verify certificates or keys rather than
+          trusting the network.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.10.1
+        ref_id: "V1.10.1"
+        name: "Source Code Control"
+        description: >
+          Manage source code and configuration in a version-control system with attributable, reviewed changes.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.11.1
+        ref_id: "V1.11.1"
+        name: "Business Logic Documentation"
+        description: >
+          Document the application's business logic and the limits, sequences, and states each workflow must respect.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.11.2
+        ref_id: "V1.11.2"
+        name: "No Unsafe Shared State"
+        description: >
+          Avoid unsynchronized shared state in high-value logic so that concurrent requests cannot corrupt a workflow.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.11.3
+        ref_id: "V1.11.3"
+        name: "Thread-Safe High-Value Logic"
+        description: >
+          Make high-value business logic explicitly thread-safe and resistant to time-of-check to time-of-use race
+          conditions.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L3
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.12.1
+        ref_id: "V1.12.1"
+        name: "Safe File Upload Storage"
+        description: >
+          Store uploaded files outside the web root or on a separate host, and serve them so they cannot be executed.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.14.1
+        ref_id: "V1.14.1"
+        name: "Component Segregation"
+        description: >
+          Segregate components of differing trust using sandboxing, containers, or network controls to limit blast
+          radius.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.14.2
+        ref_id: "V1.14.2"
+        name: "Signed Build Artifacts"
+        description: >
+          Distribute binaries and updates using signatures over trusted channels so tampered artifacts are detected.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.14.3
+        ref_id: "V1.14.3"
+        name: "Build Pipeline Warnings"
+        description: >
+          Configure the build pipeline to surface out-of-date or insecure components and to warn on deprecated
+          dependencies.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.14.4
+        ref_id: "V1.14.4"
+        name: "Automated Deployment"
+        description: >
+          Automate build and deployment so that releases are repeatable and free of manual, error-prone steps.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.14.5
+        ref_id: "V1.14.5"
+        name: "Application Sandboxing"
+        description: >
+          Deploy the application inside network segmentation and sandboxing appropriate to its exposure and sensitivity.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V1.14.6
+        ref_id: "V1.14.6"
+        name: "No Unsupported Client Technologies"
+        description: >
+          Avoid unsupported or insecure client-side technologies such as legacy plugins that expand the attack surface.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V1
+        depth: 2
+        assessable: true
+        category: L2
+      # ─── V2: Authentication ───
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        ref_id: "V2"
+        name: "Authentication"
+        description: >
+          Requirements addressing authentication within the ASVS verification model.
+        depth: 1
+        assessable: false
+        category: "Authentication"
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.1.1
+        ref_id: "V2.1.1"
+        name: "Minimum Password Length"
+        description: >
+          Require passwords of at least twelve characters so that short, easily guessed secrets are rejected.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.1.2
+        ref_id: "V2.1.2"
+        name: "Long Passwords Permitted"
+        description: >
+          Permit long passwords of at least sixty-four characters so users can choose strong passphrases.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.1.3
+        ref_id: "V2.1.3"
+        name: "No Silent Truncation"
+        description: >
+          Do not silently truncate passwords; accept the full secret the user typed or reject it clearly.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.1.4
+        ref_id: "V2.1.4"
+        name: "Unicode and Spaces Allowed"
+        description: >
+          Allow spaces and printable Unicode, including emoji, within passwords without stripping meaningful characters.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.1.5
+        ref_id: "V2.1.5"
+        name: "Users Can Change Password"
+        description: >
+          Let authenticated users change their password through a supported, self-service flow.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.1.6
+        ref_id: "V2.1.6"
+        name: "Change Requires Current Password"
+        description: >
+          Require the current password when changing to a new one so a hijacked session cannot lock out the owner.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.1.7
+        ref_id: "V2.1.7"
+        name: "Breached Password Screening"
+        description: >
+          Check chosen passwords against a set of known-breached values and refuse those that appear in it.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.1.8
+        ref_id: "V2.1.8"
+        name: "Password Strength Guidance"
+        description: >
+          Provide a strength meter or guidance to help users choose stronger passwords.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.1.9
+        ref_id: "V2.1.9"
+        name: "No Arbitrary Composition Rules"
+        description: >
+          Do not impose composition rules such as mandatory symbol mixes that push users toward predictable patterns.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.1.10
+        ref_id: "V2.1.10"
+        name: "No Forced Periodic Rotation"
+        description: >
+          Do not force periodic password rotation in the absence of evidence of compromise.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.1.11
+        ref_id: "V2.1.11"
+        name: "Password Managers Supported"
+        description: >
+          Allow pasting and browser or password-manager autofill so that strong, unique secrets are practical.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.1.12
+        ref_id: "V2.1.12"
+        name: "Reveal or Show Last Character"
+        description: >
+          Offer an option to view the entered password or its last character to reduce entry errors.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.2.1
+        ref_id: "V2.2.1"
+        name: "Anti-Automation on Login"
+        description: >
+          Apply anti-automation controls such as rate limiting and lockout so that credential guessing is impractical.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.2.2
+        ref_id: "V2.2.2"
+        name: "Restrict Weak Authenticators"
+        description: >
+          Limit weak authenticators such as SMS and favour stronger factors, offering users at least one strong option.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.2.3
+        ref_id: "V2.2.3"
+        name: "Secure Authentication Notifications"
+        description: >
+          Notify users through a secure channel after significant authentication events such as password or factor
+          changes.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.2.4
+        ref_id: "V2.2.4"
+        name: "Impersonation Resistance"
+        description: >
+          Provide impersonation resistance against phishing, for example with hardware-backed or verifier-bound
+          authenticators.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L3
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.2.5
+        ref_id: "V2.2.5"
+        name: "Verifier Compromise Resistance"
+        description: >
+          Ensure a compromise of the verifier does not let an attacker recover usable authentication secrets.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L3
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.2.6
+        ref_id: "V2.2.6"
+        name: "Replay Resistance"
+        description: >
+          Use replay-resistant mechanisms such as one-time or challenge-based authenticators for high-assurance flows.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L3
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.2.7
+        ref_id: "V2.2.7"
+        name: "Intent to Authenticate"
+        description: >
+          Require a deliberate user action to authenticate so that presence and intent are demonstrated.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L3
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.3.1
+        ref_id: "V2.3.1"
+        name: "Random Initial Secrets"
+        description: >
+          Generate initial or temporary passwords with sufficient randomness and expire them after first use.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.3.2
+        ref_id: "V2.3.2"
+        name: "Enrollment and Renewal"
+        description: >
+          Support secure enrollment and renewal of hardware and software authenticators through a defined process.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.3.3
+        ref_id: "V2.3.3"
+        name: "Renewal Instructions and Timing"
+        description: >
+          Deliver renewal instructions in good time before an authenticator expires so access is not disrupted.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.4.1
+        ref_id: "V2.4.1"
+        name: "Salted Password Hashing"
+        description: >
+          Store passwords using a strong, salted, purpose-built password hashing function rather than a fast digest.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.4.2
+        ref_id: "V2.4.2"
+        name: "Unique Salt Per Credential"
+        description: >
+          Use a unique salt for each stored credential so that identical passwords do not share a hash.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.4.3
+        ref_id: "V2.4.3"
+        name: "Adequate Work Factor"
+        description: >
+          Configure the password hash with a work factor high enough to make offline cracking costly.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.4.4
+        ref_id: "V2.4.4"
+        name: "Approved Hashing Algorithm"
+        description: >
+          Choose an approved password-hashing algorithm such as argon2, scrypt, bcrypt, or PBKDF2 with sound parameters.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.4.5
+        ref_id: "V2.4.5"
+        name: "Additional Pepper or Iteration"
+        description: >
+          Apply an additional secret pepper or extra iteration for the most sensitive stored credentials.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L3
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.5.1
+        ref_id: "V2.5.1"
+        name: "No Vendor Default Recovery Secret"
+        description: >
+          Do not ship default or shared recovery secrets that would grant access out of the box.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.5.2
+        ref_id: "V2.5.2"
+        name: "No Password Hints"
+        description: >
+          Do not store or expose password hints or knowledge-based answers that ease guessing.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.5.3
+        ref_id: "V2.5.3"
+        name: "Recovery Does Not Reveal Password"
+        description: >
+          Ensure account recovery never discloses the current password to the requester.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.5.4
+        ref_id: "V2.5.4"
+        name: "No Shared or Default Accounts"
+        description: >
+          Avoid shared or built-in default accounts such as generic administrator logins.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.5.5
+        ref_id: "V2.5.5"
+        name: "Notify on Factor Change"
+        description: >
+          Notify the user when an authentication factor is added, changed, or removed.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.5.6
+        ref_id: "V2.5.6"
+        name: "Secure Recovery Mechanism"
+        description: >
+          Provide a secure recovery mechanism that does not rely on an insecure channel or weak secret.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.5.7
+        ref_id: "V2.5.7"
+        name: "Recovery for Lost MFA"
+        description: >
+          Offer a secure way to recover or replace a lost multi-factor authenticator without weakening assurance.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.6.1
+        ref_id: "V2.6.1"
+        name: "One-Time Lookup Secrets"
+        description: >
+          Ensure lookup or backup codes can each be used only once.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.6.2
+        ref_id: "V2.6.2"
+        name: "Random Lookup Secrets"
+        description: >
+          Generate lookup secrets with sufficient entropy from a secure random source.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.6.3
+        ref_id: "V2.6.3"
+        name: "Hashed Lookup Secrets"
+        description: >
+          Store lookup secrets in hashed form so a database leak does not expose usable codes.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.7.1
+        ref_id: "V2.7.1"
+        name: "No Cleartext Out-of-Band"
+        description: >
+          Do not use unencrypted out-of-band mechanisms as a primary factor for sensitive accounts.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.7.2
+        ref_id: "V2.7.2"
+        name: "Out-of-Band Expiry"
+        description: >
+          Expire out-of-band verification codes after a short validity window.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.7.3
+        ref_id: "V2.7.3"
+        name: "Single-Use Out-of-Band"
+        description: >
+          Ensure an out-of-band code can only be consumed once.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.7.4
+        ref_id: "V2.7.4"
+        name: "Authenticated Out-of-Band Delivery"
+        description: >
+          Deliver out-of-band codes only over a channel bound to the correct user.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.8.1
+        ref_id: "V2.8.1"
+        name: "Time-Based One-Time Passwords"
+        description: >
+          Support time-based one-time password authenticators as a recognised second factor.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.8.2
+        ref_id: "V2.8.2"
+        name: "Protected OTP Secrets"
+        description: >
+          Protect stored one-time-password seed secrets so a database leak cannot reproduce codes.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.8.4
+        ref_id: "V2.8.4"
+        name: "Single-Use OTP Within Window"
+        description: >
+          Reject reuse of a one-time password within its validity window.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.9.1
+        ref_id: "V2.9.1"
+        name: "Secure Cryptographic Key Storage"
+        description: >
+          Store cryptographic authenticator keys in protected storage resistant to extraction.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.9.2
+        ref_id: "V2.9.2"
+        name: "Challenge Nonce Quality"
+        description: >
+          Use unpredictable, sufficiently long challenge nonces in cryptographic authentication.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.9.3
+        ref_id: "V2.9.3"
+        name: "Approved Cryptographic Authentication"
+        description: >
+          Rely on approved cryptographic algorithms for authenticator verification.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.10.1
+        ref_id: "V2.10.1"
+        name: "Non-Default Service Secrets"
+        description: >
+          Ensure inter-service authentication secrets are not defaults and are unique per deployment.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.10.2
+        ref_id: "V2.10.2"
+        name: "Protected Service Credentials"
+        description: >
+          Protect stored service credentials so they are not readable in application source or config.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V2.10.4
+        ref_id: "V2.10.4"
+        name: "Secrets in a Vault"
+        description: >
+          Store service and integration secrets in a managed secrets vault rather than in code or images.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V2
+        depth: 2
+        assessable: true
+        category: L2
+      # ─── V3: Session Management ───
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V3
+        ref_id: "V3"
+        name: "Session Management"
+        description: >
+          Requirements addressing session management within the ASVS verification model.
+        depth: 1
+        assessable: false
+        category: "Session Management"
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V3.1.1
+        ref_id: "V3.1.1"
+        name: "No Session Tokens in URLs"
+        description: >
+          Never place session tokens in URLs where they can leak through logs, history, or referrers.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V3
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V3.2.1
+        ref_id: "V3.2.1"
+        name: "New Token After Authentication"
+        description: >
+          Issue a fresh session token upon authentication to prevent fixation of a pre-login value.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V3
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V3.2.2
+        ref_id: "V3.2.2"
+        name: "Sufficient Token Entropy"
+        description: >
+          Generate session tokens with enough entropy that they cannot be guessed or enumerated.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V3
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V3.2.3
+        ref_id: "V3.2.3"
+        name: "Secure Token Storage"
+        description: >
+          Store session tokens in the client using secure, tamper-resistant cookie mechanisms.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V3
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V3.2.4
+        ref_id: "V3.2.4"
+        name: "Approved Token Generation"
+        description: >
+          Generate session tokens using approved cryptographic random functions.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V3
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V3.3.1
+        ref_id: "V3.3.1"
+        name: "Logout Invalidates Session"
+        description: >
+          Fully invalidate the session server-side on logout so the token cannot be reused.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V3
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V3.3.2
+        ref_id: "V3.3.2"
+        name: "Inactivity and Absolute Timeout"
+        description: >
+          Expire sessions after a period of inactivity and enforce a reasonable absolute lifetime.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V3
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V3.3.3
+        ref_id: "V3.3.3"
+        name: "Terminate Sessions on Credential Change"
+        description: >
+          Terminate a user's other active sessions when their password or factors change.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V3
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V3.3.4
+        ref_id: "V3.3.4"
+        name: "Manage Active Sessions"
+        description: >
+          Let users view and revoke their active sessions and devices.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V3
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V3.4.1
+        ref_id: "V3.4.1"
+        name: "Secure Cookie Attribute"
+        description: >
+          Set the Secure attribute on session cookies so they are sent only over encrypted connections.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V3
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V3.4.2
+        ref_id: "V3.4.2"
+        name: "HttpOnly Cookie Attribute"
+        description: >
+          Set the HttpOnly attribute so session cookies are not readable from client scripts.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V3
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V3.4.3
+        ref_id: "V3.4.3"
+        name: "SameSite Cookie Attribute"
+        description: >
+          Set an appropriate SameSite attribute to reduce cross-site request risk.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V3
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V3.4.4
+        ref_id: "V3.4.4"
+        name: "Host-Prefixed Cookies"
+        description: >
+          Use the __Host- cookie prefix where possible to constrain scope and origin.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V3
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V3.4.5
+        ref_id: "V3.4.5"
+        name: "Path-Scoped Cookies"
+        description: >
+          Scope session cookies to the narrowest path the application needs.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V3
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V3.5.1
+        ref_id: "V3.5.1"
+        name: "Revocable Token Sessions"
+        description: >
+          Allow token-based sessions to be revoked so a stolen token can be invalidated.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V3
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V3.5.2
+        ref_id: "V3.5.2"
+        name: "No Static API Secrets as Sessions"
+        description: >
+          Do not treat static, long-lived API keys as user sessions.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V3
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V3.5.3
+        ref_id: "V3.5.3"
+        name: "Stateless Token Validation"
+        description: >
+          Validate stateless tokens using approved signatures and reject tampered or expired values.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V3
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V3.7.1
+        ref_id: "V3.7.1"
+        name: "Reauthentication for Sensitive Actions"
+        description: >
+          Require reauthentication or a fresh confirmation before especially sensitive operations.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V3
+        depth: 2
+        assessable: true
+        category: L2
+      # ─── V4: Access Control ───
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V4
+        ref_id: "V4"
+        name: "Access Control"
+        description: >
+          Requirements addressing access control within the ASVS verification model.
+        depth: 1
+        assessable: false
+        category: "Access Control"
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V4.1.1
+        ref_id: "V4.1.1"
+        name: "Server-Side Access Enforcement"
+        description: >
+          Enforce access control on a trusted server layer, never solely in client-side code.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V4
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V4.1.2
+        ref_id: "V4.1.2"
+        name: "Non-Manipulable Access Metadata"
+        description: >
+          Ensure the attributes used for access decisions cannot be tampered with by the requester.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V4
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V4.1.3
+        ref_id: "V4.1.3"
+        name: "Principle of Least Privilege"
+        description: >
+          Grant each user and process only the access their function requires.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V4
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V4.1.5
+        ref_id: "V4.1.5"
+        name: "Fail Securely on Access Errors"
+        description: >
+          Make access-control checks deny by default and fail closed when an error occurs.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V4
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V4.2.1
+        ref_id: "V4.2.1"
+        name: "Protect Against Object Reference Abuse"
+        description: >
+          Verify the caller is authorised for each object so identifiers cannot be swapped to reach others' data.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V4
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V4.2.2
+        ref_id: "V4.2.2"
+        name: "Anti-CSRF for State Changes"
+        description: >
+          Protect state-changing requests with anti-CSRF measures or equivalent controls.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V4
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V4.3.1
+        ref_id: "V4.3.1"
+        name: "Multi-Factor Admin Access"
+        description: >
+          Require multi-factor authentication for administrative interfaces.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V4
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V4.3.2
+        ref_id: "V4.3.2"
+        name: "Directory Browsing Disabled"
+        description: >
+          Disable directory listing and block access to backup or system files under the web root.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V4
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V4.3.3
+        ref_id: "V4.3.3"
+        name: "Extra Authorization for Sensitive Ops"
+        description: >
+          Apply additional authorization checks for high-value or destructive administrative operations.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V4
+        depth: 2
+        assessable: true
+        category: L2
+      # ─── V5: Validation, Sanitization and Encoding ───
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        ref_id: "V5"
+        name: "Validation, Sanitization and Encoding"
+        description: >
+          Requirements addressing validation, sanitization and encoding within the ASVS verification model.
+        depth: 1
+        assessable: false
+        category: "Validation, Sanitization and Encoding"
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.1.1
+        ref_id: "V5.1.1"
+        name: "HTTP Parameter Pollution"
+        description: >
+          Defend against HTTP parameter pollution by handling duplicated parameters predictably.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.1.2
+        ref_id: "V5.1.2"
+        name: "Mass Assignment Protection"
+        description: >
+          Guard against mass assignment by binding only the fields a request is permitted to set.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.1.3
+        ref_id: "V5.1.3"
+        name: "Validate All Input"
+        description: >
+          Validate all input against expected type, length, and range on the server.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.1.4
+        ref_id: "V5.1.4"
+        name: "Allowlist Structured Data"
+        description: >
+          Validate structured data such as identifiers and enums against a strict allowlist.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.1.5
+        ref_id: "V5.1.5"
+        name: "Validate Redirect Targets"
+        description: >
+          Validate redirect and forward destinations so they cannot be steered to attacker-controlled sites.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.2.1
+        ref_id: "V5.2.1"
+        name: "Sanitize Untrusted HTML"
+        description: >
+          Sanitize user-supplied HTML with a well-tested library before it is stored or rendered.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.2.2
+        ref_id: "V5.2.2"
+        name: "Sanitize Unstructured Data"
+        description: >
+          Sanitize unstructured user content so that control characters cannot alter downstream processing.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.2.3
+        ref_id: "V5.2.3"
+        name: "Prevent Mail Injection"
+        description: >
+          Neutralise mail-header and message injection when user input feeds email generation.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.2.4
+        ref_id: "V5.2.4"
+        name: "Avoid Dynamic Code Evaluation"
+        description: >
+          Avoid evaluating user input as code and remove dynamic eval-style execution paths.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.2.5
+        ref_id: "V5.2.5"
+        name: "Prevent Template Injection"
+        description: >
+          Prevent template injection by keeping user input out of template syntax.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.2.6
+        ref_id: "V5.2.6"
+        name: "Mitigate SSRF"
+        description: >
+          Protect server-side requests by validating and restricting user-supplied URLs and destinations.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.2.7
+        ref_id: "V5.2.7"
+        name: "Neutralize Scriptable SVG"
+        description: >
+          Sanitize or reject scriptable content in uploaded SVG or similar files.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.2.8
+        ref_id: "V5.2.8"
+        name: "Sanitize Scriptable Markup"
+        description: >
+          Sanitize scriptable content in formats such as Markdown or CSS before rendering.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.3.1
+        ref_id: "V5.3.1"
+        name: "Context-Aware Output Encoding"
+        description: >
+          Apply output encoding appropriate to each rendering context to stop injection.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.3.2
+        ref_id: "V5.3.2"
+        name: "Unicode-Safe Encoding"
+        description: >
+          Handle Unicode correctly during encoding so normalisation tricks cannot bypass filters.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.3.3
+        ref_id: "V5.3.3"
+        name: "Context-Aware XSS Defense"
+        description: >
+          Defend against cross-site scripting with context-aware encoding and safe sinks.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.3.4
+        ref_id: "V5.3.4"
+        name: "Parameterized Database Queries"
+        description: >
+          Use parameterized queries or safe ORM methods to prevent SQL injection.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.3.5
+        ref_id: "V5.3.5"
+        name: "Prevent OS Command Injection"
+        description: >
+          Avoid building shell commands from input and use safe APIs to prevent command injection.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.3.6
+        ref_id: "V5.3.6"
+        name: "Prevent XML Injection"
+        description: >
+          Protect XML processing from injection through validation and safe construction.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.3.7
+        ref_id: "V5.3.7"
+        name: "Prevent LDAP Injection"
+        description: >
+          Escape or parameterize LDAP queries to prevent injection.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.3.9
+        ref_id: "V5.3.9"
+        name: "Prevent File Inclusion"
+        description: >
+          Prevent local and remote file inclusion driven by user input.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.3.10
+        ref_id: "V5.3.10"
+        name: "Prevent XPath Injection"
+        description: >
+          Protect XPath and similar query languages from injection via user input.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.4.1
+        ref_id: "V5.4.1"
+        name: "Memory-Safe String Handling"
+        description: >
+          Use memory-safe string and buffer operations in unmanaged languages.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.4.2
+        ref_id: "V5.4.2"
+        name: "Safe Format Strings"
+        description: >
+          Avoid passing user input as a format string in functions that interpret one.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.4.3
+        ref_id: "V5.4.3"
+        name: "Buffer Bounds Checking"
+        description: >
+          Validate array and buffer bounds to avoid overflow in unmanaged code.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.5.1
+        ref_id: "V5.5.1"
+        name: "Safe Deserialization"
+        description: >
+          Do not deserialize untrusted data with mechanisms that can instantiate arbitrary types.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.5.2
+        ref_id: "V5.5.2"
+        name: "Hardened XML Parsing"
+        description: >
+          Configure XML parsers to disable external entities and prevent XXE.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.5.3
+        ref_id: "V5.5.3"
+        name: "Deserialization Integrity Checks"
+        description: >
+          Apply integrity checks and type restrictions when serialized data must be accepted.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V5.5.4
+        ref_id: "V5.5.4"
+        name: "Strict JSON Parsing"
+        description: >
+          Parse JSON with strict, well-tested parsers and reject malformed structures.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V5
+        depth: 2
+        assessable: true
+        category: L1
+      # ─── V6: Stored Cryptography ───
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V6
+        ref_id: "V6"
+        name: "Stored Cryptography"
+        description: >
+          Requirements addressing stored cryptography within the ASVS verification model.
+        depth: 1
+        assessable: false
+        category: "Stored Cryptography"
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V6.1.1
+        ref_id: "V6.1.1"
+        name: "Encrypt Regulated Personal Data"
+        description: >
+          Encrypt regulated personal data at rest so that a storage breach does not expose it in the clear.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V6
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V6.1.2
+        ref_id: "V6.1.2"
+        name: "Encrypt Health Data"
+        description: >
+          Encrypt sensitive health information at rest in line with its regulatory obligations.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V6
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V6.1.3
+        ref_id: "V6.1.3"
+        name: "Encrypt Financial Data"
+        description: >
+          Encrypt sensitive financial data at rest to limit the impact of storage compromise.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V6
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V6.2.1
+        ref_id: "V6.2.1"
+        name: "Fail Securely in Crypto Modules"
+        description: >
+          Ensure cryptographic operations fail closed and never fall back to processing data unprotected.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V6
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V6.2.2
+        ref_id: "V6.2.2"
+        name: "Industry-Proven Algorithms"
+        description: >
+          Use only widely reviewed, current cryptographic algorithms rather than home-grown schemes.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V6
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V6.2.3
+        ref_id: "V6.2.3"
+        name: "Correct Encryption Initialization"
+        description: >
+          Initialise ciphers correctly, including proper modes and parameters, to preserve their security.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V6
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V6.2.4
+        ref_id: "V6.2.4"
+        name: "Random Nonces and IVs"
+        description: >
+          Generate nonces and initialisation vectors with the uniqueness each algorithm requires.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V6
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V6.2.5
+        ref_id: "V6.2.5"
+        name: "No Insecure Cipher Modes"
+        description: >
+          Avoid insecure modes such as ECB that leak structure in ciphertext.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V6
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V6.2.6
+        ref_id: "V6.2.6"
+        name: "Avoid Padding Oracles"
+        description: >
+          Choose constructions and error handling that do not expose padding-oracle behaviour.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V6
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V6.2.7
+        ref_id: "V6.2.7"
+        name: "Authenticated Encryption"
+        description: >
+          Use authenticated encryption so that tampering with ciphertext is detected.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V6
+        depth: 2
+        assessable: true
+        category: L3
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V6.2.8
+        ref_id: "V6.2.8"
+        name: "Constant-Time Comparisons"
+        description: >
+          Compare secrets in constant time to resist timing side channels.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V6
+        depth: 2
+        assessable: true
+        category: L3
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V6.3.1
+        ref_id: "V6.3.1"
+        name: "Cryptographic Randomness"
+        description: >
+          Generate security-sensitive values with a cryptographically secure random source.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V6
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V6.3.2
+        ref_id: "V6.3.2"
+        name: "Unpredictable Identifiers"
+        description: >
+          Derive unguessable identifiers, such as random UUIDs, from a secure generator where they gate access.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V6
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V6.4.1
+        ref_id: "V6.4.1"
+        name: "Managed Secret Storage"
+        description: >
+          Store cryptographic secrets in a dedicated secrets manager or key vault.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V6
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V6.4.2
+        ref_id: "V6.4.2"
+        name: "Keys Not in Source"
+        description: >
+          Keep key material out of source code and out of version-controlled configuration.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V6
+        depth: 2
+        assessable: true
+        category: L2
+      # ─── V7: Error Handling and Logging ───
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V7
+        ref_id: "V7"
+        name: "Error Handling and Logging"
+        description: >
+          Requirements addressing error handling and logging within the ASVS verification model.
+        depth: 1
+        assessable: false
+        category: "Error Handling and Logging"
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V7.1.1
+        ref_id: "V7.1.1"
+        name: "No Sensitive Data in Logs"
+        description: >
+          Ensure logs do not capture sensitive data such as full credentials or tokens.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V7
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V7.1.2
+        ref_id: "V7.1.2"
+        name: "No Credentials in Logs"
+        description: >
+          Exclude passwords, session tokens, and secrets from all log output.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V7
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V7.1.3
+        ref_id: "V7.1.3"
+        name: "Log Security-Relevant Events"
+        description: >
+          Log security-relevant events such as authentication and access-control decisions.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V7
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V7.1.4
+        ref_id: "V7.1.4"
+        name: "Sufficient Log Context"
+        description: >
+          Include enough context in each log entry to investigate an event without exposing secrets.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V7
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V7.2.1
+        ref_id: "V7.2.1"
+        name: "Log Authentication Decisions"
+        description: >
+          Record both successful and failed authentication attempts with relevant metadata.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V7
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V7.2.2
+        ref_id: "V7.2.2"
+        name: "Log Access-Control Decisions"
+        description: >
+          Record access-control denials so that probing and abuse can be detected.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V7
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V7.3.1
+        ref_id: "V7.3.1"
+        name: "Encode Log Data"
+        description: >
+          Encode data written to logs so that injected content cannot forge or corrupt entries.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V7
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V7.3.3
+        ref_id: "V7.3.3"
+        name: "Tamper-Resistant Logs"
+        description: >
+          Protect logs from unauthorised modification and deletion.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V7
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V7.3.4
+        ref_id: "V7.3.4"
+        name: "Synchronized Time Source"
+        description: >
+          Use a synchronised, reliable time source so log timestamps can be correlated.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V7
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V7.4.1
+        ref_id: "V7.4.1"
+        name: "Generic Error Messages"
+        description: >
+          Return generic error messages to users and keep diagnostic detail server-side.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V7
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V7.4.2
+        ref_id: "V7.4.2"
+        name: "Structured Exception Handling"
+        description: >
+          Handle exceptions consistently so failures do not leak stack traces or internal state.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V7
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V7.4.3
+        ref_id: "V7.4.3"
+        name: "Last-Resort Fail Secure"
+        description: >
+          Provide a last-resort handler that fails securely for unexpected errors.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V7
+        depth: 2
+        assessable: true
+        category: L2
+      # ─── V8: Data Protection ───
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V8
+        ref_id: "V8"
+        name: "Data Protection"
+        description: >
+          Requirements addressing data protection within the ASVS verification model.
+        depth: 1
+        assessable: false
+        category: "Data Protection"
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V8.1.1
+        ref_id: "V8.1.1"
+        name: "No Server Caching of Sensitive Data"
+        description: >
+          Prevent sensitive data from being cached on the server where it could be exposed later.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V8
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V8.1.2
+        ref_id: "V8.1.2"
+        name: "Remove Temporary Copies"
+        description: >
+          Remove temporary copies of sensitive data as soon as they are no longer needed.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V8
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V8.1.3
+        ref_id: "V8.1.3"
+        name: "Minimize Sensitive Data in Params"
+        description: >
+          Minimise sensitive data carried in request parameters and avoid logging it.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V8
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V8.1.4
+        ref_id: "V8.1.4"
+        name: "Detect Abnormal Data Access"
+        description: >
+          Detect and alert on abnormal volumes of sensitive-data access or extraction.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V8
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V8.2.1
+        ref_id: "V8.2.1"
+        name: "Anti-Caching Response Headers"
+        description: >
+          Set anti-caching headers on responses containing sensitive data.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V8
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V8.2.2
+        ref_id: "V8.2.2"
+        name: "Limit Client-Side Storage"
+        description: >
+          Avoid storing sensitive data in browser storage that persists beyond the session.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V8
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V8.2.3
+        ref_id: "V8.2.3"
+        name: "Clear Data on Logout"
+        description: >
+          Clear client-side sensitive data when the user logs out.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V8
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V8.3.1
+        ref_id: "V8.3.1"
+        name: "Sensitive Data in Request Body"
+        description: >
+          Send sensitive data in the request body or headers, not in the query string.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V8
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V8.3.2
+        ref_id: "V8.3.2"
+        name: "User Data Export and Removal"
+        description: >
+          Allow users to export and remove their personal data on request.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V8
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V8.3.3
+        ref_id: "V8.3.3"
+        name: "Privacy Notice and Consent"
+        description: >
+          Present clear terms and obtain consent before collecting personal data.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V8
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V8.3.4
+        ref_id: "V8.3.4"
+        name: "Sensitive Data Inventory"
+        description: >
+          Identify and document the sensitive data the application collects and processes.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V8
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V8.3.5
+        ref_id: "V8.3.5"
+        name: "Audit Sensitive Data Access"
+        description: >
+          Audit access to sensitive data with enough detail to support investigations.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V8
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V8.3.6
+        ref_id: "V8.3.6"
+        name: "Clear Sensitive Memory"
+        description: >
+          Overwrite sensitive values in memory once they are no longer required.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V8
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V8.3.7
+        ref_id: "V8.3.7"
+        name: "Data Minimization"
+        description: >
+          Collect and retain only the sensitive data the application genuinely needs.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V8
+        depth: 2
+        assessable: true
+        category: L2
+      # ─── V9: Communication ───
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V9
+        ref_id: "V9"
+        name: "Communication"
+        description: >
+          Requirements addressing communication within the ASVS verification model.
+        depth: 1
+        assessable: false
+        category: "Communication"
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V9.1.1
+        ref_id: "V9.1.1"
+        name: "TLS for All Connections"
+        description: >
+          Require TLS for all client connections and never fall back to unencrypted transport.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V9
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V9.1.2
+        ref_id: "V9.1.2"
+        name: "Strong Cipher Configuration"
+        description: >
+          Configure only strong, current cipher suites and disable weak ones.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V9
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V9.1.3
+        ref_id: "V9.1.3"
+        name: "Current TLS Versions"
+        description: >
+          Support only current TLS versions and disable obsolete protocols.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V9
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V9.2.1
+        ref_id: "V9.2.1"
+        name: "Trusted Certificates"
+        description: >
+          Use certificates from trusted authorities and validate them fully.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V9
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V9.2.2
+        ref_id: "V9.2.2"
+        name: "Encrypt Internal Connections"
+        description: >
+          Encrypt connections between internal components, not just external traffic.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V9
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V9.2.3
+        ref_id: "V9.2.3"
+        name: "Authenticated Connections"
+        description: >
+          Authenticate the endpoints of sensitive connections to prevent interception.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V9
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V9.2.4
+        ref_id: "V9.2.4"
+        name: "Certificate Revocation Checks"
+        description: >
+          Check certificate revocation status where the environment supports it.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V9
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V9.2.5
+        ref_id: "V9.2.5"
+        name: "Log Backend TLS Failures"
+        description: >
+          Log backend TLS connection failures for high-assurance monitoring.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V9
+        depth: 2
+        assessable: true
+        category: L3
+      # ─── V10: Malicious Code ───
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V10
+        ref_id: "V10"
+        name: "Malicious Code"
+        description: >
+          Requirements addressing malicious code within the ASVS verification model.
+        depth: 1
+        assessable: false
+        category: "Malicious Code"
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V10.1.1
+        ref_id: "V10.1.1"
+        name: "Malicious Code Analysis"
+        description: >
+          Use code analysis tooling to detect potentially malicious code in the codebase.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V10
+        depth: 2
+        assessable: true
+        category: L3
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V10.2.1
+        ref_id: "V10.2.1"
+        name: "No Unauthorized Data Collection"
+        description: >
+          Ensure the application does not collect or transmit data beyond what the user authorised.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V10
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V10.2.2
+        ref_id: "V10.2.2"
+        name: "No Undisclosed Phone-Home"
+        description: >
+          Ensure the application does not contain undisclosed phone-home or tracking behaviour.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V10
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V10.2.3
+        ref_id: "V10.2.3"
+        name: "No Backdoors"
+        description: >
+          Ensure the codebase is free of backdoors and undocumented privileged access.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V10
+        depth: 2
+        assessable: true
+        category: L3
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V10.3.1
+        ref_id: "V10.3.1"
+        name: "Integrity-Checked Updates"
+        description: >
+          Verify the integrity and authenticity of application updates before applying them.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V10
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V10.3.2
+        ref_id: "V10.3.2"
+        name: "Signed Code and Dependencies"
+        description: >
+          Use signing and integrity checks so that tampered code or dependencies are rejected.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V10
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V10.3.3
+        ref_id: "V10.3.3"
+        name: "Protection Against Subdomain Takeover"
+        description: >
+          Guard against subdomain takeover and stale references that attackers could claim.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V10
+        depth: 2
+        assessable: true
+        category: L1
+      # ─── V11: Business Logic ───
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V11
+        ref_id: "V11"
+        name: "Business Logic"
+        description: >
+          Requirements addressing business logic within the ASVS verification model.
+        depth: 1
+        assessable: false
+        category: "Business Logic"
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V11.1.1
+        ref_id: "V11.1.1"
+        name: "Enforce Sequential Steps"
+        description: >
+          Enforce that multi-step workflows are completed in order and cannot be skipped.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V11
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V11.1.2
+        ref_id: "V11.1.2"
+        name: "Realistic Timing Limits"
+        description: >
+          Reject workflow submissions that arrive faster than a genuine human could produce them.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V11
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V11.1.3
+        ref_id: "V11.1.3"
+        name: "Enforce Usage Limits"
+        description: >
+          Apply per-user limits so that a single actor cannot abuse a feature at scale.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V11
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V11.1.4
+        ref_id: "V11.1.4"
+        name: "Anti-Automation for Aggregation"
+        description: >
+          Apply anti-automation to actions an attacker could script to harvest data or resources.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V11
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V11.1.5
+        ref_id: "V11.1.5"
+        name: "Enforce Business Rule Limits"
+        description: >
+          Enforce business-rule limits such as maximum values or quantities server-side.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V11
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V11.1.6
+        ref_id: "V11.1.6"
+        name: "Prevent Logic Race Conditions"
+        description: >
+          Protect high-value operations from race conditions that could bypass business rules.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V11
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V11.1.7
+        ref_id: "V11.1.7"
+        name: "Monitor for Logic Abuse"
+        description: >
+          Monitor for unusual business-logic events that may indicate abuse or fraud.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V11
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V11.1.8
+        ref_id: "V11.1.8"
+        name: "Alert on Business Anomalies"
+        description: >
+          Configure alerting on business-logic anomalies so responders are notified promptly.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V11
+        depth: 2
+        assessable: true
+        category: L2
+      # ─── V12: Files and Resources ───
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V12
+        ref_id: "V12"
+        name: "Files and Resources"
+        description: >
+          Requirements addressing files and resources within the ASVS verification model.
+        depth: 1
+        assessable: false
+        category: "Files and Resources"
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V12.1.1
+        ref_id: "V12.1.1"
+        name: "Reject Oversized Uploads"
+        description: >
+          Reject uploads larger than the application expects to avoid denial of service.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V12
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V12.1.2
+        ref_id: "V12.1.2"
+        name: "Validate File Size and Count"
+        description: >
+          Validate the size and number of uploaded files against defined limits.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V12
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V12.1.3
+        ref_id: "V12.1.3"
+        name: "Enforce Storage Quotas"
+        description: >
+          Enforce per-user storage quotas so uploads cannot exhaust capacity.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V12
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V12.2.1
+        ref_id: "V12.2.1"
+        name: "Validate File Type"
+        description: >
+          Validate the actual type of uploaded files rather than trusting the declared extension.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V12
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V12.3.1
+        ref_id: "V12.3.1"
+        name: "Validate Submitted Filenames"
+        description: >
+          Validate and normalise user-submitted filenames to prevent path traversal.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V12
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V12.3.2
+        ref_id: "V12.3.2"
+        name: "Guard File Metadata"
+        description: >
+          Prevent user-controlled file metadata from steering unsafe processing.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V12
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V12.3.3
+        ref_id: "V12.3.3"
+        name: "Prevent Path Manipulation"
+        description: >
+          Block path manipulation so file operations cannot escape their intended directory.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V12
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V12.3.4
+        ref_id: "V12.3.4"
+        name: "Restrict Executable Extensions"
+        description: >
+          Reject or neutralise dangerous, executable file extensions on upload.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V12
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V12.3.5
+        ref_id: "V12.3.5"
+        name: "Distrust File Metadata"
+        description: >
+          Do not make trust decisions based on user-supplied file metadata.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V12
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V12.4.1
+        ref_id: "V12.4.1"
+        name: "Store Files Outside Web Root"
+        description: >
+          Store uploaded files outside the web root or on a storage service so they cannot be executed.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V12
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V12.4.2
+        ref_id: "V12.4.2"
+        name: "Scan Uploads for Malware"
+        description: >
+          Scan uploaded files for malware before they are made available.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V12
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V12.5.1
+        ref_id: "V12.5.1"
+        name: "Do Not Serve Source Files"
+        description: >
+          Configure the web tier so that source and configuration files are never served.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V12
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V12.5.2
+        ref_id: "V12.5.2"
+        name: "Control Access to Uploaded Files"
+        description: >
+          Serve uploaded files through access-controlled, safe delivery paths.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V12
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V12.6.1
+        ref_id: "V12.6.1"
+        name: "Prevent File-Based Redirects"
+        description: >
+          Prevent file features from being used for open redirect or server-side request forgery.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V12
+        depth: 2
+        assessable: true
+        category: L1
+      # ─── V13: API and Web Service ───
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V13
+        ref_id: "V13"
+        name: "API and Web Service"
+        description: >
+          Requirements addressing api and web service within the ASVS verification model.
+        depth: 1
+        assessable: false
+        category: "API and Web Service"
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V13.1.1
+        ref_id: "V13.1.1"
+        name: "Consistent API Validation"
+        description: >
+          Apply the same validation and encoding rules to API endpoints as to the user interface.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V13
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V13.1.3
+        ref_id: "V13.1.3"
+        name: "No Sensitive Data in API URLs"
+        description: >
+          Keep sensitive data out of API URLs where it could be logged or cached.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V13
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V13.1.5
+        ref_id: "V13.1.5"
+        name: "Reject Unexpected Content Types"
+        description: >
+          Reject requests whose content type is not one the endpoint expects.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V13
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V13.2.1
+        ref_id: "V13.2.1"
+        name: "Allowlist HTTP Methods"
+        description: >
+          Allow only the HTTP methods each API resource is designed to accept.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V13
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V13.2.2
+        ref_id: "V13.2.2"
+        name: "Schema-Validate API Payloads"
+        description: >
+          Validate API request bodies against a defined schema and reject malformed input.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V13
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V13.2.3
+        ref_id: "V13.2.3"
+        name: "Anti-CSRF for Cookie APIs"
+        description: >
+          Protect cookie-authenticated API calls against cross-site request forgery.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V13
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V13.2.5
+        ref_id: "V13.2.5"
+        name: "Verify Request Content Type"
+        description: >
+          Verify that request content types match what the API contract specifies.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V13
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V13.2.4
+        ref_id: "V13.2.4"
+        name: "Rate-Limit API Endpoints"
+        description: >
+          Apply rate limiting to API endpoints to resist automated abuse.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V13
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V13.2.6
+        ref_id: "V13.2.6"
+        name: "Verify Message Authenticity"
+        description: >
+          Verify the authenticity of message headers and payloads where integrity matters.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V13
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V13.3.1
+        ref_id: "V13.3.1"
+        name: "Validate SOAP Payloads"
+        description: >
+          Validate SOAP requests against their schema to prevent malformed or malicious input.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V13
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V13.3.2
+        ref_id: "V13.3.2"
+        name: "Apply Message-Layer Security"
+        description: >
+          Apply message-layer security to web services that require it.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V13
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V13.4.1
+        ref_id: "V13.4.1"
+        name: "Constrain GraphQL Queries"
+        description: >
+          Constrain GraphQL query depth and cost to prevent resource-exhaustion attacks.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V13
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V13.4.2
+        ref_id: "V13.4.2"
+        name: "Enforce GraphQL Authorization"
+        description: >
+          Enforce authorization consistently across GraphQL resolvers.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V13
+        depth: 2
+        assessable: true
+        category: L2
+      # ─── V14: Configuration ───
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V14
+        ref_id: "V14"
+        name: "Configuration"
+        description: >
+          Requirements addressing configuration within the ASVS verification model.
+        depth: 1
+        assessable: false
+        category: "Configuration"
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V14.1.1
+        ref_id: "V14.1.1"
+        name: "Repeatable Build Process"
+        description: >
+          Use a documented, repeatable build process free of undocumented manual steps.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V14
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V14.1.2
+        ref_id: "V14.1.2"
+        name: "Secure Compiler Flags"
+        description: >
+          Compile with security flags and warnings enabled and address the findings.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V14
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V14.1.3
+        ref_id: "V14.1.3"
+        name: "Hardened Server Configuration"
+        description: >
+          Apply hardened, reviewed configuration to application and web servers.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V14
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V14.1.4
+        ref_id: "V14.1.4"
+        name: "Separate Environments"
+        description: >
+          Keep development and test artifacts and accounts out of production.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V14
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V14.2.1
+        ref_id: "V14.2.1"
+        name: "Up-to-Date Dependencies"
+        description: >
+          Keep components and dependencies current with security updates.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V14
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V14.2.2
+        ref_id: "V14.2.2"
+        name: "Remove Unneeded Features"
+        description: >
+          Remove unused features, sample content, and default files from deployments.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V14
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V14.2.3
+        ref_id: "V14.2.3"
+        name: "Verify Third-Party Asset Integrity"
+        description: >
+          Verify the integrity of third-party assets, for example with subresource integrity.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V14
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V14.2.4
+        ref_id: "V14.2.4"
+        name: "Sandbox Third-Party Code"
+        description: >
+          Sandbox or isolate third-party code that runs within the application.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V14
+        depth: 2
+        assessable: true
+        category: L3
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V14.2.5
+        ref_id: "V14.2.5"
+        name: "Maintain a Software Bill of Materials"
+        description: >
+          Maintain an inventory of components and their versions to support vulnerability response.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V14
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V14.2.6
+        ref_id: "V14.2.6"
+        name: "Reduce Attack Surface"
+        description: >
+          Reduce the deployed attack surface by disabling features that are not required.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V14
+        depth: 2
+        assessable: true
+        category: L2
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V14.3.2
+        ref_id: "V14.3.2"
+        name: "Disable Debug Modes"
+        description: >
+          Disable debug modes and developer consoles in production.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V14
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V14.3.3
+        ref_id: "V14.3.3"
+        name: "No Version Disclosure"
+        description: >
+          Suppress framework and server version information in responses.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V14
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V14.4.1
+        ref_id: "V14.4.1"
+        name: "Charset in Content-Type"
+        description: >
+          Specify a safe character set in the Content-Type header of responses.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V14
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V14.4.2
+        ref_id: "V14.4.2"
+        name: "Content-Disposition for Downloads"
+        description: >
+          Set a Content-Disposition header so downloads are handled safely by browsers.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V14
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V14.4.3
+        ref_id: "V14.4.3"
+        name: "Content Security Policy"
+        description: >
+          Deploy a Content-Security-Policy header to reduce the impact of injection.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V14
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V14.4.4
+        ref_id: "V14.4.4"
+        name: "No MIME Sniffing"
+        description: >
+          Set X-Content-Type-Options to nosniff to stop content-type guessing.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V14
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V14.4.5
+        ref_id: "V14.4.5"
+        name: "Strict Transport Security"
+        description: >
+          Send an HTTP Strict-Transport-Security header to enforce HTTPS.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V14
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V14.4.6
+        ref_id: "V14.4.6"
+        name: "Referrer Policy"
+        description: >
+          Set a Referrer-Policy header to limit leakage of URLs to other origins.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V14
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V14.4.7
+        ref_id: "V14.4.7"
+        name: "Anti-Clickjacking Controls"
+        description: >
+          Restrict framing with frame-ancestors or equivalent to prevent clickjacking.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V14
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V14.5.1
+        ref_id: "V14.5.1"
+        name: "Validate HTTP Methods at Edge"
+        description: >
+          Reject unsupported HTTP methods at the server so only intended verbs are processed.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V14
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V14.5.2
+        ref_id: "V14.5.2"
+        name: "Do Not Trust Origin for Auth"
+        description: >
+          Do not use the Origin header alone to make authentication decisions.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V14
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V14.5.3
+        ref_id: "V14.5.3"
+        name: "Strict CORS Configuration"
+        description: >
+          Configure cross-origin resource sharing with a strict, explicit allowlist of origins.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V14
+        depth: 2
+        assessable: true
+        category: L1
+      - urn: urn:inflect:req:owasp-asvs-4.0.3:V14.5.4
+        ref_id: "V14.5.4"
+        name: "Authenticate Trusted Proxies"
+        description: >
+          Authenticate trusted proxies before honouring forwarded headers.
+        parent_urn: urn:inflect:req:owasp-asvs-4.0.3:V14
+        depth: 2
+        assessable: true
+        category: L2

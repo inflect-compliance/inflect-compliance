@@ -1,0 +1,377 @@
+[
+  {
+    "code": "ASVS-V2",
+    "title": "Authentication (ASVS L1)",
+    "description": "Implements the Level 1 verification requirements of ASVS chapter V2 \u2014 Authentication. Establishes the baseline application-security controls for this chapter.",
+    "defaultFrequency": "QUARTERLY",
+    "defaultOwnerHint": "Application Security",
+    "requirements": [
+      "V2.1.1",
+      "V2.1.2",
+      "V2.1.3",
+      "V2.1.4",
+      "V2.1.5",
+      "V2.1.6",
+      "V2.1.7",
+      "V2.1.8",
+      "V2.1.9",
+      "V2.1.10",
+      "V2.1.11",
+      "V2.1.12",
+      "V2.2.1",
+      "V2.2.2",
+      "V2.2.3",
+      "V2.3.1",
+      "V2.5.1",
+      "V2.5.2",
+      "V2.5.3",
+      "V2.5.4",
+      "V2.5.5",
+      "V2.5.6",
+      "V2.6.1",
+      "V2.7.1",
+      "V2.7.2",
+      "V2.7.3",
+      "V2.7.4",
+      "V2.8.1"
+    ],
+    "tasks": [
+      {
+        "title": "Implement ASVS L1 requirements for V2",
+        "description": "Put in place the Level 1 verification requirements for Authentication (ASVS chapter V2)."
+      },
+      {
+        "title": "Verify V2 coverage",
+        "description": "Periodically verify that the Level 1 requirements for Authentication remain satisfied as the application evolves."
+      }
+    ]
+  },
+  {
+    "code": "ASVS-V3",
+    "title": "Session Management (ASVS L1)",
+    "description": "Implements the Level 1 verification requirements of ASVS chapter V3 \u2014 Session Management. Establishes the baseline application-security controls for this chapter.",
+    "defaultFrequency": "QUARTERLY",
+    "defaultOwnerHint": "Application Security",
+    "requirements": [
+      "V3.1.1",
+      "V3.2.1",
+      "V3.2.2",
+      "V3.2.3",
+      "V3.3.1",
+      "V3.3.2",
+      "V3.4.1",
+      "V3.4.2",
+      "V3.4.3",
+      "V3.4.4",
+      "V3.4.5"
+    ],
+    "tasks": [
+      {
+        "title": "Implement ASVS L1 requirements for V3",
+        "description": "Put in place the Level 1 verification requirements for Session Management (ASVS chapter V3)."
+      },
+      {
+        "title": "Verify V3 coverage",
+        "description": "Periodically verify that the Level 1 requirements for Session Management remain satisfied as the application evolves."
+      }
+    ]
+  },
+  {
+    "code": "ASVS-V4",
+    "title": "Access Control (ASVS L1)",
+    "description": "Implements the Level 1 verification requirements of ASVS chapter V4 \u2014 Access Control. Establishes the baseline application-security controls for this chapter.",
+    "defaultFrequency": "QUARTERLY",
+    "defaultOwnerHint": "Application Security",
+    "requirements": [
+      "V4.1.1",
+      "V4.1.2",
+      "V4.1.3",
+      "V4.1.5",
+      "V4.2.1",
+      "V4.2.2",
+      "V4.3.1",
+      "V4.3.2"
+    ],
+    "tasks": [
+      {
+        "title": "Implement ASVS L1 requirements for V4",
+        "description": "Put in place the Level 1 verification requirements for Access Control (ASVS chapter V4)."
+      },
+      {
+        "title": "Verify V4 coverage",
+        "description": "Periodically verify that the Level 1 requirements for Access Control remain satisfied as the application evolves."
+      }
+    ]
+  },
+  {
+    "code": "ASVS-V5",
+    "title": "Validation, Sanitization and Encoding (ASVS L1)",
+    "description": "Implements the Level 1 verification requirements of ASVS chapter V5 \u2014 Validation, Sanitization and Encoding. Establishes the baseline application-security controls for this chapter.",
+    "defaultFrequency": "QUARTERLY",
+    "defaultOwnerHint": "Application Security",
+    "requirements": [
+      "V5.1.1",
+      "V5.1.2",
+      "V5.1.3",
+      "V5.1.4",
+      "V5.1.5",
+      "V5.2.1",
+      "V5.2.2",
+      "V5.2.3",
+      "V5.2.4",
+      "V5.2.5",
+      "V5.2.6",
+      "V5.2.7",
+      "V5.2.8",
+      "V5.3.1",
+      "V5.3.2",
+      "V5.3.3",
+      "V5.3.4",
+      "V5.3.5",
+      "V5.3.6",
+      "V5.3.7",
+      "V5.3.9",
+      "V5.3.10",
+      "V5.5.1",
+      "V5.5.2",
+      "V5.5.3",
+      "V5.5.4"
+    ],
+    "tasks": [
+      {
+        "title": "Implement ASVS L1 requirements for V5",
+        "description": "Put in place the Level 1 verification requirements for Validation, Sanitization and Encoding (ASVS chapter V5)."
+      },
+      {
+        "title": "Verify V5 coverage",
+        "description": "Periodically verify that the Level 1 requirements for Validation, Sanitization and Encoding remain satisfied as the application evolves."
+      }
+    ]
+  },
+  {
+    "code": "ASVS-V6",
+    "title": "Stored Cryptography (ASVS L1)",
+    "description": "Implements the Level 1 verification requirements of ASVS chapter V6 \u2014 Stored Cryptography. Establishes the baseline application-security controls for this chapter.",
+    "defaultFrequency": "QUARTERLY",
+    "defaultOwnerHint": "Application Security",
+    "requirements": [
+      "V6.2.1"
+    ],
+    "tasks": [
+      {
+        "title": "Implement ASVS L1 requirements for V6",
+        "description": "Put in place the Level 1 verification requirements for Stored Cryptography (ASVS chapter V6)."
+      },
+      {
+        "title": "Verify V6 coverage",
+        "description": "Periodically verify that the Level 1 requirements for Stored Cryptography remain satisfied as the application evolves."
+      }
+    ]
+  },
+  {
+    "code": "ASVS-V7",
+    "title": "Error Handling and Logging (ASVS L1)",
+    "description": "Implements the Level 1 verification requirements of ASVS chapter V7 \u2014 Error Handling and Logging. Establishes the baseline application-security controls for this chapter.",
+    "defaultFrequency": "QUARTERLY",
+    "defaultOwnerHint": "Security Operations",
+    "requirements": [
+      "V7.4.1"
+    ],
+    "tasks": [
+      {
+        "title": "Implement ASVS L1 requirements for V7",
+        "description": "Put in place the Level 1 verification requirements for Error Handling and Logging (ASVS chapter V7)."
+      },
+      {
+        "title": "Verify V7 coverage",
+        "description": "Periodically verify that the Level 1 requirements for Error Handling and Logging remain satisfied as the application evolves."
+      }
+    ]
+  },
+  {
+    "code": "ASVS-V8",
+    "title": "Data Protection (ASVS L1)",
+    "description": "Implements the Level 1 verification requirements of ASVS chapter V8 \u2014 Data Protection. Establishes the baseline application-security controls for this chapter.",
+    "defaultFrequency": "QUARTERLY",
+    "defaultOwnerHint": "Application Security / Privacy",
+    "requirements": [
+      "V8.2.1",
+      "V8.2.2",
+      "V8.2.3",
+      "V8.3.1",
+      "V8.3.2",
+      "V8.3.3",
+      "V8.3.4"
+    ],
+    "tasks": [
+      {
+        "title": "Implement ASVS L1 requirements for V8",
+        "description": "Put in place the Level 1 verification requirements for Data Protection (ASVS chapter V8)."
+      },
+      {
+        "title": "Verify V8 coverage",
+        "description": "Periodically verify that the Level 1 requirements for Data Protection remain satisfied as the application evolves."
+      }
+    ]
+  },
+  {
+    "code": "ASVS-V9",
+    "title": "Communication (ASVS L1)",
+    "description": "Implements the Level 1 verification requirements of ASVS chapter V9 \u2014 Communication. Establishes the baseline application-security controls for this chapter.",
+    "defaultFrequency": "MONTHLY",
+    "defaultOwnerHint": "Platform Engineering",
+    "requirements": [
+      "V9.1.1",
+      "V9.1.2",
+      "V9.1.3"
+    ],
+    "tasks": [
+      {
+        "title": "Implement ASVS L1 requirements for V9",
+        "description": "Put in place the Level 1 verification requirements for Communication (ASVS chapter V9)."
+      },
+      {
+        "title": "Verify V9 coverage",
+        "description": "Periodically verify that the Level 1 requirements for Communication remain satisfied as the application evolves."
+      }
+    ]
+  },
+  {
+    "code": "ASVS-V10",
+    "title": "Malicious Code (ASVS L1)",
+    "description": "Implements the Level 1 verification requirements of ASVS chapter V10 \u2014 Malicious Code. Establishes the baseline application-security controls for this chapter.",
+    "defaultFrequency": "QUARTERLY",
+    "defaultOwnerHint": "Application Security",
+    "requirements": [
+      "V10.3.1",
+      "V10.3.2",
+      "V10.3.3"
+    ],
+    "tasks": [
+      {
+        "title": "Implement ASVS L1 requirements for V10",
+        "description": "Put in place the Level 1 verification requirements for Malicious Code (ASVS chapter V10)."
+      },
+      {
+        "title": "Verify V10 coverage",
+        "description": "Periodically verify that the Level 1 requirements for Malicious Code remain satisfied as the application evolves."
+      }
+    ]
+  },
+  {
+    "code": "ASVS-V11",
+    "title": "Business Logic (ASVS L1)",
+    "description": "Implements the Level 1 verification requirements of ASVS chapter V11 \u2014 Business Logic. Establishes the baseline application-security controls for this chapter.",
+    "defaultFrequency": "QUARTERLY",
+    "defaultOwnerHint": "Application Security",
+    "requirements": [
+      "V11.1.1",
+      "V11.1.2",
+      "V11.1.3",
+      "V11.1.4",
+      "V11.1.5",
+      "V11.1.6"
+    ],
+    "tasks": [
+      {
+        "title": "Implement ASVS L1 requirements for V11",
+        "description": "Put in place the Level 1 verification requirements for Business Logic (ASVS chapter V11)."
+      },
+      {
+        "title": "Verify V11 coverage",
+        "description": "Periodically verify that the Level 1 requirements for Business Logic remain satisfied as the application evolves."
+      }
+    ]
+  },
+  {
+    "code": "ASVS-V12",
+    "title": "Files and Resources (ASVS L1)",
+    "description": "Implements the Level 1 verification requirements of ASVS chapter V12 \u2014 Files and Resources. Establishes the baseline application-security controls for this chapter.",
+    "defaultFrequency": "QUARTERLY",
+    "defaultOwnerHint": "Application Security",
+    "requirements": [
+      "V12.1.1",
+      "V12.3.1",
+      "V12.3.2",
+      "V12.3.3",
+      "V12.3.4",
+      "V12.3.5",
+      "V12.4.1",
+      "V12.4.2",
+      "V12.5.1",
+      "V12.5.2",
+      "V12.6.1"
+    ],
+    "tasks": [
+      {
+        "title": "Implement ASVS L1 requirements for V12",
+        "description": "Put in place the Level 1 verification requirements for Files and Resources (ASVS chapter V12)."
+      },
+      {
+        "title": "Verify V12 coverage",
+        "description": "Periodically verify that the Level 1 requirements for Files and Resources remain satisfied as the application evolves."
+      }
+    ]
+  },
+  {
+    "code": "ASVS-V13",
+    "title": "API and Web Service (ASVS L1)",
+    "description": "Implements the Level 1 verification requirements of ASVS chapter V13 \u2014 API and Web Service. Establishes the baseline application-security controls for this chapter.",
+    "defaultFrequency": "QUARTERLY",
+    "defaultOwnerHint": "API Platform",
+    "requirements": [
+      "V13.1.1",
+      "V13.1.3",
+      "V13.1.5",
+      "V13.2.1",
+      "V13.2.2",
+      "V13.2.3",
+      "V13.2.5",
+      "V13.3.1"
+    ],
+    "tasks": [
+      {
+        "title": "Implement ASVS L1 requirements for V13",
+        "description": "Put in place the Level 1 verification requirements for API and Web Service (ASVS chapter V13)."
+      },
+      {
+        "title": "Verify V13 coverage",
+        "description": "Periodically verify that the Level 1 requirements for API and Web Service remain satisfied as the application evolves."
+      }
+    ]
+  },
+  {
+    "code": "ASVS-V14",
+    "title": "Configuration (ASVS L1)",
+    "description": "Implements the Level 1 verification requirements of ASVS chapter V14 \u2014 Configuration. Establishes the baseline application-security controls for this chapter.",
+    "defaultFrequency": "MONTHLY",
+    "defaultOwnerHint": "Platform Engineering",
+    "requirements": [
+      "V14.2.1",
+      "V14.2.2",
+      "V14.2.3",
+      "V14.3.2",
+      "V14.3.3",
+      "V14.4.1",
+      "V14.4.2",
+      "V14.4.3",
+      "V14.4.4",
+      "V14.4.5",
+      "V14.4.6",
+      "V14.4.7",
+      "V14.5.1",
+      "V14.5.2",
+      "V14.5.3"
+    ],
+    "tasks": [
+      {
+        "title": "Implement ASVS L1 requirements for V14",
+        "description": "Put in place the Level 1 verification requirements for Configuration (ASVS chapter V14)."
+      },
+      {
+        "title": "Verify V14 coverage",
+        "description": "Periodically verify that the Level 1 requirements for Configuration remain satisfied as the application evolves."
+      }
+    ]
+  }
+]
