@@ -291,7 +291,7 @@ describe('generateReadinessReport', () => {
             { id: 'r-1', code: 'A', title: 'X', section: 'Org', sortOrder: 1 },
         ]);
         tenantDb.controlRequirementLink.findMany.mockResolvedValueOnce([
-            { requirementId: 'r-1', control: { id: 'c-1', code: 'CC1', name: 'NA Ctrl', status: 'NOT_APPLICABLE', description: 'Justified because X', tasks: [], evidence: [] } },
+            { requirementId: 'r-1', control: { id: 'c-1', code: 'CC1', name: 'NA Ctrl', status: 'NOT_APPLICABLE', applicabilityJustification: 'Justified because X', tasks: [], evidence: [] } },
         ]);
 
         const result = await generateReadinessReport(ctx, 'iso');
@@ -302,13 +302,13 @@ describe('generateReadinessReport', () => {
         expect(result.controlsMissingEvidence).toEqual([]);
     });
 
-    it('NOT_APPLICABLE control with null description uses default justification', async () => {
+    it('NOT_APPLICABLE control with null justification uses default justification', async () => {
         mockPrisma.framework.findFirst.mockResolvedValueOnce({ id: 'fw-1', key: 'iso', name: 'ISO', version: '2022' });
         mockPrisma.frameworkRequirement.findMany.mockResolvedValueOnce([
             { id: 'r-1', code: 'A', title: 'X', section: 'Org', sortOrder: 1 },
         ]);
         tenantDb.controlRequirementLink.findMany.mockResolvedValueOnce([
-            { requirementId: 'r-1', control: { id: 'c-1', code: 'CC1', name: 'NA', status: 'NOT_APPLICABLE', description: null, tasks: [], evidence: [] } },
+            { requirementId: 'r-1', control: { id: 'c-1', code: 'CC1', name: 'NA', status: 'NOT_APPLICABLE', applicabilityJustification: null, tasks: [], evidence: [] } },
         ]);
 
         const result = await generateReadinessReport(ctx, 'iso');

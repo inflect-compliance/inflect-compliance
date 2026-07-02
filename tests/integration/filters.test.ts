@@ -48,7 +48,7 @@ describe('normalizeQ', () => {
 // through the mock's received arguments.
 
 describe('ControlRepository._buildWhere', () => {
-    it('builds where with q using OR on name, code, description', async () => {
+    it('builds where with q using OR on name, code, objective', async () => {
         const { ControlRepository } = await import('@/app-layer/repositories/ControlRepository');
         const mockFindMany = jest.fn().mockResolvedValue([]);
         const mockDb = { control: { findMany: mockFindMany } } as unknown as PrismaTx;
@@ -62,7 +62,7 @@ describe('ControlRepository._buildWhere', () => {
             expect.arrayContaining([
                 expect.objectContaining({ name: { contains: 'firewall', mode: 'insensitive' } }),
                 expect.objectContaining({ code: { contains: 'firewall', mode: 'insensitive' } }),
-                expect.objectContaining({ description: { contains: 'firewall', mode: 'insensitive' } }),
+                expect.objectContaining({ objective: { contains: 'firewall', mode: 'insensitive' } }),
             ])
         );
     });
