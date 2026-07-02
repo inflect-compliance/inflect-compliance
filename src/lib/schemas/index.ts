@@ -161,6 +161,11 @@ export const UpdateControlSchema = z.object({
     description: z.string().optional().nullable(),
     code: z.string().optional().nullable(),
     intent: z.string().optional().nullable(),
+    // Internal-controls fields — Overview (objective, successCriteria) + Tests
+    // (testingMethodology).
+    objective: z.string().optional().nullable(),
+    successCriteria: z.string().optional().nullable(),
+    testingMethodology: z.string().optional().nullable(),
     category: z.string().optional().nullable(),
     frequency: z.enum(['AD_HOC', 'DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'ANNUALLY']).optional().nullable(),
     evidenceSource: z.enum(['MANUAL', 'INTEGRATION']).optional().nullable(),
