@@ -58,7 +58,9 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
+import { classifyRoute } from "@/lib/nav/page-segregation";
 import {
     Breadcrumbs,
     type BreadcrumbItem,
@@ -161,6 +163,14 @@ export function PageHeader({
     // breadcrumb trails at once.
     useBreadcrumbs(breadcrumbs);
 
+    // Subtitle-led headers apply to MAIN pages only (top-level nav
+    // destinations): the H1 is kept in the DOM as the a11y landmark but
+    // visually hidden so the page leads with its subtitle. SUBPAGES
+    // (detail / admin / nested) keep a visible H1 — the classification is
+    // the repo's own MAIN vs SUBPAGE source of truth (page-segregation).
+    const pathname = usePathname();
+    const titleHidden = classifyRoute(pathname ?? "") === "main";
+
     return (
         <header
             className={cn(
@@ -195,18 +205,15 @@ export function PageHeader({
                         {eyebrow}
                     </Eyebrow>
                 )}
-                {/* The page title is kept in the DOM as the level-1 document
-                    heading (accessibility + the tenant's own wayfinding lives in
-                    the breadcrumbs/top bar) but rendered visually-hidden per the
-                    product direction: pages lead with the subtitle below the
-                    breadcrumbs, not a large H1. Removing the element outright
-                    would strip the a11y landmark + break every `h1`/page-header
-                    contract; `sr-only` keeps those while hiding it and letting
-                    the subtitle + KPIs/table rise to the top. */}
+                {/* MAIN pages: the H1 is kept in the DOM as the a11y landmark
+                    but visually hidden (`sr-only`) so the page leads with its
+                    subtitle, not a large H1. SUBPAGES keep a visible H1 —
+                    removing it outright would strip the landmark + break the
+                    h1/page-header contract. See titleHidden above. */}
                 <Heading
                     level={1}
                     id={titleId}
-                    className="sr-only"
+                    className={titleHidden ? "sr-only" : cn(back && "mt-1")}
                     data-testid="page-header-title"
                 >
                     {title}

@@ -210,7 +210,7 @@ export function FrameworksClient({
                         ]}
                         className="mb-1"
                     />
-                    <Heading level={1} id="frameworks-heading">
+                    <Heading level={1} id="frameworks-heading" className="sr-only">
                         Compliance Frameworks
                     </Heading>
                     <p className="text-sm text-content-muted mt-1">

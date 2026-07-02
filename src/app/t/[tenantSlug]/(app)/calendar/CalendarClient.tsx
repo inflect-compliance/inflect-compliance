@@ -174,7 +174,7 @@ export function CalendarClient({
                         ]}
                         className="mb-1"
                     />
-                    <Heading level={1} className="flex items-center gap-tight">
+                    <Heading level={1} className="sr-only flex items-center gap-tight">
                         <CalIcon className="size-6 text-content-muted" aria-hidden="true" />
                         Compliance Calendar
                     </Heading>

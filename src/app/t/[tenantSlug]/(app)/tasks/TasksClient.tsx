@@ -721,7 +721,7 @@ function TasksPageInner({
                         ]}
                         className="mb-1"
                     />
-                    <Heading level={1}>Tasks</Heading>
+                    <Heading level={1} className="sr-only">Tasks</Heading>
                     <p className="text-sm text-content-muted mt-1">
                         Compliance work prioritised, assigned, and tracked to closure.
                     </p>

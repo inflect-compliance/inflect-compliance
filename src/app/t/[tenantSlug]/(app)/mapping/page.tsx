@@ -48,7 +48,7 @@ export default function MappingPage() {
                     ]}
                     className="mb-1"
                 />
-                <Heading level={1}>{t('title')}</Heading>
+                <Heading level={1} className="sr-only">{t('title')}</Heading>
                 <p className="text-content-muted text-sm">{t('subtitle')}</p>
             </div>
 
