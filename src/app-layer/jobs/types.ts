@@ -582,6 +582,13 @@ export interface JobPayloadMap {
     'dau-mau-aggregator': DauMauAggregatorPayload;
     'onboarding-abandonment-sweep': OnboardingAbandonmentPayload;
     'incident-notification-deadlines': IncidentNotificationDeadlinesPayload;
+    'aws-posture-collect': AwsPostureCollectPayload;
+}
+
+/** aws-posture connector — run one tenant connection's benchmark + collect evidence. */
+export interface AwsPostureCollectPayload {
+    tenantId: string;
+    connectionId: string;
 }
 
 /** Union of all valid job names */
@@ -609,6 +616,15 @@ export const JOB_DEFAULTS: Record<JobName, {
         // One attempt — the incremental cursor (max lastModifiedAt) means the
         // next daily run resumes from where this one stopped, so a transient
         // failure self-heals without retry storms against NVD's rate limit.
+        attempts: 1,
+        backoff: { type: 'fixed', delay: 0 },
+        removeOnComplete: 50,
+        removeOnFail: 200,
+    },
+    'aws-posture-collect': {
+        // One attempt — a posture run shells out to Powerpipe against live AWS
+        // (slow, rate-limited); a transient failure is picked up by the next
+        // scheduled run rather than retried in a storm.
         attempts: 1,
         backoff: { type: 'fixed', delay: 0 },
         removeOnComplete: 50,

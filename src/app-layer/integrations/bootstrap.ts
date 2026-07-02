@@ -15,6 +15,7 @@
  */
 import { registry, integrationRegistry } from './registry';
 import { GitHubProvider } from './providers/github';
+import { AwsPostureProvider } from './aws-posture-provider';
 import { GitHubClient } from './providers/github-client';
 import { GitHubBranchProtectionMapper } from './providers/github-mapper';
 import { GitHubSyncOrchestrator } from './providers/github/sync';
@@ -26,8 +27,10 @@ import { SharePointMapper } from './providers/sharepoint/mapper';
 // GitHub — branch protection, repo security
 registry.register(new GitHubProvider());
 
+// AWS cloud posture — Powerpipe steampipe-mod-aws-compliance benchmark evidence.
+registry.register(new AwsPostureProvider());
+
 // Future providers:
-// registry.register(new AwsProvider());
 // registry.register(new AzureProvider());
 // registry.register(new GitLabProvider());
 
