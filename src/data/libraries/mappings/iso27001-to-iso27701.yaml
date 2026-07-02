@@ -1,0 +1,92 @@
+# Cross-Framework Mapping Set: ISO/IEC 27001:2022 → ISO/IEC 27701:2019 (PIMS)
+#
+# ISO/IEC 27701 is the privacy EXTENSION of ISO/IEC 27001 + 27002. This bridge
+# lets an organization already running an ISO 27001 ISMS see how its management
+# clauses and Annex A controls extend into the PIMS — the entry point for
+# privacy coverage. A.5.34 (privacy and protection of PII) is the pivot: the
+# single ISO 27001 control that ISO 27701 expands into full controller (clause
+# 7) and processor (clause 8) guidance.
+#
+# Attribution: mapping relationships derived from the structural relationship
+# between ISO/IEC 27001 and ISO/IEC 27701 as described in ISO/IEC 27701:2019
+# Annex F; clause identifiers only, no ISO text. See also the Microsoft Data
+# Protection Mapping Project (MIT) used for the ISO 27701 → GDPR crosswalk.
+
+urn: urn:inflect:mappingset:iso27001-to-iso27701
+name: "ISO/IEC 27001:2022 → ISO/IEC 27701:2019 (PIMS)"
+description: >
+  Bridge from the ISO 27001 ISMS into the ISO 27701 Privacy Information
+  Management System. Management clauses extend into PIMS clause 5, Annex A
+  controls into clause 6, and A.5.34 (PII protection) into the controller /
+  processor guidance of clauses 7 and 8. Structural guidance, not a compliance
+  guarantee.
+version: 1
+source_framework_ref: ISO27001-2022
+target_framework_ref: ISO27701-2019
+
+mapping_entries:
+  # ─── ISMS management clauses → PIMS-specific management requirements ───
+  - source_ref: "5"
+    target_ref: "5"
+    strength: RELATED
+    rationale: ISO 27001 leadership requirements are extended by PIMS-specific management requirements in clause 5.
+  - source_ref: "6"
+    target_ref: "5"
+    strength: INTERSECT
+    rationale: ISO 27001 planning / risk assessment is extended to cover privacy risks in the PIMS.
+  - source_ref: "8"
+    target_ref: "5"
+    strength: RELATED
+    rationale: ISO 27001 operational planning and control is extended to privacy processing operations.
+
+  # ─── Annex A controls → PIMS-specific control guidance (clause 6) ───
+  - source_ref: A.5.1
+    target_ref: "6"
+    strength: RELATED
+    rationale: Information security policies are extended with privacy-specific policy guidance in clause 6.
+  - source_ref: A.5.34
+    target_ref: "7"
+    strength: SUBSET
+    rationale: A.5.34 (privacy and protection of PII) is the single ISO 27001 control that ISO 27701 clause 7 expands into full PII-controller guidance.
+  - source_ref: A.5.34
+    target_ref: "8"
+    strength: SUBSET
+    rationale: A.5.34 also expands into ISO 27701 clause 8 PII-processor guidance.
+  - source_ref: A.5.34
+    target_ref: "7.2.5"
+    strength: INTERSECT
+    rationale: PII protection includes assessing privacy impact, addressed by 7.2.5.
+
+  # ─── Supplier / cloud controls → processor & subcontractor guidance ───
+  - source_ref: A.5.19
+    target_ref: "7.2.6"
+    strength: INTERSECT
+    rationale: Supplier-relationship security extends to contracts binding PII processors (7.2.6).
+  - source_ref: A.5.20
+    target_ref: "7.2.6"
+    strength: INTERSECT
+    rationale: Addressing security within supplier agreements extends to processor contract terms.
+  - source_ref: A.5.23
+    target_ref: "8.5.7"
+    strength: RELATED
+    rationale: Information security for use of cloud services relates to engaging PII sub-processors.
+
+  # ─── Incident management → privacy incident / breach guidance ───
+  - source_ref: A.5.24
+    target_ref: "6"
+    strength: RELATED
+    rationale: Incident-management planning is extended with privacy-breach handling guidance in the PIMS.
+  - source_ref: A.5.26
+    target_ref: "6"
+    strength: RELATED
+    rationale: Incident response is extended to cover personal-data breaches.
+
+  # ─── Cryptography / transmission ───
+  - source_ref: A.8.24
+    target_ref: "7.4.9"
+    strength: INTERSECT
+    rationale: Use of cryptography supports PII transmission controls (7.4.9 / 8.4.3).
+  - source_ref: A.8.24
+    target_ref: "8.4.3"
+    strength: INTERSECT
+    rationale: Use of cryptography supports processor-side PII transmission controls.

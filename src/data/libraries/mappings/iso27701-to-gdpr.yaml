@@ -1,0 +1,207 @@
+# Cross-Framework Mapping Set: ISO/IEC 27701:2019 (PIMS) → GDPR (EU 2016/679)
+#
+# The ISO 27701 ↔ GDPR relationships are transcribed from the Microsoft Data
+# Protection Mapping Project (https://github.com/microsoft/data-protection-mapping-project,
+# MIT License, © Microsoft; project archived 2024-06). Only the mapping
+# RELATIONSHIPS and clause / article IDENTIFIERS are ported. ISO 27701 control
+# text is ISO-copyrighted and is NOT reproduced (our own paraphrased node
+# descriptions live in the framework library); GDPR article references are EU
+# public law.
+#
+# Attribution: Microsoft Data Protection Mapping Project (MIT).
+
+urn: urn:inflect:mappingset:iso27701-to-gdpr
+name: "ISO/IEC 27701:2019 (PIMS) → GDPR (EU 2016/679)"
+description: >
+  Privacy crosswalk between the ISO/IEC 27701 PIMS controls (controller Annex A
+  and processor Annex B) and the GDPR articles they help satisfy. Relationships
+  ported from the Microsoft Data Protection Mapping Project (MIT). Structural
+  traceability guidance, not legal advice or a compliance guarantee.
+version: 1
+source_framework_ref: ISO27701-2019
+target_framework_ref: GDPR
+
+mapping_entries:
+  # ═══ Controller (Annex A) — conditions for collection & processing ═══
+  - source_ref: "7.2.1"
+    target_ref: "Art.5"
+    strength: INTERSECT
+    rationale: Documenting the purpose of processing supports the purpose-limitation principle.
+  - source_ref: "7.2.2"
+    target_ref: "Art.6"
+    strength: EQUAL
+    rationale: Identifying and documenting the lawful basis directly implements Article 6 lawfulness of processing.
+  - source_ref: "7.2.3"
+    target_ref: "Art.7"
+    strength: INTERSECT
+    rationale: Determining when and how to obtain consent supports the Article 7 conditions for consent.
+  - source_ref: "7.2.4"
+    target_ref: "Art.7"
+    strength: EQUAL
+    rationale: Obtaining and recording consent implements the demonstrability requirement of Article 7.
+  - source_ref: "7.2.5"
+    target_ref: "Art.35"
+    strength: EQUAL
+    rationale: The PIMS privacy impact assessment corresponds to the GDPR data protection impact assessment.
+  - source_ref: "7.2.6"
+    target_ref: "Art.28"
+    strength: EQUAL
+    rationale: Controller contracts with PII processors implement the Article 28 processor-contract requirements.
+  - source_ref: "7.2.8"
+    target_ref: "Art.30"
+    strength: EQUAL
+    rationale: Maintaining records of processing implements Article 30 records of processing activities.
+
+  # ═══ Controller (Annex A) — obligations to PII principals ═══
+  - source_ref: "7.3.2"
+    target_ref: "Art.13"
+    strength: INTERSECT
+    rationale: Determining the information for PII principals supports Article 13 information duties.
+  - source_ref: "7.3.2"
+    target_ref: "Art.14"
+    strength: INTERSECT
+    rationale: Determining the information for PII principals also supports Article 14 (data obtained indirectly).
+  - source_ref: "7.3.3"
+    target_ref: "Art.12"
+    strength: INTERSECT
+    rationale: Providing information to PII principals supports the Article 12 transparency modalities.
+  - source_ref: "7.3.4"
+    target_ref: "Art.7"
+    strength: INTERSECT
+    rationale: A mechanism to modify or withdraw consent implements the Article 7(3) withdrawal right.
+  - source_ref: "7.3.5"
+    target_ref: "Art.21"
+    strength: EQUAL
+    rationale: A mechanism to object to processing implements the Article 21 right to object.
+  - source_ref: "7.3.6"
+    target_ref: "Art.15"
+    strength: INTERSECT
+    rationale: Access, correction and erasure support the Article 15 right of access.
+  - source_ref: "7.3.6"
+    target_ref: "Art.16"
+    strength: INTERSECT
+    rationale: Access, correction and erasure support the Article 16 right to rectification.
+  - source_ref: "7.3.6"
+    target_ref: "Art.17"
+    strength: INTERSECT
+    rationale: Access, correction and erasure support the Article 17 right to erasure.
+  - source_ref: "7.3.7"
+    target_ref: "Art.19"
+    strength: EQUAL
+    rationale: Informing third parties of changes implements the Article 19 notification obligation.
+  - source_ref: "7.3.8"
+    target_ref: "Art.20"
+    strength: INTERSECT
+    rationale: Providing a copy of PII processed supports the Article 20 right to data portability.
+  - source_ref: "7.3.10"
+    target_ref: "Art.22"
+    strength: EQUAL
+    rationale: Managing automated decision-making obligations implements Article 22.
+
+  # ═══ Controller (Annex A) — privacy by design and by default ═══
+  - source_ref: "7.4.1"
+    target_ref: "Art.5"
+    strength: INTERSECT
+    rationale: Limiting collection implements the data-minimisation principle.
+  - source_ref: "7.4.2"
+    target_ref: "Art.25"
+    strength: INTERSECT
+    rationale: Limiting processing supports data protection by default.
+  - source_ref: "7.4.3"
+    target_ref: "Art.5"
+    strength: INTERSECT
+    rationale: Keeping PII accurate implements the accuracy principle.
+  - source_ref: "7.4.4"
+    target_ref: "Art.25"
+    strength: INTERSECT
+    rationale: PII minimization objectives implement data protection by design and by default.
+  - source_ref: "7.4.5"
+    target_ref: "Art.17"
+    strength: INTERSECT
+    rationale: De-identification and deletion at end of processing support the right to erasure.
+  - source_ref: "7.4.7"
+    target_ref: "Art.5"
+    strength: INTERSECT
+    rationale: Enforcing retention periods implements the storage-limitation principle.
+  - source_ref: "7.4.9"
+    target_ref: "Art.32"
+    strength: INTERSECT
+    rationale: PII transmission controls contribute to the security of processing.
+
+  # ═══ Controller (Annex A) — sharing, transfer and disclosure ═══
+  - source_ref: "7.5.1"
+    target_ref: "Art.44"
+    strength: INTERSECT
+    rationale: Establishing a basis for cross-border transfer implements the general transfer principle.
+  - source_ref: "7.5.1"
+    target_ref: "Art.46"
+    strength: INTERSECT
+    rationale: A documented transfer basis maps to appropriate-safeguards transfers.
+  - source_ref: "7.5.2"
+    target_ref: "Art.45"
+    strength: RELATED
+    rationale: Documenting countries PII may be transferred to relates to adequacy decisions.
+  - source_ref: "7.5.4"
+    target_ref: "Art.30"
+    strength: INTERSECT
+    rationale: Records of disclosure to third parties support the records-of-processing obligation.
+
+  # ═══ Processor (Annex B) ═══
+  - source_ref: "8.2.1"
+    target_ref: "Art.28"
+    strength: EQUAL
+    rationale: The processor customer agreement implements the Article 28 processor contract.
+  - source_ref: "8.2.2"
+    target_ref: "Art.28"
+    strength: INTERSECT
+    rationale: Not processing for the processor's own purposes implements processing on documented instructions.
+  - source_ref: "8.2.4"
+    target_ref: "Art.28"
+    strength: INTERSECT
+    rationale: Flagging an infringing instruction implements the Article 28(3) processor duty to inform.
+  - source_ref: "8.2.6"
+    target_ref: "Art.30"
+    strength: EQUAL
+    rationale: Processor records of processing implement Article 30(2).
+  - source_ref: "8.3.1"
+    target_ref: "Art.12"
+    strength: RELATED
+    rationale: Supporting the controller's obligations to principals assists Article 12 request handling.
+  - source_ref: "8.4.2"
+    target_ref: "Art.28"
+    strength: INTERSECT
+    rationale: Return, transfer or disposal of PII at end of service implements Article 28(3)(g).
+  - source_ref: "8.4.3"
+    target_ref: "Art.32"
+    strength: INTERSECT
+    rationale: Processor PII transmission controls contribute to security of processing.
+  - source_ref: "8.5.1"
+    target_ref: "Art.44"
+    strength: INTERSECT
+    rationale: A basis for cross-jurisdiction transfer implements the general transfer principle.
+  - source_ref: "8.5.4"
+    target_ref: "Art.48"
+    strength: RELATED
+    rationale: Notifying the customer of disclosure requests relates to transfers/disclosures not authorised by Union law.
+  - source_ref: "8.5.6"
+    target_ref: "Art.28"
+    strength: INTERSECT
+    rationale: Disclosing subcontractors implements the Article 28(2) sub-processor authorisation duty.
+  - source_ref: "8.5.7"
+    target_ref: "Art.28"
+    strength: INTERSECT
+    rationale: Engaging a subcontractor under consistent terms implements Article 28(4) flow-down.
+  - source_ref: "8.5.8"
+    target_ref: "Art.28"
+    strength: INTERSECT
+    rationale: Notifying the customer of subcontractor changes implements Article 28(2) objection rights.
+
+  # ═══ PIMS control extension (clause 6) — breach handling ═══
+  - source_ref: "6"
+    target_ref: "Art.33"
+    strength: RELATED
+    rationale: PIMS-extended incident management covers personal-data breach notification to the authority.
+  - source_ref: "6"
+    target_ref: "Art.34"
+    strength: RELATED
+    rationale: PIMS-extended incident management covers breach communication to affected individuals.

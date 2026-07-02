@@ -1,0 +1,122 @@
+[
+  {
+    "code": "PIMS-01",
+    "title": "Lawful Basis and Purpose Register",
+    "description": "Maintain a register that records, for each processing activity, its purpose and the lawful basis relied on, and keep it current.",
+    "defaultFrequency": "ANNUALLY",
+    "defaultOwnerHint": "Privacy Officer / DPO",
+    "requirements": ["7.2.1", "7.2.2"],
+    "tasks": [
+      { "title": "Document processing purposes", "description": "List each category of PII processed and the specific purpose it is processed for." },
+      { "title": "Record the lawful basis per purpose", "description": "Assign and document a lawful basis for each purpose and review when purposes change." }
+    ]
+  },
+  {
+    "code": "PIMS-02",
+    "title": "Consent Management",
+    "description": "Operate a process to determine when consent is required, obtain it, evidence it, and allow individuals to modify or withdraw it.",
+    "defaultFrequency": "ANNUALLY",
+    "defaultOwnerHint": "Privacy Officer / DPO",
+    "requirements": ["7.2.3", "7.2.4", "7.3.4"],
+    "tasks": [
+      { "title": "Define consent capture points", "description": "Identify where consent is required and design granular, purpose-specific capture." },
+      { "title": "Retain consent records", "description": "Store evidence of consent and provide a mechanism to withdraw or change it." }
+    ]
+  },
+  {
+    "code": "PIMS-03",
+    "title": "Privacy Impact Assessment",
+    "description": "Assess the privacy impact of new or changed high-risk processing before it begins and record the outcome.",
+    "defaultFrequency": "ANNUALLY",
+    "defaultOwnerHint": "Privacy Officer / DPO",
+    "requirements": ["7.2.5"],
+    "tasks": [
+      { "title": "Trigger a PIA for high-risk processing", "description": "Screen new processing and run a privacy impact assessment where the risk is high." },
+      { "title": "Track PIA remediation", "description": "Record identified risks and follow mitigations through to closure." }
+    ]
+  },
+  {
+    "code": "PIMS-04",
+    "title": "Records of Processing Activities",
+    "description": "Maintain records of processing carried out as a controller and as a processor on behalf of customers.",
+    "defaultFrequency": "ANNUALLY",
+    "defaultOwnerHint": "Privacy Officer / DPO",
+    "requirements": ["7.2.8", "8.2.6"],
+    "tasks": [
+      { "title": "Compile the RoPA", "description": "Record processing activities, categories of data and recipients." },
+      { "title": "Review the RoPA periodically", "description": "Reconcile the records against actual processing at least annually." }
+    ]
+  },
+  {
+    "code": "PIMS-05",
+    "title": "Data Subject Rights Handling",
+    "description": "Receive, verify and fulfil individuals' access, correction, erasure, objection and copy requests within required timescales.",
+    "defaultFrequency": "QUARTERLY",
+    "defaultOwnerHint": "Privacy Officer / DPO",
+    "requirements": ["7.3.5", "7.3.6", "7.3.8", "7.3.9"],
+    "tasks": [
+      { "title": "Operate a request intake channel", "description": "Provide and monitor a channel for data-subject requests and verify identity." },
+      { "title": "Fulfil requests within SLA", "description": "Action access, correction, erasure and objection requests and log the outcome." }
+    ]
+  },
+  {
+    "code": "PIMS-06",
+    "title": "Privacy Notice and Transparency",
+    "description": "Determine the privacy information individuals should receive and provide it clearly at the appropriate time.",
+    "defaultFrequency": "ANNUALLY",
+    "defaultOwnerHint": "Privacy Officer / DPO",
+    "requirements": ["7.3.2", "7.3.3"],
+    "tasks": [
+      { "title": "Maintain the privacy notice", "description": "Keep the privacy notice accurate and aligned to actual processing." },
+      { "title": "Surface notices at collection", "description": "Present the relevant privacy information where PII is collected." }
+    ]
+  },
+  {
+    "code": "PIMS-07",
+    "title": "Data Minimization and Retention",
+    "description": "Collect and process only necessary PII, set minimization objectives, and delete or de-identify PII at the end of its retention.",
+    "defaultFrequency": "ANNUALLY",
+    "defaultOwnerHint": "Data Owner",
+    "requirements": ["7.4.1", "7.4.4", "7.4.5", "7.4.7"],
+    "tasks": [
+      { "title": "Set a retention schedule", "description": "Define retention periods per data category and enforce them." },
+      { "title": "Delete or de-identify at end of purpose", "description": "Remove or de-identify PII when the processing purpose ends." }
+    ]
+  },
+  {
+    "code": "PIMS-08",
+    "title": "Processor and Sub-processor Management",
+    "description": "Bind processors and sub-processors by contract, disclose sub-processors, and manage changes with the customer.",
+    "defaultFrequency": "ANNUALLY",
+    "defaultOwnerHint": "Vendor Manager",
+    "requirements": ["7.2.6", "8.5.6", "8.5.7", "8.5.8"],
+    "tasks": [
+      { "title": "Put processing agreements in place", "description": "Ensure written agreements bind processors to privacy obligations." },
+      { "title": "Maintain the sub-processor list", "description": "Disclose sub-processors and notify customers of changes." }
+    ]
+  },
+  {
+    "code": "PIMS-09",
+    "title": "Cross-Border Transfer Governance",
+    "description": "Establish and document a lawful basis for cross-border transfers of PII and the jurisdictions to which it may flow.",
+    "defaultFrequency": "ANNUALLY",
+    "defaultOwnerHint": "Privacy Officer / DPO",
+    "requirements": ["7.5.1", "7.5.2", "8.5.1"],
+    "tasks": [
+      { "title": "Map cross-border data flows", "description": "Identify where PII is transferred and the jurisdictions involved." },
+      { "title": "Document the transfer basis", "description": "Record the safeguard or basis relied on for each transfer." }
+    ]
+  },
+  {
+    "code": "PIMS-10",
+    "title": "Privacy Breach Handling",
+    "description": "Extend incident management to detect, assess and notify personal-data breaches to authorities and affected individuals.",
+    "defaultFrequency": "ANNUALLY",
+    "defaultOwnerHint": "Security / Privacy Incident Lead",
+    "requirements": ["6"],
+    "tasks": [
+      { "title": "Define a personal-data breach playbook", "description": "Extend the incident process with breach assessment and notification steps." },
+      { "title": "Run a breach notification drill", "description": "Exercise the authority (72h) and data-subject notification paths." }
+    ]
+  }
+]
