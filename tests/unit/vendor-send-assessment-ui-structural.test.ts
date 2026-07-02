@@ -3,9 +3,9 @@
  * "Send to vendor" assessment flow.
  *
  * A light static-analysis guard (no React render): asserts the page
- * wires the G-3 send flow end-to-end and keeps the legacy in-app
- * "Start" flow intact. Complements the route handler's behavioural
- * test (`vendor-assessment-send-route.test.ts`).
+ * wires the G-3 send flow end-to-end as the SINGLE assessment-creation
+ * path (the legacy in-app "Start" flow was retired). Complements the
+ * route handler's behavioural test (`vendor-assessment-send-route.test.ts`).
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -46,9 +46,12 @@ describe('vendor detail — G-3 send-assessment wiring', () => {
         expect(src).toContain('/vendor-assessment/');
     });
 
-    it('keeps the legacy in-app start flow intact', () => {
-        expect(src).toContain('/assessments/start');
-        expect(src).toContain('start-assessment-btn');
-        expect(src).toContain('templateKey');
+    it('retires the legacy in-app start flow (single send-to-vendor path)', () => {
+        // The legacy QuestionnaireTemplate in-app "Start" flow never surfaced
+        // the tenant's own VendorAssessmentTemplates, so it was removed in
+        // favour of the unified G-3 send flow.
+        expect(src).not.toContain('/assessments/start');
+        expect(src).not.toContain('start-assessment-btn');
+        expect(src).not.toContain('templateKey');
     });
 });
