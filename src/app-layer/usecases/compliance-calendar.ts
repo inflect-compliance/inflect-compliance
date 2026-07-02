@@ -694,11 +694,12 @@ async function loadFindingEvents(
 // ─── Lightweight badge query ─────────────────────────────────────────
 
 /**
- * Cheap count of upcoming + overdue deadlines used by the sidebar
- * Calendar nav badge. Bounded to a 7-day forward window + everything
- * already overdue that hasn't been resolved. Caps at `MAX_BADGE_COUNT`
- * so the badge never renders a huge number that's effectively noise
- * (we render `99+` past the cap on the UI side).
+ * Cheap count of FUTURE outstanding deadlines used by the sidebar Calendar
+ * nav badge. Bounded to a forward window `(now, now + horizonDays]` — overdue
+ * / past-due items are deliberately EXCLUDED (the badge signals "coming up",
+ * not "already late", which the individual list pages surface). Caps at
+ * `MAX_BADGE_COUNT` so the badge never renders a huge number that's
+ * effectively noise (we render `99+` past the cap on the UI side).
  */
 const MAX_BADGE_COUNT = 99;
 
@@ -722,7 +723,7 @@ export async function getUpcomingDeadlineCount(
                 db.task.count({
                     where: {
                         tenantId: ctx.tenantId,
-                        dueAt: { not: null, lte: horizon },
+                        dueAt: { gt: now, lte: horizon },
                         status: {
                             // Cast through readonly → mutable WorkItemStatus[]
                             // because Prisma's `notIn` rejects the
@@ -742,7 +743,7 @@ export async function getUpcomingDeadlineCount(
                         tenantId: ctx.tenantId,
                         deletedAt: null,
                         applicability: 'APPLICABLE',
-                        nextDueAt: { not: null, lte: horizon },
+                        nextDueAt: { gt: now, lte: horizon },
                         status: { notIn: ['IMPLEMENTED', 'NOT_APPLICABLE'] },
                     },
                     take: MAX_BADGE_COUNT + 1,
@@ -750,7 +751,7 @@ export async function getUpcomingDeadlineCount(
                 db.evidence.count({
                     where: {
                         tenantId: ctx.tenantId,
-                        nextReviewDate: { not: null, lte: horizon },
+                        nextReviewDate: { gt: now, lte: horizon },
                         status: { not: 'APPROVED' },
                     },
                     take: MAX_BADGE_COUNT + 1,
@@ -758,7 +759,7 @@ export async function getUpcomingDeadlineCount(
                 db.policy.count({
                     where: {
                         tenantId: ctx.tenantId,
-                        nextReviewAt: { not: null, lte: horizon },
+                        nextReviewAt: { gt: now, lte: horizon },
                         status: { not: 'ARCHIVED' },
                     },
                     take: MAX_BADGE_COUNT + 1,
@@ -768,8 +769,8 @@ export async function getUpcomingDeadlineCount(
                         tenantId: ctx.tenantId,
                         status: { not: 'OFFBOARDED' },
                         OR: [
-                            { nextReviewAt: { not: null, lte: horizon } },
-                            { contractRenewalAt: { not: null, lte: horizon } },
+                            { nextReviewAt: { gt: now, lte: horizon } },
+                            { contractRenewalAt: { gt: now, lte: horizon } },
                         ],
                     },
                     take: MAX_BADGE_COUNT + 1,

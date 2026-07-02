@@ -218,7 +218,7 @@ function LoginForm() {
                             variant="secondary"
                             onClick={() => handleOAuthSignIn('google')}
                             disabled={loading}
-                            className="w-full"
+                            className="w-full gap-default"
                         >
                             Continue with Google
                             <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
