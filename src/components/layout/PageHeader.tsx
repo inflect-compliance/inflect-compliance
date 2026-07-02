@@ -195,10 +195,18 @@ export function PageHeader({
                         {eyebrow}
                     </Eyebrow>
                 )}
+                {/* The page title is kept in the DOM as the level-1 document
+                    heading (accessibility + the tenant's own wayfinding lives in
+                    the breadcrumbs/top bar) but rendered visually-hidden per the
+                    product direction: pages lead with the subtitle below the
+                    breadcrumbs, not a large H1. Removing the element outright
+                    would strip the a11y landmark + break every `h1`/page-header
+                    contract; `sr-only` keeps those while hiding it and letting
+                    the subtitle + KPIs/table rise to the top. */}
                 <Heading
                     level={1}
                     id={titleId}
-                    className={cn(back && "mt-1")}
+                    className="sr-only"
                     data-testid="page-header-title"
                 >
                     {title}

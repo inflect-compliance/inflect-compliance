@@ -1142,31 +1142,10 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                     />
                 </div>
 
-                {/* Retention filter tabs — top-level sub-navigation,
-                    on their own row above the filter toolbar. */}
-                <div className="flex items-center gap-1 flex-wrap" id="retention-tabs">
-                    <Button
-                        variant={retentionFilter === 'active' ? 'primary' : 'ghost'}
-                        onClick={() => setFilter('tab', 'active')}
-                        id="tab-active"
-                    >
-                        Active ({activeEvidence.length})
-                    </Button>
-                    <Button
-                        variant={retentionFilter === 'expiring' ? 'destructive' : 'ghost'}
-                        onClick={() => setFilter('tab', 'expiring')}
-                        id="tab-expiring"
-                    >
-                        Expiring ({expiringEvidence.length})
-                    </Button>
-                    <Button
-                        variant={retentionFilter === 'archived' ? 'secondary' : 'ghost'}
-                        onClick={() => setFilter('tab', 'archived')}
-                        id="tab-archived"
-                    >
-                        Archived ({archivedEvidence.length})
-                    </Button>
-                </div>
+                {/* Retention filter tabs (Active / Expiring / Archived) removed
+                    per product direction — the list defaults to the active view
+                    (`retentionFilter` still defaults to 'active'); status-scoped
+                    views remain reachable via the ?tab= deep-link. */}
 
                 {/*
                   Filter toolbar — the Filter button + live search sit on

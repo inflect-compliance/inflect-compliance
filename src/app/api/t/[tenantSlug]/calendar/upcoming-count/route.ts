@@ -1,8 +1,9 @@
 /**
  * Epic 49 — `GET /api/t/[tenantSlug]/calendar/upcoming-count`.
  *
- * Lightweight count of upcoming + overdue deadlines for the sidebar
- * Calendar nav badge. Capped at 99 (the UI renders `99+` past the cap)
+ * Lightweight count of FUTURE outstanding deadlines for the sidebar
+ * Calendar nav badge (overdue/past-due excluded — the badge signals
+ * "coming up", not "already late"). Capped at 99 (the UI renders `99+` past the cap)
  * so the badge stays scannable. Uses Prisma `count()` + `take` to
  * short-circuit large tenants.
  *
