@@ -1025,7 +1025,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
                             ]}
                             className="mb-1"
                         />
-                        <Heading level={1}>{t.title}</Heading>
+                        <Heading level={1} className="sr-only">{t.title}</Heading>
                         {t.listDescription && (
                             <p className="text-sm text-content-muted mt-1">{t.listDescription}</p>
                         )}

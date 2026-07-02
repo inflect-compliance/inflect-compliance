@@ -127,7 +127,7 @@ export function ReportsClient({ data, soaReport, controls, tenantSlug, canEdit, 
                             ]}
                             className="mb-1"
                         />
-                        <Heading level={1} id="reports-heading">{t.title}</Heading>
+                        <Heading level={1} id="reports-heading" className="sr-only">{t.title}</Heading>
                         <p className="text-sm text-content-muted mt-1">{t.subtitle}</p>
                     </div>
                     {/* Roadmap-2 PR-12 — tab-aware exports.
