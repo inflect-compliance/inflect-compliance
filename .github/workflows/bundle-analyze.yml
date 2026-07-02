@@ -32,7 +32,9 @@ jobs:
     if: >-
       github.event_name == 'push' ||
       contains(github.event.pull_request.labels.*.name, 'perf-watch')
-    runs-on: ubuntu-latest
+    # Match the main CI Build job's runner — the analyzer build is heavier than
+    # a plain `next build` and OOMs on a small runner's heap.
+    runs-on: ${{ vars.LARGE_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
@@ -46,6 +48,11 @@ jobs:
           # needed to measure bundle size.
           SKIP_ENV_VALIDATION: '1'
           NEXT_TELEMETRY_DISABLED: '1'
+          # The bundle-analyzer plugin holds the full module graph + stats in
+          # memory on top of the Next build, which OOMs at Node's default heap.
+          # Raise the old-space ceiling (fits the large runner; safe on a 7GB
+          # standard runner too).
+          NODE_OPTIONS: '--max-old-space-size=6144'
           # `npm run analyze` → `npm run build`, which runs
           # `scripts/validate-env.ts` before `next build`. That script hard-
           # checks `DATABASE_URL` (it predates SKIP_ENV_VALIDATION and does not
