@@ -94,6 +94,30 @@ describe('requirePermission — async params resolution (#636 regression)', () =
         expect(handler).toHaveBeenCalledTimes(1);
     });
 
+    it('forwards RESOLVED params to the handler (dynamic segments readable)', async () => {
+        // The bug: `permissionedRoute` awaited params for getTenantCtx but
+        // forwarded the still-unawaited Promise to the handler, so a handler
+        // reading `params.id` off `/gap-assessments/[id]/…` got `undefined`
+        // (silent for a tolerant findMany, a 500 for a required composite key).
+        let seenParams: unknown;
+        const handler = jest.fn(async (_req, routeArgs) => {
+            seenParams = routeArgs.params;
+            return NextResponse.json({ ok: true });
+        });
+        const route = requirePermission(
+            'admin.members',
+            handler as never,
+        ) as unknown as LooseRoute;
+
+        await route(req, {
+            params: Promise.resolve({ tenantSlug: 'acme', id: 'assessment-123' }) as never,
+        });
+
+        expect(seenParams).not.toBeInstanceOf(Promise);
+        expect(seenParams).toEqual({ tenantSlug: 'acme', id: 'assessment-123' });
+        expect((seenParams as { id: string }).id).toBe('assessment-123');
+    });
+
     it('still accepts a plain sync params object (the unit-test call shape)', async () => {
         const handler = jest
             .fn()
