@@ -1,0 +1,343 @@
+[
+  {
+    "code": "CIS-01",
+    "title": "Inventory and Control of Enterprise Assets (IG1)",
+    "description": "Implements the IG1 safeguards of CIS Control 1 — Inventory and Control of Enterprise Assets. Establishes the essential cyber-hygiene baseline for this control area.",
+    "defaultFrequency": "MONTHLY",
+    "defaultOwnerHint": "IT Operations",
+    "requirements": [
+      "1.1",
+      "1.2"
+    ],
+    "tasks": [
+      {
+        "title": "Implement IG1 safeguards for Control 1",
+        "description": "Put in place the IG1 safeguards for Inventory and Control of Enterprise Assets (1.1, 1.2)."
+      },
+      {
+        "title": "Review Control 1 coverage",
+        "description": "Periodically verify that the IG1 safeguards for Inventory and Control of Enterprise Assets remain effective and update as the environment changes."
+      }
+    ]
+  },
+  {
+    "code": "CIS-02",
+    "title": "Inventory and Control of Software Assets (IG1)",
+    "description": "Implements the IG1 safeguards of CIS Control 2 — Inventory and Control of Software Assets. Establishes the essential cyber-hygiene baseline for this control area.",
+    "defaultFrequency": "MONTHLY",
+    "defaultOwnerHint": "IT Operations",
+    "requirements": [
+      "2.1",
+      "2.2",
+      "2.3"
+    ],
+    "tasks": [
+      {
+        "title": "Implement IG1 safeguards for Control 2",
+        "description": "Put in place the IG1 safeguards for Inventory and Control of Software Assets (2.1, 2.2, 2.3)."
+      },
+      {
+        "title": "Review Control 2 coverage",
+        "description": "Periodically verify that the IG1 safeguards for Inventory and Control of Software Assets remain effective and update as the environment changes."
+      }
+    ]
+  },
+  {
+    "code": "CIS-03",
+    "title": "Data Protection (IG1)",
+    "description": "Implements the IG1 safeguards of CIS Control 3 — Data Protection. Establishes the essential cyber-hygiene baseline for this control area.",
+    "defaultFrequency": "QUARTERLY",
+    "defaultOwnerHint": "Data Protection Officer",
+    "requirements": [
+      "3.1",
+      "3.2",
+      "3.3",
+      "3.4",
+      "3.5",
+      "3.6"
+    ],
+    "tasks": [
+      {
+        "title": "Implement IG1 safeguards for Control 3",
+        "description": "Put in place the IG1 safeguards for Data Protection (3.1, 3.2, 3.3, 3.4, 3.5, 3.6)."
+      },
+      {
+        "title": "Review Control 3 coverage",
+        "description": "Periodically verify that the IG1 safeguards for Data Protection remain effective and update as the environment changes."
+      }
+    ]
+  },
+  {
+    "code": "CIS-04",
+    "title": "Secure Configuration of Enterprise Assets and Software (IG1)",
+    "description": "Implements the IG1 safeguards of CIS Control 4 — Secure Configuration of Enterprise Assets and Software. Establishes the essential cyber-hygiene baseline for this control area.",
+    "defaultFrequency": "QUARTERLY",
+    "defaultOwnerHint": "IT Operations / Security Engineering",
+    "requirements": [
+      "4.1",
+      "4.2",
+      "4.3",
+      "4.4",
+      "4.5",
+      "4.6",
+      "4.7"
+    ],
+    "tasks": [
+      {
+        "title": "Implement IG1 safeguards for Control 4",
+        "description": "Put in place the IG1 safeguards for Secure Configuration of Enterprise Assets and Software (4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7)."
+      },
+      {
+        "title": "Review Control 4 coverage",
+        "description": "Periodically verify that the IG1 safeguards for Secure Configuration of Enterprise Assets and Software remain effective and update as the environment changes."
+      }
+    ]
+  },
+  {
+    "code": "CIS-05",
+    "title": "Account Management (IG1)",
+    "description": "Implements the IG1 safeguards of CIS Control 5 — Account Management. Establishes the essential cyber-hygiene baseline for this control area.",
+    "defaultFrequency": "MONTHLY",
+    "defaultOwnerHint": "Identity & Access Management",
+    "requirements": [
+      "5.1",
+      "5.2",
+      "5.3",
+      "5.4"
+    ],
+    "tasks": [
+      {
+        "title": "Implement IG1 safeguards for Control 5",
+        "description": "Put in place the IG1 safeguards for Account Management (5.1, 5.2, 5.3, 5.4)."
+      },
+      {
+        "title": "Review Control 5 coverage",
+        "description": "Periodically verify that the IG1 safeguards for Account Management remain effective and update as the environment changes."
+      }
+    ]
+  },
+  {
+    "code": "CIS-06",
+    "title": "Access Control Management (IG1)",
+    "description": "Implements the IG1 safeguards of CIS Control 6 — Access Control Management. Establishes the essential cyber-hygiene baseline for this control area.",
+    "defaultFrequency": "QUARTERLY",
+    "defaultOwnerHint": "Identity & Access Management",
+    "requirements": [
+      "6.1",
+      "6.2",
+      "6.3",
+      "6.4",
+      "6.5"
+    ],
+    "tasks": [
+      {
+        "title": "Implement IG1 safeguards for Control 6",
+        "description": "Put in place the IG1 safeguards for Access Control Management (6.1, 6.2, 6.3, 6.4, 6.5)."
+      },
+      {
+        "title": "Review Control 6 coverage",
+        "description": "Periodically verify that the IG1 safeguards for Access Control Management remain effective and update as the environment changes."
+      }
+    ]
+  },
+  {
+    "code": "CIS-07",
+    "title": "Continuous Vulnerability Management (IG1)",
+    "description": "Implements the IG1 safeguards of CIS Control 7 — Continuous Vulnerability Management. Establishes the essential cyber-hygiene baseline for this control area.",
+    "defaultFrequency": "MONTHLY",
+    "defaultOwnerHint": "Vulnerability Management",
+    "requirements": [
+      "7.1",
+      "7.2",
+      "7.3",
+      "7.4"
+    ],
+    "tasks": [
+      {
+        "title": "Implement IG1 safeguards for Control 7",
+        "description": "Put in place the IG1 safeguards for Continuous Vulnerability Management (7.1, 7.2, 7.3, 7.4)."
+      },
+      {
+        "title": "Review Control 7 coverage",
+        "description": "Periodically verify that the IG1 safeguards for Continuous Vulnerability Management remain effective and update as the environment changes."
+      }
+    ]
+  },
+  {
+    "code": "CIS-08",
+    "title": "Audit Log Management (IG1)",
+    "description": "Implements the IG1 safeguards of CIS Control 8 — Audit Log Management. Establishes the essential cyber-hygiene baseline for this control area.",
+    "defaultFrequency": "QUARTERLY",
+    "defaultOwnerHint": "Security Operations",
+    "requirements": [
+      "8.1",
+      "8.2",
+      "8.3"
+    ],
+    "tasks": [
+      {
+        "title": "Implement IG1 safeguards for Control 8",
+        "description": "Put in place the IG1 safeguards for Audit Log Management (8.1, 8.2, 8.3)."
+      },
+      {
+        "title": "Review Control 8 coverage",
+        "description": "Periodically verify that the IG1 safeguards for Audit Log Management remain effective and update as the environment changes."
+      }
+    ]
+  },
+  {
+    "code": "CIS-09",
+    "title": "Email and Web Browser Protections (IG1)",
+    "description": "Implements the IG1 safeguards of CIS Control 9 — Email and Web Browser Protections. Establishes the essential cyber-hygiene baseline for this control area.",
+    "defaultFrequency": "QUARTERLY",
+    "defaultOwnerHint": "Security Operations",
+    "requirements": [
+      "9.1",
+      "9.2"
+    ],
+    "tasks": [
+      {
+        "title": "Implement IG1 safeguards for Control 9",
+        "description": "Put in place the IG1 safeguards for Email and Web Browser Protections (9.1, 9.2)."
+      },
+      {
+        "title": "Review Control 9 coverage",
+        "description": "Periodically verify that the IG1 safeguards for Email and Web Browser Protections remain effective and update as the environment changes."
+      }
+    ]
+  },
+  {
+    "code": "CIS-10",
+    "title": "Malware Defenses (IG1)",
+    "description": "Implements the IG1 safeguards of CIS Control 10 — Malware Defenses. Establishes the essential cyber-hygiene baseline for this control area.",
+    "defaultFrequency": "MONTHLY",
+    "defaultOwnerHint": "Security Operations",
+    "requirements": [
+      "10.1",
+      "10.2",
+      "10.3"
+    ],
+    "tasks": [
+      {
+        "title": "Implement IG1 safeguards for Control 10",
+        "description": "Put in place the IG1 safeguards for Malware Defenses (10.1, 10.2, 10.3)."
+      },
+      {
+        "title": "Review Control 10 coverage",
+        "description": "Periodically verify that the IG1 safeguards for Malware Defenses remain effective and update as the environment changes."
+      }
+    ]
+  },
+  {
+    "code": "CIS-11",
+    "title": "Data Recovery (IG1)",
+    "description": "Implements the IG1 safeguards of CIS Control 11 — Data Recovery. Establishes the essential cyber-hygiene baseline for this control area.",
+    "defaultFrequency": "QUARTERLY",
+    "defaultOwnerHint": "IT Operations / Backup Admin",
+    "requirements": [
+      "11.1",
+      "11.2",
+      "11.3",
+      "11.4"
+    ],
+    "tasks": [
+      {
+        "title": "Implement IG1 safeguards for Control 11",
+        "description": "Put in place the IG1 safeguards for Data Recovery (11.1, 11.2, 11.3, 11.4)."
+      },
+      {
+        "title": "Review Control 11 coverage",
+        "description": "Periodically verify that the IG1 safeguards for Data Recovery remain effective and update as the environment changes."
+      }
+    ]
+  },
+  {
+    "code": "CIS-12",
+    "title": "Network Infrastructure Management (IG1)",
+    "description": "Implements the IG1 safeguards of CIS Control 12 — Network Infrastructure Management. Establishes the essential cyber-hygiene baseline for this control area.",
+    "defaultFrequency": "QUARTERLY",
+    "defaultOwnerHint": "Network Engineering",
+    "requirements": [
+      "12.1"
+    ],
+    "tasks": [
+      {
+        "title": "Implement IG1 safeguards for Control 12",
+        "description": "Put in place the IG1 safeguards for Network Infrastructure Management (12.1)."
+      },
+      {
+        "title": "Review Control 12 coverage",
+        "description": "Periodically verify that the IG1 safeguards for Network Infrastructure Management remain effective and update as the environment changes."
+      }
+    ]
+  },
+  {
+    "code": "CIS-14",
+    "title": "Security Awareness and Skills Training (IG1)",
+    "description": "Implements the IG1 safeguards of CIS Control 14 — Security Awareness and Skills Training. Establishes the essential cyber-hygiene baseline for this control area.",
+    "defaultFrequency": "ANNUALLY",
+    "defaultOwnerHint": "Security Awareness Lead",
+    "requirements": [
+      "14.1",
+      "14.2",
+      "14.3",
+      "14.4",
+      "14.5",
+      "14.6",
+      "14.7",
+      "14.8"
+    ],
+    "tasks": [
+      {
+        "title": "Implement IG1 safeguards for Control 14",
+        "description": "Put in place the IG1 safeguards for Security Awareness and Skills Training (14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7, 14.8)."
+      },
+      {
+        "title": "Review Control 14 coverage",
+        "description": "Periodically verify that the IG1 safeguards for Security Awareness and Skills Training remain effective and update as the environment changes."
+      }
+    ]
+  },
+  {
+    "code": "CIS-15",
+    "title": "Service Provider Management (IG1)",
+    "description": "Implements the IG1 safeguards of CIS Control 15 — Service Provider Management. Establishes the essential cyber-hygiene baseline for this control area.",
+    "defaultFrequency": "ANNUALLY",
+    "defaultOwnerHint": "Vendor Risk Management",
+    "requirements": [
+      "15.1"
+    ],
+    "tasks": [
+      {
+        "title": "Implement IG1 safeguards for Control 15",
+        "description": "Put in place the IG1 safeguards for Service Provider Management (15.1)."
+      },
+      {
+        "title": "Review Control 15 coverage",
+        "description": "Periodically verify that the IG1 safeguards for Service Provider Management remain effective and update as the environment changes."
+      }
+    ]
+  },
+  {
+    "code": "CIS-17",
+    "title": "Incident Response Management (IG1)",
+    "description": "Implements the IG1 safeguards of CIS Control 17 — Incident Response Management. Establishes the essential cyber-hygiene baseline for this control area.",
+    "defaultFrequency": "ANNUALLY",
+    "defaultOwnerHint": "Incident Response Lead",
+    "requirements": [
+      "17.1",
+      "17.2",
+      "17.3"
+    ],
+    "tasks": [
+      {
+        "title": "Implement IG1 safeguards for Control 17",
+        "description": "Put in place the IG1 safeguards for Incident Response Management (17.1, 17.2, 17.3)."
+      },
+      {
+        "title": "Review Control 17 coverage",
+        "description": "Periodically verify that the IG1 safeguards for Incident Response Management remain effective and update as the environment changes."
+      }
+    ]
+  }
+]

@@ -1,0 +1,174 @@
+# Cross-Framework Mapping Set: CIS Controls v8 → NIST CSF 2.0
+#
+# Standalone mapping-set file for the RequirementMapping ingestion pipeline.
+# Source identifiers are CIS Safeguard numbers (factual identifiers only, used
+# under CC BY-NC-SA 4.0 — no CIS descriptive text is reproduced here). Target
+# identifiers are NIST CSF 2.0 subcategory references. Mappings are structural
+# guidance, not guarantees of compliance or equivalence.
+urn: urn:inflect:mappingset:cis-v8-to-nist-csf
+name: "CIS Controls v8 → NIST CSF 2.0"
+description: >
+  Cross-framework traceability mapping from CIS Critical Security Controls v8 safeguards to NIST Cybersecurity Framework 2.0 subcategories.
+version: 1
+source_framework_ref: CIS-CONTROLS-V8
+target_framework_ref: NIST-CSF-2.0
+
+mapping_entries:
+  # ── CIS Control 1 ──
+  - source_ref: "1.1"
+    target_ref: ID.AM-01
+    strength: EQUAL
+    rationale: "CIS Safeguard 1.1 (Establish and Maintain Detailed Enterprise Asset Inventory) relates to ID.AM-01."
+  - source_ref: "1.2"
+    target_ref: DE.CM-01
+    strength: RELATED
+    rationale: "CIS Safeguard 1.2 (Address Unauthorized Assets) relates to DE.CM-01."
+  # ── CIS Control 2 ──
+  - source_ref: "2.1"
+    target_ref: ID.AM-02
+    strength: EQUAL
+    rationale: "CIS Safeguard 2.1 (Establish and Maintain a Software Inventory) relates to ID.AM-02."
+  - source_ref: "2.2"
+    target_ref: ID.RA-01
+    strength: RELATED
+    rationale: "CIS Safeguard 2.2 (Ensure Authorized Software is Currently Supported) relates to ID.RA-01."
+  - source_ref: "2.3"
+    target_ref: DE.CM-01
+    strength: RELATED
+    rationale: "CIS Safeguard 2.3 (Address Unauthorized Software) relates to DE.CM-01."
+  # ── CIS Control 3 ──
+  - source_ref: "3.2"
+    target_ref: ID.AM-01
+    strength: RELATED
+    rationale: "CIS Safeguard 3.2 (Establish and Maintain a Data Inventory) relates to ID.AM-01."
+  - source_ref: "3.3"
+    target_ref: PR.AA-01
+    strength: RELATED
+    rationale: "CIS Safeguard 3.3 (Configure Data Access Control Lists) relates to PR.AA-01."
+  - source_ref: "3.6"
+    target_ref: PR.DS-01
+    strength: INTERSECT
+    rationale: "CIS Safeguard 3.6 (Encrypt Data on End-User Devices) relates to PR.DS-01."
+  # ── CIS Control 6 ──
+  - source_ref: "6.1"
+    target_ref: PR.AA-01
+    strength: INTERSECT
+    rationale: "CIS Safeguard 6.1 (Establish an Access Granting Process) relates to PR.AA-01."
+  - source_ref: "6.2"
+    target_ref: PR.AA-01
+    strength: RELATED
+    rationale: "CIS Safeguard 6.2 (Establish an Access Revoking Process) relates to PR.AA-01."
+  - source_ref: "6.3"
+    target_ref: PR.AA-01
+    strength: INTERSECT
+    rationale: "CIS Safeguard 6.3 (Require MFA for Externally-Exposed Applications) relates to PR.AA-01."
+  - source_ref: "6.4"
+    target_ref: PR.AA-01
+    strength: INTERSECT
+    rationale: "CIS Safeguard 6.4 (Require MFA for Remote Network Access) relates to PR.AA-01."
+  - source_ref: "6.5"
+    target_ref: PR.AA-01
+    strength: INTERSECT
+    rationale: "CIS Safeguard 6.5 (Require MFA for Administrative Access) relates to PR.AA-01."
+  # ── CIS Control 7 ──
+  - source_ref: "7.1"
+    target_ref: ID.RA-01
+    strength: INTERSECT
+    rationale: "CIS Safeguard 7.1 (Establish and Maintain a Vulnerability Management Process) relates to ID.RA-01."
+  - source_ref: "7.2"
+    target_ref: ID.RA-01
+    strength: RELATED
+    rationale: "CIS Safeguard 7.2 (Establish and Maintain a Remediation Process) relates to ID.RA-01."
+  - source_ref: "7.3"
+    target_ref: ID.RA-01
+    strength: RELATED
+    rationale: "CIS Safeguard 7.3 (Perform Automated Operating System Patch Management) relates to ID.RA-01."
+  - source_ref: "7.4"
+    target_ref: ID.RA-01
+    strength: RELATED
+    rationale: "CIS Safeguard 7.4 (Perform Automated Application Patch Management) relates to ID.RA-01."
+  # ── CIS Control 8 ──
+  - source_ref: "8.1"
+    target_ref: DE.CM-01
+    strength: RELATED
+    rationale: "CIS Safeguard 8.1 (Establish and Maintain an Audit Log Management Process) relates to DE.CM-01."
+  - source_ref: "8.2"
+    target_ref: DE.CM-01
+    strength: RELATED
+    rationale: "CIS Safeguard 8.2 (Collect Audit Logs) relates to DE.CM-01."
+  # ── CIS Control 9 ──
+  - source_ref: "9.2"
+    target_ref: DE.CM-01
+    strength: RELATED
+    rationale: "CIS Safeguard 9.2 (Use DNS Filtering Services) relates to DE.CM-01."
+  # ── CIS Control 10 ──
+  - source_ref: "10.1"
+    target_ref: DE.CM-01
+    strength: RELATED
+    rationale: "CIS Safeguard 10.1 (Deploy and Maintain Anti-Malware Software) relates to DE.CM-01."
+  # ── CIS Control 11 ──
+  - source_ref: "11.1"
+    target_ref: RC.RP-01
+    strength: RELATED
+    rationale: "CIS Safeguard 11.1 (Establish and Maintain a Data Recovery Process) relates to RC.RP-01."
+  - source_ref: "11.2"
+    target_ref: RC.RP-01
+    strength: INTERSECT
+    rationale: "CIS Safeguard 11.2 (Perform Automated Backups) relates to RC.RP-01."
+  - source_ref: "11.3"
+    target_ref: RC.RP-01
+    strength: RELATED
+    rationale: "CIS Safeguard 11.3 (Protect Recovery Data) relates to RC.RP-01."
+  - source_ref: "11.4"
+    target_ref: RC.RP-01
+    strength: RELATED
+    rationale: "CIS Safeguard 11.4 (Establish and Maintain an Isolated Instance of Recovery Data) relates to RC.RP-01."
+  # ── CIS Control 17 ──
+  - source_ref: "17.1"
+    target_ref: RS.MA-01
+    strength: INTERSECT
+    rationale: "CIS Safeguard 17.1 (Designate Personnel to Manage Incident Handling) relates to RS.MA-01."
+  - source_ref: "17.2"
+    target_ref: RS.MA-01
+    strength: RELATED
+    rationale: "CIS Safeguard 17.2 (Establish and Maintain Contact Information for Reporting Security Incidents) relates to RS.MA-01."
+  - source_ref: "17.3"
+    target_ref: RS.MA-01
+    strength: RELATED
+    rationale: "CIS Safeguard 17.3 (Establish and Maintain an Enterprise Process for Reporting Incidents) relates to RS.MA-01."
+  # ── CIS Control 3 ──
+  - source_ref: "3.10"
+    target_ref: PR.DS-01
+    strength: INTERSECT
+    rationale: "CIS Safeguard 3.10 (Encrypt Sensitive Data in Transit) relates to PR.DS-01."
+  - source_ref: "3.11"
+    target_ref: PR.DS-01
+    strength: INTERSECT
+    rationale: "CIS Safeguard 3.11 (Encrypt Sensitive Data at Rest) relates to PR.DS-01."
+  # ── CIS Control 7 ──
+  - source_ref: "7.5"
+    target_ref: ID.RA-01
+    strength: INTERSECT
+    rationale: "CIS Safeguard 7.5 (Perform Automated Vulnerability Scans of Internal Enterprise Assets) relates to ID.RA-01."
+  - source_ref: "7.6"
+    target_ref: ID.RA-01
+    strength: INTERSECT
+    rationale: "CIS Safeguard 7.6 (Perform Automated Vulnerability Scans of Externally-Exposed Enterprise Assets) relates to ID.RA-01."
+  # ── CIS Control 13 ──
+  - source_ref: "13.1"
+    target_ref: DE.CM-01
+    strength: INTERSECT
+    rationale: "CIS Safeguard 13.1 (Centralize Security Event Alerting) relates to DE.CM-01."
+  - source_ref: "13.3"
+    target_ref: DE.CM-01
+    strength: INTERSECT
+    rationale: "CIS Safeguard 13.3 (Deploy a Network Intrusion Detection Solution) relates to DE.CM-01."
+  # ── CIS Control 15 ──
+  - source_ref: "15.1"
+    target_ref: GV.OC-02
+    strength: RELATED
+    rationale: "CIS Safeguard 15.1 (Establish and Maintain an Inventory of Service Providers) relates to GV.OC-02."
+  - source_ref: "15.4"
+    target_ref: GV.OC-01
+    strength: RELATED
+    rationale: "CIS Safeguard 15.4 (Ensure Service Provider Contracts Include Security Requirements) relates to GV.OC-01."

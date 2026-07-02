@@ -332,6 +332,29 @@ async function main() {
     }
     console.log(`✅ SSDF risk templates seeded (${ssdfRiskTemplates.length} secure-development templates)`);
 
+    // ─── CIS Controls v8 cyber-hygiene risk templates ───
+    // Companion to the CIS v8 IG1 Starter Pack: the failure modes the essential
+    // CIS safeguards exist to prevent. frameworkTag 'CIS', category 'Cyber
+    // Hygiene'. Rides the shared RiskTemplate upsert path (no bespoke machinery).
+    const cisRiskTemplates: Array<{ id: string; title: string; description: string; category: string; defaultLikelihood: number; defaultImpact: number; frameworkTag: string }> = [
+        { id: 'cis-unmanaged-asset', title: 'Unmanaged Asset on the Network', description: 'A device that is not on the asset inventory connects to the network and receives access without going through onboarding or hardening.', category: 'Cyber Hygiene', defaultLikelihood: 4, defaultImpact: 3, frameworkTag: 'CIS' },
+        { id: 'cis-unauthorized-software', title: 'Unauthorized or Unsupported Software in Use', description: 'Software that is unapproved or past end-of-life runs on enterprise assets, expanding the attack surface with no patch path.', category: 'Cyber Hygiene', defaultLikelihood: 4, defaultImpact: 3, frameworkTag: 'CIS' },
+        { id: 'cis-unpatched-vulnerability', title: 'Unpatched Known Vulnerability Exploited', description: 'A known vulnerability is exploited because operating-system or application patches were not applied within the remediation window.', category: 'Cyber Hygiene', defaultLikelihood: 4, defaultImpact: 5, frameworkTag: 'CIS' },
+        { id: 'cis-weak-authentication', title: 'Account Compromise via Weak Authentication', description: 'An account is taken over because it lacked multi-factor authentication or reused a weak password.', category: 'Cyber Hygiene', defaultLikelihood: 3, defaultImpact: 5, frameworkTag: 'CIS' },
+        { id: 'cis-malware-infection', title: 'Malware Infection on Enterprise Assets', description: 'Malicious code executes on assets due to missing anti-malware defenses, autorun exposure, or unfiltered email and web content.', category: 'Cyber Hygiene', defaultLikelihood: 3, defaultImpact: 4, frameworkTag: 'CIS' },
+        { id: 'cis-unrecoverable-data', title: 'Unrecoverable Data After Incident', description: 'Data cannot be restored after ransomware or failure because backups were missing, unprotected, or never tested.', category: 'Cyber Hygiene', defaultLikelihood: 2, defaultImpact: 5, frameworkTag: 'CIS' },
+        { id: 'cis-sensitive-data-exposure', title: 'Sensitive Data Exposure', description: 'Sensitive information is disclosed because it was not classified, access-controlled, or encrypted at rest and in transit.', category: 'Cyber Hygiene', defaultLikelihood: 3, defaultImpact: 5, frameworkTag: 'CIS' },
+        { id: 'cis-untrained-workforce', title: 'Successful Social-Engineering Attack', description: 'A phishing or social-engineering attack succeeds because staff were not trained to recognize and report it.', category: 'Cyber Hygiene', defaultLikelihood: 4, defaultImpact: 4, frameworkTag: 'CIS' },
+    ];
+    for (const t of cisRiskTemplates) {
+        await prisma.riskTemplate.upsert({
+            where: { id: t.id },
+            create: t,
+            update: { description: t.description, category: t.category, defaultLikelihood: t.defaultLikelihood, defaultImpact: t.defaultImpact, frameworkTag: t.frameworkTag },
+        });
+    }
+    console.log(`✅ CIS risk templates seeded (${cisRiskTemplates.length} cyber-hygiene templates)`);
+
     // ─── Seed risks (tenant-wide) ───
     const riskCount = await prisma.risk.count({ where: { tenantId: tenant.id } });
     if (riskCount === 0) {
@@ -1704,6 +1727,86 @@ Reviewed at least annually.` },
         });
     }
     console.log(`✅ SSDF Starter Pack + ${ssdfStarterControls.length} curated controls seeded`);
+
+    // ─── CIS Critical Security Controls v8 ───
+    // STRUCTURAL OUTLINE ONLY. CIS Controls v8 are (c) Center for Internet
+    // Security, licensed CC BY-NC-SA 4.0 (NonCommercial + ShareAlike). Because
+    // Inflect Compliance is a commercial product, we ship ONLY the factual
+    // identifiers (Control 1-18, Safeguard numbers), the short factual titles,
+    // and the IG1/IG2/IG3 structure. All descriptive text is our own paraphrase.
+    // Full CIS Controls: https://www.cisecurity.org/controls. Rides the generic
+    // framework/pack machinery — no special-casing.
+    const cisData = require('./fixtures/cis-v8-requirements.json') as Array<{ key: string; section: string; category: string; sortOrder: number; title: string }>;
+    const cisMeta = JSON.stringify({
+        locale: 'en',
+        provider: 'Center for Internet Security',
+        packager: 'inflect',
+        publicationDate: '2021-05-18',
+        license: 'CC-BY-NC-SA-4.0',
+        sourceUrl: 'https://www.cisecurity.org/controls',
+        note: 'Structural outline only — identifiers, titles, and IG structure reused under CC BY-NC-SA 4.0; all descriptions are original paraphrases.',
+        copyright:
+            'CIS Critical Security Controls v8 are (c) Center for Internet ' +
+            'Security and licensed CC BY-NC-SA 4.0.',
+    });
+    const cisFramework = await prisma.framework.upsert({
+        where: { key_version: { key: 'CIS-V8', version: '8' } },
+        update: { name: 'CIS Critical Security Controls v8', kind: 'INDUSTRY_STANDARD', description: 'A prioritized set of 18 controls and 153 safeguards, grouped into Implementation Groups IG1-IG3, to mitigate the most common cyber attacks.', metadataJson: cisMeta, sourceUrn: 'urn:inflect:library:cis-controls-v8' },
+        create: { key: 'CIS-V8', name: 'CIS Critical Security Controls v8', version: '8', kind: 'INDUSTRY_STANDARD', description: 'A prioritized set of 18 controls and 153 safeguards, grouped into Implementation Groups IG1-IG3, to mitigate the most common cyber attacks.', metadataJson: cisMeta, sourceUrn: 'urn:inflect:library:cis-controls-v8' },
+    });
+    const cisReqMap: Record<string, string> = {};
+    for (const req of cisData) {
+        const r = await prisma.frameworkRequirement.upsert({
+            where: { frameworkId_code: { frameworkId: cisFramework.id, code: req.key } },
+            update: { title: req.title, section: req.section, category: req.category, sortOrder: req.sortOrder },
+            create: { frameworkId: cisFramework.id, code: req.key, title: req.title, section: req.section, category: req.category, sortOrder: req.sortOrder },
+        });
+        cisReqMap[req.key] = r.id;
+    }
+    // ─── CIS v8 IG1 Starter Pack (curated essential cyber-hygiene controls) ───
+    // Curated control templates — one per CIS control that carries IG1 safeguards
+    // (the essential cyber-hygiene baseline) — so a CIS adopter gets mapped
+    // coverage on day one, not a bare 0%. Distinct 'CIS-' code prefix. Each
+    // control links to the specific IG1 safeguard requirement(s) it satisfies.
+    const cisIg1Controls = require('./fixtures/cis-v8-ig1-control-templates.json') as Array<{
+        code: string; title: string; description: string; defaultFrequency: string; defaultOwnerHint: string; requirements: string[]; tasks: Array<{ title: string; description: string }>;
+    }>;
+    for (const c of cisIg1Controls) {
+        const existing = await prisma.controlTemplate.findUnique({ where: { code: c.code } });
+        if (!existing) {
+            const tmpl = await prisma.controlTemplate.create({
+                data: {
+                    code: c.code,
+                    title: c.title,
+                    description: c.description,
+                    category: 'Cyber Hygiene',
+                    defaultFrequency: c.defaultFrequency as ControlFrequency,
+                    defaultOwnerHint: c.defaultOwnerHint,
+                },
+            });
+            for (const task of c.tasks) {
+                await prisma.controlTemplateTask.create({ data: { templateId: tmpl.id, title: task.title, description: task.description } });
+            }
+            for (const rk of c.requirements) {
+                if (cisReqMap[rk]) {
+                    await prisma.controlTemplateRequirementLink.create({ data: { templateId: tmpl.id, requirementId: cisReqMap[rk] } }).catch(() => { });
+                }
+            }
+        }
+    }
+    const cisIg1Tmpls = await prisma.controlTemplate.findMany({ where: { code: { startsWith: 'CIS-' } } });
+    const cisIg1Pack = await prisma.frameworkPack.upsert({
+        where: { key: 'CIS_V8_IG1_PACK' },
+        update: { name: 'CIS Controls v8 — IG1 Starter Pack', frameworkId: cisFramework.id, version: '8' },
+        create: { key: 'CIS_V8_IG1_PACK', name: 'CIS Controls v8 — IG1 Starter Pack', frameworkId: cisFramework.id, version: '8', description: 'Curated essential cyber-hygiene controls covering the IG1 safeguards of the CIS Critical Security Controls v8, each mapped to its safeguards.' },
+    });
+    for (const tmpl of cisIg1Tmpls) {
+        await prisma.packTemplateLink.upsert({
+            where: { packId_templateId: { packId: cisIg1Pack.id, templateId: tmpl.id } },
+            create: { packId: cisIg1Pack.id, templateId: tmpl.id }, update: {},
+        });
+    }
+    console.log(`✅ CIS Controls v8 + ${cisData.length} safeguards + IG1 Starter Pack (${cisIg1Controls.length} controls) seeded`);
 
     // ─── ISO/IEC 27701:2019 — Privacy Information Management System (PIMS) ───
     // ISO 27701 is the privacy extension of ISO 27001/27002 (controller Annex A +

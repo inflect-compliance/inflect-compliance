@@ -1364,6 +1364,9 @@
     "docs/implementation-notes/2026-07-02-policy-template-gap-fill.md": {
       "class": "historical"
     },
+    "docs/implementation-notes/2026-07-02-cis-controls-v8-framework.md": {
+      "class": "historical"
+    },
     "docs/aws-posture-connector.md": {
       "class": "authoritative"
     },
