@@ -14,9 +14,7 @@
  */
 import { Prisma, type CompliancePostureSummary } from '@prisma/client';
 import { RequestContext } from '../types';
-import { prisma } from '@/lib/prisma';
 import { runInTenantContext } from '@/lib/db-context';
-import { getPermissionsForRole } from '@/lib/permissions';
 import { assertCanRead } from '../policies/common';
 import { getExecutiveDashboard } from './dashboard';
 import { listFrameworks } from './framework';
@@ -244,41 +242,4 @@ export async function getLatestPostureSummary(
     return runInTenantContext(ctx, (tdb) =>
         tdb.compliancePostureSummary.findUnique({ where: { tenantId: ctx.tenantId } }),
     );
-}
-
-/**
- * Build a tenant-scoped read RequestContext for the daily cron actor.
- *
- * Picks an active member (OWNER/ADMIN preferred) so RLS + the read policies
- * resolve against a real user. Returns null when the tenant has no active
- * members (nothing to summarise).
- */
-export async function buildPostureCronContext(
-    tenantId: string,
-): Promise<RequestContext | null> {
-    const member = await prisma.tenantMembership.findFirst({
-        where: { tenantId, status: 'ACTIVE' },
-        // Role is a Postgres enum ordered by declaration
-        // (OWNER, ADMIN, EDITOR, READER, AUDITOR), so `asc` surfaces an
-        // OWNER/ADMIN first and falls back to any active member.
-        orderBy: { role: 'asc' },
-        select: { userId: true, role: true },
-    });
-    if (!member) return null;
-
-    const appPermissions = getPermissionsForRole(member.role);
-    return {
-        requestId: `compliance-posture-${tenantId}`,
-        userId: member.userId,
-        tenantId,
-        role: member.role,
-        permissions: {
-            canRead: appPermissions.controls.view,
-            canWrite: appPermissions.controls.create,
-            canAdmin: appPermissions.admin.manage,
-            canAudit: appPermissions.audits.view,
-            canExport: appPermissions.reports.export,
-        },
-        appPermissions,
-    };
 }

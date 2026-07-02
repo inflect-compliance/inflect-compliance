@@ -15,15 +15,53 @@
  */
 import prisma from '@/lib/prisma';
 import { logger } from '@/lib/observability/logger';
-import {
-    buildPostureCronContext,
-    generateCompliancePostureSummary,
-} from '@/app-layer/usecases/compliance-posture';
+import { getPermissionsForRole } from '@/lib/permissions';
+import type { RequestContext } from '@/app-layer/types';
+import { generateCompliancePostureSummary } from '@/app-layer/usecases/compliance-posture';
 import { enqueue } from './queue';
 import type {
     CompliancePostureSummaryPayload,
     CompliancePostureDispatchPayload,
 } from './types';
+
+/**
+ * Build a tenant-scoped read RequestContext for the daily cron actor.
+ *
+ * Picks an active member (OWNER/ADMIN preferred) so RLS + the read policies
+ * resolve against a real user. Returns null when the tenant has no active
+ * members (nothing to summarise). Lives in the job layer (not the usecase)
+ * because it needs a cross-tenant/global read before any tenant context
+ * exists — tenant-scoped usecase code must never import global prisma.
+ */
+async function buildPostureCronContext(
+    tenantId: string,
+): Promise<RequestContext | null> {
+    const member = await prisma.tenantMembership.findFirst({
+        where: { tenantId, status: 'ACTIVE' },
+        // Role is a Postgres enum ordered by declaration
+        // (OWNER, ADMIN, EDITOR, READER, AUDITOR), so `asc` surfaces an
+        // OWNER/ADMIN first and falls back to any active member.
+        orderBy: { role: 'asc' },
+        select: { userId: true, role: true },
+    });
+    if (!member) return null;
+
+    const appPermissions = getPermissionsForRole(member.role);
+    return {
+        requestId: `compliance-posture-${tenantId}`,
+        userId: member.userId,
+        tenantId,
+        role: member.role,
+        permissions: {
+            canRead: appPermissions.controls.view,
+            canWrite: appPermissions.controls.create,
+            canAdmin: appPermissions.admin.manage,
+            canAudit: appPermissions.audits.view,
+            canExport: appPermissions.reports.export,
+        },
+        appPermissions,
+    };
+}
 
 /**
  * Per-tenant runner. Builds the cron context for `payload.tenantId` and
