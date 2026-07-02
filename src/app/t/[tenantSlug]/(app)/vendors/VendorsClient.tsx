@@ -481,7 +481,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                             ]}
                             className="mb-1"
                         />
-                        <Heading level={1}>Vendor Register</Heading>
+                        <Heading level={1} className="sr-only">Vendor Register</Heading>
                         <p className="text-sm text-content-muted mt-1">
                             Third-party relationships, assessed and renewed on a cadence.
                         </p>
