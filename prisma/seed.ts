@@ -741,6 +741,40 @@ Reviewed at least annually.` },
     }
     console.log(`✅ imported policy templates seeded (${importedPolicies.templates.length})`);
 
+    // IC ORIGINAL gap-fill policy templates — topics genuinely absent from the
+    // ciso-toolkit + imported sets (threat & vulnerability management, corporate
+    // governance, data classification & handling, MDM/BYOD). Original prose in
+    // IC house style; framework refs live in policy-template-framework-map.json
+    // keyed by these externalRefs. Same upsert-by-(externalRef|title) shape.
+    const originalGapPolicies = require('./fixtures/policy-templates-original-gaps.json') as {
+        templates: Array<{
+            externalRef: string; title: string; category: string; language: string;
+            contentType: string; contentText: string; tags: string; source: string;
+        }>;
+    };
+    for (const t of originalGapPolicies.templates) {
+        const data = {
+            title: t.title,
+            category: t.category,
+            language: t.language,
+            contentType: t.contentType as 'MARKDOWN',
+            contentText: t.contentText,
+            tags: t.tags,
+            isGlobal: true,
+            source: t.source,
+            externalRef: t.externalRef,
+        };
+        const existing = await prisma.policyTemplate.findFirst({
+            where: { OR: [{ externalRef: t.externalRef }, { title: t.title }] },
+        });
+        if (existing) {
+            await prisma.policyTemplate.update({ where: { id: existing.id }, data });
+        } else {
+            await prisma.policyTemplate.create({ data });
+        }
+    }
+    console.log(`✅ IC original gap-fill policy templates seeded (${originalGapPolicies.templates.length})`);
+
     // ─── Frameworks & Requirements ───
     const annexAData = require('./fixtures/iso27001_2022_annexA.json') as Array<{
         key: string; theme: string; themeNumber: number; sortOrder: number; title: string; summary?: string;
