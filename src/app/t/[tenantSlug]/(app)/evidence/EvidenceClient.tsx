@@ -224,22 +224,25 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     });
     const truncated = evidenceQuery.data?.truncated ?? false;
 
-    // ─── Bulk actions (canonical BulkActionBar — assign-owner only) ───
-    // Evidence status is workflow-gated (the reviewer-identity review chain),
-    // so the bar carries Assign owner only — no bulk status.
+    // ─── Bulk actions (canonical BulkActionBar) ───
+    // Approve, Assign owner, Delete. Bulk Approve moves items straight to
+    // APPROVED — the separate reviewer-identity review chain is bypassed for
+    // this action (see bulkApproveEvidence).
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [bulkApplying, setBulkApplying] = useState(false);
     const handleBulkApply = async (action: string, value: string) => {
         const ids = Array.from(selected);
-        if (ids.length === 0 || (action !== 'assign' && action !== 'delete')) return;
+        if (ids.length === 0 || !['assign', 'delete', 'approve'].includes(action)) return;
         setBulkApplying(true);
         try {
-            const url = action === 'delete'
-                ? apiUrl('/evidence/bulk/delete')
+            const url =
+                action === 'delete' ? apiUrl('/evidence/bulk/delete')
+                : action === 'approve' ? apiUrl('/evidence/bulk/approve')
                 : apiUrl('/evidence/bulk/assign');
-            const body = action === 'delete'
-                ? { evidenceIds: ids }
-                : { evidenceIds: ids, ownerUserId: value || null };
+            const body =
+                action === 'assign'
+                    ? { evidenceIds: ids, ownerUserId: value || null }
+                    : { evidenceIds: ids };
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -254,6 +257,7 @@ function EvidencePageInner({ initialEvidence, initialControls, tenantSlug, permi
     };
     const evidenceBulkActions: BulkActionDef[] = useMemo(
         () => [
+            { value: 'approve', label: 'Approve', confirm: true },
             {
                 value: 'assign',
                 label: 'Assign owner',

@@ -643,6 +643,7 @@ export const BulkControlDeleteSchema = z.object({ controlIds: z.array(z.string()
 export const BulkTaskDeleteSchema = z.object({ taskIds: z.array(z.string().min(1)).min(1).max(100) }).strip();
 export const BulkTestPlanDeleteSchema = z.object({ planIds: z.array(z.string().min(1)).min(1).max(100) }).strip();
 export const BulkEvidenceDeleteSchema = z.object({ evidenceIds: z.array(z.string().min(1)).min(1).max(100) }).strip();
+export const BulkEvidenceApproveSchema = z.object({ evidenceIds: z.array(z.string().min(1)).min(1).max(100) }).strip();
 export const BulkPolicyDeleteSchema = z.object({ policyIds: z.array(z.string().min(1)).min(1).max(100) }).strip();
 export const BulkVendorDeleteSchema = z.object({ vendorIds: z.array(z.string().min(1)).min(1).max(100) }).strip();
 
