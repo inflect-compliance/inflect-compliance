@@ -1110,3 +1110,17 @@ enum IncidentNotificationStatus {
   SUBMITTED
   NOT_REQUIRED
 }
+
+/// AI Guard enforcement posture, per tenant, stored on
+/// TenantSecuritySettings.aiGuardMode. Resolves the action the AI
+/// injection/egress guard applies to a non-clean verdict:
+///   STRICT   — block the model call / drop the proposed action on a
+///              malicious input verdict or a secret-leak egress hit.
+///   BALANCED — (default) allow but flag + force human review; a secret
+///              leak in outbound content is still blocked.
+///   AUDIT    — log only; never enforce (deliberate triage opt-in).
+enum AiGuardMode {
+  STRICT
+  BALANCED
+  AUDIT
+}
