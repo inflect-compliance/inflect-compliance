@@ -290,9 +290,6 @@ export default function DashboardClient({
             {(postureSummary ?? initialPostureSummary) ? (
                 <PostureHeroCard
                     summary={(postureSummary ?? initialPostureSummary)!}
-                    coveragePercent={exec.controlCoverage.coveragePercent}
-                    coverageImplemented={exec.controlCoverage.implemented}
-                    coverageApplicable={exec.controlCoverage.applicable}
                     canRegenerate={perms.reports.export}
                     onRegenerate={handleRegeneratePosture}
                     regenerating={regenerating}
