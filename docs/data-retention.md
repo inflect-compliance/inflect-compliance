@@ -5,7 +5,7 @@ await legal / compliance / finance sign-off (see [Open questions](#open-question
 **Owners:** Engineering (mechanism + inventory) · Compliance/Legal (regulatory
 periods + GDPR) · Finance (financial-record periods) · Product (tenant tiers).
 
-This document categorizes **every one of the 150 Prisma models**, declares the
+This document categorizes **every one of the 151 Prisma models**, declares the
 retention behaviour that exists *today*, names who owns each undecided number,
 and enumerates the cleanup machinery. It is the companion to
 [`docs/encryption-data-protection.md`](encryption-data-protection.md) — that doc
@@ -33,7 +33,7 @@ covers confidentiality *at rest*; this one covers *lifecycle*.
 | Configuration | 40 | Tenant/org structure, templates, framework reference data, integration + security settings. Lives with the tenant; purged on tenant deletion. |
 | Operational | 24 | Notifications, executions, snapshots, key-sequences, onboarding. No TTL today — prime candidates for time-boxed pruning. |
 | Security ephemeral | 13 | Tokens / sessions / credentials. `expiresAt`-driven; security lifetime, **not** a data-retention conversation. |
-| Regulatory artefact | 6 | `AuditLog`, `OrgAuditLog`, `ReadinessSnapshot` — immutable + hash-chained. Plus the NIS2 Article 23 incident triad (`Incident`, `IncidentNotification`, `IncidentTimelineEntry`) — incident + regulatory-notification records. Retention is a **legal** decision; we do not delete by default. |
+| Regulatory artefact | 7 | `AuditLog`, `OrgAuditLog`, `ReadinessSnapshot` — immutable + hash-chained. Plus the NIS2 Article 23 incident triad (`Incident`, `IncidentNotification`, `IncidentTimelineEntry`) — incident + regulatory-notification records. Plus `AgentActionReceipt` — externally-verifiable, mediator-signed AI-agent action evidence. Retention is a **legal** decision; we do not delete by default. |
 | PII subject | 2 | `User`, `AuditorAccount` — the GDPR right-to-erasure surface. **Undefined** beyond soft-delete. |
 | Financial | 2 | `BillingAccount`, `BillingEvent` — typically a 7-year regulatory floor; **needs finance input**. |
 
@@ -48,6 +48,7 @@ a `userId` but stores no contact PII).
 | `AccessReview` | Business record | No | Soft-delete (`deletedAt`) — **NOT** auto-purged | Soft-deleted rows **not auto-purged** — gap |
 | `AccessReviewDecision` | Business record | maybe | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
 | `Account` | Security ephemeral | No | None today — cascade on parent/tenant delete only | DEFINED — expiry-driven |
+| `AgentActionReceipt` | Regulatory artefact | No | None today — immutable-ish evidence; cascade on tenant delete only. `scannedSummary` is scrubbed/bounded (no raw payloads/PII) | Mediator-signed AI-agent action evidence; verified rows link to the hash-chained `AuditLog`. Retention tracks the audit trail — **needs legal/auditor input** |
 | `Asset` | Business record | No | retentionUntil sweep (data-lifecycle `runRetentionSweep`) + soft-delete | DEFINED (retentionUntil) where set; else indefinite |
 | `AssetKeySequence` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
 | `AssetRiskLink` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |

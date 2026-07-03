@@ -44,6 +44,14 @@ const NON_SUBPROCESSOR_ALLOWLIST: Record<string, string> = {
     VENDOR_MONITOR_ENABLED: 'operator feature flag toggling the vendor-monitoring sweep — not an external endpoint',
     VENDOR_MONITOR_BREACH_PROVIDER: 'selects the breach signal source; real value (hibp-domain) sends only a vendor domain string to the public keyless HIBP breach catalog — pull-only, no personal data, not a sub-processor',
     VENDOR_MONITOR_TLS_PROVIDER: "selects the TLS-grade source; real value (header-grade) reads the vendor's OWN public homepage security headers — no third-party processor, not a sub-processor",
+    // pipelock MCP mediator — a SELF-HOSTED daemon we run in our own Docker
+    // Compose stack (not a third-party SaaS). PIPELOCK_PUBLIC_KEY is the PUBLIC
+    // half of the mediator's Ed25519 signing keypair, used only to VERIFY
+    // ingested receipts — no customer/personal data is ever sent to a third
+    // party, so pipelock is not a sub-processor. PIPELOCK_STRICT_MODE is an
+    // operator feature flag.
+    PIPELOCK_PUBLIC_KEY: 'public Ed25519 verify key for the self-hosted pipelock MCP mediator — verify-only, no data sent externally, not a sub-processor',
+    PIPELOCK_STRICT_MODE: 'operator feature flag toggling strict receipt enforcement — not an external endpoint',
     // Internal secrets (env-provided; stored in AWS Secrets Manager, itself listed).
     AUTH_SECRET: 'internal JWT/session signing secret',
     JWT_SECRET: 'internal JWT signing secret',

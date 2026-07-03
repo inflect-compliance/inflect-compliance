@@ -171,6 +171,30 @@ services:
     volumes:
       - staging-uploads:/data/uploads
 
+  # ── pipelock (MCP mediator — AI agent firewall) ───────────────
+  # External Apache-2.0 CORE "AI agent firewall for MCP security"
+  # (github.com/luckyPipewrench/pipelock). Mediates agent → MCP tool
+  # calls and emits mediator-signed Ed25519 action receipts, POSTed to
+  # POST /api/t/<slug>/agent-receipts where the app verifies them against
+  # PIPELOCK_PUBLIC_KEY. Mode "balanced" = detect + sign (non-blocking);
+  # switch to "strict" + app PIPELOCK_STRICT_MODE=1 to block. We use ONLY
+  # the Apache-2.0 CORE format — NOT the ELv2 "fleet" features. Pin a
+  # digest and provide the PRIVATE signing key before enabling; the app
+  # gets only the PUBLIC key. See deploy/docker-compose.prod.yml for the
+  # full key-generation runbook.
+  pipelock:
+    image: ghcr.io/luckypipewrench/pipelock:latest # pin to a digest before enabling
+    restart: unless-stopped
+    depends_on:
+      - app
+    environment:
+      PIPELOCK_MODE: "balanced"
+      PIPELOCK_SIGNING_KEY_FILE: "/run/secrets/pipelock-signing.key"
+    volumes:
+      - ./pipelock-signing.key:/run/secrets/pipelock-signing.key:ro
+    expose:
+      - "8080"
+
 volumes:
   staging-pgdata:
     name: inflect-staging-pgdata

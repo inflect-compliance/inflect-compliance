@@ -147,6 +147,18 @@ export const env = createEnv({
         AV_SCAN_MODE: z.enum(["strict", "permissive", "disabled"]).default("strict"),
         CLAMAV_HOST: z.string().optional(),                  // ClamAV daemon host (e.g. clamav:3310)
 
+        // Agent-action receipts (pipelock mediator). The mediator's Ed25519
+        // PUBLIC signing key — used to VERIFY ingested action receipts. NOT a
+        // secret (public half of the keypair); the private half stays with the
+        // pipelock daemon and is never stored here. Accepts base64 or hex; the
+        // ingest usecase normalises it. Absent ⇒ every receipt is flagged
+        // verified:false (fail-safe: unverifiable, never auto-trusted).
+        PIPELOCK_PUBLIC_KEY: z.string().optional(),
+        // Strict-mode hook (default OFF). When "1", the MCP guard seam may
+        // reject agent tool actions that arrive without a valid verified
+        // receipt. Off by default — balanced (detect+sign) is the norm.
+        PIPELOCK_STRICT_MODE: z.enum(["0", "1"]).default("0"),
+
         // Data Protection (Epic 8) — GAP-03 enforcement.
         //
         // Schema layer: optional() carries the *shape* (string ≥32 chars
@@ -342,6 +354,9 @@ export const env = createEnv({
         AV_WEBHOOK_SECRET: process.env.AV_WEBHOOK_SECRET,
         AV_SCAN_MODE: process.env.AV_SCAN_MODE,
         CLAMAV_HOST: process.env.CLAMAV_HOST,
+
+        PIPELOCK_PUBLIC_KEY: process.env.PIPELOCK_PUBLIC_KEY,
+        PIPELOCK_STRICT_MODE: process.env.PIPELOCK_STRICT_MODE,
 
         DATA_ENCRYPTION_KEY: process.env.DATA_ENCRYPTION_KEY,
         DATA_ENCRYPTION_KEY_PREVIOUS: process.env.DATA_ENCRYPTION_KEY_PREVIOUS,

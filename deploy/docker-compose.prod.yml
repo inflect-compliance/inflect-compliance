@@ -179,6 +179,49 @@ services:
       - caddy-data:/data
       - caddy-config:/config
 
+  # ── pipelock (MCP mediator — AI agent firewall) ───────────────
+  # External "AI agent firewall for MCP security" (Apache-2.0 CORE;
+  # github.com/luckyPipewrench/pipelock). Sits in front of the agent
+  # → MCP path, inspects each tool call, and emits a mediator-signed
+  # Ed25519 "action receipt" per decision. We POST those receipts to
+  #   POST /api/t/<slug>/agent-receipts
+  # where the app VERIFIES the signature (native Node crypto) against
+  # PIPELOCK_PUBLIC_KEY before trusting/linking them to the audit chain.
+  #
+  # Mode "balanced" = detect + sign (does NOT block tool calls). To
+  # enforce blocking later, switch the daemon to "strict" AND set the
+  # app's PIPELOCK_STRICT_MODE=1 (default 0). We use ONLY the Apache-2.0
+  # CORE receipt format — NOT the Elastic-License-2.0 "fleet" features.
+  #
+  # Key management (do this ONCE, out of band — see the runbook below):
+  #   1. Generate an Ed25519 keypair for the mediator:
+  #        openssl genpkey -algorithm ed25519 -out pipelock-signing.key
+  #        openssl pkey -in pipelock-signing.key -pubout -out pipelock-signing.pub
+  #   2. Give pipelock the PRIVATE key (mounted secret below) — it never
+  #      leaves the daemon.
+  #   3. Put the PUBLIC key (raw 32-byte, hex or base64) in the app's env
+  #      as PIPELOCK_PUBLIC_KEY (deploy/.env.prod). Public half only.
+  #
+  # NOTE: image tag + exact env/flags depend on the pipelock release in
+  # use — pin a digest before enabling. This service is DEFINED here but
+  # is NOT auto-updated by Watchtower (no enable label) and should be
+  # activated deliberately by an operator.
+  pipelock:
+    image: ghcr.io/luckypipewrench/pipelock:latest # pin to a digest before enabling
+    restart: unless-stopped
+    depends_on:
+      - app
+    env_file:
+      - ./.env.prod
+    environment:
+      PIPELOCK_MODE: "balanced" # detect + sign; switch to "strict" to block
+      PIPELOCK_SIGNING_KEY_FILE: "/run/secrets/pipelock-signing.key"
+    volumes:
+      # PRIVATE signing key — stays with the daemon, never in the app.
+      - ./pipelock-signing.key:/run/secrets/pipelock-signing.key:ro
+    expose:
+      - "8080"
+
 volumes:
   pgdata:
   redisdata:

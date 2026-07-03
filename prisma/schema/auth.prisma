@@ -153,6 +153,7 @@ model Tenant {
   integrationConnections            IntegrationConnection[]
   integrationExecutions             IntegrationExecution[]
   integrationWebhookEvents          IntegrationWebhookEvent[]
+  agentActionReceipts               AgentActionReceipt[]
   notifications                     Notification[]
   notificationOutbox                NotificationOutbox[]
   policies                          Policy[]
