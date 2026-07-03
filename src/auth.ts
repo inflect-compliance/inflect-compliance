@@ -42,7 +42,6 @@ import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import prisma from '@/lib/prisma';
 import { env } from '@/env';
 import { authenticateWithPassword } from '@/lib/auth/credentials';
-import { isTokenExpired, refreshAccessToken } from '@/lib/auth/refresh';
 import type { Role } from '@prisma/client';
 import { edgeLogger } from '@/lib/observability/edge-logger';
 import { hashForLookup } from '@/lib/security/encryption';
@@ -658,44 +657,20 @@ export const authOptions: NextAuthOptions = {
                 }
             }
 
-            // OAuth token refresh.
-            if (
-                token.provider &&
-                token.expiresAt &&
-                token.refreshToken &&
-                isTokenExpired(token.expiresAt)
-            ) {
-                try {
-                    const refreshed = await refreshAccessToken(
-                        token.provider,
-                        token.refreshToken,
-                    );
-
-                    token.accessToken = refreshed.accessToken;
-                    token.expiresAt = refreshed.expiresAt;
-                    if (refreshed.refreshToken) {
-                        token.refreshToken = refreshed.refreshToken;
-                    }
-                    delete token.error;
-
-                    await prisma.account.updateMany({
-                        where: {
-                            userId: token.userId!,
-                            provider: token.provider,
-                        },
-                        data: {
-                            access_token: refreshed.accessToken,
-                            expires_at: refreshed.expiresAt,
-                            ...(refreshed.refreshToken
-                                ? { refresh_token: refreshed.refreshToken }
-                                : {}),
-                        },
-                    });
-                } catch {
-                    edgeLogger.error('Token refresh failed, forcing reauth', { component: 'auth' });
-                    token.error = 'RefreshTokenError';
-                }
-            }
+            // OAuth access-token refresh intentionally NOT done here.
+            //
+            // The provider access token is used ONLY at sign-in (Entra group
+            // claims); it is never exposed to the session (see the session
+            // callback — "NEVER include accessToken") and nothing makes
+            // outbound Google/Microsoft API calls with it afterwards. The
+            // `jwt` callback runs on every `getServerSession` read but, in the
+            // App Router, that path does NOT persist the re-signed cookie — so
+            // a proactive refresh here re-ran on EVERY request (a Google token
+            // HTTP round-trip + an Account row write per request) while never
+            // updating the cookie expiry it checked. Since the token is unused,
+            // the refresh was pure overhead and is removed. If a feature ever
+            // needs the live provider token, refresh it on-demand from the
+            // stored Account.refresh_token at the point of use (not per request).
 
             // MFA challenge completion check.
             if (token.mfaPending === true && token.userId && token.tenantId) {
