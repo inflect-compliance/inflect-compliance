@@ -232,6 +232,8 @@ export const SUBPAGES: readonly string[] = [
     // Risks
     '/risks/[riskId]',
     '/risks/ai',
+    '/risks/ai-systems',
+    '/risks/ai-systems/[systemId]',
     '/risks/board',
     '/risks/correlations',
     '/risks/dashboard',

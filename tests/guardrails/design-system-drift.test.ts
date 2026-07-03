@@ -37,6 +37,12 @@ const MIGRATED_PAGES = [
     'risks/correlations/page.tsx',
     // RQ-10 — reports; semantic tokens + Card/Button/StatusBadge only.
     'risks/reports/page.tsx',
+    // EU AI Act — AI-System Registry; semantic tokens + EntityListPage /
+    // PageHeader / Card / Button / StatusBadge only (no raw colours / .btn / .badge).
+    'risks/ai-systems/page.tsx',
+    'risks/ai-systems/AiSystemsClient.tsx',
+    'risks/ai-systems/[systemId]/page.tsx',
+    'risks/ai-systems/[systemId]/AiSystemDetailClient.tsx',
     'dashboard/page.tsx',
     // Epic 69 split the dashboard into a thin server shell + a
     // `'use client'` component owning the card composition. Both

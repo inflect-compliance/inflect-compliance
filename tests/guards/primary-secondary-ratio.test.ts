@@ -188,7 +188,10 @@ const MIN_SECONDARY_TO_PRIMARY_RATIO = 0.9;
 // form (dispatch/finalize on the owner panel are secondary). +1.
 // +1 for the Epic G-3 vendor-assessment "Send assessment" modal confirm
 // (see the per-file bump in primary-action-budget.test.ts).
-const MAX_PRIMARY_COUNT = 141;
+// 2026-07-03 — bumped 141 → 142 for the EU AI Act AI-System Registry: the list
+// "System" create button and the "Register & classify" modal confirm are both
+// earned primaries (the detail conformity/regenerate actions stay secondary). +1.
+const MAX_PRIMARY_COUNT = 142;
 
 describe("primary:secondary ratio direction", () => {
     const counts = (() => {

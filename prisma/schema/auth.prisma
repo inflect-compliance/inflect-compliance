@@ -233,6 +233,8 @@ model Tenant {
   accessReviewDecisions             AccessReviewDecision[]
   // Epic G-5 — control exception register.
   controlExceptions                 ControlException[]
+  aiSystems                         AiSystem[]
+  aiSystemRequirementLinks          AiSystemRequirementLink[]
   // Epic G-7 — risk treatment plans.
   riskTreatmentPlans                RiskTreatmentPlan[]
   treatmentMilestones               TreatmentMilestone[]

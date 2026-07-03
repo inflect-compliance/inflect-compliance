@@ -377,6 +377,12 @@ const LIST_QUERY_INDEXES: readonly CompositeIndex[] = [
 // curated composite index is needed."
 
 const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
+    // EU AI Act registry — listAiSystems filters by tenantId (+ optional
+    // riskTier / status), orders by riskTier then createdAt; covered by
+    // @@index([tenantId, riskTier]) + @@index([tenantId, status]). Bounded
+    // take ≤200.
+    AiSystem:
+        'listAiSystems filters by tenantId (+riskTier/status) — covered by @@index([tenantId, riskTier]) + @@index([tenantId, status]); bounded take ≤200.',
     // MCP agent proposals — listAgentProposals filters by tenantId (+ optional
     // status), orders by createdAt desc; fully covered by
     // @@index([tenantId, status, createdAt]). Bounded take ≤100.
