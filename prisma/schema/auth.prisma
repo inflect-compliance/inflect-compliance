@@ -235,6 +235,7 @@ model Tenant {
   controlExceptions                 ControlException[]
   aiSystems                         AiSystem[]
   aiSystemRequirementLinks          AiSystemRequirementLink[]
+  aiDecisionLogs                    AiDecisionLog[]
   // Epic G-7 — risk treatment plans.
   riskTreatmentPlans                RiskTreatmentPlan[]
   treatmentMilestones               TreatmentMilestone[]
