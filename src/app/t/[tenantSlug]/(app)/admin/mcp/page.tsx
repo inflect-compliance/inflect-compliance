@@ -1,4 +1,4 @@
-import { SquareCheck, Workflow } from '@/components/ui/icons/nucleo';
+import { SquareCheck, Workflow, BadgeCheck } from '@/components/ui/icons/nucleo';
 import Link from 'next/link';
 import { PageHeader } from '@/components/layout/PageHeader';
 
@@ -39,6 +39,14 @@ export default async function McpAdminPage({
             title: 'Agent Runs',
             description:
                 'Observe the orchestrator. Start a workflow, watch its step timeline and cost, resume a paused run after acting on its proposals, or abort a runaway run.',
+        },
+        {
+            href: tenantHref('/admin/mcp/agent-receipts'),
+            id: 'mcp-agent-receipts-card',
+            icon: BadgeCheck,
+            title: 'Agent Receipts',
+            description:
+                'Externally-verifiable, mediator-signed (pipelock) evidence of agent tool actions. Each verified Ed25519 receipt links to the hash-chained audit trail; export any receipt for independent verification.',
         },
     ];
 

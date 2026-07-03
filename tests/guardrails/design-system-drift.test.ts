@@ -56,6 +56,10 @@ const MIGRATED_PAGES = [
     // legacy btn/badge CSS). Promoted on landing rather than parked in
     // the unmigrated tally.
     'admin/mcp/page.tsx',
+    // Agent-action receipts view — token-clean from the start (semantic
+    // tokens + PageHeader/StatusBadge/Nucleo icons only; no raw color
+    // utilities, no legacy btn/badge CSS). Promoted on landing.
+    'admin/mcp/agent-receipts/page.tsx',
     // Second migration pass — Epic 51 finishing guide. A page is only
     // added here once it is clean on ALL three checks: raw color
     // utilities, legacy `.btn btn-*`, and legacy `.badge badge-*`.

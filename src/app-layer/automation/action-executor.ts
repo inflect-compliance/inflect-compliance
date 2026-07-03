@@ -12,10 +12,9 @@
  * dispatcher regresses to a hardcoded outcome note.
  */
 import { createHmac } from 'node:crypto';
-import { lookup } from 'node:dns/promises';
 import type { PrismaClient } from '@prisma/client';
 import { enqueue } from '../jobs/queue';
-import { checkWebhookUrl, isPrivateAddress } from './webhook-safety';
+import { safeFetch, SsrfBlockedError } from './webhook-safety';
 import { isNotificationsEnabled } from '../notifications/settings';
 import { TERMINAL_WORK_ITEM_STATUSES } from '../domain/work-item-status';
 import type {
@@ -225,19 +224,6 @@ async function updateStatus(db: Db, rule: ExecutableRule, event: ActionEvent): P
 async function fireWebhook(rule: ExecutableRule, event: ActionEvent): Promise<ActionResult> {
     const cfg = rule.actionConfigJson as WebhookActionConfig;
     if (!cfg?.url) return { ok: false, summary: 'No webhook URL configured' };
-    // SSRF guard: https-only + block private/loopback/metadata. The structural
-    // check blocks literal private hosts; we then resolve DNS and re-check the
-    // actual IP so a public name pointing at private space is also rejected.
-    const verdict = checkWebhookUrl(cfg.url);
-    if (!verdict.ok) return { ok: false, summary: `Webhook blocked: ${verdict.reason}` };
-    try {
-        const { address } = await lookup(verdict.host!);
-        if (isPrivateAddress(address)) {
-            return { ok: false, summary: `Webhook blocked: ${verdict.host} resolves to private ${address}` };
-        }
-    } catch {
-        return { ok: false, summary: `Webhook blocked: cannot resolve ${verdict.host}` };
-    }
     const body = JSON.stringify({
         rule: { id: rule.id, name: rule.name },
         event: { name: event.event, entityType: event.entityType, entityId: event.entityId },
@@ -257,7 +243,9 @@ async function fireWebhook(rule: ExecutableRule, event: ActionEvent): Promise<Ac
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), WEBHOOK_TIMEOUT_MS);
     try {
-        const res = await fetch(cfg.url, {
+        // safeFetch enforces the SSRF egress guard (https-only, private/metadata
+        // block, DNS-rebinding re-check, IP-pin) on the tenant-supplied URL.
+        const res = await safeFetch(cfg.url, {
             method: cfg.method ?? 'POST',
             headers,
             body,
@@ -268,6 +256,11 @@ async function fireWebhook(rule: ExecutableRule, event: ActionEvent): Promise<Ac
             summary: `Webhook ${cfg.url} → ${res.status}`,
             detail: { status: res.status },
         };
+    } catch (err) {
+        if (err instanceof SsrfBlockedError) {
+            return { ok: false, summary: `Webhook blocked: ${err.message}` };
+        }
+        throw err;
     } finally {
         clearTimeout(timer);
     }

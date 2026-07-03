@@ -7,10 +7,12 @@
  */
 const enqueueMock = jest.fn();
 jest.mock('@/app-layer/jobs/queue', () => ({ enqueue: (...a: unknown[]) => enqueueMock(...a) }));
+// webhook-safety's safeFetch resolves via `node:dns` promises with { all: true },
+// so the mock returns the address-LIST form.
 const lookupMock = jest.fn((..._a: unknown[]) =>
-    Promise.resolve({ address: '93.184.216.34', family: 4 }),
+    Promise.resolve([{ address: '93.184.216.34', family: 4 }]),
 );
-jest.mock('node:dns/promises', () => ({ lookup: (...a: unknown[]) => lookupMock(...a) }));
+jest.mock('node:dns', () => ({ promises: { lookup: (...a: unknown[]) => lookupMock(...a) } }));
 
 import { executeAction } from '@/app-layer/automation/action-executor';
 
@@ -154,7 +156,7 @@ describe('PR-D hardening guards', () => {
 
     it('WEBHOOK blocks a host that resolves to a private IP (no fetch)', async () => {
         const db = makeDb();
-        lookupMock.mockResolvedValueOnce({ address: '10.0.0.5', family: 4 });
+        lookupMock.mockResolvedValueOnce([{ address: '10.0.0.5', family: 4 }]);
         const res = await executeAction(db, ruleOf('WEBHOOK', { url: 'https://evil.example.com/h' }), baseEvent);
         expect(res.ok).toBe(false);
         expect(res.summary).toMatch(/private/i);

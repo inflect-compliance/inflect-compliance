@@ -2,8 +2,8 @@
   "$schema": "internal: docs classification source of truth",
   "description": "Classification of every docs/**/*.md. authoritative = true today; living = partially-shipped design direction; historical = moment-in-time record (incl. all of docs/implementation-notes/); deprecated = superseded redirect. Enforced by tests/guardrails/docs-accuracy.test.ts. See CLAUDE.md \"Doc classifications\".",
   "counts": {
-    "authoritative": 106,
-    "historical": 333,
+    "authoritative": 108,
+    "historical": 350,
     "living": 5,
     "deprecated": 1
   },
@@ -1307,7 +1307,13 @@
     "docs/implementation-notes/2026-07-01-ai-system-registry.md": {
       "class": "historical"
     },
+    "docs/implementation-notes/2026-07-03-agent-action-receipts.md": {
+      "class": "historical"
+    },
     "docs/implementation-notes/2026-07-02-ai-compliance-posture-hero.md": {
+      "class": "historical"
+    },
+    "docs/implementation-notes/2026-07-03-ssrf-egress-coverage.md": {
       "class": "historical"
     },
     "docs/implementation-notes/2026-07-01-ds1-sovereignty-self-assessment.md": {
@@ -1395,6 +1401,9 @@
       "class": "historical"
     },
     "docs/implementation-notes/2026-07-02-time-badge-my-future-tasks.md": {
+      "class": "historical"
+    },
+    "docs/implementation-notes/2026-07-03-ai-injection-egress-guard.md": {
       "class": "historical"
     }
   }

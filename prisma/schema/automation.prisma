@@ -345,3 +345,51 @@ model AutomationExecution {
   @@index([jobRunId])
   @@index([tenantId, parentExecutionId])
 }
+
+/// Externally-verifiable evidence of an AI/MCP agent action, ingested from an
+/// external pipelock mediator (github.com/luckyPipewrench/pipelock — Apache-2.0
+/// CORE, NOT the ELv2 "fleet" feature). Each row carries a mediator-signed
+/// Ed25519 receipt over the agent's tool decision; the signature is VERIFIED
+/// in-app (native Node `crypto`, no npm SDK) before the row is trusted. Only a
+/// verified receipt is linked to a hash-chained AuditLog entry (`auditLogId`);
+/// an invalid/absent signature is persisted `verified:false` with no link so it
+/// is visible-but-flagged, never silently accepted. `scannedSummary` is BOUNDED
+/// and scrubbed on write — never raw payloads/secrets. Regulatory-artefact /
+/// evidence: retained + immutable-ish (see docs/data-retention.md).
+model AgentActionReceipt {
+  id              String   @id @default(cuid())
+  tenantId        String
+  /// The TenantApiKey / MCP key the agent authenticated with (if known).
+  mcpKeyId        String?
+  /// pipelock's agent/run identifier from the receipt (if present).
+  agentId         String?
+  /// The MCP tool / action the receipt attests to.
+  toolName        String
+  /// pipelock verdict bucket (e.g. allow / block / warn).
+  decisionVerdict String
+  /// The pipelock policy that was active when the decision was made.
+  activePolicy    String?
+  /// BOUNDED, scrubbed summary of what pipelock scanned — size-capped, with any
+  /// credential/PII patterns stripped on write. NEVER raw request/response bodies.
+  scannedSummary  Json
+  /// The mediator's Ed25519 signature over the canonical receipt (verbatim,
+  /// e.g. `ed25519:<hex>`), retained so an external auditor can re-verify.
+  signature       String
+  /// The signer key identifier / public key material from the receipt.
+  signingKeyId    String
+  /// When the mediated action occurred (from the receipt).
+  occurredAt      DateTime
+  /// Set ONLY after successful signature verification — links this receipt to
+  /// its hash-chained AuditLog entry. Null while `verified` is false.
+  auditLogId      String?
+  /// True iff the Ed25519 signature verified against the configured public key.
+  verified        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  auditLog AuditLog? @relation(fields: [auditLogId], references: [id])
+
+  @@index([tenantId, occurredAt])
+  @@index([tenantId, mcpKeyId])
+  @@index([auditLogId])
+}

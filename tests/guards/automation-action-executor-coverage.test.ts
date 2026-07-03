@@ -46,6 +46,6 @@ describe('action-executor coverage', () => {
         expect(src).toMatch(/notification\.createMany/); // NOTIFY_USER
         expect(src).toMatch(/\.task\.create/); // CREATE_TASK
         expect(src).toMatch(/updateMany/); // UPDATE_STATUS
-        expect(src).toMatch(/fetch\(/); // WEBHOOK
+        expect(src).toMatch(/safeFetch\(/); // WEBHOOK (SSRF-guarded outbound)
     });
 });
