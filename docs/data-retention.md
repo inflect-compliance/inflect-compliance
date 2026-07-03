@@ -48,6 +48,8 @@ a `userId` but stores no contact PII).
 | `AccessReview` | Business record | No | Soft-delete (`deletedAt`) — **NOT** auto-purged | Soft-deleted rows **not auto-purged** — gap |
 | `AccessReviewDecision` | Business record | maybe | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |
 | `Account` | Security ephemeral | No | None today — cascade on parent/tenant delete only | DEFINED — expiry-driven |
+| `AiSystem` | Business record | No | Soft-delete (`deletedAt`) — **NOT** auto-purged; purpose/useContext encrypted (Epic B) | Soft-deleted rows **not auto-purged** — gap |
+| `AiSystemRequirementLink` | Business record | No | None today — cascade on AI-system/tenant delete only | Indefinite while tenant active — review w/ compliance |
 | `Asset` | Business record | No | retentionUntil sweep (data-lifecycle `runRetentionSweep`) + soft-delete | DEFINED (retentionUntil) where set; else indefinite |
 | `AssetKeySequence` | Operational | No | None today — cascade on parent/tenant delete only | No TTL today — candidate for time-boxed prune |
 | `AssetRiskLink` | Business record | No | None today — cascade on parent/tenant delete only | Indefinite while tenant active — review w/ compliance |

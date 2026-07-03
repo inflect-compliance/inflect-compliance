@@ -1110,3 +1110,27 @@ enum IncidentNotificationStatus {
   SUBMITTED
   NOT_REQUIRED
 }
+
+/// EU AI Act (Regulation (EU) 2024/1689) — the role a tenant plays for an AI
+/// system. Providers develop/place a system on the market (Art 16/17 duties);
+/// deployers use one under their authority (Art 26/27 duties).
+enum AiDeploymentRole {
+  PROVIDER
+  DEPLOYER
+}
+
+/// EU AI Act risk tier. PROHIBITED (Art 5) > HIGH (Art 6 + Annex III) >
+/// LIMITED (Art 50 transparency) > MINIMAL (Art 95 voluntary). Strict
+/// precedence; see src/lib/eu-ai-act/classification.ts.
+enum AiRiskTier {
+  PROHIBITED
+  HIGH
+  LIMITED
+  MINIMAL
+}
+
+/// Lifecycle state of a registered AI system.
+enum AiSystemStatus {
+  ACTIVE
+  RETIRED
+}

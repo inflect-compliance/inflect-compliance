@@ -1304,6 +1304,9 @@
     "docs/implementation-notes/2026-07-01-scanner-ingestion.md": {
       "class": "historical"
     },
+    "docs/implementation-notes/2026-07-01-ai-system-registry.md": {
+      "class": "historical"
+    },
     "docs/implementation-notes/2026-07-02-ai-compliance-posture-hero.md": {
       "class": "historical"
     },

@@ -209,6 +209,10 @@ export const ENCRYPTED_FIELDS: Readonly<Record<string, readonly string[]>> = {
     //  on REJECTED rows. Both contain narrative that may name
     //  internal users / systems, so they're encrypted at rest.
     ControlException: ['justification', 'rejectionReason'],
+    // EU AI Act registry — a system's purpose + use-context can describe
+    // sensitive business processes / data flows. Sanitised on write, encrypted
+    // at rest. NOT searched (no contains/orderBy), so encryption is safe.
+    AiSystem: ['purpose', 'useContext'],
 
     // ─── RQ2-1 risk score provenance ───────────────────
     //  `justification` carries the assessor's narrative for a score
