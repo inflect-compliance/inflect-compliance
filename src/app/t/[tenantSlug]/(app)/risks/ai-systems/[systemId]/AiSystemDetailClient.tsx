@@ -10,6 +10,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card } from '@/components/ui/card';
+import { Heading } from '@/components/ui/typography';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
 import { TIER_VARIANT } from '../AiSystemsClient';
@@ -103,7 +104,7 @@ export function AiSystemDetailClient({ system, tenantSlug, canWrite }: Props) {
             />
 
             <Card>
-                <h2 className="mb-2 text-sm font-semibold text-content-emphasis">Classification</h2>
+                <Heading level={2} className="mb-2 text-sm font-semibold text-content-emphasis">Classification</Heading>
                 <Row label="Risk tier">
                     <StatusBadge variant={TIER_VARIANT[system.riskTier] ?? 'neutral'}>{system.riskTier}</StatusBadge>
                 </Row>
@@ -115,9 +116,9 @@ export function AiSystemDetailClient({ system, tenantSlug, canWrite }: Props) {
             </Card>
 
             <Card>
-                <h2 className="mb-2 text-sm font-semibold text-content-emphasis">
+                <Heading level={2} className="mb-2 text-sm font-semibold text-content-emphasis">
                     Linked obligations ({system.requirementLinks.length})
-                </h2>
+                </Heading>
                 {system.requirementLinks.length === 0 ? (
                     <p className="text-sm text-content-muted">No obligations linked.</p>
                 ) : (
@@ -136,7 +137,7 @@ export function AiSystemDetailClient({ system, tenantSlug, canWrite }: Props) {
 
             {system.riskTier === 'HIGH' && (
                 <Card>
-                    <h2 className="mb-1 text-sm font-semibold text-content-emphasis">Conformity artifacts</h2>
+                    <Heading level={2} className="mb-1 text-sm font-semibold text-content-emphasis">Conformity artifacts</Heading>
                     <p className="mb-3 text-xs text-content-subtle">
                         Generate a DRAFT for human review. A draft is queued in the approval queue — nothing is
                         published, and a Declaration of Conformity is never auto-issued.
@@ -155,7 +156,7 @@ export function AiSystemDetailClient({ system, tenantSlug, canWrite }: Props) {
                                 disabled={!canWrite || busy === d.id || queued.includes(d.id)}
                                 onClick={() => generate(d.id)}
                             >
-                                {busy === d.id ? 'Generating…' : queued.includes(d.id) ? 'Queued ✓' : d.label}
+                                {busy === d.id ? 'Generating…' : queued.includes(d.id) ? 'Queued' : d.label}
                             </Button>
                         ))}
                     </div>

@@ -1,0 +1,101 @@
+/**
+ * AI-System Registry usecase unit tests — classification-driven registration
+ * and propose-not-commit conformity drafting (with mocked persistence).
+ */
+jest.mock('@/lib/db-context', () => ({
+    runInTenantContext: jest.fn(async (_ctx: unknown, fn: (db: unknown) => unknown) => fn({})),
+}));
+jest.mock('@/lib/prisma', () => ({
+    prisma: {
+        framework: {
+            findMany: jest.fn().mockResolvedValue([
+                { id: 'fw-eu', key: 'EU-AI-ACT' },
+                { id: 'fw-iso', key: 'ISO42001' },
+            ]),
+        },
+        frameworkRequirement: {
+            findMany: jest.fn().mockResolvedValue([
+                { id: 'req-art9', code: 'Art.9', frameworkId: 'fw-eu' },
+            ]),
+        },
+    },
+}));
+
+const mockCreate = jest.fn().mockResolvedValue({ id: 'ai-1', riskTier: 'HIGH', classificationClauseId: 'Annex III(4)' });
+const mockLink = jest.fn().mockResolvedValue(1);
+const mockGetById = jest.fn();
+jest.mock('@/app-layer/repositories/AiSystemRepository', () => ({
+    AiSystemRepository: {
+        create: (...a: unknown[]) => mockCreate(...a),
+        linkRequirements: (...a: unknown[]) => mockLink(...a),
+        list: jest.fn().mockResolvedValue([]),
+        getById: (...a: unknown[]) => mockGetById(...a),
+    },
+}));
+jest.mock('@/app-layer/events/audit', () => ({ logEvent: jest.fn() }));
+
+const mockProposal = jest.fn().mockResolvedValue({ id: 'prop-1', status: 'PENDING' });
+jest.mock('@/app-layer/usecases/agent-proposals', () => ({
+    createAgentProposal: (...a: unknown[]) => mockProposal(...a),
+}));
+
+import { createAiSystem } from '@/app-layer/usecases/ai-system';
+import { generateConformityDraft } from '@/app-layer/usecases/ai-system-conformity';
+import { makeRequestContext } from '../helpers/make-context';
+
+beforeEach(() => jest.clearAllMocks());
+
+describe('createAiSystem', () => {
+    it('classifies an Annex III use-case as HIGH and links obligations', async () => {
+        const result = await createAiSystem(makeRequestContext('EDITOR'), {
+            name: 'Candidate screening model',
+            classification: { annexIIIArea: 'employment' },
+        });
+        expect(result.riskTier).toBe('HIGH');
+        expect(result.clauseId).toBe('Annex III(4)');
+        // The persisted tier is computed here, never taken from the client.
+        expect(mockCreate).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.anything(),
+            expect.objectContaining({ riskTier: 'HIGH', classificationClauseId: 'Annex III(4)' }),
+        );
+        expect(mockLink).toHaveBeenCalled();
+    });
+
+    it('classifies nothing-triggered as MINIMAL', async () => {
+        mockCreate.mockResolvedValueOnce({ id: 'ai-2', riskTier: 'MINIMAL', classificationClauseId: 'Art.95' });
+        const result = await createAiSystem(makeRequestContext('EDITOR'), { name: 'Spellchecker', classification: {} });
+        expect(result.riskTier).toBe('MINIMAL');
+    });
+});
+
+describe('generateConformityDraft (propose-not-commit)', () => {
+    it('queues a DRAFT proposal for a HIGH-risk system', async () => {
+        mockGetById.mockResolvedValueOnce({
+            id: 'ai-1', name: 'Screening', provider: null, deploymentRole: 'DEPLOYER',
+            riskTier: 'HIGH', status: 'ACTIVE', purpose: null, useContext: null,
+            classificationClauseId: 'Annex III(4)', classificationRationale: 'high',
+            requirementLinks: [],
+        });
+        const res = await generateConformityDraft(makeRequestContext('EDITOR'), 'ai-1', {
+            docType: 'ANNEX_IV_TECHNICAL_DOCUMENTATION',
+        });
+        expect(mockProposal).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.objectContaining({ kind: 'POLICY' }),
+        );
+        expect(res.proposalId).toBe('prop-1');
+    });
+
+    it('refuses to generate for a non-HIGH system', async () => {
+        mockGetById.mockResolvedValueOnce({
+            id: 'ai-3', name: 'Chatbot', riskTier: 'LIMITED', requirementLinks: [],
+            provider: null, deploymentRole: 'DEPLOYER', status: 'ACTIVE',
+            purpose: null, useContext: null, classificationClauseId: 'Art.50(1)', classificationRationale: 'x',
+        });
+        await expect(
+            generateConformityDraft(makeRequestContext('EDITOR'), 'ai-3', { docType: 'ANNEX_V_DECLARATION_OF_CONFORMITY' }),
+        ).rejects.toThrow(/HIGH-risk/);
+        expect(mockProposal).not.toHaveBeenCalled();
+    });
+});

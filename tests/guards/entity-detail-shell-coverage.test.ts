@@ -69,7 +69,14 @@ const ADOPTED_PAGES: ReadonlyArray<Adopter> = [
  * planned follow-up. The post-loop assertion caps the list at 5
  * entries — graduate, don't grow.
  */
-const WAVE_2_DEFERRED: ReadonlyArray<{ page: string; entity: string; reason: string }> = [];
+const WAVE_2_DEFERRED: ReadonlyArray<{ page: string; entity: string; reason: string }> = [
+    {
+        page: 'src/app/t/[tenantSlug]/(app)/risks/ai-systems/[systemId]/page.tsx',
+        entity: 'AiSystem',
+        reason:
+            'EU AI Act AI-system detail is a lightweight read-only classification view (PageHeader + back={smart} + a few cards + conformity-draft actions), not a tabbed entity-detail surface. Graduate to EntityDetailLayout if/when it grows tabs (evidence, activity).',
+    },
+];
 
 function read(rel: string): string | null {
   const abs = path.resolve(ROOT, rel);
