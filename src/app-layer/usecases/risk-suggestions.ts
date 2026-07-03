@@ -160,8 +160,18 @@ export async function generateRiskSuggestions(
             });
         }
 
-        // 10. Call provider with sanitized input
-        const provider = getProvider();
+        // 10. Call provider with sanitized input.
+        // AI sovereignty (DS-1): resolve the tenant's AI-residency posture.
+        // LOCAL_ONLY forces a local provider and refuses external inference.
+        const secSettings = await db.tenantSecuritySettings.findUnique({
+            where: { tenantId: ctx.tenantId },
+            select: { aiResidency: true, aiLocalBaseUrl: true, aiLocalModel: true },
+        });
+        const provider = getProvider({
+            residency: secSettings?.aiResidency,
+            localBaseUrl: secSettings?.aiLocalBaseUrl,
+            localModel: secSettings?.aiLocalModel,
+        });
         const aiStart = Date.now();
         let output;
         try {

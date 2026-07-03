@@ -1151,6 +1151,14 @@ model TenantSecuritySettings {
   /// secret/exfil egress guard). Default BALANCED = allow-but-flag; STRICT
   /// blocks malicious input / secret egress; AUDIT logs only.
   aiGuardMode                AiGuardMode @default(BALANCED)
+  /// AI sovereignty (DS-1). EXTERNAL (default) allows the configured external
+  /// provider; LOCAL_ONLY forces inference onto the tenant's own local gateway
+  /// and refuses external providers. Optional per-tenant local-gateway override
+  /// (else the AI_LOCAL_* env defaults). aiLocalBaseUrl is an internal URL, not
+  /// a secret — not encrypted.
+  aiResidency                AiResidency @default(EXTERNAL)
+  aiLocalBaseUrl             String?
+  aiLocalModel               String?
   createdAt                  DateTime  @default(now())
   updatedAt                  DateTime  @updatedAt
   mfaFailClosed              Boolean   @default(false)

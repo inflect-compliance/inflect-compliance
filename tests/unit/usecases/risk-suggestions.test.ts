@@ -163,6 +163,7 @@ describe('generateRiskSuggestions — pre-AI controls', () => {
                 }) },
                 asset: { findMany: jest.fn().mockResolvedValue([]) },
                 control: { findMany: jest.fn().mockResolvedValue([]) },
+                tenantSecuritySettings: { findUnique: jest.fn().mockResolvedValue(null) },
                 riskSuggestionSession: {
                     create: jest.fn().mockResolvedValue({ id: 's1' }),
                     update: jest.fn().mockResolvedValue({ id: 's1', status: 'GENERATED' }),
@@ -197,6 +198,7 @@ describe('generateRiskSuggestions — pre-AI controls', () => {
                 tenant: { findUnique: jest.fn().mockResolvedValue({ industry: 'x', maxRiskScale: 5 }) },
                 asset: { findMany: jest.fn().mockResolvedValue([]) },
                 control: { findMany: jest.fn().mockResolvedValue([]) },
+                tenantSecuritySettings: { findUnique: jest.fn().mockResolvedValue(null) },
                 riskSuggestionSession: {
                     create: jest.fn().mockResolvedValue({ id: 's1' }),
                     update: jest.fn().mockResolvedValue({}),

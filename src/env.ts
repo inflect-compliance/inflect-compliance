@@ -225,6 +225,13 @@ export const env = createEnv({
         AI_RISK_PROVIDER: z.string().default('stub'),
         OPENROUTER_API_KEY: z.string().optional(),
         OPENROUTER_MODEL: z.string().optional(),
+        // Local / self-hosted AI gateway (AI sovereignty). Base URL of an
+        // OpenAI-compatible endpoint (Ollama / vLLM / …); model name; optional
+        // bearer. Used when AI_RISK_PROVIDER=local or a tenant sets
+        // aiResidency=LOCAL_ONLY (a per-tenant override wins over these).
+        AI_LOCAL_BASE_URL: z.string().optional(),
+        AI_LOCAL_MODEL: z.string().optional(),
+        AI_LOCAL_API_KEY: z.string().optional(),
         AI_RISK_DAILY_QUOTA: z.string().optional(),
         AI_RISK_USER_RPM: z.string().optional(),
         AI_RISK_ENABLED: z.string().default('true'),
@@ -377,6 +384,9 @@ export const env = createEnv({
         AI_RISK_PROVIDER: process.env.AI_RISK_PROVIDER,
         OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
         OPENROUTER_MODEL: process.env.OPENROUTER_MODEL,
+        AI_LOCAL_BASE_URL: process.env.AI_LOCAL_BASE_URL,
+        AI_LOCAL_MODEL: process.env.AI_LOCAL_MODEL,
+        AI_LOCAL_API_KEY: process.env.AI_LOCAL_API_KEY,
         AI_RISK_DAILY_QUOTA: process.env.AI_RISK_DAILY_QUOTA,
         AI_RISK_USER_RPM: process.env.AI_RISK_USER_RPM,
         AI_RISK_ENABLED: process.env.AI_RISK_ENABLED,

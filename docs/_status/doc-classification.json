@@ -1313,6 +1313,9 @@
     "docs/implementation-notes/2026-07-01-ai-decision-log.md": {
       "class": "historical"
     },
+    "docs/implementation-notes/2026-07-01-ai-sovereignty-and-prompt-hygiene.md": {
+      "class": "historical"
+    },
     "docs/implementation-notes/2026-07-02-ai-compliance-posture-hero.md": {
       "class": "historical"
     },

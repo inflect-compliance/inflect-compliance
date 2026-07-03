@@ -52,6 +52,13 @@ const NON_SUBPROCESSOR_ALLOWLIST: Record<string, string> = {
     // operator feature flag.
     PIPELOCK_PUBLIC_KEY: 'public Ed25519 verify key for the self-hosted pipelock MCP mediator — verify-only, no data sent externally, not a sub-processor',
     PIPELOCK_STRICT_MODE: 'operator feature flag toggling strict receipt enforcement — not an external endpoint',
+    // AI sovereignty (DS-1) — the local/self-hosted LLM gateway. These configure
+    // the TENANT'S OWN in-jurisdiction inference endpoint (Ollama / vLLM), the
+    // OPPOSITE of an external sub-processor: a LOCAL_ONLY tenant's inference
+    // never leaves its perimeter. Not a third-party processor.
+    AI_LOCAL_BASE_URL: 'base URL of the tenant\'s OWN self-hosted OpenAI-compatible LLM gateway (AI sovereignty) — in-jurisdiction inference, not an external sub-processor',
+    AI_LOCAL_MODEL: 'model name served by the tenant\'s self-hosted gateway — a config string, not an external endpoint',
+    AI_LOCAL_API_KEY: 'optional bearer for the tenant\'s OWN local gateway — internal, not sent to any third party',
     // Internal secrets (env-provided; stored in AWS Secrets Manager, itself listed).
     AUTH_SECRET: 'internal JWT/session signing secret',
     JWT_SECRET: 'internal JWT signing secret',
