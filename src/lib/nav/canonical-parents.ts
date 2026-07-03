@@ -37,6 +37,7 @@ const PARENT_MAP: Record<string, CanonicalParent> = {
     // Agent (MCP) — both hang off the /admin/mcp hub.
     '/agent-proposals': { href: '/admin/mcp', label: 'MCP' },
     '/agent-runs': { href: '/admin/mcp', label: 'MCP' },
+    '/admin/mcp/agent-receipts': { href: '/admin/mcp', label: 'MCP' },
 
     // Admin subpages
     '/admin/api-keys': { href: '/admin', label: 'Admin' },

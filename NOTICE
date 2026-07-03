@@ -18,6 +18,28 @@ pipelock is used as a taxonomy blueprint only. It is NOT a dependency of
 this project: no pipelock code is imported, linked, or redistributed; the
 guard is an independent TypeScript-native reimplementation.
 
+------------------------------------------------------------------------
+Agent-action receipts — pipelock (Apache License 2.0 CORE)
+------------------------------------------------------------------------
+inflect-compliance ingests and verifies mediator-signed AI-agent "action
+receipts" produced by pipelock (https://github.com/luckyPipewrench/pipelock),
+an "AI agent firewall for MCP security".
+
+We use ONLY the pipelock Apache-2.0-licensed CORE receipt format (the
+`action_record` container with a top-level Ed25519 `signature` / `signer_key`
+and hash-chain fields). We do NOT use, link, bundle, or depend on any pipelock
+feature governed by the Elastic License 2.0 (the "fleet" features, including the
+`fleet-receipt` DSSE envelope format).
+
+No pipelock source code is vendored or redistributed here. We do not depend on
+any pipelock npm package (there is no TypeScript verifier SDK); the Ed25519
+signature is verified natively using Node's built-in `crypto` module against the
+CORE receipt canonicalization. Portions of pipelock governed by the Elastic
+License 2.0 are NOT used by this product.
+
+------------------------------------------------------------------------
+Apache License, Version 2.0
+------------------------------------------------------------------------
 You may obtain a copy of the Apache License, Version 2.0 at:
 
     http://www.apache.org/licenses/LICENSE-2.0

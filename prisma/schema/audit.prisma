@@ -43,6 +43,9 @@ model AuditLog {
   version      Int      @default(1)
   tenant       Tenant   @relation(fields: [tenantId], references: [id])
   user         User?    @relation(fields: [userId], references: [id])
+  /// Verified agent-action receipts linked to this hash-chained entry (Epic:
+  /// agent-action-receipts). Back-relation only — adds no column to AuditLog.
+  agentActionReceipts AgentActionReceipt[]
 
   @@index([tenantId])
   @@index([tenantId, createdAt])

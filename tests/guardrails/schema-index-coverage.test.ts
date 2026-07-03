@@ -382,6 +382,12 @@ const LIST_MODELS_TENANT_INDEX_SUFFICIENT: Record<string, string> = {
     // @@index([tenantId, status, createdAt]). Bounded take ≤100.
     AgentProposal:
         'listAgentProposals filters by tenantId (+status), orders by createdAt — covered by @@index([tenantId, status, createdAt]); bounded take ≤100.',
+    // Agent-action receipts — listReceipts filters by tenantId (+ optional
+    // verified / toolName), orders by occurredAt desc; covered by
+    // @@index([tenantId, occurredAt]) (tenantId is RLS-bound; verified/toolName
+    // are small in-page filters). Bounded take ≤200 (default 100).
+    AgentActionReceipt:
+        'listReceipts filters by tenantId (+verified/toolName), orders by occurredAt — covered by @@index([tenantId, occurredAt]); bounded take ≤200.',
     WorkflowRun:
         'listWorkflowRuns filters by tenantId (+status), orders by startedAt — covered by @@index([tenantId, status, startedAt]); bounded take ≤50.',
     TenantFrameworkDelta:
