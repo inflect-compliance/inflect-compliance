@@ -1307,6 +1307,9 @@
     "docs/implementation-notes/2026-07-02-ai-compliance-posture-hero.md": {
       "class": "historical"
     },
+    "docs/implementation-notes/2026-07-03-ssrf-egress-coverage.md": {
+      "class": "historical"
+    },
     "docs/implementation-notes/2026-07-01-ds1-sovereignty-self-assessment.md": {
       "class": "historical"
     },

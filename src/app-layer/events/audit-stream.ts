@@ -43,6 +43,7 @@
  */
 
 import { computeHmacSha256 } from '@/app-layer/integrations/webhook-crypto';
+import { safeFetch, SsrfBlockedError } from '@/app-layer/automation/webhook-safety';
 import { logger } from '@/lib/observability/logger';
 import { buildOutboundHeaders, computeBatchId } from '@/app-layer/events/webhook-headers';
 import {
@@ -171,13 +172,23 @@ const defaultPost: StreamPostFn = async (url, body, headers) => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), POST_TIMEOUT_MS);
     try {
-        const res = await fetch(url, {
+        // SSRF guard: the audit-stream URL is tenant-controlled, so route it
+        // through safeFetch (https-only + private/metadata block + DNS-rebinding
+        // re-check + IP-pin) rather than fetching it directly.
+        const res = await safeFetch(url, {
             method: 'POST',
             body,
             headers,
             signal: controller.signal,
         });
         return { ok: res.ok, status: res.status, statusText: res.statusText };
+    } catch (err) {
+        if (err instanceof SsrfBlockedError) {
+            // Permanently unsafe destination — 403 is non-retryable so the
+            // batch fails fast rather than retrying a blocked URL.
+            return { ok: false, status: 403, statusText: `SSRF blocked: ${err.message}` };
+        }
+        throw err;
     } finally {
         clearTimeout(timer);
     }
