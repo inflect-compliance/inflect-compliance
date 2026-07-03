@@ -26,6 +26,7 @@ import {
     updateEvidence,
     reviewEvidence,
     bulkAssignEvidence,
+    bulkApproveEvidence,
     deleteEvidence,
     restoreEvidence,
     purgeEvidence,
@@ -229,6 +230,36 @@ describeFn('bulkAssignEvidence (integration)', () => {
     it('returns 0 when no ids match (empty-set early return)', async () => {
         const res = await bulkAssignEvidence(adminCtx(), ['nope-1', 'nope-2'], ownerUserId);
         expect(res.updated).toBe(0);
+    });
+});
+
+describeFn('bulkApproveEvidence (integration)', () => {
+    it('approves DRAFT rows directly by an EDITOR — no SUBMITTED step (review chain bypassed)', async () => {
+        const a = await newDraft({ title: 'approve a' });
+        const b = await newDraft({ title: 'approve b' });
+        const res = await bulkApproveEvidence(editorCtx(), [a.id, b.id]);
+        expect(res.approved).toBe(2);
+        const rows = await globalPrisma.evidence.findMany({ where: { id: { in: [a.id, b.id] } } });
+        expect(rows.every((r) => r.status === 'APPROVED')).toBe(true);
+    });
+
+    it('records an EvidenceReview row crediting the approver', async () => {
+        const a = await newDraft({ title: 'approve review row' });
+        await bulkApproveEvidence(editorCtx(), [a.id]);
+        const reviews = await globalPrisma.evidenceReview.findMany({ where: { evidenceId: a.id, action: 'APPROVED' } });
+        expect(reviews.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('is idempotent — an already-APPROVED row is skipped', async () => {
+        const a = await newDraft({ title: 'approve idempotent' });
+        await bulkApproveEvidence(editorCtx(), [a.id]);
+        const res = await bulkApproveEvidence(editorCtx(), [a.id]);
+        expect(res.approved).toBe(0);
+    });
+
+    it('returns 0 when no ids match (empty-set early return)', async () => {
+        const res = await bulkApproveEvidence(editorCtx(), ['nope-1', 'nope-2']);
+        expect(res.approved).toBe(0);
     });
 });
 

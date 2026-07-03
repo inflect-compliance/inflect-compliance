@@ -820,3 +820,42 @@ export async function bulkAssignEvidence(
     await bumpEntityCacheVersion(ctx, 'evidence');
     return { updated };
 }
+
+/**
+ * Bulk-approve evidence directly — the "review" workflow is bypassed here.
+ * Every non-approved item (DRAFT / SUBMITTED / REJECTED / NEEDS_REVIEW)
+ * moves straight to APPROVED, no SUBMITTED intermediate and no separate
+ * reviewer-identity gate. An EvidenceReview row is still recorded (who + when)
+ * for the audit trail, and a STATUS_CHANGE audit entry is written per item.
+ * `nextReviewDate` is left as-is (set at creation from the review cycle), so an
+ * approved item with a future/absent review date immediately counts as
+ * "current" on the dashboard.
+ */
+export async function bulkApproveEvidence(ctx: RequestContext, evidenceIds: string[]) {
+    assertCanWrite(ctx);
+    const approved = await runInTenantContext(ctx, async (db) => {
+        const rows = await EvidenceRepository.listByIds(db, ctx, evidenceIds);
+        const toApprove = rows.filter((r) => r.status !== 'APPROVED');
+        if (toApprove.length === 0) return 0;
+        await EvidenceRepository.bulkUpdate(db, ctx, toApprove.map((r) => r.id), { status: 'APPROVED' });
+        for (const r of toApprove) {
+            await EvidenceRepository.addReview(db, ctx, r.id, 'APPROVED', 'Bulk approved');
+            await logEvent(db, ctx, {
+                action: 'STATUS_CHANGE',
+                entityType: 'Evidence',
+                entityId: r.id,
+                details: 'Evidence approved (bulk)',
+                detailsJson: {
+                    category: 'status_change',
+                    entityName: 'Evidence',
+                    fromStatus: r.status,
+                    toStatus: 'APPROVED',
+                    summary: 'approved (bulk)',
+                },
+            });
+        }
+        return toApprove.length;
+    });
+    await bumpEntityCacheVersion(ctx, 'evidence');
+    return { approved };
+}
