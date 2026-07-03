@@ -26,6 +26,7 @@ import { checkRateLimit, recordGeneration } from '@/app-layer/ai/risk-assessment
 import { enforceFeatureGate } from '@/app-layer/ai/risk-assessment/feature-gate';
 import { bumpEntityCacheVersion } from '@/lib/cache/list-cache';
 import { recordAiRiskAssessment } from '@/lib/observability/metrics';
+import { logAiDecision, recordDecisionOutcome } from '@/app-layer/ai/decision-log';
 
 // ─── Generate Risk Suggestions ───
 
@@ -216,6 +217,18 @@ export async function generateRiskSuggestions(
                 },
             });
 
+            // EU AI Act Art 12 — record the failed invocation too (digest only).
+            await logAiDecision(db, ctx, {
+                feature: 'risk-suggestions',
+                provider: provider.providerName,
+                model: null,
+                sanitizedInput,
+                outputSummary: null,
+                latencyMs: Date.now() - aiStart,
+                guardVerdict: 'error',
+                sessionRef: session.id,
+            });
+
             throw err;
         }
 
@@ -265,6 +278,25 @@ export async function generateRiskSuggestions(
             suggestionCount: guardedSuggestions.length,
             promptTokens: output.usage?.promptTokens,
             completionTokens: output.usage?.completionTokens,
+        });
+
+        // EU AI Act Art 12 — one decision-log row per invocation. Stores a
+        // DIGEST of the sanitised input (never the raw prompt/PII) + a bounded
+        // summary + latency/cost + the guard verdict. Append-only; the human
+        // outcome is stamped later via applySession/dismissSession.
+        const guardBlocked = guard.redactions + guard.droppedLowConfidence > 0;
+        await logAiDecision(db, ctx, {
+            feature: 'risk-suggestions',
+            provider: output.provider,
+            model: output.modelName,
+            sanitizedInput,
+            outputSummary: `${guardedSuggestions.length} risk suggestion(s): ${guardedSuggestions.map((s) => s.title).slice(0, 5).join('; ')}`,
+            latencyMs: Date.now() - aiStart,
+            tokensIn: output.usage?.promptTokens ?? null,
+            tokensOut: output.usage?.completionTokens ?? null,
+            guardVerdict: guardBlocked ? `redactions=${guard.redactions};dropped=${guard.droppedLowConfidence}` : 'clean',
+            guardBlocked,
+            sessionRef: session.id,
         });
 
         // 11. Store suggestion items
@@ -484,6 +516,9 @@ export async function applySession(ctx: RequestContext, sessionId: string, input
             include: { items: true },
         });
 
+        // EU AI Act Art 14 — human-oversight outcome on the AI decision.
+        await recordDecisionOutcome(db, ctx, session.id, createdRisks.length > 0 ? 'ACCEPTED' : 'REJECTED');
+
         // Audit log with full traceability
         await logEvent(db, ctx, {
             action: 'AI_RISK_SUGGESTIONS_APPLIED',
@@ -535,6 +570,9 @@ export async function dismissSession(ctx: RequestContext, sessionId: string) {
             where: { id: session.id },
             data: { status: 'DISMISSED' },
         });
+
+        // EU AI Act Art 14 — the human rejected the AI suggestions.
+        await recordDecisionOutcome(db, ctx, session.id, 'REJECTED');
 
         // Audit log
         await logEvent(db, ctx, {

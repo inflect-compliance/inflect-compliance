@@ -57,6 +57,14 @@ jest.mock('../../../src/app-layer/events/audit', () => ({
     logEvent: jest.fn().mockResolvedValue(undefined),
 }));
 
+// The AI decision log (Art 12) is exercised by its own ratchet
+// (tests/guards/ai-decision-log.test.ts); mock it here so these tests focus on
+// the usecase's own sanitise/provider/apply/dismiss logic.
+jest.mock('@/app-layer/ai/decision-log', () => ({
+    logAiDecision: jest.fn().mockResolvedValue('log-1'),
+    recordDecisionOutcome: jest.fn().mockResolvedValue(1),
+}));
+
 jest.mock('@/lib/cache/list-cache', () => ({
     bumpEntityCacheVersion: jest.fn().mockResolvedValue(undefined),
 }));

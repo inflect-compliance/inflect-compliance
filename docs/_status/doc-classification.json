@@ -1310,6 +1310,9 @@
     "docs/implementation-notes/2026-07-03-agent-action-receipts.md": {
       "class": "historical"
     },
+    "docs/implementation-notes/2026-07-01-ai-decision-log.md": {
+      "class": "historical"
+    },
     "docs/implementation-notes/2026-07-02-ai-compliance-posture-hero.md": {
       "class": "historical"
     },

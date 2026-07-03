@@ -970,3 +970,55 @@ export function recordAiRiskAssessment(attrs: {
         getAiRiskTokens().add(attrs.completionTokens, { provider: attrs.provider, kind: 'completion' });
     }
 }
+
+// ─── AI decision log (Art 12/14) — invocation + human-outcome metrics ───
+
+let _aiDecisionLogged: ReturnType<ReturnType<typeof getMeter>['createCounter']> | null = null;
+let _aiDecisionGuardBlocks: ReturnType<ReturnType<typeof getMeter>['createCounter']> | null = null;
+let _aiDecisionOutcomes: ReturnType<ReturnType<typeof getMeter>['createCounter']> | null = null;
+
+function getAiDecisionLogged() {
+    if (!_aiDecisionLogged) {
+        _aiDecisionLogged = getMeter().createCounter('ai.decision.logged', {
+            description: 'AI decisions logged, labelled by provider + feature. One per AI-feature invocation.',
+            unit: '1',
+        });
+    }
+    return _aiDecisionLogged;
+}
+function getAiDecisionGuardBlocks() {
+    if (!_aiDecisionGuardBlocks) {
+        _aiDecisionGuardBlocks = getMeter().createCounter('ai.decision.guard_blocks', {
+            description: 'AI decisions whose output guard redacted/dropped content, labelled by provider + feature.',
+            unit: '1',
+        });
+    }
+    return _aiDecisionGuardBlocks;
+}
+function getAiDecisionOutcomes() {
+    if (!_aiDecisionOutcomes) {
+        _aiDecisionOutcomes = getMeter().createCounter('ai.decision.outcome', {
+            description: 'Human-oversight outcomes on AI suggestions (accepted/edited/rejected), labelled by outcome. Acceptance rate is derivable.',
+            unit: '1',
+        });
+    }
+    return _aiDecisionOutcomes;
+}
+
+/** Record one AI decision-log write — called once per AI-feature invocation. */
+export function recordAiDecisionLogged(attrs: {
+    provider: string;
+    feature: string;
+    guardBlocked?: boolean;
+}): void {
+    const labels = { provider: attrs.provider, feature: attrs.feature };
+    getAiDecisionLogged().add(1, labels);
+    if (attrs.guardBlocked) getAiDecisionGuardBlocks().add(1, labels);
+}
+
+/** Record a human-oversight outcome on an AI suggestion (Art 14). */
+export function recordAiDecisionOutcome(attrs: {
+    outcome: 'ACCEPTED' | 'EDITED' | 'REJECTED';
+}): void {
+    getAiDecisionOutcomes().add(1, { outcome: attrs.outcome });
+}

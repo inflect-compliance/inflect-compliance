@@ -1148,3 +1148,12 @@ enum AiGuardMode {
   BALANCED
   AUDIT
 }
+
+/// AI decision human-oversight outcome (EU AI Act Art 14). PENDING until a
+/// human acts on the suggestion; then a one-way transition to a terminal state.
+enum AiHumanOutcome {
+  PENDING
+  ACCEPTED
+  EDITED
+  REJECTED
+}

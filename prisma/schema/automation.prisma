@@ -393,3 +393,46 @@ model AgentActionReceipt {
   @@index([tenantId, mcpKeyId])
   @@index([auditLogId])
 }
+
+// ─────────────────────────────────────────────────────────────────
+// AI decision log (EU AI Act Art 12 record-keeping + AI-ops).
+//
+// One row per AI-feature invocation: what the model was asked (a DIGEST, never
+// the raw prompt/PII), a bounded sanitised output summary, latency/cost, the
+// output-guard verdict, and the human-oversight outcome (Art 14). Rows are
+// append-only — a DB trigger blocks edits to the core record; only the
+// humanOutcome stamp may transition once, PENDING → terminal (the feedback
+// loop). See src/app-layer/ai/decision-log/.
+// ─────────────────────────────────────────────────────────────────
+model AiDecisionLog {
+  id            String         @id @default(cuid())
+  tenantId      String
+  /// The AI feature (e.g. 'risk-suggestions').
+  feature       String
+  /// Optional link to a registered AI system (EU AI Act registry). When set to
+  /// a HIGH-risk system, this row is the Art 12 record for that system.
+  aiSystemId    String?
+  provider      String
+  model         String?
+  /// SHA-256 of the sanitised provider input — NEVER the raw prompt/PII.
+  inputDigest   String
+  /// Bounded, sanitised summary of the output — never raw content.
+  outputSummary String?
+  latencyMs     Int?
+  tokensIn      Int?
+  tokensOut     Int?
+  /// Output-guard verdict (redactions / dropped-low-confidence / error).
+  guardVerdict  String?
+  humanOutcome  AiHumanOutcome @default(PENDING)
+  /// The generating session (RiskSuggestionSession id) — the feedback join key.
+  sessionRef    String?
+  userId        String?
+  createdAt     DateTime       @default(now())
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  aiSystem AiSystem? @relation(fields: [aiSystemId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, aiSystemId])
+  @@index([tenantId, sessionRef])
+}

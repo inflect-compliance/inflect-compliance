@@ -89,6 +89,13 @@ describe('Epic 19 Coherence: metric names', () => {
             'cache.ssr.hit',
             'cache.ssr.miss',
             'cache.ssr.duration',
+            // AI decision log (EU AI Act Art 12/14) — AI-ops quality signals
+            // (invocation volume, guard-block rate, human-acceptance rate).
+            // Watched ad-hoc for AI drift/cost/quality; not an API-SLO board
+            // metric (same class as the ai.risk_assessment.* diagnostics).
+            'ai.decision.logged',
+            'ai.decision.guard_blocks',
+            'ai.decision.outcome',
         ]);
 
         // Dot → underscore: api.request.count → api_request_count

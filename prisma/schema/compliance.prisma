@@ -3031,6 +3031,7 @@ model AiSystem {
 
   tenant           Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   requirementLinks AiSystemRequirementLink[]
+  decisionLogs     AiDecisionLog[]
 
   /// Composite parent key so child links can never point cross-tenant.
   @@unique([id, tenantId])
