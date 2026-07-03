@@ -12,7 +12,7 @@
  */
 import { assertCanRead, assertCanWrite } from '../policies/common';
 import { runInTenantContext } from '@/lib/db-context';
-import { prisma } from '@/lib/prisma';
+import type { PrismaTx } from '@/lib/db-context';
 import { notFound } from '@/lib/errors/types';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { logEvent } from '../events/audit';
@@ -27,22 +27,22 @@ const AI_FRAMEWORK_KEYS = ['EU-AI-ACT', 'ISO42001'] as const;
 /**
  * Resolve a tier's obligation refs (framework key + code) to concrete
  * FrameworkRequirement ids from the seeded AI-Act / ISO 42001 library. Reads
- * the GLOBAL catalog (Framework/FrameworkRequirement are not tenant-scoped).
- * Unresolved refs are skipped defensively — the CI ratchet
- * (tests/guards/ai-system-registry.test.ts) guarantees the map has no dangling
- * refs, so at runtime this resolves the full set.
+ * the GLOBAL catalog (Framework/FrameworkRequirement are not tenant-scoped, so
+ * the tenant-bound `db` reads them without an RLS filter). Unresolved refs are
+ * skipped defensively — the CI ratchet (tests/guards/ai-system-registry.test.ts)
+ * guarantees the map has no dangling refs, so at runtime this resolves the set.
  */
-async function resolveTierRequirementIds(tier: AiRiskTier): Promise<string[]> {
+async function resolveTierRequirementIds(db: PrismaTx, tier: AiRiskTier): Promise<string[]> {
     const refs = TIER_OBLIGATIONS[tier];
     if (!refs.length) return [];
 
-    const frameworks = await prisma.framework.findMany({
+    const frameworks = await db.framework.findMany({
         where: { key: { in: [...AI_FRAMEWORK_KEYS] } },
         select: { id: true, key: true },
     });
     const fwIdByKey = new Map(frameworks.map((f) => [f.key, f.id]));
 
-    const requirements = await prisma.frameworkRequirement.findMany({
+    const requirements = await db.frameworkRequirement.findMany({
         where: {
             frameworkId: { in: frameworks.map((f) => f.id) },
             code: { in: refs.map((r) => r.code) },
@@ -71,9 +71,9 @@ export async function createAiSystem(ctx: RequestContext, input: unknown) {
 
     // Deterministic, explainable classification — authored from the Act.
     const classification = classifyAiSystem(parsed.classification);
-    const requirementIds = await resolveTierRequirementIds(classification.tier);
 
     return runInTenantContext(ctx, async (db) => {
+        const requirementIds = await resolveTierRequirementIds(db, classification.tier);
         const created = await AiSystemRepository.create(db, ctx, {
             name: parsed.name,
             // Free-text: sanitised on write; encrypted at rest (Epic B manifest).

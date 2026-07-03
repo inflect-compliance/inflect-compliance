@@ -3,22 +3,23 @@
  * and propose-not-commit conformity drafting (with mocked persistence).
  */
 jest.mock('@/lib/db-context', () => ({
-    runInTenantContext: jest.fn(async (_ctx: unknown, fn: (db: unknown) => unknown) => fn({})),
-}));
-jest.mock('@/lib/prisma', () => ({
-    prisma: {
-        framework: {
-            findMany: jest.fn().mockResolvedValue([
-                { id: 'fw-eu', key: 'EU-AI-ACT' },
-                { id: 'fw-iso', key: 'ISO42001' },
-            ]),
-        },
-        frameworkRequirement: {
-            findMany: jest.fn().mockResolvedValue([
-                { id: 'req-art9', code: 'Art.9', frameworkId: 'fw-eu' },
-            ]),
-        },
-    },
+    runInTenantContext: jest.fn(async (_ctx: unknown, fn: (db: unknown) => unknown) =>
+        fn({
+            // The global Framework/FrameworkRequirement catalog is read via the
+            // tenant-bound `db` (the tables have no RLS).
+            framework: {
+                findMany: jest.fn().mockResolvedValue([
+                    { id: 'fw-eu', key: 'EU-AI-ACT' },
+                    { id: 'fw-iso', key: 'ISO42001' },
+                ]),
+            },
+            frameworkRequirement: {
+                findMany: jest.fn().mockResolvedValue([
+                    { id: 'req-art9', code: 'Art.9', frameworkId: 'fw-eu' },
+                ]),
+            },
+        }),
+    ),
 }));
 
 const mockCreate = jest.fn().mockResolvedValue({ id: 'ai-1', riskTier: 'HIGH', classificationClauseId: 'Annex III(4)' });
