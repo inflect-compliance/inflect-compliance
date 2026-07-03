@@ -44,9 +44,6 @@ const PRIORITY_TONE: Record<AdvicePriority, string> = {
 
 export interface PostureHeroCardProps {
     summary: PostureSummaryDto;
-    coveragePercent: number;
-    coverageImplemented: number;
-    coverageApplicable: number;
     canRegenerate?: boolean;
     onRegenerate?: () => void;
     regenerating?: boolean;
@@ -54,9 +51,6 @@ export interface PostureHeroCardProps {
 
 export function PostureHeroCard({
     summary,
-    coveragePercent,
-    coverageImplemented,
-    coverageApplicable,
     canRegenerate = false,
     onRegenerate,
     regenerating = false,
@@ -77,7 +71,6 @@ export function PostureHeroCard({
             className={cn(
                 cardVariants(),
                 'relative isolate overflow-hidden',
-                'flex flex-col gap-default lg:flex-row lg:items-stretch lg:justify-between',
                 "before:content-[''] before:absolute before:inset-0 before:-z-10 before:pointer-events-none",
                 'before:bg-[radial-gradient(ellipse_640px_400px_at_18%_60%,var(--brand-subtle)_0%,transparent_72%)]',
                 'before:opacity-[0.15]',
@@ -85,8 +78,26 @@ export function PostureHeroCard({
             data-hero-metric
             data-testid="dashboard-hero"
         >
-            {/* ─── Left — headline + narrative + advice ─── */}
-            <div className="min-w-0 flex-1 flex flex-col gap-tight">
+            {/* Regenerate — corner affordance (admin / write-capable only).
+                Absolutely positioned so the narrative + advice span the full
+                width beneath it; the headline row clears it vertically. */}
+            {canRegenerate && (
+                <div className="absolute right-default top-default z-10">
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={onRegenerate}
+                        disabled={regenerating}
+                        data-testid="dashboard-hero-regenerate"
+                    >
+                        {regenerating ? 'Regenerating…' : 'Regenerate'}
+                    </Button>
+                </div>
+            )}
+
+            {/* Headline + narrative + advice — full width (control coverage
+                lives in its own section directly below the hero). */}
+            <div className="min-w-0 flex flex-col gap-tight">
                 <p
                     className="text-xs text-content-muted uppercase tracking-wide font-medium"
                     data-hero-metric-eyebrow
@@ -95,7 +106,7 @@ export function PostureHeroCard({
                 </p>
                 <div className="flex items-baseline gap-default flex-wrap">
                     <p
-                        className={cn('text-[56px] leading-none font-bold', LABEL_TONE[label])}
+                        className={cn('text-[28px] leading-none font-bold', LABEL_TONE[label])}
                         data-posture-label={label}
                     >
                         {LABEL_COPY[label]}
@@ -117,7 +128,7 @@ export function PostureHeroCard({
                 </div>
 
                 <p
-                    className="text-sm text-content-muted max-w-prose mt-tight"
+                    className="text-sm text-content-muted mt-tight"
                     data-posture-summary-text
                 >
                     {summary.summaryText}
@@ -145,35 +156,6 @@ export function PostureHeroCard({
                             </li>
                         ))}
                     </ul>
-                )}
-            </div>
-
-            {/* ─── Right — coverage secondary stat + regenerate ─── */}
-            <div className="flex flex-row lg:flex-col items-start lg:items-end justify-between gap-tight shrink-0 lg:text-right lg:border-l lg:border-border-subtle lg:pl-default">
-                <div>
-                    <p className="text-xs text-content-muted uppercase tracking-wide font-medium">
-                        Control coverage
-                    </p>
-                    <p className="text-3xl font-bold tabular-nums text-content-emphasis leading-tight">
-                        <AnimatedNumber
-                            value={coveragePercent}
-                            format={{ kind: 'percent', fractionDigits: 1 }}
-                        />
-                    </p>
-                    <p className="text-xs text-content-muted lg:justify-end">
-                        {coverageImplemented} of {coverageApplicable} implemented
-                    </p>
-                </div>
-                {canRegenerate && (
-                    <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={onRegenerate}
-                        disabled={regenerating}
-                        data-testid="dashboard-hero-regenerate"
-                    >
-                        {regenerating ? 'Regenerating…' : 'Regenerate'}
-                    </Button>
                 )}
             </div>
         </section>
