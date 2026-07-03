@@ -19,6 +19,7 @@ import type { ApplySessionInput, RiskAssessmentApiInput } from '@/app-layer/ai/r
 import { forbidden, notFound } from '@/lib/errors/types';
 import { sanitizeProviderInput, describePayload } from '@/app-layer/ai/risk-assessment/privacy-sanitizer';
 import { detectInputAnomalies } from '@/app-layer/ai/risk-assessment/input-anomaly';
+import { guardUntrustedInput, guardEgress, assertGuardAllowed } from '@/app-layer/ai/guard';
 import { buildInferenceLog } from '@/app-layer/ai/risk-assessment/inference-log';
 import { applyOutputGuard } from '@/app-layer/ai/risk-assessment/output-guard';
 import { checkRateLimit, recordGeneration } from '@/app-layer/ai/risk-assessment/rate-limiter';
@@ -93,6 +94,32 @@ export async function generateRiskSuggestions(
         // and flag the resulting draft for careful human review (C11.4.2 —
         // the human is the action gate, since AI output is advisory).
         const anomalyReport = detectInputAnomalies(sanitizedInput);
+
+        // 8c. AI Guard (content-aware). Normalizes then scans the assembled
+        // untrusted tenant text for prompt-injection — catching base64 /
+        // homoglyph / zero-width evasion the delimiter + reserved-token
+        // neutralizer alone don't. Runs ALONGSIDE that fence (defence in
+        // depth), never instead of it. The egress scan runs on the outbound
+        // payload AFTER the privacy sanitizer (sanitize → egress scan).
+        const untrustedText = [
+            sanitizedInput.tenantIndustry ?? '',
+            sanitizedInput.tenantContext ?? '',
+            ...sanitizedInput.frameworks,
+            ...sanitizedInput.assets.map((a) => a.name),
+            ...(sanitizedInput.existingControls ?? []),
+        ].join('\n');
+        const inputGuard = await guardUntrustedInput(ctx, untrustedText, {
+            source: 'risk-assessment',
+            db,
+        });
+        const outboundGuard = await guardEgress(ctx, sanitizedInput, {
+            source: 'risk-assessment:outbound',
+            db,
+        });
+        // Invariant: a strict-mode malicious input verdict OR a secret-leak
+        // egress hit aborts the model call before any suggestion is created.
+        assertGuardAllowed(inputGuard);
+        assertGuardAllowed(outboundGuard);
 
         // 9. Create session record (DRAFT → will be GENERATED on success)
         const session = await db.riskSuggestionSession.create({
@@ -198,6 +225,15 @@ export async function generateRiskSuggestions(
         // (URLs / images / HTML) stripped, and below-floor confidence dropped.
         const guard = applyOutputGuard(output);
         const guardedSuggestions = guard.suggestions;
+
+        // AI Guard — egress scan on the model output before it is persisted /
+        // surfaced. A secret the model echoed is blocked (never committed) and
+        // audited with rule ids only.
+        const outputGuard = await guardEgress(ctx, guardedSuggestions, {
+            source: 'risk-assessment:output',
+            db,
+        });
+        assertGuardAllowed(outputGuard);
 
         // AISVS C12.1.3 — one structured inference record per call (carries the
         // C12.1.2 safety-decision block + C12.2.5 token counts). Attached to the
@@ -318,7 +354,11 @@ export async function generateRiskSuggestions(
         return {
             session: updatedSession,
             items,
-            reviewRecommended: anomalyReport.flagged,
+            reviewRecommended:
+                anomalyReport.flagged ||
+                inputGuard.reviewRequired ||
+                outboundGuard.reviewRequired ||
+                outputGuard.reviewRequired,
         };
     });
 }

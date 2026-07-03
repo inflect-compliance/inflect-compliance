@@ -1143,6 +1143,10 @@ model TenantSecuritySettings {
   /// incident view surfaces this as "notify: <authority>". Null = the
   /// tenant has not configured an authority yet.
   incidentAuthority          String?
+  /// AI Guard enforcement posture for this tenant (prompt-injection +
+  /// secret/exfil egress guard). Default BALANCED = allow-but-flag; STRICT
+  /// blocks malicious input / secret egress; AUDIT logs only.
+  aiGuardMode                AiGuardMode @default(BALANCED)
   createdAt                  DateTime  @default(now())
   updatedAt                  DateTime  @updatedAt
   mfaFailClosed              Boolean   @default(false)

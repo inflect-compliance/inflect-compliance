@@ -24,6 +24,7 @@ import { assertCanRead, assertCanWrite } from '@/app-layer/policies/common';
 import { badRequest, notFound } from '@/lib/errors/types';
 import { appendAuditEntry } from '@/lib/audit';
 import { sanitizePlainText } from '@/lib/security/sanitize';
+import { guardUntrustedInput, guardEgress, assertGuardAllowed } from '@/app-layer/ai/guard';
 import {
     CreateRiskSchema,
     CreateControlSchema,
@@ -92,6 +93,22 @@ export async function createAgentProposal(
     // 2. Sanitise ALL proposed free text at the boundary (Epic D).
     const sanitized = sanitizeDeep(parsed.data);
     const rationale = input.rationale ? sanitizePlainText(input.rationale) : null;
+
+    // 2b. AI Guard — external-agent output is the highest-risk untrusted
+    // content entering IC. Scan the proposed content for prompt-injection and
+    // for secret / exfil material. A strict-mode malicious verdict or a secret
+    // leak is blocked; a flag forces the (already-required) human review. The
+    // proposal is propose-not-commit regardless, so nothing is ever committed
+    // straight from the agent.
+    const proposedText = [rationale ?? '', JSON.stringify(sanitized)].join('\n');
+    assertGuardAllowed(
+        await guardUntrustedInput(ctx, proposedText, { source: `agent-proposal:${input.kind}` }),
+    );
+    assertGuardAllowed(
+        await guardEgress(ctx, { payload: sanitized, rationale }, {
+            source: `agent-proposal:${input.kind}:egress`,
+        }),
+    );
 
     // 3. Persist the PENDING proposal (RLS-scoped). NOT the real entity.
     const proposal = await runInTenantContext(ctx, (db) =>
@@ -179,6 +196,20 @@ export async function approveAgentProposal(
     const base = JSON.parse(proposal.payloadJson) as Record<string, unknown>;
     const merged = parsedEdits ? { ...base, ...parsedEdits } : base;
     const kind = proposal.kind as AgentProposalKind;
+
+    // AI Guard — the load-bearing auto-commit-block invariant. This is the ONE
+    // path where agent-proposed content becomes a live compliance record, so
+    // re-scan the merged payload (base + reviewer edits) one last time: a
+    // strict-mode malicious verdict or a secret-leak egress hit blocks the
+    // commit before the real create-usecase runs.
+    assertGuardAllowed(
+        await guardUntrustedInput(ctx, JSON.stringify(merged), {
+            source: `agent-proposal-approve:${kind}`,
+        }),
+    );
+    assertGuardAllowed(
+        await guardEgress(ctx, merged, { source: `agent-proposal-approve:${kind}:egress` }),
+    );
 
     // Run the REAL create-usecase — same validation/sanitisation/audit/cache
     // path a human create takes. The proposal only becomes a record HERE.

@@ -20,6 +20,7 @@ import { logEvent } from '../events/audit';
 import { sanitizePlainText } from '@/lib/security/sanitize';
 import { createFinding } from './finding';
 import { sanitizeDocText, extractDocument, type DocExtraction } from '@/app-layer/ai/vendor-doc';
+import { guardUntrustedInput, guardEgress, assertGuardAllowed } from '@/app-layer/ai/guard';
 import { getFileRecordText } from '@/app-layer/services/vendor-doc-text';
 import { controlEvidencesQuestion } from '@/app-layer/services/soc2-question-map';
 import type { FindingSeverity } from '@prisma/client';
@@ -73,8 +74,32 @@ export async function extractVendorDocument(
     });
 
     const sanitized = sanitizeDocText(rawText);
+
+    // AI Guard. The vendor document body is untrusted tenant content and has
+    // the weakest prompt fence of the AI paths (raw text is concatenated into
+    // the prompt with no injection neutralizer). Scan it for prompt-injection
+    // BEFORE extraction, and egress-scan the outbound (already PII-sanitized)
+    // text for secret material. Composes WITH the existing PII sanitizer
+    // (sanitize → guard), never replaces it.
+    const inputGuard = await guardUntrustedInput(ctx, sanitized, {
+        source: 'vendor-doc',
+    });
+    const outboundGuard = await guardEgress(ctx, sanitized, {
+        source: 'vendor-doc:outbound',
+    });
+    // Invariant: a strict-mode malicious input verdict OR a secret-leak egress
+    // hit aborts before extraction — nothing is proposed from a poisoned doc.
+    assertGuardAllowed(inputGuard);
+    assertGuardAllowed(outboundGuard);
+
     const extraction = await extractDocument(sanitized);
     const e = extraction.data;
+
+    // AI Guard — egress scan on the extracted structure before ANY proposal is
+    // written. A secret pulled out of the document is blocked (never proposed).
+    assertGuardAllowed(
+        await guardEgress(ctx, e, { source: 'vendor-doc:extraction' }),
+    );
 
     // ── Persist the extraction session. ──
     const extractionRow = await runInTenantContext(ctx, async (db) => {
