@@ -66,6 +66,7 @@ const FLOWS: HardenedFlow[] = [
         hookExport: 'useEditAssetForm',
         modalPath: 'assets/EditAssetModal.tsx',
         confirmCopy: /Discard changes\?/,
+        i18nConfirmKey: 'modal.editDiscardConfirm',
     },
 ];
 

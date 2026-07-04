@@ -121,7 +121,8 @@ describe('Empty-state personality adoption (R11-PR1)', () => {
             // resolve the key against en.json so the intent holds through the
             // catalog (the value must still be "Clear filters").
             const hasLiteral = /['"]Clear filters['"]/.test(src);
-            const keyMatch = src.match(/t\(['"]([\w.]*[Cc]lear[Ff]ilters)['"]\)/);
+            // Matches t('…clearFilters') or an aliased translator like tx('…').
+            const keyMatch = src.match(/t\w*\(['"]([\w.]*[Cc]lear[Ff]ilters)['"]\)/);
             let hasI18n = false;
             if (keyMatch) {
                 const enMessages = require('../../messages/en.json') as Record<

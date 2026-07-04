@@ -8,6 +8,7 @@
  */
 import { useCallback, type Dispatch, type SetStateAction } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useSWRConfig } from 'swr';
 import { useTenantHref, useTenantApiUrl } from '@/lib/tenant-context-provider';
 import { Button } from '@/components/ui/button';
@@ -36,6 +37,7 @@ export function NewAssetModal({
     tenantSlug,
     labels,
 }: NewAssetModalProps) {
+    const t = useTranslations('assets');
     const tenantHref = useTenantHref();
     const router = useRouter();
     const { mutate: swrMutate } = useSWRConfig();
@@ -68,16 +70,14 @@ export function NewAssetModal({
                 if (form.submitting) return;
                 if (
                     form.isDirty &&
-                    !window.confirm(
-                        'Discard asset? Any details you entered will be lost.',
-                    )
+                    !window.confirm(t('modal.discardConfirm'))
                 ) {
                     return;
                 }
             }
             setOpen(next);
         },
-        [form.submitting, form.isDirty, setOpen],
+        [form.submitting, form.isDirty, setOpen, t],
     );
     const close = () => guardedSetOpen(false);
 
@@ -92,12 +92,12 @@ export function NewAssetModal({
             setShowModal={guardedSetOpen}
             size="lg"
             title={labels.addAsset}
-            description="Register an information asset to track inside risk + control coverage."
+            description={t('modal.newDescription')}
             preventDefaultClose={form.submitting}
         >
             <Modal.Header
                 title={labels.addAsset}
-                description="Register an information asset to track inside risk + control coverage."
+                description={t('modal.newDescription')}
             />
             <Modal.Form id="new-asset-form" onSubmit={handleSubmit}>
                 <Modal.Body>
@@ -134,7 +134,7 @@ export function NewAssetModal({
                         disabled={!form.canSubmit}
                         id="create-asset-submit"
                     >
-                        {form.submitting ? 'Creating…' : labels.createAsset}
+                        {form.submitting ? t('modal.creating') : labels.createAsset}
                     </Button>
                 </Modal.Actions>
             </Modal.Form>

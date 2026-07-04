@@ -15,6 +15,24 @@ import * as path from 'path';
 import { SWRConfig } from 'swr';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
+// next-intl is ESM (jest can't parse its export); mock it to resolve real
+// en.json values so the components render English and text assertions hold.
+jest.mock('next-intl', () => {
+    const en = require('../../messages/en.json');
+    return {
+        useTranslations: (ns: string) => (key: string) => {
+            const v = key
+                .split('.')
+                .reduce((o: unknown, k) =>
+                    o && typeof o === 'object'
+                        ? (o as Record<string, unknown>)[k]
+                        : undefined, en[ns]);
+            return typeof v === 'string' ? v : key;
+        },
+        useLocale: () => 'en',
+    };
+});
+
 jest.mock('next/navigation', () => ({
     useRouter: () => ({ push: jest.fn(), replace: jest.fn(), refresh: jest.fn(), prefetch: jest.fn() }),
     usePathname: () => '/t/acme/assets',

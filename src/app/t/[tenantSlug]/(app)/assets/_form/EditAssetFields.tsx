@@ -8,6 +8,7 @@
  * `<EditAssetModal>` renders it inside Modal.Body. State + submit
  * live in `useEditAssetForm`.
  */
+import { useTranslations } from 'next-intl';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { UserCombobox } from '@/components/ui/user-combobox';
 import { AssetCriticalityFields } from './AssetCriticalityFields';
@@ -33,11 +34,6 @@ const TYPE_OPTIONS: ComboboxOption[] = TYPES.map((t) => ({
     value: t,
     label: t.replace(/_/g, ' '),
 }));
-const STATUS_OPTIONS: ComboboxOption[] = [
-    { value: 'ACTIVE', label: 'Active' },
-    { value: 'RETIRED', label: 'Retired' },
-];
-
 export function EditAssetFields({
     form,
     tenantSlug,
@@ -45,11 +41,16 @@ export function EditAssetFields({
     form: EditAssetFormReturn;
     tenantSlug: string;
 }) {
+    const t = useTranslations('assets');
+    const STATUS_OPTIONS: ComboboxOption[] = [
+        { value: 'ACTIVE', label: t('statusOption.ACTIVE') },
+        { value: 'RETIRED', label: t('statusOption.RETIRED') },
+    ];
     return (
         <>
         <div className="grid grid-cols-2 gap-default">
             <div>
-                <label className="input-label">Name *</label>
+                <label className="input-label">{t('form.nameRequired')}</label>
                 <input
                     className="input"
                     value={form.fields.name}
@@ -57,7 +58,7 @@ export function EditAssetFields({
                 />
             </div>
             <div>
-                <label className="input-label">Type</label>
+                <label className="input-label">{t('type')}</label>
                 <Combobox
                     hideSearch
                     selected={
@@ -74,7 +75,7 @@ export function EditAssetFields({
                 />
             </div>
             <div>
-                <label className="input-label">Status</label>
+                <label className="input-label">{t('form.status')}</label>
                 <Combobox
                     hideSearch
                     selected={
@@ -92,7 +93,7 @@ export function EditAssetFields({
                 />
             </div>
             <div>
-                <label className="input-label">Owner</label>
+                <label className="input-label">{t('owner')}</label>
                 <UserCombobox
                     tenantSlug={tenantSlug}
                     selectedId={form.fields.ownerUserId || null}
@@ -102,11 +103,11 @@ export function EditAssetFields({
                     forceDropdown
                     matchTriggerWidth
                     id="asset-assignee"
-                    placeholder="Unassigned"
+                    placeholder={t('form.unassigned')}
                 />
             </div>
             <div>
-                <label className="input-label">Classification</label>
+                <label className="input-label">{t('classification')}</label>
                 <Combobox
                     hideSearch
                     selected={
@@ -118,14 +119,14 @@ export function EditAssetFields({
                         form.setField('classification', opt?.value ?? '')
                     }
                     options={ASSET_CLASSIFICATION_OPTIONS}
-                    placeholder="Select classification…"
+                    placeholder={t('form.selectClassification')}
                     matchTriggerWidth
                     buttonProps={{ className: 'w-full' }}
                     caret
                 />
             </div>
             <div>
-                <label className="input-label">Location</label>
+                <label className="input-label">{t('location')}</label>
                 <input
                     className="input"
                     value={form.fields.location}
@@ -133,7 +134,7 @@ export function EditAssetFields({
                 />
             </div>
             <div>
-                <label className="input-label">Data Residency</label>
+                <label className="input-label">{t('dataResidency')}</label>
                 <Combobox
                     hideSearch
                     selected={
@@ -145,7 +146,7 @@ export function EditAssetFields({
                         form.setField('dataResidency', opt?.value ?? '')
                     }
                     options={ASSET_DATA_RESIDENCY_OPTIONS}
-                    placeholder="Select residency…"
+                    placeholder={t('form.selectResidency')}
                     matchTriggerWidth
                     buttonProps={{ className: 'w-full' }}
                     caret

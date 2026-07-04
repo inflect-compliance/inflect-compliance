@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTenantSWR, usePrefetchTenant } from '@/lib/hooks/use-tenant-swr';
@@ -114,6 +115,10 @@ export function AssetsClient(props: AssetsClientProps) {
 }
 
 function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permissions, translations: t }: AssetsClientProps) {
+    // `t` above is the server-threaded resolved-strings object (existing
+    // pattern). `tx` is the live next-intl translator for the strings this
+    // island localizes directly under the `assets` namespace.
+    const tx = useTranslations('assets');
     // Modal-form follow-up — create-asset modal mounted off the list,
     // auto-opening on `?create=1` (the redirect target from
     // `/assets/new`). Matches the canonical NewVendorModal wiring.
@@ -268,32 +273,30 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
         () => [
             {
                 value: 'status',
-                label: 'Set status',
+                label: tx('bulk.setStatus'),
                 canApply: (v) => v !== '',
-                renderInput: ({ value, setValue }) => (
-                    <Combobox
-                        hideSearch
-                        id="bulk-value-input"
-                        selected={
-                            [
-                                { value: 'ACTIVE', label: 'Active' },
-                                { value: 'RETIRED', label: 'Retired' },
-                            ].find((o) => o.value === value) ?? null
-                        }
-                        setSelected={(opt) => setValue(opt?.value ?? '')}
-                        options={[
-                            { value: 'ACTIVE', label: 'Active' },
-                            { value: 'RETIRED', label: 'Retired' },
-                        ]}
-                        placeholder="Select status..."
-                        matchTriggerWidth
-                        buttonProps={{ className: 'text-sm' }}
-                    />
-                ),
+                renderInput: ({ value, setValue }) => {
+                    const statusOpts = [
+                        { value: 'ACTIVE', label: tx('statusOption.ACTIVE') },
+                        { value: 'RETIRED', label: tx('statusOption.RETIRED') },
+                    ];
+                    return (
+                        <Combobox
+                            hideSearch
+                            id="bulk-value-input"
+                            selected={statusOpts.find((o) => o.value === value) ?? null}
+                            setSelected={(opt) => setValue(opt?.value ?? '')}
+                            options={statusOpts}
+                            placeholder={tx('bulk.selectStatus')}
+                            matchTriggerWidth
+                            buttonProps={{ className: 'text-sm' }}
+                        />
+                    );
+                },
             },
             {
                 value: 'assign',
-                label: 'Assign owner',
+                label: tx('bulk.assignOwner'),
                 renderInput: ({ value, setValue, setLabel }) => (
                     <UserCombobox
                         tenantSlug={tenantSlug}
@@ -304,15 +307,15 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                         }}
                         forceDropdown
                         matchTriggerWidth
-                        placeholder="Owner (blank = unassign)"
+                        placeholder={tx('bulk.ownerPlaceholder')}
                         className="w-full sm:w-44"
                         id="bulk-value-input"
                     />
                 ),
             },
-            { value: 'delete', label: 'Delete', confirm: true },
+            { value: 'delete', label: tx('bulk.delete'), confirm: true },
         ],
-        [tenantSlug],
+        [tenantSlug, tx],
     );
 
     // Item 32 — the asset row backing the open quick-look panel.
@@ -351,11 +354,11 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
     };
     useKeyboardShortcut('ArrowDown', () => moveSelection(1), {
         enabled: selectedAssetId != null,
-        description: 'Next asset',
+        description: tx('shortcutNextAsset'),
     });
     useKeyboardShortcut('ArrowUp', () => moveSelection(-1), {
         enabled: selectedAssetId != null,
-        description: 'Previous asset',
+        description: tx('shortcutPrevAsset'),
     });
 
     const liveFilters = useMemo(() => buildAssetFilters(), []);
@@ -364,12 +367,12 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
     // filter categories (which stay in the Filter dropdown).
     const kpiCards: CardDefinition[] = useMemo(
         () => [
-            { id: 'total', label: 'Total assets', kind: 'kpi' },
-            { id: 'active', label: 'Active', kind: 'kpi' },
-            { id: 'critical', label: 'High criticality', kind: 'kpi' },
-            { id: 'retired', label: 'Retired', kind: 'kpi' },
+            { id: 'total', label: tx('kpi.total'), kind: 'kpi' },
+            { id: 'active', label: tx('kpi.active'), kind: 'kpi' },
+            { id: 'critical', label: tx('kpi.highCriticality'), kind: 'kpi' },
+            { id: 'retired', label: tx('kpi.retired'), kind: 'kpi' },
         ],
-        [],
+        [tx],
     );
     const { visibleCards: visibleKpiCards, dropdown: filtersDropdown } =
         useFilterCardVisibility({
@@ -456,20 +459,20 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
             // First-column rule (Risk/Controls parity) — the
             // per-tenant `AST-N` Code leads the column DEFS, but is off by
             // default — toggle it on via the gear. Name is the default lead.
-            { id: 'code', label: 'Code', defaultVisible: false },
-            { id: 'name', label: 'Name' },
-            { id: 'type', label: 'Type' },
+            { id: 'code', label: tx('colVis.code'), defaultVisible: false },
+            { id: 'name', label: tx('colVis.name') },
+            { id: 'type', label: tx('colVis.type') },
             // Item 34 — the derived criticality (top-two-mean of C/I/A)
             // leads the risk-relevant columns; classification is demoted
             // off-by-default since criticality is the operative signal for
             // prioritisation and classification duplicates much of it.
-            { id: 'criticality', label: 'Criticality' },
-            { id: 'classification', label: 'Classification', defaultVisible: false },
-            { id: 'owner', label: 'Owner' },
-            { id: 'controls', label: 'Controls' },
-            { id: 'tasks', label: 'Tasks' },
+            { id: 'criticality', label: tx('colVis.criticality') },
+            { id: 'classification', label: tx('colVis.classification'), defaultVisible: false },
+            { id: 'owner', label: tx('colVis.owner') },
+            { id: 'controls', label: tx('colVis.controls') },
+            { id: 'tasks', label: tx('colVis.tasks') },
         ],
-        [],
+        [tx],
     );
     const {
         columnVisibility,
@@ -488,7 +491,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
             // tone keeps the canonical-id signal quiet while the
             // Name cell carries the click affordance.
             id: 'code',
-            header: 'Code',
+            header: tx('colHeaders.code'),
             // Args are inferred from the column generic — leaving
             // explicit annotations off keeps the type-narrowness
             // ratchet honest.
@@ -545,7 +548,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
             // Item 34 — derived criticality (top-two-mean of C/I/A with a
             // critical-ceiling override), shown as a toned badge.
             id: 'criticality',
-            header: 'Criticality',
+            header: tx('colHeaders.criticality'),
             accessorFn: sortAccessors.criticality,
             cell: ({ row }) => {
                 const crit = getAssetCriticality(
@@ -579,7 +582,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
         {
             // B7 — unified linked-task count (done/total), matching Controls.
             id: 'tasks',
-            header: 'Tasks',
+            header: tx('colHeaders.tasks'),
             accessorFn: sortAccessors.tasks,
             cell: ({ row }) => {
                 const total = row.original.taskTotal ?? 0;
@@ -597,7 +600,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                 );
             },
         },
-    ]), [t, sortAccessors]);
+    ]), [t, tx, sortAccessors]);
 
     return (
         <ListPageShell className="animate-fadeIn gap-section">
@@ -606,7 +609,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                     <div>
                         <PageBreadcrumbs
                             items={[
-                                { label: 'Dashboard', href: tenantHref('/dashboard') },
+                                { label: tx('breadcrumbDashboard'), href: tenantHref('/dashboard') },
                                 { label: t.title },
                             ]}
                             className="mb-1"
@@ -676,14 +679,14 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                 <FilterToolbar
                     filters={liveFilters}
                     searchId="assets-search"
-                    searchPlaceholder="Search assets…"
+                    searchPlaceholder={tx('searchPlaceholder')}
                     leading={
                         <Button variant="primary" icon={<Plus className="-ml-0.5 -mr-2.5" />} onClick={() => setIsCreateOpen(true)} id="new-asset-btn">{t.addAsset}</Button>
                     }
                     actions={
                         <>
-                            <Tooltip content="Coverage">
-                                <Link href={tenantHref('/coverage')} aria-label="Coverage" className={buttonVariants({ variant: 'secondary', size: 'icon' })}><AppIcon name="shield" size={16} /></Link>
+                            <Tooltip content={tx('coverageTooltip')}>
+                                <Link href={tenantHref('/coverage')} aria-label={tx('coverageTooltip')} className={buttonVariants({ variant: 'secondary', size: 'icon' })}><AppIcon name="shield" size={16} /></Link>
                             </Tooltip>
                             {columnsDropdown}
                             {filtersDropdown}
@@ -730,7 +733,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                             onApply={handleBulkApply}
                             applying={bulkApplying}
                             selectedCount={selected.size}
-                            entityLabel="assets"
+                            entityLabel={tx('entityLabelPlural')}
                         />
                     )}
                     onRowClick={(row) =>
@@ -742,10 +745,10 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                             <EmptyState
                                 size="sm"
                                 variant="no-results"
-                                title="No assets match your filters"
-                                description="Try widening your search or clearing one of the active filters."
+                                title={tx('empty.noResultsTitle')}
+                                description={tx('empty.filtersHint')}
                                 secondaryAction={{
-                                    label: 'Clear filters',
+                                    label: tx('empty.clearFilters'),
                                     onClick: () => filterCtx.clearAll(),
                                 }}
                             />
@@ -754,11 +757,11 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                                 size="sm"
                                 variant="no-records"
                                 title={t.noAssets}
-                                description="Register the systems, applications, and data stores in scope before mapping risks and controls."
+                                description={tx('empty.recordsHint')}
                                 primaryAction={
                                     permissions.canWrite
                                         ? {
-                                              label: 'Add asset',
+                                              label: tx('empty.addAssetAction'),
                                               onClick: () => setIsCreateOpen(true),
                                           }
                                         : undefined
@@ -766,7 +769,7 @@ function AssetsPageInner({ initialAssets, initialFilters, tenantSlug, permission
                             />
                         )
                     }
-                    resourceName={(p) => p ? 'assets' : 'asset'}
+                    resourceName={(p) => p ? tx('entityLabelPlural') : tx('entityLabel')}
                     data-testid="assets-table"
                     className="hover:bg-bg-muted"
                 />

@@ -4,6 +4,7 @@
  * Controlled field markup for the asset-create form. Same shape as
  * the legacy inline form on AssetsClient that this modal replaces.
  */
+import { useTranslations } from 'next-intl';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
@@ -56,6 +57,7 @@ export function NewAssetFields({
     labels: NewAssetFieldsLabels;
     tenantSlug: string;
 }) {
+    const t = useTranslations('assets');
     return (
         <>
             <FormField label={labels.name} required>
@@ -84,7 +86,7 @@ export function NewAssetFields({
                                 (o?.value ?? 'SYSTEM') as NewAssetFormFields['type'],
                             )
                         }
-                        placeholder="Select type…"
+                        placeholder={t('form.typePlaceholder')}
                         hideSearch
                         matchTriggerWidth
                         buttonProps={{ className: 'w-full' }}
@@ -104,7 +106,7 @@ export function NewAssetFields({
                         setSelected={(o) =>
                             form.setField('classification', o?.value ?? '')
                         }
-                        placeholder="Select classification…"
+                        placeholder={t('form.selectClassification')}
                         hideSearch
                         matchTriggerWidth
                         buttonProps={{ className: 'w-full' }}
@@ -124,7 +126,7 @@ export function NewAssetFields({
                         }
                         forceDropdown
                         matchTriggerWidth
-                        placeholder="Unassigned"
+                        placeholder={t('form.unassigned')}
                     />
                 </FormField>
                 <FormField label={labels.location}>
@@ -139,7 +141,7 @@ export function NewAssetFields({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-default">
-                <FormField label="Status">
+                <FormField label={t('form.status')}>
                     <Combobox
                         id="asset-status-select"
                         name="status"
@@ -155,7 +157,7 @@ export function NewAssetFields({
                                 (o?.value ?? 'ACTIVE') as NewAssetFormFields['status'],
                             )
                         }
-                        placeholder="Select status…"
+                        placeholder={t('form.statusPlaceholder')}
                         hideSearch
                         matchTriggerWidth
                         buttonProps={{ className: 'w-full' }}
@@ -175,7 +177,7 @@ export function NewAssetFields({
                         setSelected={(o) =>
                             form.setField('dataResidency', o?.value ?? '')
                         }
-                        placeholder="Select residency…"
+                        placeholder={t('form.selectResidency')}
                         hideSearch
                         matchTriggerWidth
                         buttonProps={{ className: 'w-full' }}
