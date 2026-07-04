@@ -43,6 +43,7 @@ import { KpiFilterCard } from '@/components/ui/kpi-filter-card';
 import { useKpiFilter, type KpiFilterDef } from '@/components/ui/kpi-filter';
 import { Heading } from '@/components/ui/typography';
 import { PageBreadcrumbs } from '@/components/layout/PageBreadcrumbs';
+import { useTranslations } from 'next-intl';
 
 const STATUS_VARIANT: Record<string, 'success' | 'info' | 'warning' | 'neutral'> = {
     ACTIVE: 'success', ONBOARDING: 'info',
@@ -56,14 +57,6 @@ function isOverdue(d: string | null, now: Date | null) {
     if (!d || !now) return false;
     return new Date(d) < now;
 }
-
-/** Bulk-action status options (canonical BulkActionBar). */
-const VENDOR_STATUS_OPTIONS = [
-    { value: 'ACTIVE', label: 'Active' },
-    { value: 'ONBOARDING', label: 'Onboarding' },
-    { value: 'OFFBOARDING', label: 'Offboarding' },
-    { value: 'OFFBOARDED', label: 'Offboarded' },
-];
 
 // listVendors → VendorRepository.list (vendorListSelect). Cells/accessors are
 // still explicitly-untyped callbacks (a separate ratchet category); this types
@@ -105,6 +98,14 @@ export function VendorsClient(props: VendorsClientProps) {
 }
 
 function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissions }: VendorsClientProps) {
+    const t = useTranslations('vendors');
+    // Bulk-action status options (canonical BulkActionBar), localized.
+    const vendorStatusOptions = [
+        { value: 'ACTIVE', label: t('statusOption.ACTIVE') },
+        { value: 'ONBOARDING', label: t('statusOption.ONBOARDING') },
+        { value: 'OFFBOARDING', label: t('statusOption.OFFBOARDING') },
+        { value: 'OFFBOARDED', label: t('statusOption.OFFBOARDED') },
+    ];
     const tenantHref = (path: string) => `/t/${tenantSlug}${path}`;
     const router = useRouter();
     // Null until hydrated — keeps Overdue/Due badges stable across SSR.
@@ -259,16 +260,16 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
         () => [
             {
                 value: 'status',
-                label: 'Set status',
+                label: t('bulk.setStatus'),
                 canApply: (v) => v !== '',
                 renderInput: ({ value, setValue }) => (
                     <Combobox
                         hideSearch
                         id="bulk-value-input"
-                        selected={VENDOR_STATUS_OPTIONS.find((o) => o.value === value) ?? null}
+                        selected={vendorStatusOptions.find((o) => o.value === value) ?? null}
                         setSelected={(opt) => setValue(opt?.value ?? '')}
-                        options={VENDOR_STATUS_OPTIONS}
-                        placeholder="Select status..."
+                        options={vendorStatusOptions}
+                        placeholder={t('bulk.selectStatus')}
                         matchTriggerWidth
                         buttonProps={{ className: 'text-sm' }}
                     />
@@ -276,7 +277,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
             },
             {
                 value: 'assign',
-                label: 'Assign owner',
+                label: t('bulk.assignOwner'),
                 renderInput: ({ value, setValue, setLabel }) => (
                     <UserCombobox
                         tenantSlug={tenantSlug}
@@ -287,15 +288,15 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                         }}
                         forceDropdown
                         matchTriggerWidth
-                        placeholder="Owner (blank = unassign)"
+                        placeholder={t('bulk.ownerPlaceholder')}
                         className="w-full sm:w-44"
                         id="bulk-value-input"
                     />
                 ),
             },
-            { value: 'delete', label: 'Delete', confirm: true },
+            { value: 'delete', label: t('bulk.delete'), confirm: true },
         ],
-        [tenantSlug],
+        [tenantSlug, t, vendorStatusOptions],
     );
     const liveFilters = useMemo(() => buildVendorFilters(), []);
     const filterCards = useMemo(() => filtersToCards(liveFilters), [liveFilters]);
@@ -379,15 +380,15 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
     // R10-PR7 — column-visibility gear.
     const vendorColumnList = useMemo(
         () => [
-            { id: 'name', label: 'Name' },
-            { id: 'status', label: 'Status' },
-            { id: 'criticality', label: 'Criticality' },
-            { id: 'risk', label: 'Risk' },
-            { id: 'nextReviewAt', label: 'Next Review' },
-            { id: 'contractRenewalAt', label: 'Contract Renewal', defaultVisible: false },
-            { id: 'owner', label: 'Owner' },
+            { id: 'name', label: t('columns.name') },
+            { id: 'status', label: t('columns.status') },
+            { id: 'criticality', label: t('columns.criticality') },
+            { id: 'risk', label: t('columns.risk') },
+            { id: 'nextReviewAt', label: t('columns.nextReview') },
+            { id: 'contractRenewalAt', label: t('columns.contractRenewal'), defaultVisible: false },
+            { id: 'owner', label: t('columns.owner') },
         ],
-        [],
+        [t],
     );
     const {
         columnVisibility,
@@ -402,7 +403,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
     const vendorColumns = useMemo(() => orderColumns(createColumns<VendorRow>([
         {
             accessorKey: 'name',
-            header: 'Name',
+            header: t('columns.name'),
             // R13-PR1 — Sub-processor badge moved out of the title
             // cell to its own column (visible via the gear). Title
             // cell stays single-element so every row in the product
@@ -418,21 +419,21 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
         },
         {
             accessorKey: 'status',
-            header: 'Status',
+            header: t('columns.status'),
             cell: ({ row }) => (
                 <StatusBadge variant={STATUS_VARIANT[row.original.status] || 'neutral'} icon={null}>{row.original.status}</StatusBadge>
             ),
         },
         {
             accessorKey: 'criticality',
-            header: 'Criticality',
+            header: t('columns.criticality'),
             cell: ({ row }) => (
                 <StatusBadge variant={CRIT_VARIANT[row.original.criticality] || 'neutral'} icon={null}>{row.original.criticality}</StatusBadge>
             ),
         },
         {
             id: 'risk',
-            header: 'Risk',
+            header: t('columns.risk'),
             accessorFn: sortAccessors.risk,
             cell: ({ row }) => {
                 const v = row.original;
@@ -443,31 +444,31 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
         },
         {
             id: 'nextReviewAt',
-            header: 'Next Review',
+            header: t('columns.nextReview'),
             cell: ({ row }) => (
                 <span>
                     <TimestampTooltip date={row.original.nextReviewAt} />
-                    {isOverdue(row.original.nextReviewAt, hydratedNow) && <span className="ml-1 text-xs text-content-error font-semibold">Overdue</span>}
+                    {isOverdue(row.original.nextReviewAt, hydratedNow) && <span className="ml-1 text-xs text-content-error font-semibold">{t('badge.overdue')}</span>}
                 </span>
             ),
         },
         {
             id: 'contractRenewalAt',
-            header: 'Contract Renewal',
+            header: t('columns.contractRenewal'),
             cell: ({ row }) => (
                 <span>
                     <TimestampTooltip date={row.original.contractRenewalAt} />
-                    {isOverdue(row.original.contractRenewalAt, hydratedNow) && <span className="ml-1 text-xs text-content-warning font-semibold">Due</span>}
+                    {isOverdue(row.original.contractRenewalAt, hydratedNow) && <span className="ml-1 text-xs text-content-warning font-semibold">{t('badge.due')}</span>}
                 </span>
             ),
         },
         {
             id: 'owner',
-            header: 'Owner',
+            header: t('columns.owner'),
             accessorFn: (v) => v.owner?.name || '—',
             cell: ({ getValue }) => <span className="text-content-muted">{getValue()}</span>,
         },
-    ])), [tenantHref, hydratedNow, orderColumns, sortAccessors]);
+    ])), [tenantHref, hydratedNow, orderColumns, sortAccessors, t]);
 
     return (
         <ListPageShell className="animate-fadeIn gap-section">
@@ -476,14 +477,14 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                     <div>
                         <PageBreadcrumbs
                             items={[
-                                { label: 'Dashboard', href: tenantHref('/dashboard') },
-                                { label: 'Vendor Register' },
+                                { label: t('breadcrumbDashboard'), href: tenantHref('/dashboard') },
+                                { label: t('title') },
                             ]}
                             className="mb-1"
                         />
-                        <Heading level={1} className="sr-only">Vendor Register</Heading>
+                        <Heading level={1} className="sr-only">{t('title')}</Heading>
                         <p className="text-sm text-content-muted mt-1">
-                            Third-party relationships, assessed and renewed on a cadence.
+                            {t('subtitle')}
                         </p>
                     </div>
                 </div>
@@ -493,7 +494,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                 {/* R23-PR-F — KPI strip. */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
                     <KpiFilterCard
-                        label="Total vendors"
+                        label={t('kpi.total')}
                         value={totalVendors}
                         sparkline={vendorTrends.total}
                         sparklineVariant={sparkColors.total}
@@ -502,7 +503,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                         selected={activeVendorKpi === 'total'}
                     />
                     <KpiFilterCard
-                        label="Active"
+                        label={t('kpi.active')}
                         value={activeVendors}
                         tone="success"
                         sparkline={vendorTrends.active}
@@ -512,7 +513,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                         selected={activeVendorKpi === 'active'}
                     />
                     <KpiFilterCard
-                        label="Critical"
+                        label={t('kpi.critical')}
                         value={criticalVendors}
                         tone={criticalVendors > 0 ? 'critical' : 'default'}
                         sparkline={vendorTrends.critical}
@@ -522,7 +523,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                         selected={activeVendorKpi === 'critical'}
                     />
                     <KpiFilterCard
-                        label="Review overdue"
+                        label={t('kpi.reviewOverdue')}
                         value={reviewOverdueVendors}
                         tone={reviewOverdueVendors > 0 ? 'critical' : 'default'}
                         sparkline={vendorTrends.reviewOverdue}
@@ -535,7 +536,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                 <FilterToolbar
                     filters={visibleFilterDefs}
                     searchId="vendors-search"
-                    searchPlaceholder="Search vendors…"
+                    searchPlaceholder={t('searchPlaceholder')}
                     leading={
                         permissions.canCreate ? (
                             <Button
@@ -544,14 +545,14 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                                 onClick={() => setIsCreateOpen(true)}
                                 id="new-vendor-btn"
                             >
-                                Vendor
+                                {t('createButton')}
                             </Button>
                         ) : undefined
                     }
                     actions={
                         <>
-                            <Tooltip content="Dashboard">
-                                <Link href={tenantHref('/vendors/dashboard')} aria-label="Dashboard" className={cn(buttonVariants({ variant: 'secondary', size: 'icon' }))} id="vendor-dashboard-btn">
+                            <Tooltip content={t('dashboardTooltip')}>
+                                <Link href={tenantHref('/vendors/dashboard')} aria-label={t('dashboardTooltip')} className={cn(buttonVariants({ variant: 'secondary', size: 'icon' }))} id="vendor-dashboard-btn">
                                     <AppIcon name="dashboard" size={16} />
                                 </Link>
                             </Tooltip>
@@ -599,7 +600,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                                 onApply={handleBulkApply}
                                 applying={bulkApplying}
                                 selectedCount={selected.size}
-                                entityLabel="vendors"
+                                entityLabel={t('entityLabelPlural')}
                             />
                         )}
                         emptyState={
@@ -607,10 +608,10 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                                 <EmptyState
                                     size="sm"
                                     variant="no-results"
-                                    title="No vendors match your filters"
-                                    description="Try widening your search or clearing one of the active filters."
+                                    title={t('empty.noResultsTitle')}
+                                    description={t('empty.filtersHint')}
                                     secondaryAction={{
-                                        label: 'Clear filters',
+                                        label: t('empty.clearFilters'),
                                         onClick: () => filterCtx.clearAll(),
                                     }}
                                 />
@@ -619,12 +620,12 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                                     size="sm"
                                     icon={Package}
                                     variant="no-records"
-                                    title="No vendors yet"
-                                    description="Register sub-processors and suppliers to track DPAs, contracts, and risk reviews in one place."
+                                    title={t('empty.noRecordsTitle')}
+                                    description={t('empty.recordsHint')}
                                 />
                             )
                         }
-                    resourceName={(p) => p ? 'vendors' : 'vendor'}
+                    resourceName={(p) => p ? t('entityLabelPlural') : t('entityLabel')}
                     data-testid="vendors-table"
                     className="hover:bg-bg-muted"
                 />

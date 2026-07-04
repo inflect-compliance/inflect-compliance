@@ -132,7 +132,21 @@ describe('Action-button canonical entity label', () => {
                 const lastGT = buttonBlock.lastIndexOf('>');
                 expect(lastGT).toBeGreaterThan(-1);
                 const textContent = buttonBlock.slice(lastGT + 1).trim();
-                expect(textContent).toBe(label);
+                // i18n-migrated sites render the label via `{t('key')}` from
+                // the page's `useTranslations('<entity>')` namespace. The bare-
+                // noun invariant is preserved through the catalog: resolve the
+                // key against en.json and assert the value is the entity noun.
+                const i18nMatch = textContent.match(/^\{t\('([^']+)'\)\}$/);
+                if (i18nMatch) {
+                    const enMessages = require('../../messages/en.json') as Record<
+                        string,
+                        Record<string, string>
+                    >;
+                    const ns = file.match(/\(app\)\/([^/]+)\//)?.[1] ?? '';
+                    expect(enMessages[ns]?.[i18nMatch[1]]).toBe(label);
+                } else {
+                    expect(textContent).toBe(label);
+                }
             },
         );
     });

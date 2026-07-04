@@ -275,9 +275,35 @@ describe('vendors/new — mixed primitives (RadioGroup + Combobox)', () => {
         expect(VENDORS_NEW_SRC).toMatch(
             /DATA_ACCESS_OPTIONS:\s*ComboboxOption\[\]\s*=\s*\[\s*\{\s*value:\s*['"]NONE['"]/,
         );
-        expect(VENDORS_NEW_SRC).toMatch(
-            /placeholder=["']— None —["']/,
-        );
+        // The "— None —" affordance rides the Combobox placeholder — either an
+        // inline literal OR (i18n-migrated) `placeholder={t('key')}` whose
+        // en.json value is "— None —". Resolve the vendor placeholder keys
+        // against the catalog so the affordance is still locked.
+        const literalNone = /placeholder=["']— None —["']/.test(VENDORS_NEW_SRC);
+        let i18nNone = false;
+        if (!literalNone) {
+            const vendors = (
+                JSON.parse(read('messages/en.json')) as Record<string, unknown>
+            ).vendors as Record<string, unknown> | undefined;
+            const keys = [
+                ...VENDORS_NEW_SRC.matchAll(
+                    /placeholder=\{t\(['"]([\w.]+)['"]\)\}/g,
+                ),
+            ].map((m) => m[1]);
+            i18nNone = keys.some(
+                (k) =>
+                    k
+                        .split('.')
+                        .reduce<unknown>(
+                            (o, seg) =>
+                                o && typeof o === 'object'
+                                    ? (o as Record<string, unknown>)[seg]
+                                    : undefined,
+                            vendors,
+                        ) === '— None —',
+            );
+        }
+        expect(literalNone || i18nNone).toBe(true);
     });
 });
 
