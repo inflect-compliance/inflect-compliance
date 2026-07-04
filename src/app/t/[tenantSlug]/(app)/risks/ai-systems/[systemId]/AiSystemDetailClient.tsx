@@ -7,6 +7,7 @@
  * queues a proposal for human review; nothing is auto-published.
  */
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card } from '@/components/ui/card';
@@ -59,6 +60,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 }
 
 export function AiSystemDetailClient({ system, tenantSlug, canWrite }: Props) {
+    const tx = useTranslations('risks');
     const [busy, setBusy] = useState<string | null>(null);
     const [queued, setQueued] = useState<string[]>([]);
     const [error, setError] = useState<string | null>(null);
@@ -74,11 +76,11 @@ export function AiSystemDetailClient({ system, tenantSlug, canWrite }: Props) {
             });
             if (!res.ok) {
                 const body = (await res.json().catch(() => null)) as { error?: string } | null;
-                throw new Error(body?.error ?? 'Failed to generate draft');
+                throw new Error(body?.error ?? tx('aiSystems.detail.errorFallback'));
             }
             setQueued((q) => [...q, docType]);
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to generate draft');
+            setError(e instanceof Error ? e.message : tx('aiSystems.detail.errorFallback'));
         } finally {
             setBusy(null);
         }
@@ -89,13 +91,13 @@ export function AiSystemDetailClient({ system, tenantSlug, canWrite }: Props) {
             <PageHeader
                 back={{ smart: true }}
                 breadcrumbs={[
-                    { label: 'Dashboard', href: `/t/${tenantSlug}/dashboard` },
-                    { label: 'Risks', href: `/t/${tenantSlug}/risks` },
-                    { label: 'AI Systems', href: `/t/${tenantSlug}/risks/ai-systems` },
+                    { label: tx('breadcrumbDashboard'), href: `/t/${tenantSlug}/dashboard` },
+                    { label: tx('aiSystems.risksCrumb'), href: `/t/${tenantSlug}/risks` },
+                    { label: tx('aiSystems.title'), href: `/t/${tenantSlug}/risks/ai-systems` },
                     { label: system.name },
                 ]}
                 title={system.name}
-                description={`${system.riskTier} risk · ${system.classificationClauseId ?? 'unclassified'} · ${system.deploymentRole === 'PROVIDER' ? 'Provider' : 'Deployer'}`}
+                description={tx('aiSystems.detail.metaLine', { tier: system.riskTier, clause: system.classificationClauseId ?? tx('aiSystems.detail.unclassified'), role: system.deploymentRole === 'PROVIDER' ? tx('aiSystems.provider') : tx('aiSystems.deployer') })}
                 actions={
                     <StatusBadge variant={TIER_VARIANT[system.riskTier] ?? 'neutral'}>
                         {system.riskTier}
@@ -104,23 +106,23 @@ export function AiSystemDetailClient({ system, tenantSlug, canWrite }: Props) {
             />
 
             <Card>
-                <Heading level={2} className="mb-2 text-sm font-semibold text-content-emphasis">Classification</Heading>
-                <Row label="Risk tier">
+                <Heading level={2} className="mb-2 text-sm font-semibold text-content-emphasis">{tx('aiSystems.detail.classificationHeading')}</Heading>
+                <Row label={tx('aiSystems.colRiskTier')}>
                     <StatusBadge variant={TIER_VARIANT[system.riskTier] ?? 'neutral'}>{system.riskTier}</StatusBadge>
                 </Row>
-                <Row label="Driving clause">{system.classificationClauseId ?? '—'}</Row>
-                <Row label="Basis">{system.classificationRationale ?? '—'}</Row>
-                <Row label="Provider">{system.provider ?? '—'}</Row>
-                <Row label="Purpose">{system.purpose ?? '—'}</Row>
-                <Row label="Use context">{system.useContext ?? '—'}</Row>
+                <Row label={tx('aiSystems.detail.rowDrivingClause')}>{system.classificationClauseId ?? '—'}</Row>
+                <Row label={tx('aiSystems.colBasis')}>{system.classificationRationale ?? '—'}</Row>
+                <Row label={tx('aiSystems.provider')}>{system.provider ?? '—'}</Row>
+                <Row label={tx('aiSystems.detail.rowPurpose')}>{system.purpose ?? '—'}</Row>
+                <Row label={tx('aiSystems.new.useContextLabel')}>{system.useContext ?? '—'}</Row>
             </Card>
 
             <Card>
                 <Heading level={2} className="mb-2 text-sm font-semibold text-content-emphasis">
-                    Linked obligations ({system.requirementLinks.length})
+                    {tx('aiSystems.detail.linkedObligations', { count: system.requirementLinks.length })}
                 </Heading>
                 {system.requirementLinks.length === 0 ? (
-                    <p className="text-sm text-content-muted">No obligations linked.</p>
+                    <p className="text-sm text-content-muted">{tx('aiSystems.detail.obligationsEmpty')}</p>
                 ) : (
                     <ul className="space-y-tight">
                         {system.requirementLinks.map((l) => (
@@ -137,10 +139,9 @@ export function AiSystemDetailClient({ system, tenantSlug, canWrite }: Props) {
 
             {system.riskTier === 'HIGH' && (
                 <Card>
-                    <Heading level={2} className="mb-1 text-sm font-semibold text-content-emphasis">Conformity artifacts</Heading>
+                    <Heading level={2} className="mb-1 text-sm font-semibold text-content-emphasis">{tx('aiSystems.detail.conformityHeading')}</Heading>
                     <p className="mb-3 text-xs text-content-subtle">
-                        Generate a DRAFT for human review. A draft is queued in the approval queue — nothing is
-                        published, and a Declaration of Conformity is never auto-issued.
+                        {tx('aiSystems.detail.conformityHelp')}
                     </p>
                     {error && (
                         <div className="mb-3 rounded-lg border border-border-error bg-bg-error px-3 py-2 text-sm text-content-error" role="alert">
@@ -156,15 +157,17 @@ export function AiSystemDetailClient({ system, tenantSlug, canWrite }: Props) {
                                 disabled={!canWrite || busy === d.id || queued.includes(d.id)}
                                 onClick={() => generate(d.id)}
                             >
-                                {busy === d.id ? 'Generating…' : queued.includes(d.id) ? 'Queued' : d.label}
+                                {busy === d.id ? tx('aiSystems.detail.generating') : queued.includes(d.id) ? tx('aiSystems.detail.queued') : d.label}
                             </Button>
                         ))}
                     </div>
                     {queued.length > 0 && (
                         <p className="mt-3 text-sm text-content-muted">
-                            Draft{queued.length > 1 ? 's' : ''} queued for review in the{' '}
+                            {queued.length > 1
+                                ? tx('aiSystems.detail.draftsQueuedPlural')
+                                : tx('aiSystems.detail.draftsQueuedSingular')}
                             <Link href={`/t/${tenantSlug}/agent-proposals`} className="text-content-link underline">
-                                approval queue
+                                {tx('aiSystems.detail.approvalQueue')}
                             </Link>
                             .
                         </p>
