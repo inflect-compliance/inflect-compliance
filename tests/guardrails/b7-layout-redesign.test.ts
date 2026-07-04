@@ -108,7 +108,10 @@ describe('B7 — layout redesign', () => {
         );
 
         it('mounts an AsidePanel browse rail (NOT a LeftAccordionRail)', () => {
-            expect(src).toMatch(/<AsidePanel\b[\s\S]{0,200}title="Browse"/);
+            // title migrated to next-intl; resolve the key against en.json.
+            expect(src).toMatch(/<AsidePanel\b[\s\S]{0,200}title=\{t\('list\.browse'\)\}/);
+            const en = require('../../messages/en.json') as { controls: { list: Record<string, string> } };
+            expect(en.controls.list.browse).toBe('Browse');
             // The legacy left-rail wiring is gone — the import +
             // the JSX must both disappear so a future "move it back
             // left" PR fails this ratchet loudly.
@@ -161,7 +164,9 @@ describe('B7 — layout redesign', () => {
             // (`<AiAssistRail>`), same chrome (`<AsidePanel>`),
             // same destination (`/risks/ai`) so the panel reads as
             // ONE shared co-pilot across registers — not a stub.
-            expect(src).toMatch(/<AsidePanel\b[\s\S]{0,200}title="AI Assist"/);
+            expect(src).toMatch(/<AsidePanel\b[\s\S]{0,200}title=\{t\('list\.aiAssist'\)\}/);
+            const en = require('../../messages/en.json') as { controls: { list: Record<string, string> } };
+            expect(en.controls.list.aiAssist).toBe('AI Assist');
             expect(src).toMatch(/<AiAssistRail\b/);
             expect(src).toMatch(/aiHref=\{tenantHref\(['"]\/risks\/ai['"]\)\}/);
         });
@@ -170,7 +175,7 @@ describe('B7 — layout redesign', () => {
             // The co-pilot is a secondary rail; it should not
             // claim 320px unprompted. Matches the Risks contract.
             expect(src).toMatch(
-                /<AsidePanel\b[\s\S]{0,200}title="AI Assist"[\s\S]{0,400}defaultCollapsed/,
+                /<AsidePanel\b[\s\S]{0,200}title=\{t\('list\.aiAssist'\)\}[\s\S]{0,400}defaultCollapsed/,
             );
         });
     });
@@ -198,9 +203,12 @@ describe('B7 — layout redesign', () => {
             // The category is DERIVED per-control (framework-tagged
             // granular domain), not read from a single stored string —
             // so the column matches the Browse rail's grouping.
+            // header migrated to next-intl; match the key + resolve against en.
             expect(src).toMatch(
-                /id:\s*['"]category['"][\s\S]{0,200}header:\s*['"]Category['"]/,
+                /id:\s*['"]category['"][\s\S]{0,200}header:\s*t\('colHeaders\.category'\)/,
             );
+            const en = require('../../messages/en.json') as { controls: { colHeaders: Record<string, string> } };
+            expect(en.controls.colHeaders.category).toBe('Category');
             expect(src).toMatch(
                 /accessorFn:\s*\(c\)\s*=>\s*categorizeControl\(c\)/,
             );

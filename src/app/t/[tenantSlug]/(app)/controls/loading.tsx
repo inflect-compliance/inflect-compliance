@@ -1,3 +1,4 @@
+import { getTranslations } from 'next-intl/server';
 import {
     SkeletonPageHeader,
     SkeletonFilterToolbar,
@@ -14,9 +15,10 @@ import {
  *   - FilterToolbar (search + pill dropdowns)
  *   - Data table (8 columns × 10 rows)
  */
-export default function ControlsLoading() {
+export default async function ControlsLoading() {
+    const t = await getTranslations('controls');
     return (
-        <div role="status" aria-live="polite" className="space-y-section animate-fadeIn" aria-busy="true" aria-label="Loading controls">
+        <div role="status" aria-live="polite" className="space-y-section animate-fadeIn" aria-busy="true" aria-label={t('loadingAria')}>
             <SkeletonPageHeader />
             <SkeletonFilterToolbar />
             <SkeletonDataTable rows={10} cols={8} />
