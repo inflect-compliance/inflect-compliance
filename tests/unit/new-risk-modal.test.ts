@@ -149,8 +149,12 @@ describe('NewRiskModal — business contract preserved', () => {
 describe('NewRiskModal — scoring UX (shared RiskEvaluationFields)', () => {
     it('mounts the shared <RiskEvaluationFields> evaluation box', () => {
         expect(MODAL_SRC).toMatch(/<RiskEvaluationFields\b/);
-        // Titled "Risk Evaluation" (R5) — the title lives in the shared box.
-        expect(SHARED_SRC).toMatch(/Risk Evaluation/);
+        // Titled "Risk Evaluation" (R5) — the title now goes through i18n;
+        // the shared box renders t('eval.title'), which resolves to the
+        // original English in en.json.
+        expect(SHARED_SRC).toMatch(/t\(['"]eval\.title['"]\)/);
+        const en = JSON.parse(read('messages/en.json'));
+        expect(en.risks.eval.title).toBe('Risk Evaluation');
     });
 
     it('the shared box exposes likelihood + impact as 1–5 range inputs', () => {

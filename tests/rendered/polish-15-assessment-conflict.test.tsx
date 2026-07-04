@@ -9,6 +9,24 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import * as React from 'react';
 
+// next-intl is ESM (jest can't parse its export); mock it to resolve real
+// en.json values (with {var} interpolation) so text assertions still hold.
+jest.mock('next-intl', () => {
+    const en = require('../../messages/en.json');
+    return {
+        useTranslations: (ns: string) => (key: string, params?: Record<string, unknown>) => {
+            let v = key
+                .split('.')
+                .reduce((o: unknown, k) =>
+                    o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined, en[ns]);
+            if (typeof v !== 'string') return key;
+            if (params) for (const [p, val] of Object.entries(params)) v = (v as string).replace(new RegExp(`\\{${p}\\}`, 'g'), String(val));
+            return v;
+        },
+        useLocale: () => 'en',
+    };
+});
+
 jest.mock('@/lib/tenant-context-provider', () => ({
     useTenantApiUrl: () => (p: string) => `/api/t/acme${p}`,
 }));

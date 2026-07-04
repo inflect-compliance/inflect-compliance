@@ -26,6 +26,11 @@ const ROOT = path.resolve(__dirname, '../..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf-8');
 
 const panel = read('src/app/t/[tenantSlug]/(app)/risks/[riskId]/FairAnalysisPanel.tsx');
+// The panel's user-facing strings were migrated to next-intl; resolve
+// the moved literals against the en catalog so the intent still holds.
+const en = JSON.parse(read('messages/en.json')) as {
+    risks: { fair: Record<string, string> };
+};
 const lib = read('src/lib/fair-calibration.ts');
 const usecase = read('src/app-layer/usecases/risk.ts');
 const route = read('src/app/api/t/[tenantSlug]/risks/[id]/fair/route.ts');
@@ -34,9 +39,13 @@ const calculator = read('src/app-layer/usecases/fair-calculator.ts');
 describe('RQ3-2 — ranges replace point floats in the panel', () => {
     test('every factor renders the min/likely/max triple inputs', () => {
         expect(panel).toMatch(/fair-triple-\$\{k\}-\$\{b\}/);
-        expect(panel).toMatch(/bound\(k, 'min', 'Min'\)/);
-        expect(panel).toMatch(/bound\(k, 'mode', 'Likely'\)/);
-        expect(panel).toMatch(/bound\(k, 'max', 'Max'\)/);
+        expect(panel).toMatch(/bound\(k, 'min', t\('fair\.min'\)\)/);
+        expect(panel).toMatch(/bound\(k, 'mode', t\('fair\.likely'\)\)/);
+        expect(panel).toMatch(/bound\(k, 'max', t\('fair\.max'\)\)/);
+        // the bound labels still read Min/Likely/Max in the default locale
+        expect(en.risks.fair.min).toBe('Min');
+        expect(en.risks.fair.likely).toBe('Likely');
+        expect(en.risks.fair.max).toBe('Max');
     });
 
     test('no raw point input remains for loss/frequency factors', () => {
@@ -55,7 +64,9 @@ describe('RQ3-2 — ranges replace point floats in the panel', () => {
     });
 
     test('the calibrated-interval language is the legend', () => {
-        expect(panel).toMatch(/90% sure/);
+        // The legend copy moved into the catalog; the panel renders the key.
+        expect(panel).toMatch(/t\('fair\.intro'\)/);
+        expect(en.risks.fair.intro).toMatch(/90% sure/);
     });
 
     test('the point estimate is derived (PERT mean) — shown, not asked', () => {

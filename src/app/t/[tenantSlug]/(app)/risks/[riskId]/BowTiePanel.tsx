@@ -4,6 +4,7 @@
    A read-time projection rendered either as an interactive xyflow canvas
    (default) or the accessible column list. */
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
 import { ShieldCheck } from '@/components/ui/icons/nucleo/shield-check';
 import { Bolt } from '@/components/ui/icons/nucleo/bolt';
@@ -45,6 +46,7 @@ function BarrierChip({ b }: { b: Barrier }) {
 }
 
 export function BowTiePanel({ riskId }: { riskId: string }) {
+    const t = useTranslations('risks');
     const apiUrl = useTenantApiUrl();
     const money = useMoneyFormatter();
     const [p, setP] = useState<Projection | null>(null);
@@ -59,18 +61,18 @@ export function BowTiePanel({ riskId }: { riskId: string }) {
         return () => { live = false; };
     }, [apiUrl, riskId]);
 
-    if (!p) return <Card className="p-6"><p className="text-sm text-content-muted">Loading bow-tie…</p></Card>;
+    if (!p) return <Card className="p-6"><p className="text-sm text-content-muted">{t('bowtie.loading')}</p></Card>;
 
     return (
         <Card className="space-y-default p-6" data-testid="risk-bowtie">
             <div className="flex flex-wrap items-center justify-between gap-default">
-                <Heading level={2}>Bow-Tie Analysis</Heading>
+                <Heading level={2}>{t('bowtie.title')}</Heading>
                 <span className="flex gap-tight">
-                    <Button size="sm" variant={view === 'canvas' ? 'primary' : 'secondary'} onClick={() => setView('canvas')}>Diagram</Button>
-                    <Button size="sm" variant={view === 'list' ? 'primary' : 'secondary'} onClick={() => setView('list')}>List</Button>
+                    <Button size="sm" variant={view === 'canvas' ? 'primary' : 'secondary'} onClick={() => setView('canvas')}>{t('bowtie.diagram')}</Button>
+                    <Button size="sm" variant={view === 'list' ? 'primary' : 'secondary'} onClick={() => setView('list')}>{t('bowtie.list')}</Button>
                 </span>
             </div>
-            <p className="text-xs text-content-muted">Threats (left) → preventive barriers → the risk event → mitigating barriers → consequences (right). Barrier colour = control effectiveness.</p>
+            <p className="text-xs text-content-muted">{t('bowtie.description')}</p>
 
             {view === 'canvas' && graph && <BowTieCanvas graph={graph} />}
 
@@ -78,32 +80,32 @@ export function BowTiePanel({ riskId }: { riskId: string }) {
             <div className="grid grid-cols-1 gap-section lg:grid-cols-5">
                 {/* Threats */}
                 <div className="space-y-tight">
-                    <Heading level={3} className="text-xs uppercase text-content-subtle">Threats</Heading>
-                    {p.threats.map((t) => (
-                        <div key={t.id} className="flex items-center gap-tight rounded-md border border-border-subtle px-default py-tight text-sm text-content-emphasis"><Bolt className="size-3.5 shrink-0" />{t.label}</div>
+                    <Heading level={3} className="text-xs uppercase text-content-subtle">{t('bowtie.threats')}</Heading>
+                    {p.threats.map((threat) => (
+                        <div key={threat.id} className="flex items-center gap-tight rounded-md border border-border-subtle px-default py-tight text-sm text-content-emphasis"><Bolt className="size-3.5 shrink-0" />{threat.label}</div>
                     ))}
                 </div>
                 {/* Preventive barriers */}
                 <div className="space-y-tight">
-                    <Heading level={3} className="text-xs uppercase text-content-subtle">Preventive</Heading>
-                    {p.preventiveBarriers.length === 0 ? <p className="text-xs text-content-subtle">None</p> : p.preventiveBarriers.map((b) => <BarrierChip key={b.controlId} b={b} />)}
+                    <Heading level={3} className="text-xs uppercase text-content-subtle">{t('bowtie.preventive')}</Heading>
+                    {p.preventiveBarriers.length === 0 ? <p className="text-xs text-content-subtle">{t('bowtie.none')}</p> : p.preventiveBarriers.map((b) => <BarrierChip key={b.controlId} b={b} />)}
                 </div>
                 {/* Event */}
                 <div className="flex flex-col items-center justify-center">
                     <div className="w-full rounded-lg border border-border-emphasis bg-bg-muted/30 p-default text-center">
                         <TriangleWarning className="mx-auto size-6 text-content-muted" />
                         <div className="font-medium text-content-emphasis">{p.event.title}</div>
-                        <div className="mt-tight text-xs text-content-muted">Score {p.event.score} · {money(p.event.ale)}/yr</div>
+                        <div className="mt-tight text-xs text-content-muted">{t('bowtie.scoreLabel')} {p.event.score} · {money(p.event.ale)}{t('perYear')}</div>
                     </div>
                 </div>
                 {/* Mitigating barriers */}
                 <div className="space-y-tight">
-                    <Heading level={3} className="text-xs uppercase text-content-subtle">Mitigating</Heading>
-                    {p.mitigatingBarriers.length === 0 ? <p className="text-xs text-content-subtle">None</p> : p.mitigatingBarriers.map((b) => <BarrierChip key={b.controlId} b={b} />)}
+                    <Heading level={3} className="text-xs uppercase text-content-subtle">{t('bowtie.mitigating')}</Heading>
+                    {p.mitigatingBarriers.length === 0 ? <p className="text-xs text-content-subtle">{t('bowtie.none')}</p> : p.mitigatingBarriers.map((b) => <BarrierChip key={b.controlId} b={b} />)}
                 </div>
                 {/* Consequences */}
                 <div className="space-y-tight">
-                    <Heading level={3} className="text-xs uppercase text-content-subtle">Consequences</Heading>
+                    <Heading level={3} className="text-xs uppercase text-content-subtle">{t('bowtie.consequences')}</Heading>
                     {p.consequences.map((c) => (
                         <div key={c.id} className="rounded-md border border-border-subtle px-default py-tight text-sm">
                             <div className="flex justify-between gap-tight">

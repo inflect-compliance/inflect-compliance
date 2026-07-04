@@ -1,3 +1,4 @@
+import { getTranslations } from 'next-intl/server';
 import {
     SkeletonPageHeader,
     SkeletonKpiGrid,
@@ -9,9 +10,10 @@ import {
  * Risks loading skeleton — header + 4 KPI cards + filter toolbar + 8-col table.
  * Matches the real RisksClient layout for seamless streaming.
  */
-export default function RisksLoading() {
+export default async function RisksLoading() {
+    const t = await getTranslations('risks');
     return (
-        <div role="status" aria-live="polite" className="space-y-section animate-fadeIn" aria-busy="true" aria-label="Loading risks">
+        <div role="status" aria-live="polite" className="space-y-section animate-fadeIn" aria-busy="true" aria-label={t('loadingAria')}>
             <SkeletonPageHeader />
             <SkeletonKpiGrid count={4} />
             <SkeletonFilterToolbar />
