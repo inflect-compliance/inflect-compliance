@@ -2,7 +2,7 @@
   "$schema": "internal: docs classification source of truth",
   "description": "Classification of every docs/**/*.md. authoritative = true today; living = partially-shipped design direction; historical = moment-in-time record (incl. all of docs/implementation-notes/); deprecated = superseded redirect. Enforced by tests/guardrails/docs-accuracy.test.ts. See CLAUDE.md \"Doc classifications\".",
   "counts": {
-    "authoritative": 108,
+    "authoritative": 109,
     "historical": 350,
     "living": 5,
     "deprecated": 1
@@ -162,6 +162,9 @@
       "class": "authoritative"
     },
     "docs/framework-library-system.md": {
+      "class": "authoritative"
+    },
+    "docs/i18n.md": {
       "class": "authoritative"
     },
     "docs/frontend-assurance-model.md": {

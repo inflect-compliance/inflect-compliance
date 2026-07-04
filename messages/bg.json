@@ -21,7 +21,9 @@
         "reject": "Отхвърли",
         "export": "Експорт",
         "actions": "Действия",
-        "details": "Детайли"
+        "details": "Детайли",
+        "theme": "Тема",
+        "language": "Език"
     },
     "login": {
         "title": "Inflect Compliance",
