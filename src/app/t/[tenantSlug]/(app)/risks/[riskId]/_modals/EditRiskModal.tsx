@@ -19,6 +19,7 @@
  */
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { FormField } from '@/components/ui/form-field';
@@ -74,6 +75,7 @@ export function EditRiskModal({
     onCancel,
     onSubmit,
 }: EditRiskModalProps) {
+    const t = useTranslations('risks');
     const titleValid = (form.title ?? '').trim().length >= 3;
     return (
         <Modal
@@ -84,13 +86,13 @@ export function EditRiskModal({
                 else setOpen(next);
             }}
             size="lg"
-            title="Edit Risk"
-            description="Update the risk's metadata."
+            title={t('edit.title')}
+            description={t('edit.description')}
             preventDefaultClose={saving}
         >
             <Modal.Header
-                title="Edit Risk"
-                description="Update the risk's metadata."
+                title={t('edit.title')}
+                description={t('edit.description')}
             />
             <Modal.Form onSubmit={onSubmit} id="risk-edit-dialog">
                 <Modal.Body>
@@ -103,7 +105,7 @@ export function EditRiskModal({
                         </div>
                     )}
                     <fieldset className="space-y-default" disabled={saving}>
-                        <FormField label="Title" required>
+                        <FormField label={t('edit.titleLabel')} required>
                             <input
                                 id="risk-edit-title"
                                 type="text"
@@ -116,7 +118,7 @@ export function EditRiskModal({
                                 minLength={3}
                             />
                         </FormField>
-                        <FormField label="Description">
+                        <FormField label={t('edit.descriptionLabel')}>
                             <textarea
                                 id="risk-edit-description"
                                 className="input min-h-[100px] w-full"
@@ -131,7 +133,7 @@ export function EditRiskModal({
                         </FormField>
                         <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
                             <div>
-                                <span className={fieldLabel}>Category</span>
+                                <span className={fieldLabel}>{t('edit.category')}</span>
                                 <Combobox
                                     hideSearch
                                     forceDropdown
@@ -147,13 +149,13 @@ export function EditRiskModal({
                                         }))
                                     }
                                     options={categoryOptions}
-                                    placeholder="— Select —"
+                                    placeholder={t('edit.selectPlaceholder')}
                                     matchTriggerWidth
                                     buttonProps={{ className: 'w-full' }}
                                     caret
                                 />
                             </div>
-                            <FormField label="Treatment Owner">
+                            <FormField label={t('edit.treatmentOwner')}>
                                 <input
                                     id="risk-edit-treatment-owner"
                                     className="input w-full"
@@ -167,7 +169,7 @@ export function EditRiskModal({
                                 />
                             </FormField>
                             <div>
-                                <span className={fieldLabel}>Owner</span>
+                                <span className={fieldLabel}>{t('edit.owner')}</span>
                                 <UserCombobox
                                     tenantSlug={tenantSlug}
                                     selectedId={form.ownerUserId || null}
@@ -179,7 +181,7 @@ export function EditRiskModal({
                                     }
                                     matchTriggerWidth
                                     id="risk-edit-assignee"
-                                    placeholder="Unassigned"
+                                    placeholder={t('edit.unassigned')}
                                 />
                             </div>
                         </div>
@@ -196,7 +198,7 @@ export function EditRiskModal({
                         />
                         <div className="grid grid-cols-1 gap-default sm:grid-cols-2">
                             <div>
-                                <span className={fieldLabel}>Treatment</span>
+                                <span className={fieldLabel}>{t('edit.treatment')}</span>
                                 <Combobox
                                     hideSearch
                                     forceDropdown
@@ -219,11 +221,11 @@ export function EditRiskModal({
                                 />
                             </div>
                             <div>
-                                <span className={fieldLabel}>Next Review</span>
+                                <span className={fieldLabel}>{t('edit.nextReview')}</span>
                                 <DatePicker
                                     id="risk-edit-next-review"
                                     className="w-full"
-                                    placeholder="Pick date"
+                                    placeholder={t('edit.pickDate')}
                                     clearable
                                     align="start"
                                     value={parseYMD(form.nextReviewAt ?? '')}
@@ -234,11 +236,11 @@ export function EditRiskModal({
                                         }))
                                     }
                                     disabledDays={{ before: startOfUtcDay(new Date()) }}
-                                    aria-label="Next review date"
+                                    aria-label={t('edit.nextReviewAria')}
                                 />
                             </div>
                         </div>
-                        <FormField label="Treatment Notes">
+                        <FormField label={t('edit.treatmentNotes')}>
                             <textarea
                                 id="risk-edit-treatment-notes"
                                 className="input min-h-[80px] w-full"
@@ -259,9 +261,7 @@ export function EditRiskModal({
                         size="sm"
                         onClick={onCancel}
                         disabled={saving}
-                    >
-                        Cancel
-                    </Button>
+                    >{t('edit.cancel')}</Button>
                     <Button
                         type="submit"
                         variant="primary"
@@ -269,7 +269,7 @@ export function EditRiskModal({
                         disabled={saving || !titleValid}
                         id="save-risk-btn"
                     >
-                        {saving ? 'Saving...' : 'Save'}
+                        {saving ? t('edit.saving') : t('edit.save')}
                     </Button>
                 </Modal.Actions>
             </Modal.Form>

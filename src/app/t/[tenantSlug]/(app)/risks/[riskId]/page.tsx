@@ -4,6 +4,7 @@
  * carries an inline disable directive; collectively they should
  * migrate to useTenantSWR (Epic 69 shape) so the rule can lift. */
 
+import { useTranslations } from 'next-intl';
 import { formatDate } from '@/lib/format-date';
 import { SkeletonCard, SkeletonDetailPage } from '@/components/ui/skeleton';
 import { useState } from 'react';
@@ -140,6 +141,7 @@ function isOverdue(nextReviewAt: string | null): boolean {
 
 export default function RiskDetailPage() {
     const { riskId } = useParams<{ riskId: string }>();
+    const t = useTranslations('risks');
     const tenant = useTenantContext();
     const apiUrl = useTenantApiUrl();
     const href = useTenantHref();
@@ -184,14 +186,14 @@ export default function RiskDetailPage() {
     })();
     const [activeTab, setActiveTab] = useState<Tab>(initialTab);
     const tabs: ReadonlyArray<{ key: Tab; label: string }> = [
-        { key: 'overview', label: 'Overview' },
-        { key: 'assessment', label: 'Assessment' },
-        { key: 'quantification', label: 'Quantification' },
-        { key: 'bowtie', label: 'Bow-Tie' },
-        { key: 'history', label: 'History' },
-        { key: 'tasks', label: 'Tasks' },
-        { key: 'evidence', label: 'Evidence' },
-        { key: 'traceability', label: 'Traceability' },
+        { key: 'overview', label: t('detail.tabOverview') },
+        { key: 'assessment', label: t('detail.tabAssessment') },
+        { key: 'quantification', label: t('detail.tabQuantification') },
+        { key: 'bowtie', label: t('detail.tabBowtie') },
+        { key: 'history', label: t('detail.tabHistory') },
+        { key: 'tasks', label: t('detail.tabTasks') },
+        { key: 'evidence', label: t('detail.tabEvidence') },
+        { key: 'traceability', label: t('detail.tabTraceability') },
     ];
     const [editForm, setEditForm] = useState<EditRiskForm>({});
 
@@ -248,7 +250,7 @@ export default function RiskDetailPage() {
             });
             if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
-                throw new Error(data.message || `Failed to save (${res.status})`);
+                throw new Error(data.message || t('detail.saveFailed', { status: res.status }));
             }
             const { risk: updated } = await res.json();
             riskQuery.mutate(updated, { revalidate: false });
@@ -270,7 +272,7 @@ export default function RiskDetailPage() {
             });
             if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
-                throw new Error(data.message || `Failed to change status (${res.status})`);
+                throw new Error(data.message || t('detail.statusChangeFailed', { status: res.status }));
             }
             const updated = await res.json();
             riskQuery.mutate(updated, { revalidate: false });
@@ -280,9 +282,9 @@ export default function RiskDetailPage() {
     };
 
     const breadcrumbs = [
-        { label: 'Dashboard', href: href('/dashboard') },
-        { label: 'Risks', href: href('/risks') },
-        { label: risk?.title ?? 'Risk' },
+        { label: t('detail.bcDashboard'), href: href('/dashboard') },
+        { label: t('detail.bcRisks'), href: href('/risks') },
+        { label: risk?.title ?? t('detail.bcFallback') },
     ];
     if (loading) {
         // RQ3-OB-B — structured skeleton instead of an empty shell.
@@ -305,7 +307,7 @@ export default function RiskDetailPage() {
     }
     if (!risk) {
         return (
-            <EntityDetailLayout empty={{ message: 'Risk not found.' }} title="" breadcrumbs={breadcrumbs}>
+            <EntityDetailLayout empty={{ message: t('detail.notFound') }} title="" breadcrumbs={breadcrumbs}>
                 <></>
             </EntityDetailLayout>
         );
@@ -341,13 +343,13 @@ export default function RiskDetailPage() {
                     items={[
                         {
                             kind: 'status',
-                            label: 'Status',
+                            label: t('detail.status'),
                             value: risk.status,
                             variant: RISK_STATUS_VARIANT[risk.status] ?? 'neutral',
                         },
                         {
                             kind: 'status',
-                            label: 'Inherent Score',
+                            label: t('detail.inherentScore'),
                             // RQ2-3 — the header score explains itself.
                             value: (
                                 <RiskScoreExplainer tenantSlug={tenant.tenantSlug} riskId={riskId} label={`${risk.inherentScore} · ${band.label}`}>
@@ -367,13 +369,13 @@ export default function RiskDetailPage() {
                         ...(riskAleValue !== null
                             ? [
                                   {
-                                      label: 'ALE',
+                                      label: t('detail.ale'),
                                       value: (
                                           <button
                                               type="button"
                                               className="cursor-pointer bg-transparent border-0 p-0 text-inherit underline underline-offset-2 decoration-dotted"
                                               onClick={() => setActiveTab('quantification')}
-                                              aria-label={`Annualised loss expectancy ${riskAleLabel} — open the quantification tab`}
+                                              aria-label={t('detail.aleAria', { ale: riskAleLabel ?? '' })}
                                               data-testid="meta-ale-link"
                                           >
                                               {riskAleLabel}
@@ -385,7 +387,7 @@ export default function RiskDetailPage() {
                         ...(risk.treatmentOwner
                             ? [
                                   {
-                                      label: 'Owner',
+                                      label: t('detail.owner'),
                                       value: risk.treatmentOwner,
                                   } as const,
                               ]
@@ -393,7 +395,7 @@ export default function RiskDetailPage() {
                         ...(risk.ownerUserId
                             ? [
                                   {
-                                      label: 'Assigned to',
+                                      label: t('detail.assignedTo'),
                                       value:
                                           riskMembers?.find(
                                               (m) => m.id === risk.ownerUserId,
@@ -408,7 +410,7 @@ export default function RiskDetailPage() {
                         ...(risk.nextReviewAt
                             ? [
                                   {
-                                      label: 'Next Review',
+                                      label: t('detail.nextReview'),
                                       value: formatDate(risk.nextReviewAt),
                                       tone: overdue
                                           ? ('critical' as const)
@@ -427,7 +429,7 @@ export default function RiskDetailPage() {
                         selected={STATUS_OPTIONS.find(o => o.value === risk.status) ?? null}
                         setSelected={(opt) => { if (opt) handleStatusChange(opt.value); }}
                         options={STATUS_OPTIONS}
-                        placeholder="Status"
+                        placeholder={t('detail.statusPlaceholder')}
                         // Item 29 — brand-color the status action (matches the
                         // primary "+ …" create buttons).
                         buttonProps={{ variant: 'primary', className: 'text-sm' }}
@@ -465,7 +467,7 @@ export default function RiskDetailPage() {
                         polish #7 — each gets a top divider so the
                         block reads as three sections, not one. */}
                     <div className="space-y-default border-t border-border-subtle pt-default">
-                        <Heading level={3}>Inherited mappings</Heading>
+                        <Heading level={3}>{t('detail.inheritedMappings')}</Heading>
                         <InheritedMappingsPanel
                             endpoint={apiUrl(`/risks/${riskId}/mappings`)}
                             tenantHref={href}
@@ -473,7 +475,7 @@ export default function RiskDetailPage() {
                         />
                     </div>
                     <div className="space-y-default border-t border-border-subtle pt-default">
-                        <Heading level={3}>Inherited test plans</Heading>
+                        <Heading level={3}>{t('detail.inheritedTestPlans')}</Heading>
                         <InheritedTestPlansPanel
                             endpoint={apiUrl(`/risks/${riskId}/test-plans`)}
                             tenantHref={href}
@@ -485,7 +487,7 @@ export default function RiskDetailPage() {
             {activeTab === 'evidence' && (
                 <div className="space-y-section">
                     <div className="space-y-default">
-                        <Heading level={3}>Attached evidence</Heading>
+                        <Heading level={3}>{t('detail.attachedEvidence')}</Heading>
                         <AttachedEvidencePanel
                             tenantSlug={tenant.tenantSlug}
                             entityId={riskId}
@@ -497,7 +499,7 @@ export default function RiskDetailPage() {
                         />
                     </div>
                     <div className="space-y-default">
-                        <Heading level={3}>Inherited from controls</Heading>
+                        <Heading level={3}>{t('detail.inheritedFromControls')}</Heading>
                         <InheritedEvidencePanel
                             endpoint={apiUrl(`/risks/${riskId}/evidence`)}
                             tenantHref={href}
@@ -560,13 +562,13 @@ export default function RiskDetailPage() {
                     <div className="flex justify-end -mt-1 -mb-2">
                         {/* B2 — icon-only edit affordance; opens the Edit
                             Risk modal, mirroring the control detail page. */}
-                        <Tooltip content="Edit risk">
+                        <Tooltip content={t('detail.editRisk')}>
                             <Button
                                 variant="secondary"
                                 size="icon"
                                 onClick={startEditing}
                                 id="edit-risk-btn"
-                                aria-label="Edit risk"
+                                aria-label={t('detail.editRisk')}
                             >
                                 <Pen2 className="size-4" />
                             </Button>
@@ -575,26 +577,26 @@ export default function RiskDetailPage() {
                 )}
                 {risk.description && (
                     <div>
-                        <Eyebrow>Description</Eyebrow>
+                        <Eyebrow>{t('detail.description')}</Eyebrow>
                         <p className="text-sm text-content-default whitespace-pre-wrap">{risk.description}</p>
                     </div>
                 )}
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-default">
                     <div>
-                        <Eyebrow>Category</Eyebrow>
+                        <Eyebrow>{t('detail.category')}</Eyebrow>
                         <p className="text-sm">{risk.category || '—'}</p>
                     </div>
                     <div>
-                        <Eyebrow>Treatment Owner</Eyebrow>
+                        <Eyebrow>{t('detail.treatmentOwner')}</Eyebrow>
                         <p className="text-sm">{risk.treatmentOwner || '—'}</p>
                     </div>
                     <div>
-                        <Eyebrow>Treatment</Eyebrow>
-                        <p className="text-sm">{risk.treatment || 'Untreated'}</p>
+                        <Eyebrow>{t('detail.treatment')}</Eyebrow>
+                        <p className="text-sm">{risk.treatment || t('detail.untreated')}</p>
                     </div>
                     <div>
-                        <Eyebrow>Target Date</Eyebrow>
+                        <Eyebrow>{t('detail.targetDate')}</Eyebrow>
                         <p className="text-sm">{risk.targetDate ? formatDate(risk.targetDate) : '—'}</p>
                     </div>
                 </div>
@@ -607,7 +609,7 @@ export default function RiskDetailPage() {
                 <div className={cn(cardVariants(), 'space-y-tight')} data-testid="risk-score-card">
                     <KPIStat
                         value={risk.inherentScore}
-                        label="Inherent Risk Score"
+                        label={t('detail.inherentRiskScore')}
                         tone={
                             risk.inherentScore > 12
                                 ? 'critical'
@@ -617,9 +619,9 @@ export default function RiskDetailPage() {
                         }
                         description={
                             <>
-                                Likelihood{' '}
+                                {t('detail.likelihood')}{' '}
                                 <span className="font-semibold text-content-default">{risk.likelihood}</span>{' '}
-                                × Impact{' '}
+                                {t('detail.impactTimes')}{' '}
                                 <span className="font-semibold text-content-default">{risk.impact}</span>
                             </>
                         }
@@ -628,26 +630,26 @@ export default function RiskDetailPage() {
 
                 {risk.threat && (
                     <div>
-                        <Eyebrow>Threat</Eyebrow>
+                        <Eyebrow>{t('detail.threat')}</Eyebrow>
                         <p className="text-sm text-content-default">{risk.threat}</p>
                     </div>
                 )}
                 {risk.vulnerability && (
                     <div>
-                        <Eyebrow>Vulnerability</Eyebrow>
+                        <Eyebrow>{t('detail.vulnerability')}</Eyebrow>
                         <p className="text-sm text-content-default whitespace-pre-wrap">{risk.vulnerability}</p>
                     </div>
                 )}
                 {risk.treatmentNotes && (
                     <div>
-                        <Eyebrow>Treatment Notes</Eyebrow>
+                        <Eyebrow>{t('detail.treatmentNotes')}</Eyebrow>
                         <p className="text-sm text-content-default whitespace-pre-wrap">{risk.treatmentNotes}</p>
                     </div>
                 )}
 
                 <div className="grid grid-cols-2 gap-default border-t border-border-subtle pt-4">
                     <div>
-                        <Eyebrow>Next Review</Eyebrow>
+                        <Eyebrow>{t('detail.nextReview')}</Eyebrow>
                         <p className={`text-sm ${overdue ? 'text-content-error font-semibold' : ''}`}>
                             {risk.nextReviewAt
                                 ? `${overdue ? '! ' : ''}${formatDate(risk.nextReviewAt)}`
@@ -656,7 +658,7 @@ export default function RiskDetailPage() {
                         </p>
                     </div>
                     <div>
-                        <Eyebrow>Created</Eyebrow>
+                        <Eyebrow>{t('detail.created')}</Eyebrow>
                         <p className="text-sm text-content-muted">{formatDate(risk.createdAt)}</p>
                     </div>
                 </div>

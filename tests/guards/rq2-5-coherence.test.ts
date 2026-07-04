@@ -42,7 +42,10 @@ describe('RQ2-5 — both languages on every surface', () => {
 
     test('the detail header carries the ALE next to the score chip', () => {
         expect(riskDetail).toMatch(/resolveALE\(/);
-        expect(riskDetail).toMatch(/label: 'ALE'/);
+        // ALE header label migrated to next-intl; assert the key + en value
+        expect(riskDetail).toMatch(/label: t\('detail\.ale'\)/);
+        const en = JSON.parse(read('messages/en.json')) as { risks: { detail: Record<string, string> } };
+        expect(en.risks.detail.ale).toBe('ALE');
     });
 
     test('the dashboard mounts the coherence widget behind the min-quantified gate', () => {
