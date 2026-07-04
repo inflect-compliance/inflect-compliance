@@ -26,7 +26,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { IconAction } from '@/components/ui/icon-action';
 import { AppIcon } from '@/components/icons/AppIcon';
-import { Modal } from '@/components/ui/modal';
+import { Modal, type ConfirmTone } from '@/components/ui/modal';
 import { cn } from '@/lib/cn';
 
 export interface BulkActionDef {
@@ -49,12 +49,19 @@ export interface BulkActionDef {
     /** Whether Apply is enabled for the current value. Default: always. */
     canApply?: (value: string) => boolean;
     /**
-     * Require a danger-tone confirmation dialog before `onApply` fires. Use for
-     * destructive actions (e.g. bulk delete). The dialog reports the selected
-     * count + `entityLabel` and confirms with the canonical "Delete" verb
-     * (locked by the destructive-vocabulary ratchet).
+     * Require a confirmation dialog before `onApply` fires.
+     *
+     * `true` — the canonical DELETE confirm: danger tone, "Delete N <noun>?",
+     * "Delete" verb (locked by the destructive-vocabulary ratchet).
+     *
+     * An object — customise for a non-destructive bulk action (e.g. Approve).
+     * The title defaults to `"<confirmLabel> N <noun>?"`; provide `tone`
+     * (default `"danger"`) + `confirmLabel` (default `"Delete"`) to match the
+     * action's verb, and an optional `description`.
      */
-    confirm?: boolean;
+    confirm?:
+        | boolean
+        | { tone?: ConfirmTone; confirmLabel?: string; title?: string; description?: string };
 }
 
 export interface BulkActionBarProps {
@@ -140,20 +147,28 @@ export function BulkActionBar({
                 icon={<AppIcon name="checkCircle" size={14} />}
                 label="Apply"
             />
-            {active?.confirm && (
-                <Modal.Confirm
-                    showModal={confirmOpen}
-                    setShowModal={setConfirmOpen}
-                    tone="danger"
-                    title={`Delete ${selectedCount ?? 0} ${noun}?`}
-                    description={`This removes the selected ${noun} from your workspace.`}
-                    confirmLabel="Delete"
-                    onConfirm={() => {
-                        setConfirmOpen(false);
-                        onApply(action, value, label);
-                    }}
-                />
-            )}
+            {active?.confirm && (() => {
+                const cfg = typeof active.confirm === 'object' ? active.confirm : {};
+                const verb = cfg.confirmLabel ?? 'Delete';
+                const tone = cfg.tone ?? 'danger';
+                return (
+                    <Modal.Confirm
+                        showModal={confirmOpen}
+                        setShowModal={setConfirmOpen}
+                        tone={tone}
+                        title={cfg.title ?? `${verb} ${selectedCount ?? 0} ${noun}?`}
+                        description={
+                            cfg.description ??
+                            `This removes the selected ${noun} from your workspace.`
+                        }
+                        confirmLabel={verb}
+                        onConfirm={() => {
+                            setConfirmOpen(false);
+                            onApply(action, value, label);
+                        }}
+                    />
+                );
+            })()}
         </div>
     );
 }
