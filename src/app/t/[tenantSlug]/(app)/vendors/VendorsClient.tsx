@@ -609,7 +609,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                                     size="sm"
                                     variant="no-results"
                                     title={t('empty.noResultsTitle')}
-                                    description={t('empty.noResultsDescription')}
+                                    description={t('empty.filtersHint')}
                                     secondaryAction={{
                                         label: t('empty.clearFilters'),
                                         onClick: () => filterCtx.clearAll(),
@@ -621,7 +621,7 @@ function VendorsPageInner({ initialVendors, initialFilters, tenantSlug, permissi
                                     icon={Package}
                                     variant="no-records"
                                     title={t('empty.noRecordsTitle')}
-                                    description={t('empty.noRecordsDescription')}
+                                    description={t('empty.recordsHint')}
                                 />
                             )
                         }

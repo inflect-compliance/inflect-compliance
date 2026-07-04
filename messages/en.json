@@ -548,10 +548,10 @@
         },
         "empty": {
             "noResultsTitle": "No vendors match your filters",
-            "noResultsDescription": "Try widening your search or clearing one of the active filters.",
+            "filtersHint": "Try widening your search or clearing one of the active filters.",
             "clearFilters": "Clear filters",
             "noRecordsTitle": "No vendors yet",
-            "noRecordsDescription": "Register sub-processors and suppliers to track DPAs, contracts, and risk reviews in one place."
+            "recordsHint": "Register sub-processors and suppliers to track DPAs, contracts, and risk reviews in one place."
         },
         "entityLabel": "vendor",
         "entityLabelPlural": "vendors",

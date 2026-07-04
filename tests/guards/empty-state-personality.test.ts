@@ -116,7 +116,31 @@ describe('Empty-state personality adoption (R11-PR1)', () => {
             if (!usesNoResults) continue;
             // Findings has no filters — exempt by lack of `hasActive` usage.
             if (!/\bhasActive\b/.test(src)) continue;
-            if (!/['"]Clear filters['"]/.test(src)) {
+            // The recovery action is a literal `'Clear filters'` OR — on an
+            // i18n-migrated page — `t('...clearFilters')`. For the i18n form,
+            // resolve the key against en.json so the intent holds through the
+            // catalog (the value must still be "Clear filters").
+            const hasLiteral = /['"]Clear filters['"]/.test(src);
+            const keyMatch = src.match(/t\(['"]([\w.]*[Cc]lear[Ff]ilters)['"]\)/);
+            let hasI18n = false;
+            if (keyMatch) {
+                const enMessages = require('../../messages/en.json') as Record<
+                    string,
+                    unknown
+                >;
+                const ns = rel.match(/\(app\)\/([^/]+)\//)?.[1] ?? '';
+                const resolved = keyMatch[1]
+                    .split('.')
+                    .reduce<unknown>(
+                        (o, k) =>
+                            o && typeof o === 'object'
+                                ? (o as Record<string, unknown>)[k]
+                                : undefined,
+                        enMessages[ns],
+                    );
+                hasI18n = resolved === 'Clear filters';
+            }
+            if (!hasLiteral && !hasI18n) {
                 offenders.push(rel);
             }
         }

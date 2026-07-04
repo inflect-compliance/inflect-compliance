@@ -113,12 +113,35 @@ describe("R32-task-63 — modal-form completeness", () => {
                 expect(src).toMatch(/guardedSetOpen/);
                 expect(src).toMatch(/form\.isDirty/);
                 expect(src).toMatch(/form\.submitting/);
-                // The "Discard … will be lost" copy is the
-                // canonical prompt; locked here so a future copy
-                // change has to land deliberately.
-                expect(src).toMatch(
-                    /window\.confirm\([\s\S]{0,200}lost\./,
-                );
+                // The "Discard … will be lost" copy is the canonical
+                // prompt. It's either an inline literal OR — on an
+                // i18n-migrated modal — sourced via `window.confirm(t('key'))`.
+                // For the i18n form, resolve the key against en.json
+                // (namespace === entity slug) so the canonical copy is still
+                // locked, just through the catalog.
+                const inlineConfirm =
+                    /window\.confirm\([\s\S]{0,200}lost\./.test(src);
+                if (!inlineConfirm) {
+                    const keyMatch = src.match(
+                        /window\.confirm\(\s*t\(['"]([\w.]+)['"]\)/,
+                    );
+                    expect(keyMatch).toBeTruthy();
+                    const en = JSON.parse(read("messages/en.json")) as Record<
+                        string,
+                        unknown
+                    >;
+                    const resolved = keyMatch![1]
+                        .split(".")
+                        .reduce<unknown>(
+                            (o, k) =>
+                                o && typeof o === "object"
+                                    ? (o as Record<string, unknown>)[k]
+                                    : undefined,
+                            en[entity.slug],
+                        );
+                    expect(typeof resolved).toBe("string");
+                    expect(resolved as string).toMatch(/lost\./);
+                }
             });
         });
     }
