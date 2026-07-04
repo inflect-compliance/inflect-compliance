@@ -1157,3 +1157,12 @@ enum AiHumanOutcome {
   EDITED
   REJECTED
 }
+
+/// Per-tenant AI-residency posture (AI sovereignty / DS-1). EXTERNAL (default)
+/// allows the configured external provider; LOCAL_ONLY is a HARD invariant —
+/// inference MUST stay on the tenant's local gateway and MUST NOT reach an
+/// external provider. See src/app-layer/ai/risk-assessment/index.ts.
+enum AiResidency {
+  EXTERNAL
+  LOCAL_ONLY
+}
