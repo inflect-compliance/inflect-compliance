@@ -13,6 +13,24 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
+// next-intl is ESM (jest can't parse its export); mock it to resolve real
+// en.json values so the RisksClient render under test yields the original English.
+jest.mock('next-intl', () => {
+    const en = require('../../messages/en.json');
+    return {
+        useTranslations: (ns: string) => (key: string, params?: Record<string, unknown>) => {
+            let v = key
+                .split('.')
+                .reduce((o: unknown, k) =>
+                    o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined, en[ns]);
+            if (typeof v !== 'string') return key;
+            if (params) for (const [p, val] of Object.entries(params)) v = (v as string).replace(new RegExp(`\\{${p}\\}`, 'g'), String(val));
+            return v;
+        },
+        useLocale: () => 'en',
+    };
+});
+
 const RISKS_CLIENT = path.resolve(
     __dirname,
     '../../src/app/t/[tenantSlug]/(app)/risks/RisksClient.tsx',
@@ -27,6 +45,10 @@ const RISK_USECASE = path.resolve(
 );
 
 const clientSrc = readFileSync(RISKS_CLIENT, 'utf8');
+// Column headers migrated to next-intl keys; resolve them against the catalog.
+const EN_RISKS = JSON.parse(
+    readFileSync(path.join(__dirname, '..', '..', 'messages/en.json'), 'utf8'),
+).risks as { colHeaders: Record<string, string> };
 const pageSrc = readFileSync(RISKS_PAGE, 'utf8');
 const usecaseSrc = readFileSync(RISK_USECASE, 'utf8');
 
@@ -52,7 +74,8 @@ describe('Risks list — Epic 44.4 column + matrix wiring', () => {
 
     it('adds the Owner column as name-only (ownerDisplayName → treatmentOwner → —, no email)', () => {
         expect(clientSrc).toContain("id: 'owner'");
-        expect(clientSrc).toContain("header: 'Owner'");
+        expect(clientSrc).toContain("header: tx('colHeaders.owner')");
+        expect(EN_RISKS.colHeaders.owner).toBe('Owner');
         // UI-14: name (or email local-part as username) via ownerDisplayName,
         // then the legacy treatmentOwner read path. The full email is NOT
         // displayed (it stays on the row only for the owner filter).
@@ -64,7 +87,8 @@ describe('Risks list — Epic 44.4 column + matrix wiring', () => {
 
     it('adds the workflow Status column with badge classes per RiskStatus value', () => {
         expect(clientSrc).toContain("id: 'status'");
-        expect(clientSrc).toContain("header: 'Status'");
+        expect(clientSrc).toContain("header: tx('colHeaders.status')");
+        expect(EN_RISKS.colHeaders.status).toBe('Status');
         expect(clientSrc).toContain('STATUS_CLASS');
         // Every enum member from prisma's RiskStatus must have a
         // class — drift here would render an unstyled badge.

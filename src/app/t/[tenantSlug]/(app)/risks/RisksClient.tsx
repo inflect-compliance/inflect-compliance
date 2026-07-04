@@ -77,14 +77,16 @@ import { detectCellCollisions } from '@/lib/risk-collisions';
 import { AleHistogram, type AleHistogramDatum } from '@/components/ui/charts';
 import { ToggleGroup } from '@/components/ui/toggle-group';
 import { useLocalStorage } from '@/components/ui/hooks';
+import { useTranslations } from 'next-intl';
 
-/** Bulk-action status options (canonical BulkActionBar). */
-const RISK_STATUS_OPTIONS = [
-    { value: 'OPEN', label: 'Open' },
-    { value: 'MITIGATING', label: 'Mitigating' },
-    { value: 'MITIGATED', label: 'Mitigated' },
-    { value: 'ACCEPTED', label: 'Accepted' },
-    { value: 'CLOSED', label: 'Closed' },
+/** Bulk-action status options (canonical BulkActionBar). Labels resolve
+ *  through the `risks.bulkStatus.*` catalog inside the component. */
+const RISK_STATUS_OPTIONS: ReadonlyArray<{ value: string; labelKey: string }> = [
+    { value: 'OPEN', labelKey: 'bulkStatus.open' },
+    { value: 'MITIGATING', labelKey: 'bulkStatus.mitigating' },
+    { value: 'MITIGATED', labelKey: 'bulkStatus.mitigated' },
+    { value: 'ACCEPTED', labelKey: 'bulkStatus.accepted' },
+    { value: 'CLOSED', labelKey: 'bulkStatus.closed' },
 ];
 
 /** RQ2-5 — resolved ALE for a list row (null = not quantified). */
@@ -211,18 +213,18 @@ export function RisksClient(props: RisksClientProps) {
  * links in the risks header, to the left of the matrix toggle. Each routes to
  * its standalone page; read-only so they show for every role.
  */
-const RISK_VIEW_LINKS: ReadonlyArray<{ href: string; label: string; icon: AppIconName }> = [
-    { href: '/risks/dashboard', label: 'Risk dashboard', icon: 'activity' },
+const RISK_VIEW_LINKS: ReadonlyArray<{ href: string; labelKey: string; icon: AppIconName }> = [
+    { href: '/risks/dashboard', labelKey: 'viewLinks.dashboard', icon: 'activity' },
     // Item 30 — the risk board (RQ3-10) shipped without a nav entry; the
     // page existed but was unreachable from the list header. Restored.
-    { href: '/risks/board', label: 'Risk board', icon: 'overview' },
-    { href: '/risks/scenarios', label: 'Scenarios', icon: 'preview' },
-    { href: '/risks/hierarchy', label: 'Hierarchy', icon: 'share' },
-    { href: '/risks/kri', label: 'Key risk indicators', icon: 'alertCircle' },
-    { href: '/risks/correlations', label: 'Correlations', icon: 'mappings' },
+    { href: '/risks/board', labelKey: 'viewLinks.board', icon: 'overview' },
+    { href: '/risks/scenarios', labelKey: 'viewLinks.scenarios', icon: 'preview' },
+    { href: '/risks/hierarchy', labelKey: 'viewLinks.hierarchy', icon: 'share' },
+    { href: '/risks/kri', labelKey: 'viewLinks.kri', icon: 'alertCircle' },
+    { href: '/risks/correlations', labelKey: 'viewLinks.correlations', icon: 'mappings' },
     // RQ3-6 — the loss-event register: forecasts meet reality.
-    { href: '/risks/loss-events', label: 'Loss events', icon: 'fileWarning' },
-    { href: '/risks/reports', label: 'Reports', icon: 'fileSpreadsheet' },
+    { href: '/risks/loss-events', labelKey: 'viewLinks.lossEvents', icon: 'fileWarning' },
+    { href: '/risks/reports', labelKey: 'viewLinks.reports', icon: 'fileSpreadsheet' },
 ];
 
 function RisksPageInner({
@@ -233,6 +235,7 @@ function RisksPageInner({
     permissions,
     translations: t,
 }: RisksClientProps) {
+    const tx = useTranslations('risks');
     const apiUrl = (path: string) => `/api/t/${tenantSlug}${path}`;
     const tenantHref = (path: string) => `/t/${tenantSlug}${path}`;
     const router = useRouter();
@@ -371,26 +374,32 @@ function RisksPageInner({
         () => [
             {
                 value: 'status',
-                label: 'Set status',
+                label: tx('bulk.setStatus'),
                 canApply: (v) => v !== '',
-                renderInput: ({ value, setValue }) => (
-                    <Combobox
-                        hideSearch
-                        id="bulk-value-input"
-                        selected={
-                            RISK_STATUS_OPTIONS.find((o) => o.value === value) ?? null
-                        }
-                        setSelected={(opt) => setValue(opt?.value ?? '')}
-                        options={RISK_STATUS_OPTIONS}
-                        placeholder="Select status..."
-                        matchTriggerWidth
-                        buttonProps={{ className: 'text-sm' }}
-                    />
-                ),
+                renderInput: ({ value, setValue }) => {
+                    const statusOptions = RISK_STATUS_OPTIONS.map((o) => ({
+                        value: o.value,
+                        label: tx(o.labelKey),
+                    }));
+                    return (
+                        <Combobox
+                            hideSearch
+                            id="bulk-value-input"
+                            selected={
+                                statusOptions.find((o) => o.value === value) ?? null
+                            }
+                            setSelected={(opt) => setValue(opt?.value ?? '')}
+                            options={statusOptions}
+                            placeholder={tx('bulk.selectStatus')}
+                            matchTriggerWidth
+                            buttonProps={{ className: 'text-sm' }}
+                        />
+                    );
+                },
             },
             {
                 value: 'assign',
-                label: 'Assign owner',
+                label: tx('bulk.assignOwner'),
                 renderInput: ({ value, setValue, setLabel }) => (
                     <UserCombobox
                         tenantSlug={tenantSlug}
@@ -401,15 +410,15 @@ function RisksPageInner({
                         }}
                         forceDropdown
                         matchTriggerWidth
-                        placeholder="Owner (blank = unassign)"
+                        placeholder={tx('bulk.ownerBlank')}
                         className="w-full sm:w-44"
                         id="bulk-value-input"
                     />
                 ),
             },
-            { value: 'delete', label: 'Delete', confirm: true },
+            { value: 'delete', label: tx('bulk.delete'), confirm: true },
         ],
-        [tenantSlug],
+        [tenantSlug, tx],
     );
 
     // ─── PR-1: org-parity sortable headers ───
@@ -459,22 +468,22 @@ function RisksPageInner({
             // Code is off by default (toggle on via the gear). The column def
             // still leads (table-unification first-column rule); only its
             // default visibility is off.
-            { id: 'code', label: 'Code', defaultVisible: false },
-            { id: 'title', label: 'Title' },
-            { id: 'asset', label: 'Asset' },
-            { id: 'inherentScore', label: 'Score' },
-            { id: 'level', label: 'Level' },
-            { id: 'status', label: 'Status' },
-            { id: 'owner', label: 'Owner' },
-            { id: 'treatment', label: 'Treatment' },
+            { id: 'code', label: tx('colVis.code'), defaultVisible: false },
+            { id: 'title', label: tx('colVis.title') },
+            { id: 'asset', label: tx('colVis.asset') },
+            { id: 'inherentScore', label: tx('colVis.score') },
+            { id: 'level', label: tx('colVis.level') },
+            { id: 'status', label: tx('colVis.status') },
+            { id: 'owner', label: tx('colVis.owner') },
+            { id: 'treatment', label: tx('colVis.treatment') },
             // ALE (annualised loss expectancy) is off by default — it widens
             // the row and caused the default table to scroll horizontally.
             // Still toggleable on via the gear.
-            { id: 'ale', label: 'ALE', defaultVisible: false },
-            { id: 'controls', label: 'Controls' },
-            { id: 'tasks', label: 'Tasks' },
+            { id: 'ale', label: tx('colVis.ale'), defaultVisible: false },
+            { id: 'controls', label: tx('colVis.controls') },
+            { id: 'tasks', label: tx('colVis.tasks') },
         ],
-        [],
+        [tx],
     );
     const {
         columnVisibility,
@@ -690,7 +699,7 @@ function RisksPageInner({
             // Controls/Tasks convention. Historic rows render an
             // em-dash; new rows mint a key in the create-path.
             id: 'code',
-            header: 'Code',
+            header: tx('colHeaders.code'),
             accessorFn: (r) => r.key || '',
             cell: ({ row }) =>
                 row.original.key ? (
@@ -789,7 +798,7 @@ function RisksPageInner({
                             return label !== null ? (
                                 <span
                                     className="text-[10px] tabular-nums text-content-muted"
-                                    title="Annualised loss expectancy"
+                                    title={tx('aleTitle')}
                                     data-testid={`risk-ale-${row.original.id}`}
                                 >
                                     {label}
@@ -834,7 +843,7 @@ function RisksPageInner({
             // 200-row register pivots to "the ones the money points
             // at" via the column header.
             id: 'ale',
-            header: 'ALE',
+            header: tx('colHeaders.ale'),
             accessorFn: sortAccessors.ale,
             cell: ({ getValue }) => {
                 const ale = getValue<number | null>();
@@ -849,7 +858,7 @@ function RisksPageInner({
         },
         {
             id: 'status',
-            header: 'Status',
+            header: tx('colHeaders.status'),
             accessorFn: sortAccessors.status,
             cell: ({ row }) => {
                 const status = row.original.status ?? 'OPEN';
@@ -862,7 +871,7 @@ function RisksPageInner({
         },
         {
             id: 'owner',
-            header: 'Owner',
+            header: tx('colHeaders.owner'),
             // Owner display: name (or email local-part as a username) →
             // legacy free-text `treatmentOwner` → em-dash. The full email is
             // intentionally NOT shown; it stays on the row for the owner filter.
@@ -903,7 +912,7 @@ function RisksPageInner({
         {
             // B7 — unified linked-task count (done/total), matching Controls.
             id: 'tasks',
-            header: 'Tasks',
+            header: tx('colHeaders.tasks'),
             accessorFn: (r) => `${r.taskDone ?? 0}/${r.taskTotal ?? 0}`,
             cell: ({ row }) => {
                 const total = row.original.taskTotal ?? 0;
@@ -921,7 +930,7 @@ function RisksPageInner({
                 );
             },
         },
-    ]), [t, getRiskBand, matrixConfig, tailByRisk, sortAccessors]);
+    ]), [t, tx, getRiskBand, matrixConfig, tailByRisk, sortAccessors]);
 
     // Right-rail Phase 3 — the AI assist co-pilot rail. A persistent,
     // co-resident entry point to the AI risk-assessment flow that
@@ -931,7 +940,7 @@ function RisksPageInner({
     // user expands it when they want to engage.
     const aiAssistRail = permissions.canWrite ? (
         <AsidePanel
-            title="AI Assist"
+            title={tx('aiAssist')}
             surfaceKey="risks-list"
             defaultCollapsed
             icon={<Sparkle3 className="h-4 w-4" />}
@@ -947,7 +956,7 @@ function RisksPageInner({
                     <div>
                         <PageBreadcrumbs
                             items={[
-                                { label: 'Dashboard', href: tenantHref('/dashboard') },
+                                { label: tx('breadcrumbDashboard'), href: tenantHref('/dashboard') },
                                 { label: t.title },
                             ]}
                             className="mb-1"
@@ -1058,7 +1067,7 @@ function RisksPageInner({
                                 The choice persists (polish #13 pattern). */}
                             <ToggleGroup
                                 size="sm"
-                                ariaLabel="Risks view"
+                                ariaLabel={tx('viewAria')}
                                 options={[
                                     { value: 'register', label: t.register, id: 'risks-view-register' },
                                     { value: 'heatmap', label: t.heatmap, id: 'risks-view-heatmap' },
@@ -1081,30 +1090,33 @@ function RisksPageInner({
                             {/* Vulnerabilities is a subpage of the Risk
                                 Register — reached via this icon button (the
                                 sidebar entry was retired). */}
-                            <Tooltip content="Vulnerabilities">
+                            <Tooltip content={tx('vulnerabilities')}>
                                 <Link
                                     href={tenantHref('/vulnerabilities')}
-                                    aria-label="Vulnerabilities"
+                                    aria-label={tx('vulnerabilities')}
                                     className={buttonVariants({ variant: 'secondary', size: 'icon' })}
                                     id="risks-vulnerabilities-btn"
                                 >
                                     <AppIcon name="shield" size={16} />
                                 </Link>
                             </Tooltip>
-                            {RISK_VIEW_LINKS.map((v) => (
-                                <Tooltip key={v.href} content={v.label}>
-                                    <Link
-                                        href={tenantHref(v.href)}
-                                        aria-label={v.label}
-                                        className={buttonVariants({ variant: 'secondary', size: 'icon' })}
-                                    >
-                                        <AppIcon name={v.icon} size={16} />
-                                    </Link>
-                                </Tooltip>
-                            ))}
+                            {RISK_VIEW_LINKS.map((v) => {
+                                const label = tx(v.labelKey);
+                                return (
+                                    <Tooltip key={v.href} content={label}>
+                                        <Link
+                                            href={tenantHref(v.href)}
+                                            aria-label={label}
+                                            className={buttonVariants({ variant: 'secondary', size: 'icon' })}
+                                        >
+                                            <AppIcon name={v.icon} size={16} />
+                                        </Link>
+                                    </Tooltip>
+                                );
+                            })}
                             {permissions.canWrite && (
-                                <Tooltip content="Import risks">
-                                    <Link href={tenantHref('/risks/import')} aria-label="Import risks" className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="risk-import-btn">
+                                <Tooltip content={tx('importRisks')}>
+                                    <Link href={tenantHref('/risks/import')} aria-label={tx('importRisks')} className={buttonVariants({ variant: 'secondary', size: 'icon' })} id="risk-import-btn">
                                         <AppIcon name="upload" size={16} />
                                     </Link>
                                 </Tooltip>
@@ -1119,25 +1131,22 @@ function RisksPageInner({
                 {view === 'histogram' ? (
                     <div className="space-y-default" data-testid="risk-histogram-view">
                         <div>
-                            <Heading level={3} className="mb-1">ALE histogram</Heading>
+                            <Heading level={3} className="mb-1">{tx('histogramView.title')}</Heading>
                             <p className="mb-tight text-xs text-content-subtle">
-                                Each quantified risk lands in a log-scale loss bucket,
-                                stacked by its matrix band — the distribution the
-                                heatmap structurally compresses.
+                                {tx('histogramView.description')}
                             </p>
                             <AleHistogram
                                 data={histogramData}
                                 referenceLine={
                                     appetiteCap != null
-                                        ? { value: appetiteCap, label: 'Per-risk appetite' }
+                                        ? { value: appetiteCap, label: tx('histogramView.perRiskAppetite') }
                                         : null
                                 }
                                 testId="risk-ale-histogram"
                             />
                             {histogramData.length === 0 && (
                                 <p className="text-sm text-content-muted">
-                                    No quantified risks yet — set FAIR ranges or SLE × ARO
-                                    on a risk to populate the histogram.
+                                    {tx('histogramView.empty')}
                                 </p>
                             )}
                         </div>
@@ -1146,10 +1155,9 @@ function RisksPageInner({
                             out. Click drills into the cell's risks. */}
                         {collisions.length > 0 && (
                             <div data-testid="risk-collision-callouts">
-                                <Heading level={3} className="mb-1">Cell collisions</Heading>
+                                <Heading level={3} className="mb-1">{tx('collisions.title')}</Heading>
                                 <p className="mb-tight text-xs text-content-subtle">
-                                    Risks sharing a matrix cell whose loss estimates differ
-                                    more than 10× — the matrix cannot show the difference.
+                                    {tx('collisions.description')}
                                 </p>
                                 <div className="space-y-tight">
                                     {collisions.map((c) => (
@@ -1231,7 +1239,7 @@ function RisksPageInner({
                                 onApply={handleBulkApply}
                                 applying={bulkApplying}
                                 selectedCount={selected.size}
-                                entityLabel="risks"
+                                entityLabel={tx('entityRisks')}
                             />
                         )}
                         emptyState={
@@ -1239,10 +1247,10 @@ function RisksPageInner({
                                 <EmptyState
                                     size="sm"
                                     variant="no-results"
-                                    title="No risks match your filters"
-                                    description="Try widening your search or clearing one of the active filters."
+                                    title={tx('emptyFilter.title')}
+                                    description={tx('emptyFilter.description')}
                                     secondaryAction={{
-                                        label: 'Clear filters',
+                                        label: tx('emptyFilter.clearFilters'),
                                         onClick: () => filterCtx.clearAll(),
                                     }}
                                 />
@@ -1253,7 +1261,7 @@ function RisksPageInner({
                                 />
                             )
                         }
-                        resourceName={(p) => p ? 'risks' : 'risk'}
+                        resourceName={(p) => p ? tx('entityRisks') : tx('entityRisk')}
                         columnVisibility={columnVisibility}
                         onColumnVisibilityChange={setColumnVisibility}
                         data-testid="risks-table"
@@ -1294,12 +1302,13 @@ function RisksFilterToolbar({
     // R-filter-gear (#3): the KPI-card gear is built in the PARENT (it
     // controls the parent's KPI grid) and threaded in here; this toolbar
     // shows the FULL filter defs.
+    const tx = useTranslations('risks');
     const filters: FilterType[] = useMemo(() => buildRiskFilters(risks), [risks]);
     return (
         <FilterToolbar
             filters={filters}
             searchId="risks-search"
-            searchPlaceholder="Search risks…"
+            searchPlaceholder={tx('searchPlaceholder')}
             leading={leading}
             actions={<>{navActions}{columnsDropdown}{filtersDropdown}</>}
         />

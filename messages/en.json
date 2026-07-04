@@ -348,6 +348,112 @@
             "failedAccept": "Failed to accept",
             "controlsUnlinked": "No controls linked yet.",
             "residualNotDerivable": "No derivable residual — link controls with an effectiveness signal."
+        },
+        "searchPlaceholder": "Search risks…",
+        "aleTitle": "Annualised loss expectancy",
+        "aiAssist": "AI Assist",
+        "breadcrumbDashboard": "Dashboard",
+        "viewAria": "Risks view",
+        "vulnerabilities": "Vulnerabilities",
+        "importRisks": "Import risks",
+        "entityRisks": "risks",
+        "entityRisk": "risk",
+        "bulk": {
+            "setStatus": "Set status",
+            "selectStatus": "Select status...",
+            "assignOwner": "Assign owner",
+            "ownerBlank": "Owner (blank = unassign)",
+            "delete": "Delete"
+        },
+        "bulkStatus": {
+            "open": "Open",
+            "mitigating": "Mitigating",
+            "mitigated": "Mitigated",
+            "accepted": "Accepted",
+            "closed": "Closed"
+        },
+        "colVis": {
+            "code": "Code",
+            "title": "Title",
+            "asset": "Asset",
+            "score": "Score",
+            "level": "Level",
+            "status": "Status",
+            "owner": "Owner",
+            "treatment": "Treatment",
+            "ale": "ALE",
+            "controls": "Controls",
+            "tasks": "Tasks"
+        },
+        "colHeaders": {
+            "code": "Code",
+            "ale": "ALE",
+            "status": "Status",
+            "owner": "Owner",
+            "tasks": "Tasks"
+        },
+        "viewLinks": {
+            "dashboard": "Risk dashboard",
+            "board": "Risk board",
+            "scenarios": "Scenarios",
+            "hierarchy": "Hierarchy",
+            "kri": "Key risk indicators",
+            "correlations": "Correlations",
+            "lossEvents": "Loss events",
+            "reports": "Reports"
+        },
+        "histogramView": {
+            "title": "ALE histogram",
+            "description": "Each quantified risk lands in a log-scale loss bucket, stacked by its matrix band — the distribution the heatmap structurally compresses.",
+            "empty": "No quantified risks yet — set FAIR ranges or SLE × ARO on a risk to populate the histogram.",
+            "perRiskAppetite": "Per-risk appetite"
+        },
+        "collisions": {
+            "title": "Cell collisions",
+            "description": "Risks sharing a matrix cell whose loss estimates differ more than 10× — the matrix cannot show the difference."
+        },
+        "emptyFilter": {
+            "title": "No risks match your filters",
+            "description": "Try widening your search or clearing one of the active filters.",
+            "clearFilters": "Clear filters"
+        },
+        "new": {
+            "title": "New risk",
+            "descShort": "Capture a risk against your register.",
+            "descLong": "Capture a risk and optionally pre-fill from a template.",
+            "eyebrow": "Risk details",
+            "templateLabel": "Template",
+            "optional": "(optional)",
+            "templateDesc": "Pre-fills title, category, likelihood, and impact from the selected template.",
+            "templatePlaceholder": "— No template",
+            "templateSearch": "Search templates…",
+            "templateEmpty": "No templates match",
+            "titleLabel": "Title",
+            "titlePlaceholder": "e.g. Unauthorized access to PII",
+            "titleEmpty": "Title cannot be empty.",
+            "categoryLabel": "Category",
+            "categoryPlaceholder": "— Category",
+            "categorySearch": "Search categories…",
+            "ownerLabel": "Owner",
+            "ownerPlaceholder": "Unassigned",
+            "descriptionLabel": "Description",
+            "descriptionPlaceholder": "What's the risk scenario?",
+            "treatmentLabel": "Treatment",
+            "treatmentPlaceholder": "Select treatment…",
+            "treatmentNotesLabel": "Treatment notes",
+            "treatmentNotesPlaceholder": "Planned mitigation, rationale, residual-risk notes…",
+            "nextReviewLabel": "Next review",
+            "datePlaceholder": "Select date",
+            "nextReviewAria": "Next review date",
+            "linkControls": "Link controls",
+            "selectedCount": "({count} selected)",
+            "loadingControls": "Loading controls…",
+            "cancel": "Cancel",
+            "creating": "Creating…",
+            "submit": "Create risk",
+            "createFailed": "Failed to create risk",
+            "createFailedStatus": "Failed to create risk ({status})",
+            "controlsEmpty": "No controls available to link."
         }
     },
     "controls": {

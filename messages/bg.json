@@ -348,6 +348,112 @@
             "failedAccept": "Неуспешно приемане",
             "controlsUnlinked": "Все още няма свързани контроли.",
             "residualNotDerivable": "Няма изводим остатъчен риск — свържете контроли със сигнал за ефективност."
+        },
+        "searchPlaceholder": "Търсене на рискове…",
+        "aleTitle": "Очаквана годишна загуба",
+        "aiAssist": "AI помощник",
+        "breadcrumbDashboard": "Табло",
+        "viewAria": "Изглед на рискове",
+        "vulnerabilities": "Уязвимости",
+        "importRisks": "Импортиране на рискове",
+        "entityRisks": "рискове",
+        "entityRisk": "риск",
+        "bulk": {
+            "setStatus": "Задай статус",
+            "selectStatus": "Изберете статус...",
+            "assignOwner": "Назначи отговорник",
+            "ownerBlank": "Отговорник (празно = премахване)",
+            "delete": "Изтрий"
+        },
+        "bulkStatus": {
+            "open": "Отворен",
+            "mitigating": "В процес на смекчаване",
+            "mitigated": "Смекчен",
+            "accepted": "Приет",
+            "closed": "Затворен"
+        },
+        "colVis": {
+            "code": "Код",
+            "title": "Заглавие",
+            "asset": "Актив",
+            "score": "Оценка",
+            "level": "Ниво",
+            "status": "Статус",
+            "owner": "Отговорник",
+            "treatment": "Третиране",
+            "ale": "ALE",
+            "controls": "Контроли",
+            "tasks": "Задачи"
+        },
+        "colHeaders": {
+            "code": "Код",
+            "ale": "ALE",
+            "status": "Статус",
+            "owner": "Отговорник",
+            "tasks": "Задачи"
+        },
+        "viewLinks": {
+            "dashboard": "Табло за рискове",
+            "board": "Дъска за рискове",
+            "scenarios": "Сценарии",
+            "hierarchy": "Йерархия",
+            "kri": "Ключови индикатори за риск",
+            "correlations": "Корелации",
+            "lossEvents": "Събития на загуба",
+            "reports": "Отчети"
+        },
+        "histogramView": {
+            "title": "Хистограма на ALE",
+            "description": "Всеки количествено определен риск попада в логаритмична кофа за загуби, подредена по неговата матрична лента — разпределението, което топлинната карта структурно компресира.",
+            "empty": "Все още няма количествено определени рискове — задайте FAIR диапазони или SLE × ARO на риск, за да попълните хистограмата.",
+            "perRiskAppetite": "Апетит за единичен риск"
+        },
+        "collisions": {
+            "title": "Колизии в клетки",
+            "description": "Рискове, споделящи клетка от матрицата, чиито оценки за загуба се различават повече от 10× — матрицата не може да покаже разликата."
+        },
+        "emptyFilter": {
+            "title": "Няма рискове, съответстващи на филтрите ви",
+            "description": "Опитайте да разширите търсенето или да изчистите някой от активните филтри.",
+            "clearFilters": "Изчисти филтрите"
+        },
+        "new": {
+            "title": "Нов риск",
+            "descShort": "Регистрирайте риск в регистъра си.",
+            "descLong": "Регистрирайте риск и по избор попълнете от шаблон.",
+            "eyebrow": "Детайли за риска",
+            "templateLabel": "Шаблон",
+            "optional": "(по избор)",
+            "templateDesc": "Попълва предварително заглавие, категория, вероятност и въздействие от избрания шаблон.",
+            "templatePlaceholder": "— Без шаблон",
+            "templateSearch": "Търсене на шаблони…",
+            "templateEmpty": "Няма съвпадащи шаблони",
+            "titleLabel": "Заглавие",
+            "titlePlaceholder": "напр. Неоторизиран достъп до ЛД",
+            "titleEmpty": "Заглавието не може да е празно.",
+            "categoryLabel": "Категория",
+            "categoryPlaceholder": "— Категория",
+            "categorySearch": "Търсене на категории…",
+            "ownerLabel": "Отговорник",
+            "ownerPlaceholder": "Неназначен",
+            "descriptionLabel": "Описание",
+            "descriptionPlaceholder": "Какъв е рисковият сценарий?",
+            "treatmentLabel": "Третиране",
+            "treatmentPlaceholder": "Изберете третиране…",
+            "treatmentNotesLabel": "Бележки за третиране",
+            "treatmentNotesPlaceholder": "Планирано смекчаване, обосновка, бележки за остатъчен риск…",
+            "nextReviewLabel": "Следващ преглед",
+            "datePlaceholder": "Изберете дата",
+            "nextReviewAria": "Дата на следващ преглед",
+            "linkControls": "Свързване на контроли",
+            "selectedCount": "({count} избрани)",
+            "loadingControls": "Зареждане на контроли…",
+            "cancel": "Отказ",
+            "creating": "Създаване…",
+            "submit": "Създай риск",
+            "createFailed": "Неуспешно създаване на риск",
+            "createFailedStatus": "Неуспешно създаване на риск ({status})",
+            "controlsEmpty": "Няма налични контроли за свързване."
         }
     },
     "controls": {

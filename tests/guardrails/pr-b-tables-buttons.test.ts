@@ -130,10 +130,12 @@ describe('PR-B — table & button hygiene', () => {
             const titleIdx = ui.indexOf("accessorKey: 'title'");
             expect(codeIdx).toBeGreaterThan(0);
             expect(titleIdx).toBeGreaterThan(codeIdx);
-            // Header label is literally "Code".
+            // Header label migrated to next-intl; resolve the key via en.json.
             expect(ui).toMatch(
-                /id:\s*['"]code['"],\s*header:\s*['"]Code['"]/,
+                /id:\s*['"]code['"],\s*header:\s*tx\('colHeaders\.code'\)/,
             );
+            const en = JSON.parse(read('messages/en.json')) as { risks: { colHeaders: Record<string, string> } };
+            expect(en.risks.colHeaders.code).toBe('Code');
         });
     });
 

@@ -72,6 +72,9 @@ describe('RQ3-OB-B — ALE sortability on the risks register', () => {
     });
 
     test('a column with id=\'ale\' exists so the header click can trigger the sort', () => {
-        expect(risksClient).toMatch(/id: 'ale',\s+header: 'ALE',/);
+        // Header migrated to next-intl; resolve the key against en.json.
+        const en = JSON.parse(read('messages/en.json')) as { risks: { colHeaders: Record<string, string> } };
+        expect(risksClient).toMatch(/id: 'ale',\s+header: tx\('colHeaders\.ale'\),/);
+        expect(en.risks.colHeaders.ale).toBe('ALE');
     });
 });

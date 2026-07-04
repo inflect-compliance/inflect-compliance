@@ -17,6 +17,24 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+// next-intl is ESM (jest can't parse its export); mock it to resolve real
+// en.json values so any component render under test yields the original English.
+jest.mock('next-intl', () => {
+    const en = require('../../messages/en.json');
+    return {
+        useTranslations: (ns: string) => (key: string, params?: Record<string, unknown>) => {
+            let v = key
+                .split('.')
+                .reduce((o: unknown, k) =>
+                    o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined, en[ns]);
+            if (typeof v !== 'string') return key;
+            if (params) for (const [p, val] of Object.entries(params)) v = (v as string).replace(new RegExp(`\\{${p}\\}`, 'g'), String(val));
+            return v;
+        },
+        useLocale: () => 'en',
+    };
+});
+
 const ROOT = path.resolve(__dirname, '../../');
 function read(rel: string): string {
     return fs.readFileSync(path.join(ROOT, rel), 'utf-8');
@@ -58,8 +76,11 @@ describe('NewRiskModal — shared Modal composition', () => {
     });
 
     it('passes title + description for a11y naming', () => {
-        expect(MODAL_SRC).toMatch(/title=["']New risk["']/);
-        expect(MODAL_SRC).toMatch(/description=["'][^"']+["']/);
+        // title/description migrated to next-intl; assert the keys + en value
+        const en = JSON.parse(read('messages/en.json'));
+        expect(MODAL_SRC).toMatch(/title=\{tx\('new\.title'\)\}/);
+        expect(en.risks.new.title).toBe('New risk');
+        expect(MODAL_SRC).toMatch(/description=\{tx\('new\.desc[A-Za-z]+'\)\}/);
     });
 
     it('guards close-during-save via preventDefaultClose={submitting}', () => {

@@ -61,6 +61,10 @@ function withClient(node: React.ReactNode) {
 
 const SRC_ROOT = path.join(__dirname, '..', '..', 'src/app/t/[tenantSlug]/(app)/risks');
 const read = (p: string) => fs.readFileSync(path.join(SRC_ROOT, p), 'utf8');
+// Module-level catalog for source-grep assertions that moved to next-intl keys.
+const EN_MESSAGES = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '..', '..', 'messages/en.json'), 'utf8'),
+) as { risks: { new: Record<string, string> } };
 
 describe('RiskEvaluationFields (shared, R5/R6)', () => {
     it('renders the "Risk Evaluation" title, two range sliders, and a live score', () => {
@@ -129,7 +133,9 @@ describe('NewRiskModal source (R3/R4/R7/R10)', () => {
     const src = read('NewRiskModal.tsx');
     it('R3 — owner is a UserCombobox bound to ownerUserId, labelled "Owner"', () => {
         expect(src).toMatch(/<UserCombobox[\s\S]*id="risk-owner"/);
-        expect(src).toMatch(/label="Owner"/);
+        // label migrated to next-intl; assert the key + its en value
+        expect(src).toMatch(/label=\{tx\('new\.ownerLabel'\)\}/);
+        expect(EN_MESSAGES.risks.new.ownerLabel).toBe('Owner');
         expect(src).not.toMatch(/label="Treatment owner"/);
     });
     it('R4 — link-controls reads the {rows} shape, and the name span is not truncated', () => {

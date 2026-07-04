@@ -229,8 +229,6 @@ const UNMIGRATED_BASELINE: ReadonlySet<string> = new Set([
     "src/app/t/[tenantSlug]/(app)/reports/loading.tsx",
     "src/app/t/[tenantSlug]/(app)/reports/soa/SoAClient.tsx",
     "src/app/t/[tenantSlug]/(app)/reports/soa/print/SoAPrintView.tsx",
-    "src/app/t/[tenantSlug]/(app)/risks/NewRiskModal.tsx",
-    "src/app/t/[tenantSlug]/(app)/risks/RisksClient.tsx",
     "src/app/t/[tenantSlug]/(app)/risks/[riskId]/_modals/EditRiskModal.tsx",
     "src/app/t/[tenantSlug]/(app)/risks/[riskId]/page.tsx",
     "src/app/t/[tenantSlug]/(app)/risks/ai-systems/AiSystemsClient.tsx",

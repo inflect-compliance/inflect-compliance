@@ -67,20 +67,32 @@ describe('icon-only action discipline', () => {
 
     // Link sites (download / navigation) — icon-only via a Tooltip-wrapped
     // `size:'icon'` anchor with an aria-label.
-    const LINK_SITES: Array<{ file: string; ariaLabel: string }> = [
-        { file: `${APP}/risks/RisksClient.tsx`, ariaLabel: 'Import risks' },
+    // `i18nKey` is set where the label was migrated to next-intl — the
+    // aria-label + Tooltip render `tx('<key>')` and the English resolves
+    // through the risks catalog.
+    const LINK_SITES: Array<{ file: string; ariaLabel: string; i18nKey?: string }> = [
+        { file: `${APP}/risks/RisksClient.tsx`, ariaLabel: 'Import risks', i18nKey: 'importRisks' },
         { file: `${APP}/audits/packs/[packId]/page.tsx`, ariaLabel: 'Export JSON' },
         { file: `${APP}/audits/packs/[packId]/page.tsx`, ariaLabel: 'Export CSV' },
     ];
 
-    for (const { file, ariaLabel } of LINK_SITES) {
+    for (const { file, ariaLabel, i18nKey } of LINK_SITES) {
         it(`icon-only link stays icon-only: "${ariaLabel}"`, () => {
             const src = read(file);
-            expect(src).toMatch(
-                new RegExp(`aria-label="${ariaLabel}"[\\s\\S]*?size: 'icon'`),
-            );
-            // wrapped in the shared Tooltip for the delayed label.
-            expect(src).toMatch(/<Tooltip content="(?:Import risks|Export JSON|Export CSV)">/);
+            if (i18nKey) {
+                expect(src).toMatch(
+                    new RegExp(`aria-label=\\{tx\\('${i18nKey}'\\)\\}[\\s\\S]*?size: 'icon'`),
+                );
+                expect(src).toMatch(new RegExp(`<Tooltip content=\\{tx\\('${i18nKey}'\\)\\}>`));
+                const en = JSON.parse(read('messages/en.json')) as { risks: Record<string, string> };
+                expect(en.risks[i18nKey]).toBe(ariaLabel);
+            } else {
+                expect(src).toMatch(
+                    new RegExp(`aria-label="${ariaLabel}"[\\s\\S]*?size: 'icon'`),
+                );
+                // wrapped in the shared Tooltip for the delayed label.
+                expect(src).toMatch(/<Tooltip content="(?:Export JSON|Export CSV)">/);
+            }
         });
     }
 
