@@ -427,7 +427,6 @@ function RisksPageInner({
         () => ({
             title: (r) => r.title || '',
             asset: (r) => r.asset?.name || '—',
-            threat: (r) => r.threat || '',
             inherentScore: (r) => r.inherentScore || 0,
             ale: (r) => riskAle(r) ?? null,
             treatment: (r) => r.treatment || t.untreated,
@@ -440,7 +439,7 @@ function RisksPageInner({
         [rawRisks, sortAccessors, sortBy, sortOrder],
     );
     const sortableRiskColumns = useMemo(
-        () => ['title', 'asset', 'threat', 'inherentScore', 'ale', 'treatment', 'status'],
+        () => ['title', 'asset', 'inherentScore', 'ale', 'treatment', 'status'],
         [],
     );
 
@@ -463,12 +462,15 @@ function RisksPageInner({
             { id: 'code', label: 'Code', defaultVisible: false },
             { id: 'title', label: 'Title' },
             { id: 'asset', label: 'Asset' },
-            { id: 'threat', label: 'Threat' },
             { id: 'inherentScore', label: 'Score' },
             { id: 'level', label: 'Level' },
             { id: 'status', label: 'Status' },
             { id: 'owner', label: 'Owner' },
             { id: 'treatment', label: 'Treatment' },
+            // ALE (annualised loss expectancy) is off by default — it widens
+            // the row and caused the default table to scroll horizontally.
+            // Still toggleable on via the gear.
+            { id: 'ale', label: 'ALE', defaultVisible: false },
             { id: 'controls', label: 'Controls' },
             { id: 'tasks', label: 'Tasks' },
         ],
@@ -724,13 +726,6 @@ function RisksPageInner({
             header: t.asset,
             cell: ({ getValue }) => (
                 <span className="text-xs">{getValue<string>()}</span>
-            ),
-        },
-        {
-            accessorKey: 'threat',
-            header: t.threat,
-            cell: ({ getValue }) => (
-                <span className="text-xs text-content-muted">{getValue<string>()}</span>
             ),
         },
         {
