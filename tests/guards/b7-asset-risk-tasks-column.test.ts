@@ -36,10 +36,36 @@ describe('B7 — Tasks column on Asset + Risk', () => {
     });
 
     it('Asset + Risk list tables render a Tasks column (done/total) + gear toggle', () => {
-        for (const src of [ASSETS, RISKS]) {
+        const en = JSON.parse(read('messages/en.json')) as Record<string, unknown>;
+        // The "Tasks" label is either an inline literal OR — on an i18n-migrated
+        // client — a t()/tx() key resolving to "Tasks" in that page's namespace.
+        const resolvesToTasks = (src: string, ns: string, prefix: RegExp): boolean => {
+            const key = src.match(prefix)?.[1];
+            if (!key) return false;
+            const val = key
+                .split('.')
+                .reduce<unknown>(
+                    (o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined),
+                    en[ns],
+                );
+            return val === 'Tasks';
+        };
+        for (const [ns, src] of [['assets', ASSETS], ['risks', RISKS]] as const) {
             expect(src).toMatch(/id: 'tasks'/);
-            expect(src).toMatch(/header: 'Tasks'/);
-            expect(src).toMatch(/\{ id: 'tasks', label: 'Tasks' \}/);
+            // header: 'Tasks' OR header: tx('colHeaders.tasks')
+            expect(
+                /header: 'Tasks'/.test(src) ||
+                    resolvesToTasks(
+                        src,
+                        ns,
+                        /id: 'tasks',\s*header:\s*t\w*\(['"]([\w.]+)['"]\)/,
+                    ),
+            ).toBe(true);
+            // colVis: { id: 'tasks', label: 'Tasks' } OR label: tx('colVis.tasks')
+            expect(
+                /\{ id: 'tasks', label: 'Tasks' \}/.test(src) ||
+                    resolvesToTasks(src, ns, /id: 'tasks', label: t\w*\(['"]([\w.]+)['"]\)/),
+            ).toBe(true);
             expect(src).toMatch(/taskDone/);
         }
     });
